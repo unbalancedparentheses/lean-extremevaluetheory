@@ -1356,6 +1356,249 @@ theorem isRegularlyVarying_of_tendsto_isSymmStable (hsymm : μ.map (fun x => -x)
 
 end Main
 
+section Characterization
+
+/-- An additive antitone function `ℝ → ℝ` is linear. -/
+theorem eq_mul_of_add_of_antitone {φ : ℝ → ℝ} (hadd : ∀ u v, φ (u + v) = φ u + φ v)
+    (hanti : Antitone φ) (u : ℝ) : φ u = u * φ 1 := by
+  set f : ℝ →+ ℝ := AddMonoidHom.mk' φ hadd
+  have hq : ∀ q : ℚ, φ q = q * φ 1 := fun q => by
+    have := map_ratCast_smul f ℝ ℝ q 1
+    simpa [f] using this
+  set c := φ 1
+  have h0 : φ 0 = 0 := by have := hadd 0 0; rw [add_zero] at this; linarith
+  have hc : c ≤ 0 := h0 ▸ hanti zero_le_one
+  have hη : ∀ ε : ℝ, 0 < ε → 0 < ε / (1 - c) := fun ε hε => div_pos hε (by linarith)
+  apply le_antisymm
+  · refine le_of_forall_pos_le_add fun ε hε => ?_
+    obtain ⟨q, hq1, hq2⟩ := exists_rat_btwn (show u - ε / (1 - c) < u by linarith [hη ε hε])
+    have h1 : φ u ≤ φ q := hanti hq2.le
+    rw [hq] at h1
+    have h2 : (q : ℝ) * c ≤ (u - ε / (1 - c)) * c := mul_le_mul_of_nonpos_right hq1.le hc
+    have h3 : -(ε / (1 - c)) * c ≤ ε := by
+      have : ε / (1 - c) * (1 - c) = ε := div_mul_cancel₀ _ (by linarith)
+      nlinarith [hη ε hε]
+    linarith
+  · refine le_of_forall_pos_le_add fun ε hε => ?_
+    obtain ⟨q, hq1, hq2⟩ := exists_rat_btwn (show u < u + ε / (1 - c) by linarith [hη ε hε])
+    have h1 : φ q ≤ φ u := hanti hq1.le
+    rw [hq] at h1
+    have h2 : (u + ε / (1 - c)) * c ≤ (q : ℝ) * c := mul_le_mul_of_nonpos_right hq2.le hc
+    have h3 : -(ε / (1 - c)) * c ≤ ε := by
+      have : ε / (1 - c) * (1 - c) = ε := div_mul_cancel₀ _ (by linarith)
+      nlinarith [hη ε hε]
+    linarith
+
+/-- **Characterization of the limit.** If `T > 0` is nonincreasing and `T(l x) / T(x) → g(l)`
+with `g(l) > 0` for every `l > 0`, then `g(l) = l ^ ρ` for some `ρ ≤ 0`. -/
+theorem exists_rpow_of_tendsto_div {T g : ℝ → ℝ} (hT : AntitoneOn T (Ioi 0))
+    (hpos : ∀ x, 0 < x → 0 < T x) (hg0 : ∀ l, 0 < l → 0 < g l)
+    (hg : ∀ l, 0 < l → Tendsto (fun x => T (l * x) / T x) atTop (𝓝 (g l))) :
+    ∃ ρ : ℝ, ρ ≤ 0 ∧ ∀ l, 0 < l → g l = l ^ ρ := by
+  have hmul : ∀ l m, 0 < l → 0 < m → g (l * m) = g l * g m := by
+    intro l m hl hm
+    have h1 := ((hg l hl).comp (tendsto_id.const_mul_atTop hm)).mul (hg m hm)
+    refine tendsto_nhds_unique (hg (l * m) (mul_pos hl hm)) (h1.congr' ?_)
+    filter_upwards [eventually_gt_atTop 0] with x hx
+    simp only [Function.comp_apply, id]
+    have := (hpos _ (mul_pos hm hx)).ne'
+    rw [mul_assoc l m x]
+    field_simp
+  have hmono : ∀ l m, 0 < l → l ≤ m → g m ≤ g l := by
+    intro l m hl hlm
+    refine le_of_tendsto_of_tendsto (hg m (hl.trans_le hlm)) (hg l hl) ?_
+    filter_upwards [eventually_gt_atTop 0] with x hx
+    exact div_le_div_of_nonneg_right (hT (mul_pos hl hx) (mul_pos (hl.trans_le hlm) hx)
+      (mul_le_mul_of_nonneg_right hlm hx.le)) (hpos x hx).le
+  set φ : ℝ → ℝ := fun u => Real.log (g (Real.exp u))
+  have hadd : ∀ u v, φ (u + v) = φ u + φ v := by
+    intro u v
+    simp only [φ, Real.exp_add]
+    rw [hmul _ _ (Real.exp_pos _) (Real.exp_pos _),
+      Real.log_mul (hg0 _ (Real.exp_pos _)).ne' (hg0 _ (Real.exp_pos _)).ne']
+  have hanti : Antitone φ := fun u v huv =>
+    Real.log_le_log (hg0 _ (Real.exp_pos _))
+      (hmono _ _ (Real.exp_pos _) (Real.exp_le_exp.2 huv))
+  refine ⟨φ 1, ?_, fun l hl => ?_⟩
+  · have := hanti zero_le_one
+    have h0 : φ 0 = 0 := by
+      have := hadd 0 0; simp only [add_zero] at this; linarith
+    linarith
+  · have := eq_mul_of_add_of_antitone hadd hanti (Real.log l)
+    simp only [φ, Real.exp_log hl] at this
+    rw [Real.rpow_def_of_pos hl, ← this, Real.exp_log (hg0 l hl)]
+
+end Characterization
+
+section General
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a : ℕ → ℝ}
+
+theorem tendsto_integral_gfun_atTop (P : ProbabilityMeasure ℝ) :
+    Tendsto (fun x : ℝ => ∫ y, (1 + y ^ 2) / max (y ^ 2) (x ^ 2) ∂(P : Measure ℝ)) atTop
+      (𝓝 0) := by
+  have h0 : (0 : ℝ) = ∫ _y, (0 : ℝ) ∂(P : Measure ℝ) := by simp
+  rw [h0]
+  refine tendsto_integral_filter_of_dominated_convergence (fun y => gfun one_pos y) ?_ ?_
+    ((gfun one_pos).integrable _) (ae_of_all _ fun y => ?_)
+  · filter_upwards [eventually_gt_atTop 0] with x hx
+    exact (gfun hx).continuous.aestronglyMeasurable
+  · filter_upwards [eventually_ge_atTop 1] with x hx
+    refine ae_of_all _ fun y => ?_
+    have hM : 0 < max (y ^ 2) (1 ^ 2) := lt_of_lt_of_le (by positivity) (le_max_right _ _)
+    rw [gfun_apply, Real.norm_eq_abs, abs_of_nonneg (div_nonneg (by positivity)
+      (le_max_of_le_right (sq_nonneg _)))]
+    exact div_le_div_of_nonneg_left (by positivity) hM
+      (max_le_max le_rfl (pow_le_pow_left₀ zero_le_one hx 2))
+  · have h1 : Tendsto (fun x : ℝ => (1 + y ^ 2) / x ^ 2) atTop (𝓝 0) :=
+      tendsto_const_nhds.div_atTop (tendsto_pow_atTop two_ne_zero)
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds h1 ?_ ?_
+    · exact Eventually.of_forall fun x =>
+        div_nonneg (by positivity) (le_max_of_le_left (sq_nonneg _))
+    · filter_upwards [eventually_gt_atTop 0] with x hx
+      exact div_le_div_of_nonneg_left (by positivity) (by positivity) (le_max_right _ _)
+
+/-- **Converse of the generalized central limit theorem, symmetric case, with the index
+derived** (Feller's criterion, necessity: [Feller, Vol. II, §XVII.5, Theorem 2], [GK, §35]).
+Let `μ` be a symmetric probability law on `ℝ`, `aₙ > 0`, and suppose the laws of
+`(X₁ + ⋯ + Xₙ) / aₙ` converge weakly to a law `ν ≠ δ₀`. Then there is `0 < α ≤ 2` such that
+the truncated second moment `U(x) = E[X² 1{|X| ≤ x}]` is regularly varying with index `2 - α`,
+and, if `α < 2`, the two-sided tail `P(|X| > x)` is regularly varying with index `-α`. -/
+theorem exists_isRegularlyVarying_of_tendsto (hsymm : μ.map (fun x => -x) = μ)
+    (ha : ∀ n, 0 < a n) {ν : ProbabilityMeasure ℝ} (hnd : (ν : Measure ℝ) ≠ Measure.dirac 0)
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map ((a n)⁻¹ * ·), inferInstance⟩) atTop (𝓝 ν)) :
+    ∃ α, 0 < α ∧ α ≤ 2 ∧ IsRegularlyVarying (truncSecondMoment μ) (2 - α) ∧
+      (α < 2 → IsRegularlyVarying (absTail μ) (-α)) := by
+  obtain ⟨δ, hδ, hb⟩ := exists_nh_le hsymm hconv
+  set B := Real.log 2
+  have hB0 : 0 ≤ B := Real.log_nonneg one_le_two
+  set ψ : ℝ → ℝ := fun u => (charFun (ν : Measure ℝ) u).re with hψ
+  set h : ℝ → ℝ := fun u => -Real.log (ψ u) with hh
+  have hψpos : ∀ u, 0 < ψ u := fun u => (tendsto_nh hsymm hconv hb u).1
+  have hlim : ∀ u, Tendsto (fun n => nh μ a n u) atTop (𝓝 (h u)) :=
+    fun u => (tendsto_nh hsymm hconv hb u).2
+  have hBa : ∀ᶠ n in atTop, ∀ u, |nh μ a n u| ≤ B * (|u| / δ + 1) ^ 2 := by
+    filter_upwards [eventually_ge_atTop 3] with n hn u
+    rw [abs_of_nonneg (nh_nonneg _ _)]
+    exact hb n hn u
+  have hhnn : ∀ u, 0 ≤ h u := fun u =>
+    ge_of_tendsto (hlim u) (Eventually.of_forall fun n => nh_nonneg _ _)
+  have hhc : Continuous h :=
+    ((Complex.continuous_re.comp continuous_charFun).log fun u => (hψpos u).ne').neg
+  have hhb : ∀ u, |h u| ≤ B * (|u| / δ + 1) ^ 2 := by
+    intro u
+    rw [abs_of_nonneg (hhnn u)]
+    exact le_of_tendsto (hlim u) (by
+      filter_upwards [hBa] with n hn
+      exact (le_abs_self _).trans (hn u))
+  have hh0 : h 0 = 0 := by
+    simp [hh, hψ, charFun_zero]
+  have hheven : ∀ u, h (-u) = h u := fun u =>
+    tendsto_nhds_unique (hlim (-u)) (by simpa only [nh_neg] using hlim u)
+  -- non-degeneracy gives `h(s₀) > 0` for some `s₀ > 0`
+  obtain ⟨s₀, hs₀, hhs₀⟩ : ∃ s₀ > 0, 0 < h s₀ := by
+    have : ∃ t, charFun (ν : Measure ℝ) t ≠ 1 := by
+      by_contra hc
+      apply hnd
+      refine Measure.ext_of_charFun (funext fun t => ?_)
+      have h1 : charFun (ν : Measure ℝ) t = 1 := by
+        by_contra h'
+        exact hc ⟨t, h'⟩
+      rw [h1, charFun_dirac]
+      simp
+    obtain ⟨t, ht⟩ := this
+    have hlt : ψ t < 1 := by
+      have hn1 : ‖charFun (ν : Measure ℝ) t‖ ≤ 1 := norm_charFun_le_one t
+      refine lt_of_le_of_ne ((Complex.re_le_norm _).trans hn1) fun heq => ht ?_
+      have hsq : ‖charFun (ν : Measure ℝ) t‖ ^ 2 = (charFun (ν : Measure ℝ) t).re ^ 2 +
+          (charFun (ν : Measure ℝ) t).im ^ 2 := by
+        rw [Complex.sq_norm, Complex.normSq_apply]; ring
+      have him : (charFun (ν : Measure ℝ) t).im = 0 := by
+        have : ‖charFun (ν : Measure ℝ) t‖ ^ 2 ≤ 1 := by
+          have := norm_nonneg (charFun (ν : Measure ℝ) t); nlinarith
+        simp only [hψ] at heq
+        rw [hsq, heq] at this
+        nlinarith [sq_nonneg (charFun (ν : Measure ℝ) t).im]
+      exact Complex.ext (by simpa [hψ] using heq) (by simpa using him)
+    have hpos : 0 < h t := by
+      simp only [hh]
+      exact neg_pos.2 (Real.log_neg (hψpos t) hlt)
+    have ht0 : t ≠ 0 := by rintro rfl; rw [hh0] at hpos; exact lt_irrefl _ hpos
+    refine ⟨|t|, abs_pos.2 ht0, ?_⟩
+    rcases le_or_gt 0 t with h0 | h0
+    · rwa [abs_of_nonneg h0]
+    · rwa [abs_of_neg h0, hheven]
+  have hpos : 0 < lap h 0 := lap_pos hB0 hδ hhc hhb hh0 hhnn hs₀ hhs₀
+  obtain ⟨P, hP⟩ := exists_charFun_eq_lap hsymm hB0 hδ hBa hlim hpos hhc hhb
+  set L : ℝ → ℝ := fun x => lap h 0 * ∫ y, (1 + y ^ 2) / max (y ^ 2) (x ^ 2) ∂(P : Measure ℝ)
+  have hlimL : ∀ x, 0 < x → Tendsto (fun n : ℕ => (n : ℝ) * sqRatio μ (a n * x)) atTop
+      (𝓝 (L x)) := fun x hx => tendsto_mul_sqRatio hsymm ha hB0 hδ hBa hlim hpos P hP hx
+  have hLpos : ∀ x, 0 < x → 0 < L x := fun x hx => mul_pos hpos (integral_gfun_pos P hx)
+  have hL1 : Tendsto (fun n : ℕ => (n : ℝ) * sqRatio μ (a n)) atTop (𝓝 (L 1)) := by
+    simpa using hlimL 1 one_pos
+  have hTpos : ∀ x, 0 < x → 0 < sqRatio μ x := by
+    obtain ⟨n, hn⟩ := ((tendsto_order.1 hL1).1 0 (hLpos 1 one_pos)).exists
+    have h1 : 0 < sqRatio μ (a n) := by
+      by_contra hc
+      have : sqRatio μ (a n) = 0 := le_antisymm (not_lt.1 hc) (sqRatio_nonneg _)
+      rw [this, mul_zero] at hn
+      exact lt_irrefl _ hn
+    exact fun x hx => sqRatio_pos_of_pos (ha n) h1 hx
+  have hratio : ∀ l, 0 < l → Tendsto (fun x => sqRatio μ (l * x) / sqRatio μ x) atTop
+      (𝓝 (L l / L 1)) := fun l hl =>
+    tendsto_div_of_tendsto_mul_comp sqRatio_antitoneOn hTpos ha hlimL hLpos hl
+  obtain ⟨ρ, hρ0, hρ⟩ := exists_rpow_of_tendsto_div sqRatio_antitoneOn hTpos
+    (fun l hl => div_pos (hLpos l hl) (hLpos 1 one_pos)) hratio
+  have hLρ : ∀ x, 0 < x → L x = L 1 * x ^ ρ := fun x hx => by
+    have := hρ x hx
+    rw [div_eq_iff (hLpos 1 one_pos).ne'] at this
+    rw [this, mul_comm]
+  -- `α = -ρ > 0`: otherwise `L` would be constant, but `L x → 0`
+  have hρneg : ρ < 0 := by
+    rcases lt_or_eq_of_le hρ0 with hρz | hρz
+    · exact hρz
+    · exfalso
+      have hconst : ∀ x, 0 < x → L x = L 1 := fun x hx => by
+        rw [hLρ x hx, hρz]; simp
+      have hto : Tendsto L atTop (𝓝 0) := by
+        have := (tendsto_integral_gfun_atTop P).const_mul (lap h 0)
+        simpa [L] using this
+      have : Tendsto L atTop (𝓝 (L 1)) := tendsto_const_nhds.congr' (by
+        filter_upwards [eventually_gt_atTop 0] with x hx
+        exact (hconst x hx).symm)
+      exact (hLpos 1 one_pos).ne' (tendsto_nhds_unique this hto)
+  set α := -ρ with hα
+  have hα0 : 0 < α := by linarith
+  have hTRV : IsRegularlyVarying (sqRatio μ) (-α) := by
+    rw [hα, neg_neg]
+    refine ⟨(eventually_gt_atTop 0).mono hTpos, fun l hl => ?_⟩
+    rw [← hρ l hl]
+    exact hratio l hl
+  have hZ : IsRegularlyVarying (minSqMoment μ) (2 - α) := by
+    have := (IsRegularlyVarying.rpow_id 2).mul hTRV
+    rw [← sub_eq_add_neg] at this
+    refine this.congr ?_
+    filter_upwards [eventually_gt_atTop 0] with x hx
+    rw [sqRatio_eq_div hx.ne', Real.rpow_two]
+    field_simp
+  have hα2 : α ≤ 2 := by
+    by_contra hc
+    replace hc : 2 < α := not_le.1 hc
+    have h2 := hZ.2 2 two_pos
+    have hle : (1 : ℝ) ≤ 2 ^ (2 - α) := ge_of_tendsto h2 (by
+      filter_upwards [hZ.1, eventually_gt_atTop 0] with x hx hx0
+      rw [le_div_iff₀ hx, one_mul]
+      exact minSqMoment_mono hx0.le (by linarith))
+    have : (2 : ℝ) ^ (2 - α) < 1 := Real.rpow_lt_one_of_one_lt_of_neg one_lt_two (by linarith)
+    linarith
+  refine ⟨α, hα0, hα2, isRegularlyVarying_truncSecondMoment_of_minSqMoment (by linarith) hZ,
+    fun hlt => ?_⟩
+  have hG := isRegularlyVarying_absTail_of_minSqMoment (by linarith) hZ
+  rwa [show 2 - α - 2 = -α by ring] at hG
+
+end General
+
 end GCLTConverse
 
 end ExtremeValueTheory
