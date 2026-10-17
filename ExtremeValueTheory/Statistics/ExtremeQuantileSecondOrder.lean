@@ -10,6 +10,49 @@ import ExtremeValueTheory.ForMathlib.MeasureTheory.Function.ConvergenceInDistrib
 /-!
 # Extreme quantile estimation under second-order regular variation
 
+Let `X_0, X_1, …` be iid with tail quantile function `U(t) = F̄^←(1/t)` of second-order regular
+variation (`ExtremeValueTheory.IsSecondOrderRegularlyVarying`) with first-order index `γ > 0`,
+second-order index `ρ < 0` and auxiliary function `A`, and let `k → ∞`, `k / n → 0`,
+`√k A(n/k) → λ ∈ ℝ`. For `p_n > 0` write `d_n = k / (n p_n)` for the extrapolation factor.
+We discharge the two hypotheses of the reduction theorems of
+`ExtremeValueTheory.Statistics.ExtremeQuantile` (a `√k`-rate for the Hill estimator and the
+deterministic extrapolation bias) and obtain the consistency and asymptotic normality of the
+Weissman estimator `x̂_p = X_{(k+1)} d_n^{γ̂}` far beyond the sample range ([dHF, §4.3]), and
+the consistency of the tail probability estimator ([dHF, §4.4]).
+
+## Main results
+
+* `isBoundedInProbability_of_tendstoInDistribution`: convergence in distribution implies
+  tightness (via `MeasureTheory.TendstoInDistribution.exists_measure_le_abs_le`).
+* `isRegularlyVarying_of_isRegularlyVarying_survivalQuantile`: if `U` is regularly varying with
+  index `γ > 0`, the survival function is regularly varying with index `-1/γ`.
+* `survivalQuantile_survival_eq_tailQuantile`, `tailQuantile_eq_survivalQuantile`:
+  `U(t) = x_{1/t}`.
+* `IsSecondOrderRegularlyVarying.tendsto_div_mul_rpow`: `U(d t) / (U(t) d^γ) → 1` uniformly in
+  `d ≥ 1` (using the uniform bound `IsSecondOrderRegularlyVarying.exists_bound_of_neg`).
+* `tendstoInMeasure_weissman_div_of_secondOrder`: `x̂_{p_n} / x_{p_n} → 1` in probability if
+  `d_n ≥ 1` eventually and `log d_n / √k → 0`.
+* `tendstoInMeasure_tailProbEstimator_div_of_secondOrder`: `p̂(y_n) / F̄(y_n) → 1` in
+  probability if `x_{k/n} ≤ y_n` eventually and `log (y_n / x_{k/n}) / √k → 0`.
+* `isBoundedInProbability_log_orderStat`: `√k (log X_{(k+1)} - log U(n/k)) = O_P(1)`, from
+  `isBoundedInProbability_orderStat_sub_log` (`√k (E_{(k+1)} - log(n/k)) = O_P(1)` for
+  exponentials, by Chebyshev's inequality for exceedance counts) and the quantile transform.
+* `tendstoInDistribution_weissman`: if moreover `d_n → ∞`,
+  `(√k / log d_n) (x̂_{p_n} / x_{p_n} - 1) ⇒ N(λ / (1 - ρ), γ²)`.
+
+## Proof of the asymptotic normality
+
+`log (x̂_p / x_p) = (log X_{(k+1)} - log U(n/k)) + (γ̂ - γ) log d_n - r_n` with the deterministic
+remainder `r_n = log U(d_n n/k) - log U(n/k) - γ log d_n = O(A(n/k))`. Multiplying by
+`√k / log d_n`, the first term is `O_P(1) / log d_n → 0`, the last is `O(1) / log d_n → 0`, and
+the middle one is the Hill CLT. The delta method for `exp` (`expSlope`) concludes; the event
+`X_{(k+1)} ≤ 0`, where the logarithmic decomposition fails, has vanishing probability.
+
+## References
+
+* [dHF] L. de Haan, A. Ferreira, *Extreme Value Theory: An Introduction*, Springer, 2006.
+* I. Weissman, *Estimation of parameters and large quantiles based on the k largest
+  observations*, JASA 73 (1978).
 -/
 
 open Filter Topology Set Real MeasureTheory ProbabilityTheory
