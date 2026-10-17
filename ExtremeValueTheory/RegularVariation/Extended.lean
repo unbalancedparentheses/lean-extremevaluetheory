@@ -188,6 +188,23 @@ theorem isRegularlyVarying (hf : IsExtendedRegularlyVarying f γ a) : IsRegularl
     exact (div_self ht.ne').symm
   · exact hr c h1
 
+/-- Extended regular variation only depends on the germ of the function at `+∞`. -/
+theorem congr {g : ℝ → ℝ} (hf : IsExtendedRegularlyVarying f γ a) (hfg : f =ᶠ[atTop] g) :
+    IsExtendedRegularlyVarying g γ a := by
+  refine ⟨hf.1, fun x hx => (hf.2 x hx).congr' ?_⟩
+  filter_upwards [hfg, (tendsto_id.const_mul_atTop hx).eventually hfg] with t h1 h2
+  simp only [id] at h2
+  rw [h1, h2]
+
+/-- A function monotone on `[c, ∞)` agrees eventually with the monotone function
+`t ↦ f (max t c)`. -/
+theorem monotone_comp_max {c : ℝ} (hmono : MonotoneOn f (Ici c)) :
+    Monotone (fun t => f (max t c)) ∧ (fun t => f (max t c)) =ᶠ[atTop] f := by
+  refine ⟨fun s t hst => hmono (mem_Ici.2 (le_max_right _ _)) (mem_Ici.2 (le_max_right _ _))
+    (max_le_max hst le_rfl), ?_⟩
+  filter_upwards [eventually_ge_atTop c] with t ht
+  rw [max_eq_left ht]
+
 end IsExtendedRegularlyVarying
 
 /-- If `g / a → c > 0` and `a` is regularly varying with index `ρ`, so is `g`. -/
@@ -605,5 +622,278 @@ theorem IsExtendedRegularlyVarying.isRegularlyVarying_sub_of_neg
     ∃ ℓ, Tendsto f atTop (𝓝 ℓ) ∧ IsRegularlyVarying (fun t => ℓ - f t) γ := by
   obtain ⟨ℓ, h1, -, h3⟩ := hf.exists_tendsto_of_neg hmono hγ
   exact ⟨ℓ, h1, hf.isRegularlyVarying.of_tendsto_div (neg_pos.2 (inv_lt_zero.2 hγ)) h3⟩
+
+/-! ### Non-positive index -/
+
+/-- **Non-positive index** ([dHF, Lemma 1.2.9]): if `f` is eventually positive and extended
+regularly varying with index `γ ≤ 0`, then `a t / f t → 0`. -/
+theorem IsExtendedRegularlyVarying.tendsto_aux_div_zero_of_nonpos
+    (hf : IsExtendedRegularlyVarying f γ a) (hγ : γ ≤ 0) (hpos : ∀ᶠ t in atTop, 0 < f t) :
+    Tendsto (fun t => a t / f t) atTop (𝓝 0) := by
+  set D := extRVLimit γ 2 with hD
+  have hDpos : 0 < D := extRVLimit_pos one_lt_two
+  set p : ℝ := (2 : ℝ) ^ γ with hp
+  have hp1 : p ≤ 1 := rpow_le_one_of_one_le_of_nonpos one_le_two hγ
+  have hF2 : Tendsto (fun t => (f (2 * t) - f t) / a t) atTop (𝓝 D) := hf.2 2 two_pos
+  have hR2 : Tendsto (fun t => a (2 * t) / a t) atTop (𝓝 p) := hf.isRegularlyVarying.2 2 two_pos
+  suffices h : Tendsto (fun t => f t / a t) atTop atTop by
+    refine h.inv_tendsto_atTop.congr fun t => ?_
+    simp only [Pi.inv_apply, inv_div]
+  rw [tendsto_atTop]
+  intro M
+  set M' := max M 1 with hM'
+  have hM'0 : 0 < M' := lt_of_lt_of_le one_pos (le_max_right _ _)
+  set ε := min (D / 2) (D / (4 * M')) with hε
+  have hε0 : 0 < ε := lt_min (half_pos hDpos) (by positivity)
+  have hεD : ε ≤ D / 2 := min_le_left _ _
+  have hεM : ε ≤ D / (4 * M') := min_le_right _ _
+  obtain ⟨T₁, hT₁⟩ := eventually_atTop.1 (hf.1.and (hpos.and
+    ((hF2.eventually (lt_mem_nhds (show D - ε < D by linarith))).and
+    (hR2.eventually (gt_mem_nhds (show p < 1 + ε by linarith))))))
+  set T₀ := max T₁ 1 with hT₀_def
+  have hT₀ : 0 < T₀ := lt_of_lt_of_le one_pos (le_max_right _ _)
+  have hb : ∀ t ≥ T₀, 0 < a t ∧ 0 < f t ∧ (D - ε) * a t ≤ f (2 * t) - f t ∧
+      a (2 * t) ≤ (1 + ε) * a t := by
+    intro t ht
+    obtain ⟨h1, h2, h3, h4⟩ := hT₁ t (le_of_max_le_left ht)
+    rw [lt_div_iff₀ h1] at h3
+    rw [div_lt_iff₀ h1] at h4
+    exact ⟨h1, h2, h3.le, h4.le⟩
+  set w := (1 + ε)⁻¹ with hw
+  have hw0 : 0 < w := by positivity
+  have hw1 : w < 1 := inv_lt_one_of_one_lt₀ (by linarith)
+  have hwε : w * ε = 1 - w := by rw [hw]; field_simp; ring
+  -- `f (2 ^ n t) - f t ≥ (D - ε) a (2 ^ n t) (1 - w ^ n) / ε`
+  have key : ∀ n : ℕ, ∀ t ≥ T₀,
+      (D - ε) * a (2 ^ n * t) * (1 - w ^ n) / ε ≤ f (2 ^ n * t) - f t := by
+    intro n
+    induction n with
+    | zero => intro t ht; simp
+    | succ n ih =>
+      intro t ht
+      have ht' : 2 ^ n * t ≥ T₀ := le_trans ht (le_mul_of_one_le_left (hT₀.trans_le ht).le
+        (one_le_pow₀ one_le_two))
+      obtain ⟨h1, -, h3, h4⟩ := hb _ ht'
+      have ih' := ih t ht
+      rw [show 2 ^ (n + 1) * t = 2 * (2 ^ n * t) by ring]
+      have hwn : 0 ≤ 1 - w ^ n := by linarith [pow_le_one₀ hw0.le hw1.le (n := n)]
+      have h5 : w * a (2 * (2 ^ n * t)) ≤ a (2 ^ n * t) := by
+        rw [hw, inv_mul_le_iff₀ (by linarith)]
+        exact h4
+      have hc : 0 ≤ (D - ε) * (1 + (1 - w ^ n) / ε) := by
+        have : 0 ≤ (1 - w ^ n) / ε := div_nonneg hwn hε0.le
+        nlinarith
+      have h6 : (D - ε) * (1 + (1 - w ^ n) / ε) * (w * a (2 * (2 ^ n * t))) ≤
+          (D - ε) * (1 + (1 - w ^ n) / ε) * a (2 ^ n * t) :=
+        mul_le_mul_of_nonneg_left h5 hc
+      have e : (D - ε) * a (2 * (2 ^ n * t)) * (1 - w ^ (n + 1)) / ε =
+          (D - ε) * (1 + (1 - w ^ n) / ε) * (w * a (2 * (2 ^ n * t))) := by
+        have hW : (1 + (1 - w ^ n) / ε) * ε = ε + 1 - w ^ n := by field_simp; ring
+        rw [div_eq_iff hε0.ne']
+        calc (D - ε) * a (2 * (2 ^ n * t)) * (1 - w ^ (n + 1))
+            = (D - ε) * a (2 * (2 ^ n * t)) * (w * ε + w - w * w ^ n) := by rw [hwε]; ring
+          _ = (D - ε) * a (2 * (2 ^ n * t)) * w * ((1 + (1 - w ^ n) / ε) * ε) := by
+            rw [hW]; ring
+          _ = _ := by ring
+      have e2 : (D - ε) * (1 + (1 - w ^ n) / ε) * a (2 ^ n * t) =
+          (D - ε) * a (2 ^ n * t) + (D - ε) * a (2 ^ n * t) * (1 - w ^ n) / ε := by
+        field_simp
+      linarith
+  obtain ⟨N, hN⟩ := ((tendsto_pow_atTop_nhds_zero_of_lt_one hw0.le hw1).eventually
+    (gt_mem_nhds (show (0 : ℝ) < 1 / 2 by norm_num))).exists
+  refine eventually_atTop.2 ⟨2 ^ N * T₀, fun s hs => ?_⟩
+  have hsT : 1 ≤ s / T₀ := by
+    rw [le_div_iff₀ hT₀, one_mul]
+    exact le_trans (le_mul_of_one_le_left hT₀.le (one_le_pow₀ one_le_two)) hs
+  obtain ⟨n, hn1, hn2⟩ := exists_nat_pow_near hsT one_lt_two
+  have hNn : N ≤ n := by
+    have h1 : (2 : ℝ) ^ N < 2 ^ (n + 1) := by
+      have : (2 : ℝ) ^ N ≤ s / T₀ := by rw [le_div_iff₀ hT₀]; exact hs
+      linarith
+    have := (pow_lt_pow_iff_right₀ one_lt_two).1 h1
+    omega
+  set t := s / 2 ^ n with ht_def
+  have h2n : (0 : ℝ) < 2 ^ n := by positivity
+  have hst : s = 2 ^ n * t := by rw [ht_def]; field_simp
+  have htT : T₀ ≤ t := by
+    rw [ht_def, le_div_iff₀ h2n, mul_comm]
+    rwa [le_div_iff₀ hT₀] at hn1
+  have hk := key n t htT
+  rw [← hst] at hk
+  have hft := (hb t htT).2.1
+  have has : 0 < a s := (hb s (by rw [hst]; exact le_trans htT (le_mul_of_one_le_left
+      (hT₀.trans_le htT).le (one_le_pow₀ one_le_two)))).1
+  have hwn : w ^ n ≤ 1 / 2 := (pow_le_pow_of_le_one hw0.le hw1.le hNn).trans hN.le
+  rw [le_div_iff₀ has]
+  have h1 : (D - ε) * a s * (1 / 2) / ε ≤ (D - ε) * a s * (1 - w ^ n) / ε := by
+    have : 0 ≤ D - ε := by linarith
+    gcongr
+    linarith
+  have h2 : M' * a s ≤ (D - ε) * a s * (1 / 2) / ε := by
+    rw [le_div_iff₀ hε0]
+    have h3 : ε * (4 * M') ≤ D := by
+      have := mul_le_mul_of_nonneg_right hεM (by positivity : (0 : ℝ) ≤ 4 * M')
+      rwa [div_mul_cancel₀ _ (by positivity)] at this
+    nlinarith
+  have h3 : M * a s ≤ M' * a s := mul_le_mul_of_nonneg_right (le_max_left _ _) has.le
+  linarith
+
+/-- **Potter-type bound for non-positive index** ([dHF, Theorem B.2.18]): if `f` is monotone on
+`[c, ∞)` and extended regularly varying with index `γ ≤ 0`, then for every `δ > 0` there are
+`C` and `T₀ > 0` with `f (y t) - f t ≤ C a(t) y ^ δ` for all `t ≥ T₀` and `y ≥ 1`. -/
+theorem IsExtendedRegularlyVarying.exists_sub_le_of_nonpos
+    (hf : IsExtendedRegularlyVarying f γ a) (hγ : γ ≤ 0) {c : ℝ} (hmono : MonotoneOn f (Ici c))
+    {δ : ℝ} (hδ : 0 < δ) :
+    ∃ C T₀ : ℝ, 0 < T₀ ∧ ∀ t ≥ T₀, ∀ y ≥ 1, f (y * t) - f t ≤ C * a t * y ^ δ := by
+  set D := extRVLimit γ 2 with hD
+  have hDpos : 0 < D := extRVLimit_pos one_lt_two
+  set p : ℝ := (2 : ℝ) ^ γ with hp
+  have hp1 : p ≤ 1 := rpow_le_one_of_one_le_of_nonpos one_le_two hγ
+  set Q : ℝ := (2 : ℝ) ^ δ with hQ
+  have hQ1 : 1 < Q := one_lt_rpow one_lt_two hδ
+  have hF2 : Tendsto (fun t => (f (2 * t) - f t) / a t) atTop (𝓝 D) := hf.2 2 two_pos
+  have hR2 : Tendsto (fun t => a (2 * t) / a t) atTop (𝓝 p) := hf.isRegularlyVarying.2 2 two_pos
+  obtain ⟨T₁, hT₁⟩ := eventually_atTop.1 (hf.1.and
+    ((hF2.eventually (gt_mem_nhds (show D < D + 1 by linarith))).and
+    (hR2.eventually (gt_mem_nhds (show p < Q by linarith)))))
+  set T₀ := max (max T₁ c) 1 with hT₀_def
+  have hT₀ : 0 < T₀ := lt_of_lt_of_le one_pos (le_max_right _ _)
+  have hT₀c : c ≤ T₀ := le_trans (le_max_right _ _) (le_max_left _ _)
+  have hb : ∀ t ≥ T₀, 0 < a t ∧ f (2 * t) - f t ≤ (D + 1) * a t ∧ a (2 * t) ≤ Q * a t := by
+    intro t ht
+    obtain ⟨h1, h3, h4⟩ := hT₁ t (le_trans (le_trans (le_max_left _ _) (le_max_left _ _)) ht)
+    rw [div_lt_iff₀ h1] at h3 h4
+    exact ⟨h1, h3.le, h4.le⟩
+  -- `f (2 ^ n t) - f t ≤ (D + 1) a t (Q ^ n - 1) / (Q - 1)`
+  have key : ∀ n : ℕ, ∀ t ≥ T₀,
+      f (2 ^ n * t) - f t ≤ (D + 1) * a t * (Q ^ n - 1) / (Q - 1) := by
+    intro n
+    induction n with
+    | zero => intro t ht; simp
+    | succ n ih =>
+      intro t ht
+      obtain ⟨h1, h2, h3⟩ := hb t ht
+      have ht2 : 2 * t ≥ T₀ := by linarith
+      have ih2 := ih (2 * t) ht2
+      rw [show 2 ^ (n + 1) * t = 2 ^ n * (2 * t) by ring]
+      have hQn : 0 ≤ Q ^ n - 1 := by linarith [one_le_pow₀ hQ1.le (n := n)]
+      have hQ' : 0 < Q - 1 := by linarith
+      have h4 : (D + 1) * a (2 * t) * (Q ^ n - 1) / (Q - 1) ≤
+          (D + 1) * (Q * a t) * (Q ^ n - 1) / (Q - 1) := by gcongr
+      have e : (D + 1) * (Q * a t) * (Q ^ n - 1) / (Q - 1) + (D + 1) * a t =
+          (D + 1) * a t * (Q ^ (n + 1) - 1) / (Q - 1) := by
+        field_simp
+        ring
+      linarith
+  refine ⟨(D + 1) * Q / (Q - 1), T₀, hT₀, fun t ht y hy => ?_⟩
+  obtain ⟨n, hn1, hn2⟩ := exists_nat_pow_near hy one_lt_two
+  have htpos : 0 < t := hT₀.trans_le ht
+  have hat := (hb t ht).1
+  have hmon : f (y * t) ≤ f (2 ^ (n + 1) * t) := by
+    refine hmono (mem_Ici.2 ?_) (mem_Ici.2 ?_) ?_
+    · exact hT₀c.trans (ht.trans (le_mul_of_one_le_left htpos.le hy))
+    · exact hT₀c.trans (ht.trans (le_mul_of_one_le_left htpos.le (one_le_pow₀ one_le_two)))
+    · exact mul_le_mul_of_nonneg_right hn2.le htpos.le
+  have hk := key (n + 1) t ht
+  have hQpow : Q ^ (n + 1) ≤ Q * y ^ δ := by
+    have e : Q ^ (n + 1) = ((2 : ℝ) ^ (n + 1)) ^ δ := by
+      rw [hQ, ← Real.rpow_natCast, ← Real.rpow_mul (by norm_num), ← Real.rpow_natCast,
+        ← Real.rpow_mul (by norm_num), mul_comm]
+    rw [e, hQ, ← Real.mul_rpow (by norm_num) (by linarith)]
+    refine Real.rpow_le_rpow (by positivity) ?_ hδ.le
+    rw [pow_succ]
+    linarith
+  have hQ' : 0 < Q - 1 := by linarith
+  have h5 : (D + 1) * a t * (Q ^ (n + 1) - 1) / (Q - 1) ≤
+      (D + 1) * a t * (Q * y ^ δ) / (Q - 1) := by
+    gcongr
+    linarith
+  have e : (D + 1) * a t * (Q * y ^ δ) / (Q - 1) = (D + 1) * Q / (Q - 1) * a t * y ^ δ := by
+    ring
+  linarith
+
+/-- **The logarithm of an extended regularly varying function** ([dHF, Lemma 3.5.1]): if `f` is
+eventually positive, monotone on `[c, ∞)`, and extended regularly varying with index `γ` and
+auxiliary function `a`, then `log f` is extended regularly varying with index `γ₋ = min γ 0` and
+auxiliary function `a / f`. -/
+theorem IsExtendedRegularlyVarying.log (hf : IsExtendedRegularlyVarying f γ a) {c : ℝ}
+    (hmono : MonotoneOn f (Ici c)) (hpos : ∀ᶠ t in atTop, 0 < f t) :
+    IsExtendedRegularlyVarying (fun t => Real.log (f t)) (min γ 0) (fun t => a t / f t) := by
+  refine ⟨?_, fun x hx => ?_⟩
+  · filter_upwards [hf.1, hpos] with t h1 h2
+    exact div_pos h1 h2
+  have hs := tendsto_id.const_mul_atTop hx
+  set r : ℝ → ℝ := fun t => a t / f t with hr
+  set d : ℝ → ℝ := fun t => (f (x * t) - f t) / a t with hd
+  have hdlim : Tendsto d atTop (𝓝 (extRVLimit γ x)) := hf.2 x hx
+  have hev : ∀ᶠ t in atTop, 0 < a t ∧ 0 < f t ∧ 0 < f (x * t) := by
+    filter_upwards [hf.1, hpos, hs.eventually hpos] with t h1 h2 h3
+    exact ⟨h1, h2, h3⟩
+  have hid : ∀ᶠ t in atTop, (Real.log (f (x * t)) - Real.log (f t)) / (a t / f t) =
+      Real.log (1 + r t * d t) / r t := by
+    filter_upwards [hev] with t ht
+    obtain ⟨h1, h2, h3⟩ := ht
+    rw [← Real.log_div h3.ne' h2.ne']
+    simp only [hr, hd]
+    congr 2
+    field_simp
+    ring
+  have hpos' : ∀ᶠ t in atTop, 0 < r t ∧ 0 < 1 + r t * d t := by
+    filter_upwards [hev] with t ht
+    obtain ⟨h1, h2, h3⟩ := ht
+    refine ⟨div_pos h1 h2, ?_⟩
+    simp only [hr, hd]
+    have : 1 + a t / f t * ((f (x * t) - f t) / a t) = f (x * t) / f t := by
+      field_simp
+      ring
+    rw [this]
+    exact div_pos h3 h2
+  rcases le_or_gt γ 0 with hγ | hγ
+  · rw [min_eq_left hγ]
+    have hr0 : Tendsto r atTop (𝓝 0) := hf.tendsto_aux_div_zero_of_nonpos hγ hpos
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' (g := fun t => d t / (1 + r t * d t))
+      ?_ hdlim ?_ ?_
+    · have h2 : Tendsto (fun t => 1 + r t * d t) atTop (𝓝 (1 + 0 * extRVLimit γ x)) :=
+        tendsto_const_nhds.add (hr0.mul hdlim)
+      have := hdlim.div h2 (by norm_num)
+      rw [zero_mul, add_zero, div_one] at this
+      exact this
+    · filter_upwards [hid, hpos'] with t h1 h2
+      rw [h1, le_div_iff₀ h2.1]
+      have := Real.one_sub_inv_le_log_of_pos h2.2
+      have hne := h2.2.ne'
+      have e : 1 - (1 + r t * d t)⁻¹ = d t / (1 + r t * d t) * r t := by
+        field_simp
+        ring
+      linarith
+    · filter_upwards [hid, hpos'] with t h1 h2
+      rw [h1, div_le_iff₀ h2.1]
+      have := Real.log_le_sub_one_of_pos h2.2
+      linarith
+  · rw [min_eq_right hγ.le, extRVLimit_zero_left]
+    obtain ⟨hgm, hge⟩ := IsExtendedRegularlyVarying.monotone_comp_max hmono
+    have hg := hf.congr hge.symm
+    have hrlim : Tendsto r atTop (𝓝 γ) := by
+      refine (hg.tendsto_aux_div_of_pos hgm hγ).congr' ?_
+      filter_upwards [hge] with t ht
+      simp only [hr]
+      rw [ht]
+    have hxγ : 1 + γ * extRVLimit γ x = x ^ γ := by
+      rw [extRVLimit_of_ne hγ.ne']
+      field_simp
+      ring
+    have hval : Real.log (1 + γ * extRVLimit γ x) / γ = Real.log x := by
+      rw [hxγ, Real.log_rpow hx]
+      field_simp
+    rw [← hval]
+    have h1 : Tendsto (fun t => 1 + r t * d t) atTop (𝓝 (1 + γ * extRVLimit γ x)) :=
+      tendsto_const_nhds.add (hrlim.mul hdlim)
+    have hne : 1 + γ * extRVLimit γ x ≠ 0 := by
+      rw [hxγ]
+      exact (rpow_pos_of_pos hx γ).ne'
+    refine (((Real.continuousAt_log hne).tendsto.comp h1).div hrlim hγ.ne').congr' ?_
+    filter_upwards [hid] with t ht
+    rw [ht]
+    rfl
 
 end ExtremeValueTheory

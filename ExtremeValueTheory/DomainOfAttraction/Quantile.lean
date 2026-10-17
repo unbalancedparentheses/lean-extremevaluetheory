@@ -55,15 +55,6 @@ theorem gpdSurvivalInv_inv {ξ x : ℝ} (hx : 0 < x) : gpdSurvivalInv ξ x⁻¹ 
   · simp only [gpdSurvivalInv, extRVLimit, hξ, ↓reduceIte]
     rw [inv_rpow hx.le, rpow_neg hx.le, inv_inv]
 
-/-- Extended regular variation only depends on the germ of the function at `+∞`. -/
-theorem IsExtendedRegularlyVarying.congr {f g a : ℝ → ℝ} {γ : ℝ}
-    (hf : IsExtendedRegularlyVarying f γ a) (hfg : f =ᶠ[atTop] g) :
-    IsExtendedRegularlyVarying g γ a := by
-  refine ⟨hf.1, fun x hx => (hf.2 x hx).congr' ?_⟩
-  filter_upwards [hfg, (tendsto_id.const_mul_atTop hx).eventually hfg] with t h1 h2
-  simp only [id] at h2
-  rw [h1, h2]
-
 end ExtremeValueTheory
 
 namespace CumulativeDistributionFunction
