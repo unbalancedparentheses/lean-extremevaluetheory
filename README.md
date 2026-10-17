@@ -44,7 +44,11 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   `e(u)/u → 1/(α-1)` for regularly varying tails with `α > 1`.
 - **Subexponential distributions** (`IsSubexponential`): regularly varying tails are
   subexponential; `P(X₁+…+Xₙ > x) ~ n P(X > x)` and the single big jump
-  `P(X₁+…+Xₙ > x) ~ P(max Xᵢ > x)` for iid samples; Kesten's bound.
+  `P(X₁+…+Xₙ > x) ~ P(max Xᵢ > x)` for iid samples; Kesten's bound. Closure under tail
+  equivalence and convolution; random sums `P(S_N > x) ~ E N · P(X > x)`
+  (`IsSubexponential.tendsto_tail_compound_div`); the Embrechts–Veraverbeke ruin asymptotics
+  `ψ(u) ~ F̄_I(u)/ρ` from the Pollaczek–Khinchine formula (`tendsto_pkRuin_div`,
+  `tendsto_pkRuin_div_mul_tail`); Weibull-type tails `exp(-x^τ)`, `τ < 1`, are subexponential.
 - **Hill estimator consistency** (`tendstoInMeasure_hill`): for iid samples whose tail is
   regularly varying with index `-α`, and `k → ∞`, `k/n → 0`, the Hill estimator
   `(1/k) Σ_{i<k} (log X₍ᵢ₊₁₎ - log X₍ₖ₊₁₎)` converges to `1/α` in probability. With order

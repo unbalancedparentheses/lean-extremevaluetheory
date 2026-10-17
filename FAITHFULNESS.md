@@ -6,8 +6,9 @@ laws. Second audit (rows marked †): Gumbel MDA (`DomainOfAttraction/Gumbel.lea
 `GumbelNecessity.lean`), the general Pickands–Balkema–de Haan file
 (`PeaksOverThreshold/Balkema.lean`), order statistics and the Hill estimator (`Statistics/*`),
 and stable laws / the generalized CLT (`StableLaws/*`). Third audit (rows marked ‡): the PBdH
-converse (`PeaksOverThreshold/Converse.lean`) and the asymmetric GCLT
-(`StableLaws/GeneralizedCLT.lean`). No `sorry`/`axiom`/`admit` found in
+converse (`PeaksOverThreshold/Converse.lean`), the asymmetric GCLT
+(`StableLaws/GeneralizedCLT.lean`, `Constants.lean`), and random sums / ruin
+(`HeavyTails/RandomSums.lean`, `Ruin.lean`, `StretchedExponential.lean`). No `sorry`/`axiom`/`admit` found in
 `ExtremeValueTheory/`.
 
 References: [EKM] Embrechts–Klüppelberg–Mikosch, *Modelling Extremal Events*;
@@ -118,6 +119,10 @@ Processes*.
 | `tendsto_tail_sub_div` | EKM Lemma 1.3.5(a) | `F̄(x−y)/F̄(x) → 1` | Holds for every real `y`. | FAITHFUL |
 | `tendsto_tail_convPow_div`, `tendsto_measure_sum_div_tail` | EKM Lemma 1.3.4 | `F̄^{*n}(x)/F̄(x) → n` | For `n ≥ 1`, in convolution form and in i.i.d.-sum form. | FAITHFUL |
 | `tendsto_measure_max_div_tail`, `tendsto_measure_sum_div_measure_max` | EKM Lemma 1.3.1 | `P(max > x) ~ n F̄(x)`; `P(S_n > x) ~ P(M_n > x)` | Same. The max version needs only `tail > 0`. | FAITHFUL |
+| ‡ `IsSubexponential.of_tendsto_tail_div`, `.convPow`, `tendsto_tail_conv_div_of_tendsto` | EKM Lemma A3.15 | tail-equivalent laws on `[0,∞)` stay subexponential; `F̄_{A*B} ~ (c₁+c₂)F̄` | Same, with `c > 0` (resp. `c₁, c₂ > 0`) and the new law on `[0,∞)`. | FAITHFUL |
+| ‡ `IsSubexponential.tendsto_tail_compound_div` / `.compound` | EKM Thm A3.20 | `E(1+ε)^N < ∞` ⇒ `P(S_N > x) ~ E N · F̄(x)` | The law of `S_N` is `compound μ p = Σ pₙ μ^{*n}` (`Measure.sum`), with `p : ℕ → ℝ≥0`, `HasSum p 1`, `Summable (pₙ(1+ε)^n)`. This is the law of an independent random sum. | FAITHFUL |
+| ‡ `pkRuin`, `IsSubexponential.tendsto_pkRuin_div`, `tendsto_pkRuin_div_mul_tail` | EKM Thm 1.3.6 (Embrechts–Veraverbeke) | `F_I ∈ S` ⇒ `ψ(u) ~ ρ⁻¹ F̄_I(u)` | `ψ` is *defined* by the Pollaczek–Khinchine formula `ρ/(1+ρ) Σ (1+ρ)^{-n} F̄_I^{*n}(u)`, which is correct, but the formula is not derived from the Cramér–Lundberg process. `integratedTail μ` is the density `F̄/m` on `(0,∞)`. The RV corollaries assume `F̄ ∈ RV_{−α}`, `α > 1` (so `m < ∞` is proved). | DIFFERS (ruin probability defined via P–K); correct |
+| ‡ `IsSubexponential.of_tail_eq_exp_neg_rpow` | EKM Ex. 1.4.3 | `F̄(x) = e^{−x^τ}`, `0 < τ < 1` ⇒ subexponential | Takes a measure with this tail as a hypothesis; no such measure is constructed in the library (it exists, e.g. via `CumulativeDistributionFunction`). | FAITHFUL (not instantiated) |
 | `kesten_bound` | EKM Lemma 1.3.5(c) | ∀ `ε > 0` ∃ `K` ∀ `n`, `x ≥ 0`: `F̄^{*n}(x) ≤ K(1+ε)^n F̄(x)` | Holds for all `n` and all real `x`. | FAITHFUL (slightly stronger) |
 
 ## Status of first-audit findings

@@ -276,3 +276,82 @@ $X_1 \sim \mu$, $X_2 \sim \nu$.
   constant $K$: for $x \ge x_0$ use the displayed estimate with
   $a = K (1+\eps)^n - A/\eps$, and for $x < x_0$ use $\overline{F}^{*(n+1)}(x) \le 1 \le A \overline{F}(x)$.
 \end{proof}
+
+\section{Closure properties, random sums and ruin}
+
+\begin{theorem}[Closure under tail equivalence and convolution]
+  \label{thm:subexp-closure}
+  \uses{thm:single-big-jump, thm:kesten}
+  \lean{ExtremeValueTheory.IsSubexponential.tendsto_tail_conv_div_of_tendsto,
+    ExtremeValueTheory.IsSubexponential.of_tendsto_tail_div,
+    ExtremeValueTheory.IsSubexponential.convPow}
+  \leanok
+  Let $\mu$ be subexponential and $A$, $B$ laws on $[0,\infty)$ with
+  $\bar F_A/\bar F_\mu \to c_1 > 0$, $\bar F_B/\bar F_\mu \to c_2 > 0$. Then
+  $\bar F_{A*B}/\bar F_\mu \to c_1 + c_2$. Consequently a law tail-equivalent to a subexponential
+  law is subexponential, and so is every convolution power $\mu^{*n}$, $n \ge 1$
+  [EKM, Lemma~A3.15].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Split $\PR[X + Y > x]$ according to which summand exceeds $x - v$ and use long-tailedness.
+\end{proof}
+
+\begin{theorem}[Random sums]
+  \label{thm:random-sums}
+  \uses{thm:kesten, thm:subexp-closure}
+  \lean{ExtremeValueTheory.IsSubexponential.tendsto_tsum_tail_convPow_div,
+    ExtremeValueTheory.compound,
+    ExtremeValueTheory.IsSubexponential.tendsto_tail_compound_div,
+    ExtremeValueTheory.IsSubexponential.compound}
+  \leanok
+  Let $\mu$ be subexponential and $N$ an independent counting variable with
+  $\E(1+\varepsilon)^N < \infty$ for some $\varepsilon > 0$. Then
+  $\PR[S_N > x] / \bar F(x) \to \E N$, and if $\E N > 0$ the law of $S_N$ is subexponential
+  [EKM, Theorem~A3.20]. The law of $S_N$ is the compound law
+  $\sum_n \PR[N = n] \, \mu^{*n}$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Termwise $\bar F^{*n}(x)/\bar F(x) \to n$; Kesten's bound
+  $\bar F^{*n} \le K(1+\varepsilon)^n \bar F$ gives domination.
+\end{proof}
+
+\begin{theorem}[Embrechts--Veraverbeke ruin asymptotics]
+  \label{thm:ruin}
+  \uses{thm:random-sums, thm:karamata}
+  \lean{ExtremeValueTheory.pkRuin, ExtremeValueTheory.integratedTail,
+    ExtremeValueTheory.IsSubexponential.tendsto_pkRuin_div,
+    ExtremeValueTheory.isSubexponential_integratedTail_of_isRegularlyVarying,
+    ExtremeValueTheory.tendsto_pkRuin_div_integral,
+    ExtremeValueTheory.tendsto_pkRuin_div_mul_tail}
+  \leanok
+  In the Cramér--Lundberg model with safety loading $\rho > 0$, the ruin probability is given by
+  the Pollaczek--Khinchine formula
+  $\psi(u) = \frac{\rho}{1+\rho} \sum_{n \ge 0} (1+\rho)^{-n} \bar F_I^{*n}(u)$, where $F_I$ is the
+  integrated tail law. If $F_I$ is subexponential then $\psi(u) / \bar F_I(u) \to 1/\rho$
+  [EKM, Theorem~1.3.6]. If $\bar F \in RV_{-\alpha}$ with $\alpha > 1$ and mean $m$, then $F_I$ is
+  subexponential and $\psi(u) \sim u \bar F(u) / (\rho m (\alpha - 1))$. The Pollaczek--Khinchine
+  formula is taken as the definition of $\psi$; it is not derived from the risk process.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Theorem~\ref{thm:random-sums} with a geometric counting law; Karamata's theorem
+  (Theorem~\ref{thm:karamata}) gives $\bar F_I(u) \sim u \bar F(u)/(m(\alpha-1))$.
+\end{proof}
+
+\begin{theorem}[Weibull-type tails are subexponential]
+  \label{thm:weibull-subexp}
+  \lean{ExtremeValueTheory.IsSubexponential.of_dominated,
+    ExtremeValueTheory.IsSubexponential.of_tail_eq_exp_neg_rpow}
+  \leanok
+  A law on $[0,\infty)$ with $\bar F(x) = \exp(-x^\tau)$, $0 < \tau < 1$, is subexponential
+  [EKM, Example~1.4.3]. More generally, a long-tailed law is subexponential if
+  $\bar F(x-t)/\bar F(x) \le g(t)$ for $0 \le t \le x/2$ with $g$ integrable and
+  $\bar F(x/2)^2 / \bar F(x) \to 0$ (a Pitman-type criterion).
+\end{theorem}
+\begin{proof}
+  \leanok
+  Dominated convergence on $\int_0^{x/2} \bar F(x-t)/\bar F(x) \, \mu(\ud t)$, with
+  $g(t) = \exp(\tau t^\tau)$ for the Weibull tail.
+\end{proof}
