@@ -488,4 +488,67 @@ theorem tendstoInMeasure_ratio_of_isRegularlyVarying {f : ℝ → ℝ} {ρ : ℝ
 
 end RandomRatio
 
+/-! ### A conditional law of large numbers for the top excesses -/
+
+section ConditionalLLN
+
+theorem integrable_exp_mul_expMeasure {a : ℝ} (ha : a < 1) :
+    Integrable (fun u => exp (a * u)) (expMeasure 1) := by
+  rw [integrable_expMeasure_iff]
+  refine (exp_neg_integrableOn_Ioi 0 (sub_pos.2 ha)).congr_fun (fun u _ => ?_) measurableSet_Ioi
+  rw [← exp_add]
+  ring_nf
+
+theorem integral_exp_mul_expMeasure {a : ℝ} (ha : a < 1) :
+    ∫ u, exp (a * u) ∂(expMeasure 1) = 1 / (1 - a) := by
+  rw [integral_expMeasure, ← integral_exp_neg_mul_Ioi (sub_pos.2 ha)]
+  refine setIntegral_congr_fun measurableSet_Ioi fun u _ => ?_
+  rw [← exp_add]
+  ring_nf
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+
+/-- **Chebyshev's inequality for the sample mean** of iid square-integrable variables. -/
+theorem measure_abs_mean_sub_ge_le {X : ℕ → Ω → ℝ} (hindep : iIndepFun X P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P) (hL2 : MemLp (X 0) 2 P) {k : ℕ} (hk : 0 < k)
+    {ε : ℝ} (hε : 0 < ε) :
+    P {ω | ε ≤ |(k : ℝ)⁻¹ * ∑ i ∈ Finset.range k, X i ω - P[X 0]|} ≤
+      ENNReal.ofReal (P[X 0 ^ 2] / (k * ε ^ 2)) := by
+  have hk' : (0 : ℝ) < k := by exact_mod_cast hk
+  have hL2i : ∀ i, MemLp (X i) 2 P := fun i => (hident i).memLp_iff.2 hL2
+  set T : Ω → ℝ := ∑ i ∈ Finset.range k, X i with hT
+  have hTfun : ∀ ω, T ω = ∑ i ∈ Finset.range k, X i ω := fun ω => by
+    simp [hT, Finset.sum_apply]
+  have hTL2 : MemLp T 2 P := memLp_finsetSum' _ fun i _ => hL2i i
+  have hET : P[T] = (k : ℝ) * P[X 0] := by
+    have : ∫ ω, T ω ∂P = ∑ i ∈ Finset.range k, ∫ ω, X i ω ∂P := by
+      simp only [hT, Finset.sum_apply]
+      exact integral_finsetSum _ fun i _ => (hL2i i).integrable one_le_two
+    rw [this, Finset.sum_congr rfl fun i _ => (hident i).integral_eq, Finset.sum_const,
+      Finset.card_range, nsmul_eq_mul]
+  have hVT : variance T P ≤ (k : ℝ) * P[X 0 ^ 2] := by
+    rw [hT, IndepFun.variance_sum (fun i _ => hL2i i)
+      (fun i _ j _ hij => hindep.indepFun hij)]
+    rw [Finset.sum_congr rfl fun i _ => (hident i).variance_eq, Finset.sum_const,
+      Finset.card_range, nsmul_eq_mul]
+    gcongr
+    exact variance_le_expectation_sq (hL2 ).aestronglyMeasurable
+  have hsub : {ω | ε ≤ |(k : ℝ)⁻¹ * ∑ i ∈ Finset.range k, X i ω - P[X 0]|} ⊆
+      {ω | k * ε ≤ |T ω - P[T]|} := by
+    intro ω hω
+    simp only [mem_ofPred_eq] at hω ⊢
+    rw [hTfun, hET]
+    have e : ∑ i ∈ Finset.range k, X i ω - k * P[X 0] =
+        k * ((k : ℝ)⁻¹ * ∑ i ∈ Finset.range k, X i ω - P[X 0]) := by
+      field_simp
+    rw [e, abs_mul, abs_of_pos hk']
+    exact mul_le_mul_of_nonneg_left hω hk'.le
+  refine (measure_mono hsub).trans ((meas_ge_le_variance_div_sq hTL2 (by positivity)).trans ?_)
+  refine ENNReal.ofReal_le_ofReal ?_
+  rw [div_le_div_iff₀ (by positivity) (by positivity)]
+  calc variance T P * (k * ε ^ 2) ≤ (k : ℝ) * P[X 0 ^ 2] * (k * ε ^ 2) := by gcongr
+    _ = P[X 0 ^ 2] * (k * ε) ^ 2 := by ring
+
+end ConditionalLLN
+
 end ExtremeValueTheory
