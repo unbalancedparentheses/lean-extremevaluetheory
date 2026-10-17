@@ -79,7 +79,8 @@ theorem tendsto_nat_mul_measureReal_affine_mem_Ioc (hX : ∀ i, Measurable (X i)
   have hy := tendsto_nat_mul_measureReal_lt_affine hX hF hGy hlimy i
   rw [show Real.log (G y) - Real.log (G x) = -Real.log (G x) - -Real.log (G y) by ring]
   refine (hx.sub hy).congr fun n ↦ ?_
-  have hset : {ω | As n (X i ω) ∈ Set.Ioc x y} = {ω | x < As n (X i ω)} \ {ω | y < As n (X i ω)} := by
+  have hset : {ω | As n (X i ω) ∈ Set.Ioc x y} =
+      {ω | x < As n (X i ω)} \ {ω | y < As n (X i ω)} := by
     ext ω
     simp [Set.mem_Ioc, not_lt]
   have hsub : {ω | y < As n (X i ω)} ⊆ {ω | x < As n (X i ω)} := fun ω h ↦
@@ -538,7 +539,8 @@ theorem tendsto_measureReal_affine_orderStat_zero_one_of_pointProcess
         P.real {ω | ∀ l, #{i ∈ range n | As n (X i ω) ∈ B l} = ![0, 1] l} := by
     filter_upwards [eventually_gt_atTop 1] with n hn
     have hsplit (ω : Ω) : #{i ∈ range n | As n (X i ω) ∈ Set.Ioi y} =
-        #{i ∈ range n | As n (X i ω) ∈ Set.Ioi x} + #{i ∈ range n | As n (X i ω) ∈ Set.Ioc y x} := by
+        #{i ∈ range n | As n (X i ω) ∈ Set.Ioi x} +
+          #{i ∈ range n | As n (X i ω) ∈ Set.Ioc y x} := by
       rw [← Finset.card_union_of_disjoint (Finset.disjoint_filter.2 fun i _ h1 h2 ↦
         Set.disjoint_left.1 hdisj h1 h2), ← Finset.filter_or]
       congr 1

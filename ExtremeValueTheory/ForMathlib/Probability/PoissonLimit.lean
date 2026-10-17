@@ -137,7 +137,8 @@ theorem tendsto_measureReal_eq_of_tendsto_integral_cexp {ι : Type*} {l : Filter
   have hc : (2 * π : ℂ) ^ k ≠ 0 := pow_ne_zero _ (by simp [Real.pi_ne_zero])
   have key : Tendsto (fun i ↦ (2 * π : ℂ) ^ k * (Q i).real {ω | Y i ω = m}) l
       (𝓝 ((2 * π : ℂ) ^ k * Q'.real {ω | Y' ω = m})) := by
-    simp_rw [← integral_torusMeasure_charFun_mul _ (hY _), ← integral_torusMeasure_charFun_mul _ hY']
+    simp_rw [← integral_torusMeasure_charFun_mul _ (hY _),
+      ← integral_torusMeasure_charFun_mul _ hY']
     refine tendsto_integral_filter_of_dominated_convergence (fun _ ↦ 1)
       (Eventually.of_forall fun i ↦ ?_) (Eventually.of_forall fun i ↦ ?_) (integrable_const 1)
       (ae_of_all _ fun t ↦ (h t).mul_const _)
