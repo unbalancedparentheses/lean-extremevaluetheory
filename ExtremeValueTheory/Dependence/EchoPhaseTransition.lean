@@ -373,4 +373,196 @@ theorem hasEscapeMass_echoProcess_short (hL1 : ∀ z, 1 ≤ L z) (hLinf : Tendst
 
 end EchoBlock
 
+/-! ### The logarithmic echo lag -/
+
+section LogLag
+
+theorem logLag_mono {u z : ℝ} (hu : 0 < u) (hz : u ≤ z) : logLag u ≤ logLag z :=
+  Nat.add_le_add_right (Nat.floor_mono (Real.log_le_log hu hz)) 1
+
+/-- `E[L(Z); Z > u] = ∫_{z > u} L(z) dν ≤ (⌈log u⌉ + 2^α / (1 - e^(-α))) u^(-α)`, as an integral. -/
+theorem setIntegral_logLag_le {α : ℝ} (hα : 0 < α) {u : ℝ} (hu : 1 ≤ u) :
+    Integrable (fun z => (logLag z : ℝ)) ((paretoMeasure 1 α).restrict (Ioi u)) ∧
+      ∫ z in Ioi u, (logLag z : ℝ) ∂(paretoMeasure 1 α) ≤
+        (⌈Real.log u⌉₊ + 2 ^ α / (1 - Real.exp (-α))) * u ^ (-α) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  set ν := paretoMeasure 1 α
+  set μ := ν.restrict (Ioi u)
+  set S : ℕ → Set ℝ := fun j => {z | j + 1 ≤ logLag z}
+  have hS : ∀ j, MeasurableSet (S j) := fun j => measurable_logLag measurableSet_Ici
+  have hcount : ∀ z, ∑' j, (S j).indicator (1 : ℝ → ℝ≥0∞) z = logLag z := fun z => by
+    rw [tsum_indicator_one_eq_card (F := Finset.range (logLag z)), Finset.card_range]
+    intro j
+    simp only [S, mem_ofPred_eq, Finset.mem_range]
+    omega
+  have e : ∀ j, μ.real (S j) = ν.real {z | u < z ∧ j + 1 ≤ logLag z} := fun j => by
+    rw [measureReal_restrict_apply (hS j)]
+    congr 1
+    ext z
+    simp [S, and_comm]
+  have hsum : Summable fun j => μ.real (S j) :=
+    (summable_logLag hα).of_nonneg_of_le (fun _ => measureReal_nonneg) fun j => by
+      rw [e]; exact measureReal_mono fun z hz => hz.2
+  have hfin : ∫⁻ z, (logLag z : ℝ≥0∞) ∂μ ≠ ∞ := by
+    rw [← tsum_measure_eq_lintegral_count hS hcount]
+    have : ∀ j, μ (S j) = ENNReal.ofReal (μ.real (S j)) := fun j =>
+      (ENNReal.ofReal_toReal (measure_ne_top _ _)).symm
+    rw [tsum_congr this, ← ENNReal.ofReal_tsum_of_nonneg (fun _ => measureReal_nonneg) hsum]
+    exact ENNReal.ofReal_ne_top
+  obtain ⟨h1, h2⟩ := hasSum_measureReal_of_count hS measurable_logLag hcount hfin
+  refine ⟨h2, ?_⟩
+  rw [← h1.tsum_eq, tsum_congr e]
+  exact tsum_logLag_le hα hu
+
+/-- **Bounds on the block mass for the logarithmic lag.** With `ℓ₀ = L(u) = ⌊log u⌋ + 1` (the
+smallest echo lag of an exceedance of `u`),
+`min(ℓ₀, r) u^(-α) ≤ E[min(L(Z), r); Z > u] ≤ (min(ℓ₀, r) + 2^α / (1 - e^(-α))) u^(-α)`. -/
+theorem echoBlockMass_logLag_bounds {α : ℝ} (hα : 0 < α) {u : ℝ} (hu : 1 ≤ u) (r : ℕ) :
+    (min (logLag u) r : ℕ) * u ^ (-α) ≤ echoBlockMass α logLag u r ∧
+      echoBlockMass α logLag u r ≤
+        ((min (logLag u) r : ℕ) + 2 ^ α / (1 - Real.exp (-α))) * u ^ (-α) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  set ν := paretoMeasure 1 α
+  set ℓ₀ := logLag u
+  set m : ℕ := min ℓ₀ r
+  have hb : ν.real (Ioi u) = u ^ (-α) := paretoMeasure_one_real_Ioi hα hu
+  have hmono : ∀ z ∈ Ioi u, ℓ₀ ≤ logLag z := fun z hz => logLag_mono (by linarith) (le_of_lt hz)
+  have hint := integrable_min_lag hα measurable_logLag u r
+  obtain ⟨hL, hLle⟩ := setIntegral_logLag_le hα hu
+  constructor
+  · rw [← hb, mul_comm, ← smul_eq_mul, ← setIntegral_const, echoBlockMass]
+    refine setIntegral_mono_on (integrable_const _) hint measurableSet_Ioi fun z hz => ?_
+    exact Nat.cast_le.2 (by have := hmono z hz; omega)
+  · have hrhs : Integrable (fun z => (m : ℝ) + ((logLag z : ℝ) - ℓ₀)) (ν.restrict (Ioi u)) :=
+      (integrable_const _).add (hL.sub (integrable_const _))
+    have h1 : echoBlockMass α logLag u r ≤ ∫ z in Ioi u, ((m : ℝ) + ((logLag z : ℝ) - ℓ₀)) ∂ν := by
+      refine setIntegral_mono_on hint hrhs measurableSet_Ioi fun z hz => ?_
+      have := hmono z hz
+      have h : min (logLag z) r + ℓ₀ ≤ m + logLag z := by omega
+      have h' : ((min (logLag z) r : ℕ) : ℝ) + ℓ₀ ≤ m + logLag z := by exact_mod_cast h
+      linarith
+    rw [integral_add (integrable_const _) (g := fun z => (logLag z : ℝ) - ℓ₀)
+      (hL.sub (integrable_const _)),
+      integral_sub (f := fun z => (logLag z : ℝ)) hL (integrable_const _), integral_const,
+      integral_const, smul_eq_mul, smul_eq_mul, measureReal_restrict_apply_univ, hb] at h1
+    have hceil : (⌈Real.log u⌉₊ : ℝ) ≤ ℓ₀ := by
+      exact_mod_cast Nat.ceil_le_floor_add_one (Real.log u)
+    nlinarith [Real.rpow_pos_of_pos (by linarith : (0 : ℝ) < u) (-α)]
+
+/-- `n uₙ^(-α) → τ > 0` forces `log uₙ / log n → 1 / α`. -/
+theorem tendsto_log_div_log_of_tendsto_mul {α : ℝ} (hα : 0 < α) {u : ℕ → ℝ}
+    (hu : Tendsto u atTop atTop) {τ : ℝ} (hτ : 0 < τ)
+    (h : Tendsto (fun n : ℕ => (n : ℝ) * u n ^ (-α)) atTop (𝓝 τ)) :
+    Tendsto (fun n : ℕ => Real.log (u n) / Real.log n) atTop (𝓝 (1 / α)) := by
+  have hlog := h.log hτ.ne'
+  have hL : Tendsto (fun n : ℕ => Real.log n) atTop atTop :=
+    Real.tendsto_log_atTop.comp tendsto_natCast_atTop_atTop
+  have e : ∀ᶠ n : ℕ in atTop,
+      Real.log ((n : ℝ) * u n ^ (-α)) = Real.log n - α * Real.log (u n) := by
+    filter_upwards [hu.eventually_gt_atTop 0, eventually_gt_atTop 0] with n hun hn
+    have hn' : (n : ℝ) ≠ 0 := by exact_mod_cast hn.ne'
+    rw [Real.log_mul hn' (Real.rpow_pos_of_pos hun _).ne', Real.log_rpow hun]
+    ring
+  have h2 := (hlog.congr' e).div_atTop hL
+  have h3 : Tendsto (fun n : ℕ => (1 - (Real.log n - α * Real.log (u n)) / Real.log n) / α)
+      atTop (𝓝 ((1 - 0) / α)) := (h2.const_sub 1).div_const α
+  rw [sub_zero] at h3
+  refine h3.congr' ?_
+  filter_upwards [hL.eventually_gt_atTop 0] with n hn
+  field_simp
+  ring
+
+/-- `rₙ / log n → c` and `n uₙ^(-α) → τ` give `rₙ uₙ^(-α) → 0`. -/
+theorem tendsto_mul_rpow_of_tendsto_div_log {α : ℝ} {u : ℕ → ℝ} {τ c : ℝ}
+    (h : Tendsto (fun n : ℕ => (n : ℝ) * u n ^ (-α)) atTop (𝓝 τ)) {r : ℕ → ℕ}
+    (hr : Tendsto (fun n : ℕ => (r n : ℝ) / Real.log n) atTop (𝓝 c)) :
+    Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0) := by
+  have hln : Tendsto (fun n : ℕ => Real.log n / n) atTop (𝓝 0) := by
+    have := (Real.tendsto_pow_log_div_mul_add_atTop 1 0 1 one_ne_zero).comp
+      tendsto_natCast_atTop_atTop
+    exact this.congr fun n => by simp
+  have := (hr.mul hln).mul h
+  rw [mul_zero, zero_mul] at this
+  refine this.congr' ?_
+  filter_upwards [eventually_gt_atTop 1] with n hn
+  have hn' : (1 : ℝ) < n := by exact_mod_cast hn
+  have hl : Real.log n ≠ 0 := (Real.log_pos hn').ne'
+  have : (n : ℝ) ≠ 0 := by positivity
+  field_simp
+
+end LogLag
+
+section LogEcho
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+  {α : ℝ} {Z : ℤ → Ω → ℝ}
+  (hα : 0 < α) (hZ : ∀ t, Measurable (Z t)) (hind : iIndepFun Z P)
+  (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α) (hpos : ∀ t ω, 0 ≤ Z t ω)
+
+include hα hZ hind hlaw hpos in
+/-- In the standard normalization `n P(X_0 > uₙ) → τ > 0`: `uₙ → ∞`, `n uₙ^(-α) → τ / 2` and
+`log uₙ / log n → 1 / α`. The echo lag `⌊log Z⌋ + 1` of an exceedance of `uₙ` is therefore
+`≈ log uₙ ≈ (1 / α) log n`. -/
+theorem logEchoProcess_levels {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
+    (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess logLag Z 0 ω}) atTop (𝓝 τ)) :
+    Tendsto u atTop atTop ∧ Tendsto (fun n : ℕ => (n : ℝ) * u n ^ (-α)) atTop (𝓝 (τ / 2)) ∧
+      Tendsto (fun n : ℕ => Real.log (u n) / Real.log n) atTop (𝓝 (1 / α)) := by
+  have hT := hasSpectralTailProcess_echoProcess hα hZ hind hlaw hpos measurable_logLag
+    one_le_logLag tendsto_logLag
+  have hτ' : Tendsto (fun n : ℕ => n * P.real {ω | u n < |echoProcess logLag Z 0 ω|}) atTop
+      (𝓝 τ) := by
+    simpa [abs_of_nonneg (echoProcess_nonneg hpos _ _)] using hτ
+  have hu := hT.tendsto_atTop_of_tendsto_mul hτ'
+  have hratio := (tendsto_measureReal_lt_echoProcess_div hα hZ hind hlaw measurable_logLag
+    one_le_logLag 0).comp hu
+  have hnb : Tendsto (fun n : ℕ => (n : ℝ) * u n ^ (-α)) atTop (𝓝 (τ / 2)) := by
+    refine (hτ.div hratio two_ne_zero).congr' ?_
+    filter_upwards [hu.eventually_ge_atTop 1] with n hn
+    have h0 : 0 < u n ^ (-α) := Real.rpow_pos_of_pos (by linarith) _
+    have hP : 0 < P.real {ω | u n < echoProcess logLag Z 0 ω} := by
+      refine h0.trans_le ?_
+      rw [← measureReal_lt_of_map_eq hZ hlaw hα 0 hn]
+      exact measureReal_mono fun ω hω => lt_of_lt_of_le hω (le_echoProcess 0 ω)
+    simp only [Pi.div_apply, Function.comp_apply]
+    field_simp
+  exact ⟨hu, hnb, tendsto_log_div_log_of_tendsto_mul hα hu (by linarith) hnb⟩
+
+include hα hZ hind hlaw hpos in
+/-- **Blocks shorter than the echo lag (`rₙ = o(log n)`): cluster ratio `→ 1 = ϑ`, escape mass
+`0`.** For the logarithmic echo process with `n P(X_0 > uₙ) → τ > 0` and `rₙ → ∞`,
+`rₙ / log n → 0`. -/
+theorem logEchoProcess_short_blocks {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
+    (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess logLag Z 0 ω}) atTop (𝓝 τ))
+    {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hrlog : Tendsto (fun n : ℕ => (r n : ℝ) / Real.log n) atTop (𝓝 0)) :
+    Tendsto (clusterRatio P (echoProcess logLag Z) u r) atTop (𝓝 1) ∧
+      HasEscapeMass P (echoProcess logLag Z) u r 0 := by
+  obtain ⟨hu, hnb, hlu⟩ := logEchoProcess_levels hα hZ hind hlaw hpos hτ0 hτ
+  have hrb := tendsto_mul_rpow_of_tendsto_div_log hnb hrlog
+  -- `rₙ / log uₙ → 0`
+  have hq : Tendsto (fun n => (r n : ℝ) / Real.log (u n)) atTop (𝓝 0) := by
+    have := hrlog.div hlu (one_div_ne_zero hα.ne')
+    rw [zero_div] at this
+    refine this.congr' ?_
+    filter_upwards [eventually_gt_atTop 1, hu.eventually_gt_atTop 1] with n hn hun
+    have hn' : (1 : ℝ) < n := by exact_mod_cast hn
+    have hl : Real.log n ≠ 0 := (Real.log_pos hn').ne'
+    have hl' : Real.log (u n) ≠ 0 := (Real.log_pos hun).ne'
+    simp only [Pi.div_apply]
+    field_simp
+  have hshort : ∀ᶠ n in atTop, ∀ z, u n < z → r n ≤ logLag z := by
+    filter_upwards [hq.eventually (gt_mem_nhds one_pos), hu.eventually_gt_atTop 1] with n hn hun z hz
+    have hl : 0 < Real.log (u n) := Real.log_pos hun
+    rw [div_lt_one hl] at hn
+    have h1 : r n ≤ ⌊Real.log (u n)⌋₊ := Nat.le_floor hn.le
+    have h2 := logLag_mono (by linarith) hz.le
+    simp only [logLag] at h2 ⊢
+    omega
+  exact ⟨tendsto_clusterRatio_echoProcess_short hα hZ hind hlaw hpos measurable_logLag
+      one_le_logLag hu (hr.eventually_gt_atTop 0) hrb hshort,
+    hasEscapeMass_echoProcess_short hα hZ hind hlaw hpos measurable_logLag one_le_logLag
+      tendsto_logLag hu hr hrb hshort⟩
+
+end LogEcho
+
 end ExtremeValueTheory
