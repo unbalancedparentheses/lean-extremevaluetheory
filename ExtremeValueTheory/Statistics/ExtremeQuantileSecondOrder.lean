@@ -462,4 +462,195 @@ theorem tendstoInMeasure_tailProbEstimator_div_of_secondOrder {X : ℕ → Ω �
 
 end TailProbability
 
+/-! ### The `√k`-rate of the intermediate exponential order statistic -/
+
+section ExpOrderStat
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+
+/-- **Chebyshev's inequality for exceedance counts**: with `q = P(X_0 > a)`,
+`P(c ≤ |#{i < n | X_i > a} - n q|) ≤ n q / c²`. -/
+theorem measure_le_abs_exceedCount_sub_le {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
+    (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) (n : ℕ) (a : ℝ)
+    {c : ℝ} (hc : 0 < c) :
+    P {ω | c ≤ |(exceedCount (fun i : Fin n => X i ω) a : ℝ) - n * (P {ω | a < X 0 ω}).toReal|}
+      ≤ ENNReal.ofReal (n * (P {ω | a < X 0 ω}).toReal / c ^ 2) := by
+  set g : ℝ → ℝ := fun x => if a < x then (1 : ℝ) else 0 with hg
+  have hgm : Measurable g :=
+    Measurable.ite (measurableSet_lt measurable_const measurable_id) measurable_const
+      measurable_const
+  set Y : ℕ → Ω → ℝ := fun i ω => g (X i ω) with hY
+  have hYId : ∀ i, IdentDistrib (Y i) (Y 0) P P := fun i => by
+    have := (hident i).comp hgm
+    simpa [hY, Function.comp_def] using this
+  have hL2 : MemLp (Y 0) 2 P := by
+    refine MemLp.of_bound (hgm.comp (hX 0)).aestronglyMeasurable 1
+      (Eventually.of_forall fun ω => ?_)
+    simp only [hY, hg]
+    split_ifs <;> norm_num
+  have hYL2 : ∀ i, MemLp (Y i) 2 P := fun i => (hYId i).memLp_iff.2 hL2
+  have hYind : ∀ i j, i ≠ j → IndepFun (Y i) (Y j) P := fun i j hij =>
+    (hindep.indepFun hij).comp hgm hgm
+  have hint : P[Y 0] = (P {ω | a < X 0 ω}).toReal := by
+    have : Y 0 = {ω | a < X 0 ω}.indicator 1 := by
+      ext ω; simp [hY, hg, Set.indicator]
+    rw [this, integral_indicator_one (measurableSet_lt measurable_const (hX 0)), measureReal_def]
+  have hsq : P[Y 0 ^ 2] = (P {ω | a < X 0 ω}).toReal := by
+    rw [← hint]
+    congr 1
+    ext ω
+    simp only [Pi.pow_apply, hY, hg]
+    split_ifs <;> norm_num
+  set T : Ω → ℝ := ∑ i ∈ Finset.range n, Y i with hT
+  have hTfun : ∀ ω, T ω = exceedCount (fun i : Fin n => X i ω) a := by
+    intro ω
+    rw [exceedCount_eq_sum]
+    simp only [hT, Finset.sum_apply, hY, hg]
+    exact (Fin.sum_univ_eq_sum_range (fun i => if a < X i ω then (1 : ℝ) else 0) n).symm
+  have hTL2 : MemLp T 2 P := memLp_finsetSum' _ fun i _ => hYL2 i
+  have hET : P[T] = n * (P {ω | a < X 0 ω}).toReal := by
+    have : ∫ ω, T ω ∂P = ∑ i ∈ Finset.range n, ∫ ω, Y i ω ∂P := by
+      simp only [hT, Finset.sum_apply]
+      exact integral_finsetSum _ fun i _ => (hYL2 i).integrable one_le_two
+    rw [this, Finset.sum_congr rfl fun i _ => (hYId i).integral_eq, Finset.sum_const,
+      Finset.card_range, nsmul_eq_mul, hint]
+  have hVT : variance T P ≤ n * (P {ω | a < X 0 ω}).toReal := by
+    rw [hT, IndepFun.variance_sum (fun i _ => hYL2 i) (fun i _ j _ hij => hYind i j hij)]
+    rw [Finset.sum_congr rfl fun i _ => (hYId i).variance_eq, Finset.sum_const,
+      Finset.card_range, nsmul_eq_mul, ← hsq]
+    gcongr
+    exact variance_le_expectation_sq hL2.aestronglyMeasurable
+  have hsub : {ω | c ≤ |(exceedCount (fun i : Fin n => X i ω) a : ℝ) -
+      n * (P {ω | a < X 0 ω}).toReal|} = {ω | c ≤ |T ω - P[T]|} := by
+    ext ω
+    simp only [mem_ofPred_eq]
+    rw [hET, hTfun]
+  rw [hsub]
+  refine (meas_ge_le_variance_div_sq hTL2 hc).trans (ENNReal.ofReal_le_ofReal ?_)
+  gcongr
+
+/-- **The intermediate exponential order statistic at rate `√k`**: if the `E_i` are iid standard
+exponential, `k → ∞` and `k / n → 0`, then `√k (E_{(k+1)} - log(n/k))` is bounded in
+probability. -/
+theorem isBoundedInProbability_orderStat_sub_log {E : ℕ → Ω → ℝ} (hEm : ∀ i, Measurable (E i))
+    (hE : ∀ i, HasLaw (E i) (expMeasure 1) P) (hind : iIndepFun E P) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0)) :
+    IsBoundedInProbability P (fun n ω =>
+      √(k n : ℝ) * (orderStat (fun i : Fin n => E i ω) (k n) - log (n / k n))) := by
+  have hident : ∀ i, IdentDistrib (E i) (E 0) P P := fun i =>
+    ⟨(hE i).aemeasurable, (hE 0).aemeasurable, by rw [(hE i).map_eq, (hE 0).map_eq]⟩
+  intro ε hε
+  obtain ⟨η, hη0, hηε⟩ : ∃ η : ℝ, 0 < η ∧ ENNReal.ofReal η ≤ ε := by
+    by_cases htop : ε = ⊤
+    · exact ⟨1, one_pos, htop ▸ le_top⟩
+    · exact ⟨ε.toReal, ENNReal.toReal_pos hε.ne' htop, ENNReal.ofReal_toReal_le⟩
+  set M : ℝ := 7 / η + 1 with hM
+  have hM1 : 1 ≤ M := by rw [hM]; linarith [div_pos (by norm_num : (0 : ℝ) < 7) hη0]
+  have hM0 : 0 < M := one_pos.trans_le hM1
+  have hM2 : 7 / M ^ 2 ≤ η := by
+    rw [div_le_iff₀ (by positivity)]
+    have : 7 / η < M := by rw [hM]; linarith
+    rw [div_lt_iff₀ hη0] at this
+    nlinarith
+  refine ⟨M, ?_⟩
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hnk := tendsto_div_atTop_of_tendsto hk hkn
+  filter_upwards [hkR.eventually_ge_atTop (M ^ 2), eventually_lt_of_tendsto_div hkn,
+    (tendsto_log_atTop.comp hnk).eventually_ge_atTop 1, hkR.eventually_gt_atTop 0]
+    with n hkM hkn' hlog hk0
+  simp only [Function.comp_apply] at hlog
+  set s₀ := log (n / k n) with hs₀
+  have hsk : 0 < √(k n : ℝ) := sqrt_pos.2 hk0
+  set x := M / √(k n : ℝ) with hx
+  have hx0 : 0 < x := div_pos hM0 hsk
+  have hx1 : x ≤ 1 := by
+    rw [hx, div_le_one hsk]
+    calc M = √(M ^ 2) := (sqrt_sq hM0.le).symm
+      _ ≤ √(k n : ℝ) := sqrt_le_sqrt hkM
+  have hkx : (k n : ℝ) * x ^ 2 = M ^ 2 := by
+    rw [hx, div_pow, sq_sqrt hk0.le]; field_simp
+  have hn0 : (0 : ℝ) < n := by
+    have : (k n : ℝ) < n := by exact_mod_cast hkn'
+    linarith
+  have hexp_s₀ : exp (-s₀) = k n / n := by
+    rw [hs₀, exp_neg, exp_log (div_pos hn0 hk0), inv_div]
+  -- the two thresholds and their exceedance probabilities
+  set a₁ := s₀ + x with ha₁
+  set a₂ := s₀ - x with ha₂
+  have hq₁ : (P {ω | a₁ < E 0 ω}).toReal = k n / n * exp (-x) := by
+    rw [measure_lt_expMeasure_of_hasLaw (hE 0) (by rw [ha₁]; linarith),
+      ENNReal.toReal_ofReal (exp_pos _).le, ha₁, neg_add, exp_add, hexp_s₀]
+  have hq₂ : (P {ω | a₂ < E 0 ω}).toReal = k n / n * exp x := by
+    rw [measure_lt_expMeasure_of_hasLaw (hE 0) (by rw [ha₂]; linarith),
+      ENNReal.toReal_ofReal (exp_pos _).le, ha₂, neg_sub, sub_eq_add_neg, exp_add, hexp_s₀,
+      mul_comm]
+  set c₁ := (k n : ℝ) * (1 - exp (-x)) with hc₁
+  set c₂ := (k n : ℝ) * (exp x - 1) with hc₂
+  have he1 : x / 2 ≤ 1 - exp (-x) := by
+    have h1 : 1 + x ≤ exp x := by linarith [add_one_le_exp x]
+    have h2 : exp (-x) ≤ 1 / (1 + x) := by
+      rw [exp_neg, one_div]; exact inv_anti₀ (by linarith) h1
+    have h3 : 1 / (1 + x) ≤ 1 - x / 2 := by
+      rw [div_le_iff₀ (by linarith)]; nlinarith
+    linarith
+  have he2 : x ≤ exp x - 1 := by linarith [add_one_le_exp x]
+  have hc₁0 : 0 < c₁ := mul_pos hk0 (by linarith)
+  have hc₂0 : 0 < c₂ := mul_pos hk0 (by linarith)
+  have hb₁ := measure_le_abs_exceedCount_sub_le hEm hind hident n a₁ hc₁0
+  have hb₂ := measure_le_abs_exceedCount_sub_le hEm hind hident n a₂ hc₂0
+  rw [hq₁] at hb₁
+  rw [hq₂] at hb₂
+  have hnq : ∀ y, (n : ℝ) * (k n / n * y) = k n * y := fun y => by field_simp
+  rw [hnq] at hb₁ hb₂
+  -- the event inclusion
+  refine (measure_mono (t := {ω | c₁ ≤ |(exceedCount (fun i : Fin n => E i ω) a₁ : ℝ) -
+      k n * exp (-x)|} ∪ {ω | c₂ ≤ |(exceedCount (fun i : Fin n => E i ω) a₂ : ℝ) -
+      k n * exp x|}) ?_).trans ((measure_union_le _ _).trans ?_)
+  · intro ω hω
+    simp only [mem_ofPred_eq] at hω
+    set z := fun i : Fin n => E i ω with hz
+    rw [abs_mul, abs_of_pos hsk, ← div_lt_iff₀' hsk, ← hx] at hω
+    rcases lt_abs.1 hω with h | h
+    · left
+      have hlt : a₁ < orderStat z (k n) := by rw [ha₁]; linarith
+      rw [lt_orderStat_iff z hkn'] at hlt
+      have hN : (k n : ℝ) + 1 ≤ exceedCount z a₁ := by exact_mod_cast hlt
+      simp only [mem_ofPred_eq]
+      refine le_trans ?_ (le_abs_self _)
+      rw [hc₁]
+      linarith
+    · right
+      have hle : orderStat z (k n) ≤ a₂ := by rw [ha₂]; linarith
+      rw [orderStat_le_iff z hkn'] at hle
+      have hN : (exceedCount z a₂ : ℝ) ≤ k n := by exact_mod_cast hle
+      simp only [mem_ofPred_eq]
+      refine le_trans ?_ (neg_le_abs _)
+      rw [hc₂]
+      linarith
+  · refine (add_le_add hb₁ hb₂).trans ?_
+    rw [← ENNReal.ofReal_add (by positivity) (by positivity)]
+    refine (ENNReal.ofReal_le_ofReal ?_).trans hηε
+    refine le_trans ?_ hM2
+    have hex1 : exp (-x) ≤ 1 := exp_le_one_iff.2 (by linarith)
+    have hex2 : exp x ≤ 3 := by
+      have := exp_le_exp.2 hx1
+      linarith [exp_one_lt_d9]
+    have hk2 : (k n : ℝ) * x ^ 2 > 0 := by positivity
+    have t1 : (k n : ℝ) * exp (-x) / c₁ ^ 2 ≤ 4 / M ^ 2 := by
+      rw [div_le_div_iff₀ (by positivity) (by positivity), ← hkx, hc₁]
+      have : (k n : ℝ) * (x / 2) ≤ k n * (1 - exp (-x)) := by gcongr
+      have h0 : 0 ≤ (k n : ℝ) * (x / 2) := by positivity
+      have := mul_le_mul this this h0 (by linarith)
+      nlinarith
+    have t2 : (k n : ℝ) * exp x / c₂ ^ 2 ≤ 3 / M ^ 2 := by
+      rw [div_le_div_iff₀ (by positivity) (by positivity), ← hkx, hc₂]
+      have : (k n : ℝ) * x ≤ k n * (exp x - 1) := by gcongr
+      have h0 : 0 ≤ (k n : ℝ) * x := by positivity
+      have := mul_le_mul this this h0 (by nlinarith)
+      nlinarith
+    calc _ ≤ 4 / M ^ 2 + 3 / M ^ 2 := add_le_add t1 t2
+      _ = 7 / M ^ 2 := by ring
+
+end ExpOrderStat
+
 end ExtremeValueTheory
