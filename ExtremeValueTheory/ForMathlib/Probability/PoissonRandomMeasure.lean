@@ -153,18 +153,29 @@ lemma measurable_sumDiracRange :
   exact Finset.measurable_sum _ fun k _ ↦
     (measurable_one.indicator hA).comp (measurable_pi_apply k)
 
-/-- The expectation of `∏_{k < n} g (Z k)` for an i.i.d. sequence `Z` with law `μ`. -/
-lemma integral_prod_range_infinitePi {𝕜 : Type*} [RCLike 𝕜] {g : E → 𝕜} (hg : Measurable g) (n : ℕ) :
-    ∫ z, ∏ k ∈ range n, g (z k) ∂(Measure.infinitePi fun _ : ℕ ↦ μ) = (∫ x, g x ∂μ) ^ n := by
-  have := integral_restrict_infinitePi (μ := fun _ : ℕ ↦ μ) (s := range n)
-    (f := fun y ↦ ∏ k : range n, g (y k)) ?_
-  · have hcoe (y : ℕ → E) : ∏ k : range n, g (y k) = ∏ k ∈ range n, g (y k) :=
-      Finset.prod_coe_sort (range n) fun k ↦ g (y k)
+/-- The expectation of `∏_{k < n} g k (Z k)` for a sequence `Z` of independent random variables
+with laws `μ k`. -/
+lemma integral_prod_range_infinitePi_of_ne {X : ℕ → Type*} [∀ k, MeasurableSpace (X k)]
+    {ρ : (k : ℕ) → Measure (X k)} [∀ k, IsProbabilityMeasure (ρ k)] {𝕜 : Type*} [RCLike 𝕜]
+    {g : (k : ℕ) → X k → 𝕜} (hg : ∀ k, Measurable (g k)) (n : ℕ) :
+    ∫ z, ∏ k ∈ range n, g k (z k) ∂(Measure.infinitePi ρ) = ∏ k ∈ range n, ∫ x, g k x ∂(ρ k) := by
+  have := integral_restrict_infinitePi (μ := ρ) (s := range n)
+    (f := fun y ↦ ∏ k : range n, g k (y k)) ?_
+  · have hcoe (y : (k : ℕ) → X k) : ∏ k : range n, g k (y k) = ∏ k ∈ range n, g k (y k) :=
+      Finset.prod_coe_sort (range n) fun k ↦ g k (y k)
     simp only [Finset.restrict, hcoe] at this
-    rw [this,
-      integral_fintype_prod_eq_prod (f := fun _ : range n ↦ g)]
-    simp
-  · exact (Finset.measurable_prod _ fun k _ ↦ hg.comp (measurable_pi_apply k)).aestronglyMeasurable
+    rw [this, integral_fintype_prod_eq_prod (f := fun k : range n ↦ g k)]
+    exact Finset.prod_coe_sort (range n) fun k ↦ ∫ x, g k x ∂(ρ k)
+  · exact (Finset.measurable_prod (s := univ)
+      (f := fun (k : range n) (y : (i : range n) → X i) ↦ g k (y k))
+      fun k _ ↦ (hg k).comp (measurable_pi_apply k)).aestronglyMeasurable
+
+/-- The expectation of `∏_{k < n} g (Z k)` for an i.i.d. sequence `Z` with law `μ`. -/
+lemma integral_prod_range_infinitePi {𝕜 : Type*} [RCLike 𝕜] {g : E → 𝕜} (hg : Measurable g)
+    (n : ℕ) :
+    ∫ z, ∏ k ∈ range n, g (z k) ∂(Measure.infinitePi fun _ : ℕ ↦ μ) = (∫ x, g x ∂μ) ^ n := by
+  rw [integral_prod_range_infinitePi_of_ne (g := fun _ ↦ g) (fun _ ↦ hg), Finset.prod_const,
+    card_range]
 
 /-- Key generating functional computation: if `K` is Poisson with mean `c` and `Z` is an
 independent i.i.d. sequence with law `μ`, then for every measurable `g` bounded by `1`,
@@ -215,6 +226,52 @@ lemma cexp_sum_indicator_eq {n : ℕ} {A : Fin n → Set E}
   · push Not at hz
     simp [hz]
 
+/-- Joint characteristic function of the counts `#{k < K | Z k ∈ A i}` on disjoint sets. -/
+lemma integral_cexp_count_poissonSampleMeasure {n : ℕ} {A : Fin n → Set E}
+    (hA : ∀ i, MeasurableSet (A i)) (hd : Pairwise (Function.onFun Disjoint A)) (t : Fin n → ℝ) :
+    ∫ ω, Complex.exp ((∑ i, t i * ∑ k ∈ range ω.1, (A i).indicator (1 : E → ℝ) (ω.2 k) : ℝ) *
+        Complex.I) ∂(poissonSampleMeasure c μ) =
+      Complex.exp (∑ i, ((c * μ.real (A i) : ℝ) : ℂ) * (Complex.exp (t i * Complex.I) - 1)) := by
+  set g : E → ℂ := fun z ↦ Complex.exp ((∑ i, t i * (A i).indicator 1 z : ℝ) * Complex.I)
+    with hg_def
+  have hg : Measurable g := by
+    refine (Complex.measurable_exp.comp (Measurable.mul_const ?_ _))
+    refine Complex.measurable_ofReal.comp ?_
+    exact Finset.measurable_sum _ fun i _ ↦
+      (measurable_one.indicator (hA i)).const_mul _
+  have hg1 : ∀ z, ‖g z‖ ≤ 1 := fun z ↦ by
+    simp only [hg_def, Complex.norm_exp_ofReal_mul_I, le_refl]
+  have key (ω : ℕ × (ℕ → E)) :
+      Complex.exp ((∑ i, t i * ∑ k ∈ range ω.1, (A i).indicator (1 : E → ℝ) (ω.2 k) : ℝ) *
+        Complex.I) = ∏ k ∈ range ω.1, g (ω.2 k) := by
+    rw [hg_def, ← Complex.exp_sum, ← Finset.sum_mul]
+    congr 1
+    push_cast
+    simp_rw [Finset.mul_sum]
+    rw [Finset.sum_comm]
+  simp_rw [key]
+  rw [integral_prod_range_poissonSampleMeasure hg hg1]
+  have hint : ∫ x, g x ∂μ - 1 =
+      ∑ i, (μ.real (A i) : ℂ) * (Complex.exp (t i * Complex.I) - 1) := by
+    simp_rw [hg_def, cexp_sum_indicator_eq hd]
+    rw [integral_add (integrable_const _), integral_finsetSum]
+    · simp [integral_indicator_const _ (hA _), mul_comm]
+    · intro i _
+      exact (integrable_const _).indicator (hA i)
+    · exact integrable_finsetSum _ fun i _ ↦ (integrable_const _).indicator (hA i)
+  rw [hint, Finset.mul_sum]
+  congr 1
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  push_cast
+  ring
+
+/-- The characteristic function of a vector of independent Poisson random variables. -/
+lemma charFun_pi_poissonMeasure {n : ℕ} (r : Fin n → ℝ≥0) (t : Fin n → ℝ) :
+    ∏ i, charFun ((poissonMeasure (r i)).map (Nat.cast : ℕ → ℝ)) (t i) =
+      Complex.exp (∑ i, ((r i : ℝ) : ℂ) * (Complex.exp (t i * Complex.I) - 1)) := by
+  rw [Complex.exp_sum]
+  exact Finset.prod_congr rfl fun i _ ↦ by rw [charFun_map_cast_poissonMeasure]
+
 /-- The joint law of the real counts `#{k < K | Z k ∈ A i}` on disjoint sets. -/
 lemma map_count_poissonSampleMeasure {n : ℕ} {A : Fin n → Set E} (hA : ∀ i, MeasurableSet (A i))
     (hd : Pairwise (Function.onFun Disjoint A)) :
@@ -232,41 +289,13 @@ lemma map_count_poissonSampleMeasure {n : ℕ} {A : Fin n → Set E} (hA : ∀ i
   refine (charFun_eq_pi_iff).1 fun t ↦ ?_
   rw [charFun_apply, integral_map (by fun_prop) (by fun_prop),
     integral_map hY.aemeasurable (by fun_prop)]
-  set g : E → ℂ := fun z ↦ Complex.exp ((∑ i, t i * (A i).indicator 1 z : ℝ) * Complex.I)
-    with hg_def
-  have hg : Measurable g := by
-    refine (Complex.measurable_exp.comp (Measurable.mul_const ?_ _))
-    refine Complex.measurable_ofReal.comp ?_
-    exact Finset.measurable_sum _ fun i _ ↦
-      (measurable_one.indicator (hA i)).const_mul _
-  have hg1 : ∀ z, ‖g z‖ ≤ 1 := fun z ↦ by
-    simp only [hg_def, Complex.norm_exp_ofReal_mul_I, le_refl]
-  have key (ω : ℕ × (ℕ → E)) : Complex.exp (inner ℝ (WithLp.toLp 2 (Y ω)) t * Complex.I) =
-      ∏ k ∈ range ω.1, g (ω.2 k) := by
-    rw [hg_def, ← Complex.exp_sum, ← Finset.sum_mul]
-    congr 1
-    simp only [PiLp.inner_apply, hYdef, Real.inner_apply]
-    push_cast
-    rw [Finset.sum_comm]
-    simp [Finset.mul_sum, mul_comm]
-  simp_rw [key]
-  rw [integral_prod_range_poissonSampleMeasure hg hg1]
-  have hint : ∫ x, g x ∂μ - 1 =
-      ∑ i, (μ.real (A i) : ℂ) * (Complex.exp (t i * Complex.I) - 1) := by
-    simp_rw [hg_def, cexp_sum_indicator_eq hd]
-    rw [integral_add (integrable_const _), integral_finsetSum]
-    · simp [integral_indicator_const _ (hA _), mul_comm]
-    · intro i _
-      exact (integrable_const _).indicator (hA i)
-    · exact integrable_finsetSum _ fun i _ ↦ (integrable_const _).indicator (hA i)
-  rw [hint, Finset.mul_sum, Complex.exp_sum]
-  refine Finset.prod_congr rfl fun i _ ↦ ?_
-  rw [charFun_map_cast_poissonMeasure, ← mul_assoc]
-  congr 2
-  rw [show (((c * μ.real (A i)).toNNReal : ℝ≥0) : ℂ) = ((c * μ.real (A i)).toNNReal : ℝ) from rfl,
-    Real.coe_toNNReal _ (by positivity)]
-  push_cast
-  ring
+  have hinner (ω : ℕ × (ℕ → E)) : inner ℝ (WithLp.toLp 2 (Y ω)) t = ∑ i, t i * Y ω i := by
+    simp [PiLp.inner_apply]
+  simp_rw [hinner, hYdef]
+  rw [integral_cexp_count_poissonSampleMeasure hA hd, charFun_pi_poissonMeasure]
+  congr 1
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  rw [Real.coe_toNNReal _ (by positivity)]
 
 /-- **Existence of Poisson random measures with finite intensity.** If `K` is Poisson
 distributed with mean `c` and `Z` is an independent i.i.d. sequence with law `μ`, then
