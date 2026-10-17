@@ -618,6 +618,111 @@ theorem eventually_approx (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
   have hL0 : 0 < L x := hLx
   nlinarith
 
+/-! ### The tail process and the spectral tail process -/
+
+/-- **The tail process of an infinite moving average** ([DR85], [KS20, §15.3]): under the
+hypotheses of `hasExtremalIndex`, `X_t = ∑_j ψ_j Z_{t-j}` has tail process `Y_t = R Θ_t`, with
+`R` Pareto(`α`) independent of `J`, `Θ_t = ψ_{J+t} / ψ_J`, `P(J = j) = ψ_j^α / ∑_i ψ_i^α`. -/
+theorem hasTailProcess (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+    (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
+    (hδα : δ < α) (hα1 : α < 1)
+    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
+    HasTailProcess P (process ψ Z) α ((paretoMeasure 1 α).prod (indexLaw ψ α))
+      (fun t p => p.1 * spectral ψ t p.2) := by
+  have hα : 0 < α := hδ.trans hδα
+  have hS := summable_rpow hψ0 hδ hδα.le hψ
+  obtain ⟨k, hk⟩ := hpos
+  have hkα : 0 < ψ k ^ α := Real.rpow_pos_of_pos hk _
+  have hW : 0 < ∑' j, ψ j ^ α := hkα.trans_le (hS.le_tsum k fun j _ => Real.rpow_nonneg (hψ0 j) _)
+  have hP := isProbabilityMeasure_paretoMeasure one_pos hα
+  have hQ := indexLaw_isProbabilityMeasure hψ0 hS hW
+  have hθ0 : ∀ j, 0 < ψ j → spectral ψ 0 j = 1 := fun j hj => by
+    simp [spectral, hj.ne']
+  constructor
+  · have hae : ∀ᵐ p ∂((paretoMeasure 1 α).prod (indexLaw ψ α)), |p.1 * spectral ψ 0 p.2| = p.1 := by
+      filter_upwards [Measure.quasiMeasurePreserving_fst.ae ae_one_lt_paretoMeasure,
+        Measure.quasiMeasurePreserving_snd.ae (ae_indexLaw_pos hα hψ0)] with p h1 h2
+      rw [hθ0 _ h2, mul_one, abs_of_pos (one_pos.trans h1)]
+    rw [Measure.map_congr hae]
+    simp
+  intro S
+  -- the finite tail processes
+  have hfinTP : ∀ m ≥ k, HasTailProcess P (MovingAverage.process m ψ Z) α
+      ((paretoMeasure 1 α).prod (MovingAverage.indexLaw m (trunc m ψ) α))
+      (fun t p => p.1 * MovingAverage.spectral m (trunc m ψ) t p.2) := by
+    intro m hm
+    have hWm : 0 < MovingAverage.weightSum m (trunc m ψ) α := by
+      rw [weightSum_trunc]
+      exact hkα.trans_le (Finset.single_le_sum (f := fun j => ψ j ^ α)
+        (fun j _ => Real.rpow_nonneg (hψ0 j) _) (Finset.mem_range.2 (by omega)))
+    have := MovingAverage.indexLaw_isProbabilityMeasure (trunc_nonneg hψ0 m) hWm
+    have h := (MovingAverage.hasSpectralTailProcess hZ hind hident hZ0 hα hL
+      (trunc_nonneg hψ0 m) (fun j hj => trunc_of_lt hj) hWm).hasTailProcess hα
+      (MovingAverage.measurable_process hZ) (fun t => measurable_from_top)
+    rwa [process_trunc] at h
+  -- positivity of `P(X_0 > x)`
+  have hX := tendsto_measureReal_process_div hZ hind hident hZ0 hδ hδα hα1 hL hψ0 hψ
+  have hBpos : ∀ᶠ x in atTop, 0 < P.real {ω | x < |process ψ Z 0 ω|} := by
+    filter_upwards [hX.eventually (lt_mem_nhds hW), hL.1] with x hx hLx
+    have : {ω | x < |process ψ Z 0 ω|} = {ω | x < process ψ Z 0 ω} := by
+      ext ω; simp [abs_of_nonneg (process_nonneg hψ0 hZ0 0 ω)]
+    rw [this]
+    exact (div_pos_iff_of_pos_right hLx).1 hx
+  refine tendstoLawCond_of_approx (Bm := fun m x => {ω | x < |MovingAverage.process m ψ Z 0 ω|})
+    (Vm := fun m x ω (t : S) => MovingAverage.process m ψ Z t ω / x)
+    (fun x => measurableSet_lt measurable_const
+      (continuous_abs.measurable.comp (measurable_process hZ 0)))
+    (fun m x => measurableSet_lt measurable_const
+      (continuous_abs.measurable.comp (MovingAverage.measurable_process hZ 0)))
+    (fun x => measurable_pi_iff.2 fun t => (measurable_process hZ t).div_const x)
+    (fun m x => measurable_pi_iff.2 fun t => (MovingAverage.measurable_process hZ t).div_const x)
+    hBpos ?_ (tendsto_integral_window hα hψ0 hS hk S) fun ε hε η hη =>
+      eventually_approx hZ hind hident hZ0 hδ hδα hα1 hL hψ0 hψ ⟨k, hk⟩ S hε hη
+  filter_upwards [eventually_ge_atTop k] with m hm
+  exact (hfinTP m hm).2 S
+
+/-- **The spectral tail process of an infinite moving average** ([DR85], [KS20, §15.3],
+[Meinguet–Segers 2010]). Let `(Z_i)_{i ∈ ℤ}` be iid nonnegative with `P(Z_0 > x)` regularly
+varying with index `-α`, `0 < δ < α < 1`, and let `ψ_j ≥ 0`, not all zero, with
+`∑ ψ_j^δ < ∞`. Then `X_t = ∑_{j ≥ 0} ψ_j Z_{t-j}` has spectral tail process
+`Θ_t = ψ_{J+t} / ψ_J`, `P(J = j) = ψ_j^α / ∑_i ψ_i^α`, `J ∈ ℕ`. -/
+theorem hasSpectralTailProcess (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+    (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
+    (hδα : δ < α) (hα1 : α < 1)
+    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
+    HasSpectralTailProcess P (process ψ Z) α (indexLaw ψ α) (spectral ψ) := by
+  have hα : 0 < α := hδ.trans hδα
+  have hS := summable_rpow hψ0 hδ hδα.le hψ
+  obtain ⟨k, hk⟩ := hpos
+  have hW : 0 < ∑' j, ψ j ^ α := (Real.rpow_pos_of_pos hk _).trans_le
+    (hS.le_tsum k fun j _ => Real.rpow_nonneg (hψ0 j) _)
+  have hP := isProbabilityMeasure_paretoMeasure one_pos hα
+  have hQ := indexLaw_isProbabilityMeasure hψ0 hS hW
+  have h := (hasTailProcess hZ hind hident hZ0 hδ hδα hα1 hL hψ0 hψ ⟨k, hk⟩).hasSpectralTailProcess
+    hα (measurable_process hZ) (fun t => measurable_fst.mul
+      ((measurable_from_top (f := fun j : ℕ => spectral ψ t j)).comp measurable_snd))
+  refine ⟨h.1, fun S => ?_⟩
+  have hae : ∀ᵐ p ∂((paretoMeasure 1 α).prod (indexLaw ψ α)),
+      (fun (t : S) => p.1 * spectral ψ t p.2 / |p.1 * spectral ψ 0 p.2|) =
+        fun (t : S) => spectral ψ t p.2 := by
+    filter_upwards [Measure.quasiMeasurePreserving_fst.ae ae_one_lt_paretoMeasure,
+      Measure.quasiMeasurePreserving_snd.ae (ae_indexLaw_pos hα hψ0)] with p h1 h2
+    have h0 : spectral ψ 0 p.2 = 1 := by simp [spectral, h2.ne']
+    funext t
+    rw [h0, mul_one, abs_of_pos (one_pos.trans h1)]
+    field_simp
+  have e : ((paretoMeasure 1 α).prod (indexLaw ψ α)).map
+      (fun p (t : S) => p.1 * spectral ψ t p.2 / |p.1 * spectral ψ 0 p.2|) =
+      (indexLaw ψ α).map fun j (t : S) => spectral ψ t j := by
+    rw [Measure.map_congr hae, show (fun p : ℝ × ℕ => fun t : S => spectral ψ t p.2) =
+      (fun j (t : S) => spectral ψ t j) ∘ Prod.snd from rfl,
+      ← Measure.map_map measurable_from_top measurable_snd, Measure.map_snd_prod, measure_univ,
+      one_smul]
+  convert h.2 S using 1
+  exact e.symm
+
 end Approx
 
 end InfiniteMovingAverage
