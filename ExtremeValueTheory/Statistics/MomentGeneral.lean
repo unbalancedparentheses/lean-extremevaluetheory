@@ -520,4 +520,249 @@ theorem abs_logMoment_div_sub_le {n : ℕ} (x : Fin n → ℝ) {k : ℕ} (hk : k
 
 end Deterministic
 
+/-! ### Consistency of the normalized log-moments -/
+
+section Consistency
+
+variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+
+/-- **Weak consistency of the normalized log-moments**, in terms of the tail quantile function:
+if `log U` is extended regularly varying with index `ρ ≤ 0` and auxiliary function `q`, monotone
+on some `[c, ∞)`, `U` is eventually positive, and `k → ∞`, `k / n → 0`, then
+`M^{(1)} / q(n/k) → 1 / (1 - ρ)` and `M^{(2)} / q(n/k)² → 2 / ((1 - ρ)(1 - 2ρ))` in
+probability. -/
+theorem tendstoInMeasure_logMoment_div_of_log_tailQuantile {X : ℕ → Ω → ℝ}
+    (hX : ∀ i, Measurable (X i)) (hindep : iIndepFun X P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P)
+    {F : CumulativeDistributionFunction} (hF : ∀ x, F x = (P {ω | X 0 ω ≤ x}).toReal)
+    {ρ : ℝ} (hρ : ρ ≤ 0) {q : ℝ → ℝ}
+    (hV : IsExtendedRegularlyVarying (fun t => Real.log (F.tailQuantile t)) ρ q) {c : ℝ}
+    (hmono : MonotoneOn (fun t => Real.log (F.tailQuantile t)) (Ici c))
+    (hU : ∀ᶠ t in atTop, 0 < F.tailQuantile t) {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
+    (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0)) :
+    TendstoInMeasure P
+        (fun n ω => logMoment (fun i : Fin n => X i ω) (k n) 1 / q ((n : ℝ) / k n)) atTop
+        (fun _ => 1 / (1 - ρ)) ∧
+      TendstoInMeasure P
+        (fun n ω => logMoment (fun i : Fin n => X i ω) (k n) 2 / q ((n : ℝ) / k n) ^ 2) atTop
+        (fun _ => 2 / ((1 - ρ) * (1 - 2 * ρ))) := by
+  set U := F.tailQuantile with hU_def
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hkpos : ∀ᶠ n in atTop, (0 : ℝ) < k n := hkR.eventually_gt_atTop 0
+  have hnpos : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < n :=
+    (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0
+  set t : ℕ → ℝ := fun n => (n : ℝ) / k n with ht_def
+  have ht : Tendsto t atTop atTop := by
+    have h1 : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝[>] 0) := by
+      refine tendsto_nhdsWithin_iff.2 ⟨hkn, ?_⟩
+      filter_upwards [hkpos, hnpos] with n h1 h2
+      exact div_pos h1 h2
+    refine (tendsto_inv_nhdsGT_zero.comp h1).congr fun n => ?_
+    simp only [Function.comp_apply, ht_def, inv_div]
+  set s : ℕ → ℝ := fun n => U (t n) with hs_def
+  set Q : ℕ → ℝ := fun n => q (t n) with hQ_def
+  have hsQ : ∀ᶠ n in atTop, 0 < s n ∧ 0 < Q n := by
+    filter_upwards [ht.eventually hU, ht.eventually hV.1] with n h1 h2
+    exact ⟨h1, h2⟩
+  have hkn' : ∀ᶠ n : ℕ in atTop, k n < n := by
+    filter_upwards [hkn.eventually (gt_mem_nhds one_pos), hnpos] with n h1 h2
+    rw [div_lt_one h2] at h1
+    exact_mod_cast h1
+  have hFbar : ∀ a, (P {ω | a < X 0 ω}).toReal = 1 - F a := by
+    intro a
+    have hc : {ω | a < X 0 ω} = {ω | X 0 ω ≤ a}ᶜ := by ext ω; simp
+    rw [hc, prob_compl_eq_one_sub (measurableSet_le (hX 0) measurable_const),
+      ENNReal.toReal_sub_of_le prob_le_one ENNReal.one_ne_top, ENNReal.toReal_one, hF]
+  -- exceedance counts
+  have hcount : ∀ x δ : ℝ, 0 < δ → Tendsto (fun n => P {ω | δ ≤
+      |(exceedCount (fun i : Fin n => X i ω) (Real.exp (Real.log (s n) + Q n * x)) : ℝ) / k n -
+        gpdSurvival' ρ 1 x|}) atTop (𝓝 0) := by
+    intro x δ hδ
+    refine tendsto_measure_abs_exceedCount_div_sub hX hindep hident hk ?_ hδ
+    refine ((F.tendsto_mul_one_sub_exp_log_tailQuantile hρ hV hU x).comp ht).congr' ?_
+    filter_upwards [hkpos] with n hn
+    simp only [Function.comp_apply, hFbar, ht_def, hs_def, hQ_def]
+    ring
+  -- weak laws of large numbers at the deterministic threshold `U(n/k)`
+  have hW : ∀ j : ℕ, 1 ≤ j → ∀ δ : ℝ, 0 < δ → Tendsto (fun n => P {ω | δ ≤
+      |(∑ i ∈ range n, (logExcess (s n) (X i ω) / Q n) ^ j) / k n - gpdMoment ρ j|})
+      atTop (𝓝 0) := by
+    intro j hj δ hδ
+    obtain ⟨hI1, hL1⟩ := tendsto_mul_integral_logExcess_div_rpow (hX 0) hF hρ hV hmono hU
+      (p := (j : ℝ)) (by exact_mod_cast hj)
+    obtain ⟨hI2, hL2⟩ := tendsto_mul_integral_logExcess_div_rpow (hX 0) hF hρ hV hmono hU
+      (p := ((2 * j : ℕ) : ℝ)) (by exact_mod_cast (show 1 ≤ 2 * j by omega))
+    have hsq : ∀ n ω, ((logExcess (s n) (X 0 ω) / Q n) ^ j) ^ 2 =
+        (logExcess (s n) (X 0 ω) / Q n) ^ ((2 * j : ℕ) : ℝ) := by
+      intro n ω
+      rw [rpow_natCast, ← pow_mul, mul_comm]
+    refine tendsto_measure_abs_sum_div_sub hindep hident
+      (g := fun n y => (logExcess (s n) y / Q n) ^ j)
+      (fun n => ((measurable_logExcess _).div_const _).pow_const _) hkpos ?_ ?_ ?_ hδ
+    · filter_upwards [ht.eventually hI2] with n hn
+      refine (memLp_two_iff_integrable_sq
+        ((((measurable_logExcess _).comp (hX 0)).div_const _).pow_const _).aestronglyMeasurable).2
+        ?_
+      refine hn.congr (Eventually.of_forall fun ω => ?_)
+      exact (hsq n ω).symm
+    · refine (hL1.comp ht).congr' ?_
+      filter_upwards [hkpos] with n hn
+      simp only [Function.comp_apply, ht_def, hs_def, hQ_def, rpow_natCast]
+      ring
+    · have := (hL2.comp ht).mul (tendsto_inv_atTop_zero.comp hkR)
+      rw [mul_zero] at this
+      refine this.congr' ?_
+      filter_upwards [hkpos] with n hn
+      simp only [Function.comp_apply, ht_def, hs_def, hQ_def]
+      field_simp
+      congr 1
+      exact integral_congr_ae (Eventually.of_forall fun ω => (hsq n ω).symm)
+  have hW1 := hW 1 le_rfl
+  have hW2 := hW 2 (by norm_num)
+  simp only [pow_one] at hW1
+  rw [show ((1 : ℕ) : ℝ) = 1 by norm_num, gpdMoment_one hρ] at hW1
+  rw [show ((2 : ℕ) : ℝ) = 2 by norm_num, gpdMoment_two hρ] at hW2
+  -- the main estimate
+  set μ₁ : ℝ := 1 / (1 - ρ) with hμ₁
+  set μ₂ : ℝ := 2 / ((1 - ρ) * (1 - 2 * ρ)) with hμ₂
+  have hμ₁0 : 0 < μ₁ := by rw [hμ₁]; have : 0 < 1 - ρ := by linarith
+                           positivity
+  set K : ℝ := 3 with hK
+  have main : ∀ ε : ℝ, 0 < ε →
+      Tendsto (fun n => P {ω | ε ≤
+        |logMoment (fun i : Fin n => X i ω) (k n) 1 / Q n - μ₁|}) atTop (𝓝 0) ∧
+      Tendsto (fun n => P {ω | ε ≤
+        |logMoment (fun i : Fin n => X i ω) (k n) 2 / Q n ^ 2 - μ₂|}) atTop (𝓝 0) := by
+    intro ε hε
+    set C' : ℝ := 2 * (μ₁ + 1) + K with hC'
+    have hC'0 : 0 < C' := by rw [hC', hK]; linarith
+    have hG : Tendsto (fun η : ℝ => gpdSurvival' ρ 1 (-η)) (𝓝 0) (𝓝 1) := by
+      have h := ((continuous_gpdSurvival'_of_nonpos hρ).comp continuous_neg).tendsto 0
+      have e : (gpdSurvival' ρ 1 ∘ fun a : ℝ => -a) 0 = 1 := by
+        simp [gpdSurvival'_zero_right]
+      rw [e] at h
+      exact h
+    have e1 : ∀ᶠ η in 𝓝[>] (0 : ℝ), gpdSurvival' ρ 1 (-η) < 2 :=
+      (hG.eventually (gt_mem_nhds one_lt_two)).filter_mono nhdsWithin_le_nhds
+    have e2 : ∀ᶠ η in 𝓝[>] (0 : ℝ), η ≤ 1 :=
+      (eventually_le_nhds one_pos).filter_mono nhdsWithin_le_nhds
+    have e3 : ∀ᶠ η in 𝓝[>] (0 : ℝ), η * C' < ε / 2 := by
+      have : Tendsto (fun η : ℝ => η * C') (𝓝 0) (𝓝 0) := by
+        simpa using (tendsto_id (x := 𝓝 (0 : ℝ))).mul_const C'
+      exact (this.eventually (gt_mem_nhds (half_pos hε))).filter_mono nhdsWithin_le_nhds
+    obtain ⟨η, h1, h2, h3, hη⟩ := (e1.and (e2.and (e3.and self_mem_nhdsWithin))).exists
+    have hη0 : 0 < η := hη
+    set Gp := gpdSurvival' ρ 1 η with hGp
+    set Gm := gpdSurvival' ρ 1 (-η) with hGm
+    have hGp1 : Gp < 1 := gpdSurvival'_lt_one hη0
+    have hGm1 : 1 < Gm := one_lt_gpdSurvival'_of_neg hρ (by linarith)
+    have hδp : 0 < 1 - Gp := by linarith
+    have hδm : 0 < min (Gm - 1) 1 := lt_min (by linarith) one_pos
+    have hδ1 : 0 < min (ε / 2) 1 := lt_min (half_pos hε) one_pos
+    have Lhi := hcount η (1 - Gp) hδp
+    have Llo := hcount (-η) (min (Gm - 1) 1) hδm
+    have LW1 := hW1 (min (ε / 2) 1) hδ1
+    have LW2 := hW2 (ε / 2) (half_pos hε)
+    -- the deterministic consequences on the good event
+    have good : ∀ n, k n < n → (0 : ℝ) < k n → 0 < s n → 0 < Q n → ∀ ω,
+        |(exceedCount (fun i : Fin n => X i ω) (Real.exp (Real.log (s n) + Q n * η)) : ℝ) /
+          k n - Gp| < 1 - Gp →
+        |(exceedCount (fun i : Fin n => X i ω) (Real.exp (Real.log (s n) + Q n * -η)) : ℝ) /
+          k n - Gm| < min (Gm - 1) 1 →
+        |(∑ i ∈ range n, logExcess (s n) (X i ω) / Q n) / k n - μ₁| < min (ε / 2) 1 →
+        |logMoment (fun i : Fin n => X i ω) (k n) 1 / Q n - μ₁| < ε ∧
+          (|(∑ i ∈ range n, (logExcess (s n) (X i ω) / Q n) ^ 2) / k n - μ₂| < ε / 2 →
+            |logMoment (fun i : Fin n => X i ω) (k n) 2 / Q n ^ 2 - μ₂| < ε) := by
+      intro n hkn hk0 hs hQ ω c1 c2 c3
+      have hk0' : 0 < k n := by exact_mod_cast hk0
+      have d1 : (exceedCount (fun i : Fin n => X i ω) (Real.exp (Real.log (s n) + Q n * η)) : ℝ)
+          / k n < 1 := by linarith [(abs_lt.1 c1).2]
+      have d2 : 1 < (exceedCount (fun i : Fin n => X i ω)
+          (Real.exp (Real.log (s n) + Q n * -η)) : ℝ) / k n := by
+        linarith [(abs_lt.1 c2).1, min_le_left (Gm - 1) 1]
+      have d3 : (exceedCount (fun i : Fin n => X i ω)
+          (Real.exp (Real.log (s n) + Q n * -η)) : ℝ) / k n ≤ K := by
+        rw [hK]
+        linarith [(abs_lt.1 c2).2, min_le_right (Gm - 1) 1]
+      obtain ⟨b1, b2⟩ := abs_logMoment_div_sub_le (fun i : Fin n => X i ω) hkn hk0' hs hQ hη0
+        d1 d2 d3
+      have hS1 : ∑ i : Fin n, logExcess (s n) (X i ω) / Q n =
+          ∑ i ∈ range n, logExcess (s n) (X i ω) / Q n :=
+        Fin.sum_univ_eq_sum_range (fun i => logExcess (s n) (X i ω) / Q n) n
+      have hS2 : ∑ i : Fin n, (logExcess (s n) (X i ω) / Q n) ^ 2 =
+          ∑ i ∈ range n, (logExcess (s n) (X i ω) / Q n) ^ 2 :=
+        Fin.sum_univ_eq_sum_range (fun i => (logExcess (s n) (X i ω) / Q n) ^ 2) n
+      rw [hS1] at b1 b2
+      rw [hS2] at b2
+      have c3' := abs_lt.1 c3
+      have hm1 := min_le_left (ε / 2) 1
+      have hm2 := min_le_right (ε / 2) 1
+      have hηK : η * K ≤ η * C' := by
+        rw [hC']
+        have : 0 ≤ 2 * (μ₁ + 1) := by linarith
+        nlinarith
+      refine ⟨?_, fun c4 => ?_⟩
+      · calc |logMoment (fun i : Fin n => X i ω) (k n) 1 / Q n - μ₁|
+            ≤ |logMoment (fun i : Fin n => X i ω) (k n) 1 / Q n -
+                (∑ i ∈ range n, logExcess (s n) (X i ω) / Q n) / k n| +
+              |(∑ i ∈ range n, logExcess (s n) (X i ω) / Q n) / k n - μ₁| :=
+              abs_sub_le _ _ _
+          _ < η * C' + ε / 2 := by
+              have := abs_lt.2 c3'
+              linarith
+          _ < ε := by linarith
+      · have hW1b : (∑ i ∈ range n, logExcess (s n) (X i ω) / Q n) / k n ≤ μ₁ + 1 := by
+          linarith [c3'.2]
+        have hb2' : η * (2 * ((∑ i ∈ range n, logExcess (s n) (X i ω) / Q n) / k n) + η * K) ≤
+            η * C' := by
+          rw [hC']
+          have : η * K ≤ K := by rw [hK]; nlinarith
+          have : 2 * ((∑ i ∈ range n, logExcess (s n) (X i ω) / Q n) / k n) ≤ 2 * (μ₁ + 1) := by
+            linarith
+          nlinarith
+        calc |logMoment (fun i : Fin n => X i ω) (k n) 2 / Q n ^ 2 - μ₂|
+            ≤ |logMoment (fun i : Fin n => X i ω) (k n) 2 / Q n ^ 2 -
+                (∑ i ∈ range n, (logExcess (s n) (X i ω) / Q n) ^ 2) / k n| +
+              |(∑ i ∈ range n, (logExcess (s n) (X i ω) / Q n) ^ 2) / k n - μ₂| :=
+              abs_sub_le _ _ _
+          _ < η * C' + ε / 2 := by linarith
+          _ < ε := by linarith
+    constructor
+    · have hlim := (Lhi.add Llo).add LW1
+      simp only [add_zero] at hlim
+      refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hlim
+        (Eventually.of_forall fun _ => bot_le) ?_
+      filter_upwards [hkn', hkpos, hsQ] with n hkn hk0 hsQn
+      refine (measure_mono ?_).trans ((measure_union_le _ _).trans
+        (add_le_add_left (measure_union_le _ _) _))
+      intro ω hω
+      simp only [Set.mem_ofPred_eq] at hω
+      by_contra hcon
+      simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_le] at hcon
+      obtain ⟨⟨c1, c2⟩, c3⟩ := hcon
+      exact absurd hω (not_le.2 (good n hkn hk0 hsQn.1 hsQn.2 ω c1 c2 c3).1)
+    · have hlim := ((Lhi.add Llo).add LW1).add LW2
+      simp only [add_zero] at hlim
+      refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hlim
+        (Eventually.of_forall fun _ => bot_le) ?_
+      filter_upwards [hkn', hkpos, hsQ] with n hkn hk0 hsQn
+      refine (measure_mono ?_).trans ((measure_union_le _ _).trans
+        (add_le_add_left ((measure_union_le _ _).trans
+          (add_le_add_left (measure_union_le _ _) _)) _))
+      intro ω hω
+      simp only [Set.mem_ofPred_eq] at hω
+      by_contra hcon
+      simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_le] at hcon
+      obtain ⟨⟨⟨c1, c2⟩, c3⟩, c4⟩ := hcon
+      exact absurd hω (not_le.2 ((good n hkn hk0 hsQn.1 hsQn.2 ω c1 c2 c3).2 c4))
+  refine ⟨?_, ?_⟩
+  · rw [tendstoInMeasure_iff_dist]
+    intro ε hε
+    simpa only [Real.dist_eq] using (main ε hε).1
+  · rw [tendstoInMeasure_iff_dist]
+    intro ε hε
+    simpa only [Real.dist_eq] using (main ε hε).2
+
+end Consistency
+
 end ExtremeValueTheory
