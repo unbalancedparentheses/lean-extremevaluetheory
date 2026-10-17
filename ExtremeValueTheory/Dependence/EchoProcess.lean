@@ -388,6 +388,105 @@ theorem ae_bddAbove_echoTerm :
     rw [this]
     exact le_max_right _ _
 
+include hα hLm hL1 in
+/-- The source probabilities at level `x ≥ 1` sum to `2 x^(-α)`: the innovation itself and its
+echo. -/
+theorem hasSum_measureReal_echoSourceSet {x : ℝ} (hx : 1 ≤ x) :
+    HasSum (fun j => (paretoMeasure 1 α).real (echoSourceSet L x j)) (2 * x ^ (-α)) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  set ν := paretoMeasure 1 α
+  set b : ℕ → ℝ := fun j => ν.real {z | x < z ∧ L z = j}
+  have hb : HasSum b (x ^ (-α)) := by
+    have hU : (⋃ j, {z : ℝ | x < z ∧ L z = j}) = Ioi x := by
+      ext z
+      simp
+    rw [← paretoMeasure_one_real_Ioi hα hx, ← hU]
+    refine hasSum_measureReal_iUnion (fun j => measurableSet_Ioi.inter
+      (hLm (measurableSet_singleton j))) fun i j hij => ?_
+    rw [Function.onFun, Set.disjoint_left]
+    rintro z ⟨-, hi⟩ ⟨-, hj⟩
+    exact hij (hi.symm.trans hj)
+  have hb0 : b 0 = 0 := by
+    have : {z : ℝ | x < z ∧ L z = 0} = ∅ := by
+      ext z
+      simp only [mem_ofPred_eq, mem_empty_iff_false, iff_false, not_and]
+      intro _ h
+      have := hL1 z
+      omega
+    simp [b, this]
+  have hsum := hb.add (hasSum_ite_eq 0 (x ^ (-α)))
+  rw [show x ^ (-α) + x ^ (-α) = 2 * x ^ (-α) by ring] at hsum
+  refine hsum.congr_fun fun j => ?_
+  rcases Nat.eq_zero_or_pos j with rfl | hj
+  · simp only [hb0, ↓reduceIte, zero_add, echoSourceSet, true_or, and_true]
+    exact paretoMeasure_one_real_Ioi hα hx
+  · simp only [b, echoSourceSet, hj.ne', false_or, ↓reduceIte, add_zero]
+
+include hα hZ hlaw hLm hL1 in
+omit [IsProbabilityMeasure P] in
+theorem hasSum_measureReal_echoSource (t : ℤ) {x : ℝ} (hx : 1 ≤ x) :
+    HasSum (fun j => P.real (echoSource L Z t x j)) (2 * x ^ (-α)) := by
+  refine (hasSum_measureReal_echoSourceSet hα hLm hL1 hx).congr_fun fun j => ?_
+  rw [echoSource_eq, measureReal_preimage_eq hZ hlaw _ (measurableSet_echoSourceSet hLm x j)]
+
+include hα hZ hlaw hLm hL1 in
+/-- `P(X_0 > x) ≤ 2 x^(-α)` for `x ≥ 1`. -/
+theorem measureReal_lt_echoProcess_le (t : ℤ) {x : ℝ} (hx : 1 ≤ x) :
+    P.real {ω | x < echoProcess L Z t ω} ≤ 2 * x ^ (-α) := by
+  have hs := hasSum_measureReal_echoSource hα hZ hlaw hLm hL1 t hx
+  refine (measureReal_mono (setOf_lt_echoProcess_subset (by linarith) t)).trans ?_
+  rw [← hs.tsum_eq]
+  exact measureReal_iUnion_le_tsum hs.summable
+
+include hα hZ hind hlaw hLm hL1 in
+/-- `P(X_0 > x) ≥ 2 x^(-α) - 4 x^(-2α)` for `x ≥ 1` (Bonferroni over the independent sources). -/
+theorem le_measureReal_lt_echoProcess (t : ℤ) {x : ℝ} (hx : 1 ≤ x) :
+    2 * x ^ (-α) - (2 * x ^ (-α)) ^ 2 ≤ P.real {ω | x < echoProcess L Z t ω} := by
+  have hs := hasSum_measureReal_echoSource hα hZ hlaw hLm hL1 t hx
+  have hA : ∀ j, MeasurableSet (echoSource L Z t x j) := fun j => by
+    rw [echoSource_eq]
+    exact hZ _ (measurableSet_echoSourceSet hLm x j)
+  have hpair : ∀ i j, i ≠ j → P.real (echoSource L Z t x i ∩ echoSource L Z t x j) =
+      P.real (echoSource L Z t x i) * P.real (echoSource L Z t x j) := by
+    intro i j hij
+    have hij' : t - (i : ℤ) ≠ t - j := by omega
+    rw [echoSource_eq, echoSource_eq, measureReal_def,
+      (hind.indepFun hij').measure_inter_preimage_eq_mul _ _ (measurableSet_echoSourceSet hLm x i)
+        (measurableSet_echoSourceSet hLm x j), ENNReal.toReal_mul]
+    rfl
+  have key := le_measureReal_iUnion_of_pairwise hA hpair hs.summable
+  rw [hs.tsum_eq] at key
+  refine key.trans (ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono_ae ?_))
+  filter_upwards [ae_bddAbove_echoTerm hα hZ hlaw hLm] with ω hω hmem
+  obtain ⟨j, hj⟩ := mem_iUnion.1 hmem
+  exact lt_echoProcess_of_mem_echoSource (hω t) hj
+
+include hα hZ hind hlaw hLm hL1 in
+/-- `P(X_t > x) / x^(-α) → 2`. -/
+theorem tendsto_measureReal_lt_echoProcess_div (t : ℤ) :
+    Tendsto (fun x => P.real {ω | x < echoProcess L Z t ω} / x ^ (-α)) atTop (𝓝 2) := by
+  have hy := tendsto_rpow_neg_atTop hα
+  have hlow : Tendsto (fun x : ℝ => 2 - 4 * x ^ (-α)) atTop (𝓝 2) := by
+    simpa using (hy.const_mul 4).const_sub 2
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' hlow tendsto_const_nhds ?_ ?_
+  · filter_upwards [eventually_ge_atTop 1] with x hx
+    have h0 : 0 < x ^ (-α) := Real.rpow_pos_of_pos (by linarith) _
+    rw [le_div_iff₀ h0]
+    nlinarith [le_measureReal_lt_echoProcess hα hZ hind hlaw hLm hL1 t hx]
+  · filter_upwards [eventually_ge_atTop 1] with x hx
+    have h0 : 0 < x ^ (-α) := Real.rpow_pos_of_pos (by linarith) _
+    rw [div_le_iff₀ h0]
+    exact measureReal_lt_echoProcess_le hα hZ hlaw hLm hL1 t hx
+
+include hα hZ hind hlaw hpos hLm hL1 in
+/-- The echo process is regularly varying with index `-α`. -/
+theorem isRegularlyVarying_echoProcess :
+    IsRegularlyVarying (fun x => P.real {ω | x < |echoProcess L Z 0 ω|}) (-α) := by
+  have h := (IsRegularlyVarying.rpow_id (-α)).of_tendsto_div
+    (tendsto_measureReal_lt_echoProcess_div hα hZ hind hlaw hLm hL1 0) two_pos
+  refine h.congr (Eventually.of_forall fun x => ?_)
+  simp only [abs_of_nonneg (echoProcess_nonneg hpos _ _)]
+
 end Echo
 
 end ExtremeValueTheory
