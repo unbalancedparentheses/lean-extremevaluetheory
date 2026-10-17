@@ -194,6 +194,7 @@ namespace IsSStar
 
 variable {μ : Measure ℝ} [IsProbabilityMeasure μ]
 
+omit [IsProbabilityMeasure μ] in
 theorem tendsto_intervalIntegral_tail (h : IsSStar μ) {b : ℝ → ℝ} (hb : Tendsto b atTop atTop) :
     Tendsto (fun x => ∫ y in (0 : ℝ)..b x, tail μ y) atTop (𝓝 (∫ t in Ioi 0, tail μ t)) :=
   intervalIntegral_tendsto_integral_Ioi 0 h.integrableOn_tail hb
@@ -412,6 +413,7 @@ private theorem integratedTail_eq_withDensity :
   rw [itDensity, withDensity_smul _ (hg.indicator measurableSet_Ioi),
     withDensity_indicator measurableSet_Ioi, integratedTail]
 
+omit [IsProbabilityMeasure μ] in
 private theorem itDensity_of_pos {u : ℝ} (hu : 0 < u) :
     itDensity μ u = ENNReal.ofReal (∫ t in Ioi 0, tail μ t)⁻¹ * ENNReal.ofReal (tail μ u) := by
   rw [itDensity, Pi.smul_apply, indicator_of_mem (show u ∈ Ioi 0 from hu), smul_eq_mul]
@@ -465,7 +467,7 @@ theorem isSubexponential_integratedTail (h : IsSStar μ) :
     IsSubexponential (integratedTail μ) := by
   have hm := h.integral_tail_pos
   set m := ∫ t in Ioi 0, tail μ t with hm_def
-  haveI := isProbabilityMeasure_integratedTail h.integrableOn_tail hm
+  have := isProbabilityMeasure_integratedTail h.integrableOn_tail hm
   set ν := integratedTail μ
   set c := ENNReal.ofReal m⁻¹ with hc
   have hν : ν = volume.withDensity (itDensity μ) := integratedTail_eq_withDensity
@@ -560,7 +562,7 @@ probability satisfies `ψ(u) / F̄_I(u) → 1 / ρ`. -/
 theorem tendsto_pkRuin_div (h : IsSStar μ) {ρ : ℝ} (hρ : 0 < ρ) :
     Tendsto (fun u => pkRuin ρ (integratedTail μ) u / tail (integratedTail μ) u) atTop
       (𝓝 (1 / ρ)) := by
-  haveI := isProbabilityMeasure_integratedTail h.integrableOn_tail h.integral_tail_pos
+  have := isProbabilityMeasure_integratedTail h.integrableOn_tail h.integral_tail_pos
   exact h.isSubexponential_integratedTail.tendsto_pkRuin_div hρ
 
 /-- **Regularly varying tails with index `-α`, `α > 1`, are in `𝒮*`** ([Klüppelberg 1988];
@@ -620,7 +622,7 @@ end IsSStar
 subexponential. -/
 theorem isSStar_paretoMeasure {t r : ℝ} (ht : 0 < t) (hr : 1 < r) :
     IsSStar (ProbabilityTheory.paretoMeasure t r) := by
-  haveI := ProbabilityTheory.isProbabilityMeasure_paretoMeasure ht (by linarith : 0 < r)
+  have := ProbabilityTheory.isProbabilityMeasure_paretoMeasure ht (by linarith : 0 < r)
   exact IsSStar.of_isRegularlyVarying (paretoMeasure_Iio_zero ht)
     (isRegularlyVarying_tail_paretoMeasure ht (by linarith)) hr
 
