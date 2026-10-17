@@ -61,8 +61,9 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   `tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt`): with tail balance
   `P(X > x)/P(|X| > x) → p`, `S_n/aₙ` (for `α < 1`) and `(S_n − n E X)/aₙ` (for `1 < α < 2`)
   converge weakly to a skewed strictly stable law with characteristic function
-  `exp(−C_α|t|^α + i(2p−1)E_α sign(t)|t|^α)`. The constants are explicit integrals; the
-  closed form `E_α = C_α tan(πα/2)` and the case `α = 1` are not formalized.
+  `exp(−C_α|t|^α(1 − i(2p−1) sign(t) tan(πα/2)))` with `C_α = Γ(1−α) cos(πα/2)`
+  (`StableIntegral.stableConst_eq_Gamma_mul_cos`, `stableSkewConst_eq_mul_tan`, and the primed
+  textbook-form theorems). The case `α = 1` is not formalized.
 - **Uniform convergence theorem and Karamata's representation theorem** for measurable slowly
   and regularly varying functions (no monotonicity), with two-sided Potter bounds
   (`isSlowlyVarying_iff_exists_representation`, `potter_bounds_of_measurable`).

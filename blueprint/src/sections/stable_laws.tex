@@ -487,3 +487,42 @@ $\mu^{*n}$ for the convolution power (Definition~\ref{def:convPow}).
   weights $p$ and $q = 1 - p$. A layer-cake formula and Potter domination give the limit, and
   L\'evy's continuity theorem concludes.
 \end{proof}
+
+\begin{theorem}[Closed forms of the stable constants]
+  \label{thm:stable-constants}
+  \uses{def:stable-const, def:has-stable-charfun}
+  \lean{ExtremeValueTheory.StableIntegral.stableConst_eq_pi_div,
+    ExtremeValueTheory.StableIntegral.stableConst_one,
+    ExtremeValueTheory.StableIntegral.stableConst_eq_Gamma_mul_cos,
+    ExtremeValueTheory.StableIntegral.stableSkewConst_eq_Gamma_mul_sin,
+    ExtremeValueTheory.StableIntegral.stableSkewConst_eq_mul_tan,
+    ExtremeValueTheory.StableIntegral.integral_rpow_div_one_add_sq}
+  \leanok
+  For $0 < \alpha < 2$, $C_\alpha = \pi / (2 \sin(\pi\alpha/2) \Gamma(\alpha))$; in particular
+  $C_1 = \pi/2$, and for $\alpha \ne 1$, $C_\alpha = \Gamma(1-\alpha)\cos(\pi\alpha/2)$,
+  $E_\alpha = \Gamma(1-\alpha)\sin(\pi\alpha/2) = C_\alpha \tan(\pi\alpha/2)$ [ST, \S1.1],
+  [Feller, \S XVII.4].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Write $u^{-\alpha-1} = \Gamma(\alpha+1)^{-1} \int_0^\infty x^\alpha e^{-xu} \, \ud x$ and swap the
+  integrals. The Laplace transforms of $1 - \cos$ and $\sin$ are rational, which reduces both
+  constants to $\int_0^\infty x^{s-1}/(1+x^2) \, \ud x = \pi / (2 \sin(\pi s/2))$, itself obtained
+  from $1/(1+x^2) = \int_0^\infty e^{-(1+x^2)y} \, \ud y$ and the reflection formula.
+\end{proof}
+
+\begin{corollary}[Generalized CLT, textbook form]
+  \label{cor:gclt-textbook}
+  \uses{thm:gclt-asymmetric, thm:stable-constants}
+  \lean{ExtremeValueTheory.tendsto_map_convPow_of_isRegularlyVarying_of_lt_one',
+    ExtremeValueTheory.tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt',
+    ExtremeValueTheory.stableExponent_mul_tan}
+  \leanok
+  Under the hypotheses of Theorem~\ref{thm:gclt-asymmetric}, the limit law has characteristic
+  function $\exp\big(-C_\alpha |t|^\alpha (1 - i \beta \, \mathrm{sign}(t) \tan(\pi\alpha/2))\big)$
+  with $C_\alpha = \Gamma(1-\alpha)\cos(\pi\alpha/2)$ and $\beta = 2p - 1$.
+\end{corollary}
+\begin{proof}
+  \leanok
+  Substitute Theorem~\ref{thm:stable-constants} into Theorem~\ref{thm:gclt-asymmetric}.
+\end{proof}
