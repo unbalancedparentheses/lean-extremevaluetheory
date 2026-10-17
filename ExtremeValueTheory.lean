@@ -47,3 +47,4 @@ import ExtremeValueTheory.ForMathlib.Probability.Process.Stationary
 import ExtremeValueTheory.ForMathlib.MeasureTheory.Measure.Bonferroni
 import ExtremeValueTheory.Dependence.Leadbetter
 import ExtremeValueTheory.Dependence.ExtremalIndex
+import ExtremeValueTheory.Dependence.Examples

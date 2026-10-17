@@ -24,7 +24,7 @@ A stationary sequence `X` has *extremal index* `θ ∈ [0, 1]` if, whenever
 * `ExtremeValueTheory.tendsto_measureReal_partialMax_le_pow`: if the marginal `F` of `X` is in the
   maximum domain of attraction of an extreme value distribution `H` with normalizations `Aₙ`, and
   `X` has extremal index `θ > 0`, then `P(M n ≤ Aₙ⁻¹ x) → H(x)^θ` for every `x`
-  [LLR, Theorem 3.7.1], [EKM, Theorem 8.1.? / §4.4].
+  [LLR, §3.7], [EKM, §8.1].
 * `ExtremeValueTheory.isExtremeValueDistr_pow`: `H^θ` is an extreme value distribution of the same
   type as `H`, i.e. `H^θ = A • H` for an affine `A` (max-stability).
 
@@ -107,7 +107,7 @@ lemma tendsto_natCast_mul_one_sub_of_tendsto_pow_one {a : ℕ → ℝ} (h0 : ∀
   have := Real.log_le_sub_one_of_pos hapos
   nlinarith [n.cast_nonneg (α := ℝ)]
 
-/-- **Maxima of stationary sequences with an extremal index** [LLR, Theorem 3.7.1]: if the
+/-- **Maxima of stationary sequences with an extremal index** [LLR, §3.7]: if the
 marginal c.d.f. `F` of `X 0` is in the maximum domain of attraction of an extreme value
 distribution `H` with normalizations `Aₙ` (that is, `F(Aₙ⁻¹ x) ^ n → H x`) and `X` has extremal
 index `θ > 0`, then `P(M n ≤ Aₙ⁻¹ x) → H(x) ^ θ` for every `x`. -/
@@ -183,7 +183,7 @@ theorem tendsto_measureReal_partialMax_le_pow [IsProbabilityMeasure P] (hs : IsS
 
 /-- The limit `H ^ θ` of the maxima of a stationary sequence with extremal index `θ > 0` is an
 extreme value distribution of the same type as `H`: `H ^ θ = A • H` for some affine `A`
-[LLR, Corollary 3.7.3]. -/
+[LLR, §3.7]. -/
 theorem isExtremeValueDistr_pow {H : CumulativeDistributionFunction}
     (hH : H.IsExtremeValueDistr) {θ : ℝ} (hθ0 : 0 < θ) :
     (H.pow hθ0).IsExtremeValueDistr ∧ ∃ A : AffineIncrEquiv, A • H = H.pow hθ0 := by

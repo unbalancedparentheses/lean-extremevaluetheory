@@ -14,7 +14,7 @@ Let `(X t)_{t ∈ ℕ}` be a stationary real sequence and `M n = max (X 0, …, 
 formalize Leadbetter's mixing condition `D(uₙ)` and anti-clustering condition `D'(uₙ)`, and prove
 
 * the block approximation `P(M n ≤ uₙ) - P(M ⌊n/k⌋ ≤ uₙ)^k → 0` under `D(uₙ)`
-  [LLR, Lemma 3.3.2], [EKM, Lemma 4.4.? (block argument)];
+  [LLR, §3.3];
 * **Leadbetter's theorem**: under `D(uₙ)`, `D'(uₙ)` and `n P(X 0 > uₙ) → τ`,
   `P(M n ≤ uₙ) → exp (-τ)` [LLR, Theorem 3.4.1], [EKM, Theorem 4.4.3];
 * the lower bound `liminf P(M n ≤ uₙ) ≥ exp (-τ)` under `D(uₙ)` alone.
@@ -185,7 +185,7 @@ lemma measureReal_maxLE_mem_Icc [IsProbabilityMeasure P] (A : Finset ℕ) (u : �
     P.real (maxLE X A u) ∈ Set.Icc (0 : ℝ) 1 :=
   ⟨measureReal_nonneg, measureReal_le_one⟩
 
-/-- **The block estimate** behind [LLR, Lemma 3.3.2]: split `{0, …, n - 1}` into `k` blocks of
+/-- **The block estimate** behind [LLR, §3.3]: split `{0, …, n - 1}` into `k` blocks of
 length `r = ⌊n/k⌋`, remove the last `l` indices of every block, and use the mixing bound `α`
 for index sets at distance `l` to factor the probability. -/
 theorem _root_.ProbabilityTheory.IsStationary.abs_measureReal_maxLE_range_sub_pow_le
@@ -316,7 +316,7 @@ theorem _root_.ProbabilityTheory.IsStationary.abs_measureReal_maxLE_range_sub_po
 
 /-! ### Leadbetter's conditions -/
 
-/-- **Leadbetter's mixing condition `D(uₙ)`** [LLR, §3.2], [EKM, Condition 4.4.2]: there are
+/-- **Leadbetter's mixing condition `D(uₙ)`** [LLR, §3.2], [EKM, §4.4]: there are
 gaps `lₙ = o(n)` and mixing coefficients `αₙ → 0` such that for all index sets
 `A, B ⊆ {0, …, n - 1}` separated by at least `lₙ` (every element of `B` exceeds every element of
 `A` by at least `lₙ`),
@@ -328,7 +328,7 @@ def ConditionD (X : ℕ → Ω → ℝ) (P : Measure Ω) (u : ℕ → ℝ) : Pro
       |P.real (maxLE X (A ∪ B) (u n)) - P.real (maxLE X A (u n)) * P.real (maxLE X B (u n))|
         ≤ α n
 
-/-- **Leadbetter's anti-clustering condition `D'(uₙ)`** [LLR, (3.4.3)], [EKM, Condition 4.4.4]:
+/-- **Leadbetter's anti-clustering condition `D'(uₙ)`** [LLR, (3.4.3)], [EKM, §4.4]:
 `limsup_{n → ∞} n ∑_{1 ≤ j < ⌊n/k⌋} P(X 0 > uₙ, X j > uₙ) → 0` as `k → ∞`. Since the terms are
 nonnegative, we state it as: for every `ε > 0` there is `k₀` such that for every `k ≥ k₀`,
 eventually in `n` the sum is at most `ε`. -/
@@ -348,7 +348,7 @@ lemma tendsto_zero_of_tendsto_natCast_mul' {p : ℕ → ℝ} {τ : ℝ}
   have : (n : ℝ) ≠ 0 := by positivity
   field_simp
 
-/-- **Block approximation** [LLR, Lemma 3.3.2]: under `D(uₙ)` and `n P(X 0 > uₙ) → τ`, for
+/-- **Block approximation** [LLR, §3.3]: under `D(uₙ)` and `n P(X 0 > uₙ) → τ`, for
 every fixed `k ≥ 1`, `P(M n ≤ uₙ) - P(M ⌊n/k⌋ ≤ uₙ) ^ k → 0`. -/
 theorem tendsto_measureReal_partialMax_sub_pow [IsProbabilityMeasure P] (hs : IsStationary X P)
     (hX : ∀ t, Measurable (X t)) {u : ℕ → ℝ} (hD : ConditionD X P u) {τ : ℝ}
