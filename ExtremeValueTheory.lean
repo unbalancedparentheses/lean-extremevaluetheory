@@ -105,3 +105,4 @@ import ExtremeValueTheory.Dependence.InfiniteMovingAverageTailProcessLarge
 import ExtremeValueTheory.Dependence.AR1Large
 import ExtremeValueTheory.MaxStable.Basic
 import ExtremeValueTheory.MaxStable.Spectral
+import ExtremeValueTheory.Dependence.StrictExtremalIndex
