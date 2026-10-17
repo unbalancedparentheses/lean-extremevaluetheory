@@ -26,6 +26,10 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
 - **Gnedenko's characterization of the Fréchet domain** (`isInMDAFrechet_iff`): `F` is in the
   maximum domain of attraction of the Fréchet law `exp(-x^(-α))` if and only if `1 - F` is
   regularly varying with index `-α`. Both directions proved, standard axioms only.
+- **Peaks over threshold, heavy-tailed case** (`tendstoUniformlyOn_excessSurvival`): if `F̄` is
+  regularly varying with index `-α`, the scaled excess distribution `F̄(u + (u/α)x)/F̄(u)`
+  converges to the generalized Pareto survival function `(1 + x/α)^(-α)` uniformly in `x ≥ 0`
+  (Pickands–Balkema–de Haan); the mean excess satisfies `e(u)/u → 1/(α-1)` for `α > 1`.
 - Regular variation API: closure properties, uniform convergence theorem and Potter bounds for
   monotone functions.
 
