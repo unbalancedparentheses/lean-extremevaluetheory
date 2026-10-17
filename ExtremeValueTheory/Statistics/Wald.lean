@@ -337,4 +337,172 @@ theorem integral_log_gpdDensity_lt (hξ : 0 < ξ) (hσ : 0 < σ) (hξ₀ : 0 < �
 
 end GPDIdentifiability
 
+/-! ### Wald consistency of the joint GPD maximum likelihood estimator -/
+
+section GPDWald
+
+/-- The GPD log-density is continuous in the parameters `(ξ, σ)` on `{ξ > 0, σ > 0}`. -/
+lemma continuousOn_log_gpdDensity (x : ℝ) :
+    ContinuousOn (fun p : ℝ × ℝ => log (gpdDensity p.1 p.2 x)) {p | 0 < p.1 ∧ 0 < p.2} := by
+  rcases lt_or_ge x 0 with hx | hx
+  · refine (continuousOn_const (c := (0 : ℝ))).congr fun p _ => ?_
+    simp only [gpdDensity_of_neg hx, log_zero]
+  · have hu : ∀ p ∈ {p : ℝ × ℝ | 0 < p.1 ∧ 0 < p.2}, 0 < 1 + p.1 * x / p.2 := fun p hp => by
+      have := hp.1; have := hp.2; positivity
+    refine ContinuousOn.congr (f := fun p : ℝ × ℝ => -log p.2 - (1 / p.1 + 1) *
+      log (1 + p.1 * x / p.2)) ?_ fun p hp => log_gpdDensity hp.2 hp.1.ne' hx (hu p hp)
+    refine (continuous_snd.continuousOn.log fun p hp => hp.2.ne').neg.sub
+      (((continuousOn_const.div continuous_fst.continuousOn fun p hp => hp.1.ne').add
+        continuousOn_const).mul (ContinuousOn.log ?_ fun p hp => (hu p hp).ne'))
+    exact continuousOn_const.add ((continuous_fst.continuousOn.mul continuousOn_const).div
+      continuous_snd.continuousOn fun p hp => hp.2.ne')
+
+variable {K : Set (ℝ × ℝ)}
+
+/-- **Existence of the joint MLE on a compact parameter set.** -/
+theorem exists_isMaxOn_gpdLogLik (hK : IsCompact K) (hKpos : ∀ p ∈ K, 0 < p.1 ∧ 0 < p.2)
+    (hne : K.Nonempty) {n : ℕ} (x : Fin n → ℝ) :
+    ∃ θ ∈ K, IsMaxOn (fun p : ℝ × ℝ => gpdLogLik p.1 p.2 x) K θ :=
+  hK.exists_isMaxOn hne (continuousOn_finsetSum _ fun i _ =>
+    (continuousOn_log_gpdDensity (x i)).mono fun p hp => hKpos p hp)
+
+/-- Uniform bounds for the parameters on a compact subset of `{ξ > 0, σ > 0}`. -/
+private lemma exists_bounds (hK : IsCompact K) (hKpos : ∀ p ∈ K, 0 < p.1 ∧ 0 < p.2)
+    (hne : K.Nonempty) :
+    ∃ c C : ℝ, 0 < c ∧ ∀ p ∈ K, c ≤ p.1 ∧ p.1 ≤ C ∧ c ≤ p.2 ∧ p.2 ≤ C := by
+  obtain ⟨p₀, hp₀, hmin⟩ := hK.exists_isMinOn hne
+    (continuous_fst.min continuous_snd : Continuous fun p : ℝ × ℝ => min p.1 p.2).continuousOn
+  obtain ⟨p₁, -, hmax⟩ := hK.exists_isMaxOn hne
+    (continuous_fst.max continuous_snd : Continuous fun p : ℝ × ℝ => max p.1 p.2).continuousOn
+  refine ⟨min p₀.1 p₀.2, max p₁.1 p₁.2, lt_min (hKpos p₀ hp₀).1 (hKpos p₀ hp₀).2,
+    fun p hp => ?_⟩
+  have h1 : min p₀.1 p₀.2 ≤ min p.1 p.2 := hmin hp
+  have h2 : max p.1 p.2 ≤ max p₁.1 p₁.2 := hmax hp
+  exact ⟨h1.trans (min_le_left _ _), (le_max_left _ _).trans h2, h1.trans (min_le_right _ _),
+    (le_max_right _ _).trans h2⟩
+
+/-- The integrable envelope `|log c| + |log C| + (1/c + 1) log(1 + (C/c)|x|)`. -/
+private lemma abs_log_gpdDensity_le {c C ξ σ : ℝ} (hc : 0 < c) (hξ : c ≤ ξ) (hξC : ξ ≤ C)
+    (hσ : c ≤ σ) (hσC : σ ≤ C) (x : ℝ) :
+    |log (gpdDensity ξ σ x)| ≤ |log c| + |log C| + (1 / c + 1) * log (1 + C / c * |x|) := by
+  have hξ0 : 0 < ξ := hc.trans_le hξ
+  have hσ0 : 0 < σ := hc.trans_le hσ
+  have hC : 0 < C := hσ0.trans_le hσC
+  have hL0 : 0 ≤ log (1 + C / c * |x|) := by
+    have : 0 ≤ C / c * |x| := by positivity
+    exact log_nonneg (by linarith)
+  rcases lt_or_ge x 0 with hx | hx
+  · rw [gpdDensity_of_neg hx, log_zero, abs_zero]
+    have := abs_nonneg (log c); have := abs_nonneg (log C)
+    have : 0 ≤ (1 / c + 1) * log (1 + C / c * |x|) := mul_nonneg (by positivity) hL0
+    linarith
+  have hu : 0 < 1 + ξ * x / σ := by positivity
+  rw [log_gpdDensity hσ0 hξ0.ne' hx hu]
+  have hlogσ : |log σ| ≤ |log c| + |log C| := by
+    have h1 := log_le_log hc hσ
+    have h2 := log_le_log hσ0 hσC
+    rw [abs_le]
+    constructor <;> linarith [neg_abs_le (log c), le_abs_self (log C), abs_nonneg (log c),
+      abs_nonneg (log C)]
+  have hL : 0 ≤ log (1 + ξ * x / σ) := by
+    have : 0 ≤ ξ * x / σ := by positivity
+    exact log_nonneg (by linarith)
+  have hLle : log (1 + ξ * x / σ) ≤ log (1 + C / c * |x|) := by
+    refine log_le_log hu ?_
+    rw [abs_of_nonneg hx]
+    have : ξ * x / σ ≤ C / c * x := by
+      rw [div_mul_eq_mul_div, div_le_div_iff₀ hσ0 hc]
+      have : ξ * x * c ≤ C * x * σ := by
+        have := mul_le_mul (mul_le_mul_of_nonneg_right hξC hx) hσ (by linarith)
+          (by positivity)
+        linarith
+      linarith
+    linarith
+  have hcoef : 1 / ξ + 1 ≤ 1 / c + 1 := by
+    have := one_div_le_one_div_of_le hc hξ
+    linarith
+  have hprod : (1 / ξ + 1) * log (1 + ξ * x / σ) ≤ (1 / c + 1) * log (1 + C / c * |x|) :=
+    mul_le_mul hcoef hLle hL (by positivity)
+  have hprod0 : 0 ≤ (1 / ξ + 1) * log (1 + ξ * x / σ) := mul_nonneg (by positivity) hL
+  calc |-log σ - (1 / ξ + 1) * log (1 + ξ * x / σ)|
+      ≤ |log σ| + (1 / ξ + 1) * log (1 + ξ * x / σ) := by
+        rw [sub_eq_add_neg, ← neg_add]
+        rw [abs_neg]
+        exact (abs_add_le _ _).trans (by rw [abs_of_nonneg hprod0])
+    _ ≤ _ := by linarith
+
+/-- The envelope is integrable under `GPD(ξ₀, σ₀)`, `ξ₀ > 0`: `log(1 + A X) ≤ log(1 + B) + ξ₀ E`
+in the exponential representation `X = σ₀ (e^{ξ₀ E} - 1)/ξ₀`. -/
+private lemma integrable_log_one_add_mul_abs {ξ₀ σ₀ A : ℝ} (hξ₀ : 0 < ξ₀) (hσ₀ : 0 < σ₀)
+    (hA : 0 ≤ A) : Integrable (fun x => log (1 + A * |x|)) (gpdMeasure ξ₀ σ₀) := by
+  have hmeas : Measurable fun x : ℝ => log (1 + A * |x|) := by fun_prop
+  rw [integrable_gpdMeasure_iff hmeas]
+  set B := A * σ₀ / ξ₀
+  have hB : 0 ≤ B := by positivity
+  refine Integrable.mono' ((integrable_const (log (1 + B))).add
+    ((integrable_pow_expMeasure 1).const_mul ξ₀)) (hmeas.comp
+      (measurable_gpdTransform ξ₀ σ₀)).aestronglyMeasurable ?_
+  filter_upwards [ae_pos_expMeasure] with t ht
+  have hT := gpdTransform_pos (ξ := ξ₀) hσ₀ ht
+  simp only [gpdTransform, hξ₀.ne', ↓reduceIte] at hT ⊢
+  have hT' : 0 ≤ σ₀ * (exp (ξ₀ * t) - 1) / ξ₀ := hT.le
+  rw [abs_of_nonneg hT', Real.norm_eq_abs, abs_of_nonneg (log_nonneg (by nlinarith))]
+  simp only [Pi.add_apply, pow_one]
+  have he : 1 ≤ exp (ξ₀ * t) := one_le_exp (by positivity)
+  have hle : 1 + A * (σ₀ * (exp (ξ₀ * t) - 1) / ξ₀) ≤ (1 + B) * exp (ξ₀ * t) := by
+    have : A * (σ₀ * (exp (ξ₀ * t) - 1) / ξ₀) = B * (exp (ξ₀ * t) - 1) := by
+      simp only [B]; ring
+    rw [this]
+    nlinarith
+  calc log (1 + A * (σ₀ * (exp (ξ₀ * t) - 1) / ξ₀)) ≤ log ((1 + B) * exp (ξ₀ * t)) :=
+        log_le_log (by nlinarith) hle
+    _ = log (1 + B) + ξ₀ * t := by
+        rw [log_mul (by positivity) (exp_pos _).ne', log_exp]
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} {X : ℕ → Ω → ℝ}
+
+/-- **Wald consistency of the joint GPD maximum likelihood estimator.** Let `K` be a compact
+set of parameters `(ξ, σ)` with `ξ > 0`, `σ > 0`, containing the true parameter `θ₀`, and let
+`X₀, X₁, …` be iid `GPD(θ₀)`. Almost surely, every sequence `θ̂ₙ ∈ K` of maximizers of the
+GPD log-likelihood over `K` (more generally, every `θ̂ₙ ∈ K` with `ℓₙ(θ₀) ≤ ℓₙ(θ̂ₙ)`)
+converges to `θ₀`. Maximizers exist by `exists_isMaxOn_gpdLogLik`. -/
+theorem ae_tendsto_gpdMLE (hK : IsCompact K) (hKpos : ∀ p ∈ K, 0 < p.1 ∧ 0 < p.2)
+    {θ₀ : ℝ × ℝ} (hθ₀ : θ₀ ∈ K) (hX : ∀ i, HasLaw (X i) (gpdMeasure θ₀.1 θ₀.2) P)
+    (hind : iIndepFun X P) :
+    ∀ᵐ ω ∂P, ∀ θhat : ℕ → ℝ × ℝ, (∀ n, θhat n ∈ K) →
+      (∀ᶠ n in atTop, gpdLogLik θ₀.1 θ₀.2 (fun i : Fin n => X i ω) ≤
+        gpdLogLik (θhat n).1 (θhat n).2 (fun i : Fin n => X i ω)) →
+      Tendsto θhat atTop (𝓝 θ₀) := by
+  obtain ⟨c, C, hc, hb⟩ := exists_bounds hK hKpos ⟨θ₀, hθ₀⟩
+  have : CompactSpace K := isCompact_iff_compactSpace.1 hK
+  set m : K → ℝ → ℝ := fun θ x => log (gpdDensity θ.1.1 θ.1.2 x)
+  set G : ℝ → ℝ := fun x => |log c| + |log C| + (1 / c + 1) * log (1 + C / c * |x|)
+  have hθ₀pos := hKpos θ₀ hθ₀
+  have hG : Integrable G (gpdMeasure θ₀.1 θ₀.2) :=
+    (integrable_const _).add ((integrable_log_one_add_mul_abs hθ₀pos.1 hθ₀pos.2
+      (div_nonneg ((hc.trans_le (hb θ₀ hθ₀).1).le.trans (hb θ₀ hθ₀).2.1) hc.le)).const_mul _)
+  have hbound : ∀ θ x, |m θ x| ≤ G x := fun θ x => by
+    obtain ⟨h1, h2, h3, h4⟩ := hb θ.1 θ.2
+    exact abs_log_gpdDensity_le hc h1 h2 h3 h4 x
+  have hcont : ∀ x, Continuous fun θ => m θ x := fun x =>
+    (continuousOn_log_gpdDensity x).comp_continuous continuous_subtype_val
+      fun θ => hKpos θ.1 θ.2
+  have hmeas : ∀ θ, Measurable (m θ) := fun θ => (measurable_gpdDensity _ _).log
+  have hint : ∀ θ, Integrable (m θ) (gpdMeasure θ₀.1 θ₀.2) := fun θ =>
+    hG.mono' (hmeas θ).aestronglyMeasurable
+      (ae_of_all _ fun x => (Real.norm_eq_abs _).le.trans (hbound θ x))
+  have hident : ∀ θ : K, θ ≠ ⟨θ₀, hθ₀⟩ → ∫ x, m θ x ∂gpdMeasure θ₀.1 θ₀.2 <
+      ∫ x, m ⟨θ₀, hθ₀⟩ x ∂gpdMeasure θ₀.1 θ₀.2 := fun θ hne =>
+    integral_log_gpdDensity_lt (hKpos θ.1 θ.2).1 (hKpos θ.1 θ.2).2 hθ₀pos.1 hθ₀pos.2
+      (fun h => hne (Subtype.ext (Prod.ext h.1 h.2))) (hint θ) (hint ⟨θ₀, hθ₀⟩)
+  filter_upwards [ae_tendsto_of_wald hX hind hcont hmeas hG hbound hident] with ω hω θhat hθK hθ
+  have := hω (fun n => ⟨θhat n, hθK n⟩) (hθ.mono fun n hn => by
+    rw [gpdLogLik, gpdLogLik,
+      Fin.sum_univ_eq_sum_range (fun i => log (gpdDensity θ₀.1 θ₀.2 (X i ω))) n,
+      Fin.sum_univ_eq_sum_range (fun i => log (gpdDensity (θhat n).1 (θhat n).2 (X i ω))) n] at hn
+    exact hn)
+  exact (continuous_subtype_val.tendsto _).comp this
+
+end GPDWald
+
 end ExtremeValueTheory
