@@ -810,6 +810,84 @@ theorem isBoundedInProbability_log_orderStat_comp_exp {E : ℕ → Ω₀ → ℝ
     mul_le_mul_of_nonneg_left hlamn.le (abs_nonneg _)
   linarith
 
+omit [IsProbabilityMeasure P₀] in
+/-- **The quantile transform for samples**: the law of any measurable statistic of the iid
+sample `(X_i)_{i<n}` equals the law of the same statistic of `(U(e^{E_i}))_{i<n}`, where the
+`E_i` are iid standard exponential and `U` is the tail quantile function of `X_0`. -/
+theorem map_statistic_eq_map_statistic_comp_exp {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
+    (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {E : ℕ → Ω₀ → ℝ}
+    (hE : ∀ i, HasLaw (E i) (expMeasure 1) P₀) (hind : iIndepFun E P₀) (n : ℕ)
+    {S : (Fin n → ℝ) → ℝ} (hS : Measurable S) :
+    P.map (fun ω => S (fun i => X i ω)) =
+      P₀.map (fun ω => S (fun i => survivalQuantile (survival P (X 0)) (exp (E i ω)))) := by
+  set U := survivalQuantile (survival P (X 0)) with hUdef
+  have hUm := measurable_tailQuantile (survival_anti (P := P) (X 0))
+    (continuousWithinAt_survival (P := P) (hX 0)) (tendsto_survival_atTop (P := P) (hX 0))
+    (tendsto_survival_atBot (P := P) (hX 0))
+  have hV : Measurable fun e => U (exp e) := hUm.comp measurable_exp
+  have hlawX : HasLaw (fun ω (i : Fin n) => X i ω)
+      (Measure.pi fun _ : Fin n => (expMeasure 1).map fun e => U (exp e)) P := by
+    refine (hindep.precomp (g := (Fin.val : Fin n → ℕ)) Fin.val_injective).hasLaw_pi
+      (fun i => ⟨(hX i).aemeasurable, ?_⟩)
+    rw [(hident i).map_eq]
+    exact map_eq_expMeasure_map_tailQuantile (hX 0)
+  have e1 : P.map (fun ω => S (fun i => X i ω)) =
+      (Measure.pi fun _ : Fin n => (expMeasure 1).map fun e => U (exp e)).map S :=
+    ((hasLaw_map hS.aemeasurable).comp hlawX).map_eq
+  have hT : Measurable fun y : Fin n → ℝ => S (fun i => U (exp (y i))) :=
+    hS.comp (measurable_pi_iff.2 fun i => hV.comp (measurable_pi_apply i))
+  have e2 : P₀.map (fun ω => S (fun i => U (exp (E i ω)))) =
+      (Measure.pi fun _ : Fin n => expMeasure 1).map
+        (fun y : Fin n → ℝ => S (fun i => U (exp (y i)))) :=
+    map_comp_vec_of_iid hE hind hT
+  rw [e1, e2, ← Measure.pi_map_pi (fun _ => hV.aemeasurable), Measure.map_map hS (by fun_prop)]
+  rfl
+
+/-- **The intermediate order statistic at rate `√k`** ([dHF, Theorem 2.4.1]): under
+second-order regular variation of the tail quantile function with `ρ < 0`, `k → ∞`,
+`k / n → 0` and `√k A(n/k) → λ`, `√k (log X_{(k+1)} - log U(n/k))` is bounded in
+probability. -/
+theorem isBoundedInProbability_log_orderStat {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
+    (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ}
+    {A : ℝ → ℝ}
+    (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ A)
+    (hρ : ρ < 0) {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
+    (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) :
+    IsBoundedInProbability P (fun n ω => √(k n : ℝ) *
+      (log (orderStat (fun i : Fin n => X i ω) (k n)) -
+        log (survivalQuantile (survival P (X 0)) (n / k n)))) := by
+  obtain ⟨Ω₀, _, P₀, E, hEm, hE, hind, hP₀⟩ := exists_iid ℕ (expMeasure 1)
+  set U := survivalQuantile (survival P (X 0)) with hUdef
+  have hUm := measurable_tailQuantile (survival_anti (P := P) (X 0))
+    (continuousWithinAt_survival (P := P) (hX 0)) (tendsto_survival_atTop (P := P) (hX 0))
+    (tendsto_survival_atBot (P := P) (hX 0))
+  have hUmono := monotoneOn_tailQuantile (survival_anti (P := P) (X 0))
+    (continuousWithinAt_survival (P := P) (hX 0)) (tendsto_survival_atTop (P := P) (hX 0))
+    (tendsto_survival_atBot (P := P) (hX 0))
+  have hB := isBoundedInProbability_log_orderStat_comp_exp hEm hE hind hUm hUmono h2 hρ hk hkn
+    hlam
+  intro ε hε
+  obtain ⟨M, hM⟩ := hB ε hε
+  refine ⟨M, hM.mono fun n hn => ?_⟩
+  set S : (Fin n → ℝ) → ℝ := fun y => √(k n : ℝ) * (log (orderStat y (k n)) - log (U (n / k n)))
+    with hS
+  have hSm : Measurable S :=
+    measurable_const.mul ((measurable_orderStat_pi (k n)).log.sub measurable_const)
+  have hmeas : MeasurableSet {y : ℝ | M < |y|} := measurableSet_lt measurable_const
+    continuous_abs.measurable
+  have e := map_statistic_eq_map_statistic_comp_exp hX hindep hident hE hind n hSm
+  have e' := congrArg (fun μ : Measure ℝ => μ {y : ℝ | M < |y|}) e
+  have m1 : Measurable fun ω => S (fun i : Fin n => X i ω) :=
+    hSm.comp (measurable_pi_iff.2 fun i => hX i)
+  have m2 : Measurable fun ω => S (fun i : Fin n => U (exp (E i ω))) :=
+    hSm.comp (measurable_pi_iff.2 fun i => (hUm.comp measurable_exp).comp (hEm i))
+  rw [Measure.map_apply m1 hmeas, Measure.map_apply m2 hmeas] at e'
+  change P {ω | M < |S (fun i => X i ω)|} ≤ ε
+  rw [show {ω | M < |S (fun i => X i ω)|} = (fun ω => S (fun i => X i ω)) ⁻¹' {y | M < |y|}
+    from rfl, e']
+  exact hn
+
 end IntermediateOrderStat
 
 end ExtremeValueTheory
