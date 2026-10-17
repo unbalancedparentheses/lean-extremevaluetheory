@@ -809,4 +809,186 @@ lemma abs_crossAvg_sub_max_le (h1ξ : 0 < 1 + ξ) (hn : 0 < n)
 
 end Pointwise
 
+/-! ### Asymptotic normality -/
+
+section Normality
+
+variable {ξ σ₀ : ℝ} {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'} [IsProbabilityMeasure P']
+  {X : ℕ → Ω → ℝ}
+
+omit [IsProbabilityMeasure P'] in
+lemma hasLaw_const_mul_gaussianReal {Z : Ω' → ℝ} {v w c : ℝ}
+    (hZ : HasLaw Z (gaussianReal 0 v.toNNReal) P') (hv : 0 ≤ v) (hw : c ^ 2 * v = w) :
+    HasLaw (fun ω => c * Z ω) (gaussianReal 0 w.toNNReal) P' := by
+  have h := HasLaw.comp (Y := fun x : ℝ => c * x) ⟨(measurable_const_mul c).aemeasurable, rfl⟩ hZ
+  rw [gaussianReal_map_const_mul, mul_zero] at h
+  have hw0 : 0 ≤ w := hw ▸ by positivity
+  convert h using 2
+  · rfl
+  apply NNReal.eq
+  simp [Real.coe_toNNReal _ hv, Real.coe_toNNReal _ hw0, hw]
+
+/-- **Asymptotic normality of the GPD scale MLE for a known shape.** Let `X₀, X₁, …` be iid
+`GPD(ξ, σ₀)` with known shape `-1/2 < ξ`, `ξ ≠ 0`, and let `σ̂ₙ` be (measurable) admissible roots
+of the likelihood equation `(1 + ξ) ∑_{i<n} Xᵢ / (σ̂ₙ + ξ Xᵢ) = n` for all large `n`, almost
+surely (by `ae_existsUnique_gpdScaleMLE` these are the maximum likelihood estimators). Then
+
+  `√n (σ̂ₙ - σ₀) ⇒ N(0, σ₀² (1 + 2ξ)) = N(0, I(σ₀)⁻¹)`,
+
+where `I(σ₀) = 1/(σ₀² (1 + 2ξ))` is the Fisher information of the scale. -/
+theorem tendstoInDistribution_gpdScaleMLE (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ₀ : 0 < σ₀)
+    (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ σ₀) P) (hind : iIndepFun X P)
+    {s : ℕ → Ω → ℝ} (hsm : ∀ n, AEMeasurable (s n) P)
+    (hs : ∀ᵐ ω ∂P, ∀ᶠ n in atTop, s n ω ∈ gpdScaleDomain ξ (fun i : Fin n => X i ω) ∧
+      (1 + ξ) * gpdScaleScore ξ (s n ω) (fun i : Fin n => X i ω) = n)
+    {Z : Ω' → ℝ} (hZ : HasLaw Z (gaussianReal 0 (σ₀ ^ 2 * (1 + 2 * ξ)).toNNReal) P') :
+    TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) * (s n ω - σ₀)) atTop Z (fun _ => P) P' := by
+  have h1ξ : 0 < 1 + ξ := by linarith
+  have h2ξ : 0 < 1 + 2 * ξ := by linarith
+  obtain ⟨c, hc_def⟩ : ∃ c : ℝ, c = 1 / (σ₀ * (1 + 2 * ξ)) := ⟨_, rfl⟩
+  have hc : 0 < c := by rw [hc_def]; positivity
+  have hJ : (1 + ξ) * ∫ x, gpdScoreDeriv ξ σ₀ x ∂gpdMeasure ξ σ₀ = c := by
+    rw [integral_gpdScoreDeriv hξ hξ0 hσ₀, hc_def]
+    field_simp
+  have hXm : ∀ i, AEMeasurable (X i) P := fun i => (hX i).aemeasurable
+  -- the random quantities
+  set A : ℕ → Ω → ℝ := scoreSumNorm ξ σ₀ X
+  set R : ℕ → Ω → ℝ := fun n ω => (1 + ξ) * crossAvg ξ σ₀ (s n ω) (fun i => X i ω) n
+  set Rp : ℕ → Ω → ℝ := fun n ω =>
+    (1 + ξ) * crossAvg ξ σ₀ (max (s n ω) σ₀) (fun i => X i ω) n
+  set q : ℕ → Ω → ℝ := fun n ω => (1 + ξ) * crossAvg ξ σ₀ σ₀ (fun i => X i ω) n
+  set Mx : ℕ → Ω → ℝ := fun n ω => runMax (fun i => 1 / (σ₀ + ξ * X i ω)) n / √(n : ℝ)
+  set ρ : ℕ → Ω → ℝ := fun n ω => |A n ω| * ((q n ω)⁻¹ * Mx n ω)
+  -- measurability
+  have hAm : ∀ n, AEMeasurable (A n) P := fun n => by
+    show AEMeasurable (fun ω => (√(n : ℝ))⁻¹ * ∑ i ∈ Finset.range n, gpdScorePsi ξ σ₀ (X i ω)) P
+    unfold gpdScorePsi; fun_prop
+  have hRm : ∀ n, AEMeasurable (R n) P := fun n => by
+    have := hsm n; simp only [R, crossAvg]; fun_prop
+  have hRpm : ∀ n, AEMeasurable (Rp n) P := fun n => by
+    have := hsm n; simp only [Rp, crossAvg]; fun_prop
+  have hqm : ∀ n, AEMeasurable (q n) P := fun n => by simp only [q, crossAvg]; fun_prop
+  have hMxm : ∀ n, AEMeasurable (Mx n) P := fun n =>
+    (aemeasurable_runMax (fun i => by have := hXm i; fun_prop) n).div_const _
+  have hρm : ∀ n, AEMeasurable (ρ n) P := fun n => by
+    have := hAm n; have := hqm n; have := hMxm n; simp only [ρ]; fun_prop
+  -- almost sure facts
+  have hsupp : ∀ᵐ ω ∂P, ∀ i, 0 < X i ω ∧ 0 < σ₀ + ξ * X i ω := ae_all_iff.2 fun i =>
+    ae_of_ae_map (hX i).aemeasurable ((hX i).map_eq ▸ ae_gpdMeasure hσ₀)
+  have hcons := ae_tendsto_gpdScaleMLE (by linarith) hξ0 hσ₀ hX hind
+  have hcross := ae_tendsto_crossAvg_max hξ hξ0 hσ₀ hX hind
+  -- `q → c` and `Rp → c` almost surely, hence in probability
+  have hq_ae : ∀ᵐ ω ∂P, Tendsto (fun n => q n ω) atTop (𝓝 c) := by
+    filter_upwards [hcross] with ω hω
+    have := (hω (fun _ => σ₀) tendsto_const_nhds).const_mul (1 + ξ)
+    simp only [max_self, hJ] at this
+    exact this
+  have hRp_ae : ∀ᵐ ω ∂P, Tendsto (fun n => Rp n ω) atTop (𝓝 c) := by
+    filter_upwards [hcross, hcons, hs] with ω hω hcω hsω
+    have := (hω (fun n => s n ω) (hcω _ hsω)).const_mul (1 + ξ)
+    rw [hJ] at this
+    exact this
+  have hq : TendstoInMeasure P q atTop (fun _ => c) :=
+    tendstoInMeasure_of_tendsto_ae (fun n => (hqm n).aestronglyMeasurable) hq_ae
+  have hRp : TendstoInMeasure P Rp atTop (fun _ => c) :=
+    tendstoInMeasure_of_tendsto_ae (fun n => (hRpm n).aestronglyMeasurable) hRp_ae
+  -- `ρ → 0` in probability
+  have hρ : TendstoInMeasure P ρ atTop (fun _ => 0) := by
+    have h1 : TendstoInMeasure P (fun n ω => (q n ω)⁻¹) atTop (fun _ => c⁻¹) :=
+      tendstoInMeasure_comp hq (φ := fun r => r⁻¹) (continuousAt_inv₀ hc.ne')
+    have h2 := tendstoInMeasure_mul h1 (tendstoInMeasure_runMax_div_sqrt hξ hξ0 hσ₀ hX)
+    rw [mul_zero] at h2
+    have h3 := tendstoInMeasure_mul_zero_of_isBoundedInProbability'
+      (isBoundedInProbability_scoreSumNorm hξ hξ0 hσ₀ hX hind) h2
+    have h4 := tendstoInMeasure_comp h3 (φ := fun r => |r|) continuous_abs.continuousAt
+    rw [abs_zero] at h4
+    refine tendstoInMeasure_zero_of_abs_le (fun n ω => le_of_eq ?_) h4
+    simp only [ρ, Mx, A, abs_mul, abs_abs]
+    ring
+  -- `R - Rp → 0` in probability
+  have hW : TendstoInMeasure P (fun n ω => R n ω - Rp n ω) atTop (fun _ => 0) := by
+    have hg1 : TendstoInMeasure P (fun n ω => 2 * q n ω * ρ n ω) atTop (fun _ => 0) := by
+      have := tendstoInMeasure_comp₂ hq hρ (φ := fun p => 2 * p.1 * p.2) (by fun_prop)
+      simpa using this
+    have hg2 := tendstoInMeasure_mul_cutoff (fun n ω => |R n ω - Rp n ω|) hρ
+    have hg := tendstoInMeasure_comp₂ hg1 hg2 (φ := fun p => p.1 + p.2)
+      continuous_add.continuousAt
+    simp only [add_zero] at hg
+    refine tendstoInMeasure_zero_of_ae_eventually_abs_le
+      (fun n => ((hRm n).sub (hRpm n)).aestronglyMeasurable) (fun n => ?_) ?_ hg
+    · have hcut : AEMeasurable (fun ω => cutoff (ρ n ω)) P :=
+        continuous_cutoff.measurable.comp_aemeasurable (hρm n)
+      have := hRm n; have := hRpm n; have := hqm n; have := hρm n
+      exact (by fun_prop : AEMeasurable (fun ω => 2 * q n ω * ρ n ω +
+        |R n ω - Rp n ω| * cutoff (ρ n ω)) P).aestronglyMeasurable
+    · filter_upwards [hsupp, hs] with ω hω hsω
+      filter_upwards [hsω, eventually_gt_atTop 0] with n hn hn0
+      have hb : ∀ i < n, 0 < s n ω + ξ * X i ω := fun i hi => hn.1.2 ⟨i, hi⟩
+      have hroot : (1 + ξ) * ∑ i ∈ Finset.range n, X i ω / (s n ω + ξ * X i ω) = n := by
+        rw [← gpdScaleScore_eq_range ξ (s n ω) (fun i => X i ω) n]; exact hn.2
+      exact abs_crossAvg_sub_max_le h1ξ hn0 hω hb hroot
+  -- `R → c` in probability
+  have hR : TendstoInMeasure P R atTop (fun _ => c) := by
+    have := tendstoInMeasure_comp₂ hRp hW (φ := fun p => p.1 + p.2) continuous_add.continuousAt
+    simpa only [add_zero, add_sub_cancel] using this
+  -- Slutsky's theorem
+  set g : ℝ × ℝ → ℝ := fun p => p.1 / max p.2 (c / 2)
+  have hg : Continuous g := continuous_fst.div (continuous_snd.max continuous_const)
+    fun p => (lt_of_lt_of_le (half_pos hc) (le_max_right _ _)).ne'
+  set Z₁ : Ω' → ℝ := fun ω => c * Z ω
+  have hZ₁ : HasLaw Z₁ (gaussianReal 0 (1 / (1 + 2 * ξ)).toNNReal) P' :=
+    hasLaw_const_mul_gaussianReal hZ (by positivity) (by rw [hc_def]; field_simp)
+  have hslut := (tendstoInDistribution_scoreSumNorm hξ hξ0 hσ₀ hX hind
+    hZ₁).continuous_comp_prodMk_of_tendstoInMeasure_const hg hR hRm
+  have hlimZ : (fun ω => g (Z₁ ω, c)) = Z := by
+    funext ω
+    simp only [g, Z₁]
+    rw [max_eq_left (by linarith)]
+    field_simp
+  rw [hlimZ] at hslut
+  refine tendstoInDistribution_of_tendstoInMeasure_sub _ Z hslut ?_
+    (fun n => by have := hsm n; fun_prop)
+  -- the remainder: `√n (σ̂ₙ - σ₀) - g(√n Fₙ(σ₀), Rₙ) → 0` in probability
+  have hD : TendstoInMeasure P (fun (n : ℕ) ω => √(n : ℝ) * (s n ω - σ₀) - A n ω / R n ω) atTop
+      (fun _ => 0) := by
+    refine tendstoInMeasure_of_tendsto_ae (fun n => ?_) ?_
+    · have := hsm n; have := hAm n; have := hRm n
+      exact (by fun_prop : AEMeasurable
+        (fun ω => √(n : ℝ) * (s n ω - σ₀) - A n ω / R n ω) P).aestronglyMeasurable
+    · filter_upwards [hsupp, hs] with ω hω hsω
+      refine tendsto_const_nhds.congr' ?_
+      filter_upwards [hsω, eventually_gt_atTop 0] with n hn hn0
+      have hb : ∀ i < n, 0 < s n ω + ξ * X i ω := fun i hi => hn.1.2 ⟨i, hi⟩
+      have hroot : (1 + ξ) * ∑ i ∈ Finset.range n, X i ω / (s n ω + ξ * X i ω) = n := by
+        rw [← gpdScaleScore_eq_range ξ (s n ω) (fun i => X i ω) n]; exact hn.2
+      rw [sqrt_mul_sub_eq_div h1ξ hn0 hω hb hroot]
+      exact (sub_self _).symm
+  have hE : TendstoInMeasure P (fun n ω => A n ω / R n ω - g (A n ω, R n ω)) atTop
+      (fun _ => 0) := by
+    refine tendstoInMeasure_of_eqOn (g := fun _ _ => 0)
+      (tendstoInMeasure_const_of_tendsto tendsto_const_nhds) (A := fun n => {ω | c / 2 ≤ R n ω})
+      ?_ (Eventually.of_forall fun n ω hω => ?_)
+    · rw [tendstoInMeasure_iff_dist] at hR
+      refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds (hR (c / 2) (half_pos hc))
+        (fun _ => bot_le) fun n => measure_mono fun ω hω => ?_
+      simp only [mem_compl_iff, mem_ofPred_eq, not_le] at hω
+      simp only [mem_ofPred_eq, Real.dist_eq]
+      rw [abs_sub_comm, abs_of_pos (by linarith)]
+      linarith
+    · simp only [mem_ofPred_eq] at hω
+      simp only [g, max_eq_left hω, sub_self]
+  have hsum := tendstoInMeasure_comp₂ hD hE (φ := fun p => p.1 + p.2) continuous_add.continuousAt
+  simp only [add_zero] at hsum
+  have heq : (fun (n : ℕ) ω => √(n : ℝ) * (s n ω - σ₀)) - (fun n ω => g (A n ω, R n ω)) =
+      fun (n : ℕ) ω => (√(n : ℝ) * (s n ω - σ₀) - A n ω / R n ω) +
+        (A n ω / R n ω - g (A n ω, R n ω)) := by
+    funext n ω
+    simp only [Pi.sub_apply]
+    ring
+  rw [heq]
+  exact hsum
+
+end Normality
+
 end ExtremeValueTheory
