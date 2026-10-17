@@ -112,3 +112,89 @@ index $\theta$ measures how much extremes cluster.
   For the moving maximum, $\PR[M_n \le u] = G(u)^{n+1}$ with $G$ the law of $Z_0$, while
   $\PR[X_0 > u] \sim 2(1 - G(u))$.
 \end{proof}
+
+\section{Regularly varying time series and the tail process}
+
+We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, Stoch.\ Proc.\ Appl.119 (2009) [BS09], Planini\'c and Soulier, \emph{The tail process revisited}, Extremes 21 (2018)
+[PS18], and Kulik and Soulier, \emph{Heavy-Tailed Time Series}, Springer (2020) [KS20].
+
+\begin{definition}[Conditional limits, tail process and spectral tail process]
+  \label{def:tail-process}
+  \uses{def:regularly-varying}
+  \lean{ExtremeValueTheory.TendstoLawCond, ExtremeValueTheory.HasSpectralTailProcess, ExtremeValueTheory.HasTailProcess,
+    ExtremeValueTheory.HasShiftInvariantWindows}
+  \leanok
+  A sequence $(X_t)_{t \in \bZ}$ has spectral tail process $(\Theta_t)$ with index $\alpha > 0$ if
+  $\PR[|X_0| > x]$ is regularly varying with index $-\alpha$ and, for every finite window
+  $S \subset \bZ$, the conditional law of $(X_t/|X_0|)_{t \in S}$ given $|X_0| > x$ converges weakly to
+  the law of $(\Theta_t)_{t \in S}$ as $x \to \infty$. It has tail process $(Y_t)$ if $|Y_0|$ is
+  Pareto($\alpha$) and the conditional law of $(X_t/x)_{t\in S}$ given $|X_0| > x$ converges to that of
+  $(Y_t)_{t \in S}$ [BS09, \S2], [KS20, Ch.~5].
+\end{definition}
+
+\begin{theorem}[Polar decomposition (Basrak--Segers)]
+  \label{thm:basrak-segers}
+  \uses{def:tail-process}
+  \lean{ExtremeValueTheory.tendstoLawCond_polar, ExtremeValueTheory.isRegularlyVarying_of_tendstoLawCond,
+    ExtremeValueTheory.tendstoLawCond_spectral_of_tendstoLawCond, ExtremeValueTheory.eq_map_prod_of_tendstoLawCond, ExtremeValueTheory.polar_iff,
+    ExtremeValueTheory.HasSpectralTailProcess.hasTailProcess, ExtremeValueTheory.HasTailProcess.hasSpectralTailProcess,
+    ExtremeValueTheory.HasTailProcess.map_window_eq, ExtremeValueTheory.HasSpectralTailProcess.ae_abs_eq_one}
+  \leanok
+  A sequence has a spectral tail process if and only if it has a tail process, and then
+  $Y_t = |Y_0| \Theta_t$ with $|Y_0|$ Pareto($\alpha$) independent of $(\Theta_t)$, and $|\Theta_0| = 1$
+  [BS09, Theorem~2.1].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Regular variation makes $|X_0|/x$ asymptotically Pareto given $|X_0| > x$; conditioning further on
+  the radial part shows that it decouples from the angular part $X/|X_0|$ in the limit.
+\end{proof}
+
+\begin{theorem}[Time-change formula]
+  \label{thm:time-change}
+  \uses{thm:basrak-segers, def:stationary}
+  \lean{ExtremeValueTheory.HasSpectralTailProcess.lintegral_timeChange}
+  \leanok
+  For a stationary sequence with spectral tail process $\Theta$, all $i \in \bZ$, finite windows
+  $S$ and measurable $g \ge 0$,
+  \begin{align*}
+    \E\big[ g((\Theta_{t-i})_{t\in S}) \, \mathbf 1\{\Theta_{-i} \ne 0\} \big]
+      \; = \; \E\big[ g((\Theta_t / |\Theta_i|)_{t \in S}) \, |\Theta_i|^\alpha \big]
+  \end{align*}
+  [BS09, Theorem~3.1], [KS20, Theorem~5.3.1].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Stationarity moves the conditioning from $|X_0| > x$ to $|X_i| > x$. Comparing the two
+  conditionings in the tail-process limit at every level $\varepsilon > 0$ gives a measure identity,
+  which is then rewritten in terms of $\Theta$.
+\end{proof}
+
+\begin{definition}[Candidate extremal index]
+  \label{def:candidate-extremal-index}
+  \uses{def:tail-process}
+  \lean{ExtremeValueTheory.candidateExtremalIndex}
+  \leanok
+  $\vartheta = \E\big[\sup_{k \ge 0} |\Theta_k|^\alpha - \sup_{k \ge 1} |\Theta_k|^\alpha\big]$, with
+  suprema in $[0, \infty]$ and $\infty - \infty = 0$ [KS20, \S7.5], [PS18].
+\end{definition}
+
+\begin{theorem}[Properties of the candidate extremal index]
+  \label{thm:candidate-extremal-index}
+  \uses{def:candidate-extremal-index, thm:time-change}
+  \lean{ExtremeValueTheory.candidateExtremalIndex_le_one, ExtremeValueTheory.candidateExtremalIndex_eq_measure,
+    ExtremeValueTheory.HasTailProcess.candidateExtremalIndex_eq, ExtremeValueTheory.HasSpectralTailProcess.ae_eq_zero_of_indepFun,
+    ExtremeValueTheory.HasSpectralTailProcess.candidateExtremalIndex_eq_one_of_indepFun,
+    ExtremeValueTheory.HasSpectralTailProcess.candidateExtremalIndex_pos}
+  \leanok
+  $\vartheta \le 1$ and $\vartheta = \PR[\sup_{k \ge 1} |Y_k| \le 1]$. If $X_t$ is independent of $X_0$
+  then $\Theta_t = 0$; in particular $\vartheta = 1$ for iid sequences. For a stationary sequence
+  with $\Theta_t \to 0$ as $t \to \infty$, $\vartheta > 0$ [PS18, \S4], [KS20, \S7.5].
+\end{theorem}
+\begin{proof}
+  \leanok
+  $|\Theta_0| = 1$ gives $\vartheta \le 1$. Writing $Y = R\Theta$ with $R$ Pareto independent of
+  $\Theta$, $\PR[\sup_{k\ge1}|Y_k| \le 1 \mid \Theta] = \sup_{k\ge0}|\Theta_k|^\alpha -
+  \sup_{k\ge1}|\Theta_k|^\alpha$. Positivity: decompose according to the last time $|Y_t| > 1$, which
+  exists since $\Theta_t \to 0$, and apply the time-change formula to each piece.
+\end{proof}

@@ -17,6 +17,13 @@ Plan: tail process → spectral tail process → time-change formula → `ϑ` an
 `|Y_t| → 0` → link with the block extremal index `θ` → machine-checked record of which hypotheses
 each step uses.
 
+Progress (2026-10-17): the tail process, the spectral tail process, the Basrak–Segers polar
+decomposition, the time-change formula, and `ϑ` with `ϑ ≤ 1`, `ϑ = P(sup_{k≥1}|Y_k| ≤ 1)`, `ϑ = 1`
+for iid sequences and `ϑ > 0` when `Θ_t → 0` are proved (`Dependence/TailProcess.lean`,
+`TimeChange.lean`). The block extremal index `θ` and Leadbetter's theorem are in
+`Dependence/ExtremalIndex.lean`. Next: `θ = ϑ` under anticlustering and `θ ≤ ϑ`, linking the two
+files.
+
 ## Open problems
 
 1. **The gap between `θ` and `ϑ`, and phase transitions.** Bai, Kulik, Wang (2024),

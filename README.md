@@ -93,6 +93,12 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   (`tendsto_measureReal_partialMax_le_exp`), the extremal index `θ` (`HasExtremalIndex`), and
   `P(M_n ≤ aₙx + bₙ) → H(x)^θ` with `H^θ` of the same type. Iid sequences have `θ = 1`; the moving
   maximum `max(Z_t, Z_{t+1})` has `θ = 1/2`.
+- **Tail process of regularly varying time series** (`Dependence/TailProcess.lean`,
+  `TimeChange.lean`): the Basrak–Segers polar decomposition (`polar_iff`), equivalence of tail and
+  spectral tail processes, the time-change formula
+  (`HasSpectralTailProcess.lintegral_timeChange`), and the candidate extremal index
+  `ϑ = E[sup_{k≥0}|Θ_k|^α − sup_{k≥1}|Θ_k|^α] = P(sup_{k≥1}|Y_k| ≤ 1)`, with `ϑ ≤ 1`, `ϑ = 1` for
+  iid sequences, and `ϑ > 0` when `Θ_t → 0`.
 - **Vague convergence and Poisson random measures** (`ForMathlib/`, Mathlib-only imports, intended
   for upstreaming): vague convergence with its portmanteau properties, Poisson random measures with
   existence for every s-finite intensity (`exists_isPoissonRandomMeasure`), Laplace functionals,
