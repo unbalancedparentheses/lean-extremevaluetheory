@@ -823,7 +823,7 @@ private lemma pow_one_eq (G : CumulativeDistributionFunction) : G.pow one_pos = 
   rw [pow_apply_eq, rpow_one]
 
 /-- An extreme value distribution is max-stable for all real powers. -/
-private lemma exists_smul_eq_pow_of_isExtremeValueDistr {G : CumulativeDistributionFunction}
+lemma exists_smul_eq_pow_of_isExtremeValueDistr {G : CumulativeDistributionFunction}
     (G_evd : G.IsExtremeValueDistr) {t : ℝ} (t_pos : 0 < t) :
     ∃ A : AffineIncrEquiv, A • G = G.pow t_pos := by
   obtain ⟨G_nondeg, F, As, hlim⟩ := G_evd
