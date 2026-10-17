@@ -77,3 +77,4 @@ import ExtremeValueTheory.Statistics.MomentGeneral
 import ExtremeValueTheory.ForMathlib.Probability.PoissonLimit
 import ExtremeValueTheory.ForMathlib.Probability.PointProcessConvergence
 import ExtremeValueTheory.PointProcess.Exceedances
+import ExtremeValueTheory.ForMathlib.Probability.PoissonRandomMeasureLaplace

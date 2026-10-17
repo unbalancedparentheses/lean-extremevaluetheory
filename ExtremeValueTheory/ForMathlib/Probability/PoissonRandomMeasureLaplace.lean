@@ -131,6 +131,73 @@ lemma lintegral_exp_neg_lintegral_simpleFunc (hN : IsPoissonRandomMeasure N ν P
   · rw [Real.norm_eq_abs, abs_of_pos (Real.exp_pos _), Real.exp_le_one_iff, neg_nonpos]
     exact Finset.sum_nonneg fun i _ ↦ mul_nonneg ENNReal.toReal_nonneg ENNReal.toReal_nonneg
 
+/-- **Laplace functional of a Poisson random measure.** If `N` is a Poisson random measure with
+σ-finite intensity `ν`, then for every measurable `f : E → [0, ∞]`,
+`E exp (-∫ f dN) = exp (-∫ (1 - exp (-f)) dν)`, where `exp (-∞) = 0`. -/
+theorem lintegral_exp_neg_lintegral (hN : IsPoissonRandomMeasure N ν P) [SigmaFinite ν]
+    {f : E → ℝ≥0∞} (hf : Measurable f) :
+    ∫⁻ ω, EReal.exp (-(∫⁻ x, f x ∂(N ω) : EReal)) ∂P =
+      EReal.exp (-(∫⁻ x, (1 - EReal.exp (-(f x : EReal))) ∂ν : EReal)) := by
+  have := hN.isProbabilityMeasure
+  set S := spanningSets ν with hS
+  set s : ℕ → SimpleFunc E ℝ≥0∞ := fun k ↦ (SimpleFunc.eapprox f k).restrict (S k) with hsdef
+  have hs_apply (k : ℕ) (x : E) : s k x = (S k).indicator (SimpleFunc.eapprox f k) x :=
+    SimpleFunc.restrict_apply _ (measurableSet_spanningSets ν k) x
+  have hmono (x : E) : Monotone fun k ↦ s k x := by
+    intro k l hkl
+    simp only [hs_apply]
+    by_cases hx : x ∈ S k
+    · rw [Set.indicator_of_mem hx, Set.indicator_of_mem (monotone_spanningSets ν hkl hx)]
+      exact SimpleFunc.monotone_eapprox f hkl x
+    · rw [Set.indicator_of_notMem hx]
+      exact zero_le
+  have htend (x : E) : Tendsto (fun k ↦ s k x) atTop (𝓝 (f x)) := by
+    refine (SimpleFunc.tendsto_eapprox hf x).congr' ?_
+    filter_upwards [eventually_ge_atTop (spanningSetsIndex ν x)] with k hk
+    rw [hs_apply, Set.indicator_of_mem (mem_spanningSets_of_index_le ν x hk)]
+  have hs_top (k : ℕ) (x : E) : s k x ≠ ∞ := by
+    rw [hs_apply]
+    by_cases hx : x ∈ S k
+    · rw [Set.indicator_of_mem hx]
+      exact (SimpleFunc.eapprox_lt_top f k x).ne
+    · rw [Set.indicator_of_notMem hx]
+      exact ENNReal.zero_ne_top
+  have hs_fin (k : ℕ) (c : ℝ≥0∞) (_ : c ∈ (s k).range) (hc : c ≠ 0) :
+      ν (s k ⁻¹' {c}) ≠ ∞ := by
+    refine ((measure_mono fun x hx ↦ ?_).trans_lt (measure_spanningSets_lt_top ν k)).ne
+    by_contra hxS
+    have : s k x = c := hx
+    rw [hs_apply, Set.indicator_of_notMem hxS] at this
+    exact hc this.symm
+  have hk (k : ℕ) := hN.lintegral_exp_neg_lintegral_simpleFunc (s k) (hs_top k) (hs_fin k)
+  -- convergence of the left-hand sides
+  have hL : Tendsto (fun k ↦ ∫⁻ ω, EReal.exp (-(∫⁻ x, s k x ∂(N ω) : EReal)) ∂P) atTop
+      (𝓝 (∫⁻ ω, EReal.exp (-(∫⁻ x, f x ∂(N ω) : EReal)) ∂P)) := by
+    refine tendsto_lintegral_of_dominated_convergence (fun _ ↦ 1) (fun k ↦ ?_)
+      (fun k ↦ ae_of_all _ fun ω ↦ ereal_exp_neg_coe_le_one _) (by simp)
+      (ae_of_all _ fun ω ↦ ?_)
+    · exact continuous_ereal_exp_neg_coe.measurable.comp
+        ((Measure.measurable_lintegral (s k).measurable).comp hN.measurable)
+    · exact (continuous_ereal_exp_neg_coe.tendsto _).comp
+        (lintegral_tendsto_of_tendsto_of_monotone (fun k ↦ (s k).measurable.aemeasurable)
+          (ae_of_all _ hmono) (ae_of_all _ htend))
+  -- convergence of the right-hand sides
+  have hφ : Continuous fun a : ℝ≥0∞ ↦ 1 - EReal.exp (-(a : EReal)) :=
+    (ENNReal.continuous_sub_left ENNReal.one_ne_top).comp continuous_ereal_exp_neg_coe
+  have hφmono : Monotone fun a : ℝ≥0∞ ↦ 1 - EReal.exp (-(a : EReal)) := by
+    intro a b hab
+    refine tsub_le_tsub_left (EReal.exp_monotone ?_) 1
+    exact EReal.neg_le_neg_iff.2 (EReal.coe_ennreal_le_coe_ennreal_iff.2 hab)
+  have hR : Tendsto (fun k ↦ EReal.exp (-(∫⁻ x, (1 - EReal.exp (-(s k x : EReal))) ∂ν : EReal)))
+      atTop (𝓝 (EReal.exp (-(∫⁻ x, (1 - EReal.exp (-(f x : EReal))) ∂ν : EReal)))) := by
+    refine (continuous_ereal_exp_neg_coe.tendsto _).comp
+      (lintegral_tendsto_of_tendsto_of_monotone (fun k ↦ ?_)
+        (ae_of_all _ fun x ↦ hφmono.comp (hmono x))
+        (ae_of_all _ fun x ↦ (hφ.tendsto _).comp (htend x)))
+    exact (hφ.measurable.comp (s k).measurable).aemeasurable
+  simp_rw [hk] at hL
+  exact tendsto_nhds_unique hL hR
+
 end IsPoissonRandomMeasure
 
 end ProbabilityTheory
