@@ -169,6 +169,191 @@ theorem tendsto_div_mul_rpow_of_le (h : IsSecondOrderRegularlyVarying U γ ρ A)
   rw [← abs_mul, show C * (1 + log (d i)) * a i = C * (a i * (1 + log (d i))) by ring]
   exact le_abs_self _
 
+/-- Telescoping the extrapolation remainder over unit steps on the logarithmic scale:
+`r(t, e^m x) = ∑_{j<m} r(e^j t, e) + r(e^m t, x)`. -/
+theorem logRem_exp_nat_mul (U : ℝ → ℝ) (γ : ℝ) (t : ℝ) (m : ℕ) :
+    ∀ x : ℝ, x ≠ 0 →
+    log (U (exp m * x * t)) - log (U t) - γ * log (exp m * x) =
+      ∑ j ∈ Finset.range m,
+          (log (U (exp 1 * (exp j * t))) - log (U (exp j * t)) - γ * log (exp 1)) +
+        (log (U (x * (exp m * t))) - log (U (exp m * t)) - γ * log x) := by
+  induction m with
+  | zero =>
+    intro x hx
+    simp only [CharP.cast_eq_zero, exp_zero, one_mul, Finset.range_zero, Finset.sum_empty,
+      zero_add]
+  | succ m ih =>
+    intro x hx
+    have he : exp ((m + 1 : ℕ) : ℝ) = exp m * exp 1 := by push_cast; rw [exp_add]
+    have h1 := ih (exp 1 * x) (mul_ne_zero (exp_pos 1).ne' hx)
+    have h2 := logRem_mul U γ (t := exp m * t) (x := exp 1) (y := x) (exp_pos 1).ne' hx
+    rw [Finset.sum_range_succ, he, show exp m * exp 1 * x * t = exp m * (exp 1 * x) * t by ring,
+      show exp m * exp 1 * x = exp m * (exp 1 * x) by ring,
+      show exp m * exp 1 * t = exp 1 * (exp m * t) by ring, h1,
+      show exp 1 * x * (exp m * t) = exp 1 * x * (exp m * t) from rfl, h2]
+    ring
+
+/-- **The extrapolation remainder for `ρ = 0`** ([dHF, Theorem 2.3.9] with `h_0(x) = log x`):
+if `t → ∞`, `d → ∞`, and `A` is asymptotically constant on the extrapolation range,
+`|A(y) / A(t) - 1| ≤ η → 0` for `y ∈ [t, d t]`, then
+
+  `(log U(d t) - log U(t) - γ log d) / (A(t) log d) → 1`. -/
+theorem tendsto_logRem_div_of_rho_eq_zero (h : IsSecondOrderRegularlyVarying U γ 0 A)
+    (hU : Measurable U) {ι : Type*} {l : Filter ι} {t d η : ι → ℝ} (ht : Tendsto t l atTop)
+    (hd : Tendsto d l atTop) (hη : Tendsto η l (𝓝 0))
+    (hA : ∀ᶠ i in l, ∀ y ∈ Icc (t i) (d i * t i), |A y / A (t i) - 1| ≤ η i) :
+    Tendsto (fun i => (log (U (d i * t i)) - log (U (t i)) - γ * log (d i)) /
+      (A (t i) * log (d i))) l (𝓝 1) := by
+  obtain ⟨C, t₀, ht₀, hC⟩ := h.exists_bound_of_le hU
+  rw [Metric.tendsto_nhds]
+  intro ε hε
+  set ε' := ε / 8 with hε'
+  have hε'0 : 0 < ε' := by positivity
+  -- unit steps
+  have hstep := h.tendsto_log (exp_pos 1)
+  rw [boxCox_zero, log_exp] at hstep
+  obtain ⟨S, hS⟩ := eventually_atTop.1 ((hstep.eventually (Metric.ball_mem_nhds 1 hε'0)).and
+    h.eventually_ne_zero)
+  have hlogd : Tendsto (fun i => log (d i)) l atTop := tendsto_log_atTop.comp hd
+  set K : ℝ := 8 * (4 * |C| + 1) / ε with hK
+  filter_upwards [ht.eventually_ge_atTop (max S t₀), hd.eventually_ge_atTop 1,
+    hlogd.eventually_ge_atTop (max K 1), hη.eventually (ge_mem_nhds (lt_min one_pos hε'0)), hA,
+    ht.eventually h.eventually_ne_zero] with i hti hdi hui hηi hAi hA0
+  have ht0 : 0 < t i := ht₀.trans_le ((le_max_right _ _).trans hti)
+  have hd0 : 0 < d i := one_pos.trans_le hdi
+  set u := log (d i) with hu
+  have hu1 : 1 ≤ u := (le_max_right _ _).trans hui
+  have hη1 : η i ≤ 1 := (le_min_iff.1 hηi).1
+  have hηε : η i ≤ ε' := (le_min_iff.1 hηi).2
+  have hη0 : 0 ≤ η i := by
+    have := hAi (t i) ⟨le_rfl, le_mul_of_one_le_left ht0.le hdi⟩
+    exact (abs_nonneg _).trans this
+  set m := ⌊u⌋₊ with hm
+  have hmu : (m : ℝ) ≤ u := Nat.floor_le (by linarith)
+  have hum : u < m + 1 := Nat.lt_floor_add_one u
+  set x := d i / exp m with hx
+  have hxpos : 0 < x := div_pos hd0 (exp_pos _)
+  have hdx : exp m * x = d i := by rw [hx]; field_simp
+  have hem : exp m ≤ d i := by rw [← exp_log hd0, ← hu]; exact exp_le_exp.2 hmu
+  have hx1 : 1 ≤ x := by rw [hx, le_div_iff₀ (exp_pos _), one_mul]; exact hem
+  have hlogx : log x < 1 := by
+    rw [hx, log_div hd0.ne' (exp_pos _).ne', log_exp, ← hu]; linarith
+  set At := |A (t i)| with hAt
+  have hAt0 : 0 < At := abs_pos.2 hA0
+  -- `|A| ≤ (1 + η) |A(t)|` and `|A - A(t)| ≤ η |A(t)|` on `[t, d t]`
+  have hAy : ∀ y ∈ Icc (t i) (d i * t i), |A y - A (t i)| ≤ η i * At := by
+    intro y hy
+    have := hAi y hy
+    rw [show A y / A (t i) - 1 = (A y - A (t i)) / A (t i) by field_simp, abs_div,
+      div_le_iff₀ hAt0] at this
+    exact this
+  have hAy' : ∀ y ∈ Icc (t i) (d i * t i), |A y| ≤ (1 + η i) * At := by
+    intro y hy
+    have := hAy y hy
+    have h3 := abs_sub_abs_le_abs_sub (A y) (A (t i))
+    rw [← hAt] at h3
+    linarith
+  -- the telescoping decomposition
+  set q : ℕ → ℝ := fun j =>
+    log (U (exp 1 * (exp j * t i))) - log (U (exp j * t i)) - γ * log (exp 1) with hq
+  set fr := log (U (x * (exp m * t i))) - log (U (exp m * t i)) - γ * log x with hfr_def
+  have htel : log (U (d i * t i)) - log (U (t i)) - γ * log (d i) =
+      ∑ j ∈ Finset.range m, q j + fr := by
+    have := logRem_exp_nat_mul U γ (t i) m x hxpos.ne'
+    rw [hdx] at this
+    exact this
+  clear_value q fr
+  -- each unit step
+  have hqj : ∀ j ∈ Finset.range m, |q j - A (t i)| ≤ (ε' * (1 + η i) + η i) * At := by
+    intro j hj
+    have hj' : (j : ℝ) < m := by exact_mod_cast Finset.mem_range.1 hj
+    have hσ : exp j * t i ∈ Icc (t i) (d i * t i) := by
+      refine ⟨le_mul_of_one_le_left ht0.le (one_le_exp (Nat.cast_nonneg _)), ?_⟩
+      refine mul_le_mul_of_nonneg_right ?_ ht0.le
+      exact (exp_le_exp.2 hj'.le).trans hem
+    have hσS : S ≤ exp j * t i := ((le_max_left _ _).trans hti).trans hσ.1
+    obtain ⟨h1, h2⟩ := hS _ hσS
+    rw [Real.dist_eq] at h1
+    have h1' : |q j - A (exp j * t i)| ≤ ε' * |A (exp j * t i)| := by
+      have e : q j - A (exp j * t i) =
+          ((log (U (exp 1 * (exp j * t i))) - log (U (exp j * t i)) - γ * 1) /
+            A (exp j * t i) - 1) * A (exp j * t i) := by
+        simp only [hq, log_exp]; field_simp
+      rw [e, abs_mul]
+      exact mul_le_mul_of_nonneg_right h1.le (abs_nonneg _)
+    have h3 := hAy _ hσ
+    have h4 := hAy' _ hσ
+    calc |q j - A (t i)| ≤ |q j - A (exp j * t i)| + |A (exp j * t i) - A (t i)| :=
+          abs_sub_le _ _ _
+      _ ≤ ε' * ((1 + η i) * At) + η i * At := by
+          gcongr
+          exact h1'.trans (mul_le_mul_of_nonneg_left h4 hε'0.le)
+      _ = (ε' * (1 + η i) + η i) * At := by ring
+  have hsum : |∑ j ∈ Finset.range m, q j - m * A (t i)| ≤ m * ((ε' * (1 + η i) + η i) * At) := by
+    have e : ∑ j ∈ Finset.range m, q j - m * A (t i) = ∑ j ∈ Finset.range m, (q j - A (t i)) := by
+      rw [Finset.sum_sub_distrib, Finset.sum_const, Finset.card_range, nsmul_eq_mul]
+    rw [e]
+    refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
+    refine (Finset.sum_le_sum hqj).trans ?_
+    simp
+  -- the fractional step
+  have hfr : |fr| ≤ 2 * |C| * ((1 + η i) * At) := by
+    have hb := hC (exp m * t i) ((le_max_right _ _).trans (hti.trans
+      (le_mul_of_one_le_left ht0.le (one_le_exp (Nat.cast_nonneg _))))) x hx1 ((1 + η i) * At)
+      (fun y hy => hAy' y ⟨(le_mul_of_one_le_left ht0.le
+        (one_le_exp (Nat.cast_nonneg _))).trans hy.1,
+        by rw [← mul_assoc, mul_comm x, hdx] at hy; exact hy.2⟩)
+    rw [hfr_def]
+    refine hb.trans ?_
+    have h0 : 0 ≤ (1 + η i) * At := by positivity
+    have h1 : 1 + log x ≤ 2 := by linarith
+    have hl0 : 0 ≤ 1 + log x := by linarith [log_nonneg hx1]
+    calc C * (1 + log x) * ((1 + η i) * At) ≤ |C| * (1 + log x) * ((1 + η i) * At) :=
+          mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right (le_abs_self C) hl0) h0
+      _ ≤ |C| * 2 * ((1 + η i) * At) :=
+          mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left h1 (abs_nonneg C)) h0
+      _ = 2 * |C| * ((1 + η i) * At) := by ring
+  -- conclusion
+  have hA0' : A (t i) * u ≠ 0 := mul_ne_zero hA0 (by linarith)
+  have hupos : 0 < u := by linarith
+  rw [Real.dist_eq, htel]
+  have e : (∑ j ∈ Finset.range m, q j + fr) / (A (t i) * u) - 1 =
+      ((∑ j ∈ Finset.range m, q j - m * A (t i)) + fr - (u - m) * A (t i)) / (A (t i) * u) := by
+    field_simp
+    ring
+  rw [e, abs_div, abs_mul, ← hAt, abs_of_pos hupos, div_lt_iff₀ (by positivity)]
+  have h5 : |(∑ j ∈ Finset.range m, q j - m * A (t i)) + fr - (u - m) * A (t i)| ≤
+      m * ((ε' * (1 + η i) + η i) * At) + 2 * |C| * ((1 + η i) * At) + At := by
+    have h6 : |(u - m) * A (t i)| ≤ At := by
+      rw [abs_mul, abs_of_nonneg (by linarith)]
+      calc (u - m) * At ≤ 1 * At := by gcongr; linarith
+        _ = At := one_mul _
+    calc _ ≤ |(∑ j ∈ Finset.range m, q j - m * A (t i)) + fr| + |(u - m) * A (t i)| :=
+          abs_sub _ _
+      _ ≤ |∑ j ∈ Finset.range m, q j - m * A (t i)| + |fr| + |(u - m) * A (t i)| := by
+          gcongr; exact abs_add_le _ _
+      _ ≤ _ := by gcongr
+  refine h5.trans_lt ?_
+  -- `m ≤ u`, `η ≤ ε'`, `η ≤ 1` and `u ≥ K`
+  have hKu : K ≤ u := (le_max_left _ _).trans hui
+  have hKu' : 8 * (4 * |C| + 1) ≤ ε * u := by
+    rw [hK, div_le_iff₀ hε] at hKu; linarith
+  have h7 : m * ((ε' * (1 + η i) + η i) * At) ≤ u * ((ε' * 2 + ε') * At) := by
+    have hc : ε' * (1 + η i) + η i ≤ ε' * 2 + ε' := by nlinarith
+    exact mul_le_mul hmu (mul_le_mul_of_nonneg_right hc hAt0.le) (by positivity) (by linarith)
+  have h8 : 2 * |C| * ((1 + η i) * At) + At ≤ (4 * |C| + 1) * At := by
+    have : 2 * |C| * (1 + η i) ≤ 4 * |C| := by nlinarith [abs_nonneg C]
+    nlinarith [mul_le_mul_of_nonneg_right this hAt0.le]
+  have h9 : (4 * |C| + 1) * At ≤ ε / 8 * u * At := by
+    have : (4 * |C| + 1) ≤ ε / 8 * u := by linarith
+    exact mul_le_mul_of_nonneg_right this hAt0.le
+  have h10 : u * ((ε' * 2 + ε') * At) + ε / 8 * u * At < ε * (At * u) := by
+    have e : u * ((ε' * 2 + ε') * At) + ε / 8 * u * At = ε / 2 * (At * u) := by
+      rw [hε']; ring
+    rw [e]
+    exact mul_lt_mul_of_pos_right (by linarith) (by positivity)
+  linarith
+
 end IsSecondOrderRegularlyVarying
 
 /-! ### Consistency of the Weissman estimator for `ρ ≤ 0` -/
