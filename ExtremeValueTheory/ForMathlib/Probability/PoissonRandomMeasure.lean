@@ -40,7 +40,7 @@ is Poisson distributed with mean `ν(Aᵢ)`.
 
 universe u
 
-open MeasureTheory Filter Finset
+open MeasureTheory Filter Finset Topology
 open scoped ENNReal NNReal
 
 namespace ProbabilityTheory
@@ -415,6 +415,203 @@ theorem integral_exp_neg_integral_sumDiracRange {f : E → ℝ} (hf : Measurable
   ring_nf
 
 end Construction
+
+/-! ### Superposition: construction for an s-finite intensity -/
+
+section Superposition
+
+/-- The law of a sequence of independent pairs `(K n, Z n)`, where `K n` is Poisson distributed
+with mean `c n` and `Z n` is an independent i.i.d. sequence with law `μ n`. -/
+noncomputable def poissonSampleSeqMeasure (c : ℕ → ℝ≥0) (μ : ℕ → Measure E)
+    [∀ n, IsProbabilityMeasure (μ n)] : Measure (ℕ → ℕ × (ℕ → E)) :=
+  Measure.infinitePi fun n ↦ poissonSampleMeasure (c n) (μ n)
+
+variable {c : ℕ → ℝ≥0} {μ : ℕ → Measure E} [∀ n, IsProbabilityMeasure (μ n)]
+
+instance : IsProbabilityMeasure (poissonSampleSeqMeasure c μ) := by
+  unfold poissonSampleSeqMeasure; infer_instance
+
+/-- The superposition `∑ₙ ∑_{k < Kₙ} δ_{Zₙ k}` is a measurable random measure. -/
+lemma measurable_sum_sumDiracRange :
+    Measurable fun ω : ℕ → ℕ × (ℕ → E) ↦ Measure.sum fun n ↦ sumDiracRange (ω n).1 (ω n).2 := by
+  refine Measure.measurable_of_measurable_coe _ fun A hA ↦ ?_
+  simp_rw [Measure.sum_apply _ hA]
+  exact Measurable.tsum fun n ↦
+    ((Measure.measurable_coe hA).comp measurable_sumDiracRange).comp (measurable_pi_apply n)
+
+/-- Joint characteristic function of the counts of the first `M` copies on disjoint sets. -/
+lemma integral_cexp_count_poissonSampleSeqMeasure {m : ℕ} {A : Fin m → Set E}
+    (hA : ∀ i, MeasurableSet (A i)) (hd : Pairwise (Function.onFun Disjoint A)) (t : Fin m → ℝ)
+    (M : ℕ) :
+    ∫ ω, Complex.exp ((∑ i, t i * ∑ n ∈ range M,
+        ∑ k ∈ range (ω n).1, (A i).indicator (1 : E → ℝ) ((ω n).2 k) : ℝ) * Complex.I)
+        ∂(poissonSampleSeqMeasure c μ) =
+      Complex.exp (∑ i, ((∑ n ∈ range M, c n * (μ n).real (A i) : ℝ) : ℂ) *
+        (Complex.exp (t i * Complex.I) - 1)) := by
+  set G : ℕ → ℕ × (ℕ → E) → ℂ := fun n x ↦
+    Complex.exp ((∑ i, t i * ∑ k ∈ range x.1, (A i).indicator (1 : E → ℝ) (x.2 k) : ℝ) *
+      Complex.I) with hG
+  have hGm (n : ℕ) : Measurable (G n) := by
+    refine Complex.measurable_exp.comp (Measurable.mul_const ?_ _)
+    refine Complex.measurable_ofReal.comp ?_
+    refine Finset.measurable_sum _ fun i _ ↦ Measurable.const_mul ?_ _
+    exact measurable_of_measurable_nat_prod
+      (F := fun n z ↦ ∑ k ∈ range n, (A i).indicator (1 : E → ℝ) (z k)) fun m ↦
+        Finset.measurable_sum _ fun k _ ↦
+          (measurable_one.indicator (hA i)).comp (measurable_pi_apply k)
+  have key (ω : ℕ → ℕ × (ℕ → E)) :
+      Complex.exp ((∑ i, t i * ∑ n ∈ range M,
+        ∑ k ∈ range (ω n).1, (A i).indicator (1 : E → ℝ) ((ω n).2 k) : ℝ) * Complex.I) =
+      ∏ n ∈ range M, G n (ω n) := by
+    rw [hG, ← Complex.exp_sum, ← Finset.sum_mul]
+    congr 1
+    push_cast
+    simp_rw [Finset.mul_sum]
+    rw [Finset.sum_comm]
+  simp_rw [key]
+  rw [poissonSampleSeqMeasure, integral_prod_range_infinitePi_of_ne hGm]
+  simp_rw [hG, integral_cexp_count_poissonSampleMeasure hA hd t, ← Complex.exp_sum]
+  congr 1
+  rw [Finset.sum_comm]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  rw [← Finset.sum_mul]
+  push_cast
+  rfl
+
+/-- **Superposition of Poisson random measures.** If `(K n, Z n)` are independent, `K n` is
+Poisson distributed with mean `c n` and `Z n` is an independent i.i.d. sequence with law `μ n`,
+then `∑ₙ ∑_{k < K n} δ_{Z n k}` is a Poisson random measure with intensity `∑ₙ c n • μ n`. -/
+theorem isPoissonRandomMeasure_sum_sumDiracRange (c : ℕ → ℝ≥0) (μ : ℕ → Measure E)
+    [∀ n, IsProbabilityMeasure (μ n)] :
+    IsPoissonRandomMeasure
+      (fun ω : ℕ → ℕ × (ℕ → E) ↦ Measure.sum fun n ↦ sumDiracRange (ω n).1 (ω n).2)
+      (Measure.sum fun n ↦ c n • μ n) (poissonSampleSeqMeasure c μ) where
+  measurable := measurable_sum_sumDiracRange
+  map_eq_pi := by
+    intro m A hA hνA hd
+    -- measurability of the real counts of each copy
+    have hXm (n : ℕ) (i : Fin m) : Measurable fun ω : ℕ → ℕ × (ℕ → E) ↦
+        ∑ k ∈ range (ω n).1, (A i).indicator (1 : E → ℝ) ((ω n).2 k) :=
+      (measurable_of_measurable_nat_prod
+        (F := fun n z ↦ ∑ k ∈ range n, (A i).indicator (1 : E → ℝ) (z k)) fun m ↦
+          Finset.measurable_sum _ fun k _ ↦
+            (measurable_one.indicator (hA i)).comp (measurable_pi_apply k)).comp
+        (measurable_pi_apply n)
+    have hX0 (n : ℕ) (ω : ℕ → ℕ × (ℕ → E)) (i : Fin m) :
+        0 ≤ ∑ k ∈ range (ω n).1, (A i).indicator (1 : E → ℝ) ((ω n).2 k) :=
+      Finset.sum_nonneg fun k _ ↦ Set.indicator_nonneg (fun _ _ ↦ zero_le_one) _
+    have hNA (ω : ℕ → ℕ × (ℕ → E)) (i : Fin m) :
+        (Measure.sum fun n ↦ sumDiracRange (ω n).1 (ω n).2) (A i) =
+          ∑' n, ENNReal.ofReal
+            (∑ k ∈ range (ω n).1, (A i).indicator (1 : E → ℝ) ((ω n).2 k)) := by
+      rw [Measure.sum_apply _ (hA i)]
+      simp_rw [sumDiracRange_apply_eq_ofReal _ _ (hA i)]
+    have hNm (i : Fin m) : Measurable fun ω : ℕ → ℕ × (ℕ → E) ↦
+        (Measure.sum fun n ↦ sumDiracRange (ω n).1 (ω n).2) (A i) :=
+      (Measure.measurable_coe (hA i)).comp measurable_sum_sumDiracRange
+    have hνAi (i : Fin m) : (Measure.sum fun n ↦ c n • μ n) (A i) =
+        ∑' n, ENNReal.ofReal (c n * (μ n).real (A i)) := by
+      rw [Measure.sum_apply _ (hA i)]
+      refine tsum_congr fun n ↦ ?_
+      rw [Measure.smul_apply, ENNReal.ofReal_mul (c n).coe_nonneg, ofReal_measureReal]
+      simp [ENNReal.smul_def]
+    -- the counts are almost surely finite
+    have hfin : ∀ᵐ ω ∂(poissonSampleSeqMeasure c μ), ∀ i,
+        (Measure.sum fun n ↦ sumDiracRange (ω n).1 (ω n).2) (A i) ≠ ∞ := by
+      rw [ae_all_iff]
+      intro i
+      have hlin : ∫⁻ ω, (Measure.sum fun n ↦ sumDiracRange (ω n).1 (ω n).2) (A i)
+          ∂(poissonSampleSeqMeasure c μ) = (Measure.sum fun n ↦ c n • μ n) (A i) := by
+        simp_rw [Measure.sum_apply _ (hA i)]
+        rw [lintegral_tsum (f := fun n (ω : ℕ → ℕ × (ℕ → E)) ↦ sumDiracRange (ω n).1 (ω n).2 (A i))
+          fun n ↦ (((Measure.measurable_coe (hA i)).comp
+            measurable_sumDiracRange).comp (measurable_pi_apply n)).aemeasurable]
+        refine tsum_congr fun n ↦ ?_
+        rw [poissonSampleSeqMeasure, (measurePreserving_eval_infinitePi
+          (fun n ↦ poissonSampleMeasure (c n) (μ n)) n).lintegral_comp
+          (f := fun x ↦ sumDiracRange x.1 x.2 (A i))
+          ((Measure.measurable_coe (hA i)).comp measurable_sumDiracRange),
+          lintegral_sumDiracRange_poissonSampleMeasure (hA i), Measure.smul_apply,
+          ENNReal.smul_def, smul_eq_mul]
+      filter_upwards [ae_lt_top (hNm i) (hlin ▸ hνA i)] with ω hω using hω.ne
+    -- the real-valued counts
+    obtain ⟨T, hT⟩ : ∃ T : (ℕ → ℕ × (ℕ → E)) → Fin m → ℝ, T = fun ω i ↦
+        ((Measure.sum fun n ↦ sumDiracRange (ω n).1 (ω n).2) (A i)).toReal := ⟨_, rfl⟩
+    have hTm : Measurable T := hT ▸ Measurable.of_eval fun i ↦ (hNm i).ennreal_toReal
+    have hconv : ∀ᵐ ω ∂(poissonSampleSeqMeasure c μ), ∀ i, Tendsto (fun M ↦ ∑ n ∈ range M,
+        ∑ k ∈ range (ω n).1, (A i).indicator (1 : E → ℝ) ((ω n).2 k)) atTop (𝓝 (T ω i)) := by
+      filter_upwards [hfin] with ω hω i
+      have h1 := ENNReal.tendsto_nat_tsum fun n ↦ ENNReal.ofReal
+        (∑ k ∈ range (ω n).1, (A i).indicator (1 : E → ℝ) ((ω n).2 k))
+      rw [← hNA] at h1
+      have h2 := (ENNReal.tendsto_toReal (hω i)).comp h1
+      rw [hT]
+      refine h2.congr fun M ↦ ?_
+      simp only [Function.comp_apply]
+      rw [ENNReal.toReal_sum fun n _ ↦ ENNReal.ofReal_ne_top]
+      exact Finset.sum_congr rfl fun n _ ↦ ENNReal.toReal_ofReal (hX0 n ω i)
+    have hrate (i : Fin m) : Tendsto (fun M ↦ ∑ n ∈ range M, (c n : ℝ) * (μ n).real (A i)) atTop
+        (𝓝 ((Measure.sum fun n ↦ c n • μ n) (A i)).toReal) := by
+      have h1 := ENNReal.tendsto_nat_tsum fun n ↦ ENNReal.ofReal (c n * (μ n).real (A i))
+      rw [← hνAi] at h1
+      refine ((ENNReal.tendsto_toReal (hνA i)).comp h1).congr fun M ↦ ?_
+      simp only [Function.comp_apply]
+      rw [ENNReal.toReal_sum fun n _ ↦ ENNReal.ofReal_ne_top]
+      exact Finset.sum_congr rfl fun n _ ↦ ENNReal.toReal_ofReal (by positivity)
+    have hchar (t : Fin m → ℝ) : ∫ ω, Complex.exp ((∑ i, t i * T ω i : ℝ) * Complex.I)
+        ∂(poissonSampleSeqMeasure c μ) = Complex.exp (∑ i,
+          (((Measure.sum fun n ↦ c n • μ n) (A i)).toReal : ℂ) *
+            (Complex.exp (t i * Complex.I) - 1)) := by
+      have hlim1 : Tendsto (fun M ↦ ∫ ω, Complex.exp ((∑ i, t i * ∑ n ∈ range M,
+          ∑ k ∈ range (ω n).1, (A i).indicator (1 : E → ℝ) ((ω n).2 k) : ℝ) * Complex.I)
+            ∂(poissonSampleSeqMeasure c μ)) atTop
+          (𝓝 (∫ ω, Complex.exp ((∑ i, t i * T ω i : ℝ) * Complex.I)
+            ∂(poissonSampleSeqMeasure c μ))) := by
+        refine tendsto_integral_of_dominated_convergence (fun _ ↦ 1) (fun M ↦ ?_)
+          (integrable_const 1) (fun M ↦ ae_of_all _ fun ω ↦ ?_) ?_
+        · refine (Complex.measurable_exp.comp (Measurable.mul_const ?_ _)).aestronglyMeasurable
+          exact Complex.measurable_ofReal.comp (Finset.measurable_sum _ fun i _ ↦
+            (Finset.measurable_sum _ fun n _ ↦ hXm n i).const_mul _)
+        · simp only [Complex.norm_exp_ofReal_mul_I, le_refl]
+        · filter_upwards [hconv] with ω hω
+          refine Tendsto.cexp (Tendsto.mul_const _ ?_)
+          refine (Complex.continuous_ofReal.tendsto _).comp ?_
+          exact tendsto_finsetSum _ fun i _ ↦ (hω i).const_mul (t i)
+      have hlim2 : Tendsto (fun M ↦ ∫ ω, Complex.exp ((∑ i, t i * ∑ n ∈ range M,
+          ∑ k ∈ range (ω n).1, (A i).indicator (1 : E → ℝ) ((ω n).2 k) : ℝ) * Complex.I)
+            ∂(poissonSampleSeqMeasure c μ)) atTop
+          (𝓝 (Complex.exp (∑ i, (((Measure.sum fun n ↦ c n • μ n) (A i)).toReal : ℂ) *
+            (Complex.exp (t i * Complex.I) - 1)))) := by
+        simp_rw [integral_cexp_count_poissonSampleSeqMeasure hA hd t]
+        refine Tendsto.cexp (tendsto_finsetSum _ fun i _ ↦ Tendsto.mul_const _ ?_)
+        exact (Complex.continuous_ofReal.tendsto _).comp (hrate i)
+      exact tendsto_nhds_unique hlim1 hlim2
+    have hlawT : (poissonSampleSeqMeasure c μ).map T = Measure.pi fun i ↦
+        (poissonMeasure ((Measure.sum fun n ↦ c n • μ n) (A i)).toNNReal).map
+          (Nat.cast : ℕ → ℝ) := by
+      refine (charFun_eq_pi_iff).1 fun t ↦ ?_
+      rw [charFun_apply, integral_map (by fun_prop) (by fun_prop),
+        integral_map hTm.aemeasurable (by fun_prop)]
+      have hinner (ω : ℕ → ℕ × (ℕ → E)) :
+          inner ℝ (WithLp.toLp 2 (T ω)) t = ∑ i, t i * T ω i := by
+        simp [PiLp.inner_apply]
+      simp_rw [hinner]
+      rw [hchar, charFun_pi_poissonMeasure]
+      rfl
+    have hae : (fun ω i ↦ (Measure.sum fun n ↦ sumDiracRange (ω n).1 (ω n).2) (A i))
+        =ᵐ[poissonSampleSeqMeasure c μ] (fun (y : Fin m → ℝ) i ↦ ENNReal.ofReal (y i)) ∘ T := by
+      filter_upwards [hfin] with ω hω
+      ext i
+      simp [hT, ENNReal.ofReal_toReal (hω i)]
+    rw [Measure.map_congr hae, ← Measure.map_map (by fun_prop) hTm, hlawT,
+      Measure.pi_map_pi (fun i ↦ by fun_prop)]
+    congr with i : 1
+    rw [Measure.map_map (by fun_prop) (by fun_prop)]
+    congr 1
+    funext k
+    simp
+
+end Superposition
 
 /-! ### Existence for a finite intensity -/
 
