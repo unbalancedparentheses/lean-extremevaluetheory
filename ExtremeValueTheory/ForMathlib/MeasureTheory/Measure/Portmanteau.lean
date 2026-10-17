@@ -229,4 +229,107 @@ theorem eq_of_forall_integral_tendsto [TopologicalSpace Ω] [HasOuterApproxClose
     (hν : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i => ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂ν))) : μ = ν :=
   ext_of_forall_integral_eq_of_IsFiniteMeasure fun f => tendsto_nhds_unique (hμ f) (hν f)
 
+/-! ### Finite measures -/
+
+/-- Normalizing finite measures: if the integrals of bounded continuous functions against finite
+measures `μs i` converge to those against a finite nonzero `μ`, the total masses converge, and the
+normalized measures are eventually probability measures converging weakly to the normalized
+`μ`. -/
+theorem tendsto_integral_normalize [TopologicalSpace Ω] [OpensMeasurableSpace Ω] {F : Filter γ}
+    {μs : γ → Measure Ω} (hμs : ∀ i, IsFiniteMeasure (μs i)) {μ : Measure Ω} [IsFiniteMeasure μ]
+    (h : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i => ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)))
+    (hμ : μ.real univ ≠ 0) :
+    Tendsto (fun i => (μs i).real univ) F (𝓝 (μ.real univ)) ∧
+    (∀ᶠ i in F, IsProbabilityMeasure (ENNReal.ofReal ((μs i).real univ)⁻¹ • μs i)) ∧
+    IsProbabilityMeasure (ENNReal.ofReal (μ.real univ)⁻¹ • μ) ∧
+    ∀ f : Ω →ᵇ ℝ, Tendsto (fun i => ∫ ω, f ω ∂(ENNReal.ofReal ((μs i).real univ)⁻¹ • μs i)) F
+      (𝓝 (∫ ω, f ω ∂(ENNReal.ofReal (μ.real univ)⁻¹ • μ))) := by
+  have hmass : Tendsto (fun i => (μs i).real univ) F (𝓝 (μ.real univ)) := by
+    simpa using h (BoundedContinuousFunction.const Ω 1)
+  have hprob : ∀ (ν : Measure Ω), IsFiniteMeasure ν → ν.real univ ≠ 0 →
+      IsProbabilityMeasure (ENNReal.ofReal (ν.real univ)⁻¹ • ν) := by
+    intro ν _ hν
+    constructor
+    rw [Measure.smul_apply, smul_eq_mul, ← ofReal_measureReal (μ := ν) (s := univ),
+      ← ENNReal.ofReal_mul (inv_nonneg.2 measureReal_nonneg), inv_mul_cancel₀ hν,
+      ENNReal.ofReal_one]
+  refine ⟨hmass, ?_, hprob μ inferInstance hμ, fun f => ?_⟩
+  · filter_upwards [hmass.eventually_ne hμ] with i hi
+    exact hprob _ (hμs i) hi
+  · simp only [integral_smul_measure, smul_eq_mul,
+      ENNReal.toReal_ofReal (inv_nonneg.2 measureReal_nonneg)]
+    exact (hmass.inv₀ hμ).mul (h f)
+
+/-- The portmanteau implication for sets with null frontier, for finite measures. -/
+theorem tendsto_measureReal_of_null_frontier_of_forall_integral_tendsto [TopologicalSpace Ω]
+    [OpensMeasurableSpace Ω] [HasOuterApproxClosed Ω] {F : Filter γ} {μs : γ → Measure Ω}
+    (hμs : ∀ i, IsFiniteMeasure (μs i)) {μ : Measure Ω} [IsFiniteMeasure μ]
+    (h : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i => ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)))
+    {E : Set Ω} (hE : μ (frontier E) = 0) :
+    Tendsto (fun i => (μs i).real E) F (𝓝 (μ.real E)) := by
+  have hmass : Tendsto (fun i => (μs i).real univ) F (𝓝 (μ.real univ)) := by
+    simpa using h (BoundedContinuousFunction.const Ω 1)
+  by_cases hμ : μ.real univ = 0
+  · have hE0 : μ.real E = 0 :=
+      le_antisymm (hμ ▸ measureReal_mono (subset_univ E)) measureReal_nonneg
+    rw [hE0]
+    rw [hμ] at hmass
+    exact tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hmass
+      (fun i => measureReal_nonneg) (fun i => measureReal_mono (μ := μs i) (subset_univ E))
+  obtain ⟨-, hprob, hprobμ, hconv⟩ := tendsto_integral_normalize hμs h hμ
+  have key := tendsto_measure_of_null_frontier_of_forall_integral_tendsto hprob hconv
+    (E := E) (by rw [Measure.smul_apply, hE, smul_zero])
+  have hlim := hmass.mul ((ENNReal.tendsto_toReal (measure_ne_top _ E)).comp key)
+  have hval : ∀ ν : Measure Ω, IsFiniteMeasure ν → ν.real univ ≠ 0 →
+      ν.real univ * ((ENNReal.ofReal (ν.real univ)⁻¹ • ν) E).toReal = ν.real E := by
+    intro ν _ hν
+    rw [Measure.smul_apply, smul_eq_mul, ENNReal.toReal_mul,
+      ENNReal.toReal_ofReal (inv_nonneg.2 measureReal_nonneg), ← measureReal_def, ← mul_assoc,
+      mul_inv_cancel₀ hν, one_mul]
+  rw [hval μ inferInstance hμ] at hlim
+  refine hlim.congr' ?_
+  filter_upwards [hmass.eventually_ne hμ] with i hi
+  exact hval _ (hμs i) hi
+
+/-- Weak convergence of finite measures, tested on bounded continuous functions, extends to
+`H · 1{c < ψ}` for `H` bounded continuous and `ψ` continuous, provided the limit gives no mass to
+`{ψ = c}`. -/
+theorem tendsto_integral_indicator_of_forall_integral_tendsto_of_isFiniteMeasure
+    [TopologicalSpace Ω] [OpensMeasurableSpace Ω] {F : Filter γ} {μs : γ → Measure Ω}
+    (hμs : ∀ i, IsFiniteMeasure (μs i)) {μ : Measure Ω} [IsFiniteMeasure μ]
+    (h : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i => ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)))
+    (H : Ω →ᵇ ℝ) {ψ : Ω → ℝ} (hψ : Continuous ψ) {c : ℝ} (hc : μ {y | ψ y = c} = 0) :
+    Tendsto (fun i => ∫ y, {y | c < ψ y}.indicator H y ∂μs i) F
+      (𝓝 (∫ y, {y | c < ψ y}.indicator H y ∂μ)) := by
+  have hmass : Tendsto (fun i => (μs i).real univ) F (𝓝 (μ.real univ)) := by
+    simpa using h (BoundedContinuousFunction.const Ω 1)
+  have hbound : ∀ ν : Measure Ω, IsFiniteMeasure ν →
+      ‖∫ y, {y | c < ψ y}.indicator H y ∂ν‖ ≤ ‖H‖ * ν.real univ := fun ν _ =>
+    norm_integral_le_of_norm_le_const (ae_of_all _ fun y => by
+      by_cases hy : y ∈ {y | c < ψ y}
+      · rw [indicator_of_mem hy]; exact H.norm_coe_le_norm y
+      · rw [indicator_of_notMem hy, norm_zero]; exact norm_nonneg _)
+  by_cases hμ : μ.real univ = 0
+  · have h0 : ∫ y, {y | c < ψ y}.indicator H y ∂μ = 0 :=
+      norm_le_zero_iff.1 ((hbound μ inferInstance).trans (by rw [hμ, mul_zero]))
+    rw [h0, tendsto_zero_iff_norm_tendsto_zero]
+    rw [hμ] at hmass
+    exact squeeze_zero (fun i => norm_nonneg _) (fun i => hbound _ (hμs i))
+      (by simpa using hmass.const_mul ‖H‖)
+  obtain ⟨-, hprob, hprobμ, hconv⟩ := tendsto_integral_normalize hμs h hμ
+  have key := tendsto_integral_indicator_of_forall_integral_tendsto hprob hconv H hψ
+    (c := c) (by rw [Measure.smul_apply, hc, smul_zero])
+  have hlim := hmass.mul key
+  have hval : ∀ ν : Measure Ω, IsFiniteMeasure ν → ν.real univ ≠ 0 →
+      ν.real univ * ∫ y, {y | c < ψ y}.indicator H y ∂(ENNReal.ofReal (ν.real univ)⁻¹ • ν) =
+        ∫ y, {y | c < ψ y}.indicator H y ∂ν := by
+    intro ν _ hν
+    rw [integral_smul_measure, smul_eq_mul,
+      ENNReal.toReal_ofReal (inv_nonneg.2 measureReal_nonneg), ← mul_assoc,
+      mul_inv_cancel₀ hν, one_mul]
+  rw [hval μ inferInstance hμ] at hlim
+  refine hlim.congr' ?_
+  filter_upwards [hmass.eventually_ne hμ] with i hi
+  exact hval _ (hμs i) hi
+
 end MeasureTheory
