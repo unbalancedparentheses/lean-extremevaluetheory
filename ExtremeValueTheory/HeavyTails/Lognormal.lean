@@ -183,4 +183,70 @@ theorem gaussianTail_le_mul (hv : v ≠ 0) {a b : ℝ} (ha : m + 1 ≤ a) (hab :
 
 end Mills
 
+/-! ### The lognormal law -/
+
+section Lognormal
+
+variable {m : ℝ} {v : ℝ≥0}
+
+/-- The **lognormal law** `LN(m, v)`: the law of `exp Z` for `Z ∼ N(m, v)`. -/
+noncomputable def lognormal (m : ℝ) (v : ℝ≥0) : Measure ℝ := (gaussianReal m v).map exp
+
+instance isProbabilityMeasure_lognormal : IsProbabilityMeasure (lognormal m v) :=
+  by rw [lognormal]; infer_instance
+
+theorem lognormal_Iio_zero : lognormal m v (Iio 0) = 0 := by
+  rw [lognormal, Measure.map_apply measurable_exp measurableSet_Iio]
+  convert measure_empty (μ := gaussianReal m v)
+  ext y; simp [(exp_pos y).le]
+
+theorem tail_lognormal {x : ℝ} (hx : 0 < x) :
+    tail (lognormal m v) x = gaussianTail m v (log x) := by
+  rw [tail, lognormal, map_measureReal_apply measurable_exp measurableSet_Ioi, gaussianTail]
+  congr 1
+  ext y; simp only [mem_preimage, mem_Ioi]
+  rw [log_lt_iff_lt_exp hx]
+
+theorem tail_lognormal_pos (hv : v ≠ 0) (x : ℝ) : 0 < tail (lognormal m v) x := by
+  have h1 : 0 < tail (lognormal m v) (max x 1) := by
+    rw [tail_lognormal (by positivity)]; exact gaussianTail_pos hv _
+  exact h1.trans_le (tail_antitone (le_max_left _ _))
+
+/-- The basic ratio estimate for the lognormal tail: for `x ≥ 2 e^{m+1}` and `0 ≤ t ≤ x / 2`,
+`F̄(x - t) ≤ (1 + 2t/x) (1 + v/(log x - m)²) exp(2t (log x - m) / (v x)) F̄(x)`. -/
+theorem tail_lognormal_sub_le (hv : v ≠ 0) {x t : ℝ} (hx : 2 * exp (m + 1) ≤ x) (ht : 0 ≤ t)
+    (htx : t ≤ x / 2) :
+    tail (lognormal m v) (x - t) ≤ (1 + 2 * t / x) * (1 + v / (log x - m) ^ 2) *
+      exp (2 * t * ((log x - m) / x) / v) * tail (lognormal m v) x := by
+  have hv' : (0 : ℝ) < v := by positivity
+  have hx0 : 0 < x := lt_of_lt_of_le (by positivity) hx
+  have hxt : x / 2 ≤ x - t := by linarith
+  have hxt0 : 0 < x - t := by linarith
+  have he : exp (m + 1) ≤ x - t := by linarith
+  set a := log (x - t) with ha_def
+  set b := log x with hb_def
+  have ha : m + 1 ≤ a := (le_log_iff_exp_le hxt0).2 he
+  have hab : a ≤ b := log_le_log hxt0 (by linarith)
+  have hba : b - a ≤ 2 * t / x := by
+    have h1 : b - a = log (x / (x - t)) := by rw [log_div hx0.ne' hxt0.ne']
+    have h2 := log_le_sub_one_of_pos (div_pos hx0 hxt0)
+    have h3 : x / (x - t) - 1 ≤ 2 * t / x := by
+      rw [div_sub_one hxt0.ne', div_le_div_iff₀ hxt0 hx0]; nlinarith
+    linarith
+  set d := 2 * t / x with hd
+  have hd0 : 0 ≤ d := by positivity
+  have hfac1 : (b - m) / (a - m) ≤ 1 + d := by
+    rw [div_le_iff₀ (by linarith)]; nlinarith
+  have hfac2 : ((b - m) ^ 2 - (a - m) ^ 2) / (2 * v) ≤ 2 * t * ((b - m) / x) / v := by
+    have e : 2 * t * ((b - m) / x) = d * (b - m) := by rw [hd]; ring
+    rw [e, div_le_div_iff₀ (by positivity) hv']
+    have : (b - m) ^ 2 - (a - m) ^ 2 ≤ 2 * d * (b - m) := by nlinarith
+    nlinarith
+  rw [tail_lognormal hxt0, tail_lognormal hx0]
+  refine (gaussianTail_le_mul hv ha hab).trans ?_
+  have hQ := (gaussianTail_pos hv (m := m) b).le
+  gcongr
+
+end Lognormal
+
 end ExtremeValueTheory
