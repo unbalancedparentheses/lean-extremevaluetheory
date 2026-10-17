@@ -643,4 +643,93 @@ theorem tendstoInMeasure_runMax_div_sqrt (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (
 
 end RunMax
 
+/-! ### The law of large numbers for the derivative of the score, above `σ₀` -/
+
+section CrossLLN
+
+variable {ξ σ₀ t : ℝ} {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} {X : ℕ → Ω → ℝ}
+
+/-- The summand of `crossAvg`: `x / ((σ₀ + ξ x)(t + ξ x))`. -/
+noncomputable def crossTerm (ξ σ₀ t x : ℝ) : ℝ := x / ((σ₀ + ξ * x) * (t + ξ * x))
+
+lemma measurable_crossTerm (ξ σ₀ t : ℝ) : Measurable (crossTerm ξ σ₀ t) := by
+  unfold crossTerm; fun_prop
+
+lemma crossAvg_eq (t : ℝ) (x : ℕ → ℝ) (n : ℕ) :
+    crossAvg ξ σ₀ t x n = (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, crossTerm ξ σ₀ t (x i) := rfl
+
+lemma crossTerm_self : crossTerm ξ σ₀ σ₀ = gpdScoreDeriv ξ σ₀ := rfl
+
+lemma crossTerm_bounds (ht : σ₀ ≤ t) {x : ℝ} (hx : 0 < x ∧ 0 < σ₀ + ξ * x) :
+    0 ≤ crossTerm ξ σ₀ t x ∧ crossTerm ξ σ₀ t x ≤ gpdScoreDeriv ξ σ₀ x := by
+  have h2 : 0 < t + ξ * x := by linarith [hx.2]
+  refine ⟨div_nonneg hx.1.le (mul_pos hx.2 h2).le, ?_⟩
+  exact div_le_div_of_nonneg_left hx.1.le (mul_pos hx.2 hx.2)
+    (mul_le_mul_of_nonneg_left (by linarith) hx.2.le)
+
+lemma integrable_crossTerm (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ₀ : 0 < σ₀) (ht : σ₀ ≤ t) :
+    Integrable (crossTerm ξ σ₀ t) (gpdMeasure ξ σ₀) := by
+  refine (integrable_gpdScoreDeriv hξ hξ0 hσ₀).mono'
+    (measurable_crossTerm ξ σ₀ t).aestronglyMeasurable ?_
+  filter_upwards [ae_gpdMeasure hσ₀] with x hx
+  obtain ⟨h1, h2⟩ := crossTerm_bounds ht hx
+  rw [Real.norm_eq_abs, abs_of_nonneg h1]; exact h2
+
+lemma tendsto_integral_crossTerm (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ₀ : 0 < σ₀) :
+    Tendsto (fun k : ℕ => ∫ x, crossTerm ξ σ₀ (σ₀ + 1 / ((k : ℝ) + 1)) x ∂gpdMeasure ξ σ₀) atTop
+      (𝓝 (∫ x, gpdScoreDeriv ξ σ₀ x ∂gpdMeasure ξ σ₀)) := by
+  have htk : ∀ k : ℕ, σ₀ ≤ σ₀ + 1 / ((k : ℝ) + 1) := fun k => by
+    have : (0 : ℝ) < 1 / ((k : ℝ) + 1) := by positivity
+    linarith
+  have hlim : Tendsto (fun k : ℕ => σ₀ + 1 / ((k : ℝ) + 1)) atTop (𝓝 σ₀) := by
+    have := (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)).const_add σ₀
+    rwa [add_zero] at this
+  refine tendsto_integral_of_dominated_convergence (gpdScoreDeriv ξ σ₀)
+    (fun k => (measurable_crossTerm _ _ _).aestronglyMeasurable)
+    (integrable_gpdScoreDeriv hξ hξ0 hσ₀) (fun k => ?_) ?_
+  · filter_upwards [ae_gpdMeasure hσ₀] with x hx
+    obtain ⟨h1, h2⟩ := crossTerm_bounds (htk k) hx
+    rw [Real.norm_eq_abs, abs_of_nonneg h1]; exact h2
+  · filter_upwards [ae_gpdMeasure hσ₀] with x hx
+    have hc : ContinuousAt (fun t => crossTerm ξ σ₀ t x) σ₀ := by
+      unfold crossTerm
+      exact continuousAt_const.div (continuousAt_const.mul (continuousAt_id.add continuousAt_const))
+        (mul_pos hx.2 hx.2).ne'
+    exact hc.tendsto.comp hlim
+
+/-- **The strong law for the derivative of the score, above `σ₀`.** Almost surely, along every
+sequence `sₙ → σ₀`, `Qₙ(max(sₙ, σ₀)) → E[X / (σ₀ + ξ X)²]`. -/
+theorem ae_tendsto_crossAvg_max (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ₀ : 0 < σ₀)
+    (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ σ₀) P) (hind : iIndepFun X P) :
+    ∀ᵐ ω ∂P, ∀ s : ℕ → ℝ, Tendsto s atTop (𝓝 σ₀) →
+      Tendsto (fun n => crossAvg ξ σ₀ (max (s n) σ₀) (fun i => X i ω) n) atTop
+        (𝓝 (∫ x, gpdScoreDeriv ξ σ₀ x ∂gpdMeasure ξ σ₀)) := by
+  set J := ∫ x, gpdScoreDeriv ξ σ₀ x ∂gpdMeasure ξ σ₀
+  set t : ℕ → ℝ := fun k => σ₀ + 1 / ((k : ℝ) + 1)
+  have htk : ∀ k, σ₀ < t k := fun k => by
+    have : (0 : ℝ) < 1 / ((k : ℝ) + 1) := by positivity
+    simp only [t]; linarith
+  have hsupp : ∀ᵐ ω ∂P, ∀ i, 0 < X i ω ∧ 0 < σ₀ + ξ * X i ω := ae_all_iff.2 fun i =>
+    ae_of_ae_map (hX i).aemeasurable ((hX i).map_eq ▸ ae_gpdMeasure hσ₀)
+  have hk : ∀ᵐ ω ∂P, ∀ k, Tendsto (fun n => crossAvg ξ σ₀ (t k) (fun i => X i ω) n) atTop
+      (𝓝 (∫ x, crossTerm ξ σ₀ (t k) x ∂gpdMeasure ξ σ₀)) := ae_all_iff.2 fun k =>
+    ae_tendsto_avg_comp hX hind (measurable_crossTerm _ _ _)
+      (integrable_crossTerm hξ hξ0 hσ₀ (htk k).le)
+  have h0 : ∀ᵐ ω ∂P, Tendsto (fun n => crossAvg ξ σ₀ σ₀ (fun i => X i ω) n) atTop (𝓝 J) :=
+    ae_tendsto_avg_comp hX hind (measurable_gpdScoreDeriv _ _) (integrable_gpdScoreDeriv hξ hξ0 hσ₀)
+  filter_upwards [hsupp, hk, h0] with ω hω hk h0 s hs
+  have hx0 : ∀ n, ∀ i < n, 0 ≤ X i ω := fun _ i _ => (hω i).1.le
+  have ha : ∀ n, ∀ i < n, 0 < σ₀ + ξ * X i ω := fun _ i _ => (hω i).2
+  have hmax : ∀ n, ∀ i < n, 0 < max (s n) σ₀ + ξ * X i ω := fun n i _ => by
+    linarith [(hω i).2, le_max_right (s n) σ₀]
+  refine tendsto_order.2 ⟨fun b hb => ?_, fun b hb => ?_⟩
+  · obtain ⟨k, hk'⟩ := ((tendsto_integral_crossTerm hξ hξ0 hσ₀).eventually (lt_mem_nhds hb)).exists
+    filter_upwards [(hk k).eventually (lt_mem_nhds hk'), hs.eventually (gt_mem_nhds (htk k))]
+      with n hn hsn
+    exact hn.trans_le (crossAvg_anti (hx0 n) (ha n) (hmax n) (max_le hsn.le (htk k).le))
+  · filter_upwards [h0.eventually (gt_mem_nhds hb)] with n hn
+    exact (crossAvg_anti (hx0 n) (ha n) (ha n) (le_max_right _ _)).trans_lt hn
+
+end CrossLLN
+
 end ExtremeValueTheory
