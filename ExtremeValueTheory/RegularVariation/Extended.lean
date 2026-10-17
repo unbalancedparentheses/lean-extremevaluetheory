@@ -329,7 +329,7 @@ theorem IsExtendedRegularlyVarying.tendsto_div_of_pos (hf : IsExtendedRegularlyV
     refine this.congr' ?_
     filter_upwards [hev] with t ht
     obtain ⟨h1, h2, h3, h4⟩ := ht
-    simp only [Function.comp_apply, Pi.div_apply, Pi.mul_apply]
+    simp only [Pi.div_apply, Function.comp_apply, hρ_def]
     generalize L t = A at *
     generalize L (2 * t) = B at *
     generalize a t = p at *
@@ -425,5 +425,185 @@ theorem IsExtendedRegularlyVarying.tendsto_aux_div_of_pos
   have := (hf.tendsto_div_of_pos hmono hγ).inv₀ (inv_pos.2 hγ).ne'
   rw [inv_inv] at this
   exact this.congr fun t => inv_div _ _
+
+/-! ### Negative index -/
+
+/-- If for every small `ε > 0` eventually `lo ε ≤ g t ≤ hi ε`, and `lo ε, hi ε → L` as
+`ε → 0+`, then `g t → L`. -/
+private lemma tendsto_of_eventually_bounds {g lo hi : ℝ → ℝ} {L ε₁ : ℝ} (hε₁ : 0 < ε₁)
+    (hb : ∀ ε, 0 < ε → ε < ε₁ → ∀ᶠ t in atTop, lo ε ≤ g t ∧ g t ≤ hi ε)
+    (hlo : Tendsto lo (𝓝 0) (𝓝 L)) (hhi : Tendsto hi (𝓝 0) (𝓝 L)) :
+    Tendsto g atTop (𝓝 L) := by
+  rw [tendsto_order]
+  have hI : Ioo 0 ε₁ ∈ 𝓝[>] (0 : ℝ) := Ioo_mem_nhdsGT hε₁
+  refine ⟨fun b hb' => ?_, fun b hb' => ?_⟩
+  · obtain ⟨ε, h1, h2⟩ :=
+      (((hlo.mono_left nhdsWithin_le_nhds).eventually (lt_mem_nhds hb')).and hI).exists
+    filter_upwards [hb ε h2.1 h2.2] with t ht
+    exact h1.trans_le ht.1
+  · obtain ⟨ε, h1, h2⟩ :=
+      (((hhi.mono_left nhdsWithin_le_nhds).eventually (gt_mem_nhds hb')).and hI).exists
+    filter_upwards [hb ε h2.1 h2.2] with t ht
+    exact ht.2.trans_lt h1
+
+/-- Upper geometric bound: if `f (2t) - f t ≤ C a t` and `a (2t) ≤ q a t` for `t ≥ T₀`, with
+`q < 1`, then `f (2 ^ n t) - f t ≤ C a t / (1 - q)`. -/
+private lemma geom_upper {C q T₀ : ℝ} (hT₀ : 0 < T₀) (hC : 0 ≤ C) (hq : q < 1)
+    (h : ∀ t ≥ T₀, 0 < a t ∧ f (2 * t) - f t ≤ C * a t ∧ a (2 * t) ≤ q * a t) :
+    ∀ n : ℕ, ∀ t ≥ T₀, f (2 ^ n * t) - f t ≤ C * a t / (1 - q) := by
+  have hq' : 0 < 1 - q := by linarith
+  intro n
+  induction n with
+  | zero =>
+    intro t ht
+    simp only [pow_zero, one_mul, sub_self]
+    have := (h t ht).1
+    positivity
+  | succ n ih =>
+    intro t ht
+    obtain ⟨h1, h2, h3⟩ := h t ht
+    have ht2 : 2 * t ≥ T₀ := by linarith
+    have ih2 := ih (2 * t) ht2
+    rw [show 2 ^ (n + 1) * t = 2 ^ n * (2 * t) by ring]
+    have h4 : C * a (2 * t) / (1 - q) ≤ C * (q * a t) / (1 - q) := by gcongr
+    have e : C * (q * a t) / (1 - q) + C * a t = C * a t / (1 - q) := by
+      field_simp
+      ring
+    linarith
+
+/-- Lower geometric bound: if `f (2t) - f t ≥ C a t` and `a (2t) ≥ q a t` for `t ≥ T₀`, with
+`0 ≤ q < 1`, then `f (2 ^ n t) - f t ≥ C a t (1 - q ^ n) / (1 - q)`. -/
+private lemma geom_lower {C q T₀ : ℝ} (hT₀ : 0 < T₀) (hC : 0 ≤ C) (hq0 : 0 ≤ q) (hq : q < 1)
+    (h : ∀ t ≥ T₀, 0 < a t ∧ C * a t ≤ f (2 * t) - f t ∧ q * a t ≤ a (2 * t)) :
+    ∀ n : ℕ, ∀ t ≥ T₀, C * a t * (1 - q ^ n) / (1 - q) ≤ f (2 ^ n * t) - f t := by
+  have hq' : 0 < 1 - q := by linarith
+  intro n
+  induction n with
+  | zero =>
+    intro t ht
+    simp
+  | succ n ih =>
+    intro t ht
+    obtain ⟨h1, h2, h3⟩ := h t ht
+    have ht2 : 2 * t ≥ T₀ := by linarith
+    have ih2 := ih (2 * t) ht2
+    rw [show 2 ^ (n + 1) * t = 2 ^ n * (2 * t) by ring]
+    have hqn : 0 ≤ 1 - q ^ n := by linarith [pow_le_one₀ hq0 hq.le (n := n)]
+    have h4 : C * (q * a t) * (1 - q ^ n) / (1 - q) ≤ C * a (2 * t) * (1 - q ^ n) / (1 - q) := by
+      gcongr
+    have e : C * (q * a t) * (1 - q ^ n) / (1 - q) + C * a t =
+        C * a t * (1 - q ^ (n + 1)) / (1 - q) := by
+      field_simp
+      ring
+    linarith
+
+/-- **Negative index** ([dHF, Lemma 1.2.9], [BGT, §3.1]): if `f` is monotone and extended
+regularly varying with index `γ < 0` and auxiliary function `a`, then `f` has a finite limit
+`f(∞) = ℓ`, `f ≤ ℓ`, and `(ℓ - f t) / a t → -1 / γ`. -/
+theorem IsExtendedRegularlyVarying.exists_tendsto_of_neg (hf : IsExtendedRegularlyVarying f γ a)
+    (hmono : Monotone f) (hγ : γ < 0) :
+    ∃ ℓ, Tendsto f atTop (𝓝 ℓ) ∧ (∀ t, f t ≤ ℓ) ∧
+      Tendsto (fun t => (ℓ - f t) / a t) atTop (𝓝 (-γ⁻¹)) := by
+  set p : ℝ := (2 : ℝ) ^ γ with hp
+  have hp0 : 0 < p := rpow_pos_of_pos two_pos γ
+  have hp1 : p < 1 := rpow_lt_one_of_one_lt_of_neg one_lt_two hγ
+  set D := extRVLimit γ 2 with hD
+  have hDpos : 0 < D := extRVLimit_pos one_lt_two
+  have hF2 : Tendsto (fun t => (f (2 * t) - f t) / a t) atTop (𝓝 D) := hf.2 2 two_pos
+  have hR2 : Tendsto (fun t => a (2 * t) / a t) atTop (𝓝 p) := hf.isRegularlyVarying.2 2 two_pos
+  have hev : ∀ ε, 0 < ε → ∃ T₀, 0 < T₀ ∧ ∀ t ≥ T₀, 0 < a t ∧
+      (D - ε) * a t ≤ f (2 * t) - f t ∧ f (2 * t) - f t ≤ (D + ε) * a t ∧
+      (p - ε) * a t ≤ a (2 * t) ∧ a (2 * t) ≤ (p + ε) * a t := by
+    intro ε hε
+    obtain ⟨T₀, hT₀⟩ := eventually_atTop.1 (hf.1.and
+      ((hF2.eventually (Ioo_mem_nhds (show D - ε < D by linarith) (show D < D + ε by linarith))).and
+      (hR2.eventually (Ioo_mem_nhds (show p - ε < p by linarith) (show p < p + ε by linarith)))))
+    refine ⟨max T₀ 1, by positivity, fun t ht => ?_⟩
+    obtain ⟨h1, h2, h3⟩ := hT₀ t (le_of_max_le_left ht)
+    obtain ⟨h21, h22⟩ := h2
+    obtain ⟨h31, h32⟩ := h3
+    rw [lt_div_iff₀ h1] at h21 h31
+    rw [div_lt_iff₀ h1] at h22 h32
+    exact ⟨h1, h21.le, h22.le, h31.le, h32.le⟩
+  set ε₁ := min p (min (1 - p) D) with hε₁
+  have hε₁0 : 0 < ε₁ := lt_min hp0 (lt_min (by linarith) hDpos)
+  have hε₁p : ε₁ ≤ p := min_le_left _ _
+  have hε₁q : ε₁ ≤ 1 - p := (min_le_right _ _).trans (min_le_left _ _)
+  have hε₁D : ε₁ ≤ D := (min_le_right _ _).trans (min_le_right _ _)
+  -- the upper bound `f s ≤ f t + (D + ε) a t / (1 - (p + ε))` for every `s`
+  have hsup : ∀ ε, 0 < ε → ε < ε₁ → ∃ T₀, 0 < T₀ ∧ ∀ t ≥ T₀,
+      ∀ s, f s ≤ f t + (D + ε) * a t / (1 - (p + ε)) := by
+    intro ε hε hε'
+    obtain ⟨T₀, hT₀, hb⟩ := hev ε hε
+    refine ⟨T₀, hT₀, fun t ht s => ?_⟩
+    have hU := geom_upper (f := f) (a := a) hT₀ (by linarith) (by linarith)
+      (fun t ht => ⟨(hb t ht).1, (hb t ht).2.2.1, (hb t ht).2.2.2.2⟩)
+    have ht0 : 0 < t := hT₀.trans_le ht
+    obtain ⟨n, hn⟩ := pow_unbounded_of_one_lt (s / t) one_lt_two
+    rw [div_lt_iff₀ ht0] at hn
+    have := hU n t ht
+    have := hmono hn.le
+    linarith
+  obtain ⟨T₁, hT₁, hT₁b⟩ := hsup (ε₁ / 2) (half_pos hε₁0) (half_lt_self hε₁0)
+  have hbdd : BddAbove (range f) := ⟨_, by rintro _ ⟨s, rfl⟩; exact hT₁b T₁ le_rfl s⟩
+  refine ⟨⨆ s, f s, tendsto_atTop_ciSup hmono hbdd, fun t => le_ciSup hbdd t, ?_⟩
+  set ℓ := ⨆ s, f s with hℓ_def
+  have hℓ : Tendsto f atTop (𝓝 ℓ) := tendsto_atTop_ciSup hmono hbdd
+  have hval : D / (1 - p) = -γ⁻¹ := by
+    rw [hD, extRVLimit_of_ne hγ.ne, ← hp]
+    have : 1 - p ≠ 0 := by linarith
+    field_simp
+    ring
+  rw [← hval]
+  refine tendsto_of_eventually_bounds (lo := fun ε => (D - ε) / (1 - (p - ε)))
+    (hi := fun ε => (D + ε) / (1 - (p + ε))) hε₁0 (fun ε hε hε' => ?_) ?_ ?_
+  · obtain ⟨T₀, hT₀, hb⟩ := hev ε hε
+    obtain ⟨T₂, hT₂, hT₂b⟩ := hsup ε hε hε'
+    filter_upwards [eventually_ge_atTop (max T₀ T₂)] with t ht
+    have ht0 : T₀ ≤ t := le_of_max_le_left ht
+    have ht2 : T₂ ≤ t := le_of_max_le_right ht
+    have hat := (hb t ht0).1
+    have htpos : 0 < t := hT₀.trans_le ht0
+    constructor
+    · -- lower bound: let `n → ∞` in the lower geometric bound
+      have hL := geom_lower (f := f) (a := a) hT₀ (C := D - ε) (q := p - ε) (by linarith)
+        (by linarith) (by linarith)
+        (fun t ht => ⟨(hb t ht).1, (hb t ht).2.1, (hb t ht).2.2.2.1⟩)
+      have hq1 : p - ε < 1 := by linarith
+      have hq0 : 0 ≤ p - ε := by linarith
+      have hlim1 : Tendsto (fun n : ℕ => (D - ε) * a t * (1 - (p - ε) ^ n) / (1 - (p - ε)))
+          atTop (𝓝 ((D - ε) * a t * (1 - 0) / (1 - (p - ε)))) :=
+        (((tendsto_pow_atTop_nhds_zero_of_lt_one hq0 hq1).const_sub 1).const_mul _).div_const _
+      have hlim2 : Tendsto (fun n : ℕ => f (2 ^ n * t) - f t) atTop (𝓝 (ℓ - f t)) :=
+        (hℓ.comp ((tendsto_pow_atTop_atTop_of_one_lt one_lt_two).atTop_mul_const htpos)).sub_const _
+      have := le_of_tendsto_of_tendsto' hlim1 hlim2 fun n => hL n t ht0
+      rw [sub_zero, mul_one] at this
+      rw [le_div_iff₀ hat]
+      calc (D - ε) / (1 - (p - ε)) * a t = (D - ε) * a t / (1 - (p - ε)) := by ring
+        _ ≤ ℓ - f t := this
+    · have : ℓ ≤ f t + (D + ε) * a t / (1 - (p + ε)) := ciSup_le fun s => hT₂b t ht2 s
+      rw [div_le_iff₀ hat]
+      calc ℓ - f t ≤ (D + ε) * a t / (1 - (p + ε)) := by linarith
+        _ = (D + ε) / (1 - (p + ε)) * a t := by ring
+  · have h1 : Tendsto (fun ε : ℝ => D - ε) (𝓝 0) (𝓝 D) :=
+      (continuous_const.sub continuous_id).tendsto' 0 D (sub_zero D)
+    have h2 : Tendsto (fun ε : ℝ => 1 - (p - ε)) (𝓝 0) (𝓝 (1 - p)) :=
+      (continuous_const.sub (continuous_const.sub continuous_id)).tendsto' 0 (1 - p)
+        (by show (1 : ℝ) - (p - 0) = 1 - p; rw [sub_zero])
+    exact h1.div h2 (by linarith)
+  · have h1 : Tendsto (fun ε : ℝ => D + ε) (𝓝 0) (𝓝 D) :=
+      (continuous_const.add continuous_id).tendsto' 0 D (add_zero D)
+    have h2 : Tendsto (fun ε : ℝ => 1 - (p + ε)) (𝓝 0) (𝓝 (1 - p)) :=
+      (continuous_const.sub (continuous_const.add continuous_id)).tendsto' 0 (1 - p)
+        (by show (1 : ℝ) - (p + 0) = 1 - p; rw [add_zero])
+    exact h1.div h2 (by linarith)
+
+/-- **Negative index**: if `f` is monotone and extended regularly varying with index `γ < 0`,
+then `f(∞) = lim f` exists and `f(∞) - f` is regularly varying with index `γ`. -/
+theorem IsExtendedRegularlyVarying.isRegularlyVarying_sub_of_neg
+    (hf : IsExtendedRegularlyVarying f γ a) (hmono : Monotone f) (hγ : γ < 0) :
+    ∃ ℓ, Tendsto f atTop (𝓝 ℓ) ∧ IsRegularlyVarying (fun t => ℓ - f t) γ := by
+  obtain ⟨ℓ, h1, -, h3⟩ := hf.exists_tendsto_of_neg hmono hγ
+  exact ⟨ℓ, h1, hf.isRegularlyVarying.of_tendsto_div (neg_pos.2 (inv_lt_zero.2 hγ)) h3⟩
 
 end ExtremeValueTheory
