@@ -25,11 +25,11 @@ condition `A(uₙ)`, no block lengths `rₙ` and no anticlustering are assumed.
    `1 - c ≤ τ ϑ_m`, `ϑ_m = P(max_{0 < t ≤ m} |Y_t| ≤ 1)`, and `m → ∞` gives `1 - c ≤ τ ϑ`.
 3. With `c = exp (-θ τ)` and `1 - exp (-x) ≥ x / (1 + x)`: `θ ≤ ϑ + τ` for every `τ > 0` for
    which levels exist. Regular variation of `P(|X_0| > x)` provides levels for every `τ > 0`
-   (`hasExceedanceLevels_of_isRegularlyVarying'`), so `θ ≤ ϑ`.
+   (`hasExceedanceLevels_of_isRegularlyVarying`), so `θ ≤ ϑ`.
 
 ## Main results
 
-* `hasExceedanceLevels_of_isRegularlyVarying'`: if `x ↦ P(X_0 > x)` is regularly varying (of any
+* `hasExceedanceLevels_of_isRegularlyVarying`: if `x ↦ P(X_0 > x)` is regularly varying (of any
   index), then for every `τ > 0` there are levels `uₙ` with `n P(X_0 > uₙ) → τ`
   (cf. [LLR, Theorem 1.7.13]: regular variation forces `P(X_0 ≥ x) / P(X_0 > x) → 1`).
 * `HasSpectralTailProcess.hasExceedanceLevels_abs`: hence `(|X_n|)` admits exceedance levels.
@@ -55,7 +55,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbability
 sequence with `n P(X_0 > uₙ) → τ`. The levels are `uₙ = inf {x ≥ 0 | P(X_0 > x) ≤ τ / n}`: by
 right continuity `n P(X_0 > uₙ) ≤ τ`, while for `λ > 1`,
 `n P(X_0 > uₙ) ≥ τ P(X_0 > uₙ) / P(X_0 > uₙ / λ) → τ λ^ρ`. -/
-theorem hasExceedanceLevels_of_isRegularlyVarying' {X : ℕ → Ω → ℝ} (hX0 : Measurable (X 0))
+theorem hasExceedanceLevels_of_isRegularlyVarying {X : ℕ → Ω → ℝ} (hX0 : Measurable (X 0))
     {ρ : ℝ} (hRV : IsRegularlyVarying (fun x => P.real {ω | x < X 0 ω}) ρ) :
     HasExceedanceLevels X P := by
   set g : ℝ → ℝ := fun x => P.real {ω | x < X 0 ω} with hg
@@ -159,7 +159,7 @@ omit [IsProbabilityMeasure Q] in
 `P(|X_0| > x)` is regularly varying. -/
 theorem HasSpectralTailProcess.hasExceedanceLevels_abs (h : HasSpectralTailProcess P X α Q Θ)
     (hX : ∀ t, Measurable (X t)) : HasExceedanceLevels (fun k : ℕ => |X k|) P :=
-  hasExceedanceLevels_of_isRegularlyVarying' (X := fun k : ℕ => |X k|)
+  hasExceedanceLevels_of_isRegularlyVarying (X := fun k : ℕ => |X k|)
     (continuous_abs.measurable.comp (hX _)) h.1
 
 /-- **The first-exceedance bound in the limit**: for a stationary series with spectral tail

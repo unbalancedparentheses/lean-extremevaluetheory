@@ -32,7 +32,7 @@ Hypothesis bookkeeping (the research value of the formal proofs):
   existence of `θ` for `|X|`: no anticlustering, no mixing, no block condition, no block lengths.
   This matches KS20 Lemma 7.5.4 as described by Bai–Kulik–Wang (2024); an earlier version
   (`le_candidateExtremalIndex`) also assumed condition `𝒜`. The level sequences needed are supplied by
-  regular variation (`hasExceedanceLevels_of_isRegularlyVarying'`).
+  regular variation (`hasExceedanceLevels_of_isRegularlyVarying`).
 
 Also done: `𝒜` from α-mixing at a rate; for every stationary m-dependent sequence with a spectral tail
 process, `|X|` has extremal index `ϑ`; through it, the moving maximum (`θ = 1/2`) and finite moving averages
