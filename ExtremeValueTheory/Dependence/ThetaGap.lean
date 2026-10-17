@@ -90,11 +90,6 @@ def escapeSet (X : ℤ → Ω → ℝ) (x : ℝ) (m k : ℕ) : Set Ω :=
 def noReturnSet (X : ℤ → Ω → ℝ) (x : ℝ) (k : ℕ) : Set Ω :=
   {ω | x < |X 0 ω| ∧ ∀ t ∈ Finset.Ioc (0 : ℤ) k, |X t ω| ≤ x}
 
-/-- The *cluster ratio* `P(max_{0 ≤ t < rₙ} |X_t| > uₙ) / (rₙ P(|X_0| > uₙ))`. -/
-noncomputable def clusterRatio (P : Measure Ω) (X : ℤ → Ω → ℝ) (u : ℕ → ℝ) (r : ℕ → ℕ) (n : ℕ) :
-    ℝ :=
-  P.real {ω | ∃ t ∈ Finset.Ico (0 : ℤ) (r n), u n < |X t ω|} / (r n * P.real {ω | u n < |X 0 ω|})
-
 /-- The *escape at lag `m`*:
 `εₙ(m) = (1 / rₙ) ∑_{k < rₙ} P(escapeSet X uₙ m k) / P(|X_0| > uₙ)`. With `Tₙ` the first return
 time above `uₙ` after `0`, `∑_{k < rₙ} 1{m < Tₙ ≤ k} = (rₙ - Tₙ)⁺ 1{Tₙ > m}`, so
@@ -426,123 +421,6 @@ section ExtremalIndex
 variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
   {P : Measure Ω} [IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ}
   {Q : Measure Ω'} [IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ} {u : ℕ → ℝ} {r : ℕ → ℕ}
-
-/-- **Under `A(uₙ)`, the maximum and the cluster ratio determine each other.** For a stationary
-series with `P(|X_0| > x) > 0` for all `x`, `n P(|X_0| > uₙ) → τ > 0`, `rₙ → ∞`, `rₙ / n → 0` and
-the block condition `A(uₙ)`: `P(M n ≤ uₙ) → exp (-θ τ)` iff the cluster ratio tends to `θ`.
-(No tail process is used.) -/
-theorem HasShiftInvariantWindows.tendsto_partialMax_iff_tendsto_clusterRatio
-    (hX : ∀ t, Measurable (X t)) (hstat : HasShiftInvariantWindows P X)
-    (hp0 : ∀ n, 0 < P.real {ω | u n < |X 0 ω|}) {τ : ℝ}
-    (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < |X 0 ω|}) atTop (𝓝 τ)) (hτ0 : 0 < τ)
-    (hr : Tendsto r atTop atTop) (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
-    (hA : ConditionA (fun k : ℕ => |X k|) P u r) (θ : ℝ) :
-    Tendsto (fun n => P.real {ω | partialMax (fun k : ℕ => |X k|) n ω ≤ u n}) atTop
-        (𝓝 (Real.exp (-(θ * τ)))) ↔ Tendsto (clusterRatio P X u r) atTop (𝓝 θ) := by
-  set p : ℕ → ℝ := fun n => P.real {ω | u n < |X 0 ω|}
-  set b : ℕ → ℝ := fun n => P.real {ω | ∃ t ∈ Finset.Ico (0 : ℤ) (r n), u n < |X t ω|}
-  set k : ℕ → ℕ := fun n => n / r n
-  have hr0 : ∀ᶠ n in atTop, 0 < r n := hr.eventually_gt_atTop 0
-  have hbr : ∀ n, b n ≤ r n * p n := by
-    intro n
-    simp only [b, hstat.measureReal_exists_lt_eq_sum hX]
-    calc _ ≤ ∑ _k ∈ Finset.range (r n), p n :=
-          Finset.sum_le_sum fun k _ => measureReal_mono fun ω hω => hω.1
-      _ = r n * p n := by simp
-  have hrp : Tendsto (fun n => (r n : ℝ) * p n) atTop (𝓝 0) := by
-    have := hrn.mul hτ
-    rw [zero_mul] at this
-    refine this.congr' ?_
-    filter_upwards [eventually_gt_atTop 0] with n hn
-    have : (n : ℝ) ≠ 0 := by exact_mod_cast hn.ne'
-    dsimp only [p]
-    field_simp
-  have hb : Tendsto b atTop (𝓝 0) :=
-    squeeze_zero (fun n => measureReal_nonneg) hbr hrp
-  have hpart : ∀ n, 0 < r n →
-      P.real {ω | partialMax (fun k : ℕ => |X k|) (r n) ω ≤ u n} = 1 - b n := by
-    intro n hn
-    have hmeas : MeasurableSet {ω | ∃ t ∈ Finset.Ico (0 : ℤ) (r n), u n < |X t ω|} := by
-      simp only [ofPred_exists, ofPred_and]
-      exact MeasurableSet.iUnion fun t => (MeasurableSet.const _).inter
-        (measurableSet_lt measurable_const (continuous_abs.measurable.comp (hX t)))
-    rw [← probReal_compl_eq_one_sub hmeas]
-    congr 1
-    ext ω
-    rw [mem_ofPred_eq, partialMax_le_iff hn, mem_compl_iff, mem_ofPred_eq]
-    constructor
-    · rintro hle ⟨t, ht, hlt⟩
-      rw [Finset.mem_Ico] at ht
-      obtain ⟨k, rfl⟩ : ∃ k : ℕ, t = k := ⟨t.toNat, by omega⟩
-      exact absurd (hle k (by exact_mod_cast ht.2)) (not_le.2 hlt)
-    · intro hne k hk
-      by_contra hcon
-      exact hne ⟨k, Finset.mem_Ico.2 ⟨by positivity, by exact_mod_cast hk⟩, not_le.1 hcon⟩
-  have hkr := tendsto_div_mul_div_self hr0 hrn
-  -- `kₙ bₙ = (kₙ rₙ / n) (n pₙ) clusterRatio`
-  have hfac : ∀ᶠ n in atTop, (k n : ℝ) * b n =
-      ((n / r n : ℕ) : ℝ) * r n / n * (n * p n) * clusterRatio P X u r n := by
-    filter_upwards [hr0, eventually_gt_atTop 0] with n hrpos hn
-    have : (r n : ℝ) ≠ 0 := by exact_mod_cast hrpos.ne'
-    have : (n : ℝ) ≠ 0 := by exact_mod_cast hn.ne'
-    have : P.real {ω | u n < |X 0 ω|} ≠ 0 := (hp0 n).ne'
-    rw [clusterRatio]
-    dsimp only [b, p, k]
-    field_simp
-  constructor
-  · intro hθ
-    have hpow : Tendsto (fun n => (1 - b n) ^ k n) atTop (𝓝 (Real.exp (-(θ * τ)))) := by
-      have := hθ.sub hA
-      rw [sub_zero] at this
-      refine this.congr' ?_
-      filter_upwards [hr0] with n hn
-      rw [hpart n hn]
-      ring
-    have hlog : Tendsto (fun n => (k n : ℝ) * Real.log (1 - b n)) atTop (𝓝 (-(θ * τ))) := by
-      have := ((Real.continuousAt_log (Real.exp_pos _).ne').tendsto.comp hpow)
-      rw [Real.log_exp] at this
-      refine this.congr' ?_
-      filter_upwards [hb.eventually (gt_mem_nhds one_pos)] with n hn
-      simp only [Function.comp_apply, Real.log_pow]
-    have hkb : Tendsto (fun n => (k n : ℝ) * b n) atTop (𝓝 (θ * τ)) := by
-      have hlow : Tendsto (fun n => -((1 - b n) * ((k n : ℝ) * Real.log (1 - b n)))) atTop
-          (𝓝 (θ * τ)) := by
-        have := ((hb.const_sub 1).mul hlog).neg
-        rwa [sub_zero, one_mul, neg_neg] at this
-      refine tendsto_of_tendsto_of_tendsto_of_le_of_le' hlow (by simpa using hlog.neg) ?_ ?_
-      · filter_upwards [hb.eventually (gt_mem_nhds one_pos)] with n hn
-        have hpos : 0 < 1 - b n := by linarith
-        have h1 := Real.one_sub_inv_le_log_of_pos hpos
-        have h2 : -b n ≤ (1 - b n) * Real.log (1 - b n) := by
-          have := mul_le_mul_of_nonneg_left h1 hpos.le
-          rwa [mul_sub, mul_one, mul_inv_cancel₀ hpos.ne', sub_sub_cancel_left] at this
-        have h3 := mul_le_mul_of_nonneg_left h2 (Nat.cast_nonneg (α := ℝ) (k n))
-        linarith
-      · filter_upwards [hb.eventually (gt_mem_nhds one_pos)] with n hn
-        have hpos : 0 < 1 - b n := by linarith
-        have h1 := Real.log_le_sub_one_of_pos hpos
-        have h3 := mul_le_mul_of_nonneg_left h1 (Nat.cast_nonneg (α := ℝ) (k n))
-        linarith
-    have hden := hkr.mul hτ
-    rw [one_mul] at hden
-    have := hkb.div hden hτ0.ne'
-    rw [mul_div_cancel_right₀ _ hτ0.ne'] at this
-    refine this.congr' ?_
-    filter_upwards [hfac, hden.eventually_ne hτ0.ne'] with n hn hne
-    simp only [Pi.div_apply]
-    rw [hn, mul_div_cancel_left₀ _ hne]
-  · intro hθ
-    have hkb : Tendsto (fun n => (k n : ℝ) * b n) atTop (𝓝 (θ * τ)) := by
-      have := (hkr.mul hτ).mul hθ
-      rw [one_mul, mul_comm τ] at this
-      exact this.congr' (hfac.mono fun n hn => hn.symm)
-    have hpow := tendsto_one_sub_pow_exp_of_tendsto_mul hb hkb
-    have := hA.add hpow
-    rw [zero_add] at this
-    refine this.congr' ?_
-    filter_upwards [hr0] with n hn
-    rw [hpart n hn]
-    ring
 
 /-- **`θ = ϑ - η`.** Under stationarity, the spectral tail process, `n P(|X_0| > uₙ) → τ > 0`,
 `rₙ → ∞`, `rₙ / n → 0` and `A(uₙ)`:
