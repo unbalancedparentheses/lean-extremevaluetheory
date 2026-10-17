@@ -126,6 +126,16 @@ lemma sumDiracRange_apply (n : ℕ) (z : ℕ → E) {A : Set E} (hA : Measurable
     sumDiracRange n z A = ∑ k ∈ range n, A.indicator 1 (z k) := by
   simp [sumDiracRange, Measure.coe_finsetSum, Finset.sum_apply, Measure.dirac_apply' _ hA]
 
+/-- The mass that `∑_{k < n} δ_{z k}` gives to a measurable set, written via a real-valued
+count. -/
+lemma sumDiracRange_apply_eq_ofReal (n : ℕ) (z : ℕ → E) {A : Set E} (hA : MeasurableSet A) :
+    sumDiracRange n z A = ENNReal.ofReal (∑ k ∈ range n, A.indicator (1 : E → ℝ) (z k)) := by
+  rw [sumDiracRange_apply _ _ hA, ENNReal.ofReal_sum_of_nonneg
+    (f := fun k ↦ A.indicator (1 : E → ℝ) (z k)) fun k _ ↦
+      Set.indicator_nonneg (fun _ _ ↦ zero_le_one) _]
+  refine Finset.sum_congr rfl fun k _ ↦ ?_
+  by_cases hk : z k ∈ A <;> simp [hk]
+
 /-- The law of a pair `(K, Z)` where `K` is Poisson distributed with mean `c` and
 `Z` is an independent sequence of i.i.d. random variables with law `μ`. -/
 noncomputable def poissonSampleMeasure (c : ℝ≥0) (μ : Measure E) [IsProbabilityMeasure μ] :
@@ -209,6 +219,46 @@ lemma integral_prod_range_poissonSampleMeasure {g : E → ℂ} (hg : Measurable 
         rw [Complex.ofReal_exp, ← Complex.exp_add]
         push_cast
         ring_nf
+
+/-- The mean of the Poisson distribution with parameter `r` is `r`. -/
+lemma lintegral_natCast_poissonMeasure (r : ℝ≥0) :
+    ∫⁻ n, (n : ℝ≥0∞) ∂(poissonMeasure r) = r := by
+  have hsum : HasSum (fun n : ℕ ↦ Real.exp (-r) * r ^ n / n.factorial * n) r := by
+    refine (hasSum_nat_add_iff' 1).1 ?_
+    simp only [Finset.range_one, Finset.sum_singleton, Nat.cast_zero, mul_zero, sub_zero]
+    convert (hasSum_one_poissonMeasure r).mul_left (r : ℝ) using 1
+    · ext n
+      rw [Nat.factorial_succ, pow_succ]
+      push_cast
+      field_simp
+    · ring
+  rw [poissonMeasure, lintegral_sum_measure]
+  simp only [lintegral_smul_measure, lintegral_dirac, smul_eq_mul]
+  have hr : (r : ℝ≥0∞) =
+      ENNReal.ofReal (∑' n : ℕ, Real.exp (-r) * r ^ n / n.factorial * n) := by
+    rw [hsum.tsum_eq, ENNReal.ofReal_coe_nnreal]
+  rw [hr, ENNReal.ofReal_tsum_of_nonneg (fun n ↦ by positivity) hsum.summable]
+  refine tsum_congr fun n ↦ ?_
+  rw [ENNReal.ofReal_mul (by positivity), ENNReal.ofReal_natCast]
+
+/-- The expected number of points of `∑_{k < K} δ_{Z k}` in a measurable set `A` is
+`c * μ A`. -/
+lemma lintegral_sumDiracRange_poissonSampleMeasure {A : Set E} (hA : MeasurableSet A) :
+    ∫⁻ ω, sumDiracRange ω.1 ω.2 A ∂(poissonSampleMeasure c μ) = c * μ A := by
+  have hm : Measurable fun ω : ℕ × (ℕ → E) ↦ sumDiracRange ω.1 ω.2 A :=
+    (Measure.measurable_coe hA).comp measurable_sumDiracRange
+  rw [poissonSampleMeasure, lintegral_prod _ hm.aemeasurable]
+  have hinner (n : ℕ) : ∫⁻ z, sumDiracRange n z A ∂(Measure.infinitePi fun _ : ℕ ↦ μ) =
+      n * μ A := by
+    simp_rw [sumDiracRange_apply _ _ hA]
+    rw [lintegral_finsetSum (f := fun k (z : ℕ → E) ↦ A.indicator 1 (z k)) _ fun k _ ↦
+      (measurable_one.indicator hA).comp (measurable_pi_apply k)]
+    have hk (k : ℕ) : ∫⁻ z, A.indicator 1 (z k) ∂(Measure.infinitePi fun _ : ℕ ↦ μ) = μ A := by
+      rw [(measurePreserving_eval_infinitePi (fun _ : ℕ ↦ μ) k).lintegral_comp
+        (f := A.indicator 1) (measurable_one.indicator hA), lintegral_indicator_one hA]
+    simp [hk]
+  simp_rw [hinner]
+  rw [lintegral_mul_const _ (by fun_prop), lintegral_natCast_poissonMeasure]
 
 omit [MeasurableSpace E] in
 /-- Pointwise identity behind the joint characteristic function of the counts on disjoint sets. -/
@@ -317,11 +367,7 @@ theorem isPoissonRandomMeasure_sumDiracRange (c : ℝ≥0) (μ : Measure E) [IsP
         (fun (y : Fin n → ℝ) i ↦ ENNReal.ofReal (y i)) ∘
           fun ω i ↦ ∑ k ∈ range ω.1, (A i).indicator (1 : E → ℝ) (ω.2 k) := by
       ext ω i
-      simp only [Function.comp_apply, sumDiracRange_apply _ _ (hA i)]
-      rw [ENNReal.ofReal_sum_of_nonneg (f := fun k ↦ (A i).indicator (1 : E → ℝ) (ω.2 k))
-        fun k _ ↦ Set.indicator_nonneg (fun _ _ ↦ zero_le_one) _]
-      refine Finset.sum_congr rfl fun k _ ↦ ?_
-      by_cases hk : ω.2 k ∈ A i <;> simp [hk]
+      exact sumDiracRange_apply_eq_ofReal _ _ (hA i)
     rw [hcount, ← Measure.map_map (by fun_prop) hY, map_count_poissonSampleMeasure hA hd,
       Measure.pi_map_pi (fun i ↦ by fun_prop)]
     congr with i : 1
