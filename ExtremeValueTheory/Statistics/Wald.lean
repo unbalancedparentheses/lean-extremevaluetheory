@@ -199,4 +199,142 @@ theorem ae_tendsto_of_wald [IsProbabilityMeasure μ] {Ω : Type*} {mΩ : Measura
 
 end Wald
 
+/-! ### Identifiability of the GPD family: the Kullback–Leibler inequality -/
+
+section GPDIdentifiability
+
+variable {ξ σ ξ₀ σ₀ x : ℝ}
+
+lemma integrable_gpdDensity (hσ : 0 < σ) : Integrable (gpdDensity ξ σ) volume :=
+  (integral_eq_one_of_eq_withDensity (gpdMeasure_eq_withDensity hσ) (gpdDensity_nonneg hσ ξ)
+    (measurable_gpdDensity ξ σ).aestronglyMeasurable).1
+
+lemma gpdDensity_pos (hξ : 0 ≤ ξ) (hσ : 0 < σ) (hx : 0 ≤ x) : 0 < gpdDensity ξ σ x := by
+  have hu : 0 < 1 + ξ * x / σ := by positivity
+  unfold gpdDensity
+  rw [ite_eq_left ⟨hx, hu⟩]
+  split_ifs
+  · positivity
+  · exact mul_pos (inv_pos.2 hσ) (rpow_pos_of_pos hu _)
+
+lemma gpdDensity_of_neg (hx : x < 0) : gpdDensity ξ σ x = 0 := by
+  simp [gpdDensity, not_le.2 hx]
+
+/-- **Identifiability of the GPD family with positive shape**: two GPD laws with `ξ, ξ₀ > 0`
+coincide only if their parameters do. -/
+theorem gpd_params_eq_of_gpdMeasure_eq (hξ : 0 < ξ) (hσ : 0 < σ) (hξ₀ : 0 < ξ₀) (hσ₀ : 0 < σ₀)
+    (h : gpdMeasure ξ σ = gpdMeasure ξ₀ σ₀) : ξ = ξ₀ ∧ σ = σ₀ := by
+  have hS : ∀ x, 0 ≤ x → gpdSurvival' ξ σ x = gpdSurvival' ξ₀ σ₀ x := fun x hx => by
+    have := gpdMeasure_Ioi (ξ := ξ) hσ hx
+    rw [h, gpdMeasure_Ioi hσ₀ hx] at this
+    exact ((ENNReal.ofReal_eq_ofReal_iff (gpdSurvival'_nonneg _ _ _)
+      (gpdSurvival'_nonneg _ _ _)).1 this).symm
+  set f : ℝ → ℝ → ℝ → ℝ := fun ξ σ x => 1 / ξ * log (1 + ξ * x / σ)
+  have hf : ∀ x, 0 < x → f ξ σ x = f ξ₀ σ₀ x := fun x hx => by
+    have := hS x hx.le
+    have h1 : 0 < 1 + ξ * x / σ := by positivity
+    have h2 : 0 < 1 + ξ₀ * x / σ₀ := by positivity
+    simp only [gpdSurvival', hξ.ne', hξ₀.ne', ↓reduceIte, max_eq_left h1.le,
+      max_eq_left h2.le] at this
+    have hl := congrArg log this
+    rw [log_rpow h1, log_rpow h2] at hl
+    simp only [f]
+    linarith
+  have hd : ∀ ξ σ x : ℝ, 0 < ξ → 0 < σ → 0 < x → HasDerivAt (f ξ σ) (1 / (σ + ξ * x)) x := by
+    intro ξ σ x hξ hσ hx
+    have h1 : 0 < 1 + ξ * x / σ := by positivity
+    have := (((((hasDerivAt_id x).const_mul ξ).div_const σ).const_add 1).log h1.ne').const_mul
+      (1 / ξ)
+    refine this.congr_deriv ?_
+    simp only [id]
+    field_simp
+  have heq : ∀ x : ℝ, 0 < x → 1 / (σ + ξ * x) = 1 / (σ₀ + ξ₀ * x) := fun x hx => by
+    have hev : f ξ σ =ᶠ[𝓝 x] f ξ₀ σ₀ := by
+      filter_upwards [lt_mem_nhds hx] with y hy
+      exact hf y hy
+    exact (hd ξ σ x hξ hσ hx).unique ((hd ξ₀ σ₀ x hξ₀ hσ₀ hx).congr_of_eventuallyEq hev)
+  have e1 := heq 1 one_pos
+  have e2 := heq 2 two_pos
+  rw [div_eq_div_iff (by positivity) (by positivity)] at e1 e2
+  constructor <;> linarith
+
+/-- **The Kullback–Leibler inequality for the GPD family** (identifiability of the log-likelihood
+criterion): for `ξ, ξ₀ > 0`, `(ξ, σ) ≠ (ξ₀, σ₀)`,
+`E_{ξ₀,σ₀} log g_{ξ,σ}(X) < E_{ξ₀,σ₀} log g_{ξ₀,σ₀}(X)`. -/
+theorem integral_log_gpdDensity_lt (hξ : 0 < ξ) (hσ : 0 < σ) (hξ₀ : 0 < ξ₀) (hσ₀ : 0 < σ₀)
+    (hne : ¬ (ξ = ξ₀ ∧ σ = σ₀))
+    (hi : Integrable (fun x => log (gpdDensity ξ σ x)) (gpdMeasure ξ₀ σ₀))
+    (hi₀ : Integrable (fun x => log (gpdDensity ξ₀ σ₀ x)) (gpdMeasure ξ₀ σ₀)) :
+    ∫ x, log (gpdDensity ξ σ x) ∂gpdMeasure ξ₀ σ₀ <
+      ∫ x, log (gpdDensity ξ₀ σ₀ x) ∂gpdMeasure ξ₀ σ₀ := by
+  have hμ := gpdMeasure_eq_withDensity (ξ := ξ₀) hσ₀
+  have hm₀ : Measurable fun x => ENNReal.ofReal (gpdDensity ξ₀ σ₀ x) :=
+    (measurable_gpdDensity _ _).ennreal_ofReal
+  have hprod : ∀ x, gpdDensity ξ₀ σ₀ x * (gpdDensity ξ σ x / gpdDensity ξ₀ σ₀ x) =
+      gpdDensity ξ σ x := fun x => by
+    rcases lt_or_ge x 0 with hx | hx
+    · simp [gpdDensity_of_neg hx]
+    · rw [mul_div_cancel₀ _ (gpdDensity_pos hξ₀.le hσ₀ hx).ne']
+  have hsmul : ∀ x, (ENNReal.ofReal (gpdDensity ξ₀ σ₀ x)).toReal •
+      (gpdDensity ξ σ x / gpdDensity ξ₀ σ₀ x) = gpdDensity ξ σ x := fun x => by
+    rw [ENNReal.toReal_ofReal (gpdDensity_nonneg hσ₀ _ x), smul_eq_mul, hprod]
+  have hratio_int : Integrable (fun x => gpdDensity ξ σ x / gpdDensity ξ₀ σ₀ x)
+      (gpdMeasure ξ₀ σ₀) := by
+    rw [hμ, integrable_withDensity_iff_integrable_smul' hm₀
+      (ae_of_all _ fun _ => ENNReal.ofReal_lt_top)]
+    exact (integrable_gpdDensity (ξ := ξ) hσ).congr (ae_of_all _ fun x => (hsmul x).symm)
+  have hratio : ∫ x, gpdDensity ξ σ x / gpdDensity ξ₀ σ₀ x ∂gpdMeasure ξ₀ σ₀ = 1 := by
+    rw [hμ, integral_withDensity_eq_integral_toReal_smul hm₀
+      (ae_of_all _ fun _ => ENNReal.ofReal_lt_top)]
+    simp_rw [hsmul]
+    exact integral_gpdDensity hσ
+  have hA : Integrable (fun x => gpdDensity ξ σ x / gpdDensity ξ₀ σ₀ x - 1)
+      (gpdMeasure ξ₀ σ₀) := hratio_int.sub (integrable_const 1)
+  have hB : Integrable (fun x => log (gpdDensity ξ σ x) - log (gpdDensity ξ₀ σ₀ x))
+      (gpdMeasure ξ₀ σ₀) := hi.sub hi₀
+  have hh_int : Integrable (fun x => (gpdDensity ξ σ x / gpdDensity ξ₀ σ₀ x - 1) -
+      (log (gpdDensity ξ σ x) - log (gpdDensity ξ₀ σ₀ x))) (gpdMeasure ξ₀ σ₀) := hA.sub hB
+  have hh_nonneg : ∀ᵐ x ∂gpdMeasure ξ₀ σ₀, 0 ≤ (gpdDensity ξ σ x / gpdDensity ξ₀ σ₀ x - 1) -
+      (log (gpdDensity ξ σ x) - log (gpdDensity ξ₀ σ₀ x)) := by
+    filter_upwards [ae_gpdMeasure hσ₀] with x hx
+    have hg := gpdDensity_pos hξ.le hσ hx.1.le
+    have hg₀ := gpdDensity_pos hξ₀.le hσ₀ hx.1.le
+    have := log_le_sub_one_of_pos (div_pos hg hg₀)
+    rw [log_div hg.ne' hg₀.ne'] at this
+    linarith
+  have hpos : 0 < ∫ x, (gpdDensity ξ σ x / gpdDensity ξ₀ σ₀ x - 1) -
+      (log (gpdDensity ξ σ x) - log (gpdDensity ξ₀ σ₀ x)) ∂gpdMeasure ξ₀ σ₀ := by
+    rw [integral_pos_iff_support_of_nonneg_ae hh_nonneg hh_int, pos_iff_ne_zero]
+    intro hzero
+    have hae : ∀ᵐ x ∂gpdMeasure ξ₀ σ₀, (gpdDensity ξ σ x / gpdDensity ξ₀ σ₀ x - 1) -
+        (log (gpdDensity ξ σ x) - log (gpdDensity ξ₀ σ₀ x)) = 0 := by
+      rw [ae_iff]; simpa [Function.support] using hzero
+    have hae2 : ∀ᵐ x ∂gpdMeasure ξ₀ σ₀, gpdDensity ξ σ x = gpdDensity ξ₀ σ₀ x := by
+      filter_upwards [hae, ae_gpdMeasure hσ₀] with x hx hx'
+      by_contra hneq
+      have hg := gpdDensity_pos hξ.le hσ hx'.1.le
+      have hg₀ := gpdDensity_pos hξ₀.le hσ₀ hx'.1.le
+      have := log_lt_sub_one_of_pos (div_pos hg hg₀)
+        (fun h1 => hneq ((div_eq_one_iff_eq hg₀.ne').1 h1))
+      rw [log_div hg.ne' hg₀.ne'] at this
+      linarith
+    have hleb : ∀ᵐ x ∂volume, gpdDensity ξ σ x = gpdDensity ξ₀ σ₀ x := by
+      rw [ae_iff] at hae2 ⊢
+      rw [hμ, withDensity_apply_eq_zero' hm₀.aemeasurable] at hae2
+      refine measure_mono_null ?_ hae2
+      intro x hx
+      refine ⟨?_, hx⟩
+      simp only [mem_ofPred_eq] at hx ⊢
+      rcases lt_or_ge x 0 with hx0 | hx0
+      · exact absurd (by simp [gpdDensity_of_neg hx0]) hx
+      · exact (ENNReal.ofReal_pos.2 (gpdDensity_pos hξ₀.le hσ₀ hx0)).ne'
+    refine hne (gpd_params_eq_of_gpdMeasure_eq hξ hσ hξ₀ hσ₀ ?_)
+    rw [gpdMeasure_eq_withDensity hσ, hμ]
+    exact withDensity_congr_ae (hleb.mono fun x hx => by simp only; rw [hx])
+  rw [integral_sub hA hB, integral_sub hratio_int (integrable_const 1), integral_sub hi hi₀,
+    hratio, integral_const, probReal_univ, one_smul] at hpos
+  linarith
+
+end GPDIdentifiability
+
 end ExtremeValueTheory
