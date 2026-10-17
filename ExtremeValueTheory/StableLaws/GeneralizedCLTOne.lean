@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.StableLaws.GeneralizedCLT
+import ExtremeValueTheory.StableLaws.Constants
 
 /-!
 # The generalized central limit theorem for `α = 1`
@@ -733,7 +734,7 @@ tail `G(x) = P(|X| > x)` is regularly varying with index `-1`, with tail balance
 `P(X > x) / G(x) → p` (hence `P(X < -x) / G(x) → q = 1 - p`), and let `aₙ > 0` with
 `n G(aₙ) → 1`. Then with the truncated centering `bₙ = n E[X 1{|X| ≤ aₙ}]`, the laws of
 `(X₁ + ⋯ + Xₙ - bₙ) / aₙ` converge weakly to a `1`-stable law `ν` with characteristic function
-`exp (-C₁ |t| + i (p - q) (c t - t log |t|))`, where `C₁ = stableConst 1` (classically `π / 2`)
+`exp (-C₁ |t| + i (p - q) (c t - t log |t|))`, where `C₁ = stableConst 1` (`= π / 2`, see the primed version)
 and `c = stableLogConst = 1 + ∫₀¹ (cos v - 1) / v dv + ∫₁^∞ cos v / v dv` (classically
 `1 - γ`). The limit exists by Lévy's continuity theorem. -/
 theorem tendsto_map_convPow_sub_of_isRegularlyVarying_one {μ : Measure ℝ}
@@ -767,5 +768,21 @@ theorem tendsto_map_convPow_sub_of_isRegularlyVarying_one {μ : Measure ℝ}
     (μ := fun n => ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - n * m n)), inferInstance⟩) hf
     (fun t => by simpa using hchar t)
   exact ⟨ν, ⟨inferInstance, fun t => congrFun hν t⟩, hlim⟩
+
+/-- **Generalized central limit theorem, `α = 1`, with `C₁ = π / 2`**: the limit law in
+`tendsto_map_convPow_sub_of_isRegularlyVarying_one` has characteristic function
+`exp (-(π / 2) |t| + i (2p - 1) (c t - t log |t|))`, using `StableIntegral.stableConst_one`. -/
+theorem tendsto_map_convPow_sub_of_isRegularlyVarying_one' {μ : Measure ℝ}
+    [IsProbabilityMeasure μ] {p : ℝ} (hRV : IsRegularlyVarying (absTail μ) (-1))
+    (hp : Tendsto (fun x => μ.real (Ioi x) / absTail μ x) atTop (𝓝 p))
+    {a : ℕ → ℝ} (ha : ∀ n, 0 < a n)
+    (hna : Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n)) atTop (𝓝 1)) :
+    ∃ ν : ProbabilityMeasure ℝ,
+      HasStableOneCharFun (Real.pi / 2) (2 * p - 1) stableLogConst (ν : Measure ℝ) ∧
+      Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+        ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - n * ∫ y in Icc (-a n) (a n), y ∂μ)),
+          inferInstance⟩) atTop (𝓝 ν) := by
+  simpa [StableIntegral.stableConst_one] using
+    tendsto_map_convPow_sub_of_isRegularlyVarying_one hRV hp ha hna
 
 end ExtremeValueTheory

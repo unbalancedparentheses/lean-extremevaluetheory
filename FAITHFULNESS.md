@@ -122,6 +122,7 @@ Processes*.
 | `tendsto_tail_sub_div` | EKM Lemma 1.3.5(a) | `F̄(x−y)/F̄(x) → 1` | Holds for every real `y`. | FAITHFUL |
 | `tendsto_tail_convPow_div`, `tendsto_measure_sum_div_tail` | EKM Lemma 1.3.4 | `F̄^{*n}(x)/F̄(x) → n` | For `n ≥ 1`, in convolution form and in i.i.d.-sum form. | FAITHFUL |
 | `tendsto_measure_max_div_tail`, `tendsto_measure_sum_div_measure_max` | EKM Lemma 1.3.1 | `P(max > x) ~ n F̄(x)`; `P(S_n > x) ~ P(M_n > x)` | Same. The max version needs only `tail > 0`. | FAITHFUL |
+| ‡ `tendsto_map_convPow_sub_of_isRegularlyVarying_one` (and `'`) | Feller XVII.5 Thm 2, EKM Thm 2.2.8 (`α = 1`) | `bₙ = n E[X 1{|X| ≤ aₙ}]`, limit `exp(−C₁|t| − iβ(2/π) t log|t| + iκt)` | Same hypotheses as the `α ≠ 1` rows with `α = 1`; the truncation is `Icc (−aₙ) aₙ`. The limit is `exp(−(π/2)|t| + iβ(c t − t log|t|))` with `β = 2p−1`. This is the ST parametrization with `σ = π/2` (so `β(2/π)σ = β`) and a location shift `κ`, which depends on the centering. `c = stableLogConst` is an explicit integral (classically `1 − γ`, not proved). | FAITHFUL (constant `c` not in closed form) |
 | ‡ `IsSubexponential.of_tendsto_tail_div`, `.convPow`, `tendsto_tail_conv_div_of_tendsto` | EKM Lemma A3.15 | tail-equivalent laws on `[0,∞)` stay subexponential; `F̄_{A*B} ~ (c₁+c₂)F̄` | Same, with `c > 0` (resp. `c₁, c₂ > 0`) and the new law on `[0,∞)`. | FAITHFUL |
 | ‡ `IsSubexponential.tendsto_tail_compound_div` / `.compound` | EKM Thm A3.20 | `E(1+ε)^N < ∞` ⇒ `P(S_N > x) ~ E N · F̄(x)` | The law of `S_N` is `compound μ p = Σ pₙ μ^{*n}` (`Measure.sum`), with `p : ℕ → ℝ≥0`, `HasSum p 1`, `Summable (pₙ(1+ε)^n)`. This is the law of an independent random sum. | FAITHFUL |
 | ‡ `pkRuin`, `IsSubexponential.tendsto_pkRuin_div`, `tendsto_pkRuin_div_mul_tail` | EKM Thm 1.3.6 (Embrechts–Veraverbeke) | `F_I ∈ S` ⇒ `ψ(u) ~ ρ⁻¹ F̄_I(u)` | `ψ` is *defined* by the Pollaczek–Khinchine formula `ρ/(1+ρ) Σ (1+ρ)^{-n} F̄_I^{*n}(u)`, which is correct, but the formula is not derived from the Cramér–Lundberg process. `integratedTail μ` is the density `F̄/m` on `(0,∞)`. The RV corollaries assume `F̄ ∈ RV_{−α}`, `α > 1` (so `m < ∞` is proved). | DIFFERS (ruin probability defined via P–K); correct |
@@ -156,8 +157,10 @@ it is avoided by the explicit bound); `orderStat ![3,1,2] 0 = 3`; `hill` on a sa
    (centering `n E X`), `tendsto_map_convPow_of_isRegularlyVarying_of_lt_one` and
    `tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt` take tail balance
    `P(X > x)/P(|X| > x) → p` and give skewed limits with `HasStableCharFun`, which are linked to
-   `IsStrictlyStable` / `IsStable` (`HasStableCharFun.isStrictlyStable`). Remaining: `α = 1`
-   (centering `n E[X 1{|X| ≤ aₙ}]`, log term). The closed forms `C_α = Γ(1−α)cos(πα/2)`
+   `IsStrictlyStable` / `IsStable` (`HasStableCharFun.isStrictlyStable`). `α = 1` is now proved too
+   (`tendsto_map_convPow_sub_of_isRegularlyVarying_one`, `StableLaws/GeneralizedCLTOne.lean`).
+   Remaining: the classical value `c = 1 − γ` of the log-term constant is not proved (`c` is an
+   explicit integral). The closed forms `C_α = Γ(1−α)cos(πα/2)`
    (`= π/2` at `α = 1`) and `E_α = C_α tan(πα/2)` are now proved (`StableLaws/Constants.lean`),
    and the primed GCLT theorems state the textbook characteristic function. Original text: **(Minor: scope) The GCLT is only the
    symmetric case.** `tendsto_map_convPow_of_isRegularlyVarying`

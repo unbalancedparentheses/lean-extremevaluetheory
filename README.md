@@ -74,7 +74,9 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   converge weakly to a skewed strictly stable law with characteristic function
   `exp(−C_α|t|^α(1 − i(2p−1) sign(t) tan(πα/2)))` with `C_α = Γ(1−α) cos(πα/2)`
   (`StableIntegral.stableConst_eq_Gamma_mul_cos`, `stableSkewConst_eq_mul_tan`, and the primed
-  textbook-form theorems). The case `α = 1` is not formalized.
+  textbook-form theorems). For `α = 1`
+  (`tendsto_map_convPow_sub_of_isRegularlyVarying_one'`), centering by `n E[X 1{|X| ≤ aₙ}]` gives
+  the limit `exp(−(π/2)|t| + i(2p−1)(c t − t log|t|))` with `c` an explicit integral.
 - **Uniform convergence theorem and Karamata's representation theorem** for measurable slowly
   and regularly varying functions (no monotonicity), with two-sided Potter bounds
   (`isSlowlyVarying_iff_exists_representation`, `potter_bounds_of_measurable`).

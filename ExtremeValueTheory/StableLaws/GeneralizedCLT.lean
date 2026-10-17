@@ -26,8 +26,8 @@ and in both cases the limit is the `α`-stable law with characteristic function
 constants as the explicit integrals here, and prove these Gamma-function closed forms (and the
 textbook restatements of the theorems) in `StableLaws/Constants.lean`.
 
-The case `α = 1` (centering `n E[X 1{|X| ≤ aₙ}]`, logarithmic term in the exponent) is not
-treated here.
+The case `α = 1` (centering `n E[X 1{|X| ≤ aₙ}]`, logarithmic term in the exponent) is in
+`ExtremeValueTheory.StableLaws.GeneralizedCLTOne`.
 
 ## Main definitions
 

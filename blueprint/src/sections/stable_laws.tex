@@ -526,3 +526,31 @@ $\mu^{*n}$ for the convolution power (Definition~\ref{def:convPow}).
   \leanok
   Substitute Theorem~\ref{thm:stable-constants} into Theorem~\ref{thm:gclt-asymmetric}.
 \end{proof}
+
+\begin{theorem}[Generalized central limit theorem, $\alpha = 1$]
+  \label{thm:gclt-one}
+  \uses{thm:gclt-asymmetric, thm:stable-constants}
+  \lean{ExtremeValueTheory.tendsto_map_convPow_sub_of_isRegularlyVarying_one,
+    ExtremeValueTheory.tendsto_map_convPow_sub_of_isRegularlyVarying_one', ExtremeValueTheory.stableExponentOne,
+    ExtremeValueTheory.HasStableOneCharFun, ExtremeValueTheory.StableIntegral.cosLogConst, ExtremeValueTheory.StableIntegral.stableLogConst}
+  \leanok
+  Under the hypotheses of Theorem~\ref{thm:gclt-asymmetric} with $\alpha = 1$, let
+  $b_n = n \E[X \mathbf 1\{|X| \le a_n\}]$. Then $(S_n - b_n)/a_n$ converges weakly to the law with
+  characteristic function
+  \begin{align*}
+    \exp\big( -\tfrac{\pi}{2} |t| + i (2p - 1) (c\, t - t \log |t|) \big),
+  \end{align*}
+  where $c = 1 + \int_0^1 (\cos v - 1)/v \, \ud v + \int_1^\infty \cos v / v \, \ud v$
+  (classically $1 - \gamma$; this value is not formalized) [Feller, \S XVII.5, Theorem~2],
+  [EKM, Theorem~2.2.8].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Decompose $\E \sin(sX) - s \E[X \mathbf 1\{|X| \le a\}]$ into one-sided terms of the continuous
+  odd function $Q_t(v) = \sin(tv) - t \, \mathrm{clamp}(v, -1, 1)$ plus a boundary term
+  $t(\PR[X > a] - \PR[X < -a]) \to t(p - q)$. A truncated layer-cake formula and Potter
+  domination give $n \E Q_t(X^+/a_n) \to p\, t (c' - \log|t|)$, where the improper integral
+  $\int_0^\infty (t \cos(tu) - t \mathbf 1\{u < 1\})/u \, \ud u = t(c' - \log |t|)$ comes from the
+  substitution $v = tu$. The centering is small: $n (t \E[X \mathbf 1\{|X|\le a_n\}]/a_n)^2 \to 0$.
+  The exponent is continuous since $t \log |t| \to 0$, so L\'evy's continuity theorem applies.
+\end{proof}
