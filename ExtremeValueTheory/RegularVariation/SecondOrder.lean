@@ -37,6 +37,8 @@ This is the condition that controls the bias of tail estimators such as the Hill
 * `IsSecondOrderRegularlyVarying.exists_bound`: the **uniform bound**
   `|log U(xt) - log U(t) - γ log x| ≤ C |A(t)| x^δ` for `t ≥ t₀`, `x ≥ 1` (a one-sided form of
   [dHF, Theorem 2.3.9]), for measurable `U` and `A`.
+* `IsSecondOrderRegularlyVarying.exists_bound_of_neg`: for `ρ < 0`, the bound
+  `|log U(xt) - log U(t) - γ log x| ≤ C |A(t)|` uniformly in `x ≥ 1`.
 
 ## Proof of the uniform bound
 
@@ -431,6 +433,102 @@ theorem exists_bound (h : IsSecondOrderRegularlyVarying U γ ρ A) (hU : Measura
     _ ≤ M * (2 * |a s| * (r ^ m / (r - 1))) := by gcongr
     _ ≤ M * (2 * |a s| * (r * x ^ δ / (r - 1))) := by gcongr
     _ = 2 * M * r / (r - 1) * |a s| * x ^ δ := by ring
+
+/-- **Uniform bound for second-order regular variation with `ρ < 0`** ([dHF, Theorem 2.3.9]).
+If `ρ < 0` and `U`, `A` are measurable, there are `C` and `t₀ > 0` with
+
+  `|log U(xt) - log U(t) - γ log x| ≤ C |A(t)|` for all `t ≥ t₀`, `x ≥ 1`,
+
+uniformly in `x`: since `|A|` decays like `t^ρ`, the remainder no longer grows with `x`. -/
+theorem exists_bound_of_neg (h : IsSecondOrderRegularlyVarying U γ ρ A) (hU : Measurable U)
+    (hA : Measurable A) (hρ : ρ < 0) :
+    ∃ C t₀ : ℝ, 0 < t₀ ∧ ∀ t ≥ t₀, ∀ x ≥ 1,
+      |log (U (x * t)) - log (U t) - γ * log x| ≤ C * |A t| := by
+  set δ : ℝ := -ρ / 2 with hδdef
+  have hδ : 0 < δ := by rw [hδdef]; linarith
+  set G : ℝ → ℝ := fun s => log (U (exp s)) - γ * s with hG
+  set a : ℝ → ℝ := fun s => A (exp s) with ha
+  have hGm : Measurable G := (hU.comp measurable_exp).log.sub (measurable_id.const_mul γ)
+  have hGa : ∀ s u,
+      G (s + u) - G s = log (U (exp u * exp s)) - log (U (exp s)) - γ * log (exp u) := by
+    intro s u
+    simp only [hG, log_exp, ← exp_add, add_comm u s]
+    ring
+  have hlim : ∀ u, Tendsto (fun s => (G (s + u) - G s) / a s) atTop
+      (𝓝 (boxCox ρ (exp u))) := by
+    intro u
+    refine ((h.tendsto_log (exp_pos u)).comp tendsto_exp_atTop).congr fun s => ?_
+    simp only [Function.comp_apply, hGa, ha]
+  obtain ⟨x₀, hx₀, hApos, hP⟩ :=
+    h.isRegularlyVarying_abs.potter_bound_of_measurable (continuous_abs.measurable.comp hA) hδ
+      one_lt_two
+  have hPot : ∀ s ≥ log x₀, ∀ v ≥ (0 : ℝ), |a (s + v)| ≤ 2 * |a s| * exp ((ρ + δ) * v) := by
+    intro s hs v hv
+    have hxs : x₀ ≤ exp s := (log_le_iff_le_exp hx₀).1 hs
+    have hxsv : x₀ ≤ exp (s + v) := hxs.trans (exp_le_exp.2 (by linarith))
+    have h1 := hP (exp s) hxs (exp (s + v)) hxsv
+    have hpos := hApos (exp s) hxs
+    rw [div_le_iff₀ hpos] at h1
+    have hr : exp (s + v) / exp s = exp v := by rw [exp_add]; field_simp
+    rw [hr] at h1
+    have hm : max (exp v ^ (ρ + δ)) (exp v ^ (ρ - δ)) ≤ exp ((ρ + δ) * v) := by
+      rw [← exp_mul, ← exp_mul]
+      refine max_le (exp_le_exp.2 (by rw [mul_comm])) (exp_le_exp.2 ?_)
+      nlinarith
+    calc |a (s + v)| ≤ 2 * max (exp v ^ (ρ + δ)) (exp v ^ (ρ - δ)) * |a s| := h1
+      _ ≤ 2 * exp ((ρ + δ) * v) * |a s| := by gcongr
+      _ = 2 * |a s| * exp ((ρ + δ) * v) := by ring
+  have hρδ : ρ + δ < 0 := by rw [hδdef]; linarith
+  have ha0 : ∀ s ≥ log x₀, a s ≠ 0 := fun s hs =>
+    abs_pos.1 (hApos _ ((log_le_iff_le_exp hx₀).1 hs))
+  have hK : ∀ s ≥ log x₀, ∀ ξ ∈ Icc (0 : ℝ) 1, |a (s + ξ)| ≤ 2 * |a s| := by
+    intro s hs ξ hξ
+    refine (hPot s hs ξ hξ.1).trans ?_
+    have : exp ((ρ + δ) * ξ) ≤ 1 := exp_le_one_iff.2 (by nlinarith [hξ.1])
+    calc 2 * |a s| * exp ((ρ + δ) * ξ) ≤ 2 * |a s| * 1 := by gcongr
+      _ = 2 * |a s| := by ring
+  have hB : ∀ u ∈ Icc (0 : ℝ) 2, |boxCox ρ (exp u)| < 3 := by
+    intro u hu
+    obtain ⟨h1, h2⟩ := boxCox_exp_nonneg_le h.nonpos hu.1
+    rw [abs_of_nonneg h1]
+    linarith [hu.2]
+  obtain ⟨S, hS⟩ := exists_abs_sub_le_of_tendsto hGm hlim hB ha0 hK
+  set M : ℝ := 3 * (1 + 2) with hM
+  have hM0 : 0 ≤ M := by positivity
+  have hiter := abs_sub_le_sum_of_le hM0 (S := max S (log x₀))
+    (fun s hs ξ hξ => hS s ((le_max_left _ _).trans hs) ξ hξ)
+  set r := exp (ρ + δ) with hr
+  have hr0 : 0 < r := exp_pos _
+  have hr1 : r < 1 := exp_lt_one_iff.2 hρδ
+  refine ⟨2 * M / (1 - r), exp (max S (log x₀)), exp_pos _, fun t ht x hx => ?_⟩
+  have ht0 : 0 < t := (exp_pos _).trans_le ht
+  have hx0 : 0 < x := one_pos.trans_le hx
+  set s := log t with hs
+  set u := log x with hu
+  have hsS : max S (log x₀) ≤ s := by rw [hs, le_log_iff_exp_le ht0]; exact ht
+  have hu0 : 0 ≤ u := log_nonneg hx
+  set m := ⌈u⌉₊ with hm
+  have hum : u ≤ m := Nat.le_ceil u
+  have h1 := hiter m s hsS u ⟨hu0, hum⟩
+  have h2 : ∑ j ∈ Finset.range m, |a (s + j)| ≤ 2 * |a s| * (1 / (1 - r)) := by
+    calc ∑ j ∈ Finset.range m, |a (s + j)|
+        ≤ ∑ j ∈ Finset.range m, 2 * |a s| * r ^ j := by
+          refine Finset.sum_le_sum fun j _ => ?_
+          rw [hr, ← exp_nat_mul, mul_comm (j : ℝ) (ρ + δ)]
+          exact hPot s ((le_max_right _ _).trans hsS) j (Nat.cast_nonneg j)
+      _ = 2 * |a s| * ((1 - r ^ m) / (1 - r)) := by
+          rw [← Finset.mul_sum, geom_sum_eq hr1.ne, ← neg_div_neg_eq]
+          ring_nf
+      _ ≤ 2 * |a s| * (1 / (1 - r)) := by
+          gcongr
+          linarith [pow_pos hr0 m]
+  have e1 : G (s + u) - G s = log (U (x * t)) - log (U t) - γ * log x := by
+    rw [hGa, hs, hu, exp_log ht0, exp_log hx0]
+  have e2 : a s = A t := by simp [ha, hs, exp_log ht0]
+  rw [← e1, ← e2]
+  calc |G (s + u) - G s| ≤ M * ∑ j ∈ Finset.range m, |a (s + j)| := h1
+    _ ≤ M * (2 * |a s| * (1 / (1 - r))) := by gcongr
+    _ = 2 * M / (1 - r) * |a s| := by ring
 
 end IsSecondOrderRegularlyVarying
 

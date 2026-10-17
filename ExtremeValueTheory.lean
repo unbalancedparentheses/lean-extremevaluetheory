@@ -83,3 +83,4 @@ import ExtremeValueTheory.RegularVariation.Multivariate
 import ExtremeValueTheory.Dependence.StationaryWindows
 import ExtremeValueTheory.Dependence.Anticlustering
 import ExtremeValueTheory.Dependence.MovingMaxTailProcess
+import ExtremeValueTheory.ForMathlib.MeasureTheory.Function.ConvergenceInDistribution
