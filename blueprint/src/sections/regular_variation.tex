@@ -312,3 +312,58 @@ works additively, with $h(t) = \log f(e^t) - \rho t$.
   $\ell(x) - \int_x^{ex} g(t) \, \ud t = \int_x^{ex} \frac{\ell(x) - \ell(t)}{t} \, \ud t \to 0$.
   Hence $c(x) = L(x) \exp\big(-\int_a^x \frac{\eps(t)}{t} \, \ud t\big) \to \exp\big(\int_a^{ea} g(t)\, \ud t\big) > 0$.
 \end{proof}
+
+\section{Extended and second-order regular variation}
+
+\begin{definition}[Extended regular variation]
+  \label{def:extended-rv}
+  \uses{def:regularly-varying}
+  \lean{ExtremeValueTheory.extRVLimit, ExtremeValueTheory.IsExtendedRegularlyVarying}
+  \leanok
+  $f$ is extended regularly varying with index $\gamma \in \bR$ and auxiliary function $a > 0$ if
+  $(f(tx) - f(t))/a(t) \to (x^\gamma - 1)/\gamma$ ($\log x$ for $\gamma = 0$) for every $x > 0$
+  [dHF, Definition~B.2.1], [BGT, Ch.~3].
+\end{definition}
+
+\begin{theorem}[Properties of extended regular variation]
+  \label{thm:extended-rv}
+  \uses{def:extended-rv}
+  \lean{ExtremeValueTheory.IsExtendedRegularlyVarying.isRegularlyVarying,
+    ExtremeValueTheory.IsExtendedRegularlyVarying.isRegularlyVarying_of_pos,
+    ExtremeValueTheory.IsExtendedRegularlyVarying.exists_tendsto_of_neg,
+    ExtremeValueTheory.IsExtendedRegularlyVarying.isRegularlyVarying_sub_of_neg, ExtremeValueTheory.IsExtendedRegularlyVarying.log}
+  \leanok
+  The auxiliary function is regularly varying with index $\gamma$. For monotone $f$: if $\gamma > 0$
+  then $f \in RV_\gamma$ and $a/f \to \gamma$; if $\gamma < 0$ then $f(\infty)$ exists and
+  $f(\infty) - f \in RV_\gamma$. If $f > 0$, $\log f$ is extended regularly varying with index
+  $\min(\gamma, 0)$ and auxiliary function $a/f$ [dHF, Lemma~3.5.1].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Standard manipulations of the limit relation, with Potter-type bounds for the uniformity.
+\end{proof}
+
+\begin{definition}[Second-order regular variation]
+  \label{def:second-order-rv}
+  \uses{def:regularly-varying}
+  \lean{ExtremeValueTheory.boxCox, ExtremeValueTheory.IsSecondOrderRegularlyVarying}
+  \leanok
+  $U$ is second-order regularly varying with indices $\gamma > 0$, $\rho \le 0$ and auxiliary function
+  $A \to 0$ of constant sign with $|A| \in RV_\rho$ if
+  $(U(tx)/U(t) - x^\gamma)/A(t) \to x^\gamma (x^\rho - 1)/\rho$ for every $x > 0$ [dHF, \S2.3].
+\end{definition}
+
+\begin{theorem}[Uniform second-order bound]
+  \label{thm:second-order-bound}
+  \uses{def:second-order-rv}
+  \lean{ExtremeValueTheory.IsSecondOrderRegularlyVarying.tendsto_log, ExtremeValueTheory.IsSecondOrderRegularlyVarying.of_tendsto_div,
+    ExtremeValueTheory.IsSecondOrderRegularlyVarying.exists_measurable, ExtremeValueTheory.IsSecondOrderRegularlyVarying.exists_bound}
+  \leanok
+  For measurable $U$ and $A$ and every $\delta > 0$ there are $C$ and $t_0$ with
+  $|\log U(xt) - \log U(t) - \gamma \log x| \le C |A(t)| x^\delta$ for $t \ge t_0$, $x \ge 1$
+  [dHF, Theorem~2.3.9] (one-sided version).
+\end{theorem}
+\begin{proof}
+  \leanok
+  Uniform convergence on compacts plus a telescoping argument over dyadic scales.
+\end{proof}

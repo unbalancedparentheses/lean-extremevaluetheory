@@ -464,3 +464,62 @@ follow de Haan and Ferreira, \emph{Extreme Value Theory: An Introduction}, Sprin
   them, and there are no ties. A second exchangeability argument gives pairwise independence;
   Chebyshev's inequality concludes.
 \end{proof}
+
+\section{Asymptotic normality of the Hill estimator}
+
+\begin{lemma}[R\'enyi representation]
+  \label{lem:renyi}
+  \uses{def:order-stat}
+  \lean{ExtremeValueTheory.lintegral_orderStat_excess, ExtremeValueTheory.map_orderStat_excess}
+  \leanok
+  For an iid standard exponential sample of size $n$ and $k < n$, the excesses
+  $E_{(i)} - E_{(k+1)}$, $i \le k$, are (conditionally on $E_{(k+1)}$) iid standard exponential
+  [dHF, Lemma~3.2.3].
+\end{lemma}
+\begin{proof}
+  \leanok
+  Count exceedances and split off coordinates, using the memoryless property.
+\end{proof}
+
+\begin{theorem}[Asymptotic normality of the Hill estimator]
+  \label{thm:hill-normality}
+  \uses{lem:renyi, thm:second-order-bound, thm:hill-consistency}
+  \lean{ExtremeValueTheory.survivalQuantile, ExtremeValueTheory.tendstoInDistribution_hill_pareto,
+    ExtremeValueTheory.tendstoInDistribution_hill_of_tendsto_zero, ExtremeValueTheory.tendstoInDistribution_hill,
+    ExtremeValueTheory.tendstoInDistribution_meanExcess, ExtremeValueTheory.map_eq_expMeasure_map_tailQuantile}
+  \leanok
+  Let $X_i$ be iid with tail quantile function $U$ second-order regularly varying with indices
+  $\gamma > 0$, $\rho \le 0$ and auxiliary function $A$. If $k \to \infty$, $k/n \to 0$ and
+  $\sqrt k A(n/k) \to \lambda$, then
+  \begin{align*}
+    \sqrt k \, (\hat\gamma_{k,n} - \gamma) \; \Rightarrow \; N\big(\lambda/(1 - \rho), \gamma^2\big)
+  \end{align*}
+  [dHF, Theorem~3.2.5]. For exact Pareto samples, $\sqrt k(\hat\gamma - 1/\alpha) \Rightarrow
+  N(0, \alpha^{-2})$ without the condition $k/n \to 0$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Write $X = U(e^E)$ with $E$ standard exponential. On the exponential scale the Hill estimator is
+  $\gamma$ times the mean of $k$ iid exponential excesses plus a bias term
+  $k^{-1}\sum_i (\log U(e^{E_{(i)}}) - \log U(e^{E_{(k+1)}}) - \gamma(E_{(i)} - E_{(k+1)}))$. The CLT
+  handles the first part; the uniform second-order bound and $E_{(k+1)} - \log(n/k) \to 0$ show the
+  bias is $A(n/k)/(1-\rho) + o_P(k^{-1/2})$.
+\end{proof}
+
+\begin{theorem}[Consistency of the moment estimator for all $\gamma$]
+  \label{thm:moment-general}
+  \uses{thm:mda-quantile, thm:extended-rv, thm:moment-consistency}
+  \lean{ExtremeValueTheory.gpdMoment_one, ExtremeValueTheory.gpdMoment_two, ExtremeValueTheory.tendstoInMeasure_logMoment_of_isInMDAGEV,
+    ExtremeValueTheory.tendstoInMeasure_momentEstimator_of_isInMDAGEV'}
+  \leanok
+  For $F$ in the domain of attraction of $H_\gamma$, $\gamma \in \bR$, with right endpoint $x_F > 0$,
+  $k \to \infty$ and $k/n \to 0$: with $\gamma_- = \min(\gamma, 0)$ and $q_n = a(n/k)/U(n/k)$,
+  $M^{(1)}/q_n \to 1/(1 - \gamma_-)$ and $M^{(2)}/q_n^2 \to 2/((1-\gamma_-)(1-2\gamma_-))$ in
+  probability, and the moment estimator converges to $\gamma$ [dHF, Theorem~3.5.2].
+\end{theorem}
+\begin{proof}
+  \leanok
+  $\log U$ is extended regularly varying with index $\gamma_-$; a weak law at the deterministic
+  threshold $U(n/k)$ via the layer-cake formula and Potter bounds, then sandwiching the random
+  threshold $X_{(k+1)}$ with exceedance counts.
+\end{proof}

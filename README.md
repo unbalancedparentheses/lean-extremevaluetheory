@@ -69,10 +69,16 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   regularly varying with index `-α`, and `k → ∞`, `k/n → 0`, the Hill estimator
   `(1/k) Σ_{i<k} (log X₍ᵢ₊₁₎ - log X₍ₖ₊₁₎)` converges to `1/α` in probability. With order
   statistics and their binomial distribution.
+- **Hill estimator asymptotic normality** (`tendstoInDistribution_hill`): under second-order
+  regular variation with `√k A(n/k) → λ`, `√k(γ̂ − γ) ⇒ N(λ/(1−ρ), γ²)`; the exact Pareto case
+  `tendstoInDistribution_hill_pareto`. Via the Rényi representation.
+- **Extended regular variation and the quantile characterization**
+  (`isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile`): `F ∈ MDA(H_γ)` iff `U` is
+  extended regularly varying with index `γ`.
 - **Pickands estimator consistency for every ξ** (`tendstoInMeasure_pickands`): for `F` in the
   domain of attraction of `H_ξ`, `ξ ∈ ℝ`, the Pickands estimator converges to `ξ` in probability.
-  The **moment estimator** (Dekkers–Einmahl–de Haan) and the log-moments are consistent for
-  `ξ > 0` (`tendstoInMeasure_momentEstimator_of_isInMDAGEV`).
+  The **moment estimator** (Dekkers–Einmahl–de Haan) is consistent for every `ξ`
+  (`tendstoInMeasure_momentEstimator_of_isInMDAGEV'`, assuming `x_F > 0`).
 - **Extreme quantiles** (`Statistics/ExtremeQuantile.lean`): ratio consistency of the Weissman
   estimator `X₍ₖ₊₁₎ (k/(n pₙ))^γ̂` and of the tail-probability estimator, for intermediate levels
   unconditionally and beyond the sample range given a `√k` rate for the Hill estimator and a bias

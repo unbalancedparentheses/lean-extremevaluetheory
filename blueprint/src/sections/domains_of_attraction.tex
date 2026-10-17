@@ -501,3 +501,21 @@ for $F$ is a function $f$, positive for $t$ near $x_F$, such that
   \leanok
   The von Mises ratios are identically $\alpha$.
 \end{proof}
+
+\section{The quantile characterization}
+
+\begin{theorem}[Quantile form of the domain of attraction]
+  \label{thm:mda-quantile}
+  \uses{def:extended-rv, thm:pbdh-iff}
+  \lean{CumulativeDistributionFunction.tailQuantile, CumulativeDistributionFunction.isExtendedRegularlyVarying_tailQuantile,
+    CumulativeDistributionFunction.isInMDAGEV_of_isExtendedRegularlyVarying_tailQuantile,
+    CumulativeDistributionFunction.isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile}
+  \leanok
+  $F$ is in the domain of attraction of $H_\gamma$ if and only if the tail quantile function
+  $U(t) = \inf\{y : 1 - F(y) \le 1/t\}$ is extended regularly varying with index $\gamma$
+  [dHF, Theorem~1.1.6].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Invert the Pickands--Balkema--de Haan limit: the auxiliary function is $a(t) = \beta(U(t))$.
+\end{proof}
