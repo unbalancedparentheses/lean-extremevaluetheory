@@ -164,6 +164,10 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   `S_n/aₙ` converges to a non-degenerate limit, the truncated second moment is `RV_{2−α}` and (for
   `α < 2`) the tail is `RV_{−α}` (`GCLTConverse.exists_isRegularlyVarying_of_tendsto`); Feller's criterion
   in the symmetric case. The asymmetric case is not formalized.
+- **Bivariate extremes** (`Multivariate/`): the Pickands dependence function `A` (bounds, spectral form
+  and convexity), the extremal coefficient `θ_E = 2A(1/2)`, the upper tail dependence coefficient
+  `λ_U = 2 − θ_E`, tail dependence of regularly varying vectors, and a.s. consistency of the Pickands
+  estimator with known margins.
 - **Uniform convergence theorem and Karamata's representation theorem** for measurable slowly
   and regularly varying functions (no monotonicity), with two-sided Potter bounds
   (`isSlowlyVarying_iff_exists_representation`, `potter_bounds_of_measurable`).

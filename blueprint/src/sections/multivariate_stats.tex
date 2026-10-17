@@ -1,0 +1,85 @@
+\chapter{Bivariate extremes: dependence functions and tail dependence}
+\label{chap:multivariate-stats}
+
+We follow [dHF, Ch.~6--7], Beirlant, Goegebeur, Segers and Teugels, \emph{Statistics of Extremes},
+Wiley (2004), Ch.~8--9, and Coles, \emph{An Introduction to Statistical Modeling of Extreme
+Values}, Springer (2001), Ch.~8.
+
+\begin{definition}[Pickands dependence function]
+  \label{def:pickands-dependence}
+  \uses{def:simple-max-stable}
+  \lean{ExtremeValueTheory.pickandsDependence, ExtremeValueTheory.IsSimpleMaxStable.pickandsDependence_le_one, ExtremeValueTheory.pickandsDependence_eq_one_of_measure_Iic_eq_mul, ExtremeValueTheory.pickandsDependence_eq_max_of_measure_Iic_eq_min, ExtremeValueTheory.pickandsDependence_map_spectralVector_independent, ExtremeValueTheory.pickandsDependence_map_spectralVector_comonotone, ExtremeValueTheory.HasSpectralMeasure.pickandsDependence_eq, ExtremeValueTheory.IsSimpleMaxStable.half_le_pickands, ExtremeValueTheory.IsSimpleMaxStable.max_le_pickands, ExtremeValueTheory.IsSimpleMaxStable.maxStableExponent_eq_pickands}
+  \leanok
+  For a bivariate simple max-stable law with exponent function $V$,
+  $V(x, y) = (1/x + 1/y)\, A(y/(x+y))$ with $\max(t, 1-t) \le A(t) \le 1$; independence gives $A \equiv 1$ and
+  complete dependence $A(t) = \max(t, 1-t)$ [Pickands 1981], [dHF, \S6.1].
+\end{definition}
+
+\begin{theorem}[Spectral form and convexity]
+  \label{thm:pickands-convex}
+  \uses{def:pickands-dependence, thm:max-stable-spectral}
+  \lean{ExtremeValueTheory.convexOn_pickandsSpectral, ExtremeValueTheory.exists_isSimpleMaxStable_hasSpectralMeasure, ExtremeValueTheory.HasSpectralMeasure, ExtremeValueTheory.HasSpectralMeasure.convexOn_pickands, ExtremeValueTheory.HasSpectralMeasure.maxStableExponent_eq, ExtremeValueTheory.HasSpectralMeasure.pickandsDependence_eq, ExtremeValueTheory.IsSimpleMaxStable.maxStableExponent_eq_pickands}
+  \leanok
+  If the law has spectral measure $H$, then $A(t) = \int \max(t\, w_0, (1-t)\, w_1) \, H(\ud w)$, which is convex.
+  Convexity for laws without a given spectral measure would need the converse spectral
+  representation, which is not formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  A supremum of linear functions of $t$ integrated against $H$.
+\end{proof}
+
+\begin{theorem}[Extremal coefficient]
+  \label{thm:extremal-coefficient}
+  \uses{def:pickands-dependence}
+  \lean{ExtremeValueTheory.extremalCoefficient, ExtremeValueTheory.IsSimpleMaxStable.extremalCoefficient_eq_two_mul_pickands, ExtremeValueTheory.IsSimpleMaxStable.extremalCoefficient_le_card, ExtremeValueTheory.IsSimpleMaxStable.maxStableExponent_const, ExtremeValueTheory.IsSimpleMaxStable.measureReal_Iic_const, ExtremeValueTheory.IsSimpleMaxStable.one_le_extremalCoefficient}
+  \leanok
+  $\theta_E = V(1, \dots, 1) \in [1, d]$ satisfies $\PR[\max_i Y_i \le z] = e^{-\theta_E/z}$, and in two dimensions
+  $\theta_E = 2A(1/2)$ [Coles, \S8.4].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Homogeneity of $V$.
+\end{proof}
+
+\begin{theorem}[Upper tail dependence]
+  \label{thm:tail-dependence}
+  \uses{thm:extremal-coefficient}
+  \lean{ExtremeValueTheory.HasUpperTailDependence, ExtremeValueTheory.hasUpperTailDependence_map_spectralVector_comonotone, ExtremeValueTheory.hasUpperTailDependence_map_spectralVector_independent, ExtremeValueTheory.HasUpperTailDependence.unique, ExtremeValueTheory.IsSimpleMaxStable.hasUpperTailDependence, ExtremeValueTheory.IsSimpleMaxStable.hasUpperTailDependence_one_of_measure_Iic_eq_min, ExtremeValueTheory.IsSimpleMaxStable.hasUpperTailDependence_pickands, ExtremeValueTheory.IsSimpleMaxStable.hasUpperTailDependence_zero_of_measure_Iic_eq_mul}
+  \leanok
+  For a bivariate simple max-stable law, $\PR[G(Y) > u \mid F(X) > u] \to \lambda_U = 2 - \theta_E = 2(1 - A(1/2)) \in [0, 1]$;
+  $\lambda_U = 0$ under independence and $1$ under complete dependence [Beirlant et al., \S9.4].
+\end{theorem}
+\begin{proof}
+  \leanok
+  The ratio equals $(1 - 2u + u^{\theta_E})/(1 - u)$ exactly.
+\end{proof}
+
+\begin{theorem}[Tail dependence of regularly varying vectors]
+  \label{thm:tail-dependence-rv}
+  \uses{def:rv-vector}
+  \lean{ExtremeValueTheory.IsRegVarVector.measureReal_snd_eq_fst_of_tailEquiv, ExtremeValueTheory.IsRegVarVector.tendsto_condProb_gt_gt}
+  \leanok
+  For a regularly varying vector in $\bR^2$ with exponent measure $\mu$,
+  $\PR[X_1 > x, X_2 > x]/\PR[X_1 > x] \to \mu\{y_1 > 1, y_2 > 1\}/\mu\{y_1 > 1\}$, and tail-equivalent margins give
+  $\mu\{y_2 > 1\} = \mu\{y_1 > 1\}$. This is the threshold form; the quantile form is not formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Portmanteau on $\mu$-continuity sets bounded away from $0$.
+\end{proof}
+
+\begin{theorem}[Consistency of the Pickands estimator]
+  \label{thm:pickands-estimator}
+  \uses{def:pickands-dependence}
+  \lean{ExtremeValueTheory.IsSimpleMaxStable.ae_nonneg_pickandsVar, ExtremeValueTheory.IsSimpleMaxStable.integrable_pickandsVar, ExtremeValueTheory.IsSimpleMaxStable.integral_pickandsVar, ExtremeValueTheory.IsSimpleMaxStable.lintegral_pickandsVar, ExtremeValueTheory.IsSimpleMaxStable.measure_apply_le_zero, ExtremeValueTheory.IsSimpleMaxStable.measure_le_pickandsVar, ExtremeValueTheory.measurable_pickandsVar, ExtremeValueTheory.pickandsDependenceEstimator, ExtremeValueTheory.pickandsVar}
+  \leanok
+  For a sample from a bivariate simple max-stable law (known unit Fr\'echet margins), with
+  $\xi_i = \min((t Y_{i,0})^{-1}, ((1-t) Y_{i,1})^{-1})$, $\xi_i$ is exponential with rate $A(t)$ and
+  $\hat A_n(t) = n / \sum_{i<n} \xi_i \to A(t)$ almost surely [Pickands 1981]. Pairwise independence of the sample
+  suffices. Estimated margins and the CFG estimator are not formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  $\PR[\xi \ge s] = e^{-s A(t)}$ and the strong law of large numbers.
+\end{proof}
