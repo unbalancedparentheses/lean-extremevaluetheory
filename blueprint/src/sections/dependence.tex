@@ -1,0 +1,114 @@
+\chapter{Extremes of stationary sequences}
+\label{chap:dependence}
+
+This chapter extends the limit theory of maxima from iid samples to stationary sequences, following
+Leadbetter, Lindgren and Rootz\'en, \emph{Extremes and Related Properties of Random Sequences and
+Processes}, Springer (1983) [LLR], Chapter~3, and [EKM, \S8.1]. Long-range independence of
+maxima is the condition $D(u_n)$, and local clustering is controlled by $D'(u_n)$; the extremal
+index $\theta$ measures how much extremes cluster.
+
+\section{Stationary sequences and Leadbetter's conditions}
+
+\begin{definition}[Stationary sequence]
+  \label{def:stationary}
+  \lean{ProbabilityTheory.IsStationary, ProbabilityTheory.IsStationary.map_shift, ProbabilityTheory.IsStationary.identDistrib,
+    ProbabilityTheory.IsStationary.factor, ProbabilityTheory.isStationary_of_iIndepFun}
+  \leanok
+  A sequence $(X_t)_{t \in \bN}$ is stationary if the law of the shifted path $(X_{t+1})_t$
+  equals the law of $(X_t)_t$. Then every shift preserves the law, the marginals are identically
+  distributed, sliding-window functions of a stationary sequence are stationary, and iid sequences
+  are stationary.
+\end{definition}
+
+\begin{definition}[Conditions $D(u_n)$ and $D'(u_n)$]
+  \label{def:leadbetter}
+  \uses{def:stationary}
+  \lean{ExtremeValueTheory.partialMax, ExtremeValueTheory.maxLE, ExtremeValueTheory.ConditionD, ExtremeValueTheory.ConditionD'}
+  \leanok
+  Let $M_n = \max_{t < n} X_t$. Condition $D(u_n)$ holds if there are $l_n = o(n)$ and
+  $\alpha_n \to 0$ such that for all $A, B \subseteq \{0, \dots, n-1\}$ separated by at least $l_n$,
+  \begin{align*}
+    \big| \PR[\max_{A \cup B} X \le u_n] - \PR[\max_A X \le u_n] \, \PR[\max_B X \le u_n] \big|
+      \; \le \; \alpha_n .
+  \end{align*}
+  Condition $D'(u_n)$ holds if
+  $\limsup_n n \sum_{1 \le j < n/k} \PR[X_0 > u_n, X_j > u_n] \to 0$ as $k \to \infty$
+  [LLR, \S3.2, (3.4.3)].
+\end{definition}
+
+\begin{theorem}[Block approximation]
+  \label{thm:block-approx}
+  \uses{def:leadbetter}
+  \lean{ProbabilityTheory.IsStationary.abs_measureReal_maxLE_range_sub_pow_le,
+    ExtremeValueTheory.tendsto_measureReal_partialMax_sub_pow, MeasureTheory.sum_measureReal_sub_sum_inter_le_measureReal_biUnion}
+  \leanok
+  For a stationary sequence satisfying $D(u_n)$ with $n \PR[X_0 > u_n] \to \tau$, and fixed
+  $k \ge 1$, $\PR[M_n \le u_n] - \PR[M_{\lfloor n/k \rfloor} \le u_n]^k \to 0$ [LLR, Lemma~3.3.1].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Split $\{0, \dots, n-1\}$ into $k$ blocks separated by gaps of length $l_n$. The gaps cost at most
+  $2 k l_n \PR[X_0 > u_n] \to 0$, and $D(u_n)$ factorizes the blocks with error $k \alpha_n$.
+\end{proof}
+
+\begin{theorem}[Leadbetter's theorem]
+  \label{thm:leadbetter}
+  \uses{thm:block-approx}
+  \lean{ExtremeValueTheory.tendsto_measureReal_partialMax_le_exp, ProbabilityTheory.IsStationary.measureReal_maxLE_range_bounds}
+  \leanok
+  If a stationary sequence satisfies $D(u_n)$ and $D'(u_n)$ and $n \PR[X_0 > u_n] \to \tau$, then
+  $\PR[M_n \le u_n] \to e^{-\tau}$, as for iid sequences [LLR, Theorem~3.4.1], [EKM, Theorem~4.4.3].
+\end{theorem}
+\begin{proof}
+  \leanok
+  By Bonferroni, $1 - \frac{n}{k} p_n \le \PR[M_{n/k} \le u_n] \le 1 - \frac{n}{k} p_n + \frac{n}{k}
+  \sum_{1 \le j < n/k} \PR[X_0 > u_n, X_j > u_n]$ with $p_n = \PR[X_0 > u_n]$. Raise to the $k$-th
+  power, use Theorem~\ref{thm:block-approx}, and let $k \to \infty$ using $D'(u_n)$.
+\end{proof}
+
+\section{The extremal index}
+
+\begin{definition}[Extremal index]
+  \label{def:extremal-index}
+  \uses{def:leadbetter}
+  \lean{ExtremeValueTheory.HasExtremalIndex}
+  \leanok
+  A stationary sequence has extremal index $\theta \in [0, 1]$ if for every $\tau > 0$ and every
+  sequence $u_n$ with $n \PR[X_0 > u_n] \to \tau$, $\PR[M_n \le u_n] \to e^{-\theta\tau}$
+  [LLR, \S3.7], [EKM, Definition~8.1.1].
+\end{definition}
+
+\begin{theorem}[Maxima of stationary sequences]
+  \label{thm:stationary-max}
+  \uses{def:extremal-index, thm:leadbetter, thm:three-types-of-extr-val-distr}
+  \lean{ExtremeValueTheory.hasExtremalIndex_one, ExtremeValueTheory.tendsto_measureReal_partialMax_le_pow,
+    ExtremeValueTheory.isExtremeValueDistr_pow, CumulativeDistributionFunction.IsExtremeValueDistr.continuous}
+  \leanok
+  Under $D$ and $D'$ at all levels, the extremal index is $1$. If the marginal $F$ satisfies
+  $F^n(a_n x + b_n) \to H(x)$ for an extreme value distribution $H$ and the sequence has extremal
+  index $\theta > 0$, then $\PR[M_n \le a_n x + b_n] \to H(x)^\theta$, and $H^\theta$ is an extreme
+  value distribution of the same type as $H$ [LLR, Theorem~3.7.1], [EKM, Theorem~8.1.2].
+\end{theorem}
+\begin{proof}
+  \leanok
+  $n(1 - F(a_n x + b_n)) \to -\log H(x)$, so the definition of $\theta$ applies with
+  $\tau = -\log H(x)$. For the type, $H^\theta = H^{\theta}$ is max-stable, and the
+  classification gives an affine map with $A \cdot H = H^\theta$.
+\end{proof}
+
+\begin{proposition}[Examples]
+  \label{prop:extremal-index-examples}
+  \uses{thm:stationary-max}
+  \lean{ExtremeValueTheory.measureReal_maxLE_of_iIndepFun, ExtremeValueTheory.conditionD_of_iIndepFun,
+    ExtremeValueTheory.conditionD'_of_iIndepFun, ExtremeValueTheory.hasExtremalIndex_one_of_iIndepFun, ExtremeValueTheory.isStationary_movingMax,
+    ExtremeValueTheory.hasExtremalIndex_movingMax}
+  \leanok
+  Iid sequences satisfy $D$ and $D'$ and have extremal index $1$. The moving maximum
+  $X_t = \max(Z_t, Z_{t+1})$ of an iid sequence is stationary with extremal index $1/2$
+  [EKM, Example~8.1.3].
+\end{proposition}
+\begin{proof}
+  \leanok
+  For the moving maximum, $\PR[M_n \le u] = G(u)^{n+1}$ with $G$ the law of $Z_0$, while
+  $\PR[X_0 > u] \sim 2(1 - G(u))$.
+\end{proof}

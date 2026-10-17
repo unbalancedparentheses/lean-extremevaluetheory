@@ -9,8 +9,9 @@ and stable laws / the generalized CLT (`StableLaws/*`). Third audit (rows marked
 converse (`PeaksOverThreshold/Converse.lean`), the asymmetric GCLT
 (`StableLaws/GeneralizedCLT.lean`, `Constants.lean`), and random sums / ruin
 (`HeavyTails/RandomSums.lean`, `Ruin.lean`, `StretchedExponential.lean`), Karamata's converse
-and the Fréchet/Weibull von Mises conditions, and the Pickands and moment estimators
-(`Statistics/Pickands.lean`, `Moment.lean`). No `sorry`/`axiom`/`admit` found in
+and the Fréchet/Weibull von Mises conditions, the Pickands and moment estimators
+(`Statistics/Pickands.lean`, `Moment.lean`), and stationary sequences and the extremal index
+(`Dependence/`, `ForMathlib/Probability/Process/Stationary.lean`). No `sorry`/`axiom`/`admit` found in
 `ExtremeValueTheory/`.
 
 References: [EKM] Embrechts–Klüppelberg–Mikosch, *Modelling Extremal Events*;
@@ -121,6 +122,11 @@ Processes*.
 | ‡ `isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival` / `_tendsto_sup_` | EKM Thm 3.4.13(b), dHF Thm 1.1.6 | `F ∈ MDA(H_ξ)` ⇔ ∃ `β(u) > 0`: `sup_{x≥0} |F̄(u+β(u)x)/F̄(u) − Ḡ_{ξ,1}(x)| → 0` as `u ↑ x_F` | Exactly this, for every `ξ`, `β` arbitrary and eventually positive along `upperEndpointFilter` (never `⊥`). The converse proves that there is no atom at a finite `x_F` rather than assuming it. | FAITHFUL |
 | ‡ `HasStableCharFun` (def) | ST Def 1.1.6 (`α ≠ 1`) | `φ(t) = exp(−σ^α|t|^α(1 − iβ sign t tan(πα/2)))` | `exp(−c|t|^α + i e sign(t)|t|^α)`. This is the same family with `c = σ^α`, `e = cβ tan(πα/2)`, and `stableSkewConst_eq_mul_tan` proves the GCLT's `e` is `(2p−1) C_α tan(πα/2)`. `iff_isSymmStable` for `e = 0`. | FAITHFUL (parametrization differs) |
 | ‡ `tendsto_map_convPow_of_isRegularlyVarying_of_lt_one`, `tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt` | Feller XVII.5 Thm 2, EKM Thm 2.2.8 (`α ≠ 1`) | RV two-sided tail, tail balance `p`, `n P(|X|>aₙ) → 1` ⇒ `(S_n − b_n)/aₙ ⇒` stable | Hypotheses: RV of `absTail`, `μ(Ioi x)/absTail → p` (`q = 1−p` is derived), `aₙ > 0`. `b_n = 0` for `α < 1`, `n ∫ y dμ` for `1 < α < 2` (integrability is proved). Limit: `HasStableCharFun α C_α ((2p−1)E_α)`. `α = 1` is not covered. | DIFFERS (`α ≠ 1`); correct |
+| ‡ `ProbabilityTheory.IsStationary` (def) | LLR §3.1 | strict stationarity | Law of the shifted path `(X_{n+1})ₙ` equals the law of `(Xₙ)ₙ` on `ℕ → ℝ`. Equivalent to shift-invariance of all finite-dimensional laws. | FAITHFUL |
+| ‡ `ConditionD`, `ConditionD'` (defs) | LLR §3.2, (3.4.3); EKM §4.4 | `D(uₙ)`: `|P(max_{A∪B} ≤ uₙ) − P(max_A)P(max_B)| ≤ α_{n,lₙ}` for index sets separated by `lₙ = o(n)`; `D'`: `limsup n Σ_{j<n/k} P(X₀>uₙ, X_j>uₙ) → 0` | Same. `D'` is stated in the equivalent ε–k₀ form. | FAITHFUL |
+| ‡ `tendsto_measureReal_partialMax_le_exp` | LLR Thm 3.4.1, EKM Thm 4.4.3 | stationary, `D`, `D'`, `n P(X₀>uₙ) → τ` ⇒ `P(M_n ≤ uₙ) → e^{−τ}` | Same. | FAITHFUL |
+| ‡ `HasExtremalIndex` (def) | LLR §3.7, EKM Def 8.1.1 | `θ ∈ [0,1]` with `P(M_n ≤ uₙ(τ)) → e^{−θτ}` whenever `n P(X₀>uₙ(τ)) → τ` | Quantifies over all such level sequences. When the marginal has atoms, no such sequence may exist for some `τ`, and the condition is then vacuous there (as in the textbook, which assumes such levels exist). Uniqueness of `θ` is not proved. | FAITHFUL |
+| ‡ `tendsto_measureReal_partialMax_le_pow`, `isExtremeValueDistr_pow` | LLR Thm 3.7.1, EKM Thm 8.1.2 | `F^n(aₙx+bₙ) → H(x)` and extremal index `θ > 0` ⇒ `P(M_n ≤ aₙx+bₙ) → H(x)^θ`, an EVD of the same type | Same; `θ > 0` is required, as in the textbook. Instantiated by `hasExtremalIndex_movingMax` (`θ = 1/2`) and the iid case. | FAITHFUL |
 | `IsSubexponential` (def) | EKM Def 1.3.3 | `F` on `(0,∞)` with `F̄^{*2}(x)/F̄(x) → 2` | `μ(Iio 0) = 0`, `tail μ x > 0` for all `x` (the textbook `F(x) < 1`), and the limit `2`. Being a probability measure is a typeclass hypothesis on the theorems, not a field of the structure. | FAITHFUL |
 | `IsSubexponential.of_isRegularlyVarying` | EKM Cor 1.3.2 | `F̄ ∈ RV_{−α}`, `α ≥ 0` ⇒ subexponential | No sign hypothesis on `α`; it is automatically `α ≥ 0`. | FAITHFUL |
 | `tendsto_tail_sub_div` | EKM Lemma 1.3.5(a) | `F̄(x−y)/F̄(x) → 1` | Holds for every real `y`. | FAITHFUL |

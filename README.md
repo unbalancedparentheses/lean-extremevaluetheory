@@ -81,6 +81,11 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   textbook-form theorems). For `α = 1`
   (`tendsto_map_convPow_sub_of_isRegularlyVarying_one'`), centering by `n E[X 1{|X| ≤ aₙ}]` gives
   the limit `exp(−(π/2)|t| + i(2p−1)(c t − t log|t|))` with `c` an explicit integral.
+- **Extremes of stationary sequences** (`Dependence/`): stationarity (`IsStationary`),
+  Leadbetter's conditions `D(uₙ)` and `D'(uₙ)`, Leadbetter's theorem `P(M_n ≤ uₙ) → e^{-τ}`
+  (`tendsto_measureReal_partialMax_le_exp`), the extremal index `θ` (`HasExtremalIndex`), and
+  `P(M_n ≤ aₙx + bₙ) → H(x)^θ` with `H^θ` of the same type. Iid sequences have `θ = 1`; the moving
+  maximum `max(Z_t, Z_{t+1})` has `θ = 1/2`.
 - **Uniform convergence theorem and Karamata's representation theorem** for measurable slowly
   and regularly varying functions (no monotonicity), with two-sided Potter bounds
   (`isSlowlyVarying_iff_exists_representation`, `potter_bounds_of_measurable`).
