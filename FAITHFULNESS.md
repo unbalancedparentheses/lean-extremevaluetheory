@@ -5,7 +5,9 @@ classification, Fréchet/Weibull MDA, regular variation, Breiman, Fréchet POT, 
 laws. Second audit (rows marked †): Gumbel MDA (`DomainOfAttraction/Gumbel.lean`,
 `GumbelNecessity.lean`), the general Pickands–Balkema–de Haan file
 (`PeaksOverThreshold/Balkema.lean`), order statistics and the Hill estimator (`Statistics/*`),
-and stable laws / the generalized CLT (`StableLaws/*`). No `sorry`/`axiom`/`admit` found in
+and stable laws / the generalized CLT (`StableLaws/*`). Third audit (rows marked ‡): the PBdH
+converse (`PeaksOverThreshold/Converse.lean`) and the asymmetric GCLT
+(`StableLaws/GeneralizedCLT.lean`). No `sorry`/`axiom`/`admit` found in
 `ExtremeValueTheory/`.
 
 References: [EKM] Embrechts–Klüppelberg–Mikosch, *Modelling Extremal Events*;
@@ -108,6 +110,9 @@ Processes*.
 | † `exists_tendsto_of_tendsto_charFun` | Feller XV.3 Thm 2 (Lévy continuity) | `φ_n → f` pointwise, `f` continuous at 0 ⇒ `f = φ_ν` and `μ_n ⇒ ν` | Same, on a finite-dimensional real inner product space; convergence is in `ProbabilityMeasure E` (weak topology). | FAITHFUL |
 | † `charFun_cauchyMeasure` (+ `isStrictlyStable_cauchyMeasure`) | Feller XV.2 | `φ(t) = exp(i t x₀ − γ|t|)` | Same, for all `γ ≥ 0` (`γ = 0` is the Dirac case, also correct). | FAITHFUL |
 | † `tendsto_map_convPow_of_isRegularlyVarying` / `tendstoInDistribution_inv_mul_sum_of_isRegularlyVarying` | Feller XVII.5 Thm 2, EKM Thm 2.2.8 (symmetric case) | `X` symmetric, `P(|X|>x) ∈ RV_{−α}`, `0<α<2`, `n P(|X|>a_n) → 1` ⇒ `S_n/a_n ⇒ SαS(C_α)` | Hypotheses: symmetry `μ.map neg = μ`, RV of the two-sided tail `absTail`, `a n > 0`, `n·absTail μ (a n) → 1`. These are satisfiable: `SymmPareto` with `a_n = (n+1)^{1/α}` is used in `exists_isSymmStable_stableConst`. The normalization `a_n⁻¹ Σ_{k<n} X_k` with limit `exp(−C_α|t|^α)` is correct (see the `stableConst` row). The i.i.d. version takes `Y ∼ ν` with `IsSymmStable α C_α ν` and gives `TendstoInDistribution`; `ν` exists by the first theorem. Only the symmetric case: no centering constants, no skewness `β`. | DIFFERS (symmetric case only); correct |
+| ‡ `isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival` / `_tendsto_sup_` | EKM Thm 3.4.13(b), dHF Thm 1.1.6 | `F ∈ MDA(H_ξ)` ⇔ ∃ `β(u) > 0`: `sup_{x≥0} |F̄(u+β(u)x)/F̄(u) − Ḡ_{ξ,1}(x)| → 0` as `u ↑ x_F` | Exactly this, for every `ξ`, `β` arbitrary and eventually positive along `upperEndpointFilter` (never `⊥`). The converse proves that there is no atom at a finite `x_F` rather than assuming it. | FAITHFUL |
+| ‡ `HasStableCharFun` (def) | ST Def 1.1.6 (`α ≠ 1`) | `φ(t) = exp(−σ^α|t|^α(1 − iβ sign t tan(πα/2)))` | `exp(−c|t|^α + i e sign(t)|t|^α)`. This is the same family with `c = σ^α`, `e = cβ tan(πα/2)`, but the closed form relating the GCLT's `e` to `tan(πα/2)` is not proved. `iff_isSymmStable` for `e = 0`. | FAITHFUL (parametrization differs) |
+| ‡ `tendsto_map_convPow_of_isRegularlyVarying_of_lt_one`, `tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt` | Feller XVII.5 Thm 2, EKM Thm 2.2.8 (`α ≠ 1`) | RV two-sided tail, tail balance `p`, `n P(|X|>aₙ) → 1` ⇒ `(S_n − b_n)/aₙ ⇒` stable | Hypotheses: RV of `absTail`, `μ(Ioi x)/absTail → p` (`q = 1−p` is derived), `aₙ > 0`. `b_n = 0` for `α < 1`, `n ∫ y dμ` for `1 < α < 2` (integrability is proved). Limit: `HasStableCharFun α C_α ((2p−1)E_α)`. `α = 1` is not covered. | DIFFERS (`α ≠ 1`); correct |
 | `IsSubexponential` (def) | EKM Def 1.3.3 | `F` on `(0,∞)` with `F̄^{*2}(x)/F̄(x) → 2` | `μ(Iio 0) = 0`, `tail μ x > 0` for all `x` (the textbook `F(x) < 1`), and the limit `2`. Being a probability measure is a typeclass hypothesis on the theorems, not a field of the structure. | FAITHFUL |
 | `IsSubexponential.of_isRegularlyVarying` | EKM Cor 1.3.2 | `F̄ ∈ RV_{−α}`, `α ≥ 0` ⇒ subexponential | No sign hypothesis on `α`; it is automatically `α ≥ 0`. | FAITHFUL |
 | `tendsto_tail_sub_div` | EKM Lemma 1.3.5(a) | `F̄(x−y)/F̄(x) → 1` | Holds for every real `y`. | FAITHFUL |
@@ -139,13 +144,23 @@ it is avoided by the explicit bound); `orderStat ![3,1,2] 0 = 3`; `hill` on a sa
 `−1` uses `log(−1) = 0`; and the unified PBdH instantiates on `standardExponentialCDF` with
 `ξ = 0`.
 
-1. **(Minor: scope) The GCLT is only the symmetric case.** `tendsto_map_convPow_of_isRegularlyVarying`
+1. **LARGELY RESOLVED: the asymmetric GCLT.** For `0 < α < 1` (no centering) and `1 < α < 2`
+   (centering `n E X`), `tendsto_map_convPow_of_isRegularlyVarying_of_lt_one` and
+   `tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt` take tail balance
+   `P(X > x)/P(|X| > x) → p` and give skewed limits with `HasStableCharFun`, which are linked to
+   `IsStrictlyStable` / `IsStable` (`HasStableCharFun.isStrictlyStable`). Remaining: `α = 1`
+   (centering `n E[X 1{|X| ≤ aₙ}]`, log term), and the closed form `E_α = C_α tan(πα/2)` (the
+   constants are explicit integrals). Original text: **(Minor: scope) The GCLT is only the
+   symmetric case.** `tendsto_map_convPow_of_isRegularlyVarying`
    and the i.i.d. version require `μ.map neg = μ`. EKM Thm 2.2.8 / Feller XVII.5 cover general
    `F` (tail balance `p, q`, centering `b_n`, skewed stable limits). Docstrings say "symmetric
    case", so this is accurately labelled, but citing "[EKM, Theorem 2.2.8]" without
    qualification overstates it. The general `IsStable` notion is never linked to the domain of
    attraction.
-2. **(Minor: scope) PBdH converse.** The unified theorem is "⇒" only. The "⇐" directions exist
+2. **RESOLVED: PBdH converse.** `isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival` is the
+   full equivalence for every `ξ ∈ ℝ` with an arbitrary scale `β` (eventually positive along the
+   endpoint filter), including Gumbel "uniform GPD ⇒ MDA(Λ)". Original text: **(Minor: scope)
+   PBdH converse.** The unified theorem is "⇒" only. The "⇐" directions exist
    only for `ξ ≠ 0`, and only with the canonical scale `β(u) = u/α` or `(x_F−u)/α`; the textbook
    "⇐" allows an arbitrary `β`. There is no Gumbel "uniform GPD ⇒ MDA(Λ)". The
    `isInMDAGumbel_and_…` lemmas start from an auxiliary function, not from the GPD

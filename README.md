@@ -38,9 +38,9 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
 - **Pickands–Balkema–de Haan** (`exists_tendstoUniformlyOn_excessSurvival_of_isInMDAGEV'`): if `F`
   is in the domain of attraction of the extreme value law with shape `ξ ∈ ℝ`, there is a scale
   `β(u) > 0` with `F̄(u + β(u)x)/F̄(u)` converging to the generalized Pareto survival function of
-  shape `ξ` uniformly in `x ≥ 0` as `u` tends to the right endpoint. For `ξ > 0` and `ξ < 0` this
-  is an equivalence (`isInMDAFrechet_iff_tendstoUniformlyOn_excessSurvival`,
-  `isInMDAWeibull_iff_tendstoUniformlyOn_excessSurvival`). The mean excess satisfies
+  shape `ξ` uniformly in `x ≥ 0` as `u` tends to the right endpoint. This is an equivalence for
+  every `ξ`, with an arbitrary scale function in the converse
+  (`isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival`). The mean excess satisfies
   `e(u)/u → 1/(α-1)` for regularly varying tails with `α > 1`.
 - **Subexponential distributions** (`IsSubexponential`): regularly varying tails are
   subexponential; `P(X₁+…+Xₙ > x) ~ n P(X > x)` and the single big jump
@@ -56,6 +56,13 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   `exp(-C_α|t|^α)`. Symmetric α-stable laws exist for every `0 < α ≤ 2` (`exists_isSymmStable`);
   Gaussian and Cauchy laws are stable, with the Cauchy characteristic function computed. Includes
   the Lévy continuity theorem with existence of the limit (`exists_tendsto_of_tendsto_charFun`).
+- **Generalized central limit theorem, asymmetric tails, `α ≠ 1`**
+  (`tendsto_map_convPow_of_isRegularlyVarying_of_lt_one`,
+  `tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt`): with tail balance
+  `P(X > x)/P(|X| > x) → p`, `S_n/aₙ` (for `α < 1`) and `(S_n − n E X)/aₙ` (for `1 < α < 2`)
+  converge weakly to a skewed strictly stable law with characteristic function
+  `exp(−C_α|t|^α + i(2p−1)E_α sign(t)|t|^α)`. The constants are explicit integrals; the
+  closed form `E_α = C_α tan(πα/2)` and the case `α = 1` are not formalized.
 - **Uniform convergence theorem and Karamata's representation theorem** for measurable slowly
   and regularly varying functions (no monotonicity), with two-sided Potter bounds
   (`isSlowlyVarying_iff_exists_representation`, `potter_bounds_of_measurable`).

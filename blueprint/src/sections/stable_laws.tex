@@ -432,3 +432,58 @@ $\mu^{*n}$ for the convolution power (Definition~\ref{def:convPow}).
   $C_\alpha > 0$) gives constant $c$. For $\alpha = 2$, take the Gaussian $N(0, 2c)$
   (Theorem~\ref{thm:symm-stable-strictly-stable}).
 \end{proof}
+
+\section{Asymmetric tails}
+
+\begin{definition}[Stable characteristic exponent]
+  \label{def:has-stable-charfun}
+  \lean{ExtremeValueTheory.stableExponent, ExtremeValueTheory.HasStableCharFun,
+    ExtremeValueTheory.StableIntegral.stableSkewConst}
+  \leanok
+  For $\alpha > 0$, $c \ge 0$ and $e \in \bR$, a probability measure $\mu$ has stable
+  characteristic function with parameters $(\alpha, c, e)$ if
+  \begin{align*}
+    \varphi_\mu(t) \; = \; \exp\big( -c |t|^\alpha + i \, e \, \mathrm{sign}(t) \, |t|^\alpha \big) .
+  \end{align*}
+  The skewness constant is $E_\alpha = \alpha \int_0^\infty \sin u \, u^{-\alpha-1} \, \ud u$ for
+  $\alpha < 1$ and $E_\alpha = -\int_0^\infty (1 - \cos u) \, u^{-\alpha} \, \ud u$ for
+  $1 < \alpha < 2$. Classically $E_\alpha = C_\alpha \tan(\pi\alpha/2)$; this closed form is not
+  formalized.
+\end{definition}
+
+\begin{theorem}[Laws with stable characteristic function are strictly stable]
+  \label{thm:has-stable-charfun-stable}
+  \uses{def:has-stable-charfun}
+  \lean{ExtremeValueTheory.HasStableCharFun.isStrictlyStable,
+    ExtremeValueTheory.HasStableCharFun.isStable,
+    ExtremeValueTheory.HasStableCharFun.iff_isSymmStable}
+  \leanok
+  If $c > 0$, a law with stable characteristic function $(\alpha, c, e)$ is strictly stable with
+  $a_n = n^{1/\alpha}$. With $e = 0$ these are exactly the $S\alpha S(c)$ laws.
+\end{theorem}
+\begin{proof}
+  \leanok
+  The exponent is homogeneous of degree $\alpha$ in $t$, so $\varphi(t)^n = \varphi(n^{1/\alpha} t)$.
+\end{proof}
+
+\begin{theorem}[Generalized central limit theorem, asymmetric tails]
+  \label{thm:gclt-asymmetric}
+  \uses{thm:gclt, def:has-stable-charfun, thm:has-stable-charfun-stable}
+  \lean{ExtremeValueTheory.tendsto_map_convPow_of_isRegularlyVarying_of_lt_one,
+    ExtremeValueTheory.tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt}
+  \leanok
+  Let $\PR[|X| > x]$ be regularly varying with index $-\alpha$, let
+  $\PR[X > x]/\PR[|X| > x] \to p$, and let $a_n > 0$ with $n \PR[|X| > a_n] \to 1$. Put
+  $\beta = 2p - 1$. If $0 < \alpha < 1$, then $S_n / a_n$ converges weakly to the law with stable
+  characteristic function $(\alpha, C_\alpha, \beta E_\alpha)$. If $1 < \alpha < 2$, the same
+  holds for $(S_n - n \E X)/a_n$ [Feller, \S XVII.5, Theorem~2], [EKM, Theorem~2.2.8]. The case
+  $\alpha = 1$ is not formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Split $n(\varphi(t/a_n) - 1)$ (minus the centering term) into its real part, handled as in the
+  symmetric case, and its imaginary part, which is an integral of $\sin$ against the difference
+  of the one-sided tails. By tail balance the right and left tails are regularly varying with
+  weights $p$ and $q = 1 - p$. A layer-cake formula and Potter domination give the limit, and
+  L\'evy's continuity theorem concludes.
+\end{proof}

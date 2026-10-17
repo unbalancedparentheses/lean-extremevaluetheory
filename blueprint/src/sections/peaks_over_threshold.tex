@@ -353,3 +353,52 @@ Definition~\ref{def:excess-survival} applied to $\overline{F}$.
   auxiliary function in the case $\xi = 0$; the unconditional form supplies it by
   Lemma~\ref{lem:auxiliary-upper-endpoint}.
 \end{proof}
+
+\begin{lemma}[Extension of the excess limit to negative arguments]
+  \label{lem:pbdh-negative}
+  \uses{def:upper-endpoint-filter}
+  \lean{CumulativeDistributionFunction.tendsto_div_tail_of_tendstoUniformlyOn_excessSurvival,
+    CumulativeDistributionFunction.tendsto_tail_zero_of_tendstoUniformlyOn_excessSurvival,
+    ExtremeValueTheory.gpdSurvivalInv}
+  \leanok
+  Suppose $\beta > 0$ near $x_F$ and $\bar F(u + \beta(u) x)/\bar F(u) \to \bar G_{\xi,1}(x)$
+  uniformly in $x \ge 0$ as $u \uparrow x_F$. Then $\bar F(u) \to 0$ (no atom at a finite $x_F$),
+  and the same limit holds for every $x < 0$ with $1 + \xi x > 0$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Fix $c > 1$ and let $s(t) = \inf\{y : \bar F(y) \le c \bar F(t)\}$, a point below $t$ whose
+  tail has no relative jump. Applying the uniform limit at the moving base point $s(t)$ gives
+  $(t - s(t))/\beta(s(t)) \to \bar G_{\xi,1}^{-1}(1/c)$ and $\beta(t)/\beta(s(t)) \to c^\xi$.
+  This determines on which side of $s(t)$ the point $t + \beta(t) x$ falls, which gives the
+  limit for $x = \bar G_{\xi,1}^{-1}(c)$.
+\end{proof}
+
+\begin{theorem}[Pickands--Balkema--de Haan, full equivalence]
+  \label{thm:pbdh-iff}
+  \uses{thm:pbdh-general, lem:pbdh-negative, thm:mda-gumbel-of-auxiliary, def:mda-gev}
+  \lean{CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival,
+    CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendsto_sup_excessSurvival,
+    CumulativeDistributionFunction.isInMDAGEV_of_tendstoUniformlyOn_excessSurvival,
+    CumulativeDistributionFunction.isInMDAGumbel_of_tendstoUniformlyOn_excessSurvival,
+    CumulativeDistributionFunction.isRegularlyVarying_of_tendstoUniformlyOn_excessSurvival,
+    CumulativeDistributionFunction.isInMDAWeibull_of_tendstoUniformlyOn_excessSurvival}
+  \leanok
+  For every $\xi \in \bR$, $F$ is in the domain of attraction of $H_\xi$ if and only if there is
+  a scale function $\beta > 0$ with
+  \begin{align*}
+    \sup_{x \ge 0} \Big| \frac{\bar F(u + \beta(u) x)}{\bar F(u)} - \bar G_{\xi,1}(x) \Big|
+      \; \to \; 0 \qquad (u \uparrow x_F)
+  \end{align*}
+  [EKM, Theorem~3.4.13(b)], [dHF, Theorem~1.1.6]. The scale function in the converse is
+  arbitrary.
+\end{theorem}
+\begin{proof}
+  \leanok
+  The forward direction is Theorem~\ref{thm:pbdh-general}. Conversely, by
+  Lemma~\ref{lem:pbdh-negative} the limit holds for all $x$ with $1 + \xi x > 0$. For $\xi = 0$,
+  $\beta$ is then an auxiliary function and Theorem~\ref{thm:mda-gumbel-of-auxiliary} applies.
+  For $\xi \ne 0$, take $b_n = \inf\{y : \bar F(y) \le 1/n\}$ and $a_n = \beta(b_n)$. Then
+  $n \bar F(b_n + a_n x) \to \bar G_{\xi,1}(x)$, which gives regular variation of the tail
+  ($\xi > 0$) or builds the Weibull normalization directly ($\xi < 0$).
+\end{proof}
