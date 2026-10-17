@@ -28,8 +28,8 @@ innovations echo far away.
 
 The model is much simpler than the stable-regenerative model of Bai–Wang (arXiv:2110.07499), and
 everything is explicit. It is a stationary *factor* of an iid sequence (hence mixing in the
-ergodic-theoretic sense; not formalized here) and satisfies the conclusion `P(M n ≤ uₙ) → exp (-θ τ)` of the extremal
-index directly; the block condition `A(uₙ)` is not used anywhere.
+ergodic-theoretic sense; not formalized here). The extremal index is computed directly from
+`P(M n ≤ uₙ)`; the block condition `A(uₙ)` is neither assumed nor proved.
 
 ## Main definitions
 
@@ -59,8 +59,10 @@ plus `L → ∞` and `E[L(Z)] < ∞` where stated):
 * `tendsto_clusterRatio_echoProcess`, `hasEscapeMass_echoProcess`,
   `not_forwardAntiClusteringAt_echoProcess`: the cluster ratio tends to `1/2`, the escape mass is
   `1/2`, anticlustering fails.
-* `logEchoProcess_theta_lt_vartheta`, `logEchoProcess_hasEscapeMass`: the same for
-  `L(z) = ⌊log z⌋₊ + 1`, where the condition on the blocks is `log uₙ = o(rₙ)`.
+* `logEchoProcess_theta_lt_vartheta`, `logEchoProcess_hasEscapeMass`,
+  `logEchoProcess_hasEscapeMass_of_tendsto`: the same for `L(z) = ⌊log z⌋₊ + 1`, where the
+  condition on the blocks is `log uₙ = o(rₙ)`; in the standard normalization
+  `n P(X_0 > uₙ) → τ > 0` it suffices that `rₙ / n → 0` and `log n = o(rₙ)`.
 
 ## Remarks
 
@@ -1130,9 +1132,9 @@ theorem logEchoProcess_theta_lt_vartheta (hα : 0 < α) (hZ : ∀ t, Measurable 
     tendsto_logLag (summable_logLag hα)
 
 /-- **The gap is the escaping mass, explicitly**: for the logarithmic echo process, along any
-`uₙ → ∞`, `rₙ → ∞` with `rₙ uₙ^(-α) → 0` and `log uₙ = o(rₙ)` (e.g. `n P(X_0 > uₙ) → τ` and
-`rₙ = ⌊√n⌋`), the cluster ratio tends to `1/2 = θ`, the escape mass is `1/2 = ϑ - θ`, and
-forward anticlustering fails. -/
+`uₙ → ∞`, `rₙ → ∞` with `rₙ uₙ^(-α) → 0` and `log uₙ = o(rₙ)` (see
+`logEchoProcess_hasEscapeMass_of_tendsto` for the standard normalization), the cluster ratio
+tends to `1/2 = θ`, the escape mass is `1/2 = ϑ - θ`, and forward anticlustering fails. -/
 theorem logEchoProcess_hasEscapeMass (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
     (hind : iIndepFun Z P) (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α)
     (hpos : ∀ t ω, 0 ≤ Z t ω) {u : ℕ → ℝ} (hu : Tendsto u atTop atTop) {r : ℕ → ℕ}
@@ -1148,6 +1150,73 @@ theorem logEchoProcess_hasEscapeMass (hα : 0 < α) (hZ : ∀ t, Measurable (Z t
       hu hr hrb (summable_logLag hα) hR,
     not_forwardAntiClusteringAt_echoProcess hα hZ hind hlaw hpos measurable_logLag one_le_logLag
       tendsto_logLag hu hr hrb (summable_logLag hα) hR⟩
+
+/-- **The same in the standard normalization**: along every level sequence with
+`n P(X_0 > uₙ) → τ > 0` and every block length with `rₙ / n → 0` and `log n = o(rₙ)` (for
+instance `rₙ = ⌊√n⌋`, not checked here), the logarithmic echo process has escape mass
+`1/2 = ϑ - θ` and violates forward anticlustering. -/
+theorem logEchoProcess_hasEscapeMass_of_tendsto (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
+    (hind : iIndepFun Z P) (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α)
+    (hpos : ∀ t ω, 0 ≤ Z t ω) {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
+    (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess logLag Z 0 ω}) atTop (𝓝 τ))
+    {r : ℕ → ℕ} (hr : Tendsto r atTop atTop) (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hlogr : Tendsto (fun n : ℕ => Real.log n / r n) atTop (𝓝 0)) :
+    Tendsto (clusterRatio P (echoProcess logLag Z) u r) atTop (𝓝 (1 / 2)) ∧
+      HasEscapeMass P (echoProcess logLag Z) u r (1 / 2) ∧
+      ¬ ForwardAntiClusteringAt P (echoProcess logLag Z) u r := by
+  have hT := hasSpectralTailProcess_echoProcess hα hZ hind hlaw hpos measurable_logLag
+    one_le_logLag tendsto_logLag
+  have hτ' : Tendsto (fun n : ℕ => n * P.real {ω | u n < |echoProcess logLag Z 0 ω|}) atTop
+      (𝓝 τ) := by
+    simpa [abs_of_nonneg (echoProcess_nonneg hpos _ _)] using hτ
+  have hu := hT.tendsto_atTop_of_tendsto_mul hτ'
+  -- `n uₙ^(-α) → τ / 2`
+  have hratio := (tendsto_measureReal_lt_echoProcess_div hα hZ hind hlaw measurable_logLag
+    one_le_logLag 0).comp hu
+  have hnb : Tendsto (fun n : ℕ => (n : ℝ) * u n ^ (-α)) atTop (𝓝 (τ / 2)) := by
+    refine (hτ.div hratio two_ne_zero).congr' ?_
+    filter_upwards [hu.eventually_ge_atTop 1] with n hn
+    have h0 : 0 < u n ^ (-α) := Real.rpow_pos_of_pos (by linarith) _
+    have hP : 0 < P.real {ω | u n < echoProcess logLag Z 0 ω} := by
+      refine h0.trans_le ?_
+      rw [← measureReal_lt_of_map_eq hZ hlaw hα 0 hn]
+      exact measureReal_mono fun ω hω => lt_of_lt_of_le hω (le_echoProcess 0 ω)
+    simp only [Pi.div_apply, Function.comp_apply]
+    field_simp
+  have hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0) := by
+    have := hrn.mul hnb
+    rw [zero_mul] at this
+    refine this.congr' ?_
+    filter_upwards [eventually_gt_atTop 0] with n hn
+    have : (n : ℝ) ≠ 0 := by exact_mod_cast hn.ne'
+    field_simp
+  -- `log uₙ ≤ (log (4 / τ) + log n) / α`, hence `log uₙ = o(rₙ)`
+  have hlog : Tendsto (fun n => Real.log (u n) / r n) atTop (𝓝 0) := by
+    have hc : Tendsto (fun n => (Real.log (4 / τ) / r n + Real.log n / r n) / α) atTop (𝓝 0) := by
+      have := (((tendsto_const_nhds (x := Real.log (4 / τ))).div_atTop
+        (tendsto_natCast_atTop_atTop.comp hr)).add hlogr).div_const α
+      simpa using this
+    refine squeeze_zero' ?_ ?_ hc
+    · filter_upwards [hu.eventually_ge_atTop 1] with n hn
+      exact div_nonneg (Real.log_nonneg hn) (Nat.cast_nonneg _)
+    · filter_upwards [hu.eventually_ge_atTop 1, hr.eventually_gt_atTop 0,
+        hnb.eventually (lt_mem_nhds (show τ / 4 < τ / 2 by linarith)),
+        eventually_gt_atTop 0] with n hn hrn0 hnb' hn0
+      have hR : (0 : ℝ) < r n := by exact_mod_cast hrn0
+      have hn' : (0 : ℝ) < n := by exact_mod_cast hn0
+      have hupos : 0 < u n := by linarith
+      have hpow : u n ^ α ≤ 4 / τ * n := by
+        have h0 : 0 < u n ^ α := Real.rpow_pos_of_pos hupos _
+        rw [Real.rpow_neg hupos.le] at hnb'
+        rw [← div_lt_iff₀' hn', lt_inv_comm₀ (by positivity) h0] at hnb'
+        calc u n ^ α ≤ (τ / 4 / n)⁻¹ := hnb'.le
+          _ = 4 / τ * n := by field_simp
+      have hl : α * Real.log (u n) ≤ Real.log (4 / τ) + Real.log n := by
+        rw [← Real.log_rpow hupos, ← Real.log_mul (by positivity) hn'.ne']
+        exact Real.log_le_log (Real.rpow_pos_of_pos hupos _) hpow
+      rw [div_le_div_iff₀ hR hα, ← add_div, div_mul_eq_mul_div, le_div_iff₀ hR]
+      nlinarith
+  exact logEchoProcess_hasEscapeMass hα hZ hind hlaw hpos hu hr hrb hlog
 
 end LogLag
 
