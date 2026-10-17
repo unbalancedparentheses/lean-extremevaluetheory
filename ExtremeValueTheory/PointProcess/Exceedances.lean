@@ -397,4 +397,94 @@ theorem tendsto_measureReal_sumDiracRange_timeSpace_eq (hX : ∀ i, Measurable (
 
 end PointProcess
 
+/-! ### Upper order statistics from the point process of exceedances -/
+
+section OrderStatistics
+
+variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+  {X : ℕ → Ω → ℝ} {F G : CumulativeDistributionFunction} {As : ℕ → AffineIncrEquiv}
+
+open scoped Classical in
+/-- The number of exceedances of the sample `X_0, …, X_{n-1}` as a count over `range n`. -/
+lemma exceedCount_eq_card_filter_range (x : ℕ → ℝ) (n : ℕ) (a : ℝ) :
+    exceedCount (fun i : Fin n ↦ x i) a = #{i ∈ range n | a < x i} := by
+  rw [exceedCount, ← Finset.card_map Fin.valEmbedding]
+  congr 1
+  ext i
+  simp only [Finset.mem_map, Finset.mem_filter, Finset.mem_univ, true_and, Fin.valEmbedding_apply,
+    Finset.mem_range]
+  constructor
+  · rintro ⟨i, hi, rfl⟩
+    exact ⟨i.2, hi⟩
+  · rintro ⟨hi, h⟩
+    exact ⟨⟨i, hi⟩, h, rfl⟩
+
+open scoped Classical in
+/-- The `(j+1)`-th largest normalized observation is at most `x` if and only if at most `j`
+normalized observations lie in `(x, ∞)`. -/
+lemma affine_orderStat_le_iff_card (x : ℕ → ℝ) (A : AffineIncrEquiv) {n j : ℕ} (hj : j < n)
+    (a : ℝ) :
+    A (orderStat (fun i : Fin n ↦ x i) j) ≤ a ↔ #{i ∈ range n | A (x i) ∈ Set.Ioi a} ≤ j := by
+  rw [AffineIncrEquiv.apply_le_iff, orderStat_le_iff _ hj, exceedCount_eq_card_filter_range]
+  have : ∀ i, A⁻¹ a < x i ↔ A (x i) ∈ Set.Ioi a := fun i ↦ by
+    rw [Set.mem_Ioi, ← not_le, ← not_le, AffineIncrEquiv.apply_le_iff]
+  simp_rw [this]
+
+open scoped Classical in
+/-- The counts of normalized exceedances of a level `x` with `G x ∈ (0, 1)` are asymptotically
+Poisson with mean `-log G(x)`. -/
+lemma tendsto_measureReal_card_affine_mem_Ioi_eq (hX : ∀ i, Measurable (X i))
+    (hind : iIndepFun X P) (hF : ∀ i x, P.real {ω | X i ω ≤ x} = F x) {x : ℝ}
+    (hGx : G x ∈ Set.Ioo 0 1) (hlim : Tendsto (fun n : ℕ ↦ ((As n • F) x) ^ n) atTop (𝓝 (G x)))
+    (m : ℕ) :
+    Tendsto (fun n ↦ P.real {ω | #{i ∈ range n | As n (X i ω) ∈ Set.Ioi x} = m}) atTop
+      (𝓝 (G x * (-Real.log (G x)) ^ m / m.factorial)) := by
+  have hτ : 0 ≤ -Real.log (G x) := neg_nonneg.2 (Real.log_nonpos hGx.1.le hGx.2.le)
+  have h := tendsto_measureReal_card_affine_mem_eq (As := As) hX hind hF
+    (B := fun _ : Fin 1 ↦ Set.Ioi x) (fun _ ↦ measurableSet_Ioi)
+    (fun a b h ↦ (h (Subsingleton.elim a b)).elim)
+    (r := fun _ ↦ (-Real.log (G x)).toNNReal) (fun _ ↦ ?_) (fun _ ↦ m)
+  · simpa [Real.coe_toNNReal _ hτ, Real.exp_log hGx.1, mul_div_assoc] using h
+  · simpa [Real.coe_toNNReal _ hτ] using tendsto_nat_mul_measureReal_lt_affine hX hF hGx hlim 0
+
+open scoped Classical in
+/-- **Limit law of the `k`-th largest, from the point process of exceedances.** This rederives
+`tendsto_measureReal_affine_orderStat_le` (Poisson limit of the `k`-th largest,
+[EKM, Theorem 4.2.3]) from the Poisson limit of the counts of exceedances:
+`P(A_n (X_{(j+1)}) ≤ x) = P(N_n (x, ∞) ≤ j) → G(x) ∑_{m ≤ j} (-log G(x)) ^ m / m!`. -/
+theorem tendsto_measureReal_affine_orderStat_le_of_pointProcess (hX : ∀ i, Measurable (X i))
+    (hind : iIndepFun X P) (hF : ∀ i x, P.real {ω | X i ω ≤ x} = F x) {x : ℝ}
+    (hGx : G x ∈ Set.Ioo 0 1) (hlim : Tendsto (fun n : ℕ ↦ ((As n • F) x) ^ n) atTop (𝓝 (G x)))
+    (j : ℕ) :
+    Tendsto (fun n : ℕ ↦ P.real {ω | As n (orderStat (fun i : Fin n ↦ X i ω) j) ≤ x}) atTop
+      (𝓝 (G x * ∑ m ∈ range (j + 1), (-Real.log (G x)) ^ m / m.factorial)) := by
+  have hcount (n : ℕ) : Measurable fun ω ↦ #{i ∈ range n | As n (X i ω) ∈ Set.Ioi x} :=
+    measurable_card_filter_range (Z := fun i ω ↦ As n (X i ω))
+      (fun i ↦ (As n).measurable.comp (hX i)) measurableSet_Ioi n
+  have heq : (fun n : ℕ ↦ P.real {ω | As n (orderStat (fun i : Fin n ↦ X i ω) j) ≤ x}) =ᶠ[atTop]
+      fun n ↦ ∑ m ∈ range (j + 1),
+        P.real {ω | #{i ∈ range n | As n (X i ω) ∈ Set.Ioi x} = m} := by
+    filter_upwards [eventually_gt_atTop j] with n hn
+    have hset : {ω | As n (orderStat (fun i : Fin n ↦ X i ω) j) ≤ x} =
+        ⋃ m ∈ range (j + 1), {ω | #{i ∈ range n | As n (X i ω) ∈ Set.Ioi x} = m} := by
+      ext ω
+      simp only [Set.mem_ofPred_eq, Set.mem_iUnion, Finset.mem_range, exists_prop,
+        affine_orderStat_le_iff_card (fun i ↦ X i ω) (As n) hn]
+      constructor
+      · intro h
+        exact ⟨_, Nat.lt_succ_of_le h, rfl⟩
+      · rintro ⟨m, hm, rfl⟩
+        exact Nat.le_of_lt_succ hm
+    rw [hset, measureReal_biUnion_finset]
+    · intro a _ b _ hab
+      exact Set.disjoint_left.2 fun ω h1 h2 ↦ hab (h1.symm.trans h2)
+    · exact fun m _ ↦ hcount n (measurableSet_singleton m)
+  refine Tendsto.congr' heq.symm ?_
+  rw [Finset.mul_sum]
+  refine tendsto_finsetSum _ fun m _ ↦ ?_
+  rw [← mul_div_assoc]
+  exact tendsto_measureReal_card_affine_mem_Ioi_eq hX hind hF hGx hlim m
+
+end OrderStatistics
+
 end ExtremeValueTheory
