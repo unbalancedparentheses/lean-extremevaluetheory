@@ -30,7 +30,9 @@ of `tendsto_map_convPow_of_isRegularlyVarying` (in
 
 * `GCLTConverse.exists_isRegularlyVarying_of_tendsto`: **converse GCLT, index derived.** If
   `Sₙ / aₙ → ν ≠ δ₀` weakly, there is `0 < α ≤ 2` with `U ∈ RV(2 - α)` and, if `α < 2`,
-  `P(|X| > ·) ∈ RV(-α)`.
+  `P(|X| > ·) ∈ RV(-α)`. Its scaling form `exists_tendsto_mul_sqRatio_of_tendsto`
+  (`n E[min (1, X² / (aₙ x)²)] → K x^(-α)`) is reused in the asymmetric case
+  (`ExtremeValueTheory.StableLaws.GeneralizedCLTConverseAsymmetric`).
 * `GCLTConverse.isRegularlyVarying_of_tendsto_isSymmStable`: **converse GCLT, index given.**
   If `Sₙ / aₙ → SαS(c)` with `0 < α < 2`, `c > 0`, then `P(|X| > ·) ∈ RV(-α)`,
   `U ∈ RV(2 - α)` and `n P(|X| > aₙ) → K > 0`.
