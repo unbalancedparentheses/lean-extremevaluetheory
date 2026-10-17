@@ -37,8 +37,10 @@ Theory: An Introduction*, Springer 2006, §3.5 [dHF]).
   of attraction, for `F ∈ MDA(H_ξ)`, `ξ > 0`.
 * `ExtremeValueTheory.tendstoInMeasure_momentEstimator_pareto`: the exact Pareto case.
 
-The consistency of the moment estimator for `ξ ≤ 0` (which needs the second-order behaviour
-of `log U` in the Gumbel and Weibull domains) is not covered here.
+The consistency of the moment estimator for every `ξ ∈ ℝ` (with positive right endpoint), which
+needs the extended regular variation of `log U`, is proved in
+`ExtremeValueTheory.Statistics.MomentGeneral`
+(`tendstoInMeasure_momentEstimator_of_isInMDAGEV'`).
 
 ## Proof
 
