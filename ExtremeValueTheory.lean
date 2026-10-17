@@ -53,3 +53,4 @@ import ExtremeValueTheory.Statistics.UpperOrderStatistics
 import ExtremeValueTheory.Statistics.Records
 
 import ExtremeValueTheory.ForMathlib.MeasureTheory.Measure.Vague
+import ExtremeValueTheory.ForMathlib.Probability.PoissonRandomMeasure
