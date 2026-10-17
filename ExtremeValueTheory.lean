@@ -126,6 +126,7 @@ import ExtremeValueTheory.Dependence.StrictExtremalIndexAll
 import ExtremeValueTheory.Multivariate.Dependence
 import ExtremeValueTheory.Multivariate.TailDependence
 import ExtremeValueTheory.Multivariate.PickandsEstimator
+import ExtremeValueTheory.MaxStable.Converse
 import ExtremeValueTheory.Dependence.EchoPhaseTransition
 import ExtremeValueTheory.Dependence.EchoConditionA
 import ExtremeValueTheory.Dependence.MixtureProcess
