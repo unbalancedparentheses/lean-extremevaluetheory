@@ -1,0 +1,69 @@
+# Research targets
+
+Open problems and correction targets in extremes of dependent sequences, collected from a literature
+search on 2026-10-17. "Open" means a source explicitly states the question as open. Items marked
+*unverified* were not checked against the full text.
+
+## Primary target
+
+**Candidate extremal index.** For a stationary regularly varying sequence with spectral tail process
+`Θ`, let `ϑ = E[sup_{k≥0} |Θ_k|^α − sup_{k≥1} |Θ_k|^α]`. Then `θ ≤ ϑ` (Kulik–Soulier 2020,
+Lemma 7.5.4, exact hypotheses *unverified*), with equality under anticlustering. Planinić–Soulier
+(2018, Lemma 4.1) need only `|Y_t| → 0` instead of anticlustering. The model of Bai–Wang
+([arXiv:2110.07499](https://arxiv.org/abs/2110.07499)) has `θ < ϑ`, and no characterization of
+`θ = ϑ` is known.
+
+Plan: tail process → spectral tail process → time-change formula → `ϑ` and the formula under
+`|Y_t| → 0` → link with the block extremal index `θ` → machine-checked record of which hypotheses
+each step uses.
+
+## Open problems
+
+1. **The gap between `θ` and `ϑ`, and phase transitions.** Bai, Kulik, Wang (2024),
+   [arXiv:2409.17966](https://arxiv.org/abs/2409.17966), §1: whether the mesoscopic phase transition
+   of their model occurs for other regularly varying processes, and whether anticlustering can hold
+   with `lim log d_n / log n = ρ` only for `ρ` up to some `ρ₀ < 1`.
+2. **Sliding-blocks cluster estimators.** Cissokho, Kulik (2020),
+   [arXiv:2005.11378](https://arxiv.org/abs/2005.11378), §5.3: consistency without β-mixing;
+   unbounded cluster functionals (partly addressed by Chen–Kulik,
+   [arXiv:2308.16270](https://arxiv.org/abs/2308.16270)); whether peaks over threshold always beats
+   block maxima in variance.
+3. **Bias of ℓᵖ-block cluster inference.** Buriticá, Wintenberger,
+   [arXiv:2212.13521](https://arxiv.org/abs/2212.13521) (stated as a research direction).
+4. **Self-normalized M1 limits with clustering**, [arXiv:2405.01318](https://arxiv.org/abs/2405.01318)
+   (needs the Skorokhod M1 topology).
+
+## Errata (formalization targets)
+
+1. **Drees, Rootzén (2010)**, Ann. Statist. 38(4). Correction note
+   [arXiv:1510.09090](https://arxiv.org/abs/1510.09090): the proof of Lemma 5.2(vii) fails under the
+   stated conditions, and the fix assumes φ-mixing.
+2. **Basrak, Segers (2009)**, SPA 119. Erratum SPA 121(4) (2011) 896–898,
+   DOI 10.1016/j.spa.2010.12.009. Content *unverified*; read it before relying on the original
+   statements.
+3. **Gomes, de Haan, Pestana (2004)**, J. Appl. Probab. 41. Correction J. Appl. Probab. 43(4) (2006),
+   DOI 10.1239/jap/1165505221. Content *unverified*.
+
+## Resolved results worth verifying
+
+- Hsing's (1993) null-variance conjecture for cluster-index estimators of linear models, proved by
+  Buriticá–Wintenberger ([arXiv:2212.13521](https://arxiv.org/abs/2212.13521)).
+- The Basrak–Davis–Mikosch (2002) Cramér–Wold conjecture for nonnegative regularly varying vectors,
+  proved by Boman–Lindskog ([arXiv:0802.4373](https://arxiv.org/abs/0802.4373)). The device fails for
+  integer `α` in general (Hult–Lindskog 2006).
+- Anticlustering is not essential for the tail-process limit (Planinić–Soulier,
+  [arXiv:1706.04767](https://arxiv.org/abs/1706.04767), §4); dissipative representations
+  (Dombry–Hashorva–Soulier, [arXiv:1710.08358](https://arxiv.org/abs/1710.08358)).
+- Markov chains with `θ = 0` (Kulik–Soulier–Wintenberger,
+  [arXiv:1511.04903](https://arxiv.org/abs/1511.04903)); Smith's (1988) counterexample to
+  "`θ` = 1 / mean cluster size".
+
+## Infrastructure
+
+Present in the Mathlib version used here: Brownian motion, Kolmogorov extension, Ionescu-Tulcea,
+infinite products, Poisson pmf, Lévy–Prokhorov, Portmanteau, Prokhorov, tightness, Cramér–Wold,
+the central limit theorem, measure-preserving maps and ergodic theory.
+
+Absent: point processes and random measures, Poisson random measures, vague convergence, the
+Skorokhod space, mixing coefficients, and a stationary-sequence API. General infrastructure written
+here goes in `ExtremeValueTheory/ForMathlib/` (Mathlib imports only, Mathlib style) for upstreaming.
