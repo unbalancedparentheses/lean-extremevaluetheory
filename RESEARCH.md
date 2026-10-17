@@ -64,7 +64,7 @@ Progress on P1 (the gap θ < ϑ), 2026-10-17:
 - **Block-length phase transition** (`Dependence/EchoPhaseTransition.lean`): for the echo process the
   cluster ratio tends to `1 = ϑ` for `rₙ = o(log n)`, to `(1 + min(1/(cα), 1))/2` for `rₙ/log n → c`, and to
   `1/2 = θ` for `log n = o(rₙ)`: a continuous transition with a kink at `c = 1/α`, the scale of the echo
-  lag `(1/α) log n`. Condition `𝒜` fails whenever `rₙ/log n` has a finite limit and holds for long blocks
+  lag `(1/α) log n`. Condition `𝒜` fails whenever `rₙ → ∞` and `rₙ/log n` has a finite limit, and holds for long blocks with `rₙ = o(n)`
   (`Dependence/EchoConditionA.lean`), where `θ = ϑ − η` then applies through the general theorem.
   This is a concrete instance of the block-length phase transitions asked about in P1.
 - **Mixture** (`Dependence/MixtureProcess.lean`): constant with probability `p`, iid otherwise. `η = 0`
