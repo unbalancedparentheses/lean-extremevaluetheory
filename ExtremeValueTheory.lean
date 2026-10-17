@@ -52,6 +52,7 @@ import ExtremeValueTheory.StableLaws.GeneralizedCLTConverse
 import ExtremeValueTheory.StableLaws.LevyMeasureLimit
 import ExtremeValueTheory.StableLaws.GeneralizedCLTConverseAsymmetric
 import ExtremeValueTheory.StableLaws.DomainOfAttractionIff
+import ExtremeValueTheory.StableLaws.StableIndex
 import ExtremeValueTheory.ForMathlib.Probability.Process.Stationary
 import ExtremeValueTheory.ForMathlib.MeasureTheory.Measure.Bonferroni
 import ExtremeValueTheory.ForMathlib.Analysis.SpecialFunctions.Gamma.Trigamma

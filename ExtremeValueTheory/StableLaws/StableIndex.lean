@@ -298,4 +298,166 @@ theorem norm_charFun_sq_of_tendsto_mul_sqRatio_two (ha : ∀ n, 0 < a n)
 
 end GaussianSymm
 
+section Index
+
+variable {μ : Measure ℝ}
+
+/-- A stable law whose characteristic function has modulus `exp (-c |t|^β)`, `c, β > 0`, has
+index `β`: comparing `|φ(1)|ⁿ = |φ(aₙ)|` forces `aₙ ^ β = n`. -/
+theorem IsStable.isStableIndex_of_norm_charFun (h : IsStable μ) {β c : ℝ} (hβ : 0 < β)
+    (hc : 0 < c) (hφ : ∀ t, ‖charFun μ t‖ = Real.exp (-(c * |t| ^ β))) :
+    IsStableIndex β μ := by
+  have := h.isProbabilityMeasure
+  refine ⟨h, fun n hn => ?_⟩
+  obtain ⟨a, b, ha, hab⟩ := h.exists_affine n hn
+  have h1 := congrArg (fun ρ => charFun ρ 1) hab
+  simp only [charFun_convPow, charFun_map_mul_add] at h1
+  have h2 : ‖charFun μ 1‖ ^ n = ‖charFun μ a‖ := by
+    rw [← norm_pow, h1, norm_mul, mul_one,
+      show (b : ℂ) * ((1 : ℝ) : ℂ) * Complex.I = ((b * 1 : ℝ) : ℂ) * Complex.I by push_cast; ring,
+      Complex.norm_exp_ofReal_mul_I, mul_one]
+  rw [hφ, hφ, ← Real.exp_nat_mul, Real.exp_eq_exp, abs_one, Real.one_rpow, mul_one,
+    abs_of_pos ha] at h2
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+  have haβ : a ^ β = n := by
+    have : c * a ^ β = c * n := by linarith
+    exact mul_left_cancel₀ hc.ne' this
+  have hae : a = (n : ℝ) ^ β⁻¹ := by
+    rw [← haβ, Real.rpow_rpow_inv ha.le hβ.ne']
+  exact ⟨b, by rw [hab, hae]⟩
+
+/-- **Feller, Vol. II, §VI.1, Theorem 1 (modulus form).** The characteristic function of a
+stable law has modulus `exp (-c |t|^α)` for some `0 < α ≤ 2`, `c > 0`.
+
+The law is in its own domain of attraction, so the converse GCLT gives the index `α` and the
+symmetrized scaling limit. For `α < 2` the explicit identification of the limit
+(`identify_of_tendsto_mul_sqRatio`) gives the modulus; for `α = 2`,
+`norm_charFun_sq_of_tendsto_mul_sqRatio_two` gives `|φ(t)|² = exp (-K t² / 2)`. -/
+theorem IsStable.exists_norm_charFun (h : IsStable μ) :
+    ∃ α c : ℝ, 0 < α ∧ α ≤ 2 ∧ 0 < c ∧ ∀ t, ‖charFun μ t‖ = Real.exp (-(c * |t| ^ α)) := by
+  have := h.isProbabilityMeasure
+  have hex : ∀ n : ℕ, ∃ a b : ℝ, 0 < a ∧ (1 ≤ n → convPow μ n = μ.map (fun x => a * x + b)) := by
+    intro n
+    rcases Nat.eq_zero_or_pos n with rfl | hn
+    · exact ⟨1, 0, one_pos, fun h => absurd h (by norm_num)⟩
+    · obtain ⟨a, b, ha, hab⟩ := h.exists_affine n hn
+      exact ⟨a, b, ha, fun _ => hab⟩
+  choose a b ha hab using hex
+  set ν : ProbabilityMeasure ℝ := ⟨μ, inferInstance⟩
+  have hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν) := by
+    refine tendsto_const_nhds.congr' ?_
+    filter_upwards [eventually_ge_atTop 1] with n hn
+    apply Subtype.ext
+    change μ = (convPow μ n).map (fun x => (a n)⁻¹ * (x - b n))
+    rw [hab n hn, Measure.map_map (by fun_prop) (by fun_prop)]
+    have : ((fun x => (a n)⁻¹ * (x - b n)) ∘ fun x => a n * x + b n) = id := by
+      funext x
+      simp only [Function.comp, id]
+      field_simp [(ha n).ne']
+      ring
+    rw [this, Measure.map_id]
+  obtain ⟨α, hα0, hα2, K, hK, hL⟩ :=
+    exists_tendsto_mul_sqRatio_symmLaw ha (ν := ν) h.ne_dirac hconv
+  rcases lt_or_eq_of_le hα2 with hlt | rfl
+  · obtain ⟨-, B, hB0, -, p, -, -, -, m, hm1, hm2⟩ :=
+      identify_of_tendsto_mul_sqRatio ha hconv hα0 hlt hK hL
+    rcases eq_or_ne α 1 with h1 | h1
+    · subst h1
+      refine ⟨1, B * stableConst 1, one_pos, by norm_num,
+        mul_pos hB0 (stableConst_pos one_pos (by norm_num)), fun t => ?_⟩
+      rw [← norm_charFun_map_add_const m]
+      change ‖charFun ((ν : Measure ℝ).map (· + m)) t‖ = _
+      rw [(hm2 rfl).2, Complex.norm_exp, Real.rpow_one]
+      simp [stableExponentOne]
+    · refine ⟨α, B * stableConst α, hα0, hα2, mul_pos hB0 (stableConst_pos hα0 hlt),
+        fun t => ?_⟩
+      rw [← norm_charFun_map_add_const m]
+      change ‖charFun ((ν : Measure ℝ).map (· + m)) t‖ = _
+      rw [(hm1 h1).2, Complex.norm_exp]
+      simp [stableExponent]
+  · refine ⟨2, K / 4, two_pos, le_rfl, by positivity, fun t => ?_⟩
+    have h2 := norm_charFun_sq_of_tendsto_mul_sqRatio_two ha hconv hK hL t
+    change ‖charFun μ t‖ ^ 2 = _ at h2
+    have hpos : 0 ≤ Real.exp (-(K / 4 * |t| ^ (2 : ℝ))) := (Real.exp_pos _).le
+    refine (pow_left_inj₀ (norm_nonneg _) hpos two_ne_zero).1 ?_
+    rw [h2, ← Real.exp_nat_mul, Real.rpow_two, sq_abs]
+    congr 1
+    push_cast
+    ring
+
+/-- **Feller, Vol. II, §VI.1, Theorem 1.** Every stable law has norming constants
+`aₙ = n ^ (1 / α)` for some `0 < α ≤ 2`. -/
+theorem IsStable.exists_isStableIndex (h : IsStable μ) :
+    ∃ α : ℝ, 0 < α ∧ α ≤ 2 ∧ IsStableIndex α μ := by
+  obtain ⟨α, c, hα0, hα2, hc, hφ⟩ := h.exists_norm_charFun
+  exact ⟨α, hα0, hα2, h.isStableIndex_of_norm_charFun hα0 hc hφ⟩
+
+/-- **Uniqueness of the index.** -/
+theorem IsStableIndex.index_eq {α β : ℝ} (hα : IsStableIndex α μ) (hβ : IsStableIndex β μ) :
+    α = β := by
+  obtain ⟨γ, c, -, -, hc, hφ⟩ := hα.1.exists_norm_charFun
+  exact (hα.eq_of_norm_charFun hc hφ).symm.trans (hβ.eq_of_norm_charFun hc hφ)
+
+theorem IsStableIndex.pos {α : ℝ} (h : IsStableIndex α μ) : 0 < α := by
+  obtain ⟨γ, hγ0, -, hγ⟩ := h.1.exists_isStableIndex
+  exact (hγ.index_eq h) ▸ hγ0
+
+theorem IsStableIndex.le_two {α : ℝ} (h : IsStableIndex α μ) : α ≤ 2 := by
+  obtain ⟨γ, -, hγ2, hγ⟩ := h.1.exists_isStableIndex
+  exact (hγ.index_eq h) ▸ hγ2
+
+/-- **The index of a stable law exists and is unique.** -/
+theorem IsStable.existsUnique_isStableIndex (h : IsStable μ) : ∃! α : ℝ, IsStableIndex α μ := by
+  obtain ⟨α, -, -, hα⟩ := h.exists_isStableIndex
+  exact ⟨α, hα, fun β hβ => hβ.index_eq hα⟩
+
+theorem isStable_iff_exists_isStableIndex :
+    IsStable μ ↔ ∃ α : ℝ, 0 < α ∧ α ≤ 2 ∧ IsStableIndex α μ :=
+  ⟨fun h => h.exists_isStableIndex, fun ⟨_, _, _, h⟩ => h.1⟩
+
+open Classical in
+/-- The index `α ∈ (0, 2]` of a stable law (`0` for a law which is not stable). -/
+noncomputable def stableIndex (μ : Measure ℝ) : ℝ :=
+  if h : IsStable μ then Classical.choose h.exists_isStableIndex else 0
+
+theorem IsStable.isStableIndex_stableIndex (h : IsStable μ) :
+    IsStableIndex (stableIndex μ) μ := by
+  simp only [stableIndex, h, ↓reduceDIte]
+  exact (Classical.choose_spec h.exists_isStableIndex).2.2
+
+theorem IsStableIndex.stableIndex_eq {α : ℝ} (h : IsStableIndex α μ) : stableIndex μ = α :=
+  h.1.isStableIndex_stableIndex.index_eq h
+
+theorem IsStable.stableIndex_pos (h : IsStable μ) : 0 < stableIndex μ :=
+  h.isStableIndex_stableIndex.pos
+
+theorem IsStable.stableIndex_le_two (h : IsStable μ) : stableIndex μ ≤ 2 :=
+  h.isStableIndex_stableIndex.le_two
+
+theorem isStableIndex_iff_stableIndex_eq {α : ℝ} :
+    IsStableIndex α μ ↔ IsStable μ ∧ stableIndex μ = α :=
+  ⟨fun h => ⟨h.1, h.stableIndex_eq⟩, fun ⟨h, e⟩ => e ▸ h.isStableIndex_stableIndex⟩
+
+end Index
+
+section Iff
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {α : ℝ}
+
+/-- **Feller's criterion with a plain stable limit** ([Feller, Vol. II, §XVII.5, Theorem 2]).
+For `0 < α < 2`, `(Sₙ - bₙ) / aₙ` converges weakly to a stable law of index `α` (in the sense
+of `IsStable`, the index being the unique `stableIndex`) iff `P(|X| > ·) ∈ RV(-α)` and the tails
+are balanced. -/
+theorem domainOfAttraction_isStable_iff (hα0 : 0 < α) (hα2 : α < 2) :
+    (∃ a : ℕ → ℝ, (∀ n, 0 < a n) ∧ ∃ b : ℕ → ℝ, ∃ ν : ProbabilityMeasure ℝ,
+      IsStable ν ∧ stableIndex ν = α ∧ Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+        ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν)) ↔
+      IsRegularlyVarying (absTail μ) (-α) ∧ ∃ p, 0 ≤ p ∧ p ≤ 1 ∧
+        Tendsto (fun x => μ.real (Ioi x) / absTail μ x) atTop (𝓝 p) := by
+  rw [← domainOfAttraction_isStableIndex_iff hα0 hα2]
+  simp only [isStableIndex_iff_stableIndex_eq, and_assoc]
+
+end Iff
+
 end ExtremeValueTheory
