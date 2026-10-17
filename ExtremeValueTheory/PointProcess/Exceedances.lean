@@ -485,6 +485,102 @@ theorem tendsto_measureReal_affine_orderStat_le_of_pointProcess (hX : ∀ i, Mea
   rw [← mul_div_assoc]
   exact tendsto_measureReal_card_affine_mem_Ioi_eq hX hind hF hGx hlim m
 
+open scoped Classical in
+/-- **Joint limit law of the two largest, from the point process of exceedances.** This rederives
+`tendsto_measureReal_affine_orderStat_zero_one` ([EKM, §4.2], [LLR, Theorem 2.3.2]) from the joint
+Poisson limit of the counts of exceedances in the disjoint sets `(x, ∞)` and `(y, x]`:
+`P(A_n (X_{(1)}) ≤ x, A_n (X_{(2)}) ≤ y) = P(N_n (x, ∞) = 0, N_n (y, x] ≤ 1)
+  → G(y) (1 + log G(x) - log G(y))`. -/
+theorem tendsto_measureReal_affine_orderStat_zero_one_of_pointProcess
+    (hX : ∀ i, Measurable (X i)) (hind : iIndepFun X P) (hF : ∀ i x, P.real {ω | X i ω ≤ x} = F x)
+    {x y : ℝ} (hyx : y ≤ x) (hGx : G x ∈ Set.Ioo 0 1) (hGy : G y ∈ Set.Ioo 0 1)
+    (hlimx : Tendsto (fun n : ℕ ↦ ((As n • F) x) ^ n) atTop (𝓝 (G x)))
+    (hlimy : Tendsto (fun n : ℕ ↦ ((As n • F) y) ^ n) atTop (𝓝 (G y))) :
+    Tendsto (fun n : ℕ ↦ P.real {ω | As n (orderStat (fun i : Fin n ↦ X i ω) 0) ≤ x ∧
+        As n (orderStat (fun i : Fin n ↦ X i ω) 1) ≤ y}) atTop
+      (𝓝 (G y * (1 + Real.log (G x) - Real.log (G y)))) := by
+  set B : Fin 2 → Set ℝ := ![Set.Ioi x, Set.Ioc y x] with hBdef
+  have hBm (l : Fin 2) : MeasurableSet (B l) := by
+    fin_cases l
+    · exact measurableSet_Ioi
+    · exact measurableSet_Ioc
+  have hdisj : Disjoint (Set.Ioi x) (Set.Ioc y x) :=
+    Set.disjoint_left.2 fun z h1 h2 ↦ absurd h2.2 (not_le.2 h1)
+  have hd : Pairwise (Function.onFun Disjoint B) := by
+    intro a b hab
+    fin_cases a <;> fin_cases b
+    · exact absurd rfl hab
+    · exact hdisj
+    · exact hdisj.symm
+    · exact absurd rfl hab
+  set a := -Real.log (G x) with ha
+  set b := Real.log (G x) - Real.log (G y) with hb
+  have ha0 : 0 ≤ a := neg_nonneg.2 (Real.log_nonpos hGx.1.le hGx.2.le)
+  have hb0 : 0 ≤ b := sub_nonneg.2 (Real.log_le_log hGy.1 (G.mono' hyx))
+  have hA (m : Fin 2 → ℕ) := tendsto_measureReal_card_affine_mem_eq (As := As) hX hind hF hBm hd
+    (r := ![a.toNNReal, b.toNNReal]) (fun l ↦ by
+      fin_cases l
+      · simpa [hBdef, Real.coe_toNNReal _ ha0] using
+          tendsto_nat_mul_measureReal_lt_affine hX hF hGx hlimx 0
+      · simpa [hBdef, Real.coe_toNNReal _ hb0] using
+          tendsto_nat_mul_measureReal_affine_mem_Ioc hX hF hyx hGy hGx hlimy hlimx 0) m
+  have hcount (n : ℕ) (l : Fin 2) :
+      Measurable fun ω ↦ #{i ∈ range n | As n (X i ω) ∈ B l} :=
+    measurable_card_filter_range (Z := fun i ω ↦ As n (X i ω))
+      (fun i ↦ (As n).measurable.comp (hX i)) (hBm l) n
+  have hmeas (n : ℕ) (m : Fin 2 → ℕ) :
+      MeasurableSet {ω | ∀ l, #{i ∈ range n | As n (X i ω) ∈ B l} = m l} := by
+    simp only [Set.ofPred_forall]
+    exact MeasurableSet.iInter fun l ↦ hcount n l (measurableSet_singleton _)
+  have heq : (fun n : ℕ ↦ P.real {ω | As n (orderStat (fun i : Fin n ↦ X i ω) 0) ≤ x ∧
+        As n (orderStat (fun i : Fin n ↦ X i ω) 1) ≤ y}) =ᶠ[atTop]
+      fun n ↦ P.real {ω | ∀ l, #{i ∈ range n | As n (X i ω) ∈ B l} = ![0, 0] l} +
+        P.real {ω | ∀ l, #{i ∈ range n | As n (X i ω) ∈ B l} = ![0, 1] l} := by
+    filter_upwards [eventually_gt_atTop 1] with n hn
+    have hsplit (ω : Ω) : #{i ∈ range n | As n (X i ω) ∈ Set.Ioi y} =
+        #{i ∈ range n | As n (X i ω) ∈ Set.Ioi x} + #{i ∈ range n | As n (X i ω) ∈ Set.Ioc y x} := by
+      rw [← Finset.card_union_of_disjoint (Finset.disjoint_filter.2 fun i _ h1 h2 ↦
+        Set.disjoint_left.1 hdisj h1 h2), ← Finset.filter_or]
+      congr 1
+      refine Finset.filter_congr fun i _ ↦ ?_
+      simp only [Set.mem_Ioi, Set.mem_Ioc]
+      constructor
+      · intro h
+        by_cases hx : x < As n (X i ω)
+        · exact Or.inl hx
+        · exact Or.inr ⟨h, not_lt.1 hx⟩
+      · rintro (h | h)
+        · exact hyx.trans_lt h
+        · exact h.1
+    have hset : {ω | As n (orderStat (fun i : Fin n ↦ X i ω) 0) ≤ x ∧
+        As n (orderStat (fun i : Fin n ↦ X i ω) 1) ≤ y} =
+        {ω | ∀ l, #{i ∈ range n | As n (X i ω) ∈ B l} = ![0, 0] l} ∪
+          {ω | ∀ l, #{i ∈ range n | As n (X i ω) ∈ B l} = ![0, 1] l} := by
+      ext ω
+      have e0 : #{i ∈ range n | As n (X i ω) ∈ Set.Ioi x} =
+          #{i ∈ range n | As n (X i ω) ∈ B 0} := by congr!
+      have e1 : #{i ∈ range n | As n (X i ω) ∈ Set.Ioc y x} =
+          #{i ∈ range n | As n (X i ω) ∈ B 1} := by congr!
+      simp only [Set.mem_ofPred_eq, Set.mem_union, Fin.forall_fin_two,
+        Matrix.cons_val_zero, Matrix.cons_val_one,
+        affine_orderStat_le_iff_card (fun i ↦ X i ω) (As n) (show 0 < n by omega),
+        affine_orderStat_le_iff_card (fun i ↦ X i ω) (As n) hn, hsplit, e0, e1]
+      omega
+    rw [hset, measureReal_union _ (hmeas n _)]
+    exact Set.disjoint_left.2 fun ω h1 h2 ↦ by
+      have := (h1 1).symm.trans (h2 1)
+      simp at this
+  refine Tendsto.congr' heq.symm ?_
+  convert (hA ![0, 0]).add (hA ![0, 1]) using 2
+  simp only [Fin.prod_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one,
+    Real.coe_toNNReal _ ha0, Real.coe_toNNReal _ hb0, pow_zero, pow_one, Nat.factorial_zero,
+    Nat.factorial_one, Nat.cast_one, div_one, mul_one]
+  have hexp : Real.exp (-a) * Real.exp (-b) = G y := by
+    rw [← Real.exp_add, ha, hb, show -(-Real.log (G x)) + -(Real.log (G x) - Real.log (G y)) =
+      Real.log (G y) by ring, Real.exp_log hGy.1]
+  rw [show G y * (1 + Real.log (G x) - Real.log (G y)) = G y + G y * b by rw [hb]; ring, ← hexp]
+  ring
+
 end OrderStatistics
 
 end ExtremeValueTheory
