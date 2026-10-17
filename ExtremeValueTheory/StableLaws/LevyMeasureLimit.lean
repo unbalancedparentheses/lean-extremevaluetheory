@@ -686,6 +686,107 @@ theorem charFun_kernMeasure (hs₀ : 0 ≤ s₀) {n : ℕ} (hn : n ≠ 0) (t : �
 
 end KernMeasure
 
+section LevyLimit
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a b : ℕ → ℝ} {ν : ProbabilityMeasure ℝ}
+  {s₀ : ℝ}
+
+/-- `R(t, s) = φ(t + s) φ(t - s) / φ(t)²`. -/
+noncomputable def rfun (ν : Measure ℝ) (t s : ℝ) : ℂ :=
+  charFun ν (t + s) * charFun ν (t - s) / charFun ν t ^ 2
+
+/-- The limit transform `λ(t) = ∫₀^{s₀} -log R(t, s) / 2 ds`. -/
+noncomputable def lamK (ν : Measure ℝ) (s₀ t : ℝ) : ℂ :=
+  ∫ s in (0 : ℝ)..s₀, -Complex.log (rfun ν t s) / 2
+
+theorem continuous_wfun (n : ℕ) : Continuous (wfun μ a n) := by
+  unfold wfun; have := continuous_charFun (μ := cLaw μ a n); fun_prop
+
+theorem continuous_dfun (n : ℕ) (t : ℝ) : Continuous (dfun μ a n t) := by
+  unfold dfun; have := continuous_wfun (μ := μ) (a := a) n; fun_prop
+
+/-- Local boundedness of `n wₙ` from the bound on `n E[min (1, (X / aₙ)²)]`. -/
+theorem exists_norm_mul_wfun_le (ha : ∀ n, 0 < a n)
+    (hS : ∃ C, ∀ᶠ n : ℕ in atTop, (n : ℝ) * sqRatio μ (a n) ≤ C) (t : ℝ) :
+    ∃ C, ∀ᶠ n : ℕ in atTop, ‖(n : ℂ) * wfun μ a n t‖ ≤ C := by
+  obtain ⟨C, hC⟩ := hS
+  refine ⟨(12 * t ^ 2 + 2 * |t| + 2) * C, hC.mono fun n hn => ?_⟩
+  rw [norm_mul, Complex.norm_natCast]
+  calc (n : ℝ) * ‖wfun μ a n t‖ ≤ n * ((12 * t ^ 2 + 2 * |t| + 2) * sqRatio μ (a n)) :=
+        mul_le_mul_of_nonneg_left (norm_wfun_le (ha n).ne' t) (Nat.cast_nonneg n)
+    _ = (12 * t ^ 2 + 2 * |t| + 2) * (n * sqRatio μ (a n)) := by ring
+    _ ≤ _ := mul_le_mul_of_nonneg_left hn (by positivity)
+
+variable (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν))
+  (hφ : ∀ t, charFun (ν : Measure ℝ) t ≠ 0)
+  (hw : ∀ t, ∃ C, ∀ᶠ n : ℕ in atTop, ‖(n : ℂ) * wfun μ a n t‖ ≤ C)
+  (hD : ∀ᶠ n : ℕ in atTop, ∀ t s, 0 ≤ s → s ≤ s₀ → ‖dfun μ a n t s‖ ≤ 1)
+include hconv hφ hw hD
+
+theorem tendsto_dfun_log' {t s : ℝ} (hs0 : 0 ≤ s) (hs : s ≤ s₀) :
+    Real.exp (-1) * Real.cos 1 ≤ (rfun ν t s).re ∧
+      Tendsto (fun n => dfun μ a n t s) atTop (𝓝 (Complex.log (rfun ν t s))) :=
+  tendsto_dfun_log hconv hφ hw (hD.mono fun _ hn => hn t s hs0 hs)
+
+theorem norm_log_rfun_le {t s : ℝ} (hs0 : 0 ≤ s) (hs : s ≤ s₀) :
+    ‖Complex.log (rfun ν t s)‖ ≤ 1 :=
+  le_of_tendsto (tendsto_dfun_log' hconv hφ hw hD hs0 hs).2.norm
+    (hD.mono fun _ hn => hn t s hs0 hs)
+
+/-- `n φ_{k ρₙ}(t) → λ(t)`. -/
+theorem tendsto_mul_charFun_kernMeasure (hs₀ : 0 ≤ s₀) (t : ℝ) :
+    Tendsto (fun n : ℕ => (n : ℂ) * charFun (kernMeasure s₀ (cLaw μ a n)) t) atTop
+      (𝓝 (lamK (ν : Measure ℝ) s₀ t)) := by
+  have he : ∀ᶠ n : ℕ in atTop, (n : ℂ) * charFun (kernMeasure s₀ (cLaw μ a n)) t =
+      ∫ s in (0 : ℝ)..s₀, -dfun μ a n t s / 2 := by
+    filter_upwards [eventually_ne_atTop 0] with n hn
+    have hn' : (n : ℂ) ≠ 0 := by exact_mod_cast hn
+    rw [charFun_kernMeasure hs₀ hn, ← intervalIntegral.integral_const_mul]
+    congr 1; funext s; field_simp
+  refine Tendsto.congr' (EventuallyEq.symm he) ?_
+  refine intervalIntegral.tendsto_integral_filter_of_dominated_convergence (fun _ => 1 / 2)
+    (Eventually.of_forall fun n => ((continuous_dfun n t).neg.div_const 2).aestronglyMeasurable)
+    ?_ intervalIntegrable_const (ae_of_all _ fun s hs => ?_)
+  · filter_upwards [hD] with n hn
+    refine ae_of_all _ fun s hs => ?_
+    rw [Set.uIoc_of_le hs₀] at hs
+    rw [norm_div, norm_neg, Complex.norm_ofNat]
+    linarith [hn t s hs.1.le hs.2]
+  · rw [Set.uIoc_of_le hs₀] at hs
+    exact ((tendsto_dfun_log' hconv hφ hw hD hs.1.le hs.2).2.neg).div_const 2
+
+theorem continuousAt_lamK (hs₀ : 0 ≤ s₀) : ContinuousAt (lamK (ν : Measure ℝ) s₀) 0 := by
+  have hRc : ∀ s, Continuous fun t => rfun (ν : Measure ℝ) t s := by
+    intro s
+    have hc := continuous_charFun (μ := (ν : Measure ℝ))
+    exact ((hc.comp (continuous_id.add continuous_const)).mul
+      (hc.comp (continuous_id.sub continuous_const))).div (hc.pow 2)
+      fun t => pow_ne_zero 2 (hφ t)
+  have hRs : ∀ t, Continuous fun s => rfun (ν : Measure ℝ) t s := by
+    intro t
+    have hc := continuous_charFun (μ := (ν : Measure ℝ))
+    exact ((hc.comp (continuous_const.add continuous_id)).mul
+      (hc.comp (continuous_const.sub continuous_id))).div continuous_const
+      fun _ => pow_ne_zero 2 (hφ t)
+  refine intervalIntegral.continuousAt_of_dominated_interval (bound := fun _ => 1 / 2)
+    (Eventually.of_forall fun t => ((Complex.measurable_log.comp (hRs t).measurable).neg.div_const
+      2).aestronglyMeasurable) (Eventually.of_forall fun t => ae_of_all _ fun s hs => ?_)
+    intervalIntegrable_const (ae_of_all _ fun s hs => ?_)
+  · rw [Set.uIoc_of_le hs₀] at hs
+    rw [norm_div, norm_neg, Complex.norm_ofNat]
+    linarith [norm_log_rfun_le hconv hφ hw hD (t := t) hs.1.le hs.2]
+  · rw [Set.uIoc_of_le hs₀] at hs
+    have hpos : 0 < (rfun (ν : Measure ℝ) 0 s).re := lt_of_lt_of_le (mul_pos (Real.exp_pos _)
+      (Real.cos_pos_of_mem_Ioo ⟨by linarith [Real.pi_gt_three], by
+        linarith [Real.pi_gt_three]⟩)) (tendsto_dfun_log' hconv hφ hw hD hs.1.le hs.2).1
+    have h1 : ContinuousAt (fun t => Complex.log (rfun (ν : Measure ℝ) t s)) 0 :=
+      ContinuousAt.comp (x := (0 : ℝ)) (g := Complex.log)
+        (continuousAt_clog (Complex.mem_slitPlane_iff.2 (Or.inl hpos))) (hRc s).continuousAt
+    exact h1.neg.div_const 2
+
+end LevyLimit
+
 end GCLTConverse
 
 end ExtremeValueTheory
