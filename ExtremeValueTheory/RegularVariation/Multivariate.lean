@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.Dependence.TailProcess
+import Mathlib.Topology.Algebra.Module.Cardinality
 
 /-!
 # Multivariate regular variation
@@ -12,7 +13,7 @@ TODO docs
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set BoundedContinuousFunction
-open scoped ENNReal NNReal
+open scoped ENNReal NNReal Pointwise
 
 namespace ExtremeValueTheory
 
@@ -206,5 +207,138 @@ theorem tendsto_measureReal_of_vanishesNearZero (hμs : ∀ i, IsFiniteMeasure (
   exact key
 
 end M0
+
+/-! ### Regularly varying random vectors -/
+
+section Definition
+
+variable {Ω E : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
+  [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E]
+  {X : Ω → E} {α : ℝ} {μ : Measure E}
+
+/-- The normalized law `P(X / x ∈ ·) / P(‖X‖ > x)`. -/
+noncomputable def tailLaw (P : Measure Ω) (X : Ω → E) (x : ℝ) : Measure E :=
+  ENNReal.ofReal (P.real {ω | x < ‖X ω‖})⁻¹ • P.map fun ω => x⁻¹ • X ω
+
+instance [IsFiniteMeasure P] (x : ℝ) : IsFiniteMeasure (tailLaw P X x) :=
+  ⟨by rw [tailLaw, Measure.smul_apply, smul_eq_mul]
+      exact ENNReal.mul_lt_top ENNReal.ofReal_lt_top (measure_lt_top _ _)⟩
+
+theorem integral_tailLaw (hX : Measurable X) (x : ℝ) {g : E → ℝ} (hg : Measurable g) :
+    ∫ y, g y ∂(tailLaw P X x) = (P.real {ω | x < ‖X ω‖})⁻¹ * ∫ ω, g (x⁻¹ • X ω) ∂P := by
+  have hm : Measurable fun ω => x⁻¹ • X ω := hX.const_smul _
+  rw [tailLaw, integral_smul_measure, integral_map hm.aemeasurable
+    hg.aestronglyMeasurable, smul_eq_mul, ENNReal.toReal_ofReal (inv_nonneg.2 measureReal_nonneg)]
+
+theorem tailLaw_real_apply (hX : Measurable X) (x : ℝ) {A : Set E} (hA : MeasurableSet A) :
+    (tailLaw P X x).real A = (P.real {ω | x < ‖X ω‖})⁻¹ * P.real {ω | x⁻¹ • X ω ∈ A} := by
+  have hm : Measurable fun ω => x⁻¹ • X ω := hX.const_smul _
+  rw [measureReal_def, tailLaw, Measure.smul_apply, Measure.map_apply hm hA,
+    smul_eq_mul, ENNReal.toReal_mul, ENNReal.toReal_ofReal (inv_nonneg.2 measureReal_nonneg),
+    measureReal_def]
+  rfl
+
+/-- **Multivariate regular variation** ([KS20, Definition 2.1.?], Hult–Lindskog's
+`M₀`-convergence, [Res07, §6.1]). A random vector `X` is regularly varying with index `α` and
+(tail, or exponent) measure `μ` if the tail `P(‖X‖ > x)` of its norm is regularly varying with
+index `-α` and
+`E[f(X / x)] / P(‖X‖ > x) → ∫ f dμ` as `x → ∞`
+for every bounded continuous `f` vanishing on a neighbourhood of the origin; the measure `μ` has no
+mass at the origin and is finite on the complement of every ball around the origin. -/
+structure IsRegVarVector (P : Measure Ω) (X : Ω → E) (α : ℝ) (μ : Measure E) : Prop where
+  isRegularlyVarying : IsRegularlyVarying (fun x => P.real {ω | x < ‖X ω‖}) (-α)
+  measure_zero : μ {0} = 0
+  measure_lt_top : ∀ r > 0, μ {y | r < ‖y‖} < ∞
+  tendsto : ∀ f : E →ᵇ ℝ, VanishesNearZero f →
+    Tendsto (fun x => (P.real {ω | x < ‖X ω‖})⁻¹ * ∫ ω, f (x⁻¹ • X ω) ∂P) atTop
+      (𝓝 (∫ y, f y ∂μ))
+
+namespace IsRegVarVector
+
+theorem tendsto_tailLaw (h : IsRegVarVector P X α μ) (hX : Measurable X) (f : E →ᵇ ℝ)
+    (hf : VanishesNearZero f) :
+    Tendsto (fun x => ∫ y, f y ∂(tailLaw P X x)) atTop (𝓝 (∫ y, f y ∂μ)) := by
+  simp only [integral_tailLaw hX _ f.continuous.measurable]
+  exact h.tendsto f hf
+
+/-- **Portmanteau**: `P(X / x ∈ A) / P(‖X‖ > x) → μ(A)` for measurable `A` bounded away from
+the origin with `μ(∂A) = 0`. -/
+theorem tendsto_measureReal [IsFiniteMeasure P] (h : IsRegVarVector P X α μ) (hX : Measurable X) {A : Set E}
+    (hAm : MeasurableSet A) {r : ℝ} (hr : 0 < r) (hA : A ⊆ {y | r ≤ ‖y‖})
+    (hfr : μ (frontier A) = 0) :
+    Tendsto (fun x => P.real {ω | x⁻¹ • X ω ∈ A} / P.real {ω | x < ‖X ω‖}) atTop
+      (𝓝 (μ.real A)) := by
+  have key := tendsto_measureReal_of_vanishesNearZero (fun x => inferInstance)
+    h.measure_lt_top (h.tendsto_tailLaw hX) hAm hr hA hfr
+  simp only [tailLaw_real_apply hX _ hAm] at key
+  exact key.congr fun x => by rw [div_eq_inv_mul]
+
+/-- Portmanteau, indicator form. -/
+theorem tendsto_integral_indicator [IsFiniteMeasure P] (h : IsRegVarVector P X α μ) (hX : Measurable X)
+    (H : E →ᵇ ℝ) {ψ : E → ℝ} (hψ : Continuous ψ) {c r : ℝ} (hr : 0 < r)
+    (hψr : ∀ y, c < ψ y → r ≤ ‖y‖) (hc : μ {y | ψ y = c} = 0) :
+    Tendsto (fun x => (P.real {ω | x < ‖X ω‖})⁻¹ *
+      ∫ ω, {y | c < ψ y}.indicator H (x⁻¹ • X ω) ∂P) atTop
+      (𝓝 (∫ y, {y | c < ψ y}.indicator H y ∂μ)) := by
+  have key := tendsto_integral_indicator_of_vanishesNearZero (fun x => inferInstance)
+    h.measure_lt_top (h.tendsto_tailLaw hX) H hψ hr hψr hc
+  simp only [integral_tailLaw hX _
+    ((H.continuous.measurable).indicator (measurableSet_lt measurable_const hψ.measurable))]
+    at key
+  exact key
+
+/-- **Homogeneity of the exponent measure** ([Res07, Theorem 6.1]): `μ(t⁻¹ · A) = t ^ α μ(A)`,
+i.e. the image of `μ` under `y ↦ t • y` is `t ^ α • μ`, for `t > 0`. -/
+theorem map_smul (h : IsRegVarVector P X α μ) {t : ℝ} (ht : 0 < t) :
+    μ.map (fun y => t • y) = ENNReal.ofReal (t ^ α) • μ := by
+  have hsm : Measurable fun y : E => t • y := measurable_const_smul t
+  refine ext_of_forall_integral_eq_of_vanishesNearZero ?_ ?_ ?_ ?_ ?_
+  · rw [Measure.map_apply hsm (measurableSet_singleton 0)]
+    convert h.measure_zero using 2
+    ext y; simp [ht.ne']
+  · rw [Measure.smul_apply, h.measure_zero, smul_zero]
+  · intro r hr
+    rw [Measure.map_apply hsm (measurableSet_lt measurable_const continuous_norm.measurable)]
+    convert h.measure_lt_top (r / t) (div_pos hr ht) using 2
+    ext y
+    simp [norm_smul, abs_of_pos ht, div_lt_iff₀ ht, mul_comm]
+  · intro r hr
+    rw [Measure.smul_apply, smul_eq_mul]
+    exact ENNReal.mul_lt_top ENNReal.ofReal_lt_top (h.measure_lt_top r hr)
+  intro f ⟨r, hr, hf⟩
+  rw [integral_map hsm.aemeasurable f.continuous.aestronglyMeasurable, integral_smul_measure,
+    ENNReal.toReal_ofReal (Real.rpow_nonneg ht.le _), smul_eq_mul]
+  let g : E →ᵇ ℝ := f.compContinuous ⟨fun y => t • y, continuous_const_smul t⟩
+  have hg : VanishesNearZero g := ⟨r / t, div_pos hr ht, fun y hy => hf _ (by
+    show ‖t • y‖ < r
+    rw [norm_smul, Real.norm_eq_abs, abs_of_pos ht]
+    rwa [lt_div_iff₀ ht, mul_comm] at hy)⟩
+  have h1 := h.tendsto g hg
+  have hlim2 := (h.tendsto f ⟨r, hr, hf⟩).comp (tendsto_id.const_mul_atTop (inv_pos.2 ht))
+  have hRV := h.isRegularlyVarying.tendsto (inv_pos.2 ht)
+  rw [Real.inv_rpow ht.le, Real.rpow_neg ht.le, inv_inv] at hRV
+  refine tendsto_nhds_unique h1 ((hRV.mul hlim2).congr' ?_)
+  filter_upwards [(tendsto_id.const_mul_atTop (inv_pos.2 ht)).eventually
+    h.isRegularlyVarying.eventually_pos, eventually_gt_atTop 0] with x hx hx0
+  have hfun : (fun ω => f ((t⁻¹ * x)⁻¹ • X ω)) = fun ω => g (x⁻¹ • X ω) := by
+    funext ω
+    simp only [g, compContinuous_apply, ContinuousMap.coe_mk, smul_smul]
+    congr 2
+    field_simp
+  show _ * ((P.real {ω | t⁻¹ * x < ‖X ω‖})⁻¹ * ∫ ω, f ((t⁻¹ * x)⁻¹ • X ω) ∂P) = _
+  rw [hfun, div_eq_mul_inv, mul_mul_mul_comm, mul_inv_cancel₀ (show P.real {ω | t⁻¹ * x < ‖X ω‖} ≠ 0 from hx.ne'), one_mul]
+
+/-- The exponent measure of a set scaled by `t > 0`: `μ(t • A) = t ^ (-α) μ(A)`. -/
+theorem measure_smul_set (h : IsRegVarVector P X α μ) {t : ℝ} (ht : 0 < t) {A : Set E}
+    (hA : MeasurableSet A) : μ (t • A) = ENNReal.ofReal (t ^ (-α)) * μ A := by
+  have := congrArg (fun ν : Measure E => ν A) (h.map_smul (inv_pos.2 ht))
+  simp only [Measure.map_apply (measurable_const_smul _) hA, Measure.smul_apply,
+    smul_eq_mul] at this
+  rw [Set.preimage_smul_inv₀ ht.ne', Real.inv_rpow ht.le, ← Real.rpow_neg ht.le] at this
+  exact this
+
+end IsRegVarVector
+
+end Definition
 
 end ExtremeValueTheory
