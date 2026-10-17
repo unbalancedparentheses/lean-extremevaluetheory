@@ -859,15 +859,17 @@ Theorem 2], [GK, §35, Theorem 2]): necessity of Feller's conditions, without sy
 `aₙ > 0`, `bₙ ∈ ℝ`, and suppose the laws of `(X₁ + ⋯ + Xₙ - bₙ) / aₙ` converge weakly to a law
 `ν` which is not a Dirac mass. Then there is `0 < α ≤ 2` such that the truncated second moment
 `U(x) = E[X² 1{|X| ≤ x}]` is regularly varying with index `2 - α`, and, if `α < 2`, the
-two-sided tail `P(|X| > x)` is regularly varying with index `-α` and the tails are balanced:
+two-sided tail `P(|X| > x)` is regularly varying with index `-α`, `n P(|X| > aₙ)` converges to
+some `B > 0` (so `aₙ` is the right scale), and the tails are balanced:
 `P(X > x) / P(|X| > x) → p` for some `p ∈ [0, 1]`. -/
 theorem exists_isRegularlyVarying_tailBalance_of_tendsto (ha : ∀ n, 0 < a n)
     {ν : ProbabilityMeasure ℝ} (hnd : ∀ x, (ν : Measure ℝ) ≠ Measure.dirac x)
     (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
       ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν)) :
     ∃ α, 0 < α ∧ α ≤ 2 ∧ IsRegularlyVarying (truncSecondMoment μ) (2 - α) ∧
-      (α < 2 → IsRegularlyVarying (absTail μ) (-α) ∧ ∃ p, 0 ≤ p ∧ p ≤ 1 ∧
-        Tendsto (fun x => μ.real (Ioi x) / absTail μ x) atTop (𝓝 p)) := by
+      (α < 2 → IsRegularlyVarying (absTail μ) (-α) ∧
+        (∃ B > 0, Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n)) atTop (𝓝 B)) ∧
+        ∃ p, 0 ≤ p ∧ p ≤ 1 ∧ Tendsto (fun x => μ.real (Ioi x) / absTail μ x) atTop (𝓝 p)) := by
   obtain ⟨α, hα0, hα2, K, hK, hL⟩ := exists_tendsto_mul_sqRatio_symmLaw ha hnd hconv
   have hZs := isRegularlyVarying_minSqMoment_of_tendsto_mul_sqRatio ha hK hL
   rcases lt_or_eq_of_le hα2 with hlt | heq
@@ -938,7 +940,53 @@ theorem exists_isRegularlyVarying_tailBalance_of_tendsto (ha : ∀ n, 0 < a n)
     intro ε hε _
     exact exists_tendsto_mul_integral_comp ha hconv hφ hS hsmall hlow (rampBCF ε) one_pos
       (fun z hz => ramp_eq_zero hε ((le_abs_self z).trans hz.le)) (lipschitzWith_ramp hε)
-  exact exists_tendsto_measureReal_Ioi_div_absTail hG ha hatop hB hB0 hT
+  exact ⟨⟨B, hB0, hB⟩, exists_tendsto_measureReal_Ioi_div_absTail hG ha hatop hB hB0 hT⟩
+
+/-- **The Lévy measure of the limit** (asymmetric converse GCLT, [Feller, Vol. II, §XVII.5],
+[GK, §35]): under the hypotheses of `exists_isRegularlyVarying_tailBalance_of_tendsto`, with
+`α < 2`, there are `c₊, c₋ ≥ 0`, `c₊ + c₋ > 0`, such that for every `u > 0`,
+`n P(X > aₙ u) → c₊ u ^ (-α)` and `n P(X < -aₙ u) → c₋ u ^ (-α)`; that is,
+`n P(X / aₙ ∈ ·)` converges on `(0, ∞)` and on `(-∞, 0)` to `c₊ α x^{-α-1} dx` and
+`c₋ α |x|^{-α-1} dx`. -/
+theorem exists_tendsto_mul_tails_of_tendsto (ha : ∀ n, 0 < a n)
+    {ν : ProbabilityMeasure ℝ} (hnd : ∀ x, (ν : Measure ℝ) ≠ Measure.dirac x)
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν)) :
+    ∃ α : ℝ, 0 < α ∧ α ≤ 2 ∧ (α < 2 → ∃ cp cm : ℝ, 0 ≤ cp ∧ 0 ≤ cm ∧ 0 < cp + cm ∧
+      ∀ u : ℝ, 0 < u →
+        Tendsto (fun n : ℕ => (n : ℝ) * μ.real (Ioi (a n * u))) atTop (𝓝 (cp * u ^ (-α))) ∧
+        Tendsto (fun n : ℕ => (n : ℝ) * μ.real (Iio (-(a n * u)))) atTop
+          (𝓝 (cm * u ^ (-α)))) := by
+  obtain ⟨α, hα0, hα2, -, h⟩ := exists_isRegularlyVarying_tailBalance_of_tendsto ha hnd hconv
+  refine ⟨α, hα0, hα2, fun hlt => ?_⟩
+  obtain ⟨hG, ⟨B, hB0, hB⟩, p, hp0, hp1, hp⟩ := h hlt
+  have hGpos := absTail_pos hG
+  have hatop : Tendsto a atTop atTop :=
+    tendsto_atTop_of_tendsto_mul_comp (T := absTail μ) (L := fun _ => B)
+      (absTail_antitone.antitoneOn _) (fun x _ => hGpos x) ha hB
+  have hq : Tendsto (fun x => μ.real (Iio (-x)) / absTail μ x) atTop (𝓝 (1 - p)) := by
+    refine (tendsto_const_nhds.sub hp).congr' ?_
+    filter_upwards [eventually_ge_atTop 0] with x hx
+    have := (hGpos x).ne'
+    rw [absTail_eq_add hx] at this ⊢
+    field_simp
+    ring
+  refine ⟨B * p, B * (1 - p), by positivity, mul_nonneg hB0.le (by linarith), by
+    rw [← mul_add]; simpa using hB0, fun u hu => ⟨?_, ?_⟩⟩
+  · have h1 := (tendsto_mul_comp_mul_of_tendsto hG hatop hB hu).mul
+      (hp.comp (hatop.atTop_mul_const hu))
+    rw [show B * u ^ (-α) * p = B * p * u ^ (-α) by ring] at h1
+    refine h1.congr fun n => ?_
+    have := (hGpos (a n * u)).ne'
+    simp only [Function.comp]
+    field_simp
+  · have h1 := (tendsto_mul_comp_mul_of_tendsto hG hatop hB hu).mul
+      (hq.comp (hatop.atTop_mul_const hu))
+    rw [show B * u ^ (-α) * (1 - p) = B * (1 - p) * u ^ (-α) by ring] at h1
+    refine h1.congr fun n => ?_
+    have := (hGpos (a n * u)).ne'
+    simp only [Function.comp]
+    field_simp
 
 end ConverseTailBalance
 
