@@ -177,6 +177,95 @@ theorem exists_term_bounds [IsProbabilityMeasure P] {Z : Ω → ℝ} (hZ : Measu
           have := mul_le_mul_of_nonneg_left hPc (show 0 ≤ K₁ * x by positivity)
           linarith
 
+/-- **Uniform bound for the remainder of a linear process** (`0 < δ < α < 1`). Let `(Z_j)` be
+identically distributed copies of `Z₀` (no independence needed) with `P(|Z₀| > x)` regularly
+varying with index `-α`. There are `K > 0`, `x₀ > 0` such that for every coefficient sequence
+`(c_j)` with `|c_j| ≤ 1` and `∑ |c_j|^δ < ∞`, and every `x ≥ x₀`,
+`P(∑_j |c_j| |Z_j| > x) ≤ K (∑_j |c_j|^δ) P(|Z₀| > x)` (the series taken in `[0, ∞]`). -/
+theorem exists_measure_tsum_gt_le [IsProbabilityMeasure P] {Z : ℕ → Ω → ℝ} {Z₀ : Ω → ℝ}
+    (hZ : ∀ j, Measurable (Z j)) (hZ₀ : Measurable Z₀) (hident : ∀ j, IdentDistrib (Z j) Z₀ P P)
+    {α δ : ℝ} (hδα : δ < α) (hα1 : α < 1)
+    (hL : IsRegularlyVarying (fun x => P.real {ω | x < |Z₀ ω|}) (-α)) :
+    ∃ K x₀ : ℝ, 0 < K ∧ 0 < x₀ ∧ ∀ c : ℕ → ℝ, (∀ j, |c j| ≤ 1) →
+      Summable (fun j => |c j| ^ δ) → ∀ x ≥ x₀,
+      P {ω | ENNReal.ofReal x < ∑' j, ENNReal.ofReal (|c j| * |Z j ω|)} ≤
+        ENNReal.ofReal (K * (∑' j, |c j| ^ δ) * P.real {ω | x < |Z₀ ω|}) := by
+  obtain ⟨K₁, x₀, hK₁, hx₀, hB⟩ := exists_term_bounds hZ₀ hδα hα1 hL
+  refine ⟨2 + K₁, x₀, by positivity, hx₀, fun c hc1 hcs x hx => ?_⟩
+  have hx0 : 0 < x := hx₀.trans_le hx
+  set Lx := P.real {ω | x < |Z₀ ω|} with hLx
+  have hLx0 : 0 ≤ Lx := measureReal_nonneg
+  set S := ∑' j, |c j| ^ δ with hS
+  -- the truncated terms
+  set T : ℕ → Ω → ℝ≥0∞ := fun j ω =>
+    ENNReal.ofReal (if |c j| * |Z j ω| ≤ x then |c j| * |Z j ω| else 0) with hT
+  have hTm : ∀ j, Measurable (T j) := fun j =>
+    ENNReal.measurable_ofReal.comp (Measurable.ite
+      (measurableSet_le (measurable_const.mul (continuous_abs.measurable.comp (hZ j)))
+        measurable_const)
+      (measurable_const.mul (continuous_abs.measurable.comp (hZ j))) measurable_const)
+  have hsub : {ω | ENNReal.ofReal x < ∑' j, ENNReal.ofReal (|c j| * |Z j ω|)} ⊆
+      (⋃ j, {ω | x < |c j| * |Z j ω|}) ∪ {ω | ENNReal.ofReal x ≤ ∑' j, T j ω} := by
+    intro ω hω
+    by_cases h : ∃ j, x < |c j| * |Z j ω|
+    · obtain ⟨j, hj⟩ := h
+      exact Or.inl (mem_iUnion.2 ⟨j, hj⟩)
+    · push Not at h
+      refine Or.inr (le_of_lt (?_ : ENNReal.ofReal x < ∑' j, T j ω))
+      simp only [mem_ofPred_eq] at hω
+      convert hω using 3 with j
+      simp [hT, h j]
+  -- the first part
+  have h1 : P (⋃ j, {ω | x < |c j| * |Z j ω|}) ≤ ENNReal.ofReal (2 * S * Lx) := by
+    refine (measure_iUnion_le _).trans ?_
+    have heq : ∀ j, P {ω | x < |c j| * |Z j ω|} = P {ω | x < |c j| * |Z₀ ω|} := fun j =>
+      ((hident j).comp ((measurable_const_mul |c j|).comp continuous_abs.measurable)
+        |>.measure_mem_eq measurableSet_Ioi)
+    calc ∑' j, P {ω | x < |c j| * |Z j ω|}
+        ≤ ∑' j, ENNReal.ofReal (2 * |c j| ^ δ * Lx) := by
+          refine ENNReal.tsum_le_tsum fun j => ?_
+          rw [heq j]
+          exact (hB x hx (c j) (hc1 j)).1
+      _ = ENNReal.ofReal (2 * S * Lx) := by
+          rw [← ENNReal.ofReal_tsum_of_nonneg (fun j => by positivity)
+            ((hcs.mul_left 2).mul_right Lx), tsum_mul_right, tsum_mul_left]
+  -- the second part, by Markov's inequality
+  have h2 : P {ω | ENNReal.ofReal x ≤ ∑' j, T j ω} ≤ ENNReal.ofReal (K₁ * S * Lx) := by
+    have hm : AEMeasurable (fun ω => ∑' j, T j ω) P :=
+      (Measurable.tsum hTm).aemeasurable
+    refine (meas_ge_le_lintegral_div hm (by simpa using hx0) ENNReal.ofReal_ne_top).trans ?_
+    rw [lintegral_tsum fun j => (hTm j).aemeasurable]
+    have heq : ∀ j, ∫⁻ ω, T j ω ∂P =
+        ∫⁻ ω, ENNReal.ofReal (if |c j| * |Z₀ ω| ≤ x then |c j| * |Z₀ ω| else 0) ∂P := by
+      intro j
+      have hg : Measurable fun z : ℝ =>
+          ENNReal.ofReal (if |c j| * |z| ≤ x then |c j| * |z| else 0) :=
+        ENNReal.measurable_ofReal.comp (Measurable.ite
+          (measurableSet_le (measurable_const.mul continuous_abs.measurable) measurable_const)
+          (measurable_const.mul continuous_abs.measurable) measurable_const)
+      exact ((hident j).comp hg).lintegral_eq
+    calc (∑' j, ∫⁻ ω, T j ω ∂P) / ENNReal.ofReal x
+        ≤ (∑' j, ENNReal.ofReal (K₁ * x * |c j| ^ δ * Lx)) / ENNReal.ofReal x := by
+          gcongr with j
+          rw [heq j]
+          exact (hB x hx (c j) (hc1 j)).2
+      _ = ENNReal.ofReal (K₁ * S * Lx) := by
+          rw [← ENNReal.ofReal_tsum_of_nonneg (fun j => by positivity)
+            ((hcs.mul_left (K₁ * x)).mul_right Lx), ← ENNReal.ofReal_div_of_pos hx0]
+          congr 1
+          rw [tsum_mul_right, tsum_mul_left]
+          field_simp
+          rw [hS]; ring
+  calc P {ω | ENNReal.ofReal x < ∑' j, ENNReal.ofReal (|c j| * |Z j ω|)}
+      ≤ P ((⋃ j, {ω | x < |c j| * |Z j ω|}) ∪ {ω | ENNReal.ofReal x ≤ ∑' j, T j ω}) :=
+        measure_mono hsub
+    _ ≤ ENNReal.ofReal (2 * S * Lx) + ENNReal.ofReal (K₁ * S * Lx) :=
+        (measure_union_le _ _).trans (add_le_add h1 h2)
+    _ = ENNReal.ofReal ((2 + K₁) * S * Lx) := by
+        have hS0 : 0 ≤ S := tsum_nonneg fun j => rpow_nonneg (abs_nonneg _) _
+        rw [← ENNReal.ofReal_add (by positivity) (by positivity)]
+        ring_nf
+
 end LinearProcess
 
 end ExtremeValueTheory
