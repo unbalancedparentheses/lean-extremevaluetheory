@@ -25,6 +25,7 @@ import ExtremeValueTheory.HeavyTails.Subexponential
 import ExtremeValueTheory.HeavyTails.RandomSums
 import ExtremeValueTheory.HeavyTails.Ruin
 import ExtremeValueTheory.HeavyTails.StretchedExponential
+import ExtremeValueTheory.HeavyTails.Examples
 import ExtremeValueTheory.DomainOfAttraction.Gumbel
 import ExtremeValueTheory.Statistics.OrderStatistics
 import ExtremeValueTheory.Statistics.Hill
