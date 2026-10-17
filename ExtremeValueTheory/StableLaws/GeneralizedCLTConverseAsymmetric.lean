@@ -609,11 +609,12 @@ variable {F G : ℝ → ℝ} {a : ℕ → ℝ}
 
 /-- `n F(aₙ u) → A u ^ ρ` when `F ∈ RV(ρ)`, `n F(aₙ) → A` and `aₙ → ∞`. -/
 theorem tendsto_mul_comp_mul_of_tendsto {ρ A : ℝ} (hRV : IsRegularlyVarying F ρ)
-    (hpos : ∀ x, 0 < F x) (ha : Tendsto a atTop atTop)
+    (ha : Tendsto a atTop atTop)
     (hA : Tendsto (fun n : ℕ => (n : ℝ) * F (a n)) atTop (𝓝 A)) {u : ℝ} (hu : 0 < u) :
     Tendsto (fun n : ℕ => (n : ℝ) * F (a n * u)) atTop (𝓝 (A * u ^ ρ)) := by
-  refine (hA.mul ((hRV.2 u hu).comp ha)).congr fun n => ?_
-  have := (hpos (a n)).ne'
+  refine (hA.mul ((hRV.2 u hu).comp ha)).congr' ?_
+  filter_upwards [ha.eventually hRV.1] with n hn
+  have := hn.ne'
   simp only [Function.comp, mul_comm u (a n)]
   field_simp
 
@@ -834,6 +835,112 @@ theorem exists_tendsto_measureReal_Ioi_div_absTail
     rwa [← mul_assoc, hc, mul_inv_cancel₀ (by linarith [hε0 m]), one_mul] at this
 
 end TailBalance
+
+section ConverseTailBalance
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a b : ℕ → ℝ}
+
+/-- The characteristic function of a limit of normalized sums does not vanish: its squared
+modulus is the characteristic function of the limit of the symmetrized sums. -/
+theorem charFun_ne_zero_of_tendsto {ν : ProbabilityMeasure ℝ}
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν))
+    (t : ℝ) : charFun (ν : Measure ℝ) t ≠ 0 := by
+  have hs := tendsto_map_convPow_symmLaw hconv
+  obtain ⟨δ, -, hb⟩ := exists_nh_le symmLaw_map_neg hs
+  have h := (tendsto_nh symmLaw_map_neg hs hb t).1
+  simp only [ProbabilityMeasure.coe_mk, charFun_symmLaw, Complex.ofReal_re] at h
+  intro h0
+  rw [h0, map_zero] at h
+  exact lt_irrefl _ h
+
+/-- **Converse of the generalized central limit theorem** ([Feller, Vol. II, §XVII.5,
+Theorem 2], [GK, §35, Theorem 2]): necessity of Feller's conditions, without symmetry. Let
+`aₙ > 0`, `bₙ ∈ ℝ`, and suppose the laws of `(X₁ + ⋯ + Xₙ - bₙ) / aₙ` converge weakly to a law
+`ν` which is not a Dirac mass. Then there is `0 < α ≤ 2` such that the truncated second moment
+`U(x) = E[X² 1{|X| ≤ x}]` is regularly varying with index `2 - α`, and, if `α < 2`, the
+two-sided tail `P(|X| > x)` is regularly varying with index `-α` and the tails are balanced:
+`P(X > x) / P(|X| > x) → p` for some `p ∈ [0, 1]`. -/
+theorem exists_isRegularlyVarying_tailBalance_of_tendsto (ha : ∀ n, 0 < a n)
+    {ν : ProbabilityMeasure ℝ} (hnd : ∀ x, (ν : Measure ℝ) ≠ Measure.dirac x)
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν)) :
+    ∃ α, 0 < α ∧ α ≤ 2 ∧ IsRegularlyVarying (truncSecondMoment μ) (2 - α) ∧
+      (α < 2 → IsRegularlyVarying (absTail μ) (-α) ∧ ∃ p, 0 ≤ p ∧ p ≤ 1 ∧
+        Tendsto (fun x => μ.real (Ioi x) / absTail μ x) atTop (𝓝 p)) := by
+  obtain ⟨α, hα0, hα2, K, hK, hL⟩ := exists_tendsto_mul_sqRatio_symmLaw ha hnd hconv
+  have hZs := isRegularlyVarying_minSqMoment_of_tendsto_mul_sqRatio ha hK hL
+  rcases lt_or_eq_of_le hα2 with hlt | heq
+  swap
+  · subst heq
+    refine ⟨2, hα0, le_rfl, ?_, fun h => absurd h (lt_irrefl _)⟩
+    rw [sub_self] at hZs ⊢
+    exact isRegularlyVarying_truncSecondMoment_of_minSqMoment (by norm_num)
+      (isRegularlyVarying_minSqMoment_of_symmLaw hZs)
+  obtain ⟨hGs, -, hBs⟩ := isRegularlyVarying_of_tendsto_mul_sqRatio (μ := symmLaw μ) ha hK hα0
+    hlt hL
+  have hG := isRegularlyVarying_absTail_of_symmLaw hGs
+  refine ⟨α, hα0, hα2, isRegularlyVarying_truncSecondMoment_of_absTail hα0 hlt hG,
+    fun _ => ⟨hG, ?_⟩⟩
+  have hGpos := absTail_pos hG
+  have hatop : Tendsto a atTop atTop :=
+    tendsto_atTop_of_tendsto_mul_comp (T := absTail (symmLaw μ)) (L := fun _ => K * ((2 - α) / 2))
+      (absTail_antitone.antitoneOn _) (fun x _ => absTail_pos hGs x) ha hBs
+  -- `n P(|X| > aₙ) → B > 0`
+  set B := K * ((2 - α) / 2) * (1 / 2) with hBdef
+  have hB0 : 0 < B := by
+    have : 0 < 2 - α := by linarith
+    positivity
+  have hB : Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n)) atTop (𝓝 B) := by
+    refine (hBs.mul ((tendsto_absTail_div_absTail_symmLaw hGs).comp hatop)).congr fun n => ?_
+    have := (absTail_pos hGs (a n)).ne'
+    simp only [Function.comp]
+    field_simp
+  -- `n E[min (1, (X / aₙ x)²)] → B κ x ^ (-α)`
+  set κ := 2 / (2 - α) with hκdef
+  have hκ0 : 0 < κ := div_pos two_pos (by linarith)
+  have hκ : Tendsto (fun x => sqRatio μ x / absTail μ x) atTop (𝓝 κ) := by
+    refine (tendsto_minSqMoment_div_sq_mul_absTail hlt hG).congr' ?_
+    filter_upwards [eventually_gt_atTop 0] with x hx
+    rw [sqRatio_eq_div hx.ne', div_div]
+  have hTRV : IsRegularlyVarying (sqRatio μ) (-α) := hG.of_tendsto_div hκ hκ0
+  have hS0 : Tendsto (fun n : ℕ => (n : ℝ) * sqRatio μ (a n)) atTop (𝓝 (B * κ)) := by
+    refine (hB.mul (hκ.comp hatop)).congr fun n => ?_
+    have := (hGpos (a n)).ne'
+    simp only [Function.comp]
+    field_simp
+  have hS : ∃ C, ∀ᶠ n : ℕ in atTop, (n : ℝ) * sqRatio μ (a n) ≤ C :=
+    ⟨B * κ + 1, ((tendsto_order.1 hS0).2 (B * κ + 1) (by linarith)).mono fun _ h => h.le⟩
+  have hsmall : ∀ η > 0, ∃ s₀ > 0, ∀ᶠ n : ℕ in atTop,
+      (n : ℝ) * sqRatio μ (a n / s₀) ≤ η := by
+    intro η hη
+    set s₀ := (η / (2 * (B * κ))) ^ α⁻¹
+    have hs₀ : 0 < s₀ := Real.rpow_pos_of_pos (by positivity) _
+    refine ⟨s₀, hs₀, ?_⟩
+    have h := tendsto_mul_comp_mul_of_tendsto hTRV hatop hS0 (inv_pos.2 hs₀)
+    have he : B * κ * s₀⁻¹ ^ (-α) = η / 2 := by
+      rw [Real.inv_rpow hs₀.le, Real.rpow_neg hs₀.le, inv_inv,
+        Real.rpow_inv_rpow (by positivity) hα0.ne']
+      field_simp
+    rw [he] at h
+    filter_upwards [(tendsto_order.1 h).2 η (by linarith)] with n hn
+    exact hn.le
+  have hlow : ∃ c > 0, ∀ᶠ n : ℕ in atTop, c ≤ (n : ℝ) * absTail μ (2 * a n) := by
+    have h := tendsto_mul_comp_mul_of_tendsto hG hatop hB two_pos
+    have h2 : 0 < B * 2 ^ (-α) := mul_pos hB0 (Real.rpow_pos_of_pos two_pos _)
+    refine ⟨B * 2 ^ (-α) / 2, by positivity, ?_⟩
+    filter_upwards [(tendsto_order.1 h).1 (B * 2 ^ (-α) / 2) (by linarith)] with n hn
+    rw [mul_comm 2 (a n)]
+    exact hn.le
+  have hφ := charFun_ne_zero_of_tendsto hconv
+  have hT : ∀ ε, 0 < ε → ε < 1 → ∃ L,
+      Tendsto (fun n : ℕ => (n : ℝ) * rampTail μ ε (a n)) atTop (𝓝 L) := by
+    intro ε hε _
+    exact exists_tendsto_mul_integral_comp ha hconv hφ hS hsmall hlow (rampBCF ε) one_pos
+      (fun z hz => ramp_eq_zero hε ((le_abs_self z).trans hz.le)) (lipschitzWith_ramp hε)
+  exact exists_tendsto_measureReal_Ioi_div_absTail hG ha hatop hB hB0 hT
+
+end ConverseTailBalance
 
 end GCLTConverse
 
