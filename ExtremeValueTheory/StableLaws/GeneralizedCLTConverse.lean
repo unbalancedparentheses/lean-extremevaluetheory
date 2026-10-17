@@ -25,6 +25,8 @@ noncomputable def truncSecondMoment (μ : Measure ℝ) (x : ℝ) : ℝ :=
 
 namespace GCLTConverse
 
+open Subexp
+
 section Tauberian
 
 variable {μ : Measure ℝ} [IsFiniteMeasure μ]
@@ -502,6 +504,184 @@ theorem exists_forall_norm_charFun_sub_one_le {ν : ℕ → Measure ℝ}
     _ = ε := by field_simp; ring
 
 end Tight
+
+section FromWeakConvergence
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a : ℕ → ℝ}
+
+/-- `hₙ(t) = n (1 - f(t / aₙ))`, where `f` is the (real) characteristic function of `μ`. -/
+noncomputable def nh (μ : Measure ℝ) (a : ℕ → ℝ) (n : ℕ) (t : ℝ) : ℝ :=
+  n * (1 - cosTransform μ ((a n)⁻¹ * t))
+
+theorem nh_nonneg (n : ℕ) (t : ℝ) : 0 ≤ nh μ a n t :=
+  mul_nonneg (Nat.cast_nonneg n) (sub_nonneg.2 (cosTransform_le_one _))
+
+theorem nh_zero (n : ℕ) : nh μ a n 0 = 0 := by simp [nh, cosTransform_zero]
+
+omit [IsProbabilityMeasure μ] in
+theorem nh_neg (n : ℕ) (t : ℝ) : nh μ a n (-t) = nh μ a n t := by
+  simp [nh, mul_neg, cosTransform_neg]
+
+theorem charFun_map_convPow (hsymm : μ.map (fun x => -x) = μ) (n : ℕ) (t : ℝ) :
+    charFun ((convPow μ n).map ((a n)⁻¹ * ·)) t =
+      ((cosTransform μ ((a n)⁻¹ * t) ^ n : ℝ) : ℂ) := by
+  rw [charFun_map_mul, charFun_convPow, GCLT.charFun_eq_integral_cos hsymm, Complex.ofReal_pow]
+  rfl
+
+/-- **Step 1 of the converse.** If `Sₙ / aₙ` converges weakly, then `hₙ(t) ≤ log 2 (|t| / δ + 1)²`
+for some `δ > 0` and all `n ≥ 3`, `t ∈ ℝ`. -/
+theorem exists_nh_le (hsymm : μ.map (fun x => -x) = μ) {ν : ProbabilityMeasure ℝ}
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map ((a n)⁻¹ * ·), inferInstance⟩) atTop (𝓝 ν)) :
+    ∃ δ > 0, ∀ n : ℕ, 3 ≤ n → ∀ t, nh μ a n t ≤ Real.log 2 * (|t| / δ + 1) ^ 2 := by
+  have hcf := ProbabilityMeasure.tendsto_iff_tendsto_charFun.1 hconv
+  have hT := isTightMeasureSet_of_tendsto_charFun
+    (μ := fun n : ℕ => (convPow μ n).map ((a n)⁻¹ * ·))
+    (continuous_charFun (μ := (ν : Measure ℝ))).continuousAt hcf
+  obtain ⟨δ, hδ, hδ'⟩ := exists_forall_norm_charFun_sub_one_le hT (ε := 1 / 2) (by norm_num)
+  have hhalf : ∀ n t, |t| ≤ δ → 1 / 2 ≤ cosTransform μ ((a n)⁻¹ * t) ^ n := by
+    intro n t ht
+    have h := hδ' n t ht
+    rw [charFun_map_convPow hsymm, ← Complex.ofReal_one, ← Complex.ofReal_sub,
+      Complex.norm_real, Real.norm_eq_abs] at h
+    linarith [(abs_le.1 h).1]
+  have hloc : ∀ n : ℕ, 3 ≤ n → ∀ t, |t| ≤ δ → nh μ a n t ≤ Real.log 2 := by
+    intro n hn t ht
+    set F := cosTransform μ ((a n)⁻¹ * t)
+    set F2 := cosTransform μ ((a n)⁻¹ * (t / 2))
+    have h1 : 1 / 2 ≤ F ^ n := hhalf n t ht
+    have h2 : 1 / 2 ≤ F2 ^ n := hhalf n (t / 2) (by rw [abs_div]; linarith [abs_nonneg t])
+    have hF2 : 1 / 2 < F2 ^ 2 := by
+      by_contra hc
+      have h3 : (F2 ^ 2) ^ n ≤ (1 / 2) ^ n := pow_le_pow_left₀ (sq_nonneg _) (not_lt.1 hc) n
+      have h4 : ((1 : ℝ) / 2) ^ n ≤ (1 / 2) ^ 3 := pow_le_pow_of_le_one (by norm_num)
+        (by norm_num) hn
+      have h5 : (1 / 2 : ℝ) ^ 2 ≤ (F2 ^ n) ^ 2 := pow_le_pow_left₀ (by norm_num) h2 2
+      rw [← pow_mul, mul_comm, pow_mul] at h3
+      norm_num at h4 h5
+      linarith
+    have hF : 0 < F := by
+      have := two_mul_sq_sub_one_le_cosTransform (μ := μ) ((a n)⁻¹ * (t / 2))
+      rw [show 2 * ((a n)⁻¹ * (t / 2)) = (a n)⁻¹ * t by ring] at this
+      linarith
+    have hlog : 1 - F ≤ -Real.log F := by linarith [Real.log_le_sub_one_of_pos hF]
+    have hlogn : Real.log (1 / 2) ≤ Real.log (F ^ n) := Real.log_le_log (by norm_num) h1
+    rw [Real.log_pow, one_div, Real.log_inv] at hlogn
+    calc nh μ a n t = n * (1 - F) := rfl
+      _ ≤ n * (-Real.log F) := mul_le_mul_of_nonneg_left hlog (Nat.cast_nonneg n)
+      _ ≤ Real.log 2 := by linarith
+  refine ⟨δ, hδ, fun n hn t => ?_⟩
+  rcases eq_or_ne t 0 with rfl | ht0
+  · rw [nh_zero]; positivity
+  set k := ⌈|t| / δ⌉₊ with hk
+  have hk1 : 1 ≤ k := Nat.one_le_iff_ne_zero.2 fun h => by
+    rw [hk, Nat.ceil_eq_zero] at h
+    have : 0 < |t| / δ := div_pos (abs_pos.2 ht0) hδ
+    linarith
+  have hk0 : (0 : ℝ) < k := by exact_mod_cast hk1
+  have hkle : |t| / δ ≤ k := Nat.le_ceil _
+  have hkle' : (k : ℝ) ≤ |t| / δ + 1 := (Nat.ceil_lt_add_one (by positivity)).le
+  have hloc' := hloc n hn (t / k) (by
+    rw [abs_div, abs_of_pos hk0, div_le_iff₀ hk0]
+    rw [div_le_iff₀ hδ] at hkle
+    linarith)
+  have hmul := one_sub_cosTransform_nat_mul_le (μ := μ) k ((a n)⁻¹ * (t / k))
+  rw [show (k : ℝ) * ((a n)⁻¹ * (t / k)) = (a n)⁻¹ * t by field_simp] at hmul
+  calc nh μ a n t = n * (1 - cosTransform μ ((a n)⁻¹ * t)) := rfl
+    _ ≤ n * ((k : ℝ) ^ 2 * (1 - cosTransform μ ((a n)⁻¹ * (t / k)))) :=
+        mul_le_mul_of_nonneg_left hmul (Nat.cast_nonneg n)
+    _ = (k : ℝ) ^ 2 * nh μ a n (t / k) := by rw [nh]; ring
+    _ ≤ (|t| / δ + 1) ^ 2 * Real.log 2 :=
+        mul_le_mul (pow_le_pow_left₀ (Nat.cast_nonneg _) hkle' 2) hloc' (nh_nonneg _ _)
+          (by positivity)
+    _ = _ := mul_comm _ _
+
+/-- **Step 2 of the converse.** If `Sₙ / aₙ → ν` weakly, then `ψ(t) = Re φ_ν(t) > 0` and
+`hₙ(t) → -log ψ(t)` for every `t`. -/
+theorem tendsto_nh (hsymm : μ.map (fun x => -x) = μ) {ν : ProbabilityMeasure ℝ}
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map ((a n)⁻¹ * ·), inferInstance⟩) atTop (𝓝 ν))
+    {δ B : ℝ} (hB : ∀ n : ℕ, 3 ≤ n → ∀ t, nh μ a n t ≤ B * (|t| / δ + 1) ^ 2) (t : ℝ) :
+    0 < (charFun (ν : Measure ℝ) t).re ∧
+      Tendsto (fun n => nh μ a n t) atTop (𝓝 (-Real.log (charFun (ν : Measure ℝ) t).re)) := by
+  have hcf := ProbabilityMeasure.tendsto_iff_tendsto_charFun.1 hconv t
+  set ψ := (charFun (ν : Measure ℝ) t).re
+  set F : ℕ → ℝ := fun n => cosTransform μ ((a n)⁻¹ * t) with hFdef
+  have hFn : Tendsto (fun n => F n ^ n) atTop (𝓝 ψ) := by
+    have := (Complex.continuous_re.tendsto _).comp hcf
+    refine this.congr fun n => ?_
+    change (charFun ((convPow μ n).map ((a n)⁻¹ * ·)) t).re = _
+    rw [charFun_map_convPow hsymm, Complex.ofReal_re]
+  set C := B * (|t| / δ + 1) ^ 2
+  have hC : ∀ n : ℕ, 3 ≤ n → nh μ a n t ≤ C := fun n hn => hB n hn t
+  have hC0 : 0 ≤ C := (nh_nonneg (μ := μ) (a := a) 3 t).trans (hC 3 le_rfl)
+  have hFeq : ∀ n : ℕ, 1 ≤ n → F n = 1 - nh μ a n t / n := by
+    intro n hn
+    have : (n : ℝ) ≠ 0 := by positivity
+    simp only [nh, hFdef]; field_simp; ring
+  -- `F n ≥ 1 / 2` eventually
+  have hF2 : ∀ᶠ n : ℕ in atTop, 1 / 2 ≤ F n := by
+    filter_upwards [eventually_ge_atTop 3, eventually_ge_atTop ⌈2 * C⌉₊] with n hn hn'
+    have hn0 : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
+    have h2C : 2 * C ≤ n := (Nat.le_ceil _).trans (by exact_mod_cast hn')
+    rw [hFeq n (by omega)]
+    have : nh μ a n t / n ≤ 1 / 2 := by
+      rw [div_le_iff₀ hn0]; linarith [hC n hn]
+    linarith
+  -- positivity of the limit
+  have hψ : 0 < ψ := by
+    have hlim := Real.tendsto_one_add_div_pow_exp (-C)
+    have hle : ∀ᶠ n : ℕ in atTop, (1 + -C / n) ^ n ≤ F n ^ n := by
+      filter_upwards [eventually_ge_atTop 3, eventually_ge_atTop ⌈C⌉₊] with n hn hn'
+      have hn0 : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
+      have hCn : C ≤ n := (Nat.le_ceil _).trans (by exact_mod_cast hn')
+      refine pow_le_pow_left₀ ?_ ?_ n
+      · rw [neg_div, ← sub_eq_add_neg, sub_nonneg, div_le_one hn0]; exact hCn
+      · rw [hFeq n (by omega), neg_div, ← sub_eq_add_neg]
+        exact sub_le_sub_left (div_le_div_of_nonneg_right (hC n hn) hn0.le) _
+    exact (Real.exp_pos _).trans_le (le_of_tendsto_of_tendsto hlim hFn hle)
+  refine ⟨hψ, ?_⟩
+  have hlog : Tendsto (fun n => -Real.log (F n ^ n)) atTop (𝓝 (-Real.log ψ)) :=
+    ((Real.continuousAt_log hψ.ne').tendsto.comp hFn).neg
+  -- the error term
+  have herr : Tendsto (fun n : ℕ => -Real.log (F n ^ n) - nh μ a n t) atTop (𝓝 0) := by
+    have hup : Tendsto (fun n : ℕ => 2 * C ^ 2 / n) atTop (𝓝 0) :=
+      tendsto_const_nhds.div_atTop tendsto_natCast_atTop_atTop
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hup ?_ ?_
+    · filter_upwards [hF2, eventually_ge_atTop 1] with n hFn2 hn
+      have hFp : 0 < F n := by linarith
+      rw [Real.log_pow]
+      have := Real.log_le_sub_one_of_pos hFp
+      simp only [nh, hFdef] at this ⊢
+      nlinarith [Nat.cast_nonneg (α := ℝ) n]
+    · filter_upwards [hF2, eventually_ge_atTop 3] with n hFn2 hn
+      have hFp : 0 < F n := by linarith
+      have hn0 : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
+      rw [Real.log_pow]
+      -- `-log F ≤ 1 / F - 1`
+      have h1 : -Real.log (F n) ≤ (F n)⁻¹ - 1 := by
+        have := Real.log_le_sub_one_of_pos (inv_pos.2 hFp)
+        rwa [Real.log_inv] at this
+      have hnh := hC n hn
+      have hnh0 := nh_nonneg (μ := μ) (a := a) n t
+      have e : 1 - F n = nh μ a n t / n := by rw [hFeq n (by omega)]; ring
+      have hnhF : nh μ a n t = n * (1 - F n) := rfl
+      have key : -(n * Real.log (F n)) - nh μ a n t ≤ nh μ a n t * (nh μ a n t / n) / F n := by
+        have h2 : -(n * Real.log (F n)) ≤ n * ((F n)⁻¹ - 1) := by nlinarith
+        have h3 : n * ((F n)⁻¹ - 1) - nh μ a n t = nh μ a n t * (nh μ a n t / n) / F n := by
+          rw [← e, hnhF]; field_simp
+        linarith
+      refine key.trans ?_
+      rw [div_le_div_iff₀ hFp hn0]
+      have : nh μ a n t * (nh μ a n t / n) * n = nh μ a n t ^ 2 := by field_simp
+      rw [this]
+      have : nh μ a n t ^ 2 ≤ C ^ 2 := pow_le_pow_left₀ hnh0 hnh 2
+      nlinarith
+  have := hlog.sub herr
+  simp only [sub_zero, sub_sub_cancel] at this
+  exact this
+
+end FromWeakConvergence
 
 end GCLTConverse
 
