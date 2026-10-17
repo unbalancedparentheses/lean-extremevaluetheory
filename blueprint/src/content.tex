@@ -6,17 +6,31 @@
 % the current file can be a simple sequence of \input. Otherwise It
 % can start with a \section or \chapter for instance.
 
-This is a blueprint for a project which forms a part of the course
+This is the blueprint of a Lean~4 library on extreme value theory and heavy-tailed
+distributions. It grew out of the Aalto ExtremeValueProject, developed for the course
 \emph{MS-EV0029 Introduction to Formalized Mathematics in Lean}
-at Aalto University, running from February to June, 2025.
-The goal is to formalize the Fisher-Tippett-Gnedenko theorem,
+at Aalto University (February--June 2025) by Kalle Kytölä and the course participants,
+whose goal was to formalize the Fisher--Tippett--Gnedenko theorem
 classifying univariate extreme value distributions.
-Contributions are welcome by course participants!
+
+The library covers:
+\begin{itemize}
+  \item cumulative distribution functions, their affine transformations, types and
+    convergence, and the classification of extreme value distributions
+    (Fisher--Tippett--Gnedenko);
+  \item regular variation: slowly and regularly varying functions, the uniform convergence
+    theorem (monotone and measurable cases), Potter bounds and the Karamata representation
+    theorem;
+  \item Karamata's theorem for tail integrals and Breiman's lemma;
+  \item domains of attraction: Gnedenko's characterizations of the Fréchet and Weibull
+    maximum domains of attraction;
+  \item peaks over threshold: the Pickands--Balkema--de Haan theorem in the Fréchet case and
+    the asymptotics of the mean excess function;
+  \item heavy tails: subexponential distributions, long-tailedness, convolution powers,
+    the single big jump principle and Kesten's bound.
+\end{itemize}
 
 \textbf{WARNING: The blueprint is still work in progress!}
-Contributions by the course participants
-to improve the blueprint and add details
-(which are helpful for formalization) are very welcome!
 
 \input{sections/cdf.tex}
 
@@ -35,3 +49,15 @@ to improve the blueprint and add details
 \input{sections/lcinverse.tex}
 
 \input{sections/cauchy_eqn.tex}
+
+\input{sections/regular_variation.tex}
+
+\input{sections/karamata.tex}
+
+\input{sections/breiman.tex}
+
+\input{sections/domains_of_attraction.tex}
+
+\input{sections/peaks_over_threshold.tex}
+
+\input{sections/subexponential.tex}

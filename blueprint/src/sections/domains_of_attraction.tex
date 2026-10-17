@@ -1,0 +1,185 @@
+\chapter{Domains of attraction}
+\label{chap:domains-of-attraction}
+
+A c.d.f.\ $F$ is in the \emph{maximum domain of attraction} of an extreme value
+distribution $G$ if there are orientation preserving affine isomorphisms $A_n \in \OriAffR$
+with $\big( (A_n . F)(x) \big)^n \to G(x)$ for every $x$, i.e., if the suitably normalized
+maximum of $n$ i.i.d.\ samples from $F$ converges in distribution to $G$. This chapter proves
+Gnedenko's characterizations of the Fréchet and Weibull domains of attraction in terms of
+regular variation. References: de Haan and Ferreira, \emph{Extreme Value Theory: An
+Introduction}, Springer (2006) [dHF]; Resnick, \emph{Extreme Values, Regular Variation, and
+Point Processes}, Springer (1987) [Resnick]; Embrechts, Klüppelberg and Mikosch,
+\emph{Modelling Extremal Events}, Springer (1997) [EKM].
+
+\section{The Fréchet domain of attraction}
+
+\begin{definition}[Fréchet maximum domain of attraction]
+  \label{def:mda-frechet}
+  \uses{def:cdf, def:std-Frechet-cdf, lem:oriented-affine-action-on-cdf}
+  \lean{CumulativeDistributionFunction.IsInMDAFrechet}
+  \leanok
+  Let $\alpha > 0$. A c.d.f.\ $F$ is in the maximum domain of attraction of the standard
+  Fréchet distribution $\FrechetCDF{\alpha}$ (with $\FrechetCDF{\alpha}(x) = \exp(-x^{-\alpha})$
+  for $x > 0$ and $0$ for $x \le 0$) if there are $A_n \in \OriAffR$ with
+  $\big( (A_n . F)(x) \big)^n \to \FrechetCDF{\alpha}(x)$ for every $x \in \bR$.
+  (Since $\FrechetCDF{\alpha}$ is continuous, this is the same as convergence at all
+  continuity points.)
+\end{definition}
+
+\begin{lemma}[Scaling constants from regular variation]
+  \label{lem:frechet-exists-scaling}
+  \uses{def:regularly-varying}
+  \lean{ExtremeValueTheory.Frechet.exists_tendsto_mul_of_isRegularlyVarying}
+  \leanok
+  Let $g$ be antitone, right-continuous, with $g(x) \to 0$ as $x \to \infty$, and regularly
+  varying with index $-\alpha$. Then there are constants $a_n > 0$ such that
+  $n \, g(a_n x) \to x^{-\alpha}$ for every $x > 0$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Take the quantile-type constants $a_n = \inf \set{ x \; | \; g(x) \le 1/n }$ (made positive).
+  Right continuity gives $n \, g(a_n) \le 1$, and regular variation at $c \, a_n$ with $c < 1$
+  gives $\liminf n \, g(a_n) \ge c^{-\alpha}$ for every $c<1$; hence $n \, g(a_n) \to 1$ (using
+  $a_n \to \infty$, which holds as $g > 0$ eventually). Then
+  $n \, g(a_n x) = n \, g(a_n) \cdot \frac{g(x a_n)}{g(a_n)} \to x^{-\alpha}$.
+\end{proof}
+
+\begin{lemma}[Regular variation from affine normalization]
+  \label{lem:frechet-rv-of-affine}
+  \uses{def:regularly-varying}
+  \lean{ExtremeValueTheory.Frechet.isRegularlyVarying_of_tendsto_mul_affine}
+  \leanok
+  Let $g$ be antitone, $\alpha > 0$, and $a_n > 0$, $b_n \in \bR$ with
+  $n \, g(a_n y + b_n) \to y^{-\alpha}$ for every $y > 0$. Then $g$ is regularly varying with
+  index $-\alpha$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Extend $a, b$ to real arguments by $a(t) = a_{\lfloor t \rfloor}$, $b(t) = b_{\lfloor t \rfloor}$,
+  so that $t \, g(a(t) y + b(t)) \to y^{-\alpha}$. Comparing the levels $t$ and $2t$ by
+  monotonicity of $g$ shows that $a(2t) \ge \rho \, a(t)$ eventually for some $\rho > 1$ (indeed
+  $a(2t) \sim 2^{1/\alpha} a(t)$) and that $b(2t) - b(t) = o(a(t))$. A doubling argument
+  (summing along dyadic chains $t, 2t, 4t, \ldots$ and using local bounds on a base interval
+  $[T, 2T]$) then yields $a(t) \to \infty$ and $b(t)/a(t) \to 0$. Hence the centring may be
+  dropped, $n \, g(a_n x) \to x^{-\alpha}$ for $x > 0$. Finally, for $t$ large choose
+  $N(t) = \sup \set{ n \; | \; a_n \le t }$, so that $a_{N(t)} \le t < a_{N(t)+1}$; a sandwich
+  using monotonicity of $g$ gives $g(c t)/g(t) \to c^{-\alpha}$.
+\end{proof}
+
+\begin{theorem}[Gnedenko's theorem, Fréchet case]
+  \label{thm:mda-frechet-iff}
+  \uses{def:mda-frechet, def:regularly-varying, lem:frechet-exists-scaling,
+    lem:frechet-rv-of-affine, thm:tfae-ev-limit}
+  \lean{CumulativeDistributionFunction.isInMDAFrechet_iff,
+    CumulativeDistributionFunction.isInMDAFrechet_of_isRegularlyVarying,
+    CumulativeDistributionFunction.isRegularlyVarying_of_isInMDAFrechet}
+  \leanok
+  Let $\alpha > 0$. A c.d.f.\ $F$ is in the maximum domain of attraction of $\FrechetCDF{\alpha}$
+  if and only if its tail $x \mapsto 1 - F(x)$ is regularly varying with index $-\alpha$
+  [dHF, Theorem~1.2.1], [Resnick, Proposition~1.11], [EKM, Theorem~3.3.7].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Sufficiency: the tail $g = 1 - F$ is antitone, right-continuous and tends to $0$, so
+  Lemma~\ref{lem:frechet-exists-scaling} gives $a_n > 0$ with $n (1 - F(a_n x)) \to x^{-\alpha}
+  = -\log \FrechetCDF{\alpha}(x)$ for $x > 0$. With $A_n^{-1}(x) = a_n x$, the equivalence of
+  the limit relations (Theorem~\ref{thm:tfae-ev-limit}) gives
+  $(A_n . F)(x)^n \to \FrechetCDF{\alpha}(x)$ for $x > 0$. For $x \le 0$ we use
+  $F(a_n x) \le F(0) < 1$ (as $1 - F > 0$ everywhere), so $F(a_n x)^n \to 0$.
+
+  Necessity: write $A_n^{-1}(x) = a_n x + b_n$ with $a_n > 0$. By
+  Theorem~\ref{thm:tfae-ev-limit}, $n (1 - F(a_n y + b_n)) \to y^{-\alpha}$ for $y > 0$, and
+  Lemma~\ref{lem:frechet-rv-of-affine} gives regular variation of $1 - F$.
+\end{proof}
+
+
+\section{The Weibull domain of attraction}
+
+\begin{definition}[Weibull maximum domain of attraction]
+  \label{def:mda-weibull}
+  \uses{def:cdf, def:std-Weibull-cdf, lem:oriented-affine-action-on-cdf}
+  \lean{CumulativeDistributionFunction.IsInMDAWeibull}
+  \leanok
+  Let $\alpha > 0$. A c.d.f.\ $F$ is in the maximum domain of attraction of the standard
+  Weibull distribution $\WeibullCDF{\alpha}$ (with $\WeibullCDF{\alpha}(x) = \exp(-(-x)^\alpha)$
+  for $x < 0$ and $1$ for $x \ge 0$) if there are $A_n \in \OriAffR$ with
+  $\big( (A_n . F)(x) \big)^n \to \WeibullCDF{\alpha}(x)$ for every $x \in \bR$.
+\end{definition}
+
+\begin{lemma}[Regularly varying antitone functions vanish at infinity]
+  \label{lem:weibull-tendsto-zero}
+  \uses{def:regularly-varying}
+  \lean{ExtremeValueTheory.Weibull.tendsto_zero_of_isRegularlyVarying}
+  \leanok
+  If $g$ is antitone, positive, and regularly varying with index $-\alpha$, $\alpha > 0$,
+  then $g(x) \to 0$ as $x \to \infty$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  $g$ has a limit $\ell \ge 0$ at $+\infty$ by monotonicity. If $\ell > 0$, then
+  $g(2x)/g(x) \to \ell/\ell = 1 \ne 2^{-\alpha}$, a contradiction.
+\end{proof}
+
+\begin{lemma}[The endpoint lemma]
+  \label{lem:weibull-endpoint}
+  \lean{ExtremeValueTheory.Weibull.eventually_eq_zero_of_tendsto_mul_affine}
+  \leanok
+  Let $u$ be antitone and nonnegative, $\alpha > 0$, $a_n > 0$, $b_n \in \bR$, with
+  $n \, u(a_n z + b_n) \to (-z)^\alpha$ for every $z < 0$ and $n \, u(b_n) \to 0$. Then for
+  every $c > 0$, eventually $u(b_n + c \, a_n) = 0$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Let $\kappa = 2^{-1/\alpha} < 1$. Comparing the levels $n$ and $2n$ by monotonicity of $u$
+  (using $2n \, u(a_{2n} z + b_{2n}) \to 2(-z)^\alpha$) shows that, for every small $\delta > 0$,
+  eventually $a_{2n} \le \rho \, a_n$ with $\rho = \kappa + 2\delta < 1$ and
+  $b_{2n} - b_n \le 3 \delta \, a_n$. Choosing $\delta$ small relative to $c (1 - \rho)$, the
+  potential $\Phi_n = b_n + c \, a_n$ is eventually non-increasing along doublings,
+  $\Phi_{2n} \le \Phi_n$. Suppose $\eta = u(\Phi_n) > 0$ for some large $n$. For $m = 2^k n$ we get
+  $b_m < \Phi_m \le \Phi_n$, so $u(b_m) \ge \eta$ and $m \, u(b_m) \ge \eta$ for all $k$,
+  contradicting $m \, u(b_m) \to 0$. Hence $u(\Phi_n) = 0$ eventually.
+\end{proof}
+
+\begin{theorem}[Gnedenko's theorem, Weibull case]
+  \label{thm:mda-weibull-iff}
+  \uses{def:mda-weibull, def:regularly-varying, lem:frechet-exists-scaling,
+    lem:frechet-rv-of-affine, lem:weibull-tendsto-zero, lem:weibull-endpoint, thm:tfae-ev-limit}
+  \lean{CumulativeDistributionFunction.isInMDAWeibull_iff,
+    CumulativeDistributionFunction.isInMDAWeibull_of_isRegularlyVarying,
+    CumulativeDistributionFunction.exists_endpoint_of_isInMDAWeibull}
+  \leanok
+  Let $\alpha > 0$. A c.d.f.\ $F$ is in the maximum domain of attraction of $\WeibullCDF{\alpha}$
+  if and only if $F$ has a finite right endpoint $x_F$ (that is, $F(x_F) = 1$ and $F(x) < 1$ for
+  $x < x_F$) and $t \mapsto 1 - F(x_F - t^{-1})$ is regularly varying with index $-\alpha$
+  [dHF, Theorem~1.2.1(2)], [EKM, Theorem~3.3.12].
+\end{theorem}
+\begin{proof}
+  \leanok
+  The transformation $x \mapsto x_F - x^{-1}$ reduces both directions to the analytic lemmas
+  of the Fréchet case, applied to the antitone function $g(t) = 1 - F(x_F - t^{-1})$
+  (suitably extended to small $t$).
+
+  Sufficiency: $g$ tends to $0$ by Lemma~\ref{lem:weibull-tendsto-zero}, and
+  Lemma~\ref{lem:frechet-exists-scaling} gives $a_n$ with $n \, g(a_n y) \to y^{-\alpha}$ for
+  $y > 0$. Taking $A_n^{-1}(x) = x_F + a_n^{-1} x$ and substituting $y = -x^{-1}$ for $x < 0$
+  gives $n (1 - F(A_n^{-1}(x))) \to (-x)^\alpha$, hence the limit relation by
+  Theorem~\ref{thm:tfae-ev-limit}; for $x \ge 0$, $F(A_n^{-1}(x)) \ge F(x_F) = 1$.
+
+  Necessity: write $A_n^{-1}(x) = a_n x + b_n$. Theorem~\ref{thm:tfae-ev-limit} gives
+  $n (1 - F(a_n z + b_n)) \to (-z)^\alpha$ for $z < 0$, while $F(b_n)^n \to 1$ gives
+  $n (1 - F(b_n)) \to 0$. The endpoint lemma (Lemma~\ref{lem:weibull-endpoint}) shows that
+  $F(b_n + c \, a_n) = 1$ eventually for every $c > 0$; in particular the right endpoint
+  $x_F$ is finite, and one deduces $(b_n - x_F)/a_n \to 0$. The centring $b_n$ can then be
+  replaced by $x_F$, and Lemma~\ref{lem:frechet-rv-of-affine}, applied after the
+  transformation $x \mapsto x_F - x^{-1}$, gives regular variation of $g$.
+\end{proof}
+
+
+\section{The Gumbel domain of attraction}
+
+% TODO: The Gumbel domain of attraction (ExtremeValueTheory/DomainOfAttraction/Gumbel.lean)
+% is being formalized separately. Add its blueprint entries here (auxiliary function
+% characterization, von Mises condition, examples) once the Lean file is finished.
+
+The Gumbel domain of attraction (sufficient conditions via an auxiliary function and the
+von Mises condition) is work in progress.

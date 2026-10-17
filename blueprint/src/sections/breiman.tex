@@ -1,0 +1,56 @@
+\chapter{Breiman's lemma}
+
+Breiman's lemma (Breiman 1965; see also Jessen and Mikosch, \emph{Regularly varying
+functions}, 2006, Lemma~4.2(1)) describes the tail of a product $X Y$ of independent random
+variables, where $X$ has a regularly varying tail and $Y \ge 0$ has a slightly higher moment.
+
+\begin{lemma}[Analytic core of Breiman's lemma]
+  \label{lem:breiman-analytic}
+  \uses{def:regularly-varying, thm:rv-potter-monotone}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_div}
+  \leanok
+  Let $F$ be antitone and regularly varying with index $-\alpha$, $\alpha > 0$. Let $\mu$ be a
+  finite measure on $\bR$ concentrated on $[0, \infty)$ such that $y \mapsto y^{\alpha + \eps}$
+  is $\mu$-integrable for some $\eps > 0$. Then
+  \begin{align*}
+    \lim_{x \to \infty} \frac{1}{F(x)} \int \indof{\set{y > 0}}(y) \, F(x / y) \, \ud \mu(y)
+    \; = \; \int y^\alpha \, \ud \mu(y) .
+  \end{align*}
+\end{lemma}
+\begin{proof}
+  \leanok
+  For $y > 0$ the integrand divided by $F(x)$ tends to $y^\alpha$ by regular variation
+  (with $c = 1/y$), and for $y = 0$ both sides vanish. For domination, choose
+  $0 < \delta \le \eps$ with $\delta < \alpha$, and let $x_0$ be given by the Potter bounds
+  (Theorem~\ref{thm:rv-potter-monotone}) with $A = 2$. Then:
+  \begin{itemize}
+    \item if $x, x/y \ge x_0$, then
+      $F(x/y)/F(x) \le 2 \max\{ y^{\alpha - \delta}, y^{\alpha + \delta} \}$;
+    \item for $x \ge x_0$, $F(x) \ge \frac{F(x_0)}{2} (x / x_0)^{-(\alpha+\delta)}$, so that when
+      $x / y < x_0$, $F(x/y)/F(x) \le 2 \frac{F(0)}{F(x_0)} y^{\alpha + \delta}$.
+  \end{itemize}
+  Both bounds are at most a constant times $1 + y^{\alpha + \eps}$, which is $\mu$-integrable
+  since $\mu$ is finite. Dominated convergence concludes.
+\end{proof}
+
+\begin{theorem}[Breiman's lemma]
+  \label{thm:breiman}
+  \uses{lem:breiman-analytic}
+  \lean{ExtremeValueTheory.tendsto_measure_mul_div_measure}
+  \leanok
+  Let $X$ and $Y$ be independent real random variables on a probability space, such that
+  $x \mapsto \PR[X > x]$ is regularly varying with index $-\alpha$, $\alpha > 0$, and
+  $Y \ge 0$ almost surely with $\EX[Y^{\alpha + \eps}] < \infty$ for some $\eps > 0$. Then
+  \begin{align*}
+    \lim_{x \to \infty} \frac{\PR[X Y > x]}{\PR[X > x]} \; = \; \EX[Y^\alpha] .
+  \end{align*}
+  No sign condition on $X$ is needed.
+\end{theorem}
+\begin{proof}
+  \leanok
+  By independence the joint law of $(X, Y)$ is the product of the marginals, so
+  conditioning on $Y$ gives, for $x > 0$,
+  $\PR[X Y > x] = \int \indof{\set{y > 0}}(y) \, \PR[X > x / y] \, \ud \PR_Y(y)$
+  (on $\set{Y = 0}$ the product is $0 < x$). The survival function $x \mapsto \PR[X > x]$
+  is antitone, so Lemma~\ref{lem:breiman-analytic} applied to $\mu = \PR_Y$ gives the claim.
+\end{proof}

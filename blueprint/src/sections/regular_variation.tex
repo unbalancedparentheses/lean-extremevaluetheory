@@ -1,0 +1,314 @@
+\chapter{Regular variation}
+
+This chapter develops the basic theory of regularly varying functions,
+following Bingham, Goldie and Teugels, \emph{Regular Variation} (Cambridge
+University Press, 1987), henceforth [BGT]. All limits are taken as $x \to +\infty$.
+
+\section{Definitions and basic properties}
+
+\begin{definition}[Slowly varying function]
+  \label{def:slowly-varying}
+  \lean{ExtremeValueTheory.IsSlowlyVarying}
+  \leanok
+  A function $L \colon \bR \to \bR$ is \emph{slowly varying} (at $+\infty$)
+  if $L(x) > 0$ for all sufficiently large $x$ and
+  \begin{align*}
+    \lim_{x \to \infty} \frac{L(c x)}{L(x)} = 1 \qquad \text{for every } c > 0 .
+  \end{align*}
+\end{definition}
+
+\begin{definition}[Regularly varying function]
+  \label{def:regularly-varying}
+  \lean{ExtremeValueTheory.IsRegularlyVarying}
+  \leanok
+  Let $\rho \in \bR$. A function $f \colon \bR \to \bR$ is \emph{regularly varying}
+  (at $+\infty$) \emph{with index $\rho$} if $f(x) > 0$ for all sufficiently large $x$ and
+  \begin{align*}
+    \lim_{x \to \infty} \frac{f(c x)}{f(x)} = c^\rho \qquad \text{for every } c > 0 .
+  \end{align*}
+\end{definition}
+
+\begin{lemma}[Slow variation is regular variation of index zero]
+  \label{lem:slowly-varying-iff-rv-zero}
+  \uses{def:slowly-varying, def:regularly-varying}
+  \lean{ExtremeValueTheory.isSlowlyVarying_iff_isRegularlyVarying_zero}
+  \leanok
+  A function is slowly varying if and only if it is regularly varying with index $0$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Immediate from the definitions, since $c^0 = 1$.
+\end{proof}
+
+\begin{lemma}[Germ invariance]
+  \label{lem:rv-congr}
+  \uses{def:regularly-varying}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.congr}
+  \leanok
+  If $f$ is regularly varying with index $\rho$ and $g(x) = f(x)$ for all
+  sufficiently large $x$, then $g$ is regularly varying with index $\rho$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  For fixed $c > 0$, both $x$ and $cx$ are eventually in the region where $f = g$,
+  so the ratios $g(cx)/g(x)$ and $f(cx)/f(x)$ eventually agree.
+\end{proof}
+
+\begin{lemma}[Basic examples]
+  \label{lem:rv-examples}
+  \uses{def:regularly-varying, def:slowly-varying}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.rpow_id, ExtremeValueTheory.IsRegularlyVarying.const,
+    ExtremeValueTheory.IsSlowlyVarying.const, ExtremeValueTheory.isSlowlyVarying_log}
+  \leanok
+  The power function $x \mapsto x^\rho$ is regularly varying with index $\rho$;
+  every positive constant is slowly varying; and the logarithm $\log$ is slowly varying.
+\end{lemma}
+\begin{proof}
+  \leanok
+  For $x > 0$ we have $(cx)^\rho / x^\rho = c^\rho$ exactly. For the logarithm,
+  $\log(cx)/\log(x) = 1 + \log(c)/\log(x) \to 1$ since $\log x \to \infty$.
+\end{proof}
+
+\begin{lemma}[Closure properties]
+  \label{lem:rv-closure}
+  \uses{def:regularly-varying, def:slowly-varying, lem:slowly-varying-iff-rv-zero}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.mul, ExtremeValueTheory.IsRegularlyVarying.inv,
+    ExtremeValueTheory.IsRegularlyVarying.div, ExtremeValueTheory.IsRegularlyVarying.rpow,
+    ExtremeValueTheory.IsRegularlyVarying.const_mul,
+    ExtremeValueTheory.IsSlowlyVarying.mul, ExtremeValueTheory.IsSlowlyVarying.inv,
+    ExtremeValueTheory.IsSlowlyVarying.div, ExtremeValueTheory.IsSlowlyVarying.rpow}
+  \leanok
+  Let $f$ and $g$ be regularly varying with indices $\rho$ and $\sigma$, respectively,
+  and let $r \in \bR$, $a > 0$. Then
+  $f g$ is regularly varying with index $\rho + \sigma$,
+  $1/f$ with index $-\rho$,
+  $f/g$ with index $\rho - \sigma$,
+  $f^r$ with index $\rho r$, and
+  $a f$ with index $\rho$.
+  In particular, slowly varying functions are closed under products, reciprocals,
+  quotients and real powers.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Eventual positivity is preserved by all these operations. The limits follow from
+  the algebra of limits, e.g.\
+  $\frac{f(cx) g(cx)}{f(x) g(x)} = \frac{f(cx)}{f(x)} \cdot \frac{g(cx)}{g(x)} \to c^\rho c^\sigma
+  = c^{\rho+\sigma}$, and for real powers continuity of $t \mapsto t^r$ at $c^\rho > 0$.
+  The slowly varying statements are the case of index $0$.
+\end{proof}
+
+\begin{theorem}[Representation through a slowly varying function]
+  \label{thm:rv-iff-exists-sv}
+  \uses{def:regularly-varying, def:slowly-varying, lem:rv-examples, lem:rv-closure, lem:rv-congr}
+  \lean{ExtremeValueTheory.isRegularlyVarying_iff_exists_isSlowlyVarying}
+  \leanok
+  A function $f$ is regularly varying with index $\rho$ if and only if there
+  is a slowly varying function $L$ such that $f(x) = x^\rho L(x)$ for all
+  sufficiently large $x$ [BGT, Theorem~1.4.1].
+\end{theorem}
+\begin{proof}
+  \leanok
+  If $f$ is regularly varying with index $\rho$, take $L(x) = x^{-\rho} f(x)$,
+  which is regularly varying with index $-\rho + \rho = 0$ by
+  Lemma~\ref{lem:rv-closure}. Conversely $x \mapsto x^\rho L(x)$ is regularly
+  varying with index $\rho + 0$, and regular variation depends only on the germ
+  at $+\infty$ (Lemma~\ref{lem:rv-congr}).
+\end{proof}
+
+
+\section{The uniform convergence theorem: monotone case}
+
+For eventually monotone functions the uniform convergence theorem has an elementary
+proof by a sandwich argument, and no measurability is needed.
+
+\begin{theorem}[Uniform convergence theorem, monotone case]
+  \label{thm:rv-uct-monotone}
+  \uses{def:regularly-varying}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.tendstoLocallyUniformlyOn,
+    ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_of_isCompact,
+    ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_Icc}
+  \leanok
+  Let $f$ be regularly varying with index $\rho$, and monotone or antitone on some
+  half-line $[a, \infty)$. Then $f(cx)/f(x) \to c^\rho$ locally uniformly in
+  $c \in (0, \infty)$; equivalently, uniformly in $c$ on every compact subset
+  $K \subseteq (0,\infty)$ [BGT, Theorem~1.5.2].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Fix $c_0 > 0$ and $\eps > 0$. By continuity of $c \mapsto c^\rho$ at $c_0$ choose
+  $\eta \in (0, c_0)$ such that $|c^\rho - c_0^\rho| < \eps/3$ for $|c - c_0| \le \eta$.
+  By monotonicity, for $x$ large and $c \in [c_0 - \eta, c_0 + \eta]$, the ratio
+  $f(cx)/f(x)$ lies between the two ratios $f((c_0 \pm \eta)x)/f(x)$. Each of these
+  is within $\eps/3$ of $(c_0 \pm \eta)^\rho$ for large $x$, hence within $2\eps/3$ of
+  $c_0^\rho$, and so $f(cx)/f(x)$ is within $2\eps/3$ of $c_0^\rho$ and within $\eps$ of
+  $c^\rho$, uniformly for $c$ in the neighbourhood. Locally uniform convergence on
+  $(0,\infty)$ upgrades to uniform convergence on compact subsets.
+\end{proof}
+
+\begin{theorem}[Potter bounds, monotone case]
+  \label{thm:rv-potter-monotone}
+  \uses{def:regularly-varying, thm:rv-uct-monotone}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.potter_bound}
+  \leanok
+  Let $f$ be regularly varying with index $\rho$, and monotone or antitone on some
+  half-line $[a,\infty)$. Then for every $\delta > 0$ and $A > 1$ there is $x_0 > 0$
+  such that $f > 0$ on $[x_0, \infty)$ and
+  \begin{align*}
+    \frac{f(y)}{f(x)} \; \le \; A \max\Big\{ \Big(\frac{y}{x}\Big)^{\rho+\delta},
+      \Big(\frac{y}{x}\Big)^{\rho-\delta} \Big\}
+    \qquad \text{for all } x, y \ge x_0
+  \end{align*}
+  [BGT, Theorem~1.5.6].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Choose $\eta > 0$ with $1 + \eta \le A$ and $A^{-1} \le 1 - \eta$. By the uniform
+  convergence theorem on $[1,2]$ (Theorem~\ref{thm:rv-uct-monotone}), for $x$ large and
+  $t \in [1,2]$ we have
+  $(1-\eta) t^{\rho - \delta} \le f(tx)/f(x) \le (1+\eta) t^{\rho+\delta}$.
+  Moreover $2^{\rho - \delta} < f(2x)/f(x) < 2^{\rho+\delta}$ for $x$ large.
+  By induction on $n$, writing $f(tx)/f(x) = \frac{f(\frac{t}{2} \cdot 2x)}{f(2x)} \cdot \frac{f(2x)}{f(x)}$,
+  the two-sided bound extends to all $t \in [1, 2^n]$, hence to all $t \ge 1$.
+  For $y \ge x$ apply the upper bound with $t = y/x$; for $y < x$ invert the lower bound
+  with $t = x/y$.
+\end{proof}
+
+
+\section{The uniform convergence theorem: measurable case}
+
+Without monotonicity, the uniform convergence theorem requires measurability. The proof
+works additively, with $h(t) = \log f(e^t) - \rho t$.
+
+\begin{theorem}[Uniform convergence theorem, additive form]
+  \label{thm:uct-additive}
+  \lean{ExtremeValueTheory.tendstoUniformlyOn_sub_of_measurable}
+  \leanok
+  Let $h \colon \bR \to \bR$ be measurable, and assume that $h(x+u) - h(x) \to 0$ as
+  $x \to \infty$ for every $u \in \bR$. Then this convergence is uniform in $u$ on
+  every compact set $K \subseteq \bR$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  It suffices to treat $K = [-N, N]$, and by chaining translates it suffices to treat
+  $u \in [0,1]$. Fix $\eps > 0$ and let
+  $A_x = \set{ u \in [0,2] \; \big| \; |h(x+u) - h(x)| \ge \eps/2 }$. These are measurable
+  sets whose indicators tend to $0$ pointwise, so by dominated convergence their Lebesgue
+  measures tend to $0$. For $x$ large, $\Leb(A_x) < 1/2$ and $\Leb(A_{x+\xi}) < 1/2$ for all
+  $\xi \in [0,1]$. Since $[1,2]$ has measure $1$, some $u \in [1,2]$ lies neither in $A_x$ nor
+  in $A_{x+\xi} + \xi$, and then
+  $|h(x+\xi) - h(x)| \le |h(x+u) - h(x)| + |h(x+u) - h(x+\xi)| < \eps$.
+\end{proof}
+
+\begin{lemma}[Additive form of a regularly varying function]
+  \label{lem:rv-log-comp-exp}
+  \uses{def:regularly-varying}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.tendsto_log_comp_exp_sub}
+  \leanok
+  If $f$ is regularly varying with index $\rho$ and $h(t) = \log f(e^t) - \rho t$,
+  then $h(t+u) - h(t) \to 0$ as $t \to \infty$ for every $u \in \bR$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  We have $h(t+u) - h(t) = \log \frac{f(e^u e^t)}{f(e^t)} - \rho u \to \log(e^{u\rho}) - \rho u = 0$,
+  using continuity of $\log$ at $e^{u\rho} > 0$.
+\end{proof}
+
+\begin{theorem}[Uniform convergence theorem, measurable case]
+  \label{thm:rv-uct-measurable}
+  \uses{thm:uct-additive, lem:rv-log-comp-exp, lem:slowly-varying-iff-rv-zero}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_of_measurable,
+    ExtremeValueTheory.IsRegularlyVarying.tendstoLocallyUniformlyOn_of_measurable,
+    ExtremeValueTheory.IsSlowlyVarying.tendstoUniformlyOn_of_measurable,
+    ExtremeValueTheory.IsSlowlyVarying.tendstoLocallyUniformlyOn_of_measurable}
+  \leanok
+  Let $f$ be measurable and regularly varying with index $\rho$. Then
+  $f(cx)/f(x) \to c^\rho$ uniformly in $c$ on every compact subset $K \subseteq (0,\infty)$
+  (and hence locally uniformly on $(0,\infty)$). In particular, for a measurable slowly
+  varying $L$, $L(cx)/L(x) \to 1$ uniformly on compact subsets of $(0,\infty)$
+  [BGT, Theorems~1.2.1 and~1.5.2].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Apply Theorem~\ref{thm:uct-additive} to $h(t) = \log f(e^t) - \rho t$, which is
+  measurable and satisfies its hypothesis by Lemma~\ref{lem:rv-log-comp-exp}. Uniform
+  convergence $h(t + u) - h(t) \to 0$ for $u \in \log K$ translates, via $x = e^t$, $c = e^u$
+  and uniform continuity of $\exp$ on bounded sets, into uniform convergence of
+  $f(cx)/f(x) = c^\rho \exp(h(t+u) - h(t))$ to $c^\rho$.
+\end{proof}
+
+\begin{theorem}[Potter bounds, measurable case]
+  \label{thm:rv-potter-measurable}
+  \uses{thm:rv-uct-measurable}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.potter_bound_of_measurable,
+    ExtremeValueTheory.IsRegularlyVarying.potter_bounds_of_measurable,
+    ExtremeValueTheory.IsSlowlyVarying.potter_bound_of_measurable}
+  \leanok
+  Let $f$ be measurable and regularly varying with index $\rho$. For every $\delta > 0$ and
+  $A > 1$ there is $x_0 > 0$ such that $f > 0$ on $[x_0, \infty)$ and, for all $x, y \ge x_0$,
+  \begin{align*}
+    A^{-1} \min\Big\{ \Big(\frac{y}{x}\Big)^{\rho+\delta}, \Big(\frac{y}{x}\Big)^{\rho-\delta} \Big\}
+    \; \le \; \frac{f(y)}{f(x)} \; \le \;
+    A \max\Big\{ \Big(\frac{y}{x}\Big)^{\rho+\delta}, \Big(\frac{y}{x}\Big)^{\rho-\delta} \Big\} .
+  \end{align*}
+  For a measurable slowly varying $L$ this reads
+  $L(y)/L(x) \le A \max\{ (y/x)^\delta, (y/x)^{-\delta} \}$
+  [BGT, Theorem~1.5.6].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Identical to the proof of Theorem~\ref{thm:rv-potter-monotone}, using
+  Theorem~\ref{thm:rv-uct-measurable} on $[1,2]$ instead of the monotone uniform
+  convergence theorem. The lower bound follows from the upper bound with the roles
+  of $x$ and $y$ exchanged.
+\end{proof}
+
+
+\section{The Karamata representation theorem}
+
+\begin{lemma}[Representation implies slow variation]
+  \label{lem:sv-of-representation}
+  \uses{def:slowly-varying}
+  \lean{ExtremeValueTheory.IsSlowlyVarying.of_representation}
+  \leanok
+  Let $a \in \bR$, $c, \eps \colon \bR \to \bR$ with $c(x) \to c_0 > 0$ and $\eps(x) \to 0$,
+  such that $t \mapsto \eps(t)/t$ is integrable on $[a, x]$ for every $x \ge a$. If
+  \begin{align*}
+    L(x) = c(x) \exp\Big( \int_a^x \frac{\eps(t)}{t} \, \ud t \Big) \qquad \text{for } x \ge a ,
+  \end{align*}
+  then $L$ is slowly varying. (No measurability of $L$ is needed.)
+\end{lemma}
+\begin{proof}
+  \leanok
+  Eventual positivity is clear. For $\lambda > 0$,
+  $\frac{L(\lambda x)}{L(x)} = \frac{c(\lambda x)}{c(x)} \exp \big( \int_x^{\lambda x} \frac{\eps(t)}{t} \, \ud t \big)$.
+  The first factor tends to $c_0 / c_0 = 1$. If $|\eps| \le \eta$ on $[\min(x,\lambda x), \infty)$,
+  then $\big| \int_x^{\lambda x} \frac{\eps(t)}{t} \, \ud t \big| \le \eta \, |\log \lambda|$, so the
+  integral tends to $0$ and the exponential to $1$.
+\end{proof}
+
+\begin{theorem}[Karamata representation theorem]
+  \label{thm:karamata-representation}
+  \uses{lem:sv-of-representation, thm:rv-uct-measurable}
+  \lean{ExtremeValueTheory.IsSlowlyVarying.exists_representation,
+    ExtremeValueTheory.isSlowlyVarying_iff_exists_representation}
+  \leanok
+  A measurable function $L$ is slowly varying if and only if there are $a > 0$ and measurable
+  functions $c, \eps$ with $c(x) \to c_0 \in (0,\infty)$ and $\eps(x) \to 0$ such that
+  \begin{align*}
+    L(x) = c(x) \exp\Big( \int_a^x \frac{\eps(t)}{t} \, \ud t \Big) \qquad \text{for all } x \ge a
+  \end{align*}
+  [BGT, Theorem~1.3.1].
+\end{theorem}
+\begin{proof}
+  \leanok
+  The direction ($\Leftarrow$) is Lemma~\ref{lem:sv-of-representation}.
+  For ($\Rightarrow$), write $\ell = \log \circ L$ and $g(t) = \ell(t)/t$. By the uniform
+  convergence theorem (Theorem~\ref{thm:rv-uct-measurable}), $\ell(t) - \ell(x) \to 0$ uniformly
+  for $t \in [x, e x]$; in particular $\ell$ is locally bounded on some $[a, \infty)$, so $g$ is
+  locally integrable there. Put $\eps(t) = \ell(e t) - \ell(t)$ for $t \ge a$; then
+  $\eps(t) \to 0$, and the substitution $t \mapsto e t$ gives
+  $\int_a^x \frac{\eps(t)}{t} \, \ud t = \int_x^{e x} g(t) \, \ud t - \int_a^{e a} g(t) \, \ud t$.
+  Since $\int_x^{ex} t^{-1} \, \ud t = 1$, we get
+  $\ell(x) - \int_x^{ex} g(t) \, \ud t = \int_x^{ex} \frac{\ell(x) - \ell(t)}{t} \, \ud t \to 0$.
+  Hence $c(x) = L(x) \exp\big(-\int_a^x \frac{\eps(t)}{t} \, \ud t\big) \to \exp\big(\int_a^{ea} g(t)\, \ud t\big) > 0$.
+\end{proof}

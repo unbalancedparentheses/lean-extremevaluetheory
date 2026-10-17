@@ -1,0 +1,278 @@
+\chapter{Subexponential distributions}
+
+We follow Embrechts, Klüppelberg and Mikosch, \emph{Modelling Extremal Events for Insurance
+and Finance} (Springer, 1997), \S1.3 [EKM], and Foss, Korshunov and Zachary, \emph{An
+Introduction to Heavy-Tailed and Subexponential Distributions} (2nd ed., Springer, 2013).
+
+Measures live on $\bR$; a measure $\mu$ is \emph{concentrated on $[0, \infty)$} if
+$\mu\big((-\infty, 0)\big) = 0$. Convolution $\mu * \nu$ is the push-forward of
+$\mu \otimes \nu$ under addition, i.e., the law of $X_1 + X_2$ for independent
+$X_1 \sim \mu$, $X_2 \sim \nu$.
+
+\section{Tails and convolutions}
+
+\begin{definition}[Tail of a measure]
+  \label{def:tail}
+  \lean{ExtremeValueTheory.tail}
+  \leanok
+  The \emph{tail} (survival function) of a measure $\mu$ on $\bR$ is
+  $\overline{F}_\mu(x) = \mu\big( (x, \infty) \big)$, regarded as a real number.
+\end{definition}
+
+\begin{lemma}[Elementary properties of tails]
+  \label{lem:tail-basic}
+  \uses{def:tail}
+  \lean{ExtremeValueTheory.Subexp.tail_nonneg, ExtremeValueTheory.Subexp.tail_le_one,
+    ExtremeValueTheory.Subexp.tail_antitone, ExtremeValueTheory.Subexp.tail_measurable,
+    ExtremeValueTheory.Subexp.tail_of_neg, ExtremeValueTheory.Subexp.tendsto_tail_atTop,
+    ExtremeValueTheory.Subexp.measureReal_Ioc_eq, ExtremeValueTheory.Subexp.measureReal_Iic_eq}
+  \leanok
+  For a finite measure $\mu$, the tail $\overline{F}_\mu$ is nonnegative, antitone, measurable,
+  and tends to $0$ at $+\infty$, and $\mu\big( (a, b] \big) = \overline{F}_\mu(a) - \overline{F}_\mu(b)$
+  for $a \le b$. For a probability measure, $\overline{F}_\mu \le 1$,
+  $\mu\big( (-\infty, a] \big) = 1 - \overline{F}_\mu(a)$, and if $\mu$ is concentrated on
+  $[0,\infty)$ then $\overline{F}_\mu(x) = 1$ for $x < 0$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Monotonicity and continuity from above of measures.
+\end{proof}
+
+\begin{lemma}[Convolution formula for tails]
+  \label{lem:tail-conv}
+  \uses{def:tail}
+  \lean{ExtremeValueTheory.Subexp.conv_apply, ExtremeValueTheory.Subexp.tail_conv,
+    ExtremeValueTheory.Subexp.conv_Iio_zero, ExtremeValueTheory.Subexp.integrable_tail_sub}
+  \leanok
+  For finite measures $\mu, \nu$,
+  \begin{align*}
+    \overline{F}_{\mu * \nu}(x) \; = \; \int \overline{F}_\nu(x - t) \, \ud \mu(t) .
+  \end{align*}
+  If $\mu$ and $\nu$ are concentrated on $[0, \infty)$, then so is $\mu * \nu$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  By Tonelli, $(\mu * \nu)(S) = \int \nu(S - t) \, \ud \mu(t)$ for measurable $S$; take
+  $S = (x, \infty)$. If $s + t < 0$ then $s < 0$ or $t < 0$, which gives the second claim.
+\end{proof}
+
+\begin{lemma}[Splitting the convolution integral]
+  \label{lem:tail-conv-split}
+  \uses{lem:tail-conv, lem:tail-basic}
+  \lean{ExtremeValueTheory.Subexp.tail_conv_split, ExtremeValueTheory.Subexp.setIntegral_tail_sub_le,
+    ExtremeValueTheory.Subexp.setIntegral_tail_sub_nonneg, ExtremeValueTheory.Subexp.tail_conv_self_ge}
+  \leanok
+  Let $\mu, \nu$ be probability measures with $\nu$ concentrated on $[0, \infty)$, and $a \le x$.
+  Then
+  \begin{align*}
+    \overline{F}_{\mu * \nu}(x) \; = \; \int_{(-\infty, a]} \overline{F}_\nu(x - t) \, \ud \mu(t)
+      + \int_{(a, x]} \overline{F}_\nu(x - t) \, \ud \mu(t) + \overline{F}_\mu(x) .
+  \end{align*}
+  Each partial integral over a set $S$ lies in $[0, \mu(S)]$. If moreover $\mu$ is concentrated
+  on $[0, \infty)$, then writing $\overline{F} = \overline{F}_\mu$,
+  \begin{align*}
+    \overline{F}_{\mu*\mu}(x) \; \ge \; \overline{F}(x) \big( 1 - \overline{F}(a) \big)
+      + \overline{F}(x - a) \big( \overline{F}(a) - \overline{F}(x) \big) + \overline{F}(x) .
+  \end{align*}
+\end{lemma}
+\begin{proof}
+  \leanok
+  Split the integral of Lemma~\ref{lem:tail-conv} over $(-\infty, a]$, $(a, x]$ and $(x, \infty)$;
+  on the last set $x - t < 0$, so the integrand equals $1$ and the integral is $\overline{F}_\mu(x)$.
+  For the lower bound use $\overline{F}(x - t) \ge \overline{F}(x)$ on $(-\infty, a]$ and
+  $\overline{F}(x - t) \ge \overline{F}(x - a)$ on $(a, x]$, together with
+  Lemma~\ref{lem:tail-basic}.
+\end{proof}
+
+\begin{definition}[Convolution powers]
+  \label{def:convPow}
+  \lean{ExtremeValueTheory.Subexp.convPow}
+  \leanok
+  The $n$-fold convolution power of $\mu$ is defined by $\mu^{*0} = \delta_0$ and
+  $\mu^{*(n+1)} = \mu * \mu^{*n}$. We write $\overline{F}^{*n}$ for its tail.
+\end{definition}
+
+\begin{lemma}[Properties of convolution powers]
+  \label{lem:convPow-basic}
+  \uses{def:convPow, lem:tail-conv}
+  \lean{ExtremeValueTheory.Subexp.convPow_zero, ExtremeValueTheory.Subexp.convPow_succ,
+    ExtremeValueTheory.Subexp.isProbabilityMeasure_convPow, ExtremeValueTheory.Subexp.convPow_one,
+    ExtremeValueTheory.Subexp.convPow_Iio_zero}
+  \leanok
+  Convolution powers of a probability measure are probability measures, $\mu^{*1} = \mu$, and
+  if $\mu$ is concentrated on $[0, \infty)$, then so is every $\mu^{*n}$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Induction on $n$ using Lemma~\ref{lem:tail-conv}, and $\mu * \delta_0 = \mu$.
+\end{proof}
+
+\begin{lemma}[Sums of i.i.d.\ variables]
+  \label{lem:map-pi-sum-convPow}
+  \uses{def:convPow}
+  \lean{ExtremeValueTheory.map_pi_sum_eq_convPow}
+  \leanok
+  Under the product measure $\mu^{\otimes n}$ on $\bR^n$, the law of the sum of the
+  coordinates $X_1 + \cdots + X_n$ is $\mu^{*n}$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Induction on $n$, splitting off the first coordinate: $\mu^{\otimes (n+1)} \cong \mu \otimes \mu^{\otimes n}$,
+  and the push-forward of a product measure under addition is the convolution of the marginals.
+\end{proof}
+
+
+\section{Subexponentiality}
+
+\begin{definition}[Subexponential distribution]
+  \label{def:subexponential}
+  \uses{def:tail}
+  \lean{ExtremeValueTheory.IsSubexponential}
+  \leanok
+  A probability measure $\mu$ on $\bR$ is \emph{subexponential} if it is concentrated on
+  $[0, \infty)$, its tail $\overline{F} = \overline{F}_\mu$ is positive everywhere, and
+  \begin{align*}
+    \lim_{x \to \infty} \frac{\overline{F}_{\mu * \mu}(x)}{\overline{F}(x)} \; = \; 2
+  \end{align*}
+  [EKM, Definition~1.3.3].
+\end{definition}
+
+\begin{theorem}[Regularly varying tails are subexponential]
+  \label{thm:subexp-of-rv}
+  \uses{def:subexponential, def:regularly-varying, lem:tail-conv-split}
+  \lean{ExtremeValueTheory.IsSubexponential.of_isRegularlyVarying}
+  \leanok
+  If $\mu$ is a probability measure concentrated on $[0, \infty)$ whose tail $\overline{F}$ is
+  regularly varying with index $-\alpha$, then $\mu$ is subexponential [EKM, Corollary~1.3.2].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Positivity: $\overline{F}$ is antitone and eventually positive.
+  Lower bound: Lemma~\ref{lem:tail-conv-split} with $a = x$ gives
+  $\overline{F}_{\mu*\mu}(x) \ge 2 \overline{F}(x) - \overline{F}(x)^2$, so the ratio is at least
+  $2 - \overline{F}(x) \to 2$.
+  Upper bound: for $c \in (0,1)$, if $X_1 + X_2 > x$ then $X_1 > cx$, or $X_2 > cx$, or both
+  $X_1, X_2 > (1-c)x$; hence
+  $\overline{F}_{\mu*\mu}(x) \le 2 \overline{F}(cx) + \overline{F}((1-c)x)^2$. Dividing by
+  $\overline{F}(x)$, the right-hand side tends to $2 c^{-\alpha} + (1-c)^{-\alpha} \cdot 0$ by
+  regular variation. Letting $c \uparrow 1$ shows that the $\limsup$ is at most $2$.
+\end{proof}
+
+\begin{theorem}[Subexponential distributions are long-tailed]
+  \label{thm:subexp-long-tailed}
+  \uses{def:subexponential, lem:tail-conv-split}
+  \lean{ExtremeValueTheory.IsSubexponential.tendsto_tail_sub_div}
+  \leanok
+  If $\mu$ is subexponential, then $\overline{F}(x - y)/\overline{F}(x) \to 1$ as $x \to \infty$,
+  for every $y \in \bR$ [EKM, Lemma~1.3.5(a)].
+\end{theorem}
+\begin{proof}
+  \leanok
+  For $y \ge 0$: the ratio is at least $1$ by monotonicity. The lower bound of
+  Lemma~\ref{lem:tail-conv-split} with $a = y$ gives
+  \begin{align*}
+    \frac{\overline{F}_{\mu*\mu}(x)}{\overline{F}(x)} \; \ge \; 1 - \overline{F}(y) + 1
+      + \frac{\overline{F}(x - y)}{\overline{F}(x)} \big( \overline{F}(y) - \overline{F}(x) \big) ,
+  \end{align*}
+  and since the left-hand side tends to $2$ and $\overline{F}(y) - \overline{F}(x) \to \overline{F}(y) > 0$,
+  we get $\limsup \overline{F}(x-y)/\overline{F}(x) \le 1$. For $y < 0$, substitute $x' = x - y$
+  and invert.
+\end{proof}
+
+\begin{lemma}[Induction step]
+  \label{lem:subexp-conv-step}
+  \uses{def:subexponential, thm:subexp-long-tailed, lem:tail-conv-split}
+  \lean{ExtremeValueTheory.IsSubexponential.tendsto_tail_conv_div}
+  \leanok
+  Let $\mu$ be subexponential and $\nu$ a probability measure concentrated on $[0, \infty)$ with
+  $\overline{F}_\nu(x) / \overline{F}_\mu(x) \to c > 0$. Then
+  $\overline{F}_{\mu*\nu}(x) / \overline{F}_\mu(x) \to c + 1$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Given $\eps > 0$, choose $v \ge 0$ such that $|\overline{F}_\nu(s)/\overline{F}_\mu(s) - c| < \eps$
+  for $s \ge v$. Splitting the convolution integral at $a = x - v$
+  (Lemma~\ref{lem:tail-conv-split}) and comparing $\overline{F}_\nu(x - t)$ with
+  $(c \pm \eps) \overline{F}_\mu(x - t)$ on $(-\infty, x - v]$ gives
+  \begin{align*}
+    (c - \eps) \big( \overline{F}_{\mu*\mu}(x) - \overline{F}_\mu(x - v) \big) + \overline{F}_\mu(x)
+    \; \le \; \overline{F}_{\mu*\nu}(x) \; \le \;
+    (c + \eps) \big( \overline{F}_{\mu*\mu}(x) - \overline{F}_\mu(x) \big) + \overline{F}_\mu(x - v) .
+  \end{align*}
+  Dividing by $\overline{F}_\mu(x)$ and using subexponentiality and long-tailedness
+  (Theorem~\ref{thm:subexp-long-tailed}), the limit points of the ratio lie in
+  $[(c - \eps) + 1, (c + \eps) + 1]$. Let $\eps \to 0$.
+\end{proof}
+
+\begin{theorem}[Tails of convolution powers]
+  \label{thm:subexp-convPow}
+  \uses{lem:subexp-conv-step, lem:convPow-basic, lem:map-pi-sum-convPow}
+  \lean{ExtremeValueTheory.IsSubexponential.tendsto_tail_convPow_div,
+    ExtremeValueTheory.IsSubexponential.tendsto_measure_sum_div_tail}
+  \leanok
+  If $\mu$ is subexponential, then for every $n \ge 1$,
+  $\overline{F}^{*n}(x) / \overline{F}(x) \to n$ as $x \to \infty$ [EKM, Lemma~1.3.4].
+  Equivalently, for i.i.d.\ $X_1, \ldots, X_n \sim \mu$,
+  $\PR[X_1 + \cdots + X_n > x] / \overline{F}(x) \to n$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Induction on $n \ge 1$: the case $n = 1$ is trivial since $\mu^{*1} = \mu$, and the step
+  $\mu^{*(n+1)} = \mu * \mu^{*n}$ is Lemma~\ref{lem:subexp-conv-step} with $\nu = \mu^{*n}$ and
+  $c = n$, using Lemma~\ref{lem:convPow-basic}. The random-variable form follows from
+  Lemma~\ref{lem:map-pi-sum-convPow}.
+\end{proof}
+
+\begin{lemma}[Tail of the maximum]
+  \label{lem:tail-max}
+  \uses{def:tail}
+  \lean{ExtremeValueTheory.tendsto_measure_max_div_tail}
+  \leanok
+  Let $\mu$ be a probability measure with $\overline{F} > 0$ everywhere and let
+  $X_1, \ldots, X_n$ be i.i.d.\ with law $\mu$ (the coordinates under $\mu^{\otimes n}$). Then
+  $\PR[\max(X_1, \ldots, X_n) > x] / \overline{F}(x) \to n$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  $\PR[\max_i X_i > x] = 1 - (1 - \overline{F}(x))^n = \overline{F}(x) \sum_{k=0}^{n-1} (1 - \overline{F}(x))^k$,
+  and the sum tends to $n$ since $\overline{F}(x) \to 0$.
+\end{proof}
+
+\begin{theorem}[Single big jump principle]
+  \label{thm:single-big-jump}
+  \uses{thm:subexp-convPow, lem:tail-max}
+  \lean{ExtremeValueTheory.IsSubexponential.tendsto_measure_sum_div_measure_max}
+  \leanok
+  If $\mu$ is subexponential, $n \ge 1$, and $X_1, \ldots, X_n$ are i.i.d.\ with law $\mu$, then
+  \begin{align*}
+    \lim_{x \to \infty} \frac{\PR[X_1 + \cdots + X_n > x]}{\PR[\max(X_1, \ldots, X_n) > x]} \; = \; 1
+  \end{align*}
+  [EKM, Lemma~1.3.1(a) and Lemma~1.3.4].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Divide numerator and denominator by $\overline{F}(x)$; both tend to $n \ne 0$ by
+  Theorem~\ref{thm:subexp-convPow} and Lemma~\ref{lem:tail-max}.
+\end{proof}
+
+\begin{theorem}[Kesten's bound]
+  \label{thm:kesten}
+  \uses{def:subexponential, def:convPow, lem:tail-conv-split, lem:convPow-basic}
+  \lean{ExtremeValueTheory.IsSubexponential.kesten_bound}
+  \leanok
+  If $\mu$ is subexponential, then for every $\eps > 0$ there is $K$ such that
+  $\overline{F}^{*n}(x) \le K (1 + \eps)^n \, \overline{F}(x)$ for all $n \in \bN$ and all
+  $x \in \bR$ [EKM, Lemma~1.3.5(c)].
+\end{theorem}
+\begin{proof}
+  \leanok
+  If $\overline{F}_\nu \le a \overline{F}$ everywhere ($\nu$ concentrated on $[0,\infty)$), then
+  splitting the convolution integral gives
+  $\overline{F}_{\mu*\nu}(x) \le a \big( \overline{F}_{\mu*\mu}(x) - \overline{F}(x) \big) + \overline{F}(x)$.
+  Choose $x_0$ such that $\overline{F}_{\mu*\mu}(x) - \overline{F}(x) \le (1 + \eps) \overline{F}(x)$
+  for $x \ge x_0$, and put $A = 1/\overline{F}(x_0)$, so that $1 \le A \overline{F}(x)$ for $x \le x_0$.
+  One proves by induction on $n$ that
+  $\overline{F}^{*n}(x) \le \big( K (1 + \eps)^n - A/\eps \big) \overline{F}(x)$ for a suitable
+  constant $K$: for $x \ge x_0$ use the displayed estimate with
+  $a = K (1+\eps)^n - A/\eps$, and for $x < x_0$ use $\overline{F}^{*(n+1)}(x) \le 1 \le A \overline{F}(x)$.
+\end{proof}

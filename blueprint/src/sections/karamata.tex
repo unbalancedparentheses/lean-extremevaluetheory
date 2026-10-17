@@ -1,0 +1,57 @@
+\chapter{Karamata's theorem}
+
+Let $F \colon \bR \to \bR$ be antitone and regularly varying with index $-\alpha$, where
+$\alpha > 1$. Typically $F = 1 - G$ is the survival function of a c.d.f.\ $G$ in the
+Fréchet domain of attraction (Chapter~\ref{chap:domains-of-attraction}).
+
+\begin{lemma}[Positivity of antitone eventually positive functions]
+  \label{lem:pos-of-antitone}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.pos_of_antitone}
+  \leanok
+  An antitone function $F$ with $F(x) > 0$ for all sufficiently large $x$ is positive everywhere.
+\end{lemma}
+\begin{proof}
+  \leanok
+  For any $t$ there is $x \ge t$ with $F(x) > 0$, and $F(t) \ge F(x)$.
+\end{proof}
+
+\begin{lemma}[Integrability of regularly varying tails]
+  \label{lem:rv-integrableOn-Ioi}
+  \uses{def:regularly-varying, thm:rv-potter-monotone}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.integrableOn_Ioi}
+  \leanok
+  If $F$ is antitone and regularly varying with index $-\alpha$, $\alpha > 1$, then $F$ is
+  integrable on every half-line $(x, \infty)$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  By the Potter bounds (Theorem~\ref{thm:rv-potter-monotone}) with
+  $\delta = (\alpha - 1)/2$, $F(t) \le C t^{-\alpha+\delta}$ for $t$ large, and
+  $-\alpha + \delta < -1$, so $F$ is integrable near $+\infty$. On bounded intervals
+  $F$ is bounded and measurable, being monotone.
+\end{proof}
+
+\begin{theorem}[Karamata's theorem for tail integrals]
+  \label{thm:karamata}
+  \uses{def:regularly-varying, thm:rv-potter-monotone, lem:rv-integrableOn-Ioi, lem:pos-of-antitone}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_Ioi_div}
+  \leanok
+  Let $F$ be antitone and regularly varying with index $-\alpha$, where $\alpha > 1$. Then
+  \begin{align*}
+    \lim_{x \to \infty} \frac{\int_x^\infty F(t) \, \ud t}{x \, F(x)} \; = \; \frac{1}{\alpha - 1}
+  \end{align*}
+  [BGT, Proposition~1.5.10; see also Theorem~1.5.11]. In particular, if $F$ is the survival
+  function of a random variable, the mean excess over a high threshold $x$ is asymptotically
+  $x/(\alpha - 1)$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  After the substitution $t = x u$,
+  \begin{align*}
+    \frac{\int_x^\infty F(t) \, \ud t}{x \, F(x)} \; = \; \int_1^\infty \frac{F(x u)}{F(x)} \, \ud u .
+  \end{align*}
+  The integrand tends to $u^{-\alpha}$ pointwise. By the Potter bounds
+  (Theorem~\ref{thm:rv-potter-monotone}) with $\delta = (\alpha-1)/2$ and $A = 2$, for $x$
+  large it is dominated by $2 u^{-\alpha + \delta}$, which is integrable on $(1, \infty)$.
+  Dominated convergence yields the limit $\int_1^\infty u^{-\alpha} \, \ud u = \frac{1}{\alpha - 1}$.
+\end{proof}

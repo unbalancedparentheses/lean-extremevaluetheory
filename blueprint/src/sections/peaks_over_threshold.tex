@@ -1,0 +1,114 @@
+\chapter{Peaks over threshold}
+
+The Pickands--Balkema--de Haan theorem (Balkema and de Haan, 1974; Pickands, 1975) says
+that, for distributions in a maximum domain of attraction, the conditional distribution of
+the excess over a high threshold $u$ is, after rescaling, close to a generalized Pareto
+distribution. We prove the heavy-tailed (Fréchet) case; see Embrechts, Klüppelberg and
+Mikosch, \emph{Modelling Extremal Events} (1997), Theorem~3.4.13 [EKM], and McNeil, Frey
+and Embrechts, \emph{Quantitative Risk Management} (2005), \S5.2 [MFE].
+
+Throughout, $F \colon \bR \to \bR$ plays the role of a survival function
+$F(x) = \PR[X > x]$.
+
+\begin{definition}[Generalized Pareto survival function]
+  \label{def:gpd-survival}
+  \lean{ExtremeValueTheory.gpdSurvival}
+  \leanok
+  For shape $\xi \ge 0$, scale $\beta > 0$ and $x \ge 0$, the survival function of the
+  generalized Pareto distribution (GPD) is
+  \begin{align*}
+    \overline{G}_{\xi,\beta}(x) \; = \;
+    \begin{cases}
+      (1 + \xi x / \beta)^{-1/\xi} & \text{if } \xi \ne 0, \\
+      \exp(-x/\beta) & \text{if } \xi = 0 .
+    \end{cases}
+  \end{align*}
+\end{definition}
+
+\begin{lemma}[Basic properties of the GPD]
+  \label{lem:gpd-properties}
+  \uses{def:gpd-survival}
+  \lean{ExtremeValueTheory.gpdSurvival_of_eq_zero, ExtremeValueTheory.gpdSurvival_of_ne_zero,
+    ExtremeValueTheory.gpdSurvival_pos, ExtremeValueTheory.gpdSurvival_le_one,
+    ExtremeValueTheory.gpdSurvival_antitoneOn, ExtremeValueTheory.gpdSurvival_tendsto_atTop,
+    ExtremeValueTheory.gpdSurvival_continuousOn, ExtremeValueTheory.gpdSurvival_inv_one}
+  \leanok
+  Let $\xi \ge 0$ and $\beta > 0$. On $[0, \infty)$ the function $\overline{G}_{\xi,\beta}$ takes
+  values in $(0, 1]$, is antitone and continuous, and tends to $0$ at $+\infty$. Moreover, for
+  $\alpha \ne 0$, $\overline{G}_{1/\alpha, 1}(x) = (1 + x/\alpha)^{-\alpha}$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  For $x \ge 0$ the base $1 + \xi x / \beta$ is at least $1$, and the exponent $-1/\xi$ is negative,
+  so all properties follow from elementary properties of real powers and of $\exp$.
+\end{proof}
+
+\begin{definition}[Excess survival function and mean excess function]
+  \label{def:excess-survival}
+  \lean{ExtremeValueTheory.excessSurvival, ExtremeValueTheory.meanExcess}
+  \leanok
+  The \emph{conditional excess survival function} over the threshold $u$ is
+  $\overline{F}_u(x) = F(u + x)/F(u)$; if $F(x) = \PR[X > x]$, this is $\PR[X - u > x \mid X > u]$.
+  The \emph{mean excess function} is $e(u) = \big( \int_u^\infty F(t) \, \ud t \big) / F(u)$, which
+  equals $\EX[X - u \mid X > u]$ when $\EX[X^+] < \infty$.
+\end{definition}
+
+\begin{lemma}[Pointwise convergence of excesses]
+  \label{lem:pot-pointwise}
+  \uses{def:regularly-varying, def:gpd-survival, def:excess-survival, lem:gpd-properties}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.tendsto_excessSurvival}
+  \leanok
+  If $F$ is regularly varying with index $-\alpha$, $\alpha > 0$, then with
+  $\beta(u) = u/\alpha$, for each $x \ge 0$,
+  \begin{align*}
+    \lim_{u \to \infty} \frac{F(u + \beta(u) x)}{F(u)} \; = \; \overline{G}_{1/\alpha, 1}(x) .
+  \end{align*}
+\end{lemma}
+\begin{proof}
+  \leanok
+  We have $u + \beta(u) x = (1 + x/\alpha) u$, so by regular variation with $c = 1 + x/\alpha > 0$
+  the ratio tends to $(1 + x/\alpha)^{-\alpha} = \overline{G}_{1/\alpha,1}(x)$
+  (Lemma~\ref{lem:gpd-properties}).
+\end{proof}
+
+\begin{theorem}[Pickands--Balkema--de Haan, Fréchet case]
+  \label{thm:pickands-balkema-de-haan}
+  \uses{lem:pot-pointwise, thm:rv-uct-monotone, lem:gpd-properties}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_excessSurvival,
+    ExtremeValueTheory.IsRegularlyVarying.tendsto_sup_excessSurvival}
+  \leanok
+  Let $F$ be antitone and regularly varying with index $-\alpha$, $\alpha > 0$, and let
+  $\beta(u) = u/\alpha$. Then $x \mapsto F(u + \beta(u) x)/F(u)$ converges to
+  $\overline{G}_{1/\alpha, 1}$ uniformly on $[0, \infty)$ as $u \to \infty$; that is,
+  \begin{align*}
+    \lim_{u \to \infty} \; \sup_{x \ge 0} \; \Big| \frac{F(u + \beta(u) x)}{F(u)}
+      - \overline{G}_{1/\alpha, 1}(x) \Big| \; = \; 0
+  \end{align*}
+  [EKM, Theorem~3.4.13].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Let $\eps > 0$. Since $\overline{G}_{1/\alpha,1}(x) \to 0$, choose $M$ with
+  $\overline{G}_{1/\alpha,1}(M) < \eps/2$. On the compact interval $c = 1 + x/\alpha \in [1, 1 + M/\alpha]$
+  the uniform convergence theorem for monotone regularly varying functions
+  (Theorem~\ref{thm:rv-uct-monotone}) gives uniform convergence for $x \in [0, M]$. For $x > M$,
+  both functions are nonnegative and bounded by their values at $x = M$ (by monotonicity), which
+  are eventually less than $\eps$; hence the difference is less than $\eps$ there as well.
+  The supremum form is a reformulation of uniform convergence.
+\end{proof}
+
+\begin{theorem}[Mean excess function of a regularly varying tail]
+  \label{thm:mean-excess}
+  \uses{def:excess-survival, thm:karamata}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.tendsto_meanExcess_div}
+  \leanok
+  If $F$ is antitone and regularly varying with index $-\alpha$, $\alpha > 1$, then
+  $e(u)/u \to 1/(\alpha - 1)$ as $u \to \infty$. This matches the mean
+  $\beta(u)/(1 - \xi) = u/(\alpha - 1)$ of the limiting GPD with $\xi = 1/\alpha$ and
+  $\beta(u) = u/\alpha$ [EKM, \S3.4], [MFE, \S5.2].
+\end{theorem}
+\begin{proof}
+  \leanok
+  $e(u)/u = \big( \int_u^\infty F(t) \, \ud t \big) / \big( u \, F(u) \big)$, so this is exactly
+  Karamata's theorem (Theorem~\ref{thm:karamata}).
+\end{proof}
