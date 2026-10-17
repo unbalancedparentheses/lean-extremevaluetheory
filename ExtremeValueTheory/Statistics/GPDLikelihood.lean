@@ -628,4 +628,323 @@ theorem gpdLogLik_lt_of_score_eq (hξ1 : -1 < ξ) (hξ : ξ ≠ 0) (hn : 0 < n) 
 
 end FixedShape
 
+/-! ### Strong consistency of the scale MLE for a known shape -/
+
+section Consistency
+
+variable {ξ σ σ₀ : ℝ}
+
+lemma ae_pos_expMeasure : ∀ᵐ t ∂expMeasure 1, 0 < t := by
+  rw [← stdExpMeasure_eq_expMeasure, ae_iff]
+  have h1 : {t : ℝ | ¬ 0 < t} = Iic 0 := by ext; simp
+  have h2 : Iic (0 : ℝ) ∩ Ioi 0 = ∅ := Set.ext fun t => by
+    simp only [mem_inter_iff, mem_Iic, mem_Ioi, mem_empty_iff_false, iff_false, not_and, not_lt]
+    exact id
+  rw [h1, stdExpMeasure, withDensity_apply _ measurableSet_Iic,
+    Measure.restrict_restrict measurableSet_Iic, h2, Measure.restrict_empty,
+    lintegral_zero_measure]
+
+/-- `GPD(ξ, σ)` is carried by its support `{x > 0, σ + ξ x > 0}`. -/
+lemma ae_gpdMeasure (hσ : 0 < σ) : ∀ᵐ y ∂gpdMeasure ξ σ, 0 < y ∧ 0 < σ + ξ * y := by
+  rw [gpdMeasure, stdExpMeasure_eq_expMeasure]
+  refine (ae_map_iff (measurable_gpdTransform ξ σ).aemeasurable ?_).2 ?_
+  · exact (measurableSet_lt measurable_const measurable_id).inter
+      (measurableSet_lt measurable_const (show Measurable fun y : ℝ => σ + ξ * y by fun_prop))
+  · filter_upwards [ae_pos_expMeasure] with t ht
+    refine ⟨gpdTransform_pos hσ ht, ?_⟩
+    by_cases hξ : ξ = 0
+    · simp [hξ, hσ]
+    · have h := one_add_mul_gpdTransform hσ hξ t
+      have : σ + ξ * gpdTransform ξ σ t = σ * exp (ξ * t) := by
+        rw [← h]; field_simp
+      rw [this]; positivity
+
+/-- On the exponential scale, the score term at the true scale is explicit:
+`T(t) / (σ + ξ T(t)) = (1 - e^{-ξ t}) / ξ`. -/
+lemma gpdTransform_div (hσ : 0 < σ) (hξ : ξ ≠ 0) (t : ℝ) :
+    gpdTransform ξ σ t / (σ + ξ * gpdTransform ξ σ t) = (1 - exp (-(ξ * t))) / ξ := by
+  have h := one_add_mul_gpdTransform hσ hξ t
+  have : σ + ξ * gpdTransform ξ σ t = σ * exp (ξ * t) := by
+    rw [← h]; field_simp
+  rw [this, exp_neg]
+  simp only [gpdTransform, hξ, ↓reduceIte]
+  field_simp
+
+/-- **The population score equation**: under `GPD(ξ, σ)`, `E[X / (σ + ξ X)] = 1 / (1 + ξ)`. -/
+theorem integral_div_gpdMeasure (hξ1 : -1 < ξ) (hξ : ξ ≠ 0) (hσ : 0 < σ) :
+    ∫ y, y / (σ + ξ * y) ∂gpdMeasure ξ σ = 1 / (1 + ξ) := by
+  have h1ξ : 0 < 1 + ξ := by linarith
+  rw [integral_gpdMeasure (by fun_prop)]
+  simp_rw [gpdTransform_div hσ hξ]
+  have heq : ∀ t : ℝ, exp (-(1 + ξ) * t) = exp (-t) * exp (-(ξ * t)) := fun t => by
+    rw [← exp_add]; congr 1; ring
+  have hint : Integrable (fun t => exp (-(ξ * t))) (expMeasure 1) := by
+    rw [integrable_expMeasure_iff]
+    exact (integrableOn_exp_mul_Ioi (a := -(1 + ξ)) (by linarith) 0).congr_fun
+      (fun t _ => heq t) measurableSet_Ioi
+  have hval : ∫ t, exp (-(ξ * t)) ∂expMeasure 1 = 1 / (1 + ξ) := by
+    rw [integral_expMeasure, ← setIntegral_congr_fun measurableSet_Ioi (fun t _ => heq t)]
+    exact integral_exp_neg_mul_Ioi h1ξ
+  rw [integral_div, integral_sub (integrable_const 1) hint, integral_const, hval]
+  simp only [probReal_univ, smul_eq_mul, one_mul]
+  field_simp
+  ring
+
+/-- The score terms are integrable: for `ξ > 0` they are bounded by `1/ξ`, and for `ξ < 0`,
+`σ > σ₀`, by `σ₀ / (-ξ (σ - σ₀))`. -/
+lemma integrable_div_gpdMeasure (hσ₀ : 0 < σ₀) (h : 0 < ξ ∧ 0 < σ ∨ ξ < 0 ∧ σ₀ < σ) :
+    Integrable (fun y => y / (σ + ξ * y)) (gpdMeasure ξ σ₀) := by
+  have hm : AEStronglyMeasurable (fun y : ℝ => y / (σ + ξ * y)) (gpdMeasure ξ σ₀) :=
+    (by fun_prop : Measurable fun y : ℝ => y / (σ + ξ * y)).aestronglyMeasurable
+  rcases h with ⟨hξ, hσ⟩ | ⟨hξ, hσ⟩
+  · refine Integrable.of_bound hm (1 / ξ) ?_
+    filter_upwards [ae_gpdMeasure hσ₀] with y hy
+    have hden : 0 < σ + ξ * y := by nlinarith [hy.1]
+    rw [Real.norm_eq_abs, abs_of_nonneg (div_nonneg hy.1.le hden.le), div_le_div_iff₀ hden hξ]
+    linarith
+  · refine Integrable.of_bound hm (σ₀ / -ξ / (σ - σ₀)) ?_
+    filter_upwards [ae_gpdMeasure hσ₀] with y hy
+    have hden : 0 < σ + ξ * y := by linarith [hy.2]
+    have hy' : y ≤ σ₀ / -ξ := by rw [le_div_iff₀ (by linarith)]; linarith [hy.2]
+    rw [Real.norm_eq_abs, abs_of_nonneg (div_nonneg hy.1.le hden.le)]
+    calc y / (σ + ξ * y) ≤ y / (σ - σ₀) :=
+          div_le_div_of_nonneg_left hy.1.le (by linarith) (by linarith [hy.2])
+      _ ≤ σ₀ / -ξ / (σ - σ₀) := div_le_div_of_nonneg_right hy' (by linarith)
+
+private lemma integral_pos_of_ae_pos {μ : Measure ℝ} [IsProbabilityMeasure μ] {f : ℝ → ℝ}
+    (hf : ∀ᵐ y ∂μ, 0 < f y) (hi : Integrable f μ) : 0 < ∫ y, f y ∂μ := by
+  rw [integral_pos_iff_support_of_nonneg_ae (hf.mono fun y hy => hy.le) hi]
+  refine pos_iff_ne_zero.2 fun h0 => ?_
+  have : ∀ᵐ y ∂μ, f y = 0 := by
+    rw [ae_iff]; simpa [Function.support] using h0
+  obtain ⟨y, h1, h2⟩ := (hf.and this).exists
+  linarith
+
+/-- The population score `σ ↦ E[X / (σ + ξ X)]` is strictly decreasing. -/
+lemma integral_div_gpdMeasure_lt {a b : ℝ} (hab : a < b)
+    (hsupp : ∀ᵐ y ∂gpdMeasure ξ σ₀, 0 < y ∧ 0 < a + ξ * y)
+    (ha : Integrable (fun y => y / (a + ξ * y)) (gpdMeasure ξ σ₀))
+    (hb : Integrable (fun y => y / (b + ξ * y)) (gpdMeasure ξ σ₀)) :
+    ∫ y, y / (b + ξ * y) ∂gpdMeasure ξ σ₀ < ∫ y, y / (a + ξ * y) ∂gpdMeasure ξ σ₀ := by
+  have := integral_pos_of_ae_pos (μ := gpdMeasure ξ σ₀)
+    (f := fun y => y / (a + ξ * y) - y / (b + ξ * y)) ?_ (ha.sub hb)
+  · rw [integral_sub ha hb] at this; linarith
+  · filter_upwards [hsupp] with y hy
+    exact sub_pos.2 (div_lt_div_of_pos_left hy.1 hy.2 (by linarith))
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} {X : ℕ → Ω → ℝ}
+
+/-- The strong law of large numbers for a function of an iid sequence. -/
+lemma ae_tendsto_avg_comp {μ : Measure ℝ} (hX : ∀ i, HasLaw (X i) μ P) (hind : iIndepFun X P)
+    {g : ℝ → ℝ} (hg : Measurable g) (hgi : Integrable g μ) :
+    ∀ᵐ ω ∂P, Tendsto (fun n : ℕ => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, g (X i ω)) atTop
+      (𝓝 (∫ y, g y ∂μ)) := by
+  have hint : Integrable (g ∘ X 0) P := (hX 0).integrable_comp hgi
+  have hind' : iIndepFun (fun i => g ∘ X i) P := hind.comp (fun _ => g) (fun _ => hg)
+  have hident : ∀ i, IdentDistrib (g ∘ X i) (g ∘ X 0) P P := fun i =>
+    IdentDistrib.comp ⟨(hX i).aemeasurable, (hX 0).aemeasurable,
+      by rw [(hX i).map_eq, (hX 0).map_eq]⟩ hg
+  have hmean : P[g ∘ X 0] = ∫ y, g y ∂μ := (hX 0).integral_comp hg.aestronglyMeasurable
+  filter_upwards [strong_law_ae (fun i => g ∘ X i) hint (fun i j hij => hind'.indepFun hij)
+    hident] with ω hω
+  rw [hmean] at hω
+  simpa [smul_eq_mul] using hω
+
+lemma gpdScaleScore_eq_range (ξ τ : ℝ) (x : ℕ → ℝ) (n : ℕ) :
+    gpdScaleScore ξ τ (fun i : Fin n => x i) = ∑ i ∈ Finset.range n, x i / (τ + ξ * x i) :=
+  Fin.sum_univ_eq_sum_range (fun i => x i / (τ + ξ * x i)) n
+
+/-- The deterministic upper bound: if the empirical score at `τ > σ₀` is eventually below
+`1 / (1 + ξ)`, every root of the likelihood equation is eventually below `τ`. -/
+private lemma eventually_lt_of_avg (hξ1 : -1 < ξ) (hσ₀ : 0 < σ₀) {x : ℕ → ℝ}
+    (hx : ∀ i, 0 < x i ∧ 0 < σ₀ + ξ * x i) {τ m : ℝ} (hτ : σ₀ < τ) (hm : m < 1 / (1 + ξ))
+    (havg : Tendsto (fun n : ℕ => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, x i / (τ + ξ * x i))
+      atTop (𝓝 m)) {s : ℕ → ℝ}
+    (hs : ∀ᶠ n in atTop, s n ∈ gpdScaleDomain ξ (fun i : Fin n => x i) ∧
+      (1 + ξ) * gpdScaleScore ξ (s n) (fun i : Fin n => x i) = n) :
+    ∀ᶠ n in atTop, s n < τ := by
+  have h1ξ : 0 < 1 + ξ := by linarith
+  filter_upwards [hs, havg.eventually (gt_mem_nhds hm), eventually_gt_atTop 0]
+    with n hn hlt hn0
+  by_contra hge
+  have hge := not_lt.1 hge
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn0
+  have hτD : τ ∈ gpdScaleDomain ξ (fun i : Fin n => x i) :=
+    ⟨by linarith, fun i => by linarith [(hx i).2]⟩
+  have hanti := gpdScaleScore_anti (fun i => (hx i).1.le) hτD hge
+  have h1 : gpdScaleScore ξ (s n) (fun i : Fin n => x i) = n / (1 + ξ) := by
+    rw [eq_div_iff h1ξ.ne', mul_comm, hn.2]
+  have h2 := gpdScaleScore_eq_range ξ τ x n
+  rw [inv_mul_lt_iff₀ hn'] at hlt
+  have : (n : ℝ) / (1 + ξ) = n * (1 / (1 + ξ)) := by ring
+  linarith
+
+/-- The deterministic lower bound for `ξ > 0`. -/
+private lemma eventually_gt_of_avg (hξ : 0 < ξ) {x : ℕ → ℝ} (hx : ∀ i, 0 < x i) {l m : ℝ}
+    (hm : 1 / (1 + ξ) < m)
+    (havg : Tendsto (fun n : ℕ => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, x i / (l + ξ * x i))
+      atTop (𝓝 m)) {s : ℕ → ℝ}
+    (hs : ∀ᶠ n in atTop, s n ∈ gpdScaleDomain ξ (fun i : Fin n => x i) ∧
+      (1 + ξ) * gpdScaleScore ξ (s n) (fun i : Fin n => x i) = n) :
+    ∀ᶠ n in atTop, l < s n := by
+  have h1ξ : 0 < 1 + ξ := by linarith
+  filter_upwards [hs, havg.eventually (lt_mem_nhds hm), eventually_gt_atTop 0]
+    with n hn hlt hn0
+  by_contra hge
+  have hge := not_lt.1 hge
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn0
+  have hanti := gpdScaleScore_anti (fun i => (hx i).le) hn.1 hge
+  have h1 : gpdScaleScore ξ (s n) (fun i : Fin n => x i) = n / (1 + ξ) := by
+    rw [eq_div_iff h1ξ.ne', mul_comm, hn.2]
+  have h2 := gpdScaleScore_eq_range ξ l x n
+  rw [lt_inv_mul_iff₀ hn'] at hlt
+  have : (n : ℝ) / (1 + ξ) = n * (1 / (1 + ξ)) := by ring
+  linarith
+
+private lemma tendsto_of_bounds {s l u : ℕ → ℝ} {c : ℝ} (hl : Tendsto l atTop (𝓝 c))
+    (hu : Tendsto u atTop (𝓝 c)) (hsl : ∀ k, ∀ᶠ n in atTop, l k < s n)
+    (hsu : ∀ k, ∀ᶠ n in atTop, s n < u k) : Tendsto s atTop (𝓝 c) := by
+  refine tendsto_order.2 ⟨fun a ha => ?_, fun b hb => ?_⟩
+  · obtain ⟨k, hk⟩ := (hl.eventually (lt_mem_nhds ha)).exists
+    exact (hsl k).mono fun n hn => hk.trans hn
+  · obtain ⟨k, hk⟩ := (hu.eventually (gt_mem_nhds hb)).exists
+    exact (hsu k).mono fun n hn => hn.trans hk
+
+/-- **Existence of the scale MLE, almost surely.** For iid `GPD(ξ, σ₀)` data with known shape
+`ξ > -1`, `ξ ≠ 0`, almost surely the likelihood equation has, for every `n ≥ 1`, a unique
+admissible root, which is the unique maximizer of the likelihood. -/
+theorem ae_existsUnique_gpdScaleMLE (hξ1 : -1 < ξ) (hξ : ξ ≠ 0) (hσ₀ : 0 < σ₀)
+    (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ σ₀) P) :
+    ∀ᵐ ω ∂P, ∀ n, 0 < n → ∃! σ, σ ∈ gpdScaleDomain ξ (fun i : Fin n => X i ω) ∧
+      (1 + ξ) * gpdScaleScore ξ σ (fun i : Fin n => X i ω) = n ∧
+      ∀ τ ∈ gpdScaleDomain ξ (fun i : Fin n => X i ω), τ ≠ σ →
+        gpdLogLik ξ τ (fun i : Fin n => X i ω) < gpdLogLik ξ σ (fun i : Fin n => X i ω) := by
+  have hsupp : ∀ᵐ ω ∂P, ∀ i, 0 < X i ω := ae_all_iff.2 fun i =>
+    (ae_of_ae_map (hX i).aemeasurable ((hX i).map_eq ▸ ae_gpdMeasure hσ₀)).mono fun _ h => h.1
+  filter_upwards [hsupp] with ω hω n hn
+  have hx : ∀ i : Fin n, 0 < X i ω := fun i => hω i
+  obtain ⟨σ, hσ, hroot⟩ := exists_gpdScaleScore_eq hξ1 hξ hn hx
+  exact ⟨σ, ⟨hσ, hroot, fun τ hτ hne => gpdLogLik_lt_of_score_eq hξ1 hξ hn hx hσ hroot hτ hne⟩,
+    fun τ hτ => gpdScaleScore_root_unique hξ1 hn hx hτ.1 hσ hτ.2.1 hroot⟩
+
+/-- **Strong consistency of the scale MLE for a known shape.** Let `X₀, X₁, …` be iid
+`GPD(ξ, σ₀)` with known shape `ξ > -1`, `ξ ≠ 0`. Almost surely, every sequence `σ̂ₙ` of admissible
+roots of the likelihood equation `(1 + ξ) ∑_{i<n} Xᵢ / (σ̂ₙ + ξ Xᵢ) = n` (equivalently, by
+`ae_existsUnique_gpdScaleMLE`, the MLEs of `σ`) converges to `σ₀`. -/
+theorem ae_tendsto_gpdScaleMLE (hξ1 : -1 < ξ) (hξ : ξ ≠ 0) (hσ₀ : 0 < σ₀)
+    (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ σ₀) P) (hind : iIndepFun X P) :
+    ∀ᵐ ω ∂P, ∀ s : ℕ → ℝ, (∀ᶠ n in atTop, s n ∈ gpdScaleDomain ξ (fun i : Fin n => X i ω) ∧
+      (1 + ξ) * gpdScaleScore ξ (s n) (fun i : Fin n => X i ω) = n) →
+      Tendsto s atTop (𝓝 σ₀) := by
+  have h1ξ : 0 < 1 + ξ := by linarith
+  have hsupp : ∀ᵐ ω ∂P, ∀ i, 0 < X i ω ∧ 0 < σ₀ + ξ * X i ω := ae_all_iff.2 fun i =>
+    ae_of_ae_map (hX i).aemeasurable ((hX i).map_eq ▸ ae_gpdMeasure hσ₀)
+  -- the upper bounds `u k = σ₀ + 1/(k+1)`
+  set u : ℕ → ℝ := fun k => σ₀ + 1 / ((k : ℝ) + 1)
+  have hu : Tendsto u atTop (𝓝 σ₀) := by
+    have := (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)).const_add σ₀
+    rw [add_zero] at this
+    exact this
+  have hσu : ∀ k, σ₀ < u k := fun k => by
+    have : (0 : ℝ) < 1 / ((k : ℝ) + 1) := by positivity
+    simp only [u]; linarith
+  have hiu : ∀ k, Integrable (fun y => y / (u k + ξ * y)) (gpdMeasure ξ σ₀) := fun k => by
+    rcases lt_or_gt_of_ne hξ with hneg | hpos
+    · exact integrable_div_gpdMeasure hσ₀ (Or.inr ⟨hneg, hσu k⟩)
+    · exact integrable_div_gpdMeasure hσ₀ (Or.inl ⟨hpos, hσ₀.trans (hσu k)⟩)
+  have hmu : ∀ k, ∫ y, y / (u k + ξ * y) ∂gpdMeasure ξ σ₀ < 1 / (1 + ξ) := fun k => by
+    rw [← integral_div_gpdMeasure hξ1 hξ hσ₀]
+    refine integral_div_gpdMeasure_lt (hσu k) (ae_gpdMeasure hσ₀) ?_ (hiu k)
+    rcases lt_or_gt_of_ne hξ with hneg | hpos
+    · -- at the true scale the score term is integrable by the explicit formula
+      by_contra hni
+      have := integral_div_gpdMeasure hξ1 hξ hσ₀
+      rw [integral_undef hni] at this
+      exact (one_div_pos.2 h1ξ).ne' this.symm
+    · exact integrable_div_gpdMeasure hσ₀ (Or.inl ⟨hpos, hσ₀⟩)
+  have hslln_u : ∀ᵐ ω ∂P, ∀ k, Tendsto (fun n : ℕ => (n : ℝ)⁻¹ *
+      ∑ i ∈ Finset.range n, X i ω / (u k + ξ * X i ω)) atTop
+      (𝓝 (∫ y, y / (u k + ξ * y) ∂gpdMeasure ξ σ₀)) := ae_all_iff.2 fun k =>
+    ae_tendsto_avg_comp hX hind (by fun_prop) (hiu k)
+  rcases lt_or_gt_of_ne hξ with hneg | hpos
+  · -- `ξ < 0`: the lower bound comes from the sample maximum approaching the endpoint
+    set xF := -σ₀ / ξ
+    have hxF : 0 < xF := div_pos_of_neg_of_neg (by linarith) hneg
+    set a : ℕ → ℝ := fun k => max 0 (xF - 1 / ((k : ℝ) + 1))
+    have ha : Tendsto a atTop (𝓝 xF) := by
+      have := (tendsto_const_nhds (x := (0 : ℝ))).max
+        ((tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)).const_sub xF)
+      rw [sub_zero, max_eq_right hxF.le] at this
+      exact this
+    have haF : ∀ k, a k < xF := fun k => max_lt hxF (by
+      have : (0 : ℝ) < 1 / (k + 1) := by positivity
+      linarith)
+    have hexists : ∀ᵐ ω ∂P, ∀ k, ∃ i, a k < X i ω := by
+      refine ae_all_iff.2 fun k => ?_
+      have hgi : Integrable ((Ioi (a k)).indicator (1 : ℝ → ℝ)) (gpdMeasure ξ σ₀) :=
+        (integrable_const 1).indicator measurableSet_Ioi
+      have hmean : 0 < ∫ y, (Ioi (a k)).indicator (1 : ℝ → ℝ) y ∂gpdMeasure ξ σ₀ := by
+        rw [integral_indicator_one measurableSet_Ioi, measureReal_def,
+          gpdMeasure_Ioi hσ₀ (le_max_left _ _), ENNReal.toReal_ofReal (gpdSurvival'_nonneg _ _ _)]
+        have hpos' : 0 < 1 + ξ * a k / σ₀ := by
+          have h := haF k
+          have : ξ * xF / σ₀ = -1 := by simp only [xF]; field_simp
+          have : ξ * xF < ξ * a k := mul_lt_mul_of_neg_left h hneg
+          have : ξ * xF / σ₀ < ξ * a k / σ₀ := div_lt_div_of_pos_right this hσ₀
+          linarith
+        rw [gpdSurvival', ite_eq_right hξ, max_eq_left hpos'.le]
+        exact rpow_pos_of_pos hpos' _
+      filter_upwards [ae_tendsto_avg_comp hX hind (measurable_one.indicator measurableSet_Ioi)
+        hgi] with ω hω
+      by_contra hno
+      simp only [not_exists, not_lt] at hno
+      have h0 : ∀ n : ℕ, (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n,
+          (Ioi (a k)).indicator (1 : ℝ → ℝ) (X i ω) = 0 := fun n => by
+        rw [Finset.sum_eq_zero fun i _ => indicator_of_notMem (s := Ioi (a k)) (show X i ω ∉ Ioi (a k) from not_lt.2 (hno i)) _, mul_zero]
+      simp only [h0] at hω
+      exact hmean.ne' (tendsto_nhds_unique hω tendsto_const_nhds)
+    filter_upwards [hsupp, hslln_u, hexists] with ω hω hωu hωe s hs
+    refine tendsto_of_bounds (l := fun k => -ξ * a k) (u := u) ?_ hu (fun k => ?_) (fun k => ?_)
+    · have := ha.const_mul (-ξ)
+      have e : -ξ * xF = σ₀ := by simp only [xF]; field_simp
+      rwa [e] at this
+    · obtain ⟨i, hi⟩ := hωe k
+      filter_upwards [hs, eventually_gt_atTop i] with n hn hin
+      have h := hn.1.2 ⟨i, hin⟩
+      simp only at h
+      have : ξ * X i ω < ξ * a k := mul_lt_mul_of_neg_left hi hneg
+      linarith
+    · exact eventually_lt_of_avg hξ1 hσ₀ hω (hσu k) (hmu k) (hωu k) hs
+  · -- `ξ > 0`: the lower bounds `l k = σ₀ / (1 + 1/(k+1))` work as the upper ones
+    set l : ℕ → ℝ := fun k => σ₀ / (1 + 1 / ((k : ℝ) + 1))
+    have hl : Tendsto l atTop (𝓝 σ₀) := by
+      have := (tendsto_const_nhds (x := σ₀)).div
+        ((tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)).const_add 1) (by norm_num)
+      rw [add_zero, div_one] at this
+      exact this
+    have hl0 : ∀ k, 0 < l k := fun k => by simp only [l]; positivity
+    have hlσ : ∀ k, l k < σ₀ := fun k => by
+      simp only [l]
+      rw [div_lt_iff₀ (by positivity)]
+      have : (0 : ℝ) < 1 / (k + 1) := by positivity
+      nlinarith
+    have hil : ∀ k, Integrable (fun y => y / (l k + ξ * y)) (gpdMeasure ξ σ₀) := fun k =>
+      integrable_div_gpdMeasure hσ₀ (Or.inl ⟨hpos, hl0 k⟩)
+    have hml : ∀ k, 1 / (1 + ξ) < ∫ y, y / (l k + ξ * y) ∂gpdMeasure ξ σ₀ := fun k => by
+      rw [← integral_div_gpdMeasure hξ1 hξ hσ₀]
+      refine integral_div_gpdMeasure_lt (hlσ k) ?_ (hil k)
+        (integrable_div_gpdMeasure hσ₀ (Or.inl ⟨hpos, hσ₀⟩))
+      filter_upwards [ae_gpdMeasure hσ₀] with y hy
+      exact ⟨hy.1, by have := hl0 k; nlinarith [hy.1]⟩
+    have hslln_l : ∀ᵐ ω ∂P, ∀ k, Tendsto (fun n : ℕ => (n : ℝ)⁻¹ *
+        ∑ i ∈ Finset.range n, X i ω / (l k + ξ * X i ω)) atTop
+        (𝓝 (∫ y, y / (l k + ξ * y) ∂gpdMeasure ξ σ₀)) := ae_all_iff.2 fun k =>
+      ae_tendsto_avg_comp hX hind (by fun_prop) (hil k)
+    filter_upwards [hsupp, hslln_u, hslln_l] with ω hω hωu hωl s hs
+    exact tendsto_of_bounds hl hu
+      (fun k => eventually_gt_of_avg hpos (fun i => (hω i).1) (hml k) (hωl k) hs)
+      (fun k => eventually_lt_of_avg hξ1 hσ₀ hω (hσu k) (hmu k) (hωu k) hs)
+
+end Consistency
+
 end ExtremeValueTheory
