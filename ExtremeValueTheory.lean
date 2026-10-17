@@ -87,3 +87,4 @@ import ExtremeValueTheory.ForMathlib.MeasureTheory.Function.ConvergenceInDistrib
 import ExtremeValueTheory.Statistics.ExtremeQuantileSecondOrder
 import ExtremeValueTheory.HeavyTails.LinearProcess
 import ExtremeValueTheory.HeavyTails.LinearProcessSeries
+import ExtremeValueTheory.Dependence.MovingAverage
