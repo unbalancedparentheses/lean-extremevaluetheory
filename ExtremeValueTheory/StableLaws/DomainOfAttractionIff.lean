@@ -313,4 +313,259 @@ theorem identify_of_tendsto_mul_sqRatio (ha : ∀ n, 0 < a n) {ν : ProbabilityM
 
 end Identification
 
+section ConverseLimit
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a b : ℕ → ℝ}
+
+/-- **The limit in the converse of the generalized CLT is stable, with the explicit
+characteristic function** ([Feller, Vol. II, §XVII.5, Theorem 2], [GK, §35, Theorem 2]). Let
+`aₙ > 0`, `bₙ ∈ ℝ`, and suppose the laws of `(Sₙ - bₙ) / aₙ` converge weakly to a law `ν` which
+is not a Dirac mass. Then there is `0 < α ≤ 2` such that, if `α < 2`: the tail
+`P(|X| > ·)` is regularly varying with index `-α`; the Lévy measures converge,
+`n P(X > aₙ u) → c₊ u^(-α)`, `n P(X < -aₙ u) → c₋ u^(-α)` with `c₊, c₋ ≥ 0`, `c₊ + c₋ > 0`;
+`ν` is stable with index `α`; and a shift of `ν` has characteristic function
+`exp (-C_α (c₊ + c₋) |t|^α + i E_α (c₊ - c₋) sign(t) |t|^α)` for `α ≠ 1`
+(so `β = (c₊ - c₋) / (c₊ + c₋)`, scale `σ^α = C_α (c₊ + c₋)`), and
+`exp (-C₁ (c₊ + c₋) |t| + i (c₊ - c₋) (κ t - t log |t|))` for `α = 1`. -/
+theorem exists_stable_limit_of_tendsto (ha : ∀ n, 0 < a n) {ν : ProbabilityMeasure ℝ}
+    (hnd : ∀ x, (ν : Measure ℝ) ≠ Measure.dirac x)
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν)) :
+    ∃ α, 0 < α ∧ α ≤ 2 ∧ (α < 2 → IsRegularlyVarying (absTail μ) (-α) ∧
+      ∃ cp cm : ℝ, 0 ≤ cp ∧ 0 ≤ cm ∧ 0 < cp + cm ∧
+      (∀ u : ℝ, 0 < u →
+        Tendsto (fun n : ℕ => (n : ℝ) * μ.real (Ioi (a n * u))) atTop (𝓝 (cp * u ^ (-α))) ∧
+        Tendsto (fun n : ℕ => (n : ℝ) * μ.real (Iio (-(a n * u)))) atTop
+          (𝓝 (cm * u ^ (-α)))) ∧
+      IsStableIndex α ν ∧ ∃ m : ℝ,
+      (α ≠ 1 → HasStableCharFun α (stableConst α * (cp + cm)) (stableSkewConst α * (cp - cm))
+        ((ν : Measure ℝ).map (· + m))) ∧
+      (α = 1 → HasStableOneCharFun (stableConst 1 * (cp + cm)) (cp - cm) stableLogConst
+        ((ν : Measure ℝ).map (· + m)))) := by
+  obtain ⟨α, hα0, hα2, K, hK, hL⟩ := exists_tendsto_mul_sqRatio_symmLaw ha hnd hconv
+  refine ⟨α, hα0, hα2, fun hlt => ?_⟩
+  obtain ⟨hG, B, hB0, hB, p, hp0, hp1, hp, m, hm1, hm2⟩ :=
+    identify_of_tendsto_mul_sqRatio ha hconv hα0 hlt hK hL
+  have hGpos := absTail_pos hG
+  have hatop : Tendsto a atTop atTop :=
+    tendsto_atTop_of_tendsto_mul_comp (T := absTail μ) (L := fun _ => B)
+      (absTail_antitone.antitoneOn _) (fun x _ => hGpos x) ha hB
+  have hq : Tendsto (fun x => μ.real (Iio (-x)) / absTail μ x) atTop (𝓝 (1 - p)) := by
+    refine (tendsto_const_nhds.sub hp).congr' ?_
+    filter_upwards [eventually_ge_atTop 0] with x hx
+    have := (hGpos x).ne'
+    rw [absTail_eq_add hx] at this ⊢
+    field_simp
+    ring
+  have hcp : B * p + B * (1 - p) = B := by ring
+  have hstab : IsStableIndex α ν := by
+    rcases eq_or_ne α 1 with h1 | h1
+    · subst h1
+      exact ((hm2 rfl).isStableIndex
+        (mul_pos hB0 (stableConst_pos one_pos (by norm_num)))).of_map_add_const
+    · exact ((hm1 h1).isStableIndex hα0 (mul_pos hB0 (stableConst_pos hα0 hlt))).of_map_add_const
+  refine ⟨hG, B * p, B * (1 - p), mul_nonneg hB0.le hp0, mul_nonneg hB0.le (by linarith),
+    by rw [hcp]; exact hB0, fun u hu => ⟨?_, ?_⟩, hstab, m, fun h1 => ?_, fun h1 => ?_⟩
+  · have h1 := (tendsto_mul_comp_mul_of_tendsto hG hatop hB hu).mul
+      (hp.comp (hatop.atTop_mul_const hu))
+    rw [show B * u ^ (-α) * p = B * p * u ^ (-α) by ring] at h1
+    refine h1.congr fun n => ?_
+    have := (hGpos (a n * u)).ne'
+    simp only [Function.comp]
+    field_simp
+  · have h1 := (tendsto_mul_comp_mul_of_tendsto hG hatop hB hu).mul
+      (hq.comp (hatop.atTop_mul_const hu))
+    rw [show B * u ^ (-α) * (1 - p) = B * (1 - p) * u ^ (-α) by ring] at h1
+    refine h1.congr fun n => ?_
+    have := (hGpos (a n * u)).ne'
+    simp only [Function.comp]
+    field_simp
+  · rw [hcp, show stableSkewConst α * (B * p - B * (1 - p)) =
+      B * ((2 * p - 1) * stableSkewConst α) by ring, mul_comm]
+    exact hm1 h1
+  · rw [hcp, show B * p - B * (1 - p) = B * (2 * p - 1) by ring, mul_comm]
+    exact hm2 h1
+
+end ConverseLimit
+
+section IndexBound
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a b : ℕ → ℝ}
+
+theorem one_sub_cosTransform_le (ρ : Measure ℝ) [IsProbabilityMeasure ρ] {s : ℝ} (hs : s ≠ 0) :
+    1 - cosTransform ρ s ≤ 2 * sqRatio ρ s⁻¹ := by
+  rw [sqRatio_eq_integral_min' (inv_ne_zero hs), cosTransform, ← integral_const_mul]
+  have hint : Integrable (fun x : ℝ => min 1 ((s⁻¹⁻¹ * x) ^ 2)) ρ :=
+    Integrable.of_bound (by fun_prop) 1 (ae_of_all _ fun x => by
+      rw [Real.norm_eq_abs, abs_of_nonneg (le_min zero_le_one (sq_nonneg _))]
+      exact min_le_left _ _)
+  calc 1 - ∫ x, cos (s * x) ∂ρ = ∫ x, (1 - cos (s * x)) ∂ρ := by
+        rw [integral_sub (integrable_const _) (integrable_cos s)]; simp
+    _ ≤ ∫ x, 2 * min 1 ((s⁻¹⁻¹ * x) ^ 2) ∂ρ :=
+        integral_mono ((integrable_const _).sub (integrable_cos s)) (hint.const_mul 2)
+          fun x => by rw [inv_inv]; exact one_sub_cos_le_two_mul_min _
+
+theorem exp_neg_two_mul_le {d : ℝ} (hd0 : 0 ≤ d) (hd : d ≤ 1 / 2) :
+    Real.exp (-(2 * d)) ≤ 1 - d := by
+  have h1 : 1 + 2 * d ≤ Real.exp (2 * d) := by linarith [Real.add_one_le_exp (2 * d)]
+  have hpos := Real.exp_pos (-(2 * d))
+  have hE : Real.exp (-(2 * d)) * Real.exp (2 * d) = 1 := by rw [← Real.exp_add]; simp
+  nlinarith
+
+/-- **A lower bound for the limit**, from the symmetrized scaling limit: if `(Sₙ - bₙ) / aₙ → ν`
+and `n E[min (1, (X - X')² / (aₙ x)²)] → K x ^ (-α)`, then `|φ_ν(t)|² ≥ exp (-6 K t^α)`. -/
+theorem exp_le_norm_charFun_sq (ha : ∀ n, 0 < a n) {ν : ProbabilityMeasure ℝ}
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν))
+    {α K : ℝ} (hK : 0 < K)
+    (hL : ∀ x : ℝ, 0 < x → Tendsto (fun n : ℕ => (n : ℝ) * sqRatio (symmLaw μ) (a n * x)) atTop
+      (𝓝 (K * x ^ (-α)))) {t : ℝ} (ht : 0 < t) :
+    Real.exp (-(6 * K * t ^ α)) ≤ ‖charFun (ν : Measure ℝ) t‖ ^ 2 := by
+  set f : ℝ → ℝ := fun s => ‖charFun μ s‖ ^ 2 with hfdef
+  have hf : ∀ s, f s = cosTransform (symmLaw μ) s := by
+    intro s
+    rw [cosTransform_eq_re, charFun_symmLaw, Complex.ofReal_re, Complex.normSq_eq_norm_sq]
+  have hlim : Tendsto (fun n : ℕ => f ((a n)⁻¹ * t) ^ n) atTop
+      (𝓝 (‖charFun (ν : Measure ℝ) t‖ ^ 2)) := by
+    have h := ((continuous_norm.pow 2).tendsto _).comp
+      (((continuous_charFun_probabilityMeasure t).tendsto ν).comp hconv)
+    refine h.congr fun n => ?_
+    simp only [Function.comp, ProbabilityMeasure.coe_mk, hfdef, Pi.pow_apply]
+    have e : (fun x => (a n)⁻¹ * (x - b n)) = fun x => (a n)⁻¹ * x + (-((a n)⁻¹ * b n)) := by
+      funext x; ring
+    rw [e, charFun_map_mul_add, charFun_convPow, norm_mul, norm_pow,
+      show (((-((a n)⁻¹ * b n) : ℝ) : ℂ) * (t : ℂ) * Complex.I) =
+        ((-((a n)⁻¹ * b n) * t : ℝ) : ℂ) * Complex.I by push_cast; ring,
+      Complex.norm_exp_ofReal_mul_I]
+    ring
+  set D := 3 * K * t ^ α with hD
+  have hKt : 0 < K * t ^ α := mul_pos hK (rpow_pos_of_pos ht _)
+  have hL' := hL t⁻¹ (inv_pos.2 ht)
+  rw [inv_rpow ht.le, rpow_neg ht.le, inv_inv] at hL'
+  refine ge_of_tendsto hlim ?_
+  filter_upwards [(tendsto_order.1 hL').2 (3 / 2 * (K * t ^ α)) (by linarith),
+    eventually_ge_atTop ⌈2 * D⌉₊, eventually_gt_atTop 0] with n hn hn2 hn0
+  have hn0' : (0 : ℝ) < n := by exact_mod_cast hn0
+  set d := 1 - f ((a n)⁻¹ * t) with hd
+  have hs : (a n)⁻¹ * t ≠ 0 := mul_ne_zero (inv_ne_zero (ha n).ne') ht.ne'
+  have hd0 : 0 ≤ d := by
+    have : f ((a n)⁻¹ * t) ≤ 1 := by
+      simp only [hfdef]
+      exact pow_le_one₀ (norm_nonneg _) (norm_charFun_le_one _)
+    linarith
+  have hdle : (n : ℝ) * d ≤ D := by
+    have h1 := one_sub_cosTransform_le (symmLaw μ) hs
+    rw [mul_inv, inv_inv, ← hf] at h1
+    calc (n : ℝ) * d ≤ (n : ℝ) * (2 * sqRatio (symmLaw μ) (a n * t⁻¹)) :=
+          mul_le_mul_of_nonneg_left h1 hn0'.le
+      _ = 2 * ((n : ℝ) * sqRatio (symmLaw μ) (a n * t⁻¹)) := by ring
+      _ ≤ 2 * (3 / 2 * (K * t ^ α)) := by linarith
+      _ = D := by rw [hD]; ring
+  have hd2 : d ≤ 1 / 2 := by
+    have h2 : 2 * D ≤ n := (Nat.le_ceil _).trans (by exact_mod_cast hn2)
+    have hD0 : 0 < D := by rw [hD]; linarith
+    nlinarith
+  have h1 : f ((a n)⁻¹ * t) = 1 - d := by rw [hd]; ring
+  rw [h1]
+  calc Real.exp (-(6 * K * t ^ α)) ≤ Real.exp (n * -(2 * d)) := by
+        rw [Real.exp_le_exp]; nlinarith
+    _ = Real.exp (-(2 * d)) ^ n := Real.exp_nat_mul _ _
+    _ ≤ (1 - d) ^ n := pow_le_pow_left₀ (Real.exp_pos _).le (exp_neg_two_mul_le hd0 hd2) n
+
+theorem exists_norm_charFun_lt_one {ν : Measure ℝ} [IsProbabilityMeasure ν]
+    (h : ∀ x, ν ≠ Measure.dirac x) : ∃ t, 0 < t ∧ ‖charFun ν t‖ < 1 := by
+  by_contra hc
+  simp only [not_exists, not_and, not_lt] at hc
+  have hnorm : ∀ t, ‖charFun ν t‖ = 1 := by
+    intro t
+    rcases lt_trichotomy t 0 with ht | rfl | ht
+    · have := hc (-t) (neg_pos.2 ht)
+      rw [charFun_neg, Complex.norm_conj] at this
+      exact le_antisymm (norm_charFun_le_one _) this
+    · simp
+    · exact le_antisymm (norm_charFun_le_one _) (hc t ht)
+  apply symmLaw_ne_dirac h
+  refine Measure.ext_of_charFun (funext fun t => ?_)
+  rw [charFun_symmLaw, charFun_dirac, Complex.normSq_eq_norm_sq, hnorm t]
+  simp
+
+theorem IsStableIndex.norm_charFun_pow {α : ℝ} {ν : Measure ℝ} (h : IsStableIndex α ν) {n : ℕ}
+    (hn : 1 ≤ n) (t : ℝ) : ‖charFun ν t‖ ^ n = ‖charFun ν ((n : ℝ) ^ α⁻¹ * t)‖ := by
+  have := h.1.isProbabilityMeasure
+  obtain ⟨b, hb⟩ := h.2 n hn
+  have h1 := congrArg (fun ρ => charFun ρ t) hb
+  simp only [charFun_convPow, charFun_map_mul_add] at h1
+  rw [← norm_pow, h1, norm_mul, show (b : ℂ) * (t : ℂ) * Complex.I = ((b * t : ℝ) : ℂ) * Complex.I by
+    push_cast; ring, Complex.norm_exp_ofReal_mul_I, mul_one]
+
+/-- If `ν` is stable with index `α` and `|φ_ν(t)|² ≥ exp (-C t^β)` for `t > 0`, then `β ≤ α`:
+`|φ_ν(t₀)|² = |φ_ν(k^{-1/α} t₀)|^{2k} ≥ exp (-C t₀^β k^{1 - β/α})`, which tends to `1` if
+`β > α`. -/
+theorem IsStableIndex.le_of_exp_le {α β C : ℝ} {ν : Measure ℝ} (h : IsStableIndex α ν)
+    (hα0 : 0 < α) (hb : ∀ t, 0 < t → Real.exp (-(C * t ^ β)) ≤ ‖charFun ν t‖ ^ 2) : β ≤ α := by
+  have := h.1.isProbabilityMeasure
+  obtain ⟨t₀, ht₀, hlt⟩ := exists_norm_charFun_lt_one h.1.ne_dirac
+  by_contra hβ
+  replace hβ := not_le.1 hβ
+  have hq1 : ‖charFun ν t₀‖ ^ 2 < 1 := pow_lt_one₀ (norm_nonneg _) hlt two_ne_zero
+  have hk : ∀ k : ℕ, 1 ≤ k →
+      Real.exp (-(C * t₀ ^ β * (k : ℝ) ^ (1 - β / α))) ≤ ‖charFun ν t₀‖ ^ 2 := by
+    intro k hk
+    have hk0 : (0 : ℝ) < k := by exact_mod_cast hk
+    set tk := (k : ℝ) ^ (-α⁻¹) * t₀ with htkdef
+    have htk : 0 < tk := mul_pos (rpow_pos_of_pos hk0 _) ht₀
+    have hrel : (k : ℝ) ^ α⁻¹ * tk = t₀ := by
+      rw [htkdef, ← mul_assoc, ← rpow_add hk0]; simp
+    have h1 := h.norm_charFun_pow hk tk
+    rw [hrel] at h1
+    have h2 : Real.exp (-(C * tk ^ β)) ^ k ≤ (‖charFun ν tk‖ ^ 2) ^ k :=
+      pow_le_pow_left₀ (Real.exp_pos _).le (hb tk htk) k
+    rw [← Real.exp_nat_mul, ← pow_mul, mul_comm 2 k, pow_mul, h1] at h2
+    have h3 : (k : ℝ) * (C * tk ^ β) = C * t₀ ^ β * (k : ℝ) ^ (1 - β / α) := by
+      rw [htkdef, mul_rpow (rpow_nonneg hk0.le _) ht₀.le, ← rpow_mul hk0.le, rpow_sub hk0,
+        rpow_one, show -α⁻¹ * β = -(β / α) by ring, rpow_neg hk0.le]
+      field_simp
+    calc Real.exp (-(C * t₀ ^ β * (k : ℝ) ^ (1 - β / α))) = Real.exp (k * -(C * tk ^ β)) := by
+          rw [mul_neg, h3]
+      _ ≤ _ := h2
+  have hlim : Tendsto (fun k : ℕ => Real.exp (-(C * t₀ ^ β * (k : ℝ) ^ (1 - β / α)))) atTop
+      (𝓝 1) := by
+    have hneg : 0 < -(1 - β / α) := by
+      have : 1 < β / α := (one_lt_div hα0).2 hβ
+      linarith
+    have h1 : Tendsto (fun k : ℕ => (k : ℝ) ^ (1 - β / α)) atTop (𝓝 0) := by
+      have := (tendsto_rpow_neg_atTop hneg).comp tendsto_natCast_atTop_atTop
+      simpa only [neg_neg, Function.comp_def] using this
+    have := (Real.continuous_exp.tendsto _).comp ((h1.const_mul (C * t₀ ^ β)).neg)
+    simpa only [mul_zero, neg_zero, Real.exp_zero, Function.comp_def] using this
+  have : 1 ≤ ‖charFun ν t₀‖ ^ 2 := le_of_tendsto hlim (eventually_atTop.2 ⟨1, hk⟩)
+  linarith
+
+/-- The index of a stable law is unique: if `ν` is stable with index `α` and
+`|φ_ν(t)| = exp (-c |t|^β)` with `c > 0`, then `β = α`. -/
+theorem IsStableIndex.eq_of_norm_charFun {α β c : ℝ} {ν : Measure ℝ} (h : IsStableIndex α ν)
+    (hc : 0 < c) (hφ : ∀ t, ‖charFun ν t‖ = Real.exp (-(c * |t| ^ β))) : β = α := by
+  have h2 := h.norm_charFun_pow (n := 2) (by norm_num) 1
+  rw [hφ, hφ, ← Real.exp_nat_mul, Real.exp_eq_exp, mul_one, abs_one, one_rpow, Nat.cast_ofNat,
+    abs_of_pos (rpow_pos_of_pos two_pos _), ← rpow_mul zero_le_two] at h2
+  have hx : (2 : ℝ) ^ (α⁻¹ * β) = 2 := by
+    refine mul_left_cancel₀ hc.ne' ?_
+    linarith
+  have hl := congrArg Real.log hx
+  rw [Real.log_rpow two_pos] at hl
+  have hl2 : Real.log 2 ≠ 0 := (Real.log_pos one_lt_two).ne'
+  have h1 : α⁻¹ * β = 1 := mul_right_cancel₀ hl2 (hl.trans (one_mul _).symm)
+  have hα : α ≠ 0 := by
+    rintro rfl
+    simp at h1
+  field_simp at h1
+  linarith
+
+theorem norm_charFun_map_add_const {ν : Measure ℝ} (m t : ℝ) :
+    ‖charFun (ν.map (· + m)) t‖ = ‖charFun ν t‖ := by
+  rw [charFun_map_add_const, norm_mul]
+  simp only [RCLike.inner_apply, conj_trivial, Complex.norm_exp_ofReal_mul_I, mul_one]
+
+end IndexBound
+
 end ExtremeValueTheory
