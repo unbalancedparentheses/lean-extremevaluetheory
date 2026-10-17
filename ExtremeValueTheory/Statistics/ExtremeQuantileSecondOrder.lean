@@ -759,6 +759,73 @@ theorem IsSecondOrderRegularlyVarying.exists_bound_of_neg' {U A : ℝ → ℝ} {
       _ = |C₁| * K * |A t| := by ring
       _ ≤ |C₁| * (1 + K) * |A t| := by gcongr; linarith
 
+/-- **Local two-sided uniform bound for second-order regular variation** (any `ρ ≤ 0`): there are
+`C` and `t₀ > 0` with `|log U(xt) - log U(t) - γ log x| ≤ C |A(t)|` for `t ≥ t₀` and
+`x ∈ [e⁻¹, e]`. -/
+theorem IsSecondOrderRegularlyVarying.exists_bound_Icc {U A : ℝ → ℝ} {γ ρ : ℝ}
+    (h : IsSecondOrderRegularlyVarying U γ ρ A) (hU : Measurable U) (hA : Measurable A) :
+    ∃ C t₀ : ℝ, 0 < t₀ ∧ ∀ t ≥ t₀, ∀ x ∈ Icc (exp (-1)) (exp 1),
+      |log (U (x * t)) - log (U t) - γ * log x| ≤ C * |A t| := by
+  obtain ⟨C₁, t₁, ht₁, hC₁⟩ := h.exists_bound hU hA one_pos
+  obtain ⟨x₀, hx₀, hApos, hP⟩ :=
+    h.isRegularlyVarying_abs.potter_bound_of_measurable (continuous_abs.measurable.comp hA)
+      one_pos one_lt_two
+  set K : ℝ := 2 * exp (|ρ| + 1) with hK
+  refine ⟨|C₁| * exp 1 * (1 + K), exp 1 * max t₁ x₀, by positivity, fun t ht x hx => ?_⟩
+  have hm0 : 0 < max t₁ x₀ := lt_max_of_lt_left ht₁
+  have ht0 : 0 < t := (by positivity : (0 : ℝ) < exp 1 * max t₁ x₀).trans_le ht
+  have htm : max t₁ x₀ ≤ t := le_trans (le_mul_of_one_le_left hm0.le (one_le_exp one_pos.le)) ht
+  have hK1 : 0 ≤ K := by positivity
+  have hx0 : 0 < x := (exp_pos _).trans_le hx.1
+  rcases le_or_gt 1 x with hx1 | hx1
+  · refine (hC₁ t ((le_max_left _ _).trans htm) x hx1).trans ?_
+    rw [rpow_one]
+    calc C₁ * |A t| * x ≤ |C₁| * |A t| * exp 1 := by
+          gcongr
+          · exact le_abs_self _
+          · exact hx.2
+      _ = |C₁| * exp 1 * 1 * |A t| := by ring
+      _ ≤ |C₁| * exp 1 * (1 + K) * |A t| := by gcongr; linarith
+  · have hxt : max t₁ x₀ ≤ x * t := by
+      have : exp (-1) * (exp 1 * max t₁ x₀) ≤ x * t :=
+        mul_le_mul hx.1 ht (by positivity) hx0.le
+      rwa [← mul_assoc, ← exp_add, neg_add_cancel, exp_zero, one_mul] at this
+    have h1 := hC₁ (x * t) ((le_max_left _ _).trans hxt) x⁻¹ (one_le_inv₀ hx0 |>.2 hx1.le)
+    rw [← mul_assoc, inv_mul_cancel₀ hx0.ne', one_mul, log_inv, rpow_one] at h1
+    have hxinv : x⁻¹ ≤ exp 1 := by
+      rw [inv_le_comm₀ hx0 (exp_pos _), ← exp_neg]; exact hx.1
+    -- Potter: `|A(xt)| ≤ K |A(t)|`
+    have hpot := hP t ((le_max_right _ _).trans htm) (x * t) ((le_max_right _ _).trans hxt)
+    rw [mul_div_cancel_right₀ _ ht0.ne', div_le_iff₀ (hApos t ((le_max_right _ _).trans htm))]
+      at hpot
+    have hlogx1 : -1 ≤ log x := by
+      rw [← log_exp (-1)]; exact log_le_log (exp_pos _) hx.1
+    have hlogx : -1 ≤ log x ∧ log x ≤ 0 := ⟨hlogx1, log_nonpos hx0.le hx1.le⟩
+    have hb : ∀ r : ℝ, |r| ≤ |ρ| + 1 → x ^ r ≤ exp (|ρ| + 1) := by
+      intro r hr'
+      rw [rpow_def_of_pos hx0]
+      refine exp_le_exp.2 ?_
+      have : |log x * r| ≤ |ρ| + 1 := by
+        rw [abs_mul]
+        have : |log x| ≤ 1 := abs_le.2 ⟨hlogx.1, by linarith [hlogx.2]⟩
+        calc |log x| * |r| ≤ 1 * (|ρ| + 1) := mul_le_mul this hr' (abs_nonneg _) zero_le_one
+          _ = |ρ| + 1 := one_mul _
+      exact (le_abs_self _).trans this
+    have hmax : max (x ^ (ρ + 1)) (x ^ (ρ - 1)) ≤ exp (|ρ| + 1) :=
+      max_le (hb _ ((abs_add_le _ _).trans (by simp))) (hb _ ((abs_sub _ _).trans (by simp)))
+    have hAxt : |A (x * t)| ≤ K * |A t| := by
+      calc |A (x * t)| ≤ 2 * max (x ^ (ρ + 1)) (x ^ (ρ - 1)) * |A t| := hpot
+        _ ≤ 2 * exp (|ρ| + 1) * |A t| := by gcongr
+    have e : log (U (x * t)) - log (U t) - γ * log x =
+        -(log (U t) - log (U (x * t)) - γ * -log x) := by ring
+    rw [e, abs_neg]
+    calc _ ≤ C₁ * |A (x * t)| * x⁻¹ := h1
+      _ ≤ |C₁| * (K * |A t|) * exp 1 := by
+          gcongr
+          exact le_abs_self _
+      _ = |C₁| * exp 1 * K * |A t| := by ring
+      _ ≤ |C₁| * exp 1 * (1 + K) * |A t| := by gcongr; linarith
+
 section IntermediateOrderStat
 
 variable {Ω Ω₀ : Type*} {mΩ : MeasurableSpace Ω} {mΩ₀ : MeasurableSpace Ω₀}
@@ -766,12 +833,12 @@ variable {Ω Ω₀ : Type*} {mΩ : MeasurableSpace Ω} {mΩ₀ : MeasurableSpace
 
 /-- **The intermediate order statistic at rate `√k`, on the exponential scale**: if the `E_i`
 are iid standard exponential and `U` is monotone on `(1, ∞)` and of second-order regular
-variation with `ρ < 0`, `k → ∞`, `k / n → 0` and `√k A(n/k) → λ`, then
+variation (any `ρ ≤ 0`), `k → ∞`, `k / n → 0` and `√k A(n/k) → λ`, then
 `√k (log U(e^{E})_{(k+1)} - log U(n/k))` is bounded in probability. -/
 theorem isBoundedInProbability_log_orderStat_comp_exp {E : ℕ → Ω₀ → ℝ}
     (hEm : ∀ i, Measurable (E i)) (hE : ∀ i, HasLaw (E i) (expMeasure 1) P₀)
     (hind : iIndepFun E P₀) {U A : ℝ → ℝ} {γ ρ lam : ℝ} (hU : Measurable U)
-    (hUm : MonotoneOn U (Ioi 1)) (h2 : IsSecondOrderRegularlyVarying U γ ρ A) (hρ : ρ < 0)
+    (hUm : MonotoneOn U (Ioi 1)) (h2 : IsSecondOrderRegularlyVarying U γ ρ A)
     {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
     (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
     (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) :
@@ -786,7 +853,7 @@ theorem isBoundedInProbability_log_orderStat_comp_exp {E : ℕ → Ω₀ → ℝ
     filter_upwards [hnk.eventually h2.eventually_ne_zero] with n hn
     simp only [Function.comp_apply]
     field_simp
-  obtain ⟨C, t₀, ht₀, hC⟩ := h2B.exists_bound_of_neg' hU hBm hρ
+  obtain ⟨C, t₀, ht₀, hC⟩ := h2B.exists_bound_Icc hU hBm
   have hT := isBoundedInProbability_orderStat_sub_log hEm hE hind hk hkn
   have hnull : P₀ (⋃ i, {ω | E i ω ≤ 0}) = 0 := by
     refine measure_iUnion_null fun i => ?_
@@ -832,7 +899,8 @@ theorem isBoundedInProbability_log_orderStat_comp_exp {E : ℕ → Ω₀ → ℝ
   have hx1 : exp (-1) ≤ x := exp_le_exp.2 (by linarith [(abs_le.1 (hes.trans hM1k)).1])
   have hxt : exp e = x * (n / k n) := by
     rw [hx, exp_sub, hs₀, exp_log hn0, div_mul_cancel₀ _ hn0.ne']
-  have hbd := hC (n / k n) hnt x hx1
+  have hx2 : x ≤ exp 1 := exp_le_exp.2 (by linarith [(abs_le.1 (hes.trans hM1k)).2])
+  have hbd := hC (n / k n) hnt x ⟨hx1, hx2⟩
   rw [← hxt, hx, log_exp] at hbd
   have key : |log (U (exp e)) - log (U (n / k n))| ≤
       |γ| * (M₁ / √(k n : ℝ)) + |C| * |B (n / k n)| := by
@@ -888,14 +956,14 @@ theorem map_statistic_eq_map_statistic_comp_exp {X : ℕ → Ω → ℝ} (hX : �
   rfl
 
 /-- **The intermediate order statistic at rate `√k`** ([dHF, Theorem 2.4.1]): under
-second-order regular variation of the tail quantile function with `ρ < 0`, `k → ∞`,
+second-order regular variation of the tail quantile function (any `ρ ≤ 0`), `k → ∞`,
 `k / n → 0` and `√k A(n/k) → λ`, `√k (log X_{(k+1)} - log U(n/k))` is bounded in
 probability. -/
 theorem isBoundedInProbability_log_orderStat {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
     (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ}
     {A : ℝ → ℝ}
     (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ A)
-    (hρ : ρ < 0) {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
+    {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
     (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
     (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) :
     IsBoundedInProbability P (fun n ω => √(k n : ℝ) *
@@ -909,7 +977,7 @@ theorem isBoundedInProbability_log_orderStat {X : ℕ → Ω → ℝ} (hX : ∀ 
   have hUmono := monotoneOn_tailQuantile (survival_anti (P := P) (X 0))
     (continuousWithinAt_survival (P := P) (hX 0)) (tendsto_survival_atTop (P := P) (hX 0))
     (tendsto_survival_atBot (P := P) (hX 0))
-  have hB := isBoundedInProbability_log_orderStat_comp_exp hEm hE hind hUm hUmono h2 hρ hk hkn
+  have hB := isBoundedInProbability_log_orderStat_comp_exp hEm hE hind hUm hUmono h2 hk hkn
     hlam
   intro ε hε
   obtain ⟨M, hM⟩ := hB ε hε
@@ -1063,7 +1131,7 @@ theorem tendstoInDistribution_weissman {X : ℕ → Ω → ℝ} (hX : ∀ i, Mea
       _ ≤ |C| * (|lam| + 1) := mul_le_mul_of_nonneg_left hlamn.le (abs_nonneg _)
   -- the random terms
   have hW := tendstoInDistribution_hill hX hindep hident hγ h2 hk hkn hlam hZ
-  have hV := isBoundedInProbability_log_orderStat hX hindep hident h2 hρ hk hkn hlam
+  have hV := isBoundedInProbability_log_orderStat hX hindep hident h2 hk hkn hlam
   have hOS : ∀ n, Measurable fun ω => orderStat (fun i : Fin n => X i ω) (k n) := fun n =>
     measurable_orderStat (fun i => hX i) _
   have hH : ∀ n, Measurable fun ω => hill (fun i : Fin n => X i ω) (k n) := fun n =>
