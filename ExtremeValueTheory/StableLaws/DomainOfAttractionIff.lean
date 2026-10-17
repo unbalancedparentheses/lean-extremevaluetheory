@@ -9,6 +9,41 @@ import Mathlib.Topology.MetricSpace.Sequences
 
 /-!
 # Domains of attraction of stable laws
+
+We close the loop between the sufficiency half of the generalized central limit theorem
+(`GeneralizedCLT.lean`, `GeneralizedCLTOne.lean`) and its converse
+(`GeneralizedCLTConverse*.lean`, `LevyMeasureLimit.lean`): the limit in the converse is
+identified as the explicit stable law of the sufficiency theorems, and we obtain Feller's
+criterion for the domain of attraction of an `α`-stable law, `0 < α < 2`, without symmetry
+([Feller, Vol. II, §XVII.5, Theorem 2], [GK, §35, Theorem 2], [EKM, Theorem 2.2.8]).
+
+## Main definitions
+
+* `IsStableIndex α μ`: `μ` is stable and `μ^{*n} = law (n ^ (1 / α) X + bₙ)` for all `n ≥ 1`
+  ([Feller, §VI.1, Theorem 1]).
+* `stableCentering μ α a n`: `0` (`α < 1`), `n E[X 1{|X| ≤ aₙ}]` (`α = 1`), `n E X` (`α > 1`).
+
+## Main results
+
+* `exists_map_add_eq_of_tendsto`, `exists_map_add_eq_map_mul`: **convergence of types with
+  equal scales**: two weak limits of `(Sₙ - bₙ) / aₙ` and `(Sₙ - b'ₙ) / aₙ` differ by a shift
+  (tightness bounds the shifts, then characteristic functions along a subsequence).
+* `HasStableOneCharFun.isStableIndex`: `1`-stable laws are stable (`bₙ = e n log n`);
+  `HasStableCharFun.isStableIndex`; `IsStableIndex.map_add_const` (shift invariance).
+* `identify_of_tendsto_mul_sqRatio`, `exists_stable_limit_of_tendsto`: **identification of the
+  limit in the converse GCLT.** If `(Sₙ - bₙ) / aₙ → ν ≠ δ` and the index is `α < 2`, then with
+  `n P(X > aₙ u) → c₊ u^(-α)`, `n P(X < -aₙ u) → c₋ u^(-α)`, a shift of `ν` has characteristic
+  function `exp (-C_α (c₊ + c₋) |t|^α + i E_α (c₊ - c₋) sign(t) |t|^α)` (`α ≠ 1`) resp.
+  `exp (-C₁ (c₊ + c₋) |t| + i (c₊ - c₋) (κ t - t log |t|))` (`α = 1`), i.e.
+  `β = (c₊ - c₋) / (c₊ + c₋)`; and `ν` is stable with index `α` (`IsStableIndex`, hence
+  `IsStable`). Proof: apply the sufficiency theorem along `aₙ (c₊ + c₋)^{1/α}` and use
+  convergence of types.
+* `IsStableIndex.le_of_exp_le`, `IsStableIndex.eq_of_norm_charFun`: index bounds and uniqueness.
+* `tendsto_map_convPow_sub_normSeq`: the GCLT with `aₙ = normSeq μ n` and
+  `bₙ = stableCentering μ α aₙ n`.
+* `domainOfAttraction_isStableIndex_iff`: **Feller's criterion.** For `0 < α < 2`,
+  `(Sₙ - bₙ) / aₙ` converges to an `α`-stable law for some `aₙ > 0`, `bₙ` iff
+  `P(|X| > ·) ∈ RV(-α)` and `P(X > x) / P(|X| > x) → p ∈ [0, 1]`.
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set Real
