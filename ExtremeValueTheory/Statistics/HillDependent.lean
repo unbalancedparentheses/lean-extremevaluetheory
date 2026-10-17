@@ -331,7 +331,6 @@ theorem geom_riemann_bounds {α ρ : ℝ} (hα : 0 < α) (hρ : 1 < ρ) (J : ℕ
     rw [div_add' _ _ _ hα.ne', le_div_iff₀ hα]
     nlinarith
 
-set_option maxHeartbeats 2000000 in
 /-- **Hill consistency under a variance condition on exceedance counts.** Let `X_0, X_1, …` be
 identically distributed (no independence or stationarity is assumed) with survival function
 `F̄(x) = P(X_0 > x)` regularly varying with index `-α`, `α > 0`, and let `k(n) → ∞`,
@@ -399,7 +398,7 @@ theorem tendstoInMeasure_hill_of_variance {X : ℕ → Ω → ℝ} (hX : ∀ i, 
     rw [← ofReal_measureReal]
     refine ENNReal.ofReal_le_ofReal ?_
     have : δ * P.real {ω | δ ≤ Z ω} < θ * δ := hM.trans_lt hn
-    nlinarith
+    exact (lt_of_mul_lt_mul_left (this.trans_eq (mul_comm θ δ)) hδ.le).le
   -- choice of the mesh `ρ`
   rw [tendstoInMeasure_iff_dist]
   intro ε hε
@@ -455,7 +454,7 @@ theorem tendstoInMeasure_hill_of_variance {X : ℕ → Ω → ℝ} (hX : ∀ i, 
   have hδ0 : 0 < δ := by positivity
   have hℓJδ : ℓ * J * δ < ε / 8 := by
     rw [hδ, mul_div_assoc', div_lt_div_iff₀ (by positivity) (by norm_num)]
-    nlinarith
+    linarith
   obtain ⟨hG1, hG2⟩ := geom_riemann_bounds hα hρ1 J
   rw [← hq, ← hℓ] at hG1 hG2
   -- the bad events
@@ -481,7 +480,7 @@ theorem tendstoInMeasure_hill_of_variance {X : ℕ → Ω → ℝ} (hX : ∀ i, 
   have hRJ := hR (c₁ J) (hc₁0 J) δ' hδ'0 (θ / 2) (by
     rw [hc₁, hc4, div_lt_iff₀ hδ'0]
     rw [lt_div_iff₀ (by positivity)] at hJ2
-    nlinarith)
+    linarith)
   have hkn' : ∀ᶠ n : ℕ in atTop, k n < n := by
     filter_upwards [hkn.eventually (gt_mem_nhds one_pos), hnpos] with n h1 h2
     rw [div_lt_one h2] at h1
@@ -567,7 +566,7 @@ theorem tendstoInMeasure_hill_of_variance {X : ℕ → Ω → ℝ} (hX : ∀ i, 
       rw [sub_lt_iff_lt_add, div_lt_iff₀ hkpos'] at this
       linarith
     rw [← Finset.sum_mul] at hsum
-    nlinarith
+    linarith
   -- conclusion
   have hsum2 : ℓ * ∑ j ∈ range J, (q ^ 2 * q ^ j - δ) =
       q ^ 2 * (ℓ * ∑ j ∈ range J, q ^ j) - ℓ * J * δ := by
@@ -587,7 +586,7 @@ theorem tendstoInMeasure_hill_of_variance {X : ℕ → Ω → ℝ} (hX : ∀ i, 
     mul_le_mul_of_nonneg_left hG1 (by positivity)
   have hqq : q ^ 2 * (a * q ^ J) ≤ a * q ^ J :=
     mul_le_of_le_one_left (by positivity) hq2
-  have := abs_lt.2 (⟨by nlinarith, by nlinarith⟩ :
+  have := abs_lt.2 (⟨by linarith, by linarith⟩ :
     -ε < (∑ i ∈ range n, logExcess (orderStat x (k n)) (X i ω)) / k n - a ∧
       (∑ i ∈ range n, logExcess (orderStat x (k n)) (X i ω)) / k n - a < ε)
   linarith
