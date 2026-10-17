@@ -365,16 +365,21 @@ section TailProbability
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
 
-/-- **The extrapolation bias of the tail probability estimator vanishes** under second-order
-regular variation with `γ > 0`, `ρ < 0` ([dHF, §4.4]): if `k → ∞`,
-`k / n → 0` and the levels `y_n` are eventually beyond the intermediate quantile,
-`x_{k/n} ≤ y_n`, then `(k / n) (y_n / x_{k/n})^{-1/γ} / F̄(y_n) → 1`. -/
-theorem tendsto_tailProb_div_of_secondOrder {Y : Ω → ℝ} (hY : Measurable Y) {γ ρ : ℝ}
+/-- **The extrapolation bias of the tail probability estimator, reduction form**: under
+second-order regular variation with `γ > 0`, if `k → ∞`, `k / n → 0`, the levels `y_n` are
+eventually beyond the intermediate quantile, `x_{k/n} ≤ y_n`, and the quantile extrapolation
+`U(D_n n/k) / (U(n/k) D_n^γ) → 1` holds along the factors `D_n ≥ 1` with
+`D_n n/k = 1 / F̄(y_n)`, then `(k / n) (y_n / x_{k/n})^{-1/γ} / F̄(y_n) → 1`. -/
+theorem tendsto_tailProb_div_of_extrapolation {Y : Ω → ℝ} (hY : Measurable Y) {γ ρ : ℝ}
     {A : ℝ → ℝ} (hγ : 0 < γ)
     (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P Y)) γ ρ A)
-    (hρ : ρ < 0) {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
+    {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
     (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0)) {y : ℕ → ℝ}
-    (hy : ∀ᶠ n in atTop, tailQuantile P Y ((k n : ℝ) / n) ≤ y n) :
+    (hy : ∀ᶠ n in atTop, tailQuantile P Y ((k n : ℝ) / n) ≤ y n)
+    (hext : ∀ D : ℕ → ℝ, (∀ᶠ n in atTop, 1 ≤ D n) →
+      (∀ᶠ n in atTop, D n * ((n : ℝ) / k n) = (survival P Y (y n))⁻¹) →
+      Tendsto (fun n => survivalQuantile (survival P Y) (D n * ((n : ℝ) / k n)) /
+        (survivalQuantile (survival P Y) ((n : ℝ) / k n) * D n ^ γ)) atTop (𝓝 1)) :
     Tendsto (fun n => (k n : ℝ) / n * (y n / tailQuantile P Y ((k n : ℝ) / n)) ^ (-(1 / γ)) /
       survival P Y (y n)) atTop (𝓝 1) := by
   set F := survival P Y with hFdef
@@ -418,7 +423,10 @@ theorem tendsto_tailProb_div_of_secondOrder {Y : Ω → ℝ} (hY : Measurable Y)
     rw [hD, le_div_iff₀ (one_pos.trans hn.1), one_mul]
     exact hn.2.2.1
   -- the bias of the quantile extrapolation
-  have hb := h2.tendsto_div_mul_rpow hUm hρ hslim hD1
+  have hb : Tendsto (fun n => U (D n * s n) / (U (s n) * D n ^ γ)) atTop (𝓝 1) := by
+    refine hext D hD1 ?_
+    filter_upwards [hev] with n hn
+    exact div_mul_cancel₀ _ (one_pos.trans hn.1).ne'
   -- `y_n / U(τ_n) → 1`
   have hyU : Tendsto (fun n => y n / U (τ n)) atTop (𝓝 1) := by
     refine tendsto_order.2 ⟨fun a ha => ?_, fun b hb1 => ?_⟩
@@ -470,6 +478,24 @@ theorem tendsto_tailProb_div_of_secondOrder {Y : Ω → ℝ} (hY : Measurable Y)
     ← rpow_mul hD0.le, mul_one_div_cancel hγ.ne', rpow_one, inv_rpow (div_pos hyn hUs).le,
     ← rpow_neg (div_pos hyn hUs).le, show (s n)⁻¹ * (y n / U (s n)) ^ (-(1 / γ)) / (τ n)⁻¹ =
       τ n / s n * (y n / U (s n)) ^ (-(1 / γ)) by field_simp]
+
+/-- **The extrapolation bias of the tail probability estimator vanishes** under second-order
+regular variation with `γ > 0`, `ρ < 0` ([dHF, §4.4]): if `k → ∞`,
+`k / n → 0` and the levels `y_n` are eventually beyond the intermediate quantile,
+`x_{k/n} ≤ y_n`, then `(k / n) (y_n / x_{k/n})^{-1/γ} / F̄(y_n) → 1`. -/
+theorem tendsto_tailProb_div_of_secondOrder {Y : Ω → ℝ} (hY : Measurable Y) {γ ρ : ℝ}
+    {A : ℝ → ℝ} (hγ : 0 < γ)
+    (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P Y)) γ ρ A)
+    (hρ : ρ < 0) {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
+    (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0)) {y : ℕ → ℝ}
+    (hy : ∀ᶠ n in atTop, tailQuantile P Y ((k n : ℝ) / n) ≤ y n) :
+    Tendsto (fun n => (k n : ℝ) / n * (y n / tailQuantile P Y ((k n : ℝ) / n)) ^ (-(1 / γ)) /
+      survival P Y (y n)) atTop (𝓝 1) := by
+  have hUm := measurable_tailQuantile (survival_anti (P := P) Y)
+    (continuousWithinAt_survival (P := P) hY) (tendsto_survival_atTop (P := P) hY)
+    (tendsto_survival_atBot (P := P) hY)
+  exact tendsto_tailProb_div_of_extrapolation hY hγ h2 hk hkn hy fun D hD1 _ =>
+    h2.tendsto_div_mul_rpow hUm hρ (tendsto_div_atTop_of_tendsto hk hkn) hD1
 
 /-- **Consistency of the tail probability estimator far in the tail** ([dHF, §4.4],
 consistency part). Let `X_0, X_1, …` be iid with tail quantile function of second-order regular

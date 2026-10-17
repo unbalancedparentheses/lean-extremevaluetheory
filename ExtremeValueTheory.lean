@@ -93,6 +93,7 @@ import ExtremeValueTheory.Dependence.MDependentExamples
 import ExtremeValueTheory.ForMathlib.Probability.Process.Mixing
 import ExtremeValueTheory.ForMathlib.MeasureTheory.Function.ConvergenceInDistribution
 import ExtremeValueTheory.Statistics.ExtremeQuantileSecondOrder
+import ExtremeValueTheory.Statistics.ExtremeQuantileRhoZero
 import ExtremeValueTheory.HeavyTails.LinearProcess
 import ExtremeValueTheory.HeavyTails.LinearProcessSeries
 import ExtremeValueTheory.HeavyTails.LinearProcessSeriesLarge
