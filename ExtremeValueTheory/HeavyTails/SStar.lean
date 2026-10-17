@@ -396,6 +396,164 @@ theorem isSubexponential (h : IsSStar μ) : IsSubexponential μ := by
   rw [e, hsplit, hunion]
   linarith
 
+/-! ### The integrated tail of an `𝒮*` law is subexponential -/
+
+/-- The density of `F_I`: `f_I = m⁻¹ F̄` on `(0, ∞)`. -/
+private noncomputable def itDensity (μ : Measure ℝ) : ℝ → ℝ≥0∞ :=
+  ENNReal.ofReal (∫ t in Ioi 0, tail μ t)⁻¹ • (Ioi 0).indicator fun t => ENNReal.ofReal (tail μ t)
+
+private theorem measurable_itDensity : Measurable (itDensity μ) :=
+  ((ENNReal.measurable_ofReal.comp tail_measurable).indicator measurableSet_Ioi).const_smul _
+
+private theorem integratedTail_eq_withDensity :
+    integratedTail μ = volume.withDensity (itDensity μ) := by
+  have hg : Measurable fun t => ENNReal.ofReal (tail μ t) :=
+    ENNReal.measurable_ofReal.comp tail_measurable
+  rw [itDensity, withDensity_smul _ (hg.indicator measurableSet_Ioi),
+    withDensity_indicator measurableSet_Ioi, integratedTail]
+
+private theorem itDensity_of_pos {u : ℝ} (hu : 0 < u) :
+    itDensity μ u = ENNReal.ofReal (∫ t in Ioi 0, tail μ t)⁻¹ * ENNReal.ofReal (tail μ u) := by
+  rw [itDensity, Pi.smul_apply, indicator_of_mem (show u ∈ Ioi 0 from hu), smul_eq_mul]
+
+/-- The density of `F_I ∗ F_I` is `m⁻² I(u)` on `(0, ∞)`. -/
+private theorem lconvolution_itDensity {u : ℝ} (hu : 0 < u) :
+    (itDensity μ ⋆ₗ itDensity μ) u =
+      ENNReal.ofReal (∫ t in Ioi 0, tail μ t)⁻¹ * ENNReal.ofReal (∫ t in Ioi 0, tail μ t)⁻¹ *
+        ENNReal.ofReal (tailConvInt μ u) := by
+  set c := ENNReal.ofReal (∫ t in Ioi 0, tail μ t)⁻¹
+  have hpt : ∀ y, itDensity μ y * itDensity μ (-y + u) =
+      c * c * (Ioo 0 u).indicator (fun y => ENNReal.ofReal (tail μ (u - y) * tail μ y)) y := by
+    intro y
+    simp only [itDensity, Pi.smul_apply, smul_eq_mul]
+    by_cases hy : y ∈ Ioo 0 u
+    · rw [indicator_of_mem (show y ∈ Ioi 0 from hy.1),
+        indicator_of_mem (show -y + u ∈ Ioi 0 by simp only [mem_Ioi]; linarith [hy.2]),
+        indicator_of_mem hy, neg_add_eq_sub, ENNReal.ofReal_mul (tail_nonneg _)]
+      ring
+    · rw [indicator_of_notMem hy]
+      simp only [mem_Ioo, not_and_or, not_lt] at hy
+      rcases hy with hy | hy
+      · rw [indicator_of_notMem (show y ∉ Ioi 0 by simpa using hy)]; simp
+      · rw [indicator_of_notMem (show -y + u ∉ Ioi 0 by simp only [mem_Ioi]; linarith)]; simp
+  rw [lconvolution_def]
+  simp_rw [hpt]
+  have hm : Measurable fun y =>
+      (Ioo 0 u).indicator (fun y => ENNReal.ofReal (tail μ (u - y) * tail μ y)) y :=
+    (ENNReal.measurable_ofReal.comp (measurable_K u)).indicator measurableSet_Ioo
+  rw [lintegral_const_mul _ hm, lintegral_indicator measurableSet_Ioo,
+    ← ofReal_integral_eq_lintegral_ofReal ((intervalIntegrable_K (μ := μ) u 0 u).1.mono_set Ioo_subset_Ioc_self)
+      (ae_of_all _ fun y => K_nonneg u y)]
+  rw [tailConvInt, intervalIntegral.integral_of_le hu.le, integral_Ioc_eq_integral_Ioo]
+
+/-- The mean `m = ∫₀^∞ F̄` of an `𝒮*` law is positive. -/
+theorem integral_tail_pos (h : IsSStar μ) : 0 < ∫ t in Ioi 0, tail μ t := by
+    have h1 : ∫ _ in (0 : ℝ)..1, tail μ 1 ≤ ∫ y in (0 : ℝ)..1, tail μ y :=
+      intervalIntegral.integral_mono_on zero_le_one intervalIntegrable_const
+        (intervalIntegrable_tail _ _) fun y hy => tail_antitone hy.2
+    rw [intervalIntegral.integral_const, smul_eq_mul, sub_zero, one_mul,
+      intervalIntegral.integral_of_le zero_le_one] at h1
+    have h2 : ∫ y in Ioc (0 : ℝ) 1, tail μ y ≤ ∫ y in Ioi (0 : ℝ), tail μ y :=
+      setIntegral_mono_set h.integrableOn_tail (ae_of_all _ fun y => tail_nonneg y)
+        Ioc_subset_Ioi_self.eventuallyLE
+    linarith [h.tail_pos 1]
+
+/-- **Integrated tails of `𝒮*` laws are subexponential** ([Klüppelberg 1988, Theorem 3.2];
+[FKZ, Theorem 3.28]): if `F ∈ 𝒮*` then `F_I ∈ 𝒮`, where `F_I` has density `F̄ / m` on
+`(0, ∞)`. -/
+theorem isSubexponential_integratedTail (h : IsSStar μ) :
+    IsSubexponential (integratedTail μ) := by
+  have hm := h.integral_tail_pos
+  set m := ∫ t in Ioi 0, tail μ t with hm_def
+  haveI := isProbabilityMeasure_integratedTail h.integrableOn_tail hm
+  set ν := integratedTail μ
+  set c := ENNReal.ofReal m⁻¹ with hc
+  have hν : ν = volume.withDensity (itDensity μ) := integratedTail_eq_withDensity
+  have hνν : ν ∗ ν = volume.withDensity (itDensity μ ⋆ₗ itDensity μ) := by
+    rw [hν]; exact conv_withDensity_eq_lconvolution measurable_itDensity measurable_itDensity
+  -- tails of `ν` are positive
+  have hpos : ∀ x, 0 < tail ν x := by
+    intro x
+    rcases lt_or_ge x 0 with hx | hx
+    · rw [tail_of_neg integratedTail_Iio_zero hx]; exact one_pos
+    rw [tail_integratedTail h.integrableOn_tail hx]
+    refine mul_pos (inv_pos.2 hm) ?_
+    have h1 : ∫ _ in x..x + 1, tail μ (x + 1) ≤ ∫ y in x..x + 1, tail μ y :=
+      intervalIntegral.integral_mono_on (by linarith) intervalIntegrable_const
+        (intervalIntegrable_tail _ _) fun y hy => tail_antitone hy.2
+    rw [intervalIntegral.integral_const, smul_eq_mul, add_sub_cancel_left, one_mul,
+      intervalIntegral.integral_of_le (by linarith)] at h1
+    have h2 : ∫ y in Ioc x (x + 1), tail μ y ≤ ∫ y in Ioi x, tail μ y :=
+      setIntegral_mono_set (h.integrableOn_tail.mono_set (Ioi_subset_Ioi hx))
+        (ae_of_all _ fun y => tail_nonneg y) Ioc_subset_Ioi_self.eventuallyLE
+    linarith [h.tail_pos (x + 1)]
+  -- the two-sided comparison for large `x`
+  have hcmp : ∀ ε, 0 < ε → ε ≤ 1 → ∀ᶠ x in atTop,
+      (2 - ε) * tail ν x ≤ tail (ν ∗ ν) x ∧ tail (ν ∗ ν) x ≤ (2 + ε) * tail ν x := by
+    intro ε hε hε1
+    have hlim := h.tendsto_tailConvInt_div
+    have hlo := (tendsto_order.1 hlim).1 ((2 - ε) * m) (by nlinarith)
+    have hhi := (tendsto_order.1 hlim).2 ((2 + ε) * m) (by nlinarith)
+    obtain ⟨x₁, hx₁⟩ := eventually_atTop.1 ((hlo.and hhi).and (eventually_gt_atTop 0))
+    filter_upwards [eventually_ge_atTop x₁] with x hx
+    -- pointwise comparison of densities on `(x, ∞)`
+    have hpt : ∀ u ∈ Ioi x, ENNReal.ofReal (2 - ε) * itDensity μ u ≤
+        (itDensity μ ⋆ₗ itDensity μ) u ∧
+        (itDensity μ ⋆ₗ itDensity μ) u ≤ ENNReal.ofReal (2 + ε) * itDensity μ u := by
+      intro u hu
+      obtain ⟨⟨hl, hh⟩, hu0⟩ := hx₁ u (hx.trans (le_of_lt hu))
+      have hFu := h.tail_pos u
+      rw [lt_div_iff₀ hFu] at hl
+      rw [div_lt_iff₀ hFu] at hh
+      rw [itDensity_of_pos hu0, lconvolution_itDensity hu0]
+      have e1 : c * c * ENNReal.ofReal (tailConvInt μ u) =
+          c * ENNReal.ofReal (m⁻¹ * tailConvInt μ u) := by
+        rw [hc, mul_assoc, ← ENNReal.ofReal_mul (inv_nonneg.2 hm.le)]
+      rw [e1, mul_left_comm, mul_left_comm _ c]
+      constructor
+      · refine mul_le_mul_of_nonneg_left ?_ bot_le
+        rw [← ENNReal.ofReal_mul (by linarith)]
+        refine ENNReal.ofReal_le_ofReal ?_
+        rw [le_inv_mul_iff₀ hm]; nlinarith
+      · refine mul_le_mul_of_nonneg_left ?_ bot_le
+        rw [← ENNReal.ofReal_mul (by linarith)]
+        refine ENNReal.ofReal_le_ofReal ?_
+        rw [inv_mul_le_iff₀ hm]; nlinarith
+    have hA : ν (Ioi x) = ∫⁻ u in Ioi x, itDensity μ u := by
+      rw [hν, withDensity_apply _ measurableSet_Ioi]
+    have hB : (ν ∗ ν) (Ioi x) = ∫⁻ u in Ioi x, (itDensity μ ⋆ₗ itDensity μ) u := by
+      rw [hνν, withDensity_apply _ measurableSet_Ioi]
+    have hlow : ENNReal.ofReal (2 - ε) * ν (Ioi x) ≤ (ν ∗ ν) (Ioi x) := by
+      rw [hA, hB, ← lintegral_const_mul' _ _ ENNReal.ofReal_ne_top]
+      exact setLIntegral_mono' measurableSet_Ioi fun u hu => (hpt u hu).1
+    have hhigh : (ν ∗ ν) (Ioi x) ≤ ENNReal.ofReal (2 + ε) * ν (Ioi x) := by
+      rw [hA, hB, ← lintegral_const_mul' _ _ ENNReal.ofReal_ne_top]
+      exact setLIntegral_mono' measurableSet_Ioi fun u hu => (hpt u hu).2
+    have hε2 : 0 ≤ 2 + ε := by linarith
+    constructor
+    · rcases le_total (2 - ε) 0 with hneg | hnn
+      · exact (mul_nonpos_of_nonpos_of_nonneg hneg (tail_nonneg _)).trans (tail_nonneg _)
+      · have := ENNReal.toReal_mono (measure_ne_top _ _) hlow
+        rwa [ENNReal.toReal_mul, ENNReal.toReal_ofReal hnn] at this
+    · have := ENNReal.toReal_mono (ENNReal.mul_ne_top ENNReal.ofReal_ne_top
+        (measure_ne_top _ _)) hhigh
+      rwa [ENNReal.toReal_mul, ENNReal.toReal_ofReal hε2] at this
+  refine ⟨integratedTail_Iio_zero, hpos, ?_⟩
+  rw [tendsto_order]
+  constructor
+  · intro b hb
+    filter_upwards [hcmp (min ((2 - b) / 2) 1) (lt_min (by linarith) one_pos) (min_le_right _ _)]
+      with x hx
+    rw [lt_div_iff₀ (hpos x)]
+    have : min ((2 - b) / 2) 1 ≤ (2 - b) / 2 := min_le_left _ _
+    nlinarith [hx.1, hpos x]
+  · intro b hb
+    filter_upwards [hcmp (min ((b - 2) / 2) 1) (lt_min (by linarith) one_pos) (min_le_right _ _)]
+      with x hx
+    have : min ((b - 2) / 2) 1 ≤ (b - 2) / 2 := min_le_left _ _
+    rw [div_lt_iff₀ (hpos x)]
+    nlinarith [hx.2, hpos x]
+
 end IsSStar
 
 end ExtremeValueTheory
