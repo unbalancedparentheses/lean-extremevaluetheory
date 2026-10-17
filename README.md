@@ -175,7 +175,10 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   in the symmetric case, stated as an iff with an explicit normalization
   (`GCLTConverse.domainOfAttraction_isSymmStable_iff`). In general, convergence of `(S_n − b_n)/aₙ`
   forces regular variation, tail balance and the Lévy-measure limits
-  (`GCLTConverse.exists_isRegularlyVarying_tailBalance_of_tendsto`).
+  (`GCLTConverse.exists_isRegularlyVarying_tailBalance_of_tendsto`). The limit is identified as stable, giving the
+  complete characterization: for `0 < α < 2`, `X` is in the domain of attraction of an `α`-stable law iff
+  its tail is `RV_{−α}` with tail balance (`domainOfAttraction_isStableIndex_iff`), with explicit
+  normalizing and centering constants.
 - **Bivariate extremes** (`Multivariate/`): the Pickands dependence function `A` (bounds, spectral form
   and convexity), the extremal coefficient `θ_E = 2A(1/2)`, the upper tail dependence coefficient
   `λ_U = 2 − θ_E`, tail dependence of regularly varying vectors, and a.s. consistency of the Pickands

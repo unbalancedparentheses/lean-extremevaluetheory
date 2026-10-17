@@ -640,3 +640,49 @@ $\mu^{*n}$ for the convolution power (Definition~\ref{def:convPow}).
   \leanok
   $n\PR[|X| > a_n] \to 1$ for this $a_n$; then Theorems~\ref{thm:gclt} and~\ref{thm:gclt-converse}.
 \end{proof}
+
+\section{The domain of attraction of a stable law}
+
+\begin{definition}[Stable law of index $\alpha$]
+  \label{def:is-stable-index}
+  \uses{def:stable}
+  \lean{ExtremeValueTheory.IsStableIndex, ExtremeValueTheory.HasStableCharFun.isStableIndex, ExtremeValueTheory.HasStableOneCharFun.isStableIndex,
+    ExtremeValueTheory.IsStableIndex.eq_of_norm_charFun, ExtremeValueTheory.IsStableIndex.le_of_exp_le, ExtremeValueTheory.exp_le_norm_charFun_sq}
+  \leanok
+  $\mu$ is stable of index $\alpha$ if it is stable and $\mu^{*n}$ is the law of $n^{1/\alpha} X + b_n$ for all $n \ge 1$. Laws with a
+  stable characteristic function (including $\alpha = 1$, with $b_n = e\, n \log n$) are stable of their index, and the
+  index is unique.
+\end{definition}
+
+\begin{theorem}[Identification of the limit]
+  \label{thm:stable-limit-identification}
+  \uses{thm:gclt-converse-asymmetric, thm:gclt-asymmetric, thm:gclt-one, def:is-stable-index}
+  \lean{ExtremeValueTheory.exists_map_add_eq_of_tendsto, ExtremeValueTheory.exists_map_add_eq_map_mul, ExtremeValueTheory.identify_of_tendsto_mul_sqRatio,
+    ExtremeValueTheory.exists_stable_limit_of_tendsto}
+  \leanok
+  If $(S_n - b_n)/a_n$ converges to a non-degenerate $\nu$ with index $\alpha < 2$, then a shift of $\nu$ is the stable law
+  with characteristic function $\exp(-C_\alpha(c_+ + c_-)|t|^\alpha + i E_\alpha (c_+ - c_-)\,\mathrm{sign}(t)|t|^\alpha)$ (and the
+  analogous $\alpha = 1$ form), so $\beta = (c_+ - c_-)/(c_+ + c_-)$, and $\nu$ is stable of index $\alpha$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Apply the sufficiency theorem along $a_n (c_+ + c_-)^{1/\alpha}$ and use convergence of types: two limits of the same
+  normalized sums with different centerings differ by a shift (tightness bounds the shifts; characteristic functions
+  identify the limit).
+\end{proof}
+
+\begin{theorem}[Domain of attraction of an $\alpha$-stable law]
+  \label{thm:doa-stable-iff}
+  \uses{thm:stable-limit-identification, thm:doa-symm-stable-iff}
+  \lean{ExtremeValueTheory.domainOfAttraction_isStableIndex_iff, ExtremeValueTheory.tendsto_map_convPow_sub_normSeq, ExtremeValueTheory.stableCentering}
+  \leanok
+  For $0 < \alpha < 2$, $X$ is in the domain of attraction of a stable law of index $\alpha$ if and only if $\PR[|X| > x]$ is
+  regularly varying with index $-\alpha$ and $\PR[X > x]/\PR[|X| > x]$ converges [Feller, \S XVII.5, Theorem~2],
+  [Gnedenko--Kolmogorov, \S35]. The normalization can be taken as $a_n = \inf\{x : \PR[|X| > x] \le 1/n\}$ and
+  $b_n = 0$, the truncated mean, or $n\E X$ for $\alpha < 1$, $= 1$, $> 1$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Sufficiency by Theorem~\ref{thm:gclt-asymmetric}; necessity by Theorem~\ref{thm:stable-limit-identification}, after
+  ruling out a converse index of $2$ via $|\varphi_\nu(t)|^2 \ge \exp(-6 K t^{\alpha'})$ and uniqueness of the index.
+\end{proof}
