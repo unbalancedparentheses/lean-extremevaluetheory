@@ -28,6 +28,7 @@ import ExtremeValueTheory.HeavyTails.StretchedExponential
 import ExtremeValueTheory.HeavyTails.Examples
 import ExtremeValueTheory.HeavyTails.SStar
 import ExtremeValueTheory.HeavyTails.Lognormal
+import ExtremeValueTheory.HeavyTails.ConvolutionRoots
 import ExtremeValueTheory.DomainOfAttraction.Gumbel
 import ExtremeValueTheory.Statistics.OrderStatistics
 import ExtremeValueTheory.Statistics.Hill
