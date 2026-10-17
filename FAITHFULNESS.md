@@ -142,7 +142,7 @@ Processes*.
 | ‡ `ProbabilityTheory.IsStationary` (def) | LLR §3.1 | strict stationarity | Law of the shifted path `(X_{n+1})ₙ` equals the law of `(Xₙ)ₙ` on `ℕ → ℝ`. Equivalent to shift-invariance of all finite-dimensional laws. | FAITHFUL |
 | ‡ `ConditionD`, `ConditionD'` (defs) | LLR §3.2, (3.4.3); EKM §4.4 | `D(uₙ)`: `|P(max_{A∪B} ≤ uₙ) − P(max_A)P(max_B)| ≤ α_{n,lₙ}` for index sets separated by `lₙ = o(n)`; `D'`: `limsup n Σ_{j<n/k} P(X₀>uₙ, X_j>uₙ) → 0` | Same. `D'` is stated in the equivalent ε–k₀ form. | FAITHFUL |
 | ‡ `tendsto_measureReal_partialMax_le_exp` | LLR Thm 3.4.1, EKM Thm 4.4.3 | stationary, `D`, `D'`, `n P(X₀>uₙ) → τ` ⇒ `P(M_n ≤ uₙ) → e^{−τ}` | Same. | FAITHFUL |
-| ‡ `HasExtremalIndex` (def) | LLR §3.7, EKM Def 8.1.1 | `θ ∈ [0,1]` with `P(M_n ≤ uₙ(τ)) → e^{−θτ}` whenever `n P(X₀>uₙ(τ)) → τ` | Quantifies over all such level sequences. When the marginal has atoms, no such sequence may exist for some `τ`, and the condition is then vacuous there (as in the textbook, which assumes such levels exist). Uniqueness of `θ` is not proved. | FAITHFUL |
+| ‡ `HasExtremalIndex` (def) | LLR §3.7, EKM Def 8.1.1 | `θ ∈ [0,1]` with `P(M_n ≤ uₙ(τ)) → e^{−θτ}` whenever `n P(X₀>uₙ(τ)) → τ` | Quantifies over all such level sequences. When the marginal has atoms, no such sequence may exist for some `τ`, and the condition is then vacuous there (as in the textbook, which assumes such levels exist). `HasExtremalIndexStrict` adds existence of levels for every `τ` (LLR), with uniqueness of `θ` (`HasExtremalIndex.unique`). | FAITHFUL |
 | ‡ `tendsto_measureReal_partialMax_le_pow`, `isExtremeValueDistr_pow` | LLR Thm 3.7.1, EKM Thm 8.1.2 | `F^n(aₙx+bₙ) → H(x)` and extremal index `θ > 0` ⇒ `P(M_n ≤ aₙx+bₙ) → H(x)^θ`, an EVD of the same type | Same; `θ > 0` is required, as in the textbook. Instantiated by `hasExtremalIndex_movingMax` (`θ = 1/2`) and the iid case. | FAITHFUL |
 | ‡ `HasSpectralTailProcess`, `HasTailProcess` (defs) | BS09 §2, KS20 Ch. 5 | conditional weak limits of `X/|X_0|` and `X/x` given `|X_0| > x` on every finite window | Same, with windows any finite `S ⊂ ℤ` and convergence tested on bounded continuous functions (`TendstoLawCond`). Stationarity for this file is `HasShiftInvariantWindows` (all finite windows are shift-invariant), equivalent to strict stationarity. | FAITHFUL |
 | ‡ `polar_iff`, `HasSpectralTailProcess.hasTailProcess` | BS09 Thm 2.1 | tail process ⇔ spectral tail process; `Y = |Y_0|Θ`, `|Y_0|` Pareto independent of `Θ` | Same. The BS09 erratum (SPA 121 (2011)) was not consulted; statements were checked against KS20 and PS18 instead. | FAITHFUL |
@@ -157,7 +157,7 @@ Processes*.
 | ‡ `LinearProcess.tendsto_measureReal_sum_mul_div`, `.tendsto_measureReal_tsum_mul_div` | EKM Lemma A3.26, Davis–Resnick (1985) | `P(Σψ_jZ_j > x)/P(|Z|>x) → Σ|ψ_j|^α(p1{ψ_j>0}+q1{ψ_j<0})` | Finite sums: real-valued iid noise, no sign condition. Infinite sums: only `0 < δ < α < 1` with `Σ|ψ_j|^δ < ∞`; `α ≥ 1` (which needs centering) not covered. | DIFFERS (`α < 1` for series); correct |
 | ‡ `MovingAverage.hasSpectralTailProcess`, `.candidateExtremalIndex_spectral` | KS20 Ch. 15, EKM Ex. 8.1.4 | spectral tail process and `ϑ = max ψ^α/Σψ^α` | Finite order, `ψ_j ≥ 0`, noise nonnegative everywhere. The equality `θ = ϑ` for this process is not yet proved (AC and `𝒜` not verified for it). | FAITHFUL (nonnegative case) |
 | ‡ `Measure.TendstoVaguely` (def) | Resnick §3.4, Kallenberg §4.1 | `∫ f dμ_i → ∫ f dμ` for `f ∈ C_c` | Same, as a predicate (no topology on `Measure X`). Portmanteau lemmas assume regularity, which is automatic for locally finite measures on locally compact second-countable Hausdorff spaces. | FAITHFUL |
-| ‡ `IsPoissonRandomMeasure` (def), `exists_isPoissonRandomMeasure` | Resnick §3.3, Kallenberg Thm 3.6 | independent Poisson counts on disjoint sets, `N(A) ~ Po(ν(A))` | Measurable `N : Ω → Measure E` for Mathlib's σ-algebra on measures; the joint law of counts on any finite disjoint family of finite-`ν` sets is the product of Poissons. **Caveat (third audit):** the definition does not force `N(A) = ∞` a.s. when `ν(A) = ∞`; for σ-finite `ν` this is automatic, but for merely s-finite `ν` the definition is too weak (the zero random measure qualifies for intensity `∞ • δ`). So `exists_isPoissonRandomMeasure` is a genuine existence result only for σ-finite `ν`. | FAITHFUL (σ-finite `ν`) |
+| ‡ `IsPoissonRandomMeasure` (def), `exists_isPoissonRandomMeasure` | Resnick §3.3, Kallenberg Thm 3.6 | independent Poisson counts on disjoint sets, `N(A) ~ Po(ν(A))` | Measurable `N : Ω → Measure E` for Mathlib's σ-algebra on measures; the joint law of counts on any finite disjoint family of finite-`ν` sets is the product of Poissons. Includes `N(A) = ∞` a.s. when `ν(A) = ∞` (field `ae_eq_top`, added after the third audit). Existence for every s-finite `ν`. | FAITHFUL |
 | ‡ `TendstoInLawVaguely` (def), `tendstoInLawVaguely_sumDiracRange` | Resnick Prop 3.21, Kallenberg Thm 4.11 | `n μₙ → ν` vaguely ⇒ binomial process `⇒ PRM(ν)` | Convergence in law is defined through joint count laws on finite families of *disjoint* relatively compact `ν`-continuity sets (equivalent to convergence of fdd count laws, reduction from overlapping sets not formalized). No topology on the space of measures. | DIFFERS (fdd-count formulation); correct |
 | ‡ `IsPoissonRandomMeasure.lintegral_exp_neg_lintegral`, `.map_eq` | Resnick Prop 3.6, Kallenberg Lemma 3.1 | Laplace functional; law determined by intensity | All measurable `f ≥ 0`, σ-finite `ν`, using `EReal.exp` so `exp(−∞) = 0`. Uniqueness from simple functions (not from `C_c^+` alone). | FAITHFUL |
 | ‡ `tendsto_measureReal_sumDiracRange_timeSpace_eq` | Resnick Cor 4.19, EKM Thm 5.3.2 | exceedance point process `⇒ PRM(Leb ⊗ μ_G)` | Proved on disjoint exceedance intervals / time rectangles above a threshold `u` with `G(u) > 0`, not as convergence on the compactified space `(x_l, ∞]`. The order-statistic corollaries match the direct theorems exactly. | DIFFERS (interval classes); correct |
@@ -181,12 +181,17 @@ Processes*.
 An independent adversarial pass over the ‡ rows (scratch-file instantiations, junk-value and
 vacuity checks) found no critical problems. Findings and status:
 
-1. **Moderate:** `IsPoissonRandomMeasure` is too weak for non-σ-finite intensities (see its row).
-   Fix in progress: add the field `ν A = ∞ → N(A) = ∞` a.s.
-2. **Minor:** `HasExtremalIndex` is vacuous at `τ` where no level sequence exists (documented in its
-   row); downstream theorems only use levels that exist. Optional fix: require existence of levels.
-3. **Minor:** `Measure.TendstoVaguely` does not require a locally finite limit, so limits are not
-   unique without `[ν.Regular]` (all theorems assume it).
+1. **RESOLVED (moderate):** `IsPoissonRandomMeasure` now has the field `ae_eq_top`
+   (`ν A = ∞ → N(A) = ∞` a.s.). Existence still holds for every s-finite intensity
+   (`ae_sum_sumDiracRange_eq_top`), and for σ-finite `ν` the field follows from the others
+   (`IsPoissonRandomMeasure.of_map_eq_pi`).
+2. **RESOLVED (minor):** `HasExtremalIndexStrict` (= `HasExtremalIndex` plus `HasExceedanceLevels`,
+   the LLR definition) is added, with uniqueness `HasExtremalIndex.unique` and the upgrade
+   `HasExtremalIndex.strict_of_continuous` for continuous marginals. `HasExtremalIndex` itself is
+   unchanged.
+3. **DOCUMENTED (minor):** `Measure.TendstoVaguely` keeps its definition (adding local finiteness
+   would not give uniqueness on non-second-countable spaces anyway); its docstring now warns about
+   the degenerate case and each result states its regularity hypothesis.
 4. **RESOLVED (for `ρ < 0`):** the far-tail Weissman theorems now have second-order versions that
    derive the Hill rate and the bias condition. The unverified "dHF Thm 4.3.1" citations were
    replaced by "dHF §4.3".
