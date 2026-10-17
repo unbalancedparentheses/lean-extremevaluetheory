@@ -11,7 +11,53 @@ import ExtremeValueTheory.PeaksOverThreshold.Balkema
 /-!
 # Likelihood theory for the generalized Pareto distribution
 
-TODO docstring
+The **generalized Pareto law** `GPD(ξ, σ)` (`gpdMeasure`) is defined through its exponential
+representation `X = σ (e^{ξ E} - 1)/ξ` (`X = σ E` for `ξ = 0`), `E` standard exponential. Its
+survival function is `gpdSurvival' ξ σ` (`PeaksOverThreshold/Balkema.lean`) and its density is
+
+  `g_{ξ,σ}(x) = σ⁻¹ (1 + ξ x / σ) ^ (-1/ξ - 1)` on `{x ≥ 0, 1 + ξ x / σ > 0}`
+  (`σ⁻¹ e^{-x/σ}` for `ξ = 0`).
+
+We develop the maximum likelihood theory of the scale parameter
+([Smith 1985]; [Coles, §4.3]; [dHF, §3.4]).
+
+## Main results
+
+* *The law.* `gpdMeasure_Ioi` (survival function), `gpdMeasure_Iic` (distribution function
+  `gpdCDF`), `hasDerivAt_gpdCDF` (the density is the derivative of the distribution function in
+  the interior of the support), `gpdMeasure_eq_withDensity` (`GPD(ξ, σ) = g_{ξ,σ}(x) dx`),
+  `integral_gpdDensity` (`∫ g_{ξ,σ} = 1`), and `gpdLogLik`, `log_gpdDensity`.
+* *The exponential case `ξ = 0`.* `gpdLogLik_zero_lt_sampleMean`: the MLE of `σ` is the sample
+  mean, the unique maximizer of the likelihood; `ae_tendsto_sampleMean_gpd_zero` (strong
+  consistency) and `tendstoInDistribution_sampleMean_gpd_zero` (asymptotic normality
+  `√n (σ̂ₙ - σ) ⇒ N(0, σ²)`).
+* *Known shape `ξ > -1`, `ξ ≠ 0`.* The likelihood equation in `σ` is
+  `(1 + ξ) ∑ᵢ xᵢ / (σ + ξ xᵢ) = n` (`hasDerivAt_gpdLogLik`). For positive observations it has a
+  root among the admissible scales (`exists_gpdScaleScore_eq`), the root is unique
+  (`gpdScaleScore_root_unique`), and it is the unique maximizer of the likelihood
+  (`gpdLogLik_lt_of_score_eq`): the score is strictly decreasing, so the likelihood increases and
+  then decreases. For iid `GPD(ξ, σ₀)` data these hold almost surely for every `n ≥ 1`
+  (`ae_existsUnique_gpdScaleMLE`), and the MLE is strongly consistent
+  (`ae_tendsto_gpdScaleMLE`).
+
+The joint maximum likelihood estimator of `(ξ, σ)` on a compact parameter set is treated in
+`ExtremeValueTheory.Statistics.Wald`.
+
+## Proof of consistency for a known shape
+
+The population score `σ ↦ E[X / (σ + ξ X)]` is strictly decreasing and equals `1/(1 + ξ)` at
+the true scale `σ₀` (`integral_div_gpdMeasure`, computed on the exponential scale, where
+`X / (σ₀ + ξ X) = (1 - e^{-ξ E}) / ξ`). By the strong law of large numbers at the countably many
+scales `σ₀ ± 1/(k + 1)`, the empirical score eventually changes sign around `σ₀`, which traps the
+root. For `ξ < 0` the scores below `σ₀` are not integrable, and the lower bound comes instead from
+the admissibility constraint `σ̂ₙ > -ξ max_{i<n} Xᵢ`, together with `max_{i<n} Xᵢ → -σ₀/ξ`.
+
+## References
+
+* R. L. Smith, *Maximum likelihood estimation in a class of nonregular cases*, Biometrika 72
+  (1985).
+* S. Coles, *An Introduction to Statistical Modeling of Extreme Values*, Springer (2001), §4.3.
+* L. de Haan and A. Ferreira, *Extreme Value Theory: An Introduction*, Springer (2006), §3.4.
 -/
 
 open Filter Topology Set Real MeasureTheory ProbabilityTheory
