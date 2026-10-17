@@ -29,7 +29,8 @@ innovations echo far away.
 The model is much simpler than the stable-regenerative model of Bai–Wang (arXiv:2110.07499), and
 everything is explicit. It is a stationary *factor* of an iid sequence (hence mixing in the
 ergodic-theoretic sense; not formalized here). The extremal index is computed directly from
-`P(M n ≤ uₙ)`; the block condition `A(uₙ)` is neither assumed nor proved.
+`P(M n ≤ uₙ)`; the block condition `A(uₙ)` is not used here. It is proved for long blocks in
+`Dependence/EchoConditionA.lean`.
 
 ## Main definitions
 
@@ -67,8 +68,8 @@ plus `L → ∞` and `E[L(Z)] < ∞` where stated):
 ## Remarks
 
 * For blocks shorter than the echo lag of an exceedance the cluster ratio tends to `ϑ = 1`
-  instead (both exceedances of a cluster are then seen as separate clusters); this mesoscopic
-  phase transition at the scale of `L(uₙ)` is not formalized.
+  instead (both exceedances of a cluster are then seen as separate clusters). This mesoscopic
+  phase transition at the scale of `L(uₙ)` is in `Dependence/EchoPhaseTransition.lean`.
 * The innovations are assumed nonnegative pointwise (`hpos`), a harmless normalization.
 -/
 
