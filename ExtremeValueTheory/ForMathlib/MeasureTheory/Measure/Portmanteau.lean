@@ -3,8 +3,10 @@ Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import Mathlib.MeasureTheory.Measure.Portmanteau
-import Mathlib.MeasureTheory.Integral.DominatedConvergence
+module
+
+public import Mathlib.MeasureTheory.Measure.Portmanteau
+public import Mathlib.MeasureTheory.Integral.DominatedConvergence
 
 /-!
 # Weak convergence of families of measures, tested against functions
@@ -26,6 +28,8 @@ measures, with weak convergence phrased through integrals of bounded continuous 
 
 * [P. Billingsley, *Convergence of Probability Measures*][billingsley1999]
 -/
+
+public section
 
 open Filter Topology Set BoundedContinuousFunction
 

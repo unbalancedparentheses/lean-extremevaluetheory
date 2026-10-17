@@ -3,9 +3,11 @@ Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import Mathlib.Analysis.SpecialFunctions.Gamma.Digamma
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.ComplexDeriv
-import Mathlib.Analysis.Complex.CauchyIntegral
+module
+
+public import Mathlib.Analysis.SpecialFunctions.Gamma.Digamma
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.ComplexDeriv
+public import Mathlib.Analysis.Complex.CauchyIntegral
 
 /-!
 # The trigamma function at `1` and the second derivative of `Γ`
@@ -31,6 +33,8 @@ whence `ψ'(1) = π² / 6` (equivalently `ζ(2) = π² / 6`). Since `ψ' = Γ''/
 
 * [M. Abramowitz, I. A. Stegun, *Handbook of Mathematical Functions*][abramowitz1964]
 -/
+
+public section
 
 open Filter Topology Set MeasureTheory
 open scoped Real

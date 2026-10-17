@@ -3,8 +3,10 @@ Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import Mathlib.Probability.IdentDistrib
-import Mathlib.Probability.Independence.InfinitePi
+module
+
+public import Mathlib.Probability.IdentDistrib
+public import Mathlib.Probability.Independence.InfinitePi
 
 /-!
 # Stationary processes in discrete time
@@ -35,6 +37,8 @@ finite dimensional distributions are invariant under time shifts.
 * [M. R. Leadbetter, G. Lindgren, H. Rootzén, *Extremes and Related Properties of Random
   Sequences and Processes*][leadbetter1983]
 -/
+
+@[expose] public section
 
 open MeasureTheory Set
 

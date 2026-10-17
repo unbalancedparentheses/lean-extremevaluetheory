@@ -3,9 +3,11 @@ Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import ExtremeValueTheory.ForMathlib.MeasureTheory.Measure.Vague
-import ExtremeValueTheory.ForMathlib.Probability.PoissonRandomMeasure
-import Mathlib.Analysis.SpecialFunctions.Complex.LogBounds
+module
+
+public import ExtremeValueTheory.ForMathlib.MeasureTheory.Measure.Vague
+public import ExtremeValueTheory.ForMathlib.Probability.PoissonRandomMeasure
+public import Mathlib.Analysis.SpecialFunctions.Complex.LogBounds
 
 /-!
 # Poisson approximation of binomial point processes
@@ -32,6 +34,8 @@ processes*, Proposition 3.21).
 
 * [S. I. Resnick, *Extreme Values, Regular Variation, and Point Processes*][resnick1987]
 -/
+
+public section
 
 open MeasureTheory Filter Finset Topology
 open scoped ENNReal NNReal

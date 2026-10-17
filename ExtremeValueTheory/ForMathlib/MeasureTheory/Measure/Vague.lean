@@ -3,11 +3,13 @@ Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import Mathlib.MeasureTheory.Integral.Bochner.Basic
-import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
-import Mathlib.MeasureTheory.Measure.Regular
-import Mathlib.MeasureTheory.Integral.CompactlySupported
-import Mathlib.Topology.UrysohnsLemma
+module
+
+public import Mathlib.MeasureTheory.Integral.Bochner.Basic
+public import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
+public import Mathlib.MeasureTheory.Measure.Regular
+public import Mathlib.MeasureTheory.Integral.CompactlySupported
+public import Mathlib.Topology.UrysohnsLemma
 
 /-!
 # Vague convergence of measures
@@ -52,6 +54,8 @@ hypotheses.
 * [O. Kallenberg, *Random Measures, Theory and Applications*][kallenberg2017]
 * [S. I. Resnick, *Extreme Values, Regular Variation, and Point Processes*][resnick1987]
 -/
+
+@[expose] public section
 
 open Filter Set Topology ENNReal
 

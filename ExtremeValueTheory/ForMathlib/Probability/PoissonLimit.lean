@@ -3,11 +3,13 @@ Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import ExtremeValueTheory.ForMathlib.Probability.PoissonRandomMeasure
-import Mathlib.Probability.Independence.Integration
-import Mathlib.Analysis.SpecialFunctions.Complex.LogBounds
-import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
-import Mathlib.MeasureTheory.Integral.Pi
+module
+
+public import ExtremeValueTheory.ForMathlib.Probability.PoissonRandomMeasure
+public import Mathlib.Probability.Independence.Integration
+public import Mathlib.Analysis.SpecialFunctions.Complex.LogBounds
+public import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
+public import Mathlib.MeasureTheory.Integral.Pi
 
 /-!
 # Poisson limits of counts of triangular arrays of independent points
@@ -44,6 +46,8 @@ convergence of the point probabilities by dominated convergence.
 * [O. Kallenberg, *Foundations of Modern Probability*][kallenberg2021]
 * [S. I. Resnick, *Extreme Values, Regular Variation, and Point Processes*][resnick1987]
 -/
+
+@[expose] public section
 
 open MeasureTheory Filter Finset Topology Complex
 open scoped ENNReal NNReal Real

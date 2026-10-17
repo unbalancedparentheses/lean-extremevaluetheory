@@ -3,8 +3,12 @@ Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import Mathlib.Probability.Independence.Basic
-import Mathlib.MeasureTheory.Measure.Real
+module
+
+public import Mathlib.Probability.Independence.Basic
+public import Mathlib.MeasureTheory.Measure.Real
+
+import Mathlib.Algebra.BigOperators.Fin
 
 /-!
 # Mixing coefficients and `m`-dependence
@@ -50,6 +54,8 @@ the past `σ(X t : t ≤ s)` and the future `σ(X t : t ≥ s + h)`.
 * [M. R. Leadbetter, G. Lindgren, H. Rootzén, *Extremes and Related Properties of Random
   Sequences and Processes*][leadbetter1983]
 -/
+
+@[expose] public section
 
 open MeasureTheory Filter Topology Set
 open scoped ENNReal

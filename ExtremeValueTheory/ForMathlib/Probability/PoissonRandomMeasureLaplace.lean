@@ -3,9 +3,11 @@ Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import ExtremeValueTheory.ForMathlib.Probability.PoissonRandomMeasure
-import Mathlib.Analysis.SpecialFunctions.Log.ENNRealLogExp
-import Mathlib.Topology.Instances.EReal.Lemmas
+module
+
+public import ExtremeValueTheory.ForMathlib.Probability.PoissonRandomMeasure
+public import Mathlib.Analysis.SpecialFunctions.Log.ENNRealLogExp
+public import Mathlib.Topology.Instances.EReal.Lemmas
 
 /-!
 # The Laplace functional of a Poisson random measure
@@ -31,6 +33,8 @@ To allow arbitrary `f` (for which `∫ f dN` may be infinite), the statement is 
 * [O. Kallenberg, *Random Measures, Theory and Applications*][kallenberg2017]
 * [G. Last, M. Penrose, *Lectures on the Poisson Process*][lastpenrose2017]
 -/
+
+public section
 
 open MeasureTheory Filter Finset Topology
 open scoped ENNReal NNReal

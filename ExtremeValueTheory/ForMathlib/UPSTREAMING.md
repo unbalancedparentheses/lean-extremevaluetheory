@@ -7,16 +7,21 @@ Mathlib linters) and the Mathlib standard style linter set (`linter.mathlibStand
 
 ## Checks before opening any PR
 
-1. **Module system.** Mathlib builds with `requiresModuleSystem := true`. Each file needs the
-   header `module`, `public import` in place of `import`, and `@[expose] public section` (or
-   explicit `public`/`@[expose]` annotations) around the definitions whose bodies are unfolded
-   downstream: `TendstoVaguely`, `IsStationary`, `IsMDependent`, the mixing coefficients,
-   `sumDiracRange`, `poissonSampleMeasure` and `torusMeasure`. The files are not converted in
-   this repository yet. Downstream non-module files can import module files, so converting
-   them would not break the rest of the library.
+1. **Module system (done).** Every file here is a module, following the Mathlib convention:
+   the header `module`, then `public import` for the imports, then the module docstring, then
+   `@[expose] public section` in the files that contain definitions (`Vague`, `Stationary`,
+   `Mixing`, `PoissonRandomMeasure`, `PoissonLimit`, `RandomMeasureLaw`,
+   `PointProcessConvergence`), so that bodies such as `TendstoVaguely`, `IsStationary`,
+   `IsMDependent`, the mixing coefficients, `sumDiracRange`, `poissonSampleMeasure` and
+   `torusMeasure` can be unfolded downstream. Files with only theorems use `public section`.
+   The one import needed only in proofs (`Mathlib.Algebra.BigOperators.Fin` in `Mixing.lean`)
+   is a plain `import`. The rest of the library is not yet in the module system and imports
+   these files as before. Before opening a PR, check (with Mathlib's `shake`) which imports
+   can be demoted from `public import` to `import`.
 2. **Bibliography.** `docs/references.bib` already has `billingsley1999`, `kallenberg2017` and
    `kallenberg2021`. Add these keys with the first PR that cites them: `resnick1987`,
-   `leadbetter1983`, `bradley2005`, `lastpenrose2017`, `abramowitz1964` and `feller1968`.
+   `leadbetter1983`, `bradley2005`, `lastpenrose2017`, `abramowitz1964` and `feller1968`. The
+   entries, in Mathlib's format, are in `references.bib` in this directory.
 3. **Naming and placement.** Some helpers live in `ProbabilityTheory` only because that is where
    they were needed. Move them to their natural namespaces when upstreaming:
    - The `ereal_exp_neg_coe_*` lemmas and `continuous_ereal_exp_neg_coe`, which are split

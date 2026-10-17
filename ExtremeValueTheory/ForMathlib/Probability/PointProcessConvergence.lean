@@ -3,9 +3,11 @@ Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import ExtremeValueTheory.ForMathlib.MeasureTheory.Measure.Vague
-import ExtremeValueTheory.ForMathlib.Probability.PoissonLimit
-import Mathlib.Probability.Independence.InfinitePi
+module
+
+public import ExtremeValueTheory.ForMathlib.MeasureTheory.Measure.Vague
+public import ExtremeValueTheory.ForMathlib.Probability.PoissonLimit
+public import Mathlib.Probability.Independence.InfinitePi
 
 /-!
 # Convergence in law of point processes towards Poisson random measures
@@ -43,6 +45,8 @@ probability mass functions is equivalent to weak convergence of the laws.
 * [O. Kallenberg, *Random Measures, Theory and Applications*][kallenberg2017]
 * [S. I. Resnick, *Extreme Values, Regular Variation, and Point Processes*][resnick1987]
 -/
+
+@[expose] public section
 
 open MeasureTheory Filter Finset Topology
 open scoped ENNReal NNReal

@@ -3,8 +3,10 @@ Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import Mathlib.MeasureTheory.Function.ConvergenceInDistribution
-import Mathlib.MeasureTheory.Measure.Portmanteau
+module
+
+public import Mathlib.MeasureTheory.Function.ConvergenceInDistribution
+public import Mathlib.MeasureTheory.Measure.Portmanteau
 
 /-!
 # Tightness of sequences converging in distribution
@@ -22,6 +24,8 @@ from the portmanteau theorem applied to the closed sets `{x | M ≤ |x|}`.
 
 * [P. Billingsley, *Convergence of Probability Measures*][billingsley1999]
 -/
+
+public section
 
 open Filter Topology Set
 

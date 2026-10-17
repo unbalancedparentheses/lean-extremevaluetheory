@@ -3,7 +3,9 @@ Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import Mathlib.MeasureTheory.Measure.Real
+module
+
+public import Mathlib.MeasureTheory.Measure.Real
 
 /-!
 # The second Bonferroni inequality
@@ -22,6 +24,8 @@ estimate of order two.
 
 * [W. Feller, *An Introduction to Probability Theory and Its Applications, Vol. I*][feller1968]
 -/
+
+public section
 
 open Finset
 

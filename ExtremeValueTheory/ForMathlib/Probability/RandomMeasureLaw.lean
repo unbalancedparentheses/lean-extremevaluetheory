@@ -3,9 +3,11 @@ Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import ExtremeValueTheory.ForMathlib.Probability.PoissonRandomMeasureLaplace
-import Mathlib.MeasureTheory.Measure.FiniteMeasureExt
-import Mathlib.Topology.UnitInterval
+module
+
+public import ExtremeValueTheory.ForMathlib.Probability.PoissonRandomMeasureLaplace
+public import Mathlib.MeasureTheory.Measure.FiniteMeasureExt
+public import Mathlib.Topology.UnitInterval
 
 /-!
 # The law of a random measure is determined by its Laplace functional
@@ -34,6 +36,8 @@ Stone–Weierstrass theorem); hence so is the law of `(N (A i))_i`, and the cyli
 * [O. Kallenberg, *Random Measures, Theory and Applications*][kallenberg2017]
 * [S. I. Resnick, *Extreme Values, Regular Variation, and Point Processes*][resnick1987]
 -/
+
+@[expose] public section
 
 open MeasureTheory Filter Finset Topology
 open scoped ENNReal NNReal unitInterval BoundedContinuousFunction

@@ -3,11 +3,13 @@ Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import Mathlib.Probability.Distributions.Poisson.Basic
-import Mathlib.Probability.Independence.CharacteristicFunction
-import Mathlib.Probability.ProductMeasure
-import Mathlib.Probability.HasLaw
-import Mathlib.MeasureTheory.Measure.GiryMonad
+module
+
+public import Mathlib.Probability.Distributions.Poisson.Basic
+public import Mathlib.Probability.Independence.CharacteristicFunction
+public import Mathlib.Probability.ProductMeasure
+public import Mathlib.Probability.HasLaw
+public import Mathlib.MeasureTheory.Measure.GiryMonad
 
 /-!
 # Poisson random measures
@@ -62,6 +64,8 @@ convergence of the characteristic functions of the partial sums.
 * [G. Last, M. Penrose, *Lectures on the Poisson Process*][lastpenrose2017]
 * [S. I. Resnick, *Extreme Values, Regular Variation, and Point Processes*][resnick1987]
 -/
+
+@[expose] public section
 
 universe u
 
