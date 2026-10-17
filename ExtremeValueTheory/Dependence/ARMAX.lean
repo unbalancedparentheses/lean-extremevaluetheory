@@ -246,6 +246,185 @@ theorem tendsto_mul_rpow (hlim : Tendsto g atTop (𝓝 0)) (hone : ∀ x < 1, g 
 
 end Analytic
 
+/-! ### The Pareto c.d.f. and the law of `max(φ Y, Z)` -/
+
+theorem paretoMeasure_real_Iic (hα : 0 < α) {x : ℝ} (hx : 1 ≤ x) :
+    (paretoMeasure 1 α).real (Iic x) = 1 - x ^ (-α) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  rw [← compl_Ioi, probReal_compl_eq_one_sub measurableSet_Ioi, paretoMeasure_one_real_Ioi hα hx]
+
+theorem paretoMeasure_Iic_of_lt {x : ℝ} (hx : x < 1) : paretoMeasure 1 α (Iic x) = 0 :=
+  measure_mono_null (Iic_subset_Iic.2 hx.le) paretoMeasure_one_Iic_one
+
+/-- The c.d.f. of `max(φ Y, Z)` for independent `Y ~ μ`, `Z ~ ν`. -/
+theorem map_step_Iic (hφ : 0 < φ) (μ ν : Measure ℝ) [SFinite ν] (x : ℝ) :
+    ((μ.prod ν).map (Function.uncurry (step φ))) (Iic x) = μ (Iic (x / φ)) * ν (Iic x) := by
+  rw [Measure.map_apply measurable_step measurableSet_Iic]
+  have : Function.uncurry (step φ) ⁻¹' Iic x = Iic (x / φ) ×ˢ Iic x := by
+    ext p
+    simp only [Set.mem_preimage, Function.uncurry, step, Set.mem_Iic, max_le_iff, mem_prod,
+      le_div_iff₀ hφ, mul_comm p.1]
+  rw [this, Measure.prod_prod]
+
+/-! ### The stationary ARMAX chain -/
+
+section Chain
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+  {X₀ : Ω → ℝ} {V : ℕ → Ω → ℝ}
+
+/-- The survival function `x ↦ P(X_0 > x)` of the initial law. -/
+noncomputable def survival (P : Measure Ω) (X₀ : Ω → ℝ) (x : ℝ) : ℝ := P.real {ω | x < X₀ ω}
+
+theorem survival_eq (hX₀ : Measurable X₀) (x : ℝ) :
+    survival P X₀ x = 1 - (P.map X₀).real (Iic x) := by
+  rw [survival, map_measureReal_apply hX₀ measurableSet_Iic, ← probReal_compl_eq_one_sub
+    (hX₀ measurableSet_Iic)]
+  congr 1
+  ext ω; simp
+
+theorem tendsto_survival (hX₀ : Measurable X₀) : Tendsto (survival P X₀) atTop (𝓝 0) := by
+  have h := (tendsto_cdf_atTop (μ := P.map X₀)).const_sub 1
+  rw [sub_self] at h
+  refine h.congr fun x => ?_
+  rw [survival_eq hX₀, cdf_eq_real]
+
+/-- **The fixed point equation in survival form.** If the law `π` of `X_0` is invariant,
+`law(max(φ X_0, Z)) = π` with `Z` Pareto independent of `X_0`, then `g(x) = P(X_0 > x)`
+satisfies `g(x) = g(x / φ) (1 - x^(-α)) + x^(-α)` for `x ≥ 1`, and `g(x) = 1` for `x < 1`. -/
+theorem survival_rec (hφ0 : 0 < φ) (hα : 0 < α) (hX₀ : Measurable X₀)
+    (hinv : ((P.map X₀).prod (paretoMeasure 1 α)).map (Function.uncurry (step φ)) = P.map X₀)
+    (x : ℝ) :
+    (1 ≤ x → survival P X₀ x = survival P X₀ (x / φ) * (1 - x ^ (-α)) + x ^ (-α)) ∧
+      (x < 1 → survival P X₀ x = 1) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have h := map_step_Iic hφ0 (P.map X₀) (paretoMeasure 1 α) x
+  rw [hinv] at h
+  have hr : (P.map X₀).real (Iic x) =
+      (P.map X₀).real (Iic (x / φ)) * (paretoMeasure 1 α).real (Iic x) := by
+    simp only [measureReal_def, h, ENNReal.toReal_mul]
+  refine ⟨fun hx => ?_, fun hx => ?_⟩
+  · rw [survival_eq hX₀, survival_eq hX₀, hr, paretoMeasure_real_Iic hα hx]
+    ring
+  · rw [survival_eq hX₀, hr, measureReal_def (μ := paretoMeasure 1 α),
+      paretoMeasure_Iic_of_lt hx]
+    simp
+
+/-- The probability of `max(X_0, …, X_{n-1}) ≤ u` is `P(X_0 ≤ u) P(Z ≤ u)^(n-1)` for `u ≥ 0`. -/
+theorem measureReal_partialMax_le (hφ0 : 0 ≤ φ) (hφ1 : φ ≤ 1) (hX₀ : Measurable X₀)
+    (hV : ∀ n, Measurable (V n)) (hind : IndepFun X₀ (fun ω n => V n ω) P)
+    (hiid : iIndepFun V P) {ν : Measure ℝ} (hlaw : ∀ n, P.map (V n) = ν) {n : ℕ} (hn : 0 < n)
+    {u : ℝ} (hu : 0 ≤ u) :
+    P.real {ω | partialMax (RandomIteration.chain (step φ) X₀ V) n ω ≤ u} =
+      P.real {ω | X₀ ω ≤ u} * ν.real (Iic u) ^ (n - 1) := by
+  have hset : {ω | partialMax (RandomIteration.chain (step φ) X₀ V) n ω ≤ u} =
+      X₀ ⁻¹' Iic u ∩ (fun ω k => V k ω) ⁻¹' {v | ∀ k ∈ range (n - 1), v k ≤ u} := by
+    ext ω
+    simp only [Set.mem_ofPred_eq, partialMax_le_iff hn, mem_inter_iff, Set.mem_preimage,
+      Set.mem_Iic, Finset.mem_range]
+    rw [← forall_iter_le_iff hφ0 hφ1 hu (X₀ ω) (fun k => V k ω) (n - 1)]
+    exact ⟨fun h t ht => h t (by omega), fun h t ht => h t (by omega)⟩
+  have hB : MeasurableSet {v : ℕ → ℝ | ∀ k ∈ range (n - 1), v k ≤ u} := by
+    simp only [setOf_forall]
+    exact MeasurableSet.iInter fun k => MeasurableSet.iInter fun _ =>
+      measurableSet_le (measurable_pi_apply k) measurable_const
+  rw [hset, measureReal_def, hind.measure_inter_preimage_eq_mul _ _ measurableSet_Iic hB,
+    ENNReal.toReal_mul]
+  have hprod : P ((fun ω k => V k ω) ⁻¹' {v | ∀ k ∈ range (n - 1), v k ≤ u}) =
+      ∏ k ∈ range (n - 1), P (V k ⁻¹' Iic u) := by
+    rw [← hiid.measure_inter_preimage_eq_mul _ (fun _ _ => measurableSet_Iic)]
+    congr 1
+    ext ω; simp
+  rw [hprod, ENNReal.toReal_prod]
+  have : ∀ k, (P (V k ⁻¹' Iic u)).toReal = ν.real (Iic u) := fun k => by
+    rw [← hlaw k, map_measureReal_apply (hV k) measurableSet_Iic]; rfl
+  simp only [this, Finset.prod_const, Finset.card_range]
+  rfl
+
+variable (hφ0 : 0 < φ) (hφ1 : φ < 1) (hα : 0 < α) (hX₀ : Measurable X₀)
+  (hV : ∀ n, Measurable (V n)) (hind : IndepFun X₀ (fun ω n => V n ω) P)
+  (hiid : iIndepFun V P) (hlaw : ∀ n, P.map (V n) = paretoMeasure 1 α)
+  (hinv : ((P.map X₀).prod (paretoMeasure 1 α)).map (Function.uncurry (step φ)) = P.map X₀)
+include hφ0 hφ1 hα hX₀ hV hind hiid hlaw hinv
+
+omit hφ1 hα in
+/-- **The ARMAX chain started from an invariant law is stationary.** -/
+theorem isStationary : IsStationary (RandomIteration.chain (step φ) X₀ V) P :=
+  RandomIteration.isStationary_chain measurable_step hX₀ hV hind hiid
+    (fun n => ⟨(hV n).aemeasurable, (hV 0).aemeasurable, by rw [hlaw, hlaw]⟩)
+    (by rw [hlaw 0]; exact hinv)
+
+/-- **The extremal index of the ARMAX chain is `θ = 1 - φ^α`** [Davis–Resnick 1989],
+[EKM, Example 8.1.10]: if `n P(X_0 > uₙ) → τ` then `P(max(X_0, …, X_{n-1}) ≤ uₙ) →
+exp(-(1 - φ^α) τ)`. -/
+theorem hasExtremalIndex :
+    HasExtremalIndex (RandomIteration.chain (step φ) X₀ V) P (1 - φ ^ α) := by
+  have hq0 : 0 ≤ φ ^ α := Real.rpow_nonneg hφ0.le _
+  have hq1 : φ ^ α < 1 := Real.rpow_lt_one hφ0.le hφ1 hα
+  refine ⟨⟨by linarith, by linarith⟩, fun τ hτ u hu => ?_⟩
+  have hrec := fun x => survival_rec hφ0 hα hX₀ hinv x
+  have hg0 : ∀ x, 0 ≤ survival P X₀ x := fun x => measureReal_nonneg
+  have hu' : Tendsto (fun n : ℕ => n * survival P X₀ (u n)) atTop (𝓝 τ) := hu
+  obtain ⟨hu1, ha, hna⟩ := tendsto_mul_rpow hφ0 hφ1 hα hg0 (fun x => (hrec x).1)
+    (tendsto_survival hX₀) (fun x => (hrec x).2) hu'
+  have hg := tendsto_zero_of_tendsto_natCast_mul' hu'
+  have hpow : Tendsto (fun n : ℕ => (1 - u n ^ (-α)) ^ (n - 1)) atTop
+      (𝓝 (Real.exp (-((1 - φ ^ α) * τ)))) := by
+    refine tendsto_one_sub_pow_exp_of_tendsto_mul ha ?_
+    have := hna.sub ha
+    rw [sub_zero] at this
+    refine this.congr' ?_
+    filter_upwards [eventually_ge_atTop 1] with n hn
+    rw [Nat.cast_sub hn]
+    ring
+  have hlim := (hg.const_sub 1).mul hpow
+  rw [sub_zero, one_mul] at hlim
+  refine hlim.congr' ?_
+  filter_upwards [hu1, eventually_ge_atTop 1] with n hn1 hn
+  rw [measureReal_partialMax_le hφ0.le hφ1.le hX₀ hV hind hiid hlaw (by omega)
+    (by linarith : (0 : ℝ) ≤ u n), paretoMeasure_real_Iic hα hn1, survival]
+  congr 1
+  rw [← probReal_compl_eq_one_sub (measurableSet_lt measurable_const hX₀)]
+  congr 1; ext ω; simp
+
+omit hV hind hiid hlaw in
+/-- **The stationary marginal is regularly varying**: `P(X_0 > x) x^α → 1 / (1 - φ^α)`. -/
+theorem tendsto_survival_div :
+    Tendsto (fun x => survival P X₀ x / x ^ (-α)) atTop (𝓝 (1 - φ ^ α)⁻¹) := by
+  have hq1 : φ ^ α < 1 := Real.rpow_lt_one hφ0.le hφ1 hα
+  set C := (1 - φ ^ α)⁻¹
+  have hrec := fun x => survival_rec hφ0 hα hX₀ hinv x
+  have hg0 : ∀ x, 0 ≤ survival P X₀ x := fun x => measureReal_nonneg
+  have ha : Tendsto (fun x : ℝ => x ^ (-α)) atTop (𝓝 0) := tendsto_rpow_neg_atTop hα
+  have hlow : Tendsto (fun x : ℝ => C * (1 - C * x ^ (-α))) atTop (𝓝 C) := by
+    simpa using ((ha.const_mul C).const_sub 1).const_mul C
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' hlow tendsto_const_nhds ?_ ?_
+  · filter_upwards [eventually_ge_atTop 1] with x hx
+    have hapos : 0 < x ^ (-α) := Real.rpow_pos_of_pos (by linarith) _
+    rw [le_div_iff₀ hapos]
+    have := le_tail hφ0 hφ1 hα hg0 (fun x => (hrec x).1) hx
+    linarith
+  · filter_upwards [eventually_ge_atTop 1] with x hx
+    have hapos : 0 < x ^ (-α) := Real.rpow_pos_of_pos (by linarith) _
+    rw [div_le_iff₀ hapos]
+    exact tail_le hφ0 hφ1 hα hg0 (fun x => (hrec x).1) (tendsto_survival hX₀) hx
+
+omit hV hind hiid hlaw in
+theorem isRegularlyVarying_tail : IsRegularlyVarying (survival P X₀) (-α) :=
+  (IsRegularlyVarying.rpow_id (-α)).of_tendsto_div
+    (tendsto_survival_div hφ0 hφ1 hα hX₀ hinv)
+    (inv_pos.2 (by linarith [Real.rpow_lt_one hφ0.le hφ1 hα]))
+
+/-- **`θ = 1 - φ^α` in the strict sense of [LLR, §3.7]**: exceedance levels exist for every
+`τ > 0` since the tail is regularly varying. -/
+theorem hasExtremalIndexStrict :
+    HasExtremalIndexStrict (RandomIteration.chain (step φ) X₀ V) P (1 - φ ^ α) :=
+  ⟨hasExtremalIndex hφ0 hφ1 hα hX₀ hV hind hiid hlaw hinv,
+    hasExceedanceLevels_of_isRegularlyVarying hX₀
+      (isRegularlyVarying_tail hφ0 hφ1 hα hX₀ hinv)⟩
+
+end Chain
+
 end ARMAX
 
 end ExtremeValueTheory
