@@ -827,6 +827,199 @@ theorem charFun_kMeasure (ρ : Measure ℝ) [IsFiniteMeasure ρ] (t : ℝ) :
 
 end Kernel
 
+section Lap
+
+/-- The transform `λ_g(t) = ∫₀^∞ e^{-s} ((g(t + s) + g(t - s)) / 2 - g(t)) ds`. -/
+noncomputable def lap (g : ℝ → ℝ) (t : ℝ) : ℝ :=
+  ∫ s in Ioi (0 : ℝ), Real.exp (-s) * ((g (t + s) + g (t - s)) / 2 - g t)
+
+theorem abs_lap_integrand_le {g : ℝ → ℝ} {B δ : ℝ} (hB0 : 0 ≤ B) (hδ : 0 < δ)
+    (hg : ∀ u, |g u| ≤ B * (|u| / δ + 1) ^ 2) (t : ℝ) {s : ℝ} (hs : 0 ≤ s) :
+    |(g (t + s) + g (t - s)) / 2 - g t| ≤ 3 * B * (|t| / δ + 1) ^ 2 + 2 * B / δ ^ 2 * s ^ 2 := by
+  set c := |t| / δ + 1
+  have hc : 0 ≤ c := by positivity
+  have key : ∀ u, |u| ≤ |t| + s → |g u| ≤ B * (2 * c ^ 2 + 2 * (s / δ) ^ 2) := by
+    intro u hu
+    refine (hg u).trans (mul_le_mul_of_nonneg_left ?_ hB0)
+    have h1 : |u| / δ + 1 ≤ c + s / δ := by
+      have : |u| / δ ≤ (|t| + s) / δ := div_le_div_of_nonneg_right hu hδ.le
+      rw [add_div] at this; linarith
+    have h2 : (|u| / δ + 1) ^ 2 ≤ (c + s / δ) ^ 2 := pow_le_pow_left₀ (by positivity) h1 2
+    nlinarith [sq_nonneg (c - s / δ)]
+  have h1 := key (t + s) ((abs_add_le _ _).trans (by rw [abs_of_nonneg hs]))
+  have h2 := key (t - s) ((abs_sub _ _).trans (by rw [abs_of_nonneg hs]))
+  have h3 := hg t
+  have e : 2 * B / δ ^ 2 * s ^ 2 = B * (2 * (s / δ) ^ 2) := by field_simp
+  rw [e]
+  calc |(g (t + s) + g (t - s)) / 2 - g t| ≤ (|g (t + s)| + |g (t - s)|) / 2 + |g t| := by
+        refine (abs_sub _ _).trans ?_
+        rw [abs_div, abs_two]
+        gcongr
+        exact abs_add_le _ _
+    _ ≤ _ := by nlinarith
+
+theorem integrableOn_lap_bound (A D : ℝ) :
+    IntegrableOn (fun s : ℝ => Real.exp (-s) * (A + D * s ^ 2)) (Ioi 0) :=
+  integrableOn_exp_neg_mul_add A D
+
+/-- Dominated convergence for `λ`. -/
+theorem tendsto_lap {g : ℕ → ℝ → ℝ} {g₀ : ℝ → ℝ} {B δ : ℝ} (hB0 : 0 ≤ B) (hδ : 0 < δ)
+    (hm : ∀ n, Continuous (g n))
+    (hB : ∀ᶠ n in atTop, ∀ u, |g n u| ≤ B * (|u| / δ + 1) ^ 2)
+    (hlim : ∀ u, Tendsto (fun n => g n u) atTop (𝓝 (g₀ u))) (t : ℝ) :
+    Tendsto (fun n => lap (g n) t) atTop (𝓝 (lap g₀ t)) := by
+  refine tendsto_integral_filter_of_dominated_convergence
+    (fun s => Real.exp (-s) * (3 * B * (|t| / δ + 1) ^ 2 + 2 * B / δ ^ 2 * s ^ 2))
+    (Eventually.of_forall fun n => Continuous.aestronglyMeasurable (by
+      have := hm n; fun_prop)) ?_ (integrableOn_lap_bound _ _) ?_
+  · filter_upwards [hB] with n hn
+    rw [ae_restrict_iff' measurableSet_Ioi]
+    refine ae_of_all _ fun s (hs : 0 < s) => ?_
+    rw [Real.norm_eq_abs, abs_mul, abs_of_pos (Real.exp_pos _)]
+    exact mul_le_mul_of_nonneg_left (abs_lap_integrand_le hB0 hδ hn t hs.le)
+      (Real.exp_pos _).le
+  · refine ae_of_all _ fun s => ?_
+    exact (((hlim _).add (hlim _)).div_const 2 |>.sub (hlim t)).const_mul _
+
+theorem continuousAt_lap {g : ℝ → ℝ} {B δ : ℝ} (hB0 : 0 ≤ B) (hδ : 0 < δ) (hc : Continuous g)
+    (hg : ∀ u, |g u| ≤ B * (|u| / δ + 1) ^ 2) (t₀ : ℝ) : ContinuousAt (lap g) t₀ := by
+  refine continuousAt_of_dominated
+    (bound := fun s => Real.exp (-s) * (3 * B * ((|t₀| + 1) / δ + 1) ^ 2 + 2 * B / δ ^ 2 * s ^ 2))
+    (Eventually.of_forall fun t => Continuous.aestronglyMeasurable (by fun_prop)) ?_
+    (integrableOn_lap_bound _ _) (ae_of_all _ fun s => by
+      have : Continuous fun t => Real.exp (-s) * ((g (t + s) + g (t - s)) / 2 - g t) := by
+        fun_prop
+      exact this.continuousAt)
+  filter_upwards [Metric.ball_mem_nhds t₀ one_pos] with t ht
+  rw [ae_restrict_iff' measurableSet_Ioi]
+  refine ae_of_all _ fun s (hs : 0 < s) => ?_
+  rw [Real.norm_eq_abs, abs_mul, abs_of_pos (Real.exp_pos _)]
+  refine mul_le_mul_of_nonneg_left ((abs_lap_integrand_le hB0 hδ hg t hs.le).trans ?_)
+    (Real.exp_pos _).le
+  have : |t| ≤ |t₀| + 1 := by
+    have := Metric.mem_ball.1 ht
+    rw [Real.dist_eq] at this
+    linarith [abs_sub_abs_le_abs_sub t t₀]
+  have : |t| / δ + 1 ≤ (|t₀| + 1) / δ + 1 := by gcongr
+  have : (|t| / δ + 1) ^ 2 ≤ ((|t₀| + 1) / δ + 1) ^ 2 := pow_le_pow_left₀ (by positivity) this 2
+  nlinarith
+
+theorem lap_pos {g : ℝ → ℝ} {B δ : ℝ} (hB0 : 0 ≤ B) (hδ : 0 < δ) (hc : Continuous g)
+    (hg : ∀ u, |g u| ≤ B * (|u| / δ + 1) ^ 2) (hg0 : g 0 = 0) (hnn : ∀ u, 0 ≤ g u)
+    {s₀ : ℝ} (hs₀ : 0 < s₀) (hgs₀ : 0 < g s₀) : 0 < lap g 0 := by
+  set φ : ℝ → ℝ := fun s => Real.exp (-s) * ((g (0 + s) + g (0 - s)) / 2 - g 0)
+  have hφc : Continuous φ := by fun_prop
+  have hint : IntegrableOn φ (Ioi 0) := by
+    refine (integrableOn_lap_bound (3 * B * (|0| / δ + 1) ^ 2) (2 * B / δ ^ 2)).mono' ?_ ?_
+    · exact hφc.aestronglyMeasurable
+    · rw [ae_restrict_iff' measurableSet_Ioi]
+      refine ae_of_all _ fun s (hs : 0 < s) => ?_
+      simp only [φ]
+      rw [Real.norm_eq_abs, abs_mul, abs_of_pos (Real.exp_pos _)]
+      exact mul_le_mul_of_nonneg_left (abs_lap_integrand_le hB0 hδ hg 0 hs.le)
+        (Real.exp_pos _).le
+  have hnn' : ∀ s, 0 ≤ φ s := fun s => by
+    simp only [φ, hg0, sub_zero]
+    exact mul_nonneg (Real.exp_pos _).le (by linarith [hnn (0 + s), hnn (0 - s)])
+  have hpos : 0 < φ s₀ := by
+    simp only [φ, hg0, sub_zero, zero_add, zero_sub]
+    exact mul_pos (Real.exp_pos _) (by linarith [hnn (-s₀)])
+  refine (setIntegral_pos_iff_support_of_nonneg_ae (ae_of_all _ hnn') hint).2 ?_
+  have hopen : IsOpen ({s | 0 < φ s} ∩ Ioi 0) := (isOpen_lt continuous_const hφc).inter isOpen_Ioi
+  have hne : ({s | 0 < φ s} ∩ Ioi 0).Nonempty := ⟨s₀, hpos, hs₀⟩
+  refine lt_of_lt_of_le (pos_iff_ne_zero.2 (hopen.measure_ne_zero volume hne)) (measure_mono ?_)
+  rintro s ⟨hs1, hs2⟩
+  exact ⟨ne_of_gt hs1, hs2⟩
+
+theorem lap_smul (c : ℝ) (g : ℝ → ℝ) (t : ℝ) : lap (fun u => c * g u) t = c * lap g t := by
+  rw [lap, lap, ← integral_const_mul]
+  congr 1; funext s; ring
+
+end Lap
+
+section Symmetric
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a : ℕ → ℝ}
+
+theorem cosTransform_eq_re (s : ℝ) : cosTransform μ s = (charFun μ s).re := by
+  have hint : Integrable (fun x : ℝ => Complex.exp (s * x * Complex.I)) μ :=
+    Integrable.of_bound (by fun_prop) 1 (ae_of_all _ fun x => by
+      rw [← Complex.ofReal_mul, Complex.norm_exp_ofReal_mul_I])
+  rw [charFun_apply_real, ← RCLike.re_to_complex, ← integral_re hint, cosTransform]
+  congr 1; funext x
+  rw [RCLike.re_to_complex, ← Complex.ofReal_mul, Complex.exp_ofReal_mul_I_re]
+
+theorem continuous_cosTransform : Continuous (cosTransform μ) := by
+  have : cosTransform μ = fun s => (charFun μ s).re := funext cosTransform_eq_re
+  rw [this]
+  exact Complex.continuous_re.comp continuous_charFun
+
+theorem continuous_nh (n : ℕ) : Continuous (nh μ a n) := by
+  unfold nh
+  have := continuous_cosTransform (μ := μ)
+  fun_prop
+
+/-- `Λₙ`, the image of `μ` under `x ↦ x / aₙ` weighted by `y² / (1 + y²)`. -/
+noncomputable def lamMeasure (μ : Measure ℝ) (a : ℕ → ℝ) (n : ℕ) : Measure ℝ :=
+  kMeasure (μ.map ((a n)⁻¹ * ·))
+
+instance (n : ℕ) : IsFiniteMeasure (lamMeasure μ a n) := by
+  unfold lamMeasure; infer_instance
+
+theorem charFun_map_inv_mul (hsymm : μ.map (fun x => -x) = μ) (n : ℕ) (u : ℝ) :
+    charFun (μ.map ((a n)⁻¹ * ·)) u = (cosTransform μ ((a n)⁻¹ * u) : ℂ) := by
+  rw [charFun_map_mul, GCLT.charFun_eq_integral_cos hsymm]
+  rfl
+
+omit [IsProbabilityMeasure μ] in
+theorem cosTransform_eq_one_sub_nh {n : ℕ} (hn : n ≠ 0) (u : ℝ) :
+    cosTransform μ ((a n)⁻¹ * u) = 1 - nh μ a n u / n := by
+  have : (n : ℝ) ≠ 0 := by exact_mod_cast hn
+  rw [nh]; field_simp; ring
+
+/-- `φ_{Λₙ}(t) = λ_{hₙ}(t) / n`. -/
+theorem charFun_lamMeasure (hsymm : μ.map (fun x => -x) = μ) {n : ℕ} (hn : n ≠ 0) (t : ℝ) :
+    charFun (lamMeasure μ a n) t = ((lap (nh μ a n) t / n : ℝ) : ℂ) := by
+  set F : ℝ → ℝ := fun u => cosTransform μ ((a n)⁻¹ * u) with hFdef
+  have hFc : Continuous F := continuous_cosTransform.comp (continuous_const.mul continuous_id)
+  have hF1 : ∀ u, |F u| ≤ 1 := fun u =>
+    abs_le.2 ⟨neg_one_le_cosTransform _, cosTransform_le_one _⟩
+  rw [lamMeasure, charFun_kMeasure]
+  simp_rw [charFun_map_inv_mul hsymm]
+  have e : ∀ s : ℝ, ((Real.exp (-s) : ℝ) : ℂ) *
+      ((((cosTransform μ ((a n)⁻¹ * (t + s)) : ℝ) : ℂ) +
+        ((cosTransform μ ((a n)⁻¹ * (t - s)) : ℝ) : ℂ)) / 2) =
+      ((Real.exp (-s) * ((F (t + s) + F (t - s)) / 2) : ℝ) : ℂ) := fun s => by
+    push_cast; ring
+  simp_rw [e, integral_complex_ofReal, ← Complex.ofReal_sub]
+  congr 1
+  have hint1 : IntegrableOn (fun s : ℝ => Real.exp (-s) * F t) (Ioi 0) :=
+    integrableOn_exp_neg.mul_const _
+  have hint2 : IntegrableOn (fun s : ℝ => Real.exp (-s) * ((F (t + s) + F (t - s)) / 2)) (Ioi 0) := by
+    refine integrableOn_exp_neg.mono' (Continuous.aestronglyMeasurable (by fun_prop))
+      (ae_of_all _ fun s => ?_)
+    rw [Real.norm_eq_abs, abs_mul, abs_of_pos (Real.exp_pos _)]
+    refine mul_le_of_le_one_right (Real.exp_pos _).le ?_
+    rw [abs_div, abs_two, div_le_one two_pos]
+    exact (abs_add_le _ _).trans (by linarith [hF1 (t + s), hF1 (t - s)])
+  have hn' : (n : ℝ) ≠ 0 := by exact_mod_cast hn
+  have e2 : ∀ s : ℝ, Real.exp (-s) * ((nh μ a n (t + s) + nh μ a n (t - s)) / 2 - nh μ a n t) =
+      n * (Real.exp (-s) * F t - Real.exp (-s) * ((F (t + s) + F (t - s)) / 2)) := fun s => by
+    simp only [nh, hFdef]; ring
+  rw [lap]
+  simp_rw [e2]
+  rw [integral_const_mul, integral_sub hint1 hint2, integral_mul_const, integral_exp_neg]
+  field_simp
+  simp [hFdef, div_eq_inv_mul]
+
+theorem measureReal_univ_lamMeasure (hsymm : μ.map (fun x => -x) = μ) {n : ℕ} (hn : n ≠ 0) :
+    (lamMeasure μ a n).real univ = lap (nh μ a n) 0 / n := by
+  have h := charFun_lamMeasure (a := a) hsymm hn 0
+  rw [charFun_zero] at h
+  exact_mod_cast h
+
+end Symmetric
+
 end GCLTConverse
 
 end ExtremeValueTheory
