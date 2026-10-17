@@ -47,7 +47,11 @@ Standing hypotheses: `α > 0`, iid Pareto(`α`) innovations (`hZ`, `hind`, `hlaw
     `→ (1 + min(1 / (c α), 1)) / 2`, escape mass `(1 - min(1 / (c α), 1)) / 2`;
   - `logEchoProcess_phase_transition`: the two regimes above together with the long-block regime
     `log n = o(rₙ)`, `rₙ = o(n)` of `logEchoProcess_hasEscapeMass_of_tendsto` (ratio `→ 1/2`,
-    escape mass `1/2`).
+    escape mass `1/2`);
+  - `logEchoProcess_not_conditionA`: for `rₙ → ∞`, `rₙ / log n → c ∈ [0, ∞)` the block condition
+    `A(uₙ)` fails. With `conditionA_logEchoProcess` (`Dependence/EchoConditionA.lean`, for
+    `log n = o(rₙ)`, `rₙ = o(n)`): along block lengths with `rₙ / log n → c ∈ [0, ∞]`,
+    `A(uₙ)` holds iff `c = ∞`, iff the cluster ratio tends to `θ`.
 * `echoBlockMass_logLag_bounds`: `min(L(u), r) u^(-α) ≤ E[min(L(Z), r); Z > u] ≤
   (min(L(u), r) + 2^α / (1 - e^(-α))) u^(-α)`.
 
@@ -62,9 +66,10 @@ Standing hypotheses: `α > 0`, iid Pareto(`α`) innovations (`hZ`, `hind`, `hlaw
 * The cluster ratio is the block estimator of the extremal index; the theorem shows that, without
   anticlustering, the block estimator can converge to any value in `[θ, ϑ]` depending on the
   block length. Only in the long-block regime does it estimate `θ`. In the short and critical
-  regimes the escape mass of `Dependence/ThetaGap.lean` differs from `ϑ - θ`; by
-  `HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex` the block condition `A(uₙ)` must
-  then fail along those block lengths.
+  regimes the escape mass of `Dependence/ThetaGap.lean` differs from `ϑ - θ`, so by
+  `HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex` the block condition `A(uₙ)` fails
+  along those block lengths (`logEchoProcess_not_conditionA`). The relation `θ = ϑ - η` of the
+  main theorem holds exactly at the block lengths where `A(uₙ)` holds.
 * `rₙ uₙ^(-α) → 0` (equivalently `rₙ = o(n)`) is automatic in the short and critical regimes.
 -/
 
@@ -550,6 +555,22 @@ theorem tendsto_mul_rpow_of_tendsto_div_log {α : ℝ} {u : ℕ → ℝ} {τ c :
   have : (n : ℝ) ≠ 0 := by positivity
   field_simp
 
+/-- `rₙ / log n → c` gives `rₙ / n → 0`. -/
+theorem tendsto_div_of_tendsto_div_log {r : ℕ → ℕ} {c : ℝ}
+    (hr : Tendsto (fun n : ℕ => (r n : ℝ) / Real.log n) atTop (𝓝 c)) :
+    Tendsto (fun n : ℕ => (r n : ℝ) / n) atTop (𝓝 0) := by
+  have hln : Tendsto (fun n : ℕ => Real.log n / n) atTop (𝓝 0) := by
+    have := (Real.tendsto_pow_log_div_mul_add_atTop 1 0 1 one_ne_zero).comp
+      tendsto_natCast_atTop_atTop
+    exact this.congr fun n => by simp
+  have := hr.mul hln
+  rw [mul_zero] at this
+  refine this.congr' ?_
+  filter_upwards [eventually_gt_atTop 1] with n hn
+  have hn' : (1 : ℝ) < n := by exact_mod_cast hn
+  have hl : Real.log n ≠ 0 := (Real.log_pos hn').ne'
+  field_simp
+
 end LogLag
 
 section LogEcho
@@ -715,6 +736,39 @@ theorem logEchoProcess_critical_blocks {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < 
   convert h.1 hlim using 1
   norm_num
   ring
+
+include hα hZ hind hlaw hpos in
+/-- **The block condition fails for blocks of length `O(log n)`.** For the logarithmic echo
+process with `n P(X_0 > uₙ) → τ > 0`, `rₙ → ∞` and `rₙ / log n → c ∈ [0, ∞)`, condition
+`A(uₙ)` fails along `rₙ`: otherwise, since `θ = 1/2` exists, the escape mass would be
+`ϑ - θ = 1/2` (`HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex`), while it is
+`(1 - min(1 / (c α), 1)) / 2 < 1/2` (or `0` for `c = 0`). Together with
+`conditionA_logEchoProcess` (`Dependence/EchoConditionA.lean`), for block lengths with
+`rₙ / log n → c ∈ [0, ∞]`, `A(uₙ)` holds iff `c = ∞`. -/
+theorem logEchoProcess_not_conditionA {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
+    (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess logLag Z 0 ω}) atTop (𝓝 τ))
+    {r : ℕ → ℕ} (hr : Tendsto r atTop atTop) {c : ℝ} (hc : 0 ≤ c)
+    (hrlog : Tendsto (fun n : ℕ => (r n : ℝ) / Real.log n) atTop (𝓝 c)) :
+    ¬ ConditionA (fun k : ℕ => |echoProcess logLag Z k|) P u r := by
+  intro hA
+  obtain ⟨hstat, hT, -, hθ⟩ := logEchoProcess_theta_lt_vartheta hα hZ hind hlaw hpos (P := P)
+  have hτ' : Tendsto (fun n : ℕ => n * P.real {ω | u n < |echoProcess logLag Z 0 ω|}) atTop
+      (𝓝 τ) := by
+    simpa [abs_of_nonneg (echoProcess_nonneg hpos _ _)] using hτ
+  have hθ' : HasExtremalIndex (fun k : ℕ => |echoProcess logLag Z k|) P (1 / 2) := by
+    convert hθ using 3 with k
+    funext ω
+    exact abs_of_nonneg (echoProcess_nonneg hpos _ _)
+  have h := hT.hasEscapeMass_of_hasExtremalIndex hα (measurable_echoProcess hZ measurable_logLag)
+    measurable_unitSpectral hstat hθ' hτ' hτ0 hr (tendsto_div_of_tendsto_div_log hrlog) hA
+  rw [candidateExtremalIndex_unitSpectral hα] at h
+  rcases hc.eq_or_lt with rfl | hc
+  · have := h.unique (logEchoProcess_short_blocks hα hZ hind hlaw hpos hτ0 hτ hr hrlog).2
+    norm_num at this
+  · have := h.unique (logEchoProcess_critical_blocks hα hZ hind hlaw hpos hτ0 hτ hc hrlog).2
+    have hm : 0 < min (1 / (c * α)) 1 := lt_min (by positivity) one_pos
+    simp only [ENNReal.toReal_one] at this
+    linarith
 
 include hα hZ hind hlaw hpos in
 /-- **The block-length phase transition of the logarithmic echo process**, in the standard
