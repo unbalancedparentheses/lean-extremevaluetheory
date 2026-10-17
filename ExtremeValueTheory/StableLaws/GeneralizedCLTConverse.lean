@@ -1163,6 +1163,199 @@ theorem exists_charFun_eq_lap (hsymm : μ.map (fun x => -x) = μ) (hB0 : 0 ≤ B
 
 end Pipeline
 
+section SqRatio
+
+variable {μ : Measure ℝ} [IsFiniteMeasure μ]
+
+theorem sq_div_max_eq {x : ℝ} (hx : x ≠ 0) (y : ℝ) :
+    y ^ 2 / max (y ^ 2) (x ^ 2) = min (x ^ 2) (y ^ 2) / x ^ 2 := by
+  have hx2 : 0 < x ^ 2 := by positivity
+  rcases le_total (y ^ 2) (x ^ 2) with h | h
+  · rw [max_eq_right h, min_eq_right h]
+  · rw [max_eq_left h, min_eq_left h, div_self (ne_of_gt (hx2.trans_le h)), div_self hx2.ne']
+
+omit [IsFiniteMeasure μ] in
+theorem sqRatio_eq_div {x : ℝ} (hx : x ≠ 0) : sqRatio μ x = minSqMoment μ x / x ^ 2 := by
+  rw [sqRatio, minSqMoment, ← integral_div]
+  simp_rw [sq_div_max_eq hx]
+
+omit [IsFiniteMeasure μ] in
+theorem sqRatio_nonneg (x : ℝ) : 0 ≤ sqRatio μ x :=
+  integral_nonneg fun _ => div_nonneg (sq_nonneg _) (le_max_of_le_left (sq_nonneg _))
+
+theorem integrable_sq_div_max {x : ℝ} (hx : x ≠ 0) :
+    Integrable (fun y : ℝ => y ^ 2 / max (y ^ 2) (x ^ 2)) μ := by
+  have hx2 : 0 < x ^ 2 := by positivity
+  refine (integrable_const (1 : ℝ)).mono' ?_ (ae_of_all _ fun y => ?_)
+  · exact Continuous.aestronglyMeasurable (Continuous.div (by fun_prop) (by fun_prop)
+      fun y => ne_of_gt (lt_of_lt_of_le hx2 (le_max_right _ _)))
+  · have hM : 0 < max (y ^ 2) (x ^ 2) := lt_of_lt_of_le hx2 (le_max_right _ _)
+    rw [Real.norm_eq_abs, abs_of_nonneg (div_nonneg (sq_nonneg _) hM.le), div_le_one hM]
+    exact le_max_left _ _
+
+theorem sqRatio_antitoneOn : AntitoneOn (sqRatio μ) (Ioi 0) := by
+  intro x hx x' hx' hxx'
+  have hx0 : (0 : ℝ) < x := hx
+  refine integral_mono (integrable_sq_div_max (ne_of_gt (hx0.trans_le hxx')))
+    (integrable_sq_div_max hx0.ne') fun y => ?_
+  have hM : 0 < max (y ^ 2) (x ^ 2) := lt_of_lt_of_le (by positivity) (le_max_right _ _)
+  exact div_le_div_of_nonneg_left (sq_nonneg _) hM
+    (max_le_max le_rfl (pow_le_pow_left₀ hx0.le hxx' 2))
+
+theorem sqRatio_pos_of_pos {x₀ : ℝ} (hx₀ : 0 < x₀) (h : 0 < sqRatio μ x₀) {x : ℝ}
+    (hx : 0 < x) : 0 < sqRatio μ x := by
+  rcases le_total x x₀ with hle | hle
+  · exact h.trans_le (sqRatio_antitoneOn hx hx₀ hle)
+  · rw [sqRatio_eq_div hx.ne']
+    rw [sqRatio_eq_div hx₀.ne'] at h
+    have hZ0 : 0 < minSqMoment μ x₀ := (div_pos_iff_of_pos_right (by positivity)).1 h
+    exact div_pos (hZ0.trans_le (minSqMoment_mono hx₀.le hle)) (by positivity)
+
+end SqRatio
+
+section Main
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a : ℕ → ℝ}
+
+omit [IsProbabilityMeasure μ] in
+theorem nh_const_mul {r : ℝ} (hr : r ≠ 0) (n : ℕ) (u : ℝ) :
+    nh μ (fun n => r * a n) n u = nh μ a n (u / r) := by
+  simp only [nh, mul_inv]
+  congr 3
+  field_simp
+
+theorem integral_gfun_pos (P : ProbabilityMeasure ℝ) {x : ℝ} (hx : 0 < x) :
+    0 < ∫ y, gfun hx y ∂(P : Measure ℝ) := by
+  have hpos : ∀ y, 0 < gfun hx y := fun y => by
+    rw [gfun_apply]
+    exact div_pos (by positivity) (lt_of_lt_of_le (by positivity) (le_max_right _ _))
+  refine (integral_pos_iff_support_of_nonneg (fun y => (hpos y).le)
+    ((gfun hx).integrable _)).2 ?_
+  have : Function.support (fun y => gfun hx y) = univ :=
+    Function.support_eq_univ fun y => (hpos y).ne'
+  rw [this, measure_univ]
+  exact one_pos
+
+/-- From the converse pipeline to regular variation: if `n T(aₙ x) → K x ^ (-α)` for all
+`x > 0`, with `K > 0` and `0 < α < 2`, then the tail is regularly varying with index `-α`,
+`U` with index `2 - α`, and `n P(|X| > aₙ) → K (2 - α) / 2`. -/
+theorem isRegularlyVarying_of_tendsto_mul_sqRatio (ha : ∀ n, 0 < a n) {K α : ℝ} (hK : 0 < K)
+    (hα0 : 0 < α) (hα2 : α < 2)
+    (hL : ∀ x, 0 < x → Tendsto (fun n : ℕ => (n : ℝ) * sqRatio μ (a n * x)) atTop
+      (𝓝 (K * x ^ (-α)))) :
+    IsRegularlyVarying (absTail μ) (-α) ∧ IsRegularlyVarying (truncSecondMoment μ) (2 - α) ∧
+      Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n)) atTop (𝓝 (K * ((2 - α) / 2))) := by
+  have hL1 : Tendsto (fun n : ℕ => (n : ℝ) * sqRatio μ (a n)) atTop (𝓝 K) := by
+    simpa using hL 1 one_pos
+  have hTpos : ∀ x, 0 < x → 0 < sqRatio μ x := by
+    obtain ⟨n, hn⟩ := ((tendsto_order.1 hL1).1 0 hK).exists
+    have h1 : 0 < sqRatio μ (a n) := by
+      by_contra hc
+      have : sqRatio μ (a n) = 0 := le_antisymm (not_lt.1 hc) (sqRatio_nonneg _)
+      rw [this, mul_zero] at hn
+      exact lt_irrefl _ hn
+    exact fun x hx => sqRatio_pos_of_pos (ha n) h1 hx
+  have hT : IsRegularlyVarying (sqRatio μ) (-α) :=
+    isRegularlyVarying_of_tendsto_mul_comp sqRatio_antitoneOn hTpos ha hK hL
+  have hZ : IsRegularlyVarying (minSqMoment μ) (2 - α) := by
+    have := (IsRegularlyVarying.rpow_id 2).mul hT
+    rw [← sub_eq_add_neg] at this
+    refine this.congr ?_
+    filter_upwards [eventually_gt_atTop 0] with x hx
+    rw [sqRatio_eq_div hx.ne', Real.rpow_two]
+    field_simp
+  have hG := isRegularlyVarying_absTail_of_minSqMoment (by linarith) hZ
+  rw [show 2 - α - 2 = -α by ring] at hG
+  refine ⟨hG, isRegularlyVarying_truncSecondMoment_of_minSqMoment (by linarith) hZ, ?_⟩
+  have hatop := tendsto_atTop_of_tendsto_mul_comp (L := fun _ => K) sqRatio_antitoneOn hTpos ha hL1
+  have hr := (tendsto_sq_mul_absTail_div_minSqMoment hZ).comp hatop
+  refine (hL1.mul hr).congr' ?_
+  filter_upwards [hatop.eventually hZ.1] with n hn
+  simp only [Function.comp_apply]
+  rw [sqRatio_eq_div (ha n).ne']
+  have := (ha n).ne'
+  field_simp
+
+/-- **Converse of the generalized central limit theorem, symmetric case**
+([Feller, Vol. II, §XVII.5, Theorem 2], [GK, §35]). Let `μ` be a symmetric probability law on
+`ℝ`, `aₙ > 0`, and suppose the laws of `(X₁ + ⋯ + Xₙ) / aₙ` converge weakly to the symmetric
+`α`-stable law `ν` with characteristic function `exp (-c |t| ^ α)`, `0 < α < 2`, `c > 0`.
+Then the two-sided tail `P(|X| > x)` is regularly varying with index `-α`, the truncated second
+moment `U(x) = E[X² 1{|X| ≤ x}]` is regularly varying with index `2 - α`, and
+`n P(|X| > aₙ)` converges to a positive constant. -/
+theorem isRegularlyVarying_of_tendsto_isSymmStable (hsymm : μ.map (fun x => -x) = μ)
+    (ha : ∀ n, 0 < a n) {α c : ℝ} (hα0 : 0 < α) (hα2 : α < 2) (hc : 0 < c)
+    {ν : ProbabilityMeasure ℝ} (hν : IsSymmStable α c (ν : Measure ℝ))
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map ((a n)⁻¹ * ·), inferInstance⟩) atTop (𝓝 ν)) :
+    IsRegularlyVarying (absTail μ) (-α) ∧ IsRegularlyVarying (truncSecondMoment μ) (2 - α) ∧
+      ∃ K > 0, Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n)) atTop (𝓝 K) := by
+  obtain ⟨δ, hδ, hb⟩ := exists_nh_le hsymm hconv
+  set B := Real.log 2
+  have hB0 : 0 ≤ B := Real.log_nonneg one_le_two
+  set h : ℝ → ℝ := fun u => c * |u| ^ α with hh
+  have hBa : ∀ᶠ n in atTop, ∀ u, |nh μ a n u| ≤ B * (|u| / δ + 1) ^ 2 := by
+    filter_upwards [eventually_ge_atTop 3] with n hn u
+    rw [abs_of_nonneg (nh_nonneg _ _)]
+    exact hb n hn u
+  have hlim : ∀ u, Tendsto (fun n => nh μ a n u) atTop (𝓝 (h u)) := by
+    intro u
+    have := (tendsto_nh hsymm hconv hb u).2
+    rwa [hν.2 u, Complex.ofReal_re, Real.log_exp, neg_neg] at this
+  have hhc : Continuous h := continuous_const.mul (continuous_abs.rpow_const fun _ => Or.inr hα0.le)
+  have hhb : ∀ u, |h u| ≤ B * (|u| / δ + 1) ^ 2 := by
+    intro u
+    rw [abs_of_nonneg (by positivity)]
+    exact le_of_tendsto (hlim u) (by
+      filter_upwards [hBa] with n hn
+      exact (le_abs_self _).trans (hn u))
+  have hpos : 0 < lap h 0 := lap_pos hB0 hδ hhc hhb (by simp [hh, Real.zero_rpow hα0.ne'])
+    (fun u => by positivity) one_pos (by simp [hh, hc])
+  obtain ⟨P, hP⟩ := exists_charFun_eq_lap hsymm hB0 hδ hBa hlim hpos hhc hhb
+  set L : ℝ → ℝ := fun x => lap h 0 * ∫ y, (1 + y ^ 2) / max (y ^ 2) (x ^ 2) ∂(P : Measure ℝ)
+  have hlimL : ∀ x (hx : 0 < x), Tendsto (fun n : ℕ => (n : ℝ) * sqRatio μ (a n * x)) atTop
+      (𝓝 (L x)) := fun x hx => tendsto_mul_sqRatio hsymm ha hB0 hδ hBa hlim hpos P hP hx
+  -- scaling: `L (r x) = r ^ (-α) L x`
+  have hscale : ∀ r x, 0 < r → 0 < x → L (r * x) = r ^ (-α) * L x := by
+    intro r x hr hx
+    set h' : ℝ → ℝ := fun u => r ^ (-α) * h u
+    have hlap : ∀ t, lap h' t = r ^ (-α) * lap h t := lap_smul _ _
+    have hr' : 0 < r ^ (-α) := Real.rpow_pos_of_pos hr _
+    have hBa' : ∀ᶠ n in atTop, ∀ u, |nh μ (fun n => r * a n) n u| ≤
+        B * (|u| / (r * δ) + 1) ^ 2 := by
+      filter_upwards [hBa] with n hn u
+      rw [nh_const_mul hr.ne', ← div_div, ← abs_of_pos hr, ← abs_div, abs_of_pos hr]
+      exact hn _
+    have hlim' : ∀ u, Tendsto (fun n => nh μ (fun n => r * a n) n u) atTop (𝓝 (h' u)) := by
+      intro u
+      simp_rw [nh_const_mul hr.ne']
+      convert hlim (u / r) using 2
+      simp only [h', hh]
+      rw [abs_div, abs_of_pos hr, Real.div_rpow (abs_nonneg _) hr.le, Real.rpow_neg hr.le]
+      field_simp
+    have hpos' : 0 < lap h' 0 := by rw [hlap]; exact mul_pos hr' hpos
+    have hP' : ∀ t, charFun (P : Measure ℝ) t = ((lap h' t / lap h' 0 : ℝ) : ℂ) := by
+      intro t; rw [hP, hlap, hlap, mul_div_mul_left _ _ hr'.ne']
+    have h1 := tendsto_mul_sqRatio (a := fun n => r * a n) hsymm (fun n => mul_pos hr (ha n))
+      hB0 (mul_pos hr hδ) hBa' hlim' hpos' P hP' hx
+    have h2 := hlimL (r * x) (mul_pos hr hx)
+    have e : ∀ n, r * a n * x = a n * (r * x) := fun n => by ring
+    simp_rw [e] at h1
+    rw [hlap] at h1
+    have := tendsto_nhds_unique h2 h1
+    rw [this, mul_assoc]
+    rfl
+  have hL1 : 0 < L 1 := mul_pos hpos (integral_gfun_pos P one_pos)
+  obtain ⟨hG, hU, hK⟩ := isRegularlyVarying_of_tendsto_mul_sqRatio (μ := μ) ha hL1 hα0 hα2
+    (fun x hx => by
+      have := hscale x 1 hx one_pos
+      rw [mul_one] at this
+      rw [← mul_comm (x ^ (-α)), ← this]
+      exact hlimL x hx)
+  exact ⟨hG, hU, _, mul_pos hL1 (by linarith), hK⟩
+
+end Main
+
 end GCLTConverse
 
 end ExtremeValueTheory
