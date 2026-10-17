@@ -696,6 +696,62 @@ theorem tendstoInDistribution_weissman_of_tendsto_bias {X : ℕ → Ω → ℝ} 
   rw [e] at hfinal
   exact hfinal
 
+/-- **Asymptotic normality of the Weissman estimator for `ρ = 0`** ([dHF, §4.3]). Let
+`X_0, X_1, …` be iid with tail quantile function `U` of second-order regular variation with
+`γ > 0`, `ρ = 0` and auxiliary function `A`, let `k → ∞`, `k / n → 0`, `√k A(n/k) → λ`, and let
+`d_n = k / (n p_n) → ∞` with `log d_n / √k → 0`. Assume that `A` is asymptotically constant on
+the extrapolation range: `|A(y) / A(n/k) - 1| ≤ η_n → 0` for `y ∈ [n/k, 1/p_n]`. Then
+
+  `(√k / log d_n) (x̂_{p_n} / x_{p_n} - 1) ⇒ N(0, γ²)`.
+
+The two biases cancel: the Hill estimator contributes `+λ / (1 - ρ) = +λ`, while the
+extrapolation remainder `log U(d_n n/k) - log U(n/k) - γ log d_n ~ A(n/k) log d_n` contributes
+`-λ` (for `ρ < 0` the latter is `O(A(n/k))` and the limit is `N(λ / (1 - ρ), γ²)`). -/
+theorem tendstoInDistribution_weissman_of_rho_eq_zero {X : ℕ → Ω → ℝ}
+    (hX : ∀ i, Measurable (X i)) (hindep : iIndepFun X P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ lam : ℝ} {A : ℝ → ℝ} (hγ : 0 < γ)
+    (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ 0 A) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {p : ℕ → ℝ}
+    (hp0 : ∀ᶠ n in atTop, 0 < p n) (hd : Tendsto (fun n => (k n : ℝ) / (n * p n)) atTop atTop)
+    (hdk : Tendsto (fun n => Real.log ((k n : ℝ) / (n * p n)) / √(k n : ℝ)) atTop (𝓝 0))
+    {η : ℕ → ℝ} (hη : Tendsto η atTop (𝓝 0))
+    (hAη : ∀ᶠ n : ℕ in atTop, ∀ y ∈ Icc ((n : ℝ) / k n) (p n)⁻¹,
+      |A y / A (n / k n) - 1| ≤ η n)
+    {Z : Ω' → ℝ} (hZ : HasLaw Z (gaussianReal 0 (γ ^ 2).toNNReal) P') :
+    TendstoInDistribution (fun n ω => √(k n : ℝ) / Real.log ((k n : ℝ) / (n * p n)) *
+      (weissman (fun i : Fin n => X i ω) (k n) (p n) / tailQuantile P (X 0) (p n) - 1))
+      atTop Z (fun _ => P) P' := by
+  set U := survivalQuantile (survival P (X 0)) with hUdef
+  have hUm := measurable_tailQuantile (survival_anti (P := P) (X 0))
+    (continuousWithinAt_survival (P := P) (hX 0)) (tendsto_survival_atTop (P := P) (hX 0))
+    (tendsto_survival_atBot (P := P) (hX 0))
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hnk : Tendsto (fun n : ℕ => (n : ℝ) / k n) atTop atTop :=
+    tendsto_div_atTop_of_tendsto hk hkn
+  have hdt : ∀ᶠ n in atTop, (k n : ℝ) / (n * p n) * ((n : ℝ) / k n) = (p n)⁻¹ := by
+    filter_upwards [hkR.eventually_gt_atTop 0,
+      (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0, hp0] with n hk0 hn0 hpn
+    field_simp
+  have hrat := h2.tendsto_logRem_div_of_rho_eq_zero hUm hnk hd hη (by
+    filter_upwards [hAη, hdt] with n hn hdn
+    rwa [hdn])
+  have hμ : Tendsto (fun n => √(k n : ℝ) *
+      (log (U ((k n : ℝ) / (n * p n) * (n / k n))) - log (U (n / k n)) -
+        γ * log ((k n : ℝ) / (n * p n))) / log ((k n : ℝ) / (n * p n))) atTop (𝓝 lam) := by
+    have := hlam.mul hrat
+    rw [mul_one] at this
+    refine this.congr' ?_
+    filter_upwards [hnk.eventually h2.eventually_ne_zero,
+      (tendsto_log_atTop.comp hd).eventually_gt_atTop 0] with n hA0 hℓ0
+    simp only [Function.comp_apply] at hℓ0
+    field_simp
+  have hZ' : HasLaw (fun ω => Z ω + lam) (gaussianReal (lam / (1 - 0)) (γ ^ 2).toNNReal) P' := by
+    simpa using gaussianReal_add_const hZ lam
+  have := tendstoInDistribution_weissman_of_tendsto_bias hX hindep hident hγ h2 hk hkn hlam hp0
+    hd hdk hμ hZ'
+  simpa using this
+
 end Normality
 
 end ExtremeValueTheory
