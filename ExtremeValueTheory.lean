@@ -115,3 +115,4 @@ import ExtremeValueTheory.Multivariate.TailDependence
 import ExtremeValueTheory.Multivariate.PickandsEstimator
 import ExtremeValueTheory.Dependence.EchoPhaseTransition
 import ExtremeValueTheory.Dependence.EchoConditionA
+import ExtremeValueTheory.Dependence.MixtureProcess
