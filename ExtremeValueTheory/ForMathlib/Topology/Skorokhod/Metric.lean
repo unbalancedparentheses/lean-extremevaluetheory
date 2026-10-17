@@ -10,6 +10,7 @@ public import Mathlib.Topology.UnitInterval
 public import Mathlib.Topology.UniformSpace.UniformConvergence
 public import Mathlib.Topology.EMetricSpace.Lipschitz
 public import Mathlib.Topology.UniformSpace.HeineCantor
+public import Mathlib.Topology.ContinuousMap.Compact
 
 /-!
 # The Skorokhod space `D[0, 1]` and the Skorokhod `J₁` metric
@@ -45,6 +46,8 @@ space when `E` is a metric space, since càdlàg functions on `I` are bounded.
   zero agree (up to `edist` zero).
 * `SkorokhodSpace.tendsto_iff_tendstoUniformly`: convergence in the Skorokhod topology to a
   continuous limit is the same as uniform convergence.
+* `SkorokhodSpace.lipschitzWith_ofContinuousMap`: the inclusion `C([0, 1], E) → D([0, 1], E)` is
+  `1`-Lipschitz for the uniform metric.
 * `SkorokhodSpace.tendsto_apply_of_continuousAt`: convergence in the Skorokhod topology implies
   convergence at every continuity point of the limit, and at the endpoints `0` and `1`
   (`SkorokhodSpace.tendsto_apply_zero`, `SkorokhodSpace.tendsto_apply_one`).
@@ -340,6 +343,16 @@ lemma dist_le_of_forall_dist_le {x y : SkorokhodSpace E} {C : ℝ} (hC : 0 ≤ C
   rw [dist_edist]
   exact ENNReal.toReal_le_of_le_ofReal hC
     (edist_le_of_forall_edist_le fun t ↦ (edist_le_ofReal hC).2 (h t))
+
+/-- The inclusion of `C([0, 1], E)` with the uniform metric into the Skorokhod space is
+`1`-Lipschitz. -/
+lemma lipschitzWith_ofContinuousMap :
+    LipschitzWith 1 (ofContinuousMap : C(I, E) → SkorokhodSpace E) :=
+  LipschitzWith.mk_one fun _ _ ↦
+    dist_le_of_forall_dist_le dist_nonneg fun t ↦ ContinuousMap.dist_apply_le_dist t
+
+lemma continuous_ofContinuousMap : Continuous (ofContinuousMap : C(I, E) → SkorokhodSpace E) :=
+  lipschitzWith_ofContinuousMap.continuous
 
 end PseudoMetricSpace
 
