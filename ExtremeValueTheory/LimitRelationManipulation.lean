@@ -266,13 +266,74 @@ lemma tendsto_one_of_ev_limit {F G : CumulativeDistributionFunction}
     {As : ℕ → AffineIncrEquiv} {x : ℝ} (hGx : G x ∈ Ioo 0 1)
     (h : Tendsto (fun n ↦ ((As n • F) x)^n) atTop (𝓝 (G x))) :
     Tendsto (fun n ↦ ((As n • F) x)) atTop (𝓝 1) := by
-  sorry -- **Issue #28**
+  have hlog := (ev_limit_iff_log_ev_limit hGx).mp h
+  have h1 : Tendsto (fun n : ℕ ↦ (1 / (n : ℝ)) * (n * Real.log ((As n • F) x))) atTop
+      (𝓝 (0 * Real.log (G x))) :=
+    tendsto_one_div_atTop_nhds_zero_nat.mul hlog
+  rw [zero_mul] at h1
+  have h2 : Tendsto (fun n : ℕ ↦ Real.exp (Real.log ((As n • F) x))) atTop (𝓝 1) := by
+    have h3 := (Real.continuous_exp.tendsto 0).comp h1
+    rw [Real.exp_zero] at h3
+    refine h3.congr' ?_
+    filter_upwards [eventually_ne_atTop 0] with n hn
+    have hn' : (n : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hn
+    simp only [Function.comp_apply]
+    congr 1
+    field_simp
+  refine h2.congr' ?_
+  filter_upwards [h (Ioi_mem_nhds hGx.1), eventually_ne_atTop 0] with n hn hn0
+  simp only [mem_preimage, mem_Ioi] at hn
+  apply Real.exp_log
+  rcases ((As n • F).apply_nonneg x).lt_or_eq with hp | hp
+  · exact hp
+  · rw [← hp, zero_pow hn0] at hn
+    exact absurd hn (lt_irrefl 0)
 
 lemma log_ev_limit_iff_taylored_ev_limit {F G : CumulativeDistributionFunction}
     {As : ℕ → AffineIncrEquiv} {x : ℝ} (hGx : G x ∈ Ioo 0 1) :
     (Tendsto (fun n ↦ n * Real.log (((As n) • F) x)) atTop (𝓝 (Real.log (G x))))
       ↔ (Tendsto (fun n ↦ n * (1 - (((As n) • F) x))) atTop (𝓝 (-(Real.log (G x))))) := by
-  sorry -- **Issue #27**
+  have hlogG : Real.log (G x) < 0 := Real.log_neg hGx.1 hGx.2
+  have m_to_infty : Tendsto (fun n : ℕ ↦ (n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop
+  have hD₁ : HasDerivAt (fun t : ℝ ↦ Real.log (1 - t)) (-1) 0 := by
+    have := ((hasDerivAt_id (0 : ℝ)).const_sub 1).log (by norm_num)
+    simpa using this
+  have hD₂ : HasDerivAt (fun t : ℝ ↦ t) 1 0 := hasDerivAt_id' 0
+  constructor
+  · intro h
+    have a_in_s : ∀ᶠ n in atTop, 1 - (As n • F) x ∈ Ico (0 : ℝ) 1 := by
+      filter_upwards [h (Iio_mem_nhds (show Real.log (G x) < Real.log (G x) / 2 by linarith))]
+        with n hn
+      simp only [mem_preimage, mem_Iio] at hn
+      have hle := (As n • F).apply_le_one x
+      have hnn := (As n • F).apply_nonneg x
+      have hne : (As n • F) x ≠ 0 := by
+        intro h0
+        rw [h0, Real.log_zero, mul_zero] at hn
+        linarith
+      have hpos : 0 < (As n • F) x := lt_of_le_of_ne hnn (Ne.symm hne)
+      exact ⟨by linarith, by linarith⟩
+    have hs₁ : ∀ δ > 0, ∃ ε > 0, ∀ t ∈ Ico (0 : ℝ) 1,
+        ‖Real.log (1 - t)‖ < ε → t ∈ Metric.ball 0 δ := by
+      intro δ hδ
+      refine ⟨δ, hδ, fun t ht hlt ↦ ?_⟩
+      have h1 : Real.log (1 - t) ≤ (1 - t) - 1 := Real.log_le_sub_one_of_pos (by linarith [ht.2])
+      rw [Real.norm_eq_abs] at hlt
+      rw [Metric.mem_ball, Real.dist_eq, sub_zero, abs_of_nonneg ht.1]
+      have := neg_abs_le (Real.log (1 - t))
+      linarith
+    have key := tendsto_smul_apply_smul_deriv_of_tendsto_atTop_of_tendsto_smul_apply_smul_deriv
+      (fun t ↦ Real.log (1 - t)) (fun t ↦ t) (by simp) rfl hs₁ m_to_infty a_in_s
+      (c := -Real.log (G x)) (by norm_num) hD₁ hD₂ (by simpa using h)
+    simpa using key
+  · intro h
+    have key := tendsto_smul_apply_smul_deriv_of_tendsto_atTop_of_tendsto_smul_apply_smul_deriv
+      (fun t ↦ t) (fun t ↦ Real.log (1 - t)) rfl (by simp) (s := univ) ?_ m_to_infty
+      (Eventually.of_forall fun _ ↦ trivial) (c := -Real.log (G x)) one_ne_zero hD₂ hD₁
+      (by simpa using h)
+    · simpa using key
+    · intro δ hδ
+      exact ⟨δ, hδ, fun t _ ht ↦ by simpa using ht⟩
 
 lemma taylored_ev_limit_iff_oneDivOneSub_limit {F G : CumulativeDistributionFunction}
     {As : ℕ → AffineIncrEquiv} {x : ℝ} (hGx : G x ∈ Ioo 0 1) :

@@ -12,3 +12,6 @@ import ExtremeValueTheory.SelfSimilarCDF
 import ExtremeValueTheory.TransformedCDF
 import ExtremeValueTheory.TypeOfCDF
 import ExtremeValueTheory.WeakConvergenceCDF
+
+import ExtremeValueTheory.RegularVariation.Basic
+import ExtremeValueTheory.RegularVariation.Karamata

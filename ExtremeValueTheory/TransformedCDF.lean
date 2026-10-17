@@ -8,6 +8,7 @@ ported to Lean/Mathlib v4.35.0 and renamed `ExtremeValueProject` to `ExtremeValu
 import ExtremeValueTheory.AffineTransformation
 import ExtremeValueTheory.PseudoInverses
 import Mathlib.Analysis.SpecialFunctions.Log.ENNRealLog
+import Mathlib.Analysis.SpecialFunctions.Log.ENNRealLogExp
 
 
 section auxiliary_log
@@ -93,22 +94,49 @@ lemma extend_affine (F : CumulativeDistributionFunction) (A : AffineIncrEquiv) :
       congr
     exact aux
 
+lemma extend_continuousAt_iff (F : CumulativeDistributionFunction) (x : ℝ) :
+    ContinuousAt F.extend x ↔ ContinuousAt F x := by
+  have key : F.extend ∘ ((↑) : ℝ → EReal) = ENNReal.ofReal ∘ F := by
+    funext y; rfl
+  rw [← EReal.isOpenEmbedding_coe.continuousAt_iff, key]
+  constructor
+  · intro h
+    have h' : ContinuousAt (ENNReal.toReal ∘ (ENNReal.ofReal ∘ F)) x :=
+      ContinuousAt.comp (g := ENNReal.toReal) (f := ENNReal.ofReal ∘ F)
+        (ENNReal.continuousAt_toReal ENNReal.ofReal_ne_top) h
+    convert h' using 1
+    funext y
+    simp [F.apply_nonneg y]
+  · intro h
+    exact ENNReal.continuous_ofReal.continuousAt.comp h
+
 lemma extend_continuousAt_bot (F : CumulativeDistributionFunction) :
     ContinuousAt F.extend ⊥ := by
-  sorry -- **Issue #30**
+  rw [ContinuousAt, extend_bot, ENNReal.tendsto_nhds_zero]
+  intro ε ε_pos
+  have h := (ENNReal.continuous_ofReal.tendsto 0).comp F.tendsto_atBot
+  simp only [ENNReal.ofReal_zero] at h
+  obtain ⟨ξ, hξ⟩ := (h.eventually (gt_mem_nhds ε_pos)).exists
+  filter_upwards [Iio_mem_nhds (EReal.bot_lt_coe ξ)] with y hy
+  have hξ' : F.extend ξ < ε := hξ
+  exact (F.extend_mono (show y ≤ (ξ : EReal) from hy.le)).trans hξ'.le
 
 lemma extend_continuousAt_top (F : CumulativeDistributionFunction) :
     ContinuousAt F.extend ⊤ := by
-  sorry -- **Issue #30**
+  rw [ContinuousAt, extend_top]
+  refine tendsto_order.2 ⟨fun a ha ↦ ?_, fun a ha ↦ ?_⟩
+  · have h := (ENNReal.continuous_ofReal.tendsto 1).comp F.tendsto_atTop
+    simp only [ENNReal.ofReal_one] at h
+    obtain ⟨ξ, hξ⟩ := (h.eventually (lt_mem_nhds ha)).exists
+    filter_upwards [Ioi_mem_nhds (EReal.coe_lt_top ξ)] with y hy
+    have hξ' : a < F.extend ξ := hξ
+    exact hξ'.trans_le (F.extend_mono (show (ξ : EReal) ≤ y from hy.le))
+  · exact Filter.Eventually.of_forall fun y ↦ (F.extend_le_one y).trans_lt ha
 
 lemma extend_continuousAt (F : CumulativeDistributionFunction) {x : ℝ}
     (hx : ContinuousAt F x) :
-    ContinuousAt F.extend x := by
-  sorry -- **Issue #30**
-
-lemma extend_continuousAt_iff (F : CumulativeDistributionFunction) (x : ℝ) :
-    ContinuousAt F.extend x ↔ ContinuousAt F x := by
-  sorry -- (maybe could be done together with issue 30)
+    ContinuousAt F.extend x :=
+  (F.extend_continuousAt_iff x).mpr hx
 
 open MeasureTheory
 
@@ -177,6 +205,18 @@ lemma oneDivOneSubAux_strictMonoOn :
   convert hpq
   refine ENNReal.sub_sub_cancel one_ne_top hp
 
+lemma oneDivOneSubAux_continuous :
+    Continuous oneDivOneSubAux := by
+  have : oneDivOneSubAux = fun p ↦ (1 - p)⁻¹ := by
+    funext p; simp [oneDivOneSubAux]
+  rw [this]
+  exact continuous_inv.comp (ENNReal.continuous_sub_left one_ne_top)
+
+lemma one_sub_inv_oneDivOneSubAux {p : ℝ≥0∞} (hp : p ≤ 1) :
+    1 - (oneDivOneSubAux p)⁻¹ = p := by
+  simp only [oneDivOneSubAux, one_div, inv_inv]
+  exact ENNReal.sub_sub_cancel one_ne_top hp
+
 namespace CumulativeDistributionFunction
 
 /-- An auxiliary transform of a cumulative distribution function `F` to a function
@@ -206,21 +246,28 @@ lemma oneDivOneSub_mono (F : CumulativeDistributionFunction) :
   oneDivOneSubAux_mono.comp F.extend_mono
 
 lemma oneDivOneSub_continuousAt_bot (F : CumulativeDistributionFunction) :
-    ContinuousAt F.oneDivOneSub ⊥ := by
-  sorry -- **Issue #31**
+    ContinuousAt F.oneDivOneSub ⊥ :=
+  oneDivOneSubAux_continuous.continuousAt.comp F.extend_continuousAt_bot
 
 lemma oneDivOneSub_continuousAt_top (F : CumulativeDistributionFunction) :
-    ContinuousAt F.oneDivOneSub ⊤ := by
-  sorry -- **Issue #31**
+    ContinuousAt F.oneDivOneSub ⊤ :=
+  oneDivOneSubAux_continuous.continuousAt.comp F.extend_continuousAt_top
 
 lemma oneDivOneSub_continuousAt (F : CumulativeDistributionFunction) {x : ℝ}
     (hx : ContinuousAt F x) :
-    ContinuousAt F.oneDivOneSub x := by
-  sorry -- **Issue #31**
+    ContinuousAt F.oneDivOneSub x :=
+  oneDivOneSubAux_continuous.continuousAt.comp (F.extend_continuousAt hx)
 
 lemma oneDivOneSub_continuousAt_iff (F : CumulativeDistributionFunction) (x : ℝ) :
     ContinuousAt F.oneDivOneSub x ↔ ContinuousAt F x := by
-  sorry -- (maybe could be done together with issue 31)
+  refine ⟨fun h ↦ ?_, F.oneDivOneSub_continuousAt⟩
+  rw [← extend_continuousAt_iff]
+  have key : F.extend = (fun q ↦ 1 - q⁻¹) ∘ F.oneDivOneSub := by
+    funext y
+    exact (one_sub_inv_oneDivOneSubAux (F.extend_le_one y)).symm
+  rw [key]
+  exact ((ENNReal.continuous_sub_left one_ne_top).continuousAt.comp
+    continuous_inv.continuousAt).comp h
 
 lemma oneDivOneSub_affine (F : CumulativeDistributionFunction) (A : AffineIncrEquiv) :
     ((A • F).oneDivOneSub) = F.oneDivOneSub ∘ (A⁻¹).extend := by
@@ -244,7 +291,7 @@ lemma rcInvOneDivOneSub_affine (F : CumulativeDistributionFunction) (A : AffineI
     ((A • F).rcInvOneDivOneSub) = A.extend ∘ F.rcInvOneDivOneSub := by
   rw [rcInvOneDivOneSub, oneDivOneSub_affine]
   apply rcInv_comp F.oneDivOneSub (A⁻¹).extend ?_
-  exact AffineMap.leftOrdContinuous_extend _
+  exact AffineIncrEquiv.leftOrdContinuous_extend _
 
 end CumulativeDistributionFunction
 
@@ -274,6 +321,20 @@ lemma oneDivNegLogAux_strictMonoOn :
   intro p hp q hq hpq
   simp only [oneDivNegLogAux, one_div, ENNReal.inv_lt_inv]
   exact EReal.toENNReal_lt_toENNReal (by simpa using hq) (by simpa using hpq)
+
+lemma oneDivNegLogAux_continuous :
+    Continuous oneDivNegLogAux := by
+  have : oneDivNegLogAux = fun p ↦ ((ENNReal.log p⁻¹).toENNReal)⁻¹ := by
+    funext p; simp [oneDivNegLogAux]
+  rw [this]
+  exact continuous_inv.comp
+    (EReal.continuous_toENNReal.comp (ENNReal.continuous_log.comp continuous_inv))
+
+lemma inv_exp_inv_oneDivNegLogAux {p : ℝ≥0∞} (hp : p ≤ 1) :
+    (EReal.exp (((oneDivNegLogAux p)⁻¹ : ℝ≥0∞) : EReal))⁻¹ = p := by
+  have h1 : 1 ≤ p⁻¹ := ENNReal.one_le_inv.mpr hp
+  have h2 : (0 : EReal) ≤ ENNReal.log p⁻¹ := ENNReal.zero_le_log_iff.mpr h1
+  simp only [oneDivNegLogAux, one_div, inv_inv, EReal.coe_toENNReal h2, ENNReal.exp_log]
 
 namespace CumulativeDistributionFunction
 
@@ -325,21 +386,30 @@ lemma oneDivNegLog_apply_ofReal_of_pos_of_lt_one (F : CumulativeDistributionFunc
   rw [ENNReal.ofReal_inv_of_pos (Real.log_pos Fx_inv_gt_one)]
 
 lemma oneDivNegLog_continuousAt_bot (F : CumulativeDistributionFunction) :
-    ContinuousAt F.oneDivNegLog ⊥ := by
-  sorry -- **Issue #32**
+    ContinuousAt F.oneDivNegLog ⊥ :=
+  oneDivNegLogAux_continuous.continuousAt.comp F.extend_continuousAt_bot
 
 lemma oneDivNegLog_continuousAt_top (F : CumulativeDistributionFunction) :
-    ContinuousAt F.oneDivNegLog ⊤ := by
-  sorry -- **Issue #32**
+    ContinuousAt F.oneDivNegLog ⊤ :=
+  oneDivNegLogAux_continuous.continuousAt.comp F.extend_continuousAt_top
 
 lemma oneDivNegLog_continuousAt (F : CumulativeDistributionFunction) {x : ℝ}
     (hx : ContinuousAt F x) :
-    ContinuousAt F.oneDivNegLog x := by
-  sorry -- **Issue #32**
+    ContinuousAt F.oneDivNegLog x :=
+  oneDivNegLogAux_continuous.continuousAt.comp (F.extend_continuousAt hx)
 
 lemma oneDivNegLog_continuousAt_iff (F : CumulativeDistributionFunction) (x : ℝ) :
     ContinuousAt F.oneDivNegLog x ↔ ContinuousAt F x := by
-  sorry -- (maybe could be done together with issue 32)
+  refine ⟨fun h ↦ ?_, F.oneDivNegLog_continuousAt⟩
+  rw [← extend_continuousAt_iff]
+  have key : F.extend =
+      (fun q : ℝ≥0∞ ↦ (EReal.exp ((q⁻¹ : ℝ≥0∞) : EReal))⁻¹) ∘ F.oneDivNegLog := by
+    funext y
+    exact (inv_exp_inv_oneDivNegLogAux (F.extend_le_one y)).symm
+  rw [key]
+  have hc : Continuous (fun q : ℝ≥0∞ ↦ (EReal.exp ((q⁻¹ : ℝ≥0∞) : EReal))⁻¹) :=
+    continuous_inv.comp (ENNReal.continuous_exp.comp (continuous_coe_ennreal_ereal.comp continuous_inv))
+  exact hc.continuousAt.comp h
 
 lemma oneDivNegLog_affine (F : CumulativeDistributionFunction) (A : AffineIncrEquiv) :
     ((A • F).oneDivNegLog) = F.oneDivNegLog ∘ (A⁻¹).extend := by
@@ -360,7 +430,7 @@ lemma rcInvOneDivNegLog_affine (F : CumulativeDistributionFunction) (A : AffineI
     ((A • F).rcInvOneDivNegLog) = A.extend ∘ F.rcInvOneDivNegLog := by
   rw [rcInvOneDivNegLog, oneDivNegLog_affine]
   apply rcInv_comp F.oneDivNegLog (A⁻¹).extend ?_
-  exact AffineMap.leftOrdContinuous_extend _
+  exact AffineIncrEquiv.leftOrdContinuous_extend _
 
 end CumulativeDistributionFunction
 

@@ -15,10 +15,17 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
 
 ## Status
 
-Work in progress. The Fisher–Tippett–Gnedenko development is imported from
-[ExtremeValueProject](https://github.com/kkytola/ExtremeValueProject) and ported to Lean v4.35.0;
-its remaining `sorry`s are being filled. See [`TRIAGE.md`](TRIAGE.md) for the open proof
-obligations.
+- **Fisher–Tippett–Gnedenko** (`CumulativeDistributionFunction.IsExtremeValueDistr.classification`):
+  proved, depending only on the standard axioms `propext`, `Classical.choice`, `Quot.sound`.
+- **Karamata's tail-integral theorem** (`IsRegularlyVarying.tendsto_integral_Ioi_div`): for an
+  antitone survival function regularly varying with index `-α`, `α > 1`,
+  `∫ₓ^∞ F̄(t) dt / (x F̄(x)) → 1/(α-1)`. Proved, standard axioms only.
+- Regular variation API: closure properties, uniform convergence theorem and Potter bounds for
+  monotone functions.
+
+The development started from [ExtremeValueProject](https://github.com/kkytola/ExtremeValueProject);
+several of its statements were false as written and have been corrected. See
+[`TRIAGE.md`](TRIAGE.md) for the corrections and the remaining open items.
 
 ## Build
 

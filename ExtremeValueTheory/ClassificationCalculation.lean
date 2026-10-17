@@ -23,7 +23,51 @@ lemma ode_of_order_two_for_Q
     {Q α : ℝ → ℝ} (Q_diffble : Differentiable ℝ Q) (hQ0 : Q 0 = 0)
     (hDQ0 : deriv Q 0 = 1) (Q_eqn : ∀ h s, Q (h + s) = Q h * α s + Q s) :
     ContDiff ℝ 2 Q ∧ (∀ s, deriv (deriv Q) s = (deriv Q s) * (deriv (deriv Q) 0)) := by
-  sorry -- **Issue #23**
+  -- Step 1: `α = Q'`.
+  have hα : ∀ s, α s = deriv Q s := by
+    intro s
+    have h1 : HasDerivAt (fun h ↦ Q (h + s)) (deriv Q (0 + s)) 0 :=
+      (Q_diffble (0 + s)).hasDerivAt.comp_add_const 0 s
+    have h2 : HasDerivAt (fun h ↦ Q h * α s + Q s) (deriv Q 0 * α s) 0 :=
+      ((Q_diffble 0).hasDerivAt.mul_const (α s)).add_const (Q s)
+    have h1' : HasDerivAt (fun h ↦ Q h * α s + Q s) (deriv Q (0 + s)) 0 := by
+      convert h1 using 1
+      funext h
+      exact (Q_eqn h s).symm
+    have := h2.unique h1'
+    rw [hDQ0, one_mul, zero_add] at this
+    exact this
+  -- Step 2: some value of `Q` is nonzero.
+  obtain ⟨s₀, hs₀⟩ : ∃ s₀, Q s₀ ≠ 0 := by
+    by_contra! hcon
+    have : Q = fun _ ↦ 0 := funext hcon
+    rw [this, deriv_const] at hDQ0
+    exact zero_ne_one hDQ0
+  -- Step 3: `Q' = 1 + k Q`.
+  set k := (deriv Q s₀ - 1) / Q s₀ with hk
+  have hDQ : deriv Q = fun h ↦ 1 + k * Q h := by
+    funext h
+    have e1 := Q_eqn h s₀
+    have e2 := Q_eqn s₀ h
+    rw [hα, add_comm] at e1
+    rw [hα] at e2
+    rw [hk]
+    field_simp
+    linarith
+  have hDQ_diff : Differentiable ℝ (deriv Q) := by
+    rw [hDQ]; exact (Q_diffble.const_mul k).const_add 1
+  have hDDQ : ∀ s, deriv (deriv Q) s = k * deriv Q s := by
+    intro s
+    rw [hDQ]
+    simp only [deriv_const_add', deriv_const_mul_field']
+    rw [hDQ]
+  have hDDQ0 : deriv (deriv Q) 0 = k := by rw [hDDQ, hDQ0, mul_one]
+  refine ⟨?_, fun s ↦ by rw [hDDQ, hDDQ0, mul_comm]⟩
+  have hC1 : ContDiff ℝ 1 Q := contDiff_one_iff_deriv.2 ⟨Q_diffble, hDQ_diff.continuous⟩
+  rw [show (2 : WithTop ℕ∞) = 1 + 1 from rfl, contDiff_succ_iff_deriv]
+  refine ⟨Q_diffble, by simp, ?_⟩
+  rw [hDQ]
+  exact contDiff_const.add (contDiff_const.mul hC1)
 
 /-- Lemma 3.2 (solve-Q) -/
 lemma solve_Q
@@ -31,7 +75,56 @@ lemma solve_Q
     (hDQ_pos : ∀ s, 0 < deriv Q s)
     (Q_de : ∀ s, deriv (deriv Q) s = (deriv Q s) * (deriv (deriv Q) 0)) :
     Q = if γ = 0 then (fun s ↦ s) else (fun s ↦ (exp (γ * s) - 1) / γ) := by
+  -- FALSE as stated (`γ` is unconstrained): see `not_solve_Q`; corrected: `solve_Q_of_gamma_eq`.
   sorry -- **Issue #24**
+
+/-- A corrected version of `solve_Q`, with `γ = Q''(0)` (and without needing positivity
+of `Q'`). -/
+lemma solve_Q_of_gamma_eq
+    {Q : ℝ → ℝ} {γ : ℝ} (Q_diffble2 : ContDiff ℝ 2 Q) (hQ0 : Q 0 = 0) (hDQ0 : deriv Q 0 = 1)
+    (hγ : γ = deriv (deriv Q) 0)
+    (Q_de : ∀ s, deriv (deriv Q) s = (deriv Q s) * (deriv (deriv Q) 0)) :
+    Q = if γ = 0 then (fun s ↦ s) else (fun s ↦ (exp (γ * s) - 1) / γ) := by
+  rw [← hγ] at Q_de
+  obtain ⟨hQd, -, hDQ⟩ :=
+    contDiff_succ_iff_deriv.1 (show ContDiff ℝ (1 + 1) Q from Q_diffble2)
+  have hDQd : Differentiable ℝ (deriv Q) := hDQ.differentiable (by norm_num)
+  have hexp : ∀ s, deriv Q s = exp (γ * s) := by
+    let g := fun s ↦ deriv Q s * exp (-(γ * s))
+    have hg : ∀ s, HasDerivAt g 0 s := by
+      intro s
+      have h1 := (hDQd s).hasDerivAt
+      have h2 : HasDerivAt (fun s ↦ exp (-(γ * s))) (exp (-(γ * s)) * (-(γ * 1))) s :=
+        ((hasDerivAt_id s).const_mul γ).neg.exp
+      convert h1.mul h2 using 1
+      rw [Q_de]; ring
+    have hconst := is_const_of_deriv_eq_zero (fun s ↦ (hg s).differentiableAt)
+      (fun s ↦ (hg s).deriv)
+    intro s
+    have h := hconst s 0
+    simp only [g, hDQ0, mul_zero, neg_zero, exp_zero, mul_one] at h
+    rw [Real.exp_neg] at h
+    have := exp_pos (γ * s)
+    field_simp at h
+    exact h
+  set T : ℝ → ℝ := if γ = 0 then (fun s ↦ s) else (fun s ↦ (exp (γ * s) - 1) / γ) with hT
+  have hT0 : T 0 = 0 := by rw [hT]; split_ifs <;> simp
+  have hTd : ∀ s, HasDerivAt T (deriv Q s) s := by
+    intro s
+    rw [hexp, hT]
+    split_ifs with h0
+    · simpa [h0] using hasDerivAt_id' s
+    · have := ((((hasDerivAt_id' s).const_mul γ).exp).sub_const 1).div_const γ
+      convert this using 1
+      field_simp
+  have hdiff : Differentiable ℝ (Q - T) :=
+    fun s ↦ (hQd s).sub (hTd s).differentiableAt
+  have hzero : ∀ s, deriv (Q - T) s = 0 := fun s ↦
+    by simpa using ((hQd s).hasDerivAt.sub (hTd s)).deriv
+  funext s
+  have := is_const_of_deriv_eq_zero hdiff hzero s 0
+  simp only [Pi.sub_apply, hQ0, hT0, sub_zero] at this
+  linarith
 
 /-- Lemma 3.4 (solve-E) -/
 lemma solve_E
@@ -40,7 +133,51 @@ lemma solve_E
     (E_noncst : ¬ ∃ C, ∀ σ > 0, E σ = C) (hE1 : E 1 = 0)
     (E_eqn : ∀ σ > 0, ∀ τ > 0, E (σ * τ) = E σ * A τ + E τ) :
     E = if γ = 0 then (fun σ ↦ c * log σ) else (fun σ ↦ c * (σ.rpow γ - 1)) := by
+  -- FALSE as stated: see `not_solve_E` below.
   sorry -- **Issue #25**
+
+/-! ### Counterexamples to `solve_Q` and `solve_E` as stated
+
+* In `solve_Q` the parameter `γ` is a free (implicit) variable not tied to `Q`
+  (presumably `γ = deriv (deriv Q) 0` was intended), so the statement fails e.g. for
+  `Q = id`, `γ = 1`.
+* In `solve_E` the normalization is wrong (the correct formula would be
+  `E σ = c * (σ ^ (γ / c) - 1) / (γ / c)` with `γ = H''(0)`, `H = E ∘ exp`), and moreover the
+  conclusion is an equality of functions on all of `ℝ` although the hypotheses only constrain
+  `E` on `(0, ∞)`. A counterexample is `E σ = 2 * (σ - 1)`, `A τ = τ`, `c = 2`, `γ = 2`. -/
+
+lemma not_solve_Q :
+    ¬ ∀ (Q : ℝ → ℝ) (γ : ℝ), ContDiff ℝ 2 Q → Q 0 = 0 → deriv Q 0 = 1 →
+      (∀ s, 0 < deriv Q s) → (∀ s, deriv (deriv Q) s = (deriv Q s) * (deriv (deriv Q) 0)) →
+      Q = if γ = 0 then (fun s ↦ s) else (fun s ↦ (exp (γ * s) - 1) / γ) := by
+  intro h
+  have := h (fun s ↦ s) 1 contDiff_id rfl (by simp) (by simp) (by simp)
+  have h1 := congrFun this 1
+  simp only [one_ne_zero, ↓reduceIte, one_mul, div_one] at h1
+  have := Real.exp_one_gt_d9
+  linarith
+
+lemma not_solve_E :
+    ¬ ∀ (E A : ℝ → ℝ) (c γ : ℝ), c = deriv E 1 →
+      γ = deriv (deriv (fun s ↦ E (exp s))) 0 → (∀ τ > 0, 0 < A τ) → MonotoneOn E (Ioi 0) →
+      (¬ ∃ C, ∀ σ > 0, E σ = C) → E 1 = 0 →
+      (∀ σ > 0, ∀ τ > 0, E (σ * τ) = E σ * A τ + E τ) →
+      E = if γ = 0 then (fun σ ↦ c * log σ) else (fun σ ↦ c * (σ.rpow γ - 1)) := by
+  intro h
+  have hc : (2 : ℝ) = deriv (fun σ : ℝ ↦ 2 * (σ - 1)) 1 := by
+    simp only [deriv_const_mul_field', deriv_sub_const, deriv_id'']; norm_num
+  have hH : deriv (fun s ↦ 2 * (exp s - 1)) = fun s ↦ 2 * exp s := by
+    funext s
+    simp only [deriv_const_mul_field', deriv_sub_const, Real.deriv_exp]
+  have hγ : (2 : ℝ) = deriv (deriv (fun s ↦ 2 * (exp s - 1))) 0 := by
+    rw [hH]; simp only [deriv_const_mul_field', Real.deriv_exp, exp_zero]; norm_num
+  have := h (fun σ ↦ 2 * (σ - 1)) (fun τ ↦ τ) 2 2 hc hγ (fun τ hτ ↦ hτ)
+    (fun x _ y _ hxy ↦ by simp only; linarith)
+    (by rintro ⟨C, hC⟩; have h1 := hC 1 one_pos; have h2 := hC 2 two_pos; linarith)
+    (by norm_num) (fun σ _ τ _ ↦ by ring)
+  have h2 := congrFun this 2
+  simp only [two_ne_zero, ↓reduceIte, Real.rpow_eq_pow, Real.rpow_two] at h2
+  norm_num at h2
 
 end classification_calculation
 

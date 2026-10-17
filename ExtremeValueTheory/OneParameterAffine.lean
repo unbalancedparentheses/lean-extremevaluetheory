@@ -168,18 +168,53 @@ lemma IsOpen.countable_setOf_connectedComponentIn
 lemma Real.eq_Ioo_or_Iio_or_Ioi_or_univ_of_isOpen_of_isConnected
     {U : Set ℝ} (U_open : IsOpen U) (U_conn : IsConnected U) :
     (∃ a b, U = Ioo a b) ∨ (∃ b, U = Iio b) ∨ (∃ a, U = Ioi a) ∨ U = univ := by
-  sorry
+  have inf_notMem (hb : BddBelow U) : sInf U ∉ U := by
+    intro h
+    obtain ⟨ε, ε_pos, hε⟩ := Metric.isOpen_iff.mp U_open _ h
+    have : sInf U - ε / 2 ∈ U := hε (by
+      rw [Metric.mem_ball, Real.dist_eq, abs_lt]; constructor <;> linarith)
+    linarith [csInf_le hb this]
+  have sup_notMem (ha : BddAbove U) : sSup U ∉ U := by
+    intro h
+    obtain ⟨ε, ε_pos, hε⟩ := Metric.isOpen_iff.mp U_open _ h
+    have : sSup U + ε / 2 ∈ U := hε (by
+      rw [Metric.mem_ball, Real.dist_eq, abs_lt]; constructor <;> linarith)
+    linarith [le_csSup ha this]
+  by_cases hb : BddBelow U <;> by_cases ha : BddAbove U
+  · refine Or.inl ⟨sInf U, sSup U, subset_antisymm (fun x hx ↦ ?_)
+      (U_conn.Ioo_csInf_csSup_subset hb ha)⟩
+    refine ⟨lt_of_le_of_ne (csInf_le hb hx) ?_, lt_of_le_of_ne (le_csSup ha hx) ?_⟩
+    · rintro rfl; exact inf_notMem hb hx
+    · rintro rfl; exact sup_notMem ha hx
+  · refine Or.inr (Or.inr (Or.inl ⟨sInf U, subset_antisymm (fun x hx ↦ ?_)
+      (U_conn.isPreconnected.Ioi_csInf_subset hb ha)⟩))
+    refine lt_of_le_of_ne (csInf_le hb hx) ?_
+    rintro rfl; exact inf_notMem hb hx
+  · refine Or.inr (Or.inl ⟨sSup U, subset_antisymm (fun x hx ↦ ?_)
+      (U_conn.isPreconnected.Iio_csSup_subset hb ha)⟩)
+    refine lt_of_le_of_ne (le_csSup ha hx) ?_
+    rintro rfl; exact sup_notMem ha hx
+  · exact Or.inr (Or.inr (Or.inr (U_conn.isPreconnected.eq_univ_of_unbounded hb ha)))
 
 lemma exists_interval_measure_inter_gt_mul_measure
     {A : Set ℝ} (A_mble : MeasurableSet A) (A_pos : 0 < volume A) (A_fin : volume A < ⊤)
     {r : ENNReal} (r_lt_one : r < 1) :
-    ∃ (J : Set ℝ), IsConnected J ∧ (interior A).Nonempty ∧ volume (J ∩ A) > r * volume J := by
+    ∃ (J : Set ℝ), IsConnected J ∧ (interior J).Nonempty ∧ volume (J ∩ A) > r * volume J := by
+  -- Corrected from upstream, which had `(interior A).Nonempty` (false for a fat Cantor set `A`).
+  -- Not needed downstream: the Steinhaus-type results below use Mathlib's
+  -- `MeasureTheory.Measure.sub_mem_nhds_zero_of_addHaar_pos`.
   sorry
 
 lemma isPreconnected_of_Ioo_subset_of_subset_Icc
     {J : Set ℝ} {a b : ℝ} (J_ge : Ioo a b ⊆ J) (J_le : J ⊆ Icc a b) :
     IsPreconnected J := by
-  sorry
+  rw [isPreconnected_iff_ordConnected]
+  refine ⟨fun x hx y hy z hz ↦ ?_⟩
+  rcases eq_or_lt_of_le hz.1 with h | h
+  · exact h ▸ hx
+  rcases eq_or_lt_of_le hz.2 with h' | h'
+  · exact h' ▸ hy
+  exact J_ge ⟨lt_of_le_of_lt (J_le hx).1 h, lt_of_lt_of_le h' (J_le hy).2⟩
 
 lemma isConnected_of_Ioo_subset_of_subset_Icc
     {J : Set ℝ} {a b : ℝ} (hab : a < b) (J_ge : Ioo a b ⊆ J) (J_le : J ⊆ Icc a b) :
@@ -201,28 +236,104 @@ lemma union_add_self_subset_Icc_of_subset_Icc
 lemma Ioo_subset_union_add_self_of_Ioo_subset
     {J : Set ℝ} {a b : ℝ} (J_ge : Ioo a b ⊆ J) (t : ℝ) (ht : |t| < b - a) :
     Ioo (min a (a + t)) (max b (b + t)) ⊆ J ∪ ({t} + J) := by
-  sorry -- TODO: Add issue.
+  intro x hx
+  have mem_add : x - t ∈ J → x ∈ {t} + J := fun h ↦ by
+    simp only [singleton_add, image_add_left, mem_preimage]
+    convert h using 1; ring
+  rcases le_or_gt 0 t with t_nn | t_neg
+  · rw [abs_of_nonneg t_nn] at ht
+    rw [min_eq_left (by linarith), max_eq_right (by linarith)] at hx
+    by_cases hxb : x < b
+    · exact Or.inl (J_ge ⟨hx.1, hxb⟩)
+    · exact Or.inr (mem_add (J_ge ⟨by linarith, by linarith [hx.2]⟩))
+  · rw [abs_of_neg t_neg] at ht
+    rw [min_eq_right (by linarith), max_eq_left (by linarith)] at hx
+    by_cases hxa : a < x
+    · exact Or.inl (J_ge ⟨hxa, hx.2⟩)
+    · exact Or.inr (mem_add (J_ge ⟨by linarith [hx.1], by linarith⟩))
 
 lemma volume_union_add_self_ge_of_Ioo_subset
     {J : Set ℝ} {a b : ℝ} (hab : a ≤ b) (J_ge : Ioo a b ⊆ J) (t : ℝ) (ht : |t| < b - a) :
     ENNReal.ofReal (b - a + |t|) ≤ volume (J ∪ ({t} + J)) := by
-  sorry
+  refine le_trans (le_of_eq ?_) (measure_mono (Ioo_subset_union_add_self_of_Ioo_subset J_ge t ht))
+  rw [Real.volume_Ioo]
+  congr 1
+  rcases le_or_gt 0 t with t_nn | t_neg
+  · rw [abs_of_nonneg t_nn, min_eq_left (by linarith), max_eq_right (by linarith)]; ring
+  · rw [abs_of_neg t_neg, min_eq_right (by linarith), max_eq_left (by linarith)]; ring
 
 lemma volume_union_add_self_le_of_subset_Icc
     {J : Set ℝ} {a b : ℝ} (hab : a ≤ b) (J_le : J ⊆ Icc a b) (t : ℝ) :
     volume (J ∪ ({t} + J)) ≤ ENNReal.ofReal (b - a + |t|) := by
-  sorry
+  refine le_trans (measure_mono (union_add_self_subset_Icc_of_subset_Icc J_le t)) (le_of_eq ?_)
+  rw [Real.volume_Icc]
+  congr 1
+  rcases le_or_gt 0 t with t_nn | t_neg
+  · rw [abs_of_nonneg t_nn, min_eq_left (by linarith), max_eq_right (by linarith)]; ring
+  · rw [abs_of_neg t_neg, min_eq_right (by linarith), max_eq_left (by linarith)]; ring
 
 lemma exists_Ioo_subset_diff_self_of_measure_pos {A : Set ℝ}
     (A_mble : MeasurableSet A) (A_pos : 0 < volume A) :
     ∃ δ > 0, Ioo (-δ) δ ⊆ A - A := by
-  sorry
+  have key := MeasureTheory.Measure.sub_mem_nhds_zero_of_addHaar_pos volume A A_mble A_pos
+  obtain ⟨δ, δ_pos, hδ⟩ := Metric.mem_nhds_iff.mp key
+  refine ⟨δ, δ_pos, ?_⟩
+  convert hδ using 1
+  rw [Real.ball_eq_Ioo]
+  simp
+
+/-- Auxiliary: for sets of positive measure, some translate of the first meets the second in
+a set of positive measure. -/
+private lemma exists_measure_preimage_add_inter_pos {A B : Set ℝ}
+    (A_mble : MeasurableSet A) (A_pos : 0 < volume A)
+    (B_mble : MeasurableSet B) (B_pos : 0 < volume B) :
+    ∃ x : ℝ, 0 < volume ((fun y ↦ x + y) ⁻¹' A ∩ B) := by
+  set S : Set (ℝ × ℝ) := {p | p.1 + p.2 ∈ A ∧ p.2 ∈ B} with def_S
+  have S_mble : MeasurableSet S :=
+    (A_mble.preimage (measurable_fst.add measurable_snd)).inter (B_mble.preimage measurable_snd)
+  have h₁ : (volume.prod volume) S = volume A * volume B := by
+    rw [Measure.prod_apply_symm S_mble]
+    have : ∀ y : ℝ, volume ((fun x ↦ (x, y)) ⁻¹' S) = B.indicator (fun _ ↦ volume A) y := by
+      intro y
+      by_cases hy : y ∈ B
+      · simp only [indicator_of_mem hy]
+        have : (fun x ↦ (x, y)) ⁻¹' S = (fun x ↦ x + y) ⁻¹' A := by
+          ext x; simp [def_S, hy]
+        rw [this, measure_preimage_add_right]
+      · simp only [indicator_of_notMem hy]
+        have : (fun x ↦ (x, y)) ⁻¹' S = ∅ := by
+          ext x; simp [def_S, hy]
+        rw [this, measure_empty]
+    simp_rw [this]
+    rw [lintegral_indicator B_mble, setLIntegral_const, mul_comm]
+  by_contra con
+  push_neg at con
+  have h₂ : (volume.prod volume) S = 0 := by
+    rw [Measure.prod_apply S_mble]
+    have : ∀ x : ℝ, volume (Prod.mk x ⁻¹' S) = 0 := by
+      intro x
+      have : Prod.mk x ⁻¹' S = (fun y ↦ x + y) ⁻¹' A ∩ B := by
+        ext y; simp [def_S]
+      rw [this]
+      exact le_antisymm (con x) bot_le
+    simp [this]
+  rw [h₁] at h₂
+  exact (mul_ne_zero A_pos.ne' B_pos.ne') h₂
 
 lemma exists_Ioo_subset_diff_of_measure_pos {A B : Set ℝ}
     (A_mble : MeasurableSet A) (A_pos : 0 < volume A)
     (B_mble : MeasurableSet B) (B_pos : 0 < volume B) :
     ∃ (a b : ℝ), a < b ∧ Ioo a b ⊆ A - B := by
-  sorry
+  obtain ⟨x, hx⟩ := exists_measure_preimage_add_inter_pos A_mble A_pos B_mble B_pos
+  have C_mble : MeasurableSet ((fun y ↦ x + y) ⁻¹' A ∩ B) :=
+    (A_mble.preimage (measurable_const_add x)).inter B_mble
+  obtain ⟨δ, δ_pos, hδ⟩ := exists_Ioo_subset_diff_self_of_measure_pos C_mble hx
+  refine ⟨x - δ, x + δ, by linarith, fun z hz ↦ ?_⟩
+  obtain ⟨c₁, hc₁, c₂, hc₂, hc⟩ := hδ (show z - x ∈ Ioo (-δ) δ from
+    ⟨by linarith [hz.1], by linarith [hz.2]⟩)
+  refine ⟨x + c₁, hc₁.1, c₂, hc₂.2, ?_⟩
+  simp only at hc ⊢
+  linarith
 
 lemma exists_Ioo_subset_add_of_measure_pos {A : Set ℝ}
     (A_mble : MeasurableSet A) (A_pos : 0 < volume A) :
@@ -234,14 +345,50 @@ lemma exists_Ioo_subset_add_of_measure_pos {A : Set ℝ}
 lemma eq_top_of_subgroup_of_measure_pos {S : AddSubgroup ℝ}
     {A : Set ℝ} (A_le_S : A ⊆ S) (A_mble : MeasurableSet A) (A_pos : 0 < volume A) :
     S = ⊤ := by
-  sorry
+  obtain ⟨δ, δ_pos, hδ⟩ := exists_Ioo_subset_diff_self_of_measure_pos A_mble A_pos
+  have small : ∀ y ∈ Ioo (-δ) δ, y ∈ S := by
+    intro y hy
+    obtain ⟨a₁, ha₁, a₂, ha₂, rfl⟩ := hδ hy
+    exact S.sub_mem (A_le_S ha₁) (A_le_S ha₂)
+  rw [eq_top_iff]
+  intro x _
+  obtain ⟨n, hn⟩ := exists_nat_gt (|x| / δ)
+  have n_pos : (0 : ℝ) < n := lt_of_le_of_lt (div_nonneg (abs_nonneg x) δ_pos.le) hn
+  have hxn : x / n ∈ Ioo (-δ) δ := by
+    rw [mem_Ioo, ← abs_lt, abs_div, abs_of_pos n_pos, div_lt_iff₀ n_pos]
+    rwa [div_lt_iff₀ δ_pos, mul_comm] at hn
+  have := S.nsmul_mem (small _ hxn) n
+  rwa [nsmul_eq_mul, mul_div_cancel₀ _ n_pos.ne'] at this
 
 lemma exists_forall_abs_le_of_additive_of_le_on_measure_pos
     {f : ℝ → ℝ} (f_add : ∀ t₁ t₂, f (t₁ + t₂) = f t₁ + f t₂)
     {A : Set ℝ} (A_mble : MeasurableSet A) (A_pos : 0 < volume A)
     {M : ℝ} (f_bdd_on_A : ∀ a ∈ A, f a ≤ M) :
     ∃ δ > 0, ∃ c, ∀ x ∈ Ioo (-δ) δ, |f x| ≤ c := by
-  sorry
+  obtain ⟨a, b, hab, hI⟩ := exists_Ioo_subset_add_of_measure_pos A_mble A_pos
+  have f_le : ∀ y ∈ Ioo a b, f y ≤ 2 * M := by
+    intro y hy
+    obtain ⟨a₁, ha₁, a₂, ha₂, rfl⟩ := hI hy
+    simp only
+    rw [f_add]
+    linarith [f_bdd_on_A a₁ ha₁, f_bdd_on_A a₂ ha₂]
+  have f_zero : f 0 = 0 := by
+    have h := f_add 0 0
+    rw [add_zero] at h
+    linarith
+  have f_neg : ∀ x, f (-x) = - f x := by
+    intro x
+    have := f_add x (-x)
+    rw [add_neg_cancel, f_zero] at this
+    linarith
+  set m := (a + b) / 2 with hm
+  refine ⟨(b - a) / 2, by linarith, 2 * M - f m, fun x hx ↦ ?_⟩
+  have h₁ : f (m + x) ≤ 2 * M := f_le _ ⟨by linarith [hx.1, hm], by linarith [hx.2, hm]⟩
+  have h₂ : f (m + -x) ≤ 2 * M := f_le _ ⟨by linarith [hx.2, hm], by linarith [hx.1, hm]⟩
+  rw [f_add] at h₁ h₂
+  rw [f_neg] at h₂
+  rw [abs_le]
+  constructor <;> linarith
 
 open Topology in
 lemma exists_nhd_abs_le_of_additive_of_le_on_measure_pos
@@ -258,7 +405,34 @@ lemma linear_of_additive_of_le_on_measure_pos
     {A : Set ℝ} (A_mble : MeasurableSet A) (A_pos : 0 < volume A)
     {M : ℝ} (f_bdd_on_A : ∀ a ∈ A, f a ≤ M) (x : ℝ) :
     f x = (f 1) * x := by
-  sorry
+  obtain ⟨δ, δ_pos, c, hc⟩ :=
+    exists_forall_abs_le_of_additive_of_le_on_measure_pos f_add A_mble A_pos f_bdd_on_A
+  let F : ℝ →+ ℝ := AddMonoidHom.mk' f f_add
+  have F_apply : ∀ y, F y = f y := fun _ ↦ rfl
+  have c_nn : 0 ≤ c := le_trans (abs_nonneg _) (hc 0 ⟨by linarith, δ_pos⟩)
+  have F_contAt : ContinuousAt F 0 := by
+    rw [Metric.continuousAt_iff]
+    intro ε ε_pos
+    obtain ⟨n, hn⟩ := exists_nat_gt (c / ε)
+    have n_pos : (0 : ℝ) < n := lt_of_le_of_lt (div_nonneg c_nn ε_pos.le) hn
+    refine ⟨δ / n, div_pos δ_pos n_pos, fun y hy ↦ ?_⟩
+    rw [Real.dist_eq, sub_zero] at hy
+    rw [Real.dist_eq, map_zero, sub_zero, F_apply]
+    have hny : (n : ℝ) * y ∈ Ioo (-δ) δ := by
+      rw [mem_Ioo, ← abs_lt, abs_mul, abs_of_pos n_pos]
+      rwa [lt_div_iff₀ n_pos, mul_comm] at hy
+    have key := hc _ hny
+    have : f ((n : ℝ) * y) = n * f y := by
+      rw [← F_apply, ← F_apply y, ← nsmul_eq_mul, map_nsmul, nsmul_eq_mul]
+    rw [this, abs_mul, abs_of_pos n_pos] at key
+    rw [div_lt_iff₀ ε_pos] at hn
+    by_contra con
+    push_neg at con
+    nlinarith
+  have F_cont : Continuous F := continuous_of_continuousAt_zero F F_contAt
+  have := map_real_smul F F_cont x 1
+  simp only [smul_eq_mul, mul_one, F_apply] at this
+  rw [this, mul_comm]
 
 open ENNReal in
 lemma linear_of_additive_of_measurable
@@ -428,7 +602,13 @@ lemma AffineIncrEquiv.homOfIndex₀_eq_homOfIndex₀_one_mul {β s : ℝ} :
 
 lemma AffineIncrEquiv.conjugate_homOfIndex₀ (A : AffineIncrEquiv) (β : ℝ) (s : ℝ) :
     A * homOfIndex₀ β s * A⁻¹ = homOfIndex₀ (β * A.coefs.1) s := by
-  sorry -- **Issue #46**
+  have ha : A.coefs.1 ≠ 0 := A.coefs_fst_pos.ne'
+  ext x
+  rw [mul_apply_eq_comp_apply, mul_apply_eq_comp_apply]
+  simp only [apply_eq, homOfIndex₀_coefs_fst, homOfIndex₀_coefs_snd,
+    inv_coefs_fst, inv_coefs_snd]
+  field_simp
+  ring
 
 @[simp] lemma AffineIncrEquiv.homOfIndex_zero' (α c : ℝ) :
     homOfIndex α c (.ofAdd 0) = 1 :=
@@ -467,7 +647,13 @@ lemma AffineIncrEquiv.homOfIndex_eq_homOfIndex_one_mul {α c s : ℝ} :
 
 lemma AffineIncrEquiv.conjugate_homOfIndex (A : AffineIncrEquiv) (α c : ℝ) (s : ℝ) :
     A * homOfIndex α c s * A⁻¹ = homOfIndex α (A c) s := by
-  sorry -- **Issue #46**
+  have ha : A.coefs.1 ≠ 0 := A.coefs_fst_pos.ne'
+  ext x
+  rw [mul_apply_eq_comp_apply, mul_apply_eq_comp_apply]
+  simp only [apply_eq, homOfIndex_coefs_fst, homOfIndex_coefs_snd,
+    inv_coefs_fst, inv_coefs_snd]
+  field_simp
+  ring
 
 /-- The one-parameter subgroup of `AffineIncrEquiv` consisting of elements `Aₛ` of the form
 `Aₛ x = x + β * s`, where `s ∈ ℝ`.
@@ -484,16 +670,39 @@ noncomputable def AffineIncrEquiv.subGroupOfIndex₀ :
 
 @[simp] lemma AffineIncrEquiv.subGroupOfIndex₀'_eq_of_ne_zero {β : ℝ} (hβ : β ≠ 0) :
     AffineIncrEquiv.subGroupOfIndex₀' β = AffineIncrEquiv.subGroupOfIndex₀ := by
-  sorry -- **Issue 44**
+  ext A
+  simp only [subGroupOfIndex₀', subGroupOfIndex₀, Subgroup.mem_map, Subgroup.mem_top, true_and]
+  constructor
+  · rintro ⟨s, rfl⟩
+    refine ⟨Multiplicative.ofAdd (β * s.toAdd), ?_⟩
+    ext x
+    simp
+  · rintro ⟨s, rfl⟩
+    refine ⟨Multiplicative.ofAdd (s.toAdd / β), ?_⟩
+    ext x
+    simp only [apply_eq, homOfIndex₀_coefs_fst', homOfIndex₀_coefs_snd', toAdd_ofAdd]
+    field_simp
 
 @[simp] lemma AffineIncrEquiv.subGroupOfIndex₀'_eq_bot :
     AffineIncrEquiv.subGroupOfIndex₀' 0 = ⊥ := by
-  sorry -- **Issue 44**
+  rw [Subgroup.eq_bot_iff_forall]
+  rintro A ⟨s, -, rfl⟩
+  ext x
+  simp
 
 @[simp] lemma AffineIncrEquiv.mem_subGroupOfIndex₀_of_no_fixed_point (A : AffineIncrEquiv)
     {α : ℝ} (hα : α ≠ 0) (c : ℝ) (hA : ∀ x, A x ≠ x) :
     A ∈ subGroupOfIndex₀ := by
-  sorry -- **Issue 44**
+  have a_eq_one : A.coefs.1 = 1 := by
+    by_contra h
+    have h' : 1 - A.coefs.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm h)
+    apply hA (A.coefs.2 / (1 - A.coefs.1))
+    rw [apply_eq]
+    field_simp
+    ring
+  refine ⟨Multiplicative.ofAdd A.coefs.2, trivial, ?_⟩
+  ext x
+  simp [a_eq_one]
 
 /-- The one-parameter subgroup of `AffineIncrEquiv` consisting of elements `Aₛ` of the form
 `Aₛ x = exp(α * s) * (x - c) + c` where `s ∈ ℝ`.
@@ -504,7 +713,10 @@ noncomputable def AffineIncrEquiv.subGroupOfIndex (α c : ℝ) :
 
 @[simp] lemma AffineIncrEquiv.subGroupOfIndex_eq_bot (c : ℝ) :
     subGroupOfIndex 0 c = ⊥ := by
-  sorry -- **Issue 45**
+  rw [Subgroup.eq_bot_iff_forall]
+  rintro A ⟨s, -, rfl⟩
+  ext x
+  simp
 
 @[simp] lemma AffineIncrEquiv.fixed_point_of_mem_subGroupOfIndex (A : AffineIncrEquiv)
     {α c : ℝ} (hA : A ∈ subGroupOfIndex α c):
@@ -516,7 +728,14 @@ noncomputable def AffineIncrEquiv.subGroupOfIndex (α c : ℝ) :
 @[simp] lemma AffineIncrEquiv.mem_subGroupOfIndex_iff_fixed_point (A : AffineIncrEquiv)
     {α : ℝ} (hα : α ≠ 0) (c : ℝ) :
     A ∈ subGroupOfIndex α c ↔ A c = c := by
-  sorry -- **Issue 45**
+  refine ⟨fun h ↦ fixed_point_of_mem_subGroupOfIndex A h, fun h ↦ ?_⟩
+  rw [apply_eq] at h
+  refine ⟨Multiplicative.ofAdd (Real.log A.coefs.1 / α), trivial, ?_⟩
+  have hexp : Real.exp (α * (Real.log A.coefs.1 / α)) = A.coefs.1 := by
+    rw [mul_div_cancel₀ _ hα, Real.exp_log A.coefs_fst_pos]
+  ext x
+  simp only [apply_eq, homOfIndex_coefs_fst', homOfIndex_coefs_snd', toAdd_ofAdd, hexp]
+  linarith
 
 /-- Functional equation for scaling coefficients of a homomorphism `f : ℝ → AffineIncrEquiv`. -/
 lemma AffineIncrEquiv.homomorphism_coef_eqn_fst
@@ -535,7 +754,9 @@ open Real
 lemma eq_of_functional_eqn_of_ne_zero {f : ℝ → ℝ} {α : ℝ} (α_ne_zero : α ≠ 0)
     (f_eqn : ∀ s₁ s₂, f (s₁ + s₂) = exp (α * s₁) * f s₂ + f s₁) :
     ∃ c, f = fun s ↦ c * (1 - exp (α * s)) := by
-  sorry
+  obtain ⟨c, hc⟩ :=
+    eq_const_mul_one_sub_exp_of_multiplicative_with_scaling_of_measurable α_ne_zero f_eqn
+  exact ⟨c, funext hc⟩
 
 /-- We endow the space of orientation-preserving affine isomorphisms of `ℝ` with the Borel
 σ-algebra of the topology of pointwise convergence. -/

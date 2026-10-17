@@ -13,11 +13,25 @@ section weak_convergence_cdf
 
 open Filter Topology NNReal ENNReal Set
 
+/-- The continuity points of a c.d.f. form a dense set. -/
+lemma CumulativeDistributionFunction.dense_setOf_continuousAt
+    (F : CumulativeDistributionFunction) : Dense {x | ContinuousAt F x} := by
+  simpa [compl] using Set.Countable.dense_compl (𝕜 := ℝ) (Monotone.countable_not_continuousAt F.mono')
+
 /-- Lemma 4.3 (cdf-tight) in blueprint. -/
 lemma CumulativeDistributionFunction.forall_pos_exists_lt_gt_continuousAt
     (F : CumulativeDistributionFunction) {ε : ℝ} (ε_pos : 0 < ε) :
     ∃ (a b : ℝ), a < b ∧ F a < ε ∧ 1 - ε < F b ∧ ContinuousAt F a ∧ ContinuousAt F b := by
-  sorry -- **Issue #16**
+  obtain ⟨x', hx'⟩ := (F.tendsto_atBot.eventually (eventually_lt_nhds ε_pos)).exists
+  obtain ⟨y', hy'⟩ :=
+    (F.tendsto_atTop.eventually (eventually_gt_nhds (show 1 - ε < 1 by linarith))).exists
+  obtain ⟨a, ha_cont, ha⟩ := F.dense_setOf_continuousAt.exists_between (show x' - 1 < x' by linarith)
+  obtain ⟨b, hb_cont, hb⟩ := F.dense_setOf_continuousAt.exists_between
+    (show max a y' < max a y' + 1 by linarith)
+  refine ⟨a, b, ?_, ?_, ?_, ha_cont, hb_cont⟩
+  · exact (le_max_left a y').trans_lt hb.1
+  · exact (F.mono ha.2.le).trans_lt hx'
+  · exact lt_of_lt_of_le hy' (F.mono ((le_max_right a y').trans hb.1.le))
 
 /-- Lemma 4.4 (subdivision-dense) in blueprint:
 An interval `[a,b]` can be subdivided with points from a dense set so that the consecutive
@@ -27,7 +41,53 @@ lemma forall_exists_subdivision_diff_lt_of_dense {D : Set ℝ} (D_dense : Dense 
     ∃ (k : ℕ) (cs : Fin (k + 1) → ℝ),
       (cs 0 = a) ∧ (cs (Fin.last _) = b) ∧ (Monotone cs) ∧ (∀ k, cs k ∈ D) ∧
       (∀ (j : Fin k), cs j.succ - cs (Fin.castAdd _ j) < δ) := by
-  sorry -- **Issue #22**
+  obtain ⟨N, hN⟩ := exists_nat_gt (2 * (b - a) / δ)
+  have N_pos : (0 : ℝ) < N := lt_trans (by positivity) hN
+  have N_pos' : 0 < N := by exact_mod_cast N_pos
+  set h := (b - a) / N with h_def
+  have h_pos : 0 < h := div_pos (by linarith) N_pos
+  have Nh : (N : ℝ) * h = b - a := by rw [h_def]; field_simp
+  have two_h : 2 * h < δ := by
+    rw [div_lt_iff₀ δ_pos] at hN
+    have : 2 * (b - a) < N * δ := by linarith
+    nlinarith
+  have hg : ∀ j : ℕ, ∃ c ∈ D, a + j * h < c ∧ c < a + j * h + h / 2 :=
+    fun j ↦ D_dense.exists_between (by linarith)
+  choose g gD g_gt g_lt using hg
+  let f : ℕ → ℝ := fun j ↦ if j = 0 then a else if N ≤ j then b else g j
+  have f_bounds : ∀ n, n ≤ N → a + n * h ≤ f n ∧ f n ≤ a + n * h + h / 2 := by
+    intro n hn
+    by_cases h0 : n = 0
+    · subst h0; simp [f]; linarith
+    · by_cases hNn : N ≤ n
+      · have : n = N := le_antisymm hn hNn
+        subst this
+        simp only [f, h0, ite_false, le_refl, ite_true]
+        constructor <;> linarith
+      · simp only [f, h0, hNn, ite_false]
+        exact ⟨(g_gt n).le, (g_lt n).le⟩
+  refine ⟨N, fun j ↦ f j, ?_, ?_, ?_, ?_, ?_⟩
+  · simp [f]
+  · simp [f, N_pos'.ne']
+  · rw [Fin.monotone_iff_le_succ]
+    intro i
+    simp only [Fin.val_castSucc, Fin.val_succ]
+    have h1 := f_bounds i (by omega)
+    have h2 := f_bounds (i + 1) (by omega)
+    push_cast at h2
+    linarith [h1.2, h2.1]
+  · intro j
+    simp only [f]
+    split_ifs
+    · exact ha
+    · exact hb
+    · exact gD _
+  · intro j
+    simp only [Fin.val_succ, Fin.val_castAdd]
+    have h1 := f_bounds j (by omega)
+    have h2 := f_bounds (j + 1) (by omega)
+    push_cast at h2
+    linarith [h1.1, h2.2]
 
 /-- Lemma 4.5 (continuous-function-approximation-subdivision) in blueprint:
 An interval `[a,b]` can be subdivided with points from a dense set so that for a given
@@ -109,7 +169,49 @@ theorem tendsto_of_forall_continuousAt_tendsto_cdf
     (μs : ℕ → ProbabilityMeasure ℝ) (μ : ProbabilityMeasure ℝ)
     (h : ∀ x, ContinuousAt μ.cdf x → Tendsto (fun n ↦ (μs n).cdf x) atTop (𝓝 (μ.cdf x))) :
     Tendsto μs atTop (𝓝 μ) := by
-  sorry -- **Issue #20** (a big one)
+  -- The measure of `Ioc c d` in terms of the c.d.f.
+  have key (ν : ProbabilityMeasure ℝ) {c d : ℝ} (hcd : c ≤ d) :
+      (ν (Ioc c d) : ℝ) = ν.cdf d - ν.cdf c := by
+    rw [ProbabilityMeasure.cdf_apply_eq, ProbabilityMeasure.cdf_apply_eq]
+    have hset : Ioc c d = Iic d \ Iic c := by
+      ext y; simp only [mem_Ioc, Set.mem_sdiff, mem_Iic, not_le]; exact and_comm
+    change (ν : Measure ℝ).real (Ioc c d) = (ν : Measure ℝ).real (Iic d) - (ν : Measure ℝ).real (Iic c)
+    rw [hset, measureReal_sdiff (Iic_subset_Iic.mpr hcd) measurableSet_Iic]
+  let S : Set (Set ℝ) :=
+    {s | ∃ c d, ContinuousAt μ.cdf c ∧ ContinuousAt μ.cdf d ∧ s = Ioc c d}
+  have max_mem {c c' : ℝ} (hc : ContinuousAt μ.cdf c) (hc' : ContinuousAt μ.cdf c') :
+      ContinuousAt μ.cdf (max c c') := by
+    rcases le_total c c' with h | h
+    · rwa [max_eq_right h]
+    · rwa [max_eq_left h]
+  have min_mem {c c' : ℝ} (hc : ContinuousAt μ.cdf c) (hc' : ContinuousAt μ.cdf c') :
+      ContinuousAt μ.cdf (min c c') := by
+    rcases le_total c c' with h | h
+    · rwa [min_eq_left h]
+    · rwa [min_eq_right h]
+  have S_pi : IsPiSystem S := by
+    rintro s ⟨c, d, hc, hd, rfl⟩ t ⟨c', d', hc', hd', rfl⟩ _
+    exact ⟨max c c', min d d', max_mem hc hc', min_mem hd hd', Ioc_inter_Ioc⟩
+  apply S_pi.tendsto_probabilityMeasure_of_tendsto_of_mem
+  · rintro s ⟨c, d, -, -, rfl⟩
+    exact measurableSet_Ioc
+  · intro u hu x hx
+    obtain ⟨ε, ε_pos, hε⟩ := Metric.isOpen_iff.mp hu x hx
+    obtain ⟨c, hc, hc'⟩ :=
+      μ.cdf.dense_setOf_continuousAt.exists_between (show x - ε < x by linarith)
+    obtain ⟨d, hd, hd'⟩ :=
+      μ.cdf.dense_setOf_continuousAt.exists_between (show x < x + ε by linarith)
+    refine ⟨Ioc c d, ⟨c, d, hc, hd, rfl⟩, Ioc_mem_nhds hc'.2 hd'.1, ?_⟩
+    intro y hy
+    apply hε
+    rw [Metric.mem_ball, Real.dist_eq, abs_sub_lt_iff]
+    constructor <;> linarith [hy.1, hy.2, hc'.1, hd'.2]
+  · rintro s ⟨c, d, hc, hd, rfl⟩
+    rcases le_total d c with hdc | hcd
+    · simp [Ioc_eq_empty_of_le hdc]
+    rw [← NNReal.tendsto_coe]
+    simp_rw [key _ hcd]
+    exact (h d hd).sub (h c hc)
 
 end weak_convergence_cdf
 
@@ -183,6 +285,8 @@ section continuous_mulAction
 
 namespace CumulativeDistributionFunction
 
+open Filter Topology
+
 lemma continuous_mulAction :
     Continuous fun (⟨A, F⟩ : AffineIncrEquiv × CumulativeDistributionFunction) ↦ A • F := by
   rw [continuous_iff_seqContinuous]
@@ -190,7 +294,40 @@ lemma continuous_mulAction :
   rw [tendsto_iff_forall_continuousAt_tendsto]
   intro x hBGx
   simp only [Function.comp_apply, mulAction_apply_eq]
-  sorry -- **Issue #54** (action-on-cdf-continuous)
+  have A_lim : Filter.Tendsto (fun i ↦ (AFs i).1) Filter.atTop (nhds BG.1) :=
+    (continuous_fst.tendsto _).comp h_lim
+  have F_lim : Filter.Tendsto (fun i ↦ (AFs i).2) Filter.atTop (nhds BG.2) :=
+    (continuous_snd.tendsto _).comp h_lim
+  rw [tendsto_iff_forall_continuousAt_tendsto] at F_lim
+  have Ainv_lim : Filter.Tendsto (fun i ↦ (AFs i).1⁻¹ x) Filter.atTop (nhds (BG.1⁻¹ x)) := by
+    have := (AffineIncrEquiv.continuous_inv.tendsto _).comp A_lim
+    exact (AffineIncrEquiv.tendsto_nhds_iff_forall_tendsto_apply _ _).mp this x
+  set y := BG.1⁻¹ x with hy
+  have G_cont : ContinuousAt BG.2 y := (affine_continuousAt_iff BG.2 BG.1 x).mp hBGx
+  rw [tendsto_order]
+  constructor
+  · intro r hr
+    obtain ⟨δ, δ_pos, hδ⟩ := Metric.eventually_nhds_iff.mp (G_cont.eventually (eventually_gt_nhds hr))
+    obtain ⟨z, z_cont, hz⟩ :=
+      BG.2.dense_setOf_continuousAt.exists_between (show y - δ < y by linarith)
+    have Gz : r < BG.2 z := by
+      apply hδ
+      rw [Real.dist_eq, abs_sub_lt_iff]
+      constructor <;> linarith [hz.1, hz.2]
+    filter_upwards [(F_lim z z_cont).eventually (eventually_gt_nhds Gz),
+      Ainv_lim.eventually (eventually_gt_nhds hz.2)] with n hn hn'
+    exact hn.trans_le ((AFs n).2.mono hn'.le)
+  · intro r hr
+    obtain ⟨δ, δ_pos, hδ⟩ := Metric.eventually_nhds_iff.mp (G_cont.eventually (eventually_lt_nhds hr))
+    obtain ⟨z, z_cont, hz⟩ :=
+      BG.2.dense_setOf_continuousAt.exists_between (show y < y + δ by linarith)
+    have Gz : BG.2 z < r := by
+      apply hδ
+      rw [Real.dist_eq, abs_sub_lt_iff]
+      constructor <;> linarith [hz.1, hz.2]
+    filter_upwards [(F_lim z z_cont).eventually (eventually_lt_nhds Gz),
+      Ainv_lim.eventually (eventually_lt_nhds hz.1)] with n hn hn'
+    exact ((AFs n).2.mono hn'.le).trans_lt hn
 
 end CumulativeDistributionFunction
 

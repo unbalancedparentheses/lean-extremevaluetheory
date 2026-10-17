@@ -393,11 +393,14 @@ lemma AffineIncrEquiv.ext_of_coefs {A₁ A₂ : AffineIncrEquiv} (h : A₁.coefs
 
 @[simp] lemma AffineIncrEquiv.coefs_fst_mul (A₁ A₂ : AffineIncrEquiv) :
     (A₁ * A₂).coefs.1 = A₁.coefs.1 * A₂.coefs.1 := by
-  sorry -- **Issue 43**
+  rw [coefs_fst_eq_div_sub (A₁ * A₂) (zero_ne_one' ℝ), mul_apply_eq_comp_apply,
+    mul_apply_eq_comp_apply, apply_eq A₁, apply_eq A₁, apply_eq A₂, apply_eq A₂]
+  ring
 
 @[simp] lemma AffineIncrEquiv.coefs_snd_mul (A₁ A₂ : AffineIncrEquiv) :
     (A₁ * A₂).coefs.2 = A₁.coefs.1 * A₂.coefs.2 + A₁.coefs.2 := by
-  sorry -- **Issue 43**
+  rw [coefs_snd_eq_apply_sub_mul (A₁ * A₂) 0, mul_apply_eq_comp_apply, apply_eq A₁, apply_eq A₂]
+  ring
 
 /-- The inverse `A⁻¹` of an orientation-preserving affine map `A : ℝ → ℝ` of the
 form `x ↦ a * x + b` is `y ↦ α * x + β` where `α = a⁻¹`. -/
@@ -432,11 +435,19 @@ lemma AffineIncrEquiv.inv_mul_eq_mkOfCoefs (A₁ A₂ : AffineIncrEquiv) :
 
 lemma AffineIncrEquiv.continuous_coefs_fst :
     Continuous fun (A : AffineIncrEquiv) ↦ A.coefs.1 := by
-  sorry
+  have key : (fun (A : AffineIncrEquiv) ↦ A.coefs.1) = fun A ↦ (A 1 - A 0) / (1 - 0) := by
+    funext A
+    exact coefs_fst_eq_div_sub A (zero_ne_one' ℝ)
+  rw [key]
+  exact ((continuous_apply 1).sub (continuous_apply 0)).div_const _
 
 lemma AffineIncrEquiv.continuous_coefs_snd :
     Continuous fun (A : AffineIncrEquiv) ↦ A.coefs.2 := by
-  sorry
+  have key : (fun (A : AffineIncrEquiv) ↦ A.coefs.2) = fun A ↦ A 0 := by
+    funext A
+    rw [coefs_snd_eq_apply_sub_mul A 0, mul_zero, sub_zero]
+  rw [key]
+  exact continuous_apply 0
 
 lemma AffineIncrEquiv.tendsto_nhds_iff_tendsto_coefs {ι : Type*} {L : Filter ι}
     {As : ι → AffineIncrEquiv} (A : AffineIncrEquiv):
@@ -459,7 +470,16 @@ lemma AffineIncrEquiv.tendsto_nhds_iff_tendsto_coefs {ι : Type*} {L : Filter ι
 affine isomorphisms of `ℝ`. -/
 lemma AffineIncrEquiv.continuous_inv :
     Continuous fun (A : AffineIncrEquiv) ↦ A⁻¹ := by
-  sorry -- **Issue #56** (affine-inversion-continuous)
+  rw [continuous_iff_forall_continuous_apply]
+  intro x
+  have key : (fun (A : AffineIncrEquiv) ↦ A⁻¹ x)
+      = fun A ↦ (A.coefs.1)⁻¹ * x + -(A.coefs.1)⁻¹ * A.coefs.2 := by
+    funext A
+    rw [apply_eq, inv_coefs_fst, inv_coefs_snd]
+  rw [key]
+  have hinv : Continuous fun (A : AffineIncrEquiv) ↦ (A.coefs.1)⁻¹ :=
+    continuous_coefs_fst.inv₀ (fun A ↦ A.coefs_fst_pos.ne')
+  exact (hinv.mul continuous_const).add (hinv.neg.mul continuous_coefs_snd)
 
 /-- The map `A ↦ A⁻¹` as a homeomorphism of the type `AffineIncrEquiv` of orientation-preserving
 affine isomorphisms of `ℝ`. -/
@@ -491,13 +511,19 @@ noncomputable def AffineIncrEquiv.homeomorph_prod :
   toFun A := ⟨log A.coefs.1, A.coefs.2⟩
   invFun p := mkOfCoefs (exp_pos p.1) p.2
   left_inv := by
-    sorry -- **Issue #53** (affine-metrizable)
+    intro A
+    apply ext_of_coefs
+    rw [coefs_mkOfCoefs, exp_log A.coefs_fst_pos]
   right_inv := by
-    sorry -- **Issue #53** (affine-metrizable)
+    intro p
+    simp [log_exp]
   continuous_toFun := by
-    sorry -- **Issue #53** (affine-metrizable)
+    exact (continuous_coefs_fst.log (fun A ↦ A.coefs_fst_pos.ne')).prodMk continuous_coefs_snd
   continuous_invFun := by
-    sorry -- **Issue #53** (affine-metrizable)
+    rw [continuous_iff_forall_continuous_apply]
+    intro x
+    simp only [apply_eq, coefs_fst_mkOfCoefs, coefs_snd_mkOfCoefs]
+    exact ((continuous_exp.comp continuous_fst).mul continuous_const).add continuous_snd
 
 /-- The topology of pointwise convergece on orientation-preserving affine isomorphisms of ℝ is
 metrizable. -/
@@ -623,21 +649,26 @@ noncomputable def AffineMap.extend (A : ℝ →ᵃ[ℝ] ℝ) (x : EReal) : EReal
       else A.coefs_of_field.2
   | some (some ξ) => A ξ
 
-lemma AffineMap.leftOrdContinuous (A : ℝ →ᵃ[ℝ] ℝ) :
+/-- An affine map `ℝ → ℝ` with nonnegative slope is monotone. -/
+lemma AffineMap.monotone_of_coefs_fst_nonneg (A : ℝ →ᵃ[ℝ] ℝ) (hA : 0 ≤ A.coefs_of_field.1) :
+    Monotone A := by
+  intro x y hxy
+  rw [A.apply_eq_of_field x, A.apply_eq_of_field y]
+  gcongr
+
+-- Corrected from upstream, where these were stated for all affine maps: an affine map with
+-- negative slope reverses the order and is not order-continuous (e.g. `A = -id`, `s = {0, 1}`).
+lemma AffineMap.leftOrdContinuous (A : ℝ →ᵃ[ℝ] ℝ) (hA : 0 ≤ A.coefs_of_field.1) :
     LeftOrdContinuous A := by
-  sorry -- **Issue #7** (Rmk: This should go via a lemma that is being PRd to Mathlib)
+  intro s x hs hx
+  exact hx.isLUB_of_tendsto ((A.monotone_of_coefs_fst_nonneg hA).monotoneOn _) hs
+    ((A.continuous_of_finiteDimensional.tendsto x).mono_left nhdsWithin_le_nhds)
 
-lemma AffineMap.rightOrdContinuous (A : ℝ →ᵃ[ℝ] ℝ) :
+lemma AffineMap.rightOrdContinuous (A : ℝ →ᵃ[ℝ] ℝ) (hA : 0 ≤ A.coefs_of_field.1) :
     RightOrdContinuous A := by
-  sorry -- **Issue #7** (Rmk: This should go via a lemma that is being PRd to Mathlib)
-
-lemma AffineMap.leftOrdContinuous_extend (A : ℝ →ᵃ[ℝ] ℝ) :
-    LeftOrdContinuous A.extend := by
-  sorry -- **Issue #7**
-
-lemma AffineMap.rightOrdContinuous_extend (A : ℝ →ᵃ[ℝ] ℝ) :
-    RightOrdContinuous A.extend := by
-  sorry -- **Issue #7**
+  intro s x hs hx
+  exact hx.isGLB_of_tendsto ((A.monotone_of_coefs_fst_nonneg hA).monotoneOn _) hs
+    ((A.continuous_of_finiteDimensional.tendsto x).mono_left nhdsWithin_le_nhds)
 
 lemma AffineEquiv.extend_bot' (A : ℝ ≃ᵃ[ℝ] ℝ) :
     A.toAffineMap.extend ⊥ =
@@ -730,6 +761,29 @@ noncomputable abbrev AffineIncrEquiv.extend (A : AffineIncrEquiv) : EReal ≃ ER
 @[simp] lemma AffineIncrEquiv.extend_symm (A : AffineIncrEquiv) :
     A.extend.symm = (A⁻¹).extend :=
   AffineEquiv.extend_symm A.val
+
+lemma AffineIncrEquiv.extend_strictMono (A : AffineIncrEquiv) : StrictMono A.extend := by
+  have hA : StrictMono A := A.mono.strictMono_of_injective A.val.injective
+  have hpos : 0 < A.val.toAffineMap.coefs_of_field.1 := A.isOrientationPreserving
+  intro x y hxy
+  induction x using EReal.rec <;> induction y using EReal.rec
+  all_goals simp_all [EReal.coe_lt_coe_iff]
+  all_goals first | exact EReal.bot_lt_coe _ | exact EReal.coe_lt_top _ | exact hA hxy
+
+/-- The extension of an orientation-preserving affine equivalence to `[-∞,+∞]`, as an order
+isomorphism. -/
+noncomputable def AffineIncrEquiv.extendOrderIso (A : AffineIncrEquiv) : EReal ≃o EReal :=
+  StrictMono.orderIsoOfSurjective A.extend A.extend_strictMono A.extend.surjective
+
+-- Corrected from upstream (`AffineMap.leftOrdContinuous_extend`), which was stated for all affine
+-- maps and is false for negative slopes.
+lemma AffineIncrEquiv.leftOrdContinuous_extend (A : AffineIncrEquiv) :
+    LeftOrdContinuous A.extend :=
+  A.extendOrderIso.leftOrdContinuous
+
+lemma AffineIncrEquiv.rightOrdContinuous_extend (A : AffineIncrEquiv) :
+    RightOrdContinuous A.extend :=
+  A.extendOrderIso.rightOrdContinuous
 
 end extend
 

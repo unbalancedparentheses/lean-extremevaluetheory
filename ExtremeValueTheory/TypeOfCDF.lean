@@ -39,16 +39,92 @@ lemma orientationPreservingAffineEquiv.mkOfCoefs_val {a : ℝ} (a_pos : 0 < a) (
 
 namespace CumulativeDistributionFunction
 
+/-- The continuity points of a c.d.f. form a dense set. -/
+private lemma dense_continuousAt_aux (F : CumulativeDistributionFunction) :
+    Dense {x | ContinuousAt F x} := by
+  simpa [compl] using Set.Countable.dense_compl (𝕜 := ℝ) (Monotone.countable_not_continuousAt F.mono')
+
 lemma exists₂_continuousAt_of_not_isDegenerate
     (F : CumulativeDistributionFunction) (hF : ¬ F.IsDegenerate) :
     ∃ x₁ x₂, (x₁ < x₂) ∧ (0 < F x₁) ∧ (F x₂ < 1) ∧ (ContinuousAt F x₁) ∧ (ContinuousAt F x₂) := by
-  sorry -- **Issue #38**
+  simp only [isDegenerate_def, not_forall, not_or] at hF
+  obtain ⟨x₀, h0, h1⟩ := hF
+  have pos : 0 < F x₀ := lt_of_le_of_ne (F.apply_nonneg x₀) (Ne.symm h0)
+  have lt1 : F x₀ < 1 := lt_of_le_of_ne (F.apply_le_one x₀) h1
+  have ev : ∀ᶠ x in 𝓝[≥] x₀, F x < 1 := (F.right_continuous x₀).eventually (eventually_lt_nhds lt1)
+  obtain ⟨u, hu, hsub⟩ := mem_nhdsGE_iff_exists_Ico_subset.mp ev
+  obtain ⟨x₁, hx₁c, hx₁⟩ := F.dense_continuousAt_aux.exists_between hu
+  obtain ⟨x₂, hx₂c, hx₂⟩ := F.dense_continuousAt_aux.exists_between hx₁.2
+  refine ⟨x₁, x₂, hx₂.1, pos.trans_le (F.mono hx₁.1.le), ?_, hx₁c, hx₂c⟩
+  exact hsub ⟨(hx₁.1.trans hx₂.1).le, hx₂.2⟩
+
+/-- The "quantile" `sInf {x | t ≤ F x}` transforms equivariantly under affine maps. -/
+lemma sInf_setOf_le_smul_apply (F : CumulativeDistributionFunction) (A : AffineIncrEquiv)
+    {t : ℝ} (ht0 : 0 < t) (ht1 : t < 1) :
+    sInf {x | t ≤ (A • F) x} = A (sInf {x | t ≤ F x}) := by
+  have hset : {x | t ≤ (A • F) x} = A '' {x | t ≤ F x} := by
+    ext y
+    constructor
+    · intro hy
+      refine ⟨A⁻¹ y, ?_, ?_⟩
+      · simpa only [Set.mem_setOf_eq, mulAction_apply_eq] using hy
+      · exact EquivLike.apply_inv_apply A y
+    · rintro ⟨x, hx, rfl⟩
+      simpa only [Set.mem_setOf_eq, mulAction_apply_eq_self_apply] using hx
+  have ne : {x | t ≤ F x}.Nonempty := by
+    obtain ⟨x, hx⟩ := (F.tendsto_atTop.eventually (eventually_gt_nhds ht1)).exists
+    exact ⟨x, hx.le⟩
+  have bdd : BddBelow {x | t ≤ F x} := by
+    obtain ⟨a, ha⟩ := eventually_atBot.mp (F.tendsto_atBot.eventually (eventually_lt_nhds ht0))
+    refine ⟨a, fun x hx ↦ ?_⟩
+    by_contra! con
+    exact absurd (ha x con.le) (not_lt.mpr hx)
+  rw [hset]
+  exact (Monotone.map_csInf_of_continuousAt
+    (A.val.continuous_of_finiteDimensional.continuousAt) A.mono ne bdd).symm
 
 lemma unique_orientationPreservingAffineEquiv_smul_eq_not_isDegenerate
     {F G : CumulativeDistributionFunction} {A₁ A₂ : AffineIncrEquiv}
     (hG : ¬ G.IsDegenerate) (h₁ : A₁ • F = G) (h₂ : A₂ • F = G) :
     A₁ = A₂ := by
-  sorry -- **Issue #39**
+  have hF : ¬ F.IsDegenerate := by
+    rwa [← h₁, affine_isDegenerate_iff] at hG
+  obtain ⟨x₁, x₂, x₁_lt, Fx₁_pos, Fx₂_lt, -, -⟩ := F.exists₂_continuousAt_of_not_isDegenerate hF
+  have Fx₁_lt : F x₁ < 1 := (F.mono x₁_lt.le).trans_lt Fx₂_lt
+  set t₂ := (F x₂ + 1) / 2 with ht₂
+  have t₂_pos : 0 < t₂ := by linarith [F.apply_nonneg x₂]
+  have t₂_lt : t₂ < 1 := by linarith
+  have agree {t : ℝ} (ht0 : 0 < t) (ht1 : t < 1) :
+      A₁ (sInf {x | t ≤ F x}) = A₂ (sInf {x | t ≤ F x}) := by
+    rw [← sInf_setOf_le_smul_apply F A₁ ht0 ht1, ← sInf_setOf_le_smul_apply F A₂ ht0 ht1, h₁, h₂]
+  set p := sInf {x | F x₁ ≤ F x} with hp
+  set q := sInf {x | t₂ ≤ F x} with hq
+  have p_le : p ≤ x₁ := by
+    apply csInf_le _ (show x₁ ∈ {x | F x₁ ≤ F x} from Set.mem_setOf.mpr le_rfl)
+    obtain ⟨a, ha⟩ := eventually_atBot.mp (F.tendsto_atBot.eventually (eventually_lt_nhds Fx₁_pos))
+    refine ⟨a, fun x hx ↦ ?_⟩
+    by_contra! con
+    exact absurd (ha x con.le) (not_lt.mpr hx)
+  have le_q : x₂ ≤ q := by
+    apply le_csInf
+    · obtain ⟨x, hx⟩ := (F.tendsto_atTop.eventually (eventually_gt_nhds t₂_lt)).exists
+      exact ⟨x, hx.le⟩
+    · intro x hx
+      by_contra! con
+      have := F.mono con.le
+      simp only [Set.mem_setOf_eq] at hx
+      linarith
+  have hpq : p ≠ q := by intro h; linarith
+  have e_p := agree Fx₁_pos Fx₁_lt
+  have e_q := agree t₂_pos t₂_lt
+  rw [← hp] at e_p
+  rw [← hq] at e_q
+  apply AffineIncrEquiv.ext_of_coefs
+  have e1 : A₁.coefs.1 = A₂.coefs.1 := by
+    rw [A₁.coefs_fst_eq_div_sub hpq, A₂.coefs_fst_eq_div_sub hpq, e_p, e_q]
+  have e2 : A₁.coefs.2 = A₂.coefs.2 := by
+    rw [A₁.coefs_snd_eq_apply_sub_mul p, A₂.coefs_snd_eq_apply_sub_mul p, e_p, e1]
+  exact Prod.ext e1 e2
 
 open AffineIncrEquiv in
 /-- If we have c.d.f. convergence `Fₙ → G` and `Aₙ • Fₙ → G'`, where `Aₙ(x) = aₙ * x + bₙ`
@@ -62,7 +138,43 @@ lemma apply_eq_zero_of_tendsto_of_lt
       Tendsto (fun n ↦ ((mkOfCoefs (a_pos n) (b n)) • (F n)) x) atTop (𝓝 (G' x)))
     {x : ℝ} (x_lt : x < β) :
     G' x = 0 := by
-  sorry
+  have G'x_small (ε : ℝ) (ε_pos : ε > 0) : G' x < ε := by
+    -- Choose `x'` s.t. `x < x' < β` and `G'` is continuous at `x'`
+    obtain ⟨x', x'_cont, x'_gt, x'_lt⟩ :=
+      G'.dense_continuousAt_aux.exists_between x_lt
+    -- Choose `z` s.t. `G(z) < ε/2` and `G` is continuous at `z`
+    set ε' := ε/2 with hε'
+    obtain ⟨z', hz'⟩ := (G.tendsto_atBot.eventually
+      (eventually_lt_nhds (show (0:ℝ) < ε' by linarith))).exists
+    obtain ⟨z, z_cont, -, z_lt⟩ :=
+      G.dense_continuousAt_aux.exists_between (show z' - 1 < z' by linarith)
+    have Gz_lt : G z < ε' := (G.mono z_lt.le).trans_lt hz'
+    -- `Aₙ(z) → β`
+    have : Tendsto (fun n ↦ a n * z) atTop (𝓝 (0 * z)) := a_lim.mul_const z
+    simp only [zero_mul] at this
+    have A_lim : Tendsto (fun n ↦ a n * z + b n) atTop (𝓝 (0 + β)) := this.add b_lim
+    simp only [zero_add] at A_lim
+    have Anz_ev_gt : ∀ᶠ n in atTop, x' < a n * z + b n :=
+      A_lim.eventually (eventually_gt_nhds x'_lt)
+    have Fnz_ev_lt : ∀ᶠ n in atTop, F n z < ε' :=
+      (F_lim z z_cont).eventually (eventually_lt_nhds Gz_lt)
+    set F' : ℕ → CumulativeDistributionFunction :=
+      fun n ↦ (mkOfCoefs (a_pos n) (b n)) • (F n) with hF'
+    by_contra con
+    have F'nx'_ev_gt : ∀ᶠ n in atTop, ε' < F' n x' :=
+      (F_lim' x' x'_cont).eventually
+        (eventually_gt_nhds (show ε' < G' x' by linarith [G'.mono x'_gt.le]))
+    obtain ⟨n, ⟨hn₁, hn₂⟩, hn₃⟩ := ((Fnz_ev_lt.and Anz_ev_gt).and F'nx'_ev_gt).exists
+    have := calc
+      F' n x' ≤ F' n (a n * z + b n) := (F' n).mono' hn₂.le
+      _ = (F n) z := by
+        rw [← mulAction_apply_eq_self_apply (F n) (mkOfCoefs (a_pos n) (b n))]
+        rfl
+    linarith
+  have : G' x ≤ 0 := by
+    by_contra h
+    linarith [G'x_small (G' x / 2) (by linarith)]
+  linarith [apply_nonneg G' x]
 
 open AffineIncrEquiv Set Countable Monotone in
 /-- If we have c.d.f. convergence `Fₙ → G` and `Aₙ • Fₙ → G'`, where `Aₙ(x) = aₙ * x + bₙ`

@@ -111,8 +111,22 @@ def _root_.MeasureTheory.ProbabilityMeasure.cdf (μ : ProbabilityMeasure ℝ) : 
   toFun := μ.toFiniteMeasure.cdf
   mono' := StieltjesFunction.mono (FiniteMeasure.cdf μ.toFiniteMeasure)
   right_continuous' := StieltjesFunction.right_continuous' (FiniteMeasure.cdf μ.toFiniteMeasure)
-  tendsto_atTop := sorry -- **Issue #10**
-  tendsto_atBot := sorry -- **Issue #10**
+  tendsto_atTop := by
+    have key := tendsto_measure_Iic_atTop (μ : Measure ℝ)
+    rw [measure_univ] at key
+    have := (ENNReal.tendsto_toReal ENNReal.one_ne_top).comp key
+    exact this
+  tendsto_atBot := by
+    have key := tendsto_measure_iInter_atBot (μ := (μ : Measure ℝ)) (s := fun x : ℝ ↦ Iic x)
+      (fun _ ↦ measurableSet_Iic.nullMeasurableSet) (fun _ _ h ↦ Iic_subset_Iic.mpr h)
+      ⟨0, measure_ne_top _ _⟩
+    have hempty : (⋂ x : ℝ, Iic x) = ∅ := by
+      ext y
+      simp only [mem_iInter, mem_Iic, mem_empty_iff_false, iff_false, not_forall, not_le]
+      exact ⟨y - 1, by linarith⟩
+    rw [hempty, measure_empty] at key
+    have := (ENNReal.tendsto_toReal ENNReal.zero_ne_top).comp key
+    exact this
 
 lemma _root_.MeasureTheory.ProbabilityMeasure.cdf_apply_eq (μ : ProbabilityMeasure ℝ) (x : ℝ) :
     μ.cdf x = μ (Iic x) := by rfl
@@ -204,7 +218,13 @@ lemma tendsto_apply_of_tendsto_of_continuousAt {ι : Type*} {L : Filter ι}
 lemma eq_of_forall_apply_eq_const_mul (F G : CumulativeDistributionFunction)
     (c : ℝ) (h : ∀ x, F x = c * G x) :
     F = G := by
-  sorry -- TODO: Create an issue?
+  have hc : c = 1 := by
+    have h1 : Tendsto (fun x ↦ c * G x) atTop (𝓝 (c * 1)) := G.tendsto_atTop.const_mul c
+    have h2 : Tendsto (fun x ↦ c * G x) atTop (𝓝 1) := by
+      simpa only [← h] using F.tendsto_atTop
+    simpa using tendsto_nhds_unique h1 h2
+  ext x
+  simpa [hc] using h x
 
 lemma eq_of_forall_dense_eq {S : Set ℝ} (S_dense : Dense S) (F G : CumulativeDistributionFunction)
     (h : ∀ x ∈ S, F x = G x) :
