@@ -142,4 +142,98 @@ theorem isInMDAWeibull_of_vonMises (F : CumulativeDistributionFunction) {α : �
     F.IsInMDAWeibull hα :=
   (F.isInMDAWeibull_iff hα).2 ⟨xF, F.isRegularlyVarying_of_vonMises_nhdsLT hα hz h1 hvm⟩
 
+/-! ### Examples -/
+
+/-- The Pareto distribution with index `α > 0`: `F x = 1 - x ^ (-α)` for `x ≥ 1` and `F x = 0`
+for `x < 1`. -/
+noncomputable def paretoCDF {α : ℝ} (hα : 0 < α) : CumulativeDistributionFunction where
+  toFun x := 1 - (max x 1) ^ (-α)
+  mono' := fun x y hxy ↦ sub_le_sub_left (Real.rpow_le_rpow_of_nonpos
+    (lt_of_lt_of_le one_pos (le_max_right _ _)) (max_le_max hxy le_rfl) (by linarith)) 1
+  right_continuous' := fun x ↦ (continuous_const.sub ((continuous_id.max continuous_const).rpow_const
+    fun y ↦ Or.inl (lt_of_lt_of_le one_pos (le_max_right y 1)).ne')).continuousWithinAt
+  tendsto_atTop := by
+    have h := (tendsto_rpow_neg_atTop hα).const_sub (1 : ℝ)
+    rw [sub_zero] at h
+    refine h.congr' ?_
+    filter_upwards [eventually_ge_atTop 1] with x hx
+    rw [max_eq_left hx]
+  tendsto_atBot := by
+    refine tendsto_const_nhds.congr' ?_
+    filter_upwards [eventually_le_atBot 1] with x hx
+    rw [max_eq_right hx, Real.one_rpow, sub_self]
+
+lemma paretoCDF_apply_of_one_le {α : ℝ} (hα : 0 < α) {x : ℝ} (hx : 1 ≤ x) :
+    paretoCDF hα x = 1 - x ^ (-α) := by
+  change 1 - (max x 1) ^ (-α) = _
+  rw [max_eq_left hx]
+
+/-- The Pareto distribution with index `α` is in the Fréchet domain of attraction `MDA(Φ_α)`,
+via the von Mises condition: `x F'(x) / (1 - F(x)) = α` for `x > 1`. -/
+theorem isInMDAFrechet_paretoCDF {α : ℝ} (hα : 0 < α) : (paretoCDF hα).IsInMDAFrechet hα := by
+  refine (paretoCDF hα).isInMDAFrechet_of_vonMises hα (z := 1)
+    (F₁ := fun x ↦ α * x ^ (-α - 1)) (fun x hx ↦ ?_) ?_
+  · have h : HasDerivAt (fun y : ℝ ↦ 1 - y ^ (-α)) (α * x ^ (-α - 1)) x := by
+      have := (Real.hasDerivAt_rpow_const (p := -α) (Or.inl (by linarith : x ≠ 0))).const_sub 1
+      convert this using 1
+      ring
+    refine h.congr_of_eventuallyEq ?_
+    filter_upwards [eventually_gt_nhds hx] with y hy
+    exact paretoCDF_apply_of_one_le hα hy.le
+  · refine tendsto_const_nhds.congr' ?_
+    filter_upwards [eventually_gt_atTop 1] with x hx
+    have hx0 : 0 < x := by linarith
+    rw [paretoCDF_apply_of_one_le hα hx.le, sub_sub_cancel, Real.rpow_sub_one hx0.ne']
+    have := Real.rpow_pos_of_pos hx0 (-α)
+    field_simp
+
+/-- The distribution `F x = 1 - (1 - x) ^ α` on `[0, 1]` (with `F = 0` on `(-∞, 0]` and `F = 1`
+on `[1, ∞)`), for `α > 0`. For `α = 1` this is the uniform distribution on `[0, 1]`; in general
+it is the `Beta(1, α)` distribution. -/
+noncomputable def powerCDF {α : ℝ} (hα : 0 < α) : CumulativeDistributionFunction where
+  toFun x := 1 - (min 1 (max (1 - x) 0)) ^ α
+  mono' := fun x y hxy ↦ sub_le_sub_left (Real.rpow_le_rpow
+    (le_min zero_le_one (le_max_right _ _)) (min_le_min le_rfl (max_le_max (by linarith) le_rfl))
+    hα.le) 1
+  right_continuous' := fun x ↦ (continuous_const.sub ((continuous_const.min
+    ((continuous_const.sub continuous_id).max continuous_const)).rpow_const
+      fun _ ↦ Or.inr hα.le)).continuousWithinAt
+  tendsto_atTop := by
+    refine tendsto_const_nhds.congr' ?_
+    filter_upwards [eventually_ge_atTop 1] with x hx
+    rw [max_eq_right (by linarith), min_eq_right zero_le_one, Real.zero_rpow hα.ne', sub_zero]
+  tendsto_atBot := by
+    refine tendsto_const_nhds.congr' ?_
+    filter_upwards [eventually_le_atBot 0] with x hx
+    rw [max_eq_left (by linarith), min_eq_left (by linarith), Real.one_rpow, sub_self]
+
+lemma powerCDF_apply_of_mem_Icc {α : ℝ} (hα : 0 < α) {x : ℝ} (hx : x ∈ Icc 0 1) :
+    powerCDF hα x = 1 - (1 - x) ^ α := by
+  change 1 - (min 1 (max (1 - x) 0)) ^ α = _
+  rw [max_eq_left (by linarith [hx.2]), min_eq_right (by linarith [hx.1])]
+
+/-- The distribution `1 - (1 - x) ^ α` on `[0, 1]` (in particular the uniform distribution,
+`α = 1`) is in the Weibull domain of attraction `MDA(Ψ_α)`, via the von Mises condition:
+`(1 - x) F'(x) / (1 - F(x)) = α` for `0 < x < 1`. -/
+theorem isInMDAWeibull_powerCDF {α : ℝ} (hα : 0 < α) : (powerCDF hα).IsInMDAWeibull hα := by
+  refine (powerCDF hα).isInMDAWeibull_of_vonMises hα (z := 0) (xF := 1) one_pos
+    (F₁ := fun x ↦ α * (1 - x) ^ (α - 1)) (fun x hx ↦ ?_) ?_
+  · have h : HasDerivAt (fun y : ℝ ↦ 1 - (1 - y) ^ α) (α * (1 - x) ^ (α - 1)) x := by
+      have := (((hasDerivAt_id x).const_sub 1).rpow_const
+        (p := α) (Or.inl (by simp only [id]; linarith [hx.2]))).const_sub 1
+      convert this using 1
+      · rfl
+      · show _ = -(-1 * α * (1 - x) ^ (α - 1))
+        ring
+    refine h.congr_of_eventuallyEq ?_
+    filter_upwards [Ioo_mem_nhds hx.1 hx.2] with y hy
+    exact powerCDF_apply_of_mem_Icc hα (Ioo_subset_Icc_self hy)
+  · refine tendsto_const_nhds.congr' ?_
+    filter_upwards [Ioo_mem_nhdsLT (show (0 : ℝ) < 1 from one_pos)] with x hx
+    have hx0 : 0 < 1 - x := by linarith [hx.2]
+    rw [powerCDF_apply_of_mem_Icc hα (Ioo_subset_Icc_self hx), sub_sub_cancel,
+      Real.rpow_sub_one hx0.ne']
+    have := Real.rpow_pos_of_pos hx0 α
+    field_simp
+
 end CumulativeDistributionFunction
