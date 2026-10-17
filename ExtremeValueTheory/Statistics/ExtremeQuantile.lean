@@ -720,4 +720,76 @@ theorem tendstoInMeasure_tailProbEstimator_div_of_isBoundedInProbability {X : �
 
 end TailProbability
 
+/-! ### Pareto-type tails: the extrapolation is exact -/
+
+section Pareto
+
+variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P] {Y : Ω → ℝ}
+
+/-- For a tail which is exactly Pareto beyond `x₀`, `P(Y > x) = C x ^ (-α)` for `x ≥ x₀`, the
+tail quantile at a level `p < C x₀ ^ (-α)` is `x_p = (C / p) ^ (1/α)`. -/
+theorem tailQuantile_eq_of_pareto (hY : Measurable Y) {α C x₀ p : ℝ} (hα : 0 < α) (hC : 0 < C)
+    (hx₀ : 0 < x₀) (hPar : ∀ x, x₀ ≤ x → survival P Y x = C * x ^ (-α)) (hp : 0 < p)
+    (hpx : p < C * x₀ ^ (-α)) : tailQuantile P Y p = (C / p) ^ (1 / α) := by
+  set y := (C / p) ^ (1 / α) with hy_def
+  have hCp : 0 < C / p := div_pos hC hp
+  have hy0 : 0 < y := rpow_pos_of_pos hCp _
+  have hyα : y ^ (-α) = p / C := by
+    rw [hy_def, ← Real.rpow_mul hCp.le, show 1 / α * -α = -1 by field_simp, Real.rpow_neg_one,
+      inv_div]
+  have hxy : x₀ < y := by
+    by_contra h
+    have h1 := Real.rpow_le_rpow_of_nonpos hy0 (not_lt.1 h) (neg_nonpos.2 hα.le)
+    rw [hyα, le_div_iff₀ hC] at h1
+    linarith
+  have hFy : survival P Y y = p := by
+    rw [hPar y hxy.le, hyα]; field_simp
+  refine le_antisymm (tailQuantile_le_of_survival_le (M := x₀) (by rwa [hPar x₀ le_rfl])
+    hFy.le) (le_of_forall_lt_imp_le_of_dense fun z hz => ?_)
+  refine le_tailQuantile_of_lt_survival hY hp ?_
+  rcases le_or_gt x₀ z with hzx | hzx
+  · rw [hPar z hzx, ← hFy, hPar y hxy.le]
+    exact mul_lt_mul_of_pos_left (Real.rpow_lt_rpow_of_neg (hx₀.trans_le hzx) hz
+      (neg_lt_zero.2 hα)) hC
+  · rw [← hPar x₀ le_rfl] at hpx
+    exact hpx.trans_le (survival_anti Y hzx.le)
+
+/-- **Ratio consistency of the Weissman estimator for Pareto-type tails** (Weissman 1978;
+[dHF, §4.3]). If `P(X > x) = C x ^ (-α)` for `x ≥ x₀`, then the extrapolation (bias) condition
+holds exactly, so for any `p_n ↓ 0` (including `n p_n → c ∈ [0, ∞)`, beyond the sample range),
+`k → ∞`, `k / n → 0`, `√k (γ̂ - 1/α) = O_P(1)` and `log (k / (n p_n)) / √k → 0`, the Weissman
+estimator satisfies `x̂_{p_n} / x_{p_n} → 1` in probability. -/
+theorem tendstoInMeasure_weissman_div_pareto {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
+    (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {α C x₀ : ℝ}
+    (hα : 0 < α) (hC : 0 < C) (hx₀ : 0 < x₀)
+    (hPar : ∀ x : ℝ, x₀ ≤ x → (P {ω | x < X 0 ω}).toReal = C * x ^ (-α)) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    {p : ℕ → ℝ} (hp0 : ∀ᶠ n in atTop, 0 < p n) (hp : Tendsto p atTop (𝓝 0))
+    (hrate : IsBoundedInProbability P (fun n ω =>
+      Real.sqrt (k n) * (hill (fun i : Fin n => X i ω) (k n) - 1 / α)))
+    (hd : Tendsto (fun n => Real.log ((k n : ℝ) / (n * p n)) / Real.sqrt (k n)) atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n ω => weissman (fun i : Fin n => X i ω) (k n) (p n) /
+      tailQuantile P (X 0) (p n)) atTop (fun _ => 1) := by
+  have hRV : IsRegularlyVarying (fun x => (P {ω | x < X 0 ω}).toReal) (-α) :=
+    ((IsRegularlyVarying.rpow_id (-α)).const_mul hC).congr
+      ((eventually_ge_atTop x₀).mono fun x hx => (hPar x hx).symm)
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hkpos : ∀ᶠ n in atTop, (0 : ℝ) < k n := hkR.eventually_gt_atTop 0
+  have hnpos : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < n :=
+    (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0
+  have hCx : 0 < C * x₀ ^ (-α) := mul_pos hC (rpow_pos_of_pos hx₀ _)
+  refine tendstoInMeasure_weissman_div_of_isBoundedInProbability hX hindep hident hα hRV hk hkn
+    hp0 hrate hd (tendsto_const_nhds.congr' ?_)
+  filter_upwards [hp0, hp.eventually (gt_mem_nhds hCx), hkpos, hnpos,
+    hkn.eventually (gt_mem_nhds hCx)] with n hpn hpx hkn' hnn hrx
+  have hr : (0 : ℝ) < k n / n := by positivity
+  rw [tailQuantile_eq_of_pareto (hX 0) hα hC hx₀ hPar hpn hpx,
+    tailQuantile_eq_of_pareto (hX 0) hα hC hx₀ hPar hr hrx,
+    ← Real.mul_rpow (div_pos hC hr).le (by positivity)]
+  have : C / ((k n : ℝ) / n) * ((k n : ℝ) / (n * p n)) = C / p n := by
+    field_simp
+  rw [this, div_self (rpow_pos_of_pos (div_pos hC hpn) _).ne']
+
+end Pareto
+
 end ExtremeValueTheory
