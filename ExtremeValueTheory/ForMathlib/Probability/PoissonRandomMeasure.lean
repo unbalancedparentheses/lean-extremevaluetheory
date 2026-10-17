@@ -24,18 +24,32 @@ is Poisson distributed with mean `ν(Aᵢ)`.
 * `ProbabilityTheory.sumDiracRange n z`: the counting measure `∑_{k < n} δ_{z k}`.
 * `ProbabilityTheory.poissonSampleMeasure c μ`: the law of a pair `(K, Z)` where `K` is Poisson
   with mean `c` and `Z` is an independent i.i.d. sequence with law `μ`.
+* `ProbabilityTheory.poissonSampleSeqMeasure c μ`: the law of a sequence of independent such
+  pairs `(K n, Z n)` with parameters `c n` and `μ n`.
 
 ## Main statements
 
 * `ProbabilityTheory.IsPoissonRandomMeasure.hasLaw`: `N(A)` is Poisson distributed with mean
   `ν(A)`.
 * `ProbabilityTheory.IsPoissonRandomMeasure.iIndepFun`: counts on disjoint sets are independent.
+* `ProbabilityTheory.IsPoissonRandomMeasure.integral_exp_neg_sum`: the Laplace functional of a
+  Poisson random measure evaluated at simple functions.
 * `ProbabilityTheory.isPoissonRandomMeasure_sumDiracRange`: the random measure `∑_{k < K} δ_{Z k}`
   is a Poisson random measure with intensity `c • μ`.
 * `ProbabilityTheory.integral_exp_neg_integral_sumDiracRange`: the Laplace functional of this
   Poisson random measure, `E exp(-∫ f dN) = exp(-∫ (1 - exp (-f)) dν)`.
-* `ProbabilityTheory.exists_isPoissonRandomMeasure`: every finite measure is the intensity of a
-  Poisson random measure.
+* `ProbabilityTheory.isPoissonRandomMeasure_sum_sumDiracRange`: superposition, the random measure
+  `∑ₙ ∑_{k < K n} δ_{Z n k}` is a Poisson random measure with intensity `∑ₙ c n • μ n`.
+* `ProbabilityTheory.exists_isPoissonRandomMeasure`: every s-finite (in particular every
+  σ-finite) measure is the intensity of a Poisson random measure.
+
+## Implementation notes
+
+The defining property `IsPoissonRandomMeasure.map_eq_pi` packages the Poisson marginals and the
+independence of counts on disjoint sets into the single statement that the joint law of the
+counts is a product of Poisson distributions. The joint laws are identified through
+characteristic functions (`charFun_eq_pi_iff`), and the countable superposition by dominated
+convergence of the characteristic functions of the partial sums.
 -/
 
 universe u
@@ -109,6 +123,41 @@ lemma iIndepFun (hN : IsPoissonRandomMeasure N ν P) {n : ℕ} {A : Fin n → Se
     hN.map_eq_pi A hA hνA hd]
   congr with i : 1
   exact ((hN.hasLaw (hA i) (hνA i)).map_eq).symm
+
+/-- **Laplace functional of a Poisson random measure on simple functions.** For pairwise
+disjoint measurable sets `A i` of finite intensity and `a i ≥ 0`,
+`E exp (-∑ i, a i * N (A i)) = exp (-∑ i, ν (A i) * (1 - exp (-a i)))`. -/
+lemma integral_exp_neg_sum (hN : IsPoissonRandomMeasure N ν P) {n : ℕ} {A : Fin n → Set E}
+    (hA : ∀ i, MeasurableSet (A i)) (hνA : ∀ i, ν (A i) ≠ ∞)
+    (hd : Pairwise (Function.onFun Disjoint A)) (a : Fin n → ℝ) :
+    ∫ ω, Real.exp (-∑ i, a i * (N ω (A i)).toReal) ∂P =
+      Real.exp (-∑ i, (ν (A i)).toReal * (1 - Real.exp (-a i))) := by
+  have hm : Measurable fun ω (i : Fin n) ↦ N ω (A i) :=
+    Measurable.of_eval fun i ↦ hN.measurable_apply (hA i)
+  have h := integral_map (μ := P) hm.aemeasurable
+    (f := fun x : Fin n → ℝ≥0∞ ↦ ∏ i, Real.exp (-(a i * (x i).toReal)))
+    (Finset.measurable_prod _ fun i _ ↦ Real.measurable_exp.comp
+      (((measurable_pi_apply i).ennreal_toReal.const_mul (a i)).neg)).aestronglyMeasurable
+  simp only at h
+  simp_rw [← Finset.sum_neg_distrib, Real.exp_sum, ← h, hN.map_eq_pi A hA hνA hd,
+    integral_fintype_prod_eq_prod (f := fun i (x : ℝ≥0∞) ↦ Real.exp (-(a i * x.toReal)))]
+  refine Finset.prod_congr rfl fun i _ ↦ ?_
+  rw [integral_map (by fun_prop) (by fun_prop), integral_poissonMeasure]
+  simp only [ENNReal.toReal_natCast, smul_eq_mul]
+  set r : ℝ≥0 := (ν (A i)).toNNReal
+  have hr : (ν (A i)).toReal = r := rfl
+  rw [hr]
+  calc ∑' k : ℕ, Real.exp (-r) * r ^ k / k.factorial * Real.exp (-(a i * k))
+      = ∑' k : ℕ, Real.exp (-r) * ((r * Real.exp (-a i)) ^ k / k.factorial) := by
+        congr with k
+        rw [mul_pow, ← Real.exp_nat_mul]
+        ring_nf
+    _ = Real.exp (-r) * Real.exp (r * Real.exp (-a i)) := by
+        rw [tsum_mul_left, (NormedSpace.expSeries_div_hasSum_exp (r * Real.exp (-a i))).tsum_eq,
+          Real.exp_eq_exp_ℝ]
+    _ = Real.exp (-(r * (1 - Real.exp (-a i)))) := by
+        rw [← Real.exp_add]
+        ring_nf
 
 end IsPoissonRandomMeasure
 
