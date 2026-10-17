@@ -40,6 +40,10 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
 - **Subexponential distributions** (`IsSubexponential`): regularly varying tails are
   subexponential; `P(X₁+…+Xₙ > x) ~ n P(X > x)` and the single big jump
   `P(X₁+…+Xₙ > x) ~ P(max Xᵢ > x)` for iid samples; Kesten's bound.
+- **Hill estimator consistency** (`tendstoInMeasure_hill`): for iid samples whose tail is
+  regularly varying with index `-α`, and `k → ∞`, `k/n → 0`, the Hill estimator
+  `(1/k) Σ_{i<k} (log X₍ᵢ₊₁₎ - log X₍ₖ₊₁₎)` converges to `1/α` in probability. With order
+  statistics and their binomial distribution.
 - **Uniform convergence theorem and Karamata's representation theorem** for measurable slowly
   and regularly varying functions (no monotonicity), with two-sided Potter bounds
   (`isSlowlyVarying_iff_exists_representation`, `potter_bounds_of_measurable`).

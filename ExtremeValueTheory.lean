@@ -23,3 +23,5 @@ import ExtremeValueTheory.RegularVariation.Representation
 import ExtremeValueTheory.DomainOfAttraction.Weibull
 import ExtremeValueTheory.HeavyTails.Subexponential
 import ExtremeValueTheory.DomainOfAttraction.Gumbel
+import ExtremeValueTheory.Statistics.OrderStatistics
+import ExtremeValueTheory.Statistics.Hill
