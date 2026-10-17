@@ -163,6 +163,140 @@ theorem abs_div_sub_le (hψ0 : ∀ j, 0 ≤ ψ j) (hψm : ∀ j, m < j → ψ j 
 
 end Deterministic
 
+/-! ### Probabilistic estimates -/
+
+section Probabilistic
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
+
+/-- The moving average `X_t = ∑_{i=0}^m ψ_i Z_{t-i}`. -/
+noncomputable def process (m : ℕ) (ψ : ℕ → ℝ) (Z : ℤ → Ω → ℝ) (t : ℤ) (ω : Ω) : ℝ :=
+  ∑ i ∈ range (m + 1), ψ i * Z (t - i) ω
+
+theorem measurable_process {Z : ℤ → Ω → ℝ} (hZ : ∀ i, Measurable (Z i)) (t : ℤ) :
+    Measurable (process m ψ Z t) :=
+  Finset.measurable_sum _ fun _ _ => (hZ _).const_mul _
+
+theorem process_nonneg (hψ0 : ∀ j, 0 ≤ ψ j) {Z : ℤ → Ω → ℝ} (hZ0 : ∀ i ω, 0 ≤ Z i ω) (t : ℤ)
+    (ω : Ω) : 0 ≤ process m ψ Z t ω :=
+  Finset.sum_nonneg fun i _ => mul_nonneg (hψ0 i) (hZ0 _ ω)
+
+/-- If `F / L → c > 0` and `L` is regularly varying with index `ρ`, so is `F`. -/
+theorem isRegularlyVarying_of_tendsto_div {F L : ℝ → ℝ} {ρ c : ℝ} (hL : IsRegularlyVarying L ρ)
+    (hc : 0 < c) (hF : Tendsto (fun x => F x / L x) atTop (𝓝 c)) : IsRegularlyVarying F ρ := by
+  have hFpos : ∀ᶠ x in atTop, 0 < F x := by
+    filter_upwards [hF.eventually (lt_mem_nhds hc), hL.1] with x hx hLx
+    exact (div_pos_iff_of_pos_right hLx).1 hx
+  refine ⟨hFpos, fun t ht => ?_⟩
+  have htx : Tendsto (fun x : ℝ => t * x) atTop atTop := tendsto_id.const_mul_atTop ht
+  have h := ((hF.comp htx).mul (hL.2 t ht)).div hF hc.ne'
+  rw [mul_div_cancel_left₀ _ hc.ne'] at h
+  refine h.congr' ?_
+  filter_upwards [hFpos, hL.1, htx.eventually hL.1] with x hFx hLx hLtx
+  simp only [Function.comp, Pi.div_apply]
+  field_simp
+
+variable [IsProbabilityMeasure P] {Z : ℤ → Ω → ℝ} {α : ℝ}
+
+/-- **Tail of `X_0`**: `P(X_0 > x) / P(Z_0 > x) → ∑_{j ≤ m} ψ_j^α`. -/
+theorem tendsto_measureReal_process_div (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+    (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hα : 0 < α)
+    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j) :
+    Tendsto (fun x => P.real {ω | x < process m ψ Z 0 ω} / P.real {ω | x < Z 0 ω}) atTop
+      (𝓝 (weightSum m ψ α)) := by
+  have habs : ∀ x, {ω | x < |Z 0 ω|} = {ω | x < Z 0 ω} := fun x => by
+    ext ω; simp [abs_of_nonneg (hZ0 0 ω)]
+  have hL' : IsRegularlyVarying (fun x => P.real {ω | x < |Z 0 ω|}) (-α) := by
+    simpa only [habs] using hL
+  have hp : Tendsto (fun x => P.real {ω | x < Z 0 ω} / P.real {ω | x < |Z 0 ω|}) atTop
+      (𝓝 1) := by
+    refine tendsto_const_nhds.congr' ?_
+    filter_upwards [hL.1] with x hx
+    rw [habs, div_self hx.ne']
+  have hinj : Function.Injective fun i : ℕ => (0 : ℤ) - i := fun a b h => by
+    simpa using h
+  have h := LinearProcess.tendsto_measureReal_sum_mul_div (Z := fun i : ℕ => Z (0 - i))
+    (fun i => hZ _) (hZ 0) (hind.precomp hinj) (fun i => hident _) hL' hp ψ (range (m + 1))
+  simp only [habs] at h
+  have hW : weightSum m ψ α = ∑ j ∈ range (m + 1), LinearProcess.tailWeight α 1 (ψ j) := by
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rcases (hψ0 j).eq_or_lt with h0 | hpos
+    · rw [← h0, LinearProcess.tailWeight_zero, Real.zero_rpow hα.ne']
+    · rw [LinearProcess.tailWeight_of_pos hpos, mul_one]
+  rw [hW]
+  exact h
+
+/-- **Product formula**: `P(Z_{i₀} > a, Z_i ≤ b for i ∈ I \ {i₀}) = F̄(a) (1 - F̄(b))^{#I - 1}`. -/
+theorem measureReal_gt_and_forall_le (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+    (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) {I : Finset ℤ} {i₀ : ℤ} (hi₀ : i₀ ∈ I)
+    (a b : ℝ) :
+    P.real {ω | a < Z i₀ ω ∧ ∀ i ∈ I, i ≠ i₀ → Z i ω ≤ b} =
+      P.real {ω | a < Z 0 ω} * (1 - P.real {ω | b < Z 0 ω}) ^ (I.card - 1) := by
+  classical
+  set s : ℤ → Set ℝ := fun i => if i = i₀ then Ioi a else Iic b with hs
+  have hsm : ∀ i ∈ I, MeasurableSet (s i) := fun i _ => by
+    simp only [hs]; split_ifs
+    · exact measurableSet_Ioi
+    · exact measurableSet_Iic
+  have hset : {ω | a < Z i₀ ω ∧ ∀ i ∈ I, i ≠ i₀ → Z i ω ≤ b} = ⋂ i ∈ I, Z i ⁻¹' s i := by
+    ext ω
+    simp only [mem_ofPred_eq, mem_iInter, Set.mem_preimage, hs]
+    constructor
+    · rintro ⟨h1, h2⟩ i hi
+      split_ifs with h
+      · subst h; exact h1
+      · exact h2 i hi h
+    · intro h
+      refine ⟨by simpa using h i₀ hi₀, fun i hi hne => ?_⟩
+      simpa [hne] using h i hi
+  have hle : ∀ i, P.real (Z i ⁻¹' Iic b) = 1 - P.real {ω | b < Z 0 ω} := fun i => by
+    rw [measureReal_def, (hident i).measure_mem_eq measurableSet_Iic, ← measureReal_def,
+      ← probReal_compl_eq_one_sub (measurableSet_lt measurable_const (hZ 0))]
+    congr 1; ext ω; simp
+  rw [hset, measureReal_def, hind.measure_inter_preimage_eq_mul I hsm, ENNReal.toReal_prod,
+    ← Finset.mul_prod_erase I _ hi₀]
+  congr 1
+  · simp only [hs, ite_true]
+    rw [ (hident i₀).measure_mem_eq measurableSet_Ioi]
+    rfl
+  · rw [← Finset.card_erase_of_mem hi₀, ← Finset.prod_const]
+    refine Finset.prod_congr rfl fun i hi => ?_
+    simp only [hs, Finset.ne_of_mem_erase hi, ite_false]
+    exact hle i
+
+/-- **Two large values**: `P(two coordinates of I exceed b) ≤ (#I)² F̄(b)²`. -/
+theorem measureReal_two_gt_le (hind : iIndepFun Z P)
+    (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (I : Finset ℤ) (b : ℝ) :
+    P.real {ω | ∃ i ∈ I, ∃ i' ∈ I, i ≠ i' ∧ b < Z i ω ∧ b < Z i' ω} ≤
+      (I.card : ℝ) ^ 2 * P.real {ω | b < Z 0 ω} ^ 2 := by
+  classical
+  have hsub : {ω | ∃ i ∈ I, ∃ i' ∈ I, i ≠ i' ∧ b < Z i ω ∧ b < Z i' ω} ⊆
+      ⋃ p ∈ (I ×ˢ I).filter (fun p => p.1 ≠ p.2), (Z p.1 ⁻¹' Ioi b ∩ Z p.2 ⁻¹' Ioi b) := by
+    rintro ω ⟨i, hi, i', hi', hne, h1, h2⟩
+    simp only [mem_iUnion, Finset.mem_filter, Finset.mem_product]
+    exact ⟨(i, i'), ⟨⟨hi, hi'⟩, hne⟩, h1, h2⟩
+  have hpair : ∀ p ∈ (I ×ˢ I).filter (fun p => p.1 ≠ p.2),
+      P.real (Z p.1 ⁻¹' Ioi b ∩ Z p.2 ⁻¹' Ioi b) = P.real {ω | b < Z 0 ω} ^ 2 := by
+    intro p hp
+    have hne := (Finset.mem_filter.1 hp).2
+    rw [measureReal_def, (hind.indepFun hne).measure_inter_preimage_eq_mul _ _ measurableSet_Ioi
+      measurableSet_Ioi, (hident p.1).measure_mem_eq measurableSet_Ioi,
+      (hident p.2).measure_mem_eq measurableSet_Ioi, ENNReal.toReal_mul, sq]
+    rfl
+  calc _ ≤ P.real (⋃ p ∈ (I ×ˢ I).filter (fun p => p.1 ≠ p.2),
+        (Z p.1 ⁻¹' Ioi b ∩ Z p.2 ⁻¹' Ioi b)) := measureReal_mono hsub (measure_ne_top P _)
+    _ ≤ ∑ p ∈ (I ×ˢ I).filter (fun p => p.1 ≠ p.2),
+        P.real (Z p.1 ⁻¹' Ioi b ∩ Z p.2 ⁻¹' Ioi b) := measureReal_biUnion_finset_le _ _
+    _ = ((I ×ˢ I).filter (fun p => p.1 ≠ p.2)).card * P.real {ω | b < Z 0 ω} ^ 2 := by
+        rw [Finset.sum_congr rfl hpair, Finset.sum_const, nsmul_eq_mul]
+    _ ≤ (I.card : ℝ) ^ 2 * P.real {ω | b < Z 0 ω} ^ 2 := by
+        gcongr
+        calc (((I ×ˢ I).filter (fun p => p.1 ≠ p.2)).card : ℝ) ≤ ((I ×ˢ I).card : ℝ) := by
+              exact_mod_cast Finset.card_filter_le _ _
+          _ = (I.card : ℝ) ^ 2 := by rw [Finset.card_product]; push_cast; ring
+
+end Probabilistic
+
 end MovingAverage
 
 end ExtremeValueTheory
