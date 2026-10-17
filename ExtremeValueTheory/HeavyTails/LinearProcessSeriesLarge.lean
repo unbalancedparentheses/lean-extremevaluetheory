@@ -229,9 +229,9 @@ theorem ae_summable_mul_of_lt_one [IsProbabilityMeasure P] {Z : ℕ → Ω → �
     (ENNReal.ofReal_toReal hne).ge).1
 
 /-- **Tails of infinite moving averages with regularly varying noise, all `α > 0`** ([EKM, Lemma
-A3.26], [DR85], [Mikosch–Samorodnitsky 2000], [KS20, Chapter 15]). Let `(Z_j)_{j ≥ 0}` be independent copies of `Z₀`,
-with `P(|Z₀| > x)` regularly varying with index `-α`, `α > 0`, and tail balance
-`P(Z₀ > x) / P(|Z₀| > x) → p`. If `∑ |ψ_j|^δ < ∞` for some `0 < δ < α` with `δ < 1`, then
+A3.26], [DR85], [Mikosch–Samorodnitsky 2000], [KS20, Chapter 15]). Let `(Z_j)_{j ≥ 0}` be
+independent copies of `Z₀`, with `P(|Z₀| > x)` regularly varying with index `-α`, `α > 0`, and
+tail balance `P(Z₀ > x) / P(|Z₀| > x) → p`. If `∑ |ψ_j|^δ < ∞` for some `0 < δ < α` with `δ < 1`, then
 `X = ∑_j ψ_j Z_j` (which converges absolutely almost surely, `ae_summable_mul_of_lt_one`)
 satisfies `P(X > x) / P(|Z₀| > x) → ∑_j |ψ_j|^α (p 1{ψ_j > 0} + (1 - p) 1{ψ_j < 0})`.
 No moment or centering assumption on `Z₀` is needed. -/
@@ -311,7 +311,8 @@ theorem tendsto_measureReal_tsum_mul_div_of_lt_one [IsProbabilityMeasure P] {Z :
           (by positivity) (not_lt.1 h)).2
         rw [abs_le] at this
         linarith
-    have hle := (measureReal_mono (μ := P) hsub (measure_ne_top P _)).trans (measureReal_union_le _ _)
+    have hle := (measureReal_mono (μ := P) hsub (measure_ne_top P _)).trans
+      (measureReal_union_le _ _)
     have : P.real {ω | (1 + ε) * x < ∑ j ∈ Finset.range m, ψ j * Z j ω} / L x ≤
         P.real {ω | x < ∑' j, ψ j * Z j ω} / L x +
           P.real {ω | ENNReal.ofReal (ε * x) < R m ω} / L x := by
@@ -347,7 +348,8 @@ theorem tendsto_measureReal_tsum_mul_div_of_lt_one [IsProbabilityMeasure P] {Z :
           (by positivity) (not_lt.1 h)).2
         rw [abs_le] at this
         linarith
-    have hle := (measureReal_mono (μ := P) hsub (measure_ne_top P _)).trans (measureReal_union_le _ _)
+    have hle := (measureReal_mono (μ := P) hsub (measure_ne_top P _)).trans
+      (measureReal_union_le _ _)
     have : P.real {ω | x < ∑' j, ψ j * Z j ω} / L x ≤
         P.real {ω | (1 - ε) * x < ∑ j ∈ Finset.range m, ψ j * Z j ω} / L x +
           P.real {ω | ENNReal.ofReal (ε * x) < R m ω} / L x := by
