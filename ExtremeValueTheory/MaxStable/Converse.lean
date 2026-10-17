@@ -266,6 +266,25 @@ lemma maxRatio_div_mem {y x : ι → ℝ} (hy : ∀ i, 0 < y i) (hx : ∀ i, 0 <
           gcongr
           exact Finset.single_le_sum (fun i _ ↦ (inv_pos.2 (hy i)).le) (Finset.mem_univ j)
 
+/-- The distance `1 - max_i θ i` of `θ ∈ [0, 1]^ι` to the unit sphere of the sup norm. -/
+noncomputable def sphereDefect : (ι → unitInterval) →ᵇ ℝ≥0 :=
+  BoundedContinuousFunction.mkOfCompact
+    ⟨fun θ ↦ 1 - Finset.univ.sup fun i ↦ Real.toNNReal (θ i : ℝ), by fun_prop⟩
+
+lemma sphereDefect_angular {x : ι → ℝ} (hx : ∀ i, 0 < x i) : sphereDefect (angular x) = 0 := by
+  obtain ⟨k, hk⟩ := exists_maxRatio_eq 1 x
+  simp only [Pi.one_apply, div_one] at hk
+  simp only [sphereDefect, BoundedContinuousFunction.mkOfCompact_apply, ContinuousMap.coe_mk]
+  refine tsub_eq_zero_of_le (Finset.le_sup_of_le (Finset.mem_univ k) (le_of_eq ?_))
+  rw [coe_angular_of_pos hx, hk, div_self (hx k).ne', Real.toNNReal_one]
+
+lemma exists_eq_one_of_sphereDefect_eq_zero {θ : ι → unitInterval} (h : sphereDefect θ = 0) :
+    ∃ i, (θ i : ℝ) = 1 := by
+  simp only [sphereDefect, BoundedContinuousFunction.mkOfCompact_apply, ContinuousMap.coe_mk,
+    tsub_eq_zero_iff_le] at h
+  obtain ⟨i, -, hi⟩ := (Finset.le_sup_iff zero_lt_one).1 h
+  exact ⟨i, le_antisymm (θ i).2.2 (Real.one_le_toNNReal.1 hi)⟩
+
 /-- The truncated angular measure `E[min (max_i Y i) M ; Θ ∈ ·]`, `Θ = Y / max_i Y i`. -/
 noncomputable def truncAngular (μ : Measure (ι → ℝ)) (M : ℝ) : Measure (ι → unitInterval) :=
   (μ.withDensity fun x ↦ ENNReal.ofReal (min (maxRatio 1 x) M)).map angular
@@ -432,9 +451,11 @@ variable {μ : Measure (ι → ℝ)}
 `∫ max_i θ i / y i dP(θ) = V(y)` for all `y` with positive coordinates. It is a cluster point of
 the measures `E[min (max_i Y i) n ; Y / max_i Y i ∈ ·] / log n`. -/
 theorem exists_angularMeasure (h : IsSimpleMaxStable μ) :
-    ∃ P : FiniteMeasure (ι → unitInterval), ∀ y : ι → ℝ, (∀ i, 0 < y i) →
-      ∫⁻ θ, spectralTest y θ ∂(P : Measure (ι → unitInterval)) =
-        ENNReal.ofReal (maxStableExponent μ y) := by
+    ∃ P : FiniteMeasure (ι → unitInterval),
+      (∀ᵐ θ ∂(P : Measure (ι → unitInterval)), ∃ i, (θ i : ℝ) = 1) ∧
+      ∀ y : ι → ℝ, (∀ i, 0 < y i) →
+        ∫⁻ θ, spectralTest y θ ∂(P : Measure (ι → unitInterval)) =
+          ENNReal.ofReal (maxStableExponent μ y) := by
   have := h.isProbabilityMeasure
   have hV1 := h.maxStableExponent_pos (y := 1) fun _ ↦ one_pos
   set C : ℝ≥0 := (maxStableExponent μ 1 + 1).toNNReal
@@ -449,7 +470,22 @@ theorem exists_angularMeasure (h : IsSimpleMaxStable μ) :
   obtain ⟨P, -, hP⟩ := (isCompact_setOfPred_finiteMeasure_le_of_compactSpace
     (ι → unitInterval) C).exists_clusterPt (f := map (scaledTruncAngular μ) atTop)
     (le_principal_iff.2 hev)
-  refine ⟨P, fun y hy ↦ ?_⟩
+  refine ⟨P, ?_, fun y hy ↦ ?_⟩
+  · -- the cluster point is concentrated on the unit sphere `max_i θ i = 1`
+    have hL : Tendsto (fun n : ℕ ↦ ((scaledTruncAngular μ n).testAgainstNN sphereDefect : ℝ))
+        atTop (𝓝 0) := by
+      refine tendsto_const_nhds.congr fun n ↦ ?_
+      rw [coe_scaledTruncAngular_testAgainstNN, lintegral_truncAngular μ
+        sphereDefect.continuous.measurable.coe_nnreal_ennreal]
+      rw [lintegral_congr_ae (g := fun _ ↦ 0) (h.ae_pos.mono fun x hx ↦ by
+        simp [sphereDefect_angular hx]), lintegral_zero, ENNReal.toReal_zero, zero_div]
+    have h0 := eq_of_clusterPt_testAgainstNN hP _ hL
+    have h0' : ∫⁻ θ, (sphereDefect θ : ℝ≥0∞) ∂(P : Measure (ι → unitInterval)) = 0 := by
+      rw [← FiniteMeasure.testAgainstNN_coe_eq]
+      exact_mod_cast NNReal.coe_eq_zero.1 h0
+    filter_upwards [(lintegral_eq_zero_iff
+      sphereDefect.continuous.measurable.coe_nnreal_ennreal).1 h0'] with θ hθ
+    exact exists_eq_one_of_sphereDefect_eq_zero (by simpa using hθ)
   have hL : Tendsto (fun n : ℕ ↦ ((scaledTruncAngular μ n).testAgainstNN (spectralTest y) : ℝ))
       atTop (𝓝 (maxStableExponent μ y)) := by
     simpa only [Function.comp_def, coe_scaledTruncAngular_testAgainstNN] using
@@ -489,16 +525,22 @@ namespace IsSimpleMaxStable
 `∫ w i dH(w) = 1`, with `P(Y ≤ y) = exp (-∫ max_i w i / y i dH(w))`. -/
 theorem exists_hasSpectralMeasure (h : IsSimpleMaxStable μ) :
     ∃ H : Measure (ι → ℝ≥0∞), IsFiniteMeasure H ∧ (∀ᵐ w ∂H, ∀ i, w i ≤ 1) ∧
-      (∀ i, ∫⁻ w, w i ∂H = 1) ∧ HasSpectralMeasure μ H := by
+      (∀ᵐ w ∂H, ⨆ i, w i = 1) ∧ (∀ i, ∫⁻ w, w i ∂H = 1) ∧ HasSpectralMeasure μ H := by
   have := h.isProbabilityMeasure
   rcases isEmpty_or_nonempty ι with hι | hι
-  · refine ⟨0, inferInstance, by simp, fun i ↦ isEmptyElim i, fun y _ ↦ ?_⟩
+  · refine ⟨0, inferInstance, by simp, by simp, fun i ↦ isEmptyElim i, fun y _ ↦ ?_⟩
     rw [show Iic y = univ from eq_univ_of_forall fun x i ↦ isEmptyElim i, measure_univ]
     simp
-  obtain ⟨P, hP⟩ := h.exists_angularMeasure
-  refine ⟨(P : Measure (ι → unitInterval)).map unitCubeToENNReal, inferInstance, ?_, ?_, ?_⟩
+  obtain ⟨P, hsph, hP⟩ := h.exists_angularMeasure
+  refine ⟨(P : Measure (ι → unitInterval)).map unitCubeToENNReal, inferInstance, ?_, ?_, ?_, ?_⟩
   · rw [ae_map_iff measurable_unitCubeToENNReal.aemeasurable measurableSet_le_one]
     exact Eventually.of_forall fun θ i ↦ ENNReal.ofReal_le_one.2 (θ i).2.2
+  · rw [ae_map_iff measurable_unitCubeToENNReal.aemeasurable (measurableSet_eq_fun
+      (Measurable.iSup fun i ↦ measurable_pi_apply i) measurable_const)]
+    filter_upwards [hsph] with θ ⟨k, hk⟩
+    refine le_antisymm (iSup_le fun i ↦ ENNReal.ofReal_le_one.2 (θ i).2.2)
+      (le_iSup_of_le k ?_)
+    simp [unitCubeToENNReal, hk]
   · intro i
     classical
     rw [lintegral_map (measurable_pi_apply i) measurable_unitCubeToENNReal]
@@ -576,14 +618,14 @@ function is `A(t) = ∫ max(t w 0, (1 - t) w 1) dH(w)` on `[0, 1]`. -/
 theorem exists_pickandsDependence_eq_pickandsSpectral (h : IsSimpleMaxStable ν) :
     ∃ H : Measure (Fin 2 → ℝ≥0∞), IsFiniteMeasure H ∧ (∀ i, ∫⁻ w, w i ∂H = 1) ∧
       HasSpectralMeasure ν H ∧ EqOn (pickandsDependence ν) (pickandsSpectral H) (Icc 0 1) := by
-  obtain ⟨H, hfin, -, hH, hS⟩ := h.exists_hasSpectralMeasure
+  obtain ⟨H, hfin, -, -, hH, hS⟩ := h.exists_hasSpectralMeasure
   exact ⟨H, hfin, hH, hS, fun _ ht ↦ hS.pickandsDependence_eq hH ht⟩
 
 /-- **Convexity of the Pickands dependence function** ([Pickands 1981]; [dHF, §6.1.5]) for every
 bivariate simple max-stable law. -/
 theorem convexOn_pickandsDependence (h : IsSimpleMaxStable ν) :
     ConvexOn ℝ (Icc 0 1) (pickandsDependence ν) := by
-  obtain ⟨H, -, -, hH, hS⟩ := h.exists_hasSpectralMeasure
+  obtain ⟨H, -, -, -, hH, hS⟩ := h.exists_hasSpectralMeasure
   exact hS.convexOn_pickands hH
 
 end IsSimpleMaxStable
