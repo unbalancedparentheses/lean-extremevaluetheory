@@ -405,7 +405,8 @@ theorem integral_id_gevLocScaleCDF_zero (μ : ℝ) {σ : ℝ} (hσ : 0 < σ) :
 
 /-- On the exponential scale the GEV distribution function is explicit:
 `H_ξ((t ^ (-ξ) - 1) / ξ) = e^{-t}` for `t > 0`. -/
-lemma gevFun_gevTransform (ξ : ℝ) {t : ℝ} (ht : 0 < t) : gevFun ξ (gevTransform ξ t) = exp (-t) := by
+lemma gevFun_gevTransform (ξ : ℝ) {t : ℝ} (ht : 0 < t) :
+    gevFun ξ (gevTransform ξ t) = exp (-t) := by
   by_cases h0 : ξ = 0
   · simp [gevFun, gevTransform, h0, exp_log ht]
   · have hk : 1 + ξ * gevTransform ξ t = t ^ (-ξ) := by

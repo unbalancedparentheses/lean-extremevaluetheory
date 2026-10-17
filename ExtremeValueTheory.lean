@@ -61,3 +61,4 @@ import ExtremeValueTheory.Dependence.TimeChange
 import ExtremeValueTheory.GEV.MaxStable
 import ExtremeValueTheory.GEV.Family
 import ExtremeValueTheory.GEV.Moments
+import ExtremeValueTheory.Statistics.BlockMaxima
