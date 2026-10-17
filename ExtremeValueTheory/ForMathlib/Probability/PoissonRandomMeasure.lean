@@ -194,6 +194,75 @@ lemma integral_prod_range_poissonSampleMeasure {g : E → ℂ} (hg : Measurable 
         push_cast
         ring_nf
 
+omit [MeasurableSpace E] in
+/-- Pointwise identity behind the joint characteristic function of the counts on disjoint sets. -/
+lemma cexp_sum_indicator_eq {n : ℕ} {A : Fin n → Set E}
+    (hd : Pairwise (Function.onFun Disjoint A)) (t : Fin n → ℝ) (z : E) :
+    Complex.exp ((∑ i, t i * (A i).indicator 1 z : ℝ) * Complex.I) =
+      1 + ∑ i, (A i).indicator (fun _ ↦ Complex.exp (t i * Complex.I) - 1) z := by
+  by_cases hz : ∃ j, z ∈ A j
+  · obtain ⟨j, hj⟩ := hz
+    have hnot : ∀ i, i ≠ j → z ∉ A i := fun i hij hi ↦
+      Set.disjoint_left.1 (hd hij) hi hj
+    rw [Finset.sum_eq_single j (fun i _ hij ↦ by simp [hnot i hij]) (by simp),
+      Finset.sum_eq_single j (fun i _ hij ↦ by simp [hnot i hij]) (by simp)]
+    simp [hj]
+  · push Not at hz
+    simp [hz]
+
+/-- The joint law of the real counts `#{k < K | Z k ∈ A i}` on disjoint sets. -/
+lemma map_count_poissonSampleMeasure {n : ℕ} {A : Fin n → Set E} (hA : ∀ i, MeasurableSet (A i))
+    (hd : Pairwise (Function.onFun Disjoint A)) :
+    (poissonSampleMeasure c μ).map
+        (fun ω i ↦ ∑ k ∈ range ω.1, (A i).indicator (1 : E → ℝ) (ω.2 k)) =
+      Measure.pi fun i ↦ (poissonMeasure (c * μ.real (A i)).toNNReal).map (Nat.cast : ℕ → ℝ) := by
+  set Y : ℕ × (ℕ → E) → (Fin n → ℝ) :=
+    fun ω i ↦ ∑ k ∈ range ω.1, (A i).indicator (1 : E → ℝ) (ω.2 k) with hYdef
+  have hY : Measurable Y := by
+    refine Measurable.of_eval fun i ↦ ?_
+    exact measurable_of_measurable_nat_prod
+      (F := fun n z ↦ ∑ k ∈ range n, (A i).indicator (1 : E → ℝ) (z k)) fun m ↦
+        Finset.measurable_sum _ fun k _ ↦
+          (measurable_one.indicator (hA i)).comp (measurable_pi_apply k)
+  refine (charFun_eq_pi_iff).1 fun t ↦ ?_
+  rw [charFun_apply, integral_map (by fun_prop) (by fun_prop),
+    integral_map hY.aemeasurable (by fun_prop)]
+  set g : E → ℂ := fun z ↦ Complex.exp ((∑ i, t i * (A i).indicator 1 z : ℝ) * Complex.I)
+    with hg_def
+  have hg : Measurable g := by
+    refine (Complex.measurable_exp.comp (Measurable.mul_const ?_ _))
+    refine Complex.measurable_ofReal.comp ?_
+    exact Finset.measurable_sum _ fun i _ ↦
+      (measurable_one.indicator (hA i)).const_mul _
+  have hg1 : ∀ z, ‖g z‖ ≤ 1 := fun z ↦ by
+    simp only [hg_def, Complex.norm_exp_ofReal_mul_I, le_refl]
+  have key (ω : ℕ × (ℕ → E)) : Complex.exp (inner ℝ (WithLp.toLp 2 (Y ω)) t * Complex.I) =
+      ∏ k ∈ range ω.1, g (ω.2 k) := by
+    rw [hg_def, ← Complex.exp_sum, ← Finset.sum_mul]
+    congr 1
+    simp only [PiLp.inner_apply, hYdef, Real.inner_apply]
+    push_cast
+    rw [Finset.sum_comm]
+    simp [Finset.mul_sum, mul_comm]
+  simp_rw [key]
+  rw [integral_prod_range_poissonSampleMeasure hg hg1]
+  have hint : ∫ x, g x ∂μ - 1 =
+      ∑ i, (μ.real (A i) : ℂ) * (Complex.exp (t i * Complex.I) - 1) := by
+    simp_rw [hg_def, cexp_sum_indicator_eq hd]
+    rw [integral_add (integrable_const _), integral_finsetSum]
+    · simp [integral_indicator_const _ (hA _), mul_comm]
+    · intro i _
+      exact (integrable_const _).indicator (hA i)
+    · exact integrable_finsetSum _ fun i _ ↦ (integrable_const _).indicator (hA i)
+  rw [hint, Finset.mul_sum, Complex.exp_sum]
+  refine Finset.prod_congr rfl fun i _ ↦ ?_
+  rw [charFun_map_cast_poissonMeasure, ← mul_assoc]
+  congr 2
+  rw [show (((c * μ.real (A i)).toNNReal : ℝ≥0) : ℂ) = ((c * μ.real (A i)).toNNReal : ℝ) from rfl,
+    Real.coe_toNNReal _ (by positivity)]
+  push_cast
+  ring
+
 end Construction
 
 end ProbabilityTheory
