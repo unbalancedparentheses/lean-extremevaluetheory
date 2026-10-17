@@ -593,4 +593,117 @@ theorem tendstoInMeasure_hill_of_variance {X : ℕ → Ω → ℝ} (hX : ∀ i, 
 
 end Consistency
 
+/-! ### `m`-dependent sequences -/
+
+section MDependent
+
+variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+
+/-- For nonnegative square-integrable `Y, Z`, `cov(Y, Z) ≤ (E Y² + E Z²) / 2`. -/
+theorem covariance_le_of_nonneg {Y Z : Ω → ℝ} (hY : MemLp Y 2 P) (hZ : MemLp Z 2 P)
+    (hY0 : ∀ ω, 0 ≤ Y ω) (hZ0 : ∀ ω, 0 ≤ Z ω) :
+    cov[Y, Z; P] ≤ (∫ ω, Y ω ^ 2 ∂P + ∫ ω, Z ω ^ 2 ∂P) / 2 := by
+  rw [covariance_eq_sub hY hZ]
+  have hYZ : Integrable (Y * Z) P := hY.integrable_mul hZ
+  have hY2 : Integrable (fun ω => Y ω ^ 2) P := hY.integrable_sq
+  have hZ2 : Integrable (fun ω => Z ω ^ 2) P := hZ.integrable_sq
+  have h1 : P[Y * Z] ≤ ∫ ω, (Y ω ^ 2 + Z ω ^ 2) / 2 ∂P :=
+    integral_mono hYZ ((hY2.add hZ2).div_const 2) fun ω => by
+      simp only [Pi.mul_apply]; nlinarith [sq_nonneg (Y ω - Z ω)]
+  rw [integral_div, integral_add hY2 hZ2] at h1
+  have h2 : 0 ≤ P[Y] * P[Z] := mul_nonneg (integral_nonneg hY0) (integral_nonneg hZ0)
+  linarith
+
+/-- **Variance of sums of an `m`-dependent sequence.** If `X` is `m`-dependent with identically
+distributed marginals and `g ≥ 0` with `g(X_0) ∈ L²`, then
+`Var(∑_{i<n} g(X_i)) ≤ (2m+1) n E[g(X_0)²]`. -/
+theorem variance_sum_le_of_isMDependent {X : ℕ → Ω → ℝ} {m : ℕ}
+    (hdep : IsMDependent X m P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {g : ℝ → ℝ}
+    (hg : Measurable g) (hg0 : ∀ x, 0 ≤ g x) (hL2 : MemLp (fun ω => g (X 0 ω)) 2 P) (n : ℕ) :
+    variance (fun ω => ∑ i ∈ range n, g (X i ω)) P ≤
+      (2 * m + 1) * n * ∫ ω, g (X 0 ω) ^ 2 ∂P := by
+  set Y : ℕ → Ω → ℝ := fun i ω => g (X i ω) with hY
+  have hYid : ∀ i, IdentDistrib (Y i) (Y 0) P P := fun i => by
+    simpa [hY, Function.comp_def] using (hident i).comp hg
+  have hYL2 : ∀ i, MemLp (Y i) 2 P := fun i => (hYid i).memLp_iff.2 hL2
+  have hY2 : ∀ i, ∫ ω, Y i ω ^ 2 ∂P = ∫ ω, g (X 0 ω) ^ 2 ∂P := fun i => by
+    have := ((hYid i).comp (measurable_id.pow_const 2)).integral_eq
+    simpa [hY, Function.comp_def] using this
+  set M := ∫ ω, g (X 0 ω) ^ 2 ∂P with hM
+  have hM0 : 0 ≤ M := integral_nonneg fun ω => sq_nonneg _
+  have hcov : ∀ i j, cov[Y i, Y j; P] ≤ if i ≤ j + m ∧ j ≤ i + m then M else 0 := by
+    intro i j
+    split_ifs with h
+    · have := covariance_le_of_nonneg (hYL2 i) (hYL2 j) (fun ω => hg0 _) (fun ω => hg0 _)
+      rw [hY2, hY2] at this
+      linarith
+    · rw [not_and_or, not_le, not_le] at h
+      refine le_of_eq ?_
+      rcases h with h | h
+      · rw [covariance_comm]
+        exact ((hdep.indepFun h).comp hg hg).covariance_eq_zero (hYL2 j) (hYL2 i)
+      · exact ((hdep.indepFun h).comp hg hg).covariance_eq_zero (hYL2 i) (hYL2 j)
+  rw [variance_fun_sum' fun i _ => hYL2 i]
+  have hrow : ∀ i, ∑ j ∈ range n, cov[Y i, Y j; P] ≤ (2 * m + 1) * M := by
+    intro i
+    refine (Finset.sum_le_sum fun j _ => hcov i j).trans ?_
+    rw [← Finset.sum_filter, sum_const, nsmul_eq_mul]
+    refine mul_le_mul_of_nonneg_right ?_ hM0
+    have hsub : (range n).filter (fun j => i ≤ j + m ∧ j ≤ i + m) ⊆ Icc (i - m) (i + m) := by
+      intro j hj
+      simp only [Finset.mem_filter, Finset.mem_Icc] at hj ⊢
+      omega
+    have hc := (Finset.card_le_card hsub).trans_eq (Nat.card_Icc _ _)
+    have : i + m + 1 - (i - m) ≤ 2 * m + 1 := by omega
+    exact_mod_cast hc.trans this
+  calc ∑ i ∈ range n, ∑ j ∈ range n, cov[Y i, Y j; P]
+      ≤ ∑ i ∈ range n, (2 * m + 1) * M := Finset.sum_le_sum fun i _ => hrow i
+    _ = (2 * m + 1) * n * M := by rw [sum_const, card_range, nsmul_eq_mul]; ring
+
+/-- **Exceedance counts of `m`-dependent sequences:**
+`Var(∑_{i<n} 1{X_i > u}) ≤ (2m+1) n F̄(u)`. -/
+theorem variance_tailCount_le_of_isMDependent {X : ℕ → Ω → ℝ} {m : ℕ}
+    (hX : ∀ i, Measurable (X i)) (hdep : IsMDependent X m P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P) (n : ℕ) (u : ℝ) :
+    variance (tailCount X n u) P ≤ (2 * m + 1) * n * survival P (X 0) u := by
+  have h := variance_sum_le_of_isMDependent hdep hident (g := fun x => if u < x then 1 else 0)
+    (measurable_ite_lt measurable_id u) (fun x => by split_ifs <;> norm_num)
+    (memLp_ite_lt (hX 0) u 2) n
+  have hsq : (fun ω => (if u < X 0 ω then (1 : ℝ) else 0) ^ 2) =
+      fun ω => if u < X 0 ω then (1 : ℝ) else 0 := by
+    ext ω; split_ifs <;> norm_num
+  rw [hsq, integral_ite_lt' (hX 0)] at h
+  exact h
+
+/-- **Weak consistency of the Hill estimator for `m`-dependent sequences.** Let `X_0, X_1, …` be
+an `m`-dependent sequence (for some fixed `m`) with identically distributed marginals (no further
+stationarity is needed), whose survival function `F̄(x) = P(X_0 > x)` is regularly varying with
+index `-α`, `α > 0`, and let `k(n) → ∞`, `k(n)/n → 0`. Then `H_{k(n),n} → 1/α` in probability.
+
+The `m = 0` case contains (pairwise-independent) iid sequences; the hypotheses used are
+`IsMDependent X m P` only through `variance_tailCount_le_of_isMDependent`. -/
+theorem tendstoInMeasure_hill_of_isMDependent {X : ℕ → Ω → ℝ} {m : ℕ}
+    (hX : ∀ i, Measurable (X i)) (hdep : IsMDependent X m P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {α : ℝ} (hα : 0 < α)
+    (hRV : IsRegularlyVarying (fun x => (P {ω | x < X 0 ω}).toReal) (-α)) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n ω => hill (fun i : Fin n => X i ω) (k n)) atTop
+      (fun _ => 1 / α) := by
+  refine tendstoInMeasure_hill_of_variance hX hident hα hRV hk hkn fun u c _ _ hmean => ?_
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hkinv : Tendsto (fun n => ((k n : ℝ))⁻¹) atTop (𝓝 0) := tendsto_inv_atTop_zero.comp hkR
+  have hb := (hmean.mul hkinv).const_mul (2 * (m : ℝ) + 1)
+  rw [mul_zero, mul_zero] at hb
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hb
+    (Eventually.of_forall fun n => by have := variance_nonneg (tailCount X n (u n)) P; positivity)
+    ?_
+  filter_upwards [hkR.eventually_gt_atTop 0] with n hkn'
+  have h := variance_tailCount_le_of_isMDependent hX hdep hident n (u n)
+  calc variance (tailCount X n (u n)) P / (k n : ℝ) ^ 2
+      ≤ (2 * m + 1) * n * survival P (X 0) (u n) / (k n : ℝ) ^ 2 := by gcongr
+    _ = (2 * m + 1) * (n * (P {ω | u n < X 0 ω}).toReal / k n * (k n : ℝ)⁻¹) := by
+      rw [survival]; field_simp
+
+end MDependent
+
 end ExtremeValueTheory
