@@ -102,3 +102,89 @@ be upstreamed.
   $\E e^{-\int f \ud N_n} = (1 - \int (1 - e^{-f}) \ud\mu_n)^n$, and $n \int (1 - e^{-f}) \ud\mu_n \to
   \int (1 - e^{-f}) \ud\nu$ by vague convergence.
 \end{proof}
+
+\section{Poisson limits, uniqueness and convergence of point processes}
+
+\begin{theorem}[Multivariate Poisson limit for triangular arrays]
+  \label{thm:poisson-limit}
+  \lean{ProbabilityTheory.integral_torusMeasure_charFun_mul, ProbabilityTheory.tendsto_measureReal_eq_of_tendsto_integral_cexp,
+    ProbabilityTheory.tendsto_prod_range_one_add, ProbabilityTheory.tendsto_measureReal_card_filter_range_eq}
+  \leanok
+  Let $Z_{n,i}$, $i < n$, be independent for each $n$, and $B_1, \dots, B_k$ disjoint with
+  $\sum_{i<n} \PR[Z_{n,i} \in B_j] \to r_j$ and $\max_{i<n} \PR[Z_{n,i} \in B_j] \to 0$. Then the counts
+  $(\#\{i : Z_{n,i} \in B_j\})_j$ converge in law to independent Poisson$(r_j)$ variables.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Characteristic functions of the count vectors converge; point probabilities of $\bN^k$-valued
+  vectors are recovered by Fourier inversion over the torus $(0, 2\pi]^k$.
+\end{proof}
+
+\begin{theorem}[Laplace functional and uniqueness]
+  \label{thm:prm-uniqueness}
+  \uses{thm:prm-laplace}
+  \lean{ProbabilityTheory.IsPoissonRandomMeasure.lintegral_exp_neg_lintegral,
+    ProbabilityTheory.IsPoissonRandomMeasure.lintegral_exp_neg_lintegral_simpleFunc,
+    ProbabilityTheory.ext_of_forall_integral_prod_pow_eq, ProbabilityTheory.map_eq_of_lintegral_exp_neg_sum_eq,
+    ProbabilityTheory.map_eq_of_lintegral_exp_neg_lintegral_eq, ProbabilityTheory.IsPoissonRandomMeasure.map_eq}
+  \leanok
+  For $\sigma$-finite $\nu$, every Poisson random measure satisfies
+  $\E e^{-\int f \ud N} = e^{-\int (1 - e^{-f}) \ud\nu}$ for all measurable $f \ge 0$. The law of a
+  random measure is determined by its Laplace functional on simple functions, so all Poisson random
+  measures with the same intensity have the same law [Kallenberg, Lemma~3.1].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Monotone approximation by simple functions. For uniqueness, $E \exp(-\sum a_i N(A_i))$ for
+  $a \in \bN^k$ are moments of $(e^{-N(A_i)})_i \in [0,1]^k$, and finite measures on the cube are
+  determined by their moments.
+\end{proof}
+
+\begin{definition}[Convergence in law of point processes]
+  \label{def:tendsto-in-law-vaguely}
+  \uses{def:vague}
+  \lean{ProbabilityTheory.TendstoInLawVaguely, ProbabilityTheory.IsPoissonRandomMeasure.measureReal_forall_apply_eq}
+  \leanok
+  $N_n \Rightarrow N$ if for every finite family of disjoint relatively compact $\nu$-continuity sets
+  $B_j$, the joint laws of the counts $(N_n(B_j))_j$ converge to those of $(N(B_j))_j$
+  [Kallenberg, Theorem~4.11].
+\end{definition}
+
+\begin{theorem}[Binomial point processes converge to Poisson]
+  \label{thm:binomial-to-prm}
+  \uses{thm:poisson-limit, def:tendsto-in-law-vaguely, thm:binomial-to-poisson}
+  \lean{ProbabilityTheory.tendstoInLawVaguely_sumDiracRange}
+  \leanok
+  If $n\mu_n \to \nu$ vaguely, the binomial point processes $\sum_{i<n} \delta_{Z_{n,i}}$,
+  $Z_{n,i} \sim \mu_n$ iid, converge in law to the Poisson random measure with intensity $\nu$
+  [Resnick, Proposition~3.21].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Theorem~\ref{thm:poisson-limit} with $r_j = \nu(B_j)$, using the portmanteau property of vague
+  convergence on $\nu$-continuity sets.
+\end{proof}
+
+\section{The point process of exceedances}
+
+\begin{theorem}[Exceedances converge to a Poisson process]
+  \label{thm:exceedances}
+  \uses{thm:poisson-limit, thm:kth-largest, thm:two-largest}
+  \lean{ExtremeValueTheory.tendsto_nat_mul_measureReal_lt_affine, ExtremeValueTheory.tendsto_nat_mul_measureReal_affine_mem_Ioc,
+    ExtremeValueTheory.tendsto_measureReal_card_affine_mem_eq, ExtremeValueTheory.exceedanceMeasure, ExtremeValueTheory.IsExceedanceInterval,
+    ExtremeValueTheory.tendsto_measureReal_sumDiracRange_affine_eq, ExtremeValueTheory.tendsto_measureReal_sumDiracRange_timeSpace_eq,
+    ExtremeValueTheory.tendsto_measureReal_affine_orderStat_le_of_pointProcess,
+    ExtremeValueTheory.tendsto_measureReal_affine_orderStat_zero_one_of_pointProcess}
+  \leanok
+  Let $X_i$ be iid with $F^n(a_n x + b_n) \to G(x)$. The point processes
+  $\sum_{i<n} \delta_{(X_i - b_n)/a_n}$ and $\sum_{i<n} \delta_{((i+1)/n, (X_i - b_n)/a_n)}$ converge, on
+  disjoint exceedance intervals above a threshold $u$ with $G(u) > 0$ (resp.\ rectangles in time),
+  to Poisson random measures with intensity $\mu_G(a, b] = \log G(b) - \log G(a)$
+  (resp.\ $\mathrm{Leb} \otimes \mu_G$) [Resnick, Corollary~4.19], [EKM, Theorem~5.3.2]. As
+  corollaries, the limit laws of the $k$-th largest and of the two largest are recovered,
+  matching Theorems~\ref{thm:kth-largest} and~\ref{thm:two-largest}.
+\end{theorem}
+\begin{proof}
+  \leanok
+  $n \PR[(X - b_n)/a_n > x] \to -\log G(x)$, then Theorem~\ref{thm:poisson-limit}.
+\end{proof}

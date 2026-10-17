@@ -117,8 +117,13 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
 - **Vague convergence and Poisson random measures** (`ForMathlib/`, Mathlib-only imports, intended
   for upstreaming): vague convergence with its portmanteau properties, Poisson random measures with
   existence for every s-finite intensity (`exists_isPoissonRandomMeasure`), Laplace functionals,
-  and convergence of Laplace functionals of binomial point processes to the Poisson one
-  (`tendsto_laplace_sumDiracRange_of_tendstoVaguely`).
+  the Laplace functional for all `f ≥ 0`, uniqueness of laws from
+  Laplace functionals, a multivariate Poisson limit theorem for triangular arrays, and convergence
+  in law of binomial point processes to Poisson random measures (`tendstoInLawVaguely_sumDiracRange`).
+- **Point process of exceedances** (`PointProcess/Exceedances.lean`): for `F ∈ MDA(G)`, the
+  normalized exceedance point process, in space and in time-space, converges to a Poisson random
+  measure (`tendsto_measureReal_sumDiracRange_timeSpace_eq`); the limit laws of upper order
+  statistics follow as corollaries.
 - **Uniform convergence theorem and Karamata's representation theorem** for measurable slowly
   and regularly varying functions (no monotonicity), with two-sided Potter bounds
   (`isSlowlyVarying_iff_exists_representation`, `potter_bounds_of_measurable`).
