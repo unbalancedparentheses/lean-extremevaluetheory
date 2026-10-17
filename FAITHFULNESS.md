@@ -1,12 +1,18 @@
 # Faithfulness audit of main theorem statements
 
-Scope: statements and definitions only (proofs are kernel-checked). Not audited:
-`Statistics/*`, `DomainOfAttraction/Gumbel.lean`. No `sorry`/`axiom`/`admit` found in
+Scope: statements and definitions only (proofs are kernel-checked). First audit: the EVD
+classification, Fréchet/Weibull MDA, regular variation, Breiman, Fréchet POT, subexponential
+laws. Second audit (rows marked †): Gumbel MDA (`DomainOfAttraction/Gumbel.lean`,
+`GumbelNecessity.lean`), the general Pickands–Balkema–de Haan file
+(`PeaksOverThreshold/Balkema.lean`), order statistics and the Hill estimator (`Statistics/*`),
+and stable laws / the generalized CLT (`StableLaws/*`). No `sorry`/`axiom`/`admit` found in
 `ExtremeValueTheory/`.
 
 References: [EKM] Embrechts–Klüppelberg–Mikosch, *Modelling Extremal Events*;
 [dHF] de Haan–Ferreira, *Extreme Value Theory*; [BGT] Bingham–Goldie–Teugels,
-*Regular Variation*; [JM] Jessen–Mikosch (2006).
+*Regular Variation*; [JM] Jessen–Mikosch (2006); [Feller] Feller, *An Introduction to
+Probability Theory*, Vol. II; [ST] Samorodnitsky–Taqqu, *Stable Non-Gaussian Random
+Processes*.
 
 ## Conventions
 
@@ -37,6 +43,21 @@ References: [EKM] Embrechts–Klüppelberg–Mikosch, *Modelling Extremal Events
 - **Real `⨆`** (`tendsto_sup_excessSurvival`) would be `0` on an unbounded family. Here the
   family is bounded (both terms lie in `[0,1]`) and the proof bounds it explicitly, so this is
   harmless.
+- **Right endpoint filter.** `upperEndpointFilter F = ⨅_{F x < 1} 𝓟 (Ioi x ∩ {F < 1})`. It is
+  `atTop` if `F < 1` everywhere and `𝓝[<] x_F` otherwise (`upperEndpointFilter_eq_atTop`,
+  `_eq_nhdsLT`, together with `exists_rightEndpoint_of_not_lt_one`). So it is never `⊥`; this
+  was checked in a scratch file (`NeBot` for every `F`).
+- **Sup-form PBdH.** Real `⨆` of an unbounded family is `0`; the scratch file confirms
+  `⨆ x ∈ Ici (0:ℝ), x = 0`. The sup-form statements go through `tendsto_iSup_abs_sub_iff`,
+  which requires and is given the bound `|·| ≤ 1` (both terms lie in `[0,1]`). So the `⨆` is the
+  genuine supremum and the sup forms are equivalent to the uniform forms.
+- **Order statistics.** `orderStat x j` is the `(j+1)`-th largest entry for `j < n` (checked:
+  `orderStat ![3,1,2] 0 = 3`), and junk `0` for `j ≥ n`. The Hill theorem only uses `k(n) < n`,
+  which holds eventually because `k/n → 0`.
+- **Stable laws.** `charFun μ t = ∫ exp(i t x) dμ` (Mathlib). `IsSymmStable α c μ` means `μ` is a
+  probability measure with `charFun μ t = exp(−c|t|^α)`. It is uninhabited for `α > 2, c > 0`
+  and for `c < 0`, but the theorems are stated for `0 < α ≤ 2` (or `< 2`), where
+  `exists_isSymmStable` gives inhabitants.
 - **i.i.d. model.** For subexponential laws, i.i.d. variables are the coordinates under
   `Measure.pi (fun _ : Fin n => μ)`. `map_pi_sum_eq_convPow` identifies the law of the sum with
   the convolution power `convPow μ n`.
@@ -65,6 +86,27 @@ References: [EKM] Embrechts–Klüppelberg–Mikosch, *Modelling Extremal Events
 | `gpdSurvival` (def) | EKM Def 3.4.1 | `Ḡ_{ξ,β}(x) = (1+ξx/β)^{−1/ξ}`, or `e^{−x/β}` if `ξ = 0` | Same formula, used only for `ξ ≥ 0`, `x ≥ 0`. For `ξ < 0` and `x > −β/ξ`, `rpow` of a negative base returns junk instead of `0`. This is documented and unused. | FAITHFUL (for `ξ ≥ 0`) |
 | `tendstoUniformlyOn_excessSurvival` / `tendsto_sup_excessSurvival` | EKM Thm 3.4.13(b) (Pickands–Balkema–de Haan) | `F ∈ MDA(H_ξ)` ⇔ ∃ `β(u)`: `sup_{0<x<x_F−u} |F_u(x) − Ḡ_{ξ,β(u)}(x)| → 0` | Only the "⇒" direction, only the Fréchet case `ξ = 1/α > 0`, with explicit `β(u) = u/α`. It is stated after the change of variable `x = β(u) y`: `F(u + (u/α)y)/F(u) → Ḡ_{1/α,1}(y)` uniformly for `y ≥ 0`, which is equivalent to the textbook form. Assumes `F` antitone and in `RV_{−α}`, which by `isInMDAFrechet_iff` is exactly `MDA(Φ_α)` when `F = 1 − F_X`. | DIFFERS (one direction, `ξ > 0` only); correct as stated |
 | `tendsto_meanExcess_div` | EKM §3.4 (mean excess of RV tails), via Karamata | `F̄ ∈ RV_{−α}`, `α > 1` ⇒ `e(u)/u → 1/(α−1)` | `meanExcess F u = (∫_{Ioi u} F)/F u`, which is `E[X − u | X > u]` when `F = F̄`. Assumes `F` antitone. | FAITHFUL |
+| † `IsInMDAGumbel` (def) | EKM §3.3.3, dHF Def 1.1.1 | `Fⁿ(a_n x + b_n) → Λ(x)` | Same shape as the Fréchet definition, for every `x`. Since `Λ` is continuous this is weak convergence. Inhabited: `isInMDAGumbel_standardExponentialCDF`, `isInMDAGumbel_standardGumbelCDF`. | FAITHFUL |
+| † `standardExponentialCDF` | — | `1 − e^{−x}` on `x ≥ 0` | `max 0 (1 − e^{−x})`, which is the same function. | FAITHFUL |
+| † `isInMDAGumbel_of_vonMises` | EKM Thm 3.3.27 / Ex. 3.3.24, dHF Thm 1.1.8 | `F''` exists near `x_F`, `F' > 0`, `(1−F)F''/(F')² → −1` ⇒ `F ∈ MDA(Λ)` | Same, but only for `x_F = +∞`: the hypotheses are on `(z, ∞)` with the limit at `atTop`, and they imply `F < 1` everywhere. | FAITHFUL (`x_F = ∞` only) |
+| † `isInMDAGumbel_iff_atTop` / `_nhdsLT` / `isInMDAGumbel_iff` | dHF Thm 1.1.8 + 1.2.5, EKM Thm 3.3.26 | `F ∈ MDA(Λ)` ⇔ ∃ `f > 0` with `F̄(t + x f(t))/F̄(t) → e^{−x}` as `t ↑ x_F`, for all `x` | The `iff` version splits on `x_F = ∞` (filter `atTop`, `F < 1`) or `x_F < ∞` (filter `𝓝[<] x_F`, `F < 1` on `(−∞,x_F)`, `F x_F = 1`). The quantifiers are right: one `f` for all `x`. The `f > 0` condition is "eventually" on the right side, and the necessity lemmas give it everywhere. `F̄ t > 0` along the filter, so `/0` is not an issue. When `t + x f(t) > x_F` the value `F̄ = 0` is the true value. | FAITHFUL |
+| † `gpdSurvival'` (def) | EKM Def 3.4.1 | `Ḡ_{ξ,β}`, all `ξ` | `(max (1+ξx/β) 0)^{−1/ξ}` for `ξ ≠ 0`, `e^{−x/β}` for `ξ = 0`. For `ξ < 0` the exponent is `> 0`, so beyond the endpoint the value is `0^{>0} = 0`, which is correct. Agrees with `gpdSurvival` for `ξ ≥ 0` (`gpdSurvival'_eq_gpdSurvival`). This fixes the `ξ < 0` junk of old finding #4. | FAITHFUL |
+| † `IsInMDAGEV` (def) | EKM Thm 3.4.5 / dHF Thm 1.1.3 | `F ∈ MDA(H_ξ)` | `ξ > 0`: `MDA(Φ_{1/ξ})`. `ξ < 0`: `MDA(Ψ_{−1/ξ})`. `ξ = 0`: `MDA(Λ)`. These are the right parameter maps. | FAITHFUL |
+| † `upperEndpointFilter` (def) | — | `u ↑ x_F` | See Conventions: `atTop` or `𝓝[<] x_F`, never `⊥`. | FAITHFUL |
+| † `isInMDAFrechet_iff_tendstoUniformlyOn_excessSurvival` / `_tendsto_sup_` | EKM Thm 3.4.13(b), `ξ > 0` | `F ∈ MDA(Φ_α)` ⇔ ∃ `β(u)` with `sup |F_u − Ḡ_{1/α,β(u)}| → 0` | Both directions now, with the explicit `β(u) = u/α` on both sides. "⇒" with a specific `β` is stronger than the textbook. "⇐" with a specific `β` is weaker than the textbook "⇐" (which allows any `β`). Uniform on `Ici 0` after the change of variable `x ↦ β(u)x`, which is equivalent. | DIFFERS (canonical `β` in "⇐"); correct |
+| † `isInMDAWeibull_iff_tendstoUniformlyOn_excessSurvival` / `_tendsto_sup_` | EKM Thm 3.4.13(b), `ξ < 0` | same, `ξ = −1/α` | `∃ x_F, F x_F = 1 ∧ (∀ x < x_F, F x < 1) ∧` uniform convergence on `Ici 0` along `𝓝[<] x_F` to `Ḡ_{−1/α,1}(x) = (max(1−x/α) 0)^α`, with `β(u) = (x_F − u)/α`. The GPD endpoint `x = α` maps to `u + β(u)α = x_F`, so "`x ≥ 0`" is the same as the textbook `0 < x < x_F − u`, since both sides vanish beyond it. Checked by hand on `F̄(x_F − s) = s^α`. The same caveat about canonical `β` in "⇐" applies. | DIFFERS (canonical `β` in "⇐"); correct |
+| † `tendstoUniformlyOn_excessSurvival_of_auxiliary`, `isInMDAGumbel_and_tendstoUniformlyOn_of_auxiliary_*` | EKM Thm 3.4.13(b), `ξ = 0`; dHF Thm 1.1.6 | auxiliary `f` ⇒ `sup_x |F̄(u+f(u)x)/F̄(u) − e^{−x}| → 0` | Same, uniform on `Ici 0` along any filter. For finite `x_F`, uniformity on all `x ≥ 0` (not just `x < (x_F−u)/f(u)`) is stronger or equal, and it is proved. | FAITHFUL |
+| † `exists_tendstoUniformlyOn_excessSurvival_of_isInMDAGEV'` | EKM Thm 3.4.13(b) "⇒", dHF Thm 1.1.6 | `F ∈ MDA(H_ξ)` ⇒ ∃ `β > 0`, `sup_{x≥0} |F̄(u+β(u)x)/F̄(u) − Ḡ_{ξ,1}(x)| → 0` as `u ↑ x_F` | Exactly this, for all `ξ ∈ ℝ`, with no extra hypothesis (the `haux` of the unprimed version is discharged by de Haan's theorem). `Ḡ_{ξ,β}(x) = Ḡ_{ξ,1}(x/β)`, so scale 1 after rescaling is equivalent. Instantiated in a scratch file on `standardExponentialCDF` with `ξ = 0`. Only "⇒" (see finding 2). | FAITHFUL ("⇒" half) |
+| † `orderStat` (def) | dHF §3.2 | `X_{(1)} ≥ ⋯ ≥ X_{(n)}` | `orderStat x j = X_{(j+1)}` through `Tuple.sort` and `Fin.rev`; junk `0` for `j ≥ n`. `lt_orderStat_iff` gives the exceedance duality. Checked on a concrete sample. | FAITHFUL |
+| † `hill` (def) | dHF (3.2.2) | `γ̂ = k⁻¹ Σ_{i<k} (log X_{n−i,n} − log X_{n−k,n})` | `k⁻¹ Σ_{i<k} (log X_{(i+1)} − log X_{(k+1)})`, the same formula. `Real.log` of a nonpositive order statistic is `log|x|` (junk; see finding 5). | FAITHFUL (positive samples) |
+| † `tendstoInMeasure_hill` | dHF Thm 3.2.2; Mason (1982) | iid, `F̄ ∈ RV_{−α}`, `α > 0`, `k → ∞`, `k/n → 0` ⇒ `γ̂ →_P 1/α` | Hypotheses: `iIndepFun X P`, `IdentDistrib (X i) (X 0)`, measurability, RV of `x ↦ P(X₀ > x).toReal` (finite measure, so `toReal` is safe), `k → ∞`, `k/n → 0`. The conclusion is `TendstoInMeasure` to the constant `1/α`. Not vacuous: `tendstoInMeasure_hill_pareto` instantiates RV. No positivity assumption on `X`, which matches dHF (junk logs occur only on an event of vanishing probability). Only the consistency direction; Mason's converse is not claimed. | FAITHFUL |
+| † `IsStable`, `IsStrictlyStable` (defs) | Feller VI.1 Def 1; ST Def 1.1.4 | non-degenerate, `μ^{*n} = law(a_n X + b_n)` (`b_n = 0` for strictly stable), `a_n > 0` | Same, for all `n ≥ 1`; non-degeneracy is `μ ≠ δ_x` for all `x`. Inhabited by Gaussian, Cauchy, and `IsSymmStable` with `0<α≤2`, `c>0`. | FAITHFUL |
+| † `IsSymmStable` (def) | ST (1.2.3), Feller XVII.4 | `SαS`: `φ(t) = exp(−c|t|^α)` | `IsProbabilityMeasure μ ∧ ∀ t, charFun μ t = exp(−c|t|^α)`. `|t|^α` is `rpow` of a nonnegative base, so there is no junk. See Conventions for parameter ranges. | FAITHFUL |
+| † `stableConst` (def) | Feller XVII.5 | `C_α = α ∫₀^∞ (1−cos u) u^{−α−1} du` | Same formula. The integral is Bochner, and is junk `0` when not integrable (`α ∉ (0,2)`). It is only used with `0 < α < 2`, where `stableConst_pos` proves it is positive and integrability is proved (`integrableOn_one_sub_cos_mul_rpow`). Value checked: `n∫(1−cos(tx/a_n))dμ → ∫(1−cos(tu)) d(u^{−α})`, which equals `C_α|t|^α`. | FAITHFUL |
+| † `exists_isSymmStable` | ST §1.1, Feller XVII.4 | `SαS(c)` exists for `0 < α ≤ 2` | For `0 < α ≤ 2`, `c ≥ 0`. `c = 0` gives `δ₀`, which is allowed here and is not claimed to be stable. | FAITHFUL |
+| † `exists_tendsto_of_tendsto_charFun` | Feller XV.3 Thm 2 (Lévy continuity) | `φ_n → f` pointwise, `f` continuous at 0 ⇒ `f = φ_ν` and `μ_n ⇒ ν` | Same, on a finite-dimensional real inner product space; convergence is in `ProbabilityMeasure E` (weak topology). | FAITHFUL |
+| † `charFun_cauchyMeasure` (+ `isStrictlyStable_cauchyMeasure`) | Feller XV.2 | `φ(t) = exp(i t x₀ − γ|t|)` | Same, for all `γ ≥ 0` (`γ = 0` is the Dirac case, also correct). | FAITHFUL |
+| † `tendsto_map_convPow_of_isRegularlyVarying` / `tendstoInDistribution_inv_mul_sum_of_isRegularlyVarying` | Feller XVII.5 Thm 2, EKM Thm 2.2.8 (symmetric case) | `X` symmetric, `P(|X|>x) ∈ RV_{−α}`, `0<α<2`, `n P(|X|>a_n) → 1` ⇒ `S_n/a_n ⇒ SαS(C_α)` | Hypotheses: symmetry `μ.map neg = μ`, RV of the two-sided tail `absTail`, `a n > 0`, `n·absTail μ (a n) → 1`. These are satisfiable: `SymmPareto` with `a_n = (n+1)^{1/α}` is used in `exists_isSymmStable_stableConst`. The normalization `a_n⁻¹ Σ_{k<n} X_k` with limit `exp(−C_α|t|^α)` is correct (see the `stableConst` row). The i.i.d. version takes `Y ∼ ν` with `IsSymmStable α C_α ν` and gives `TendstoInDistribution`; `ν` exists by the first theorem. Only the symmetric case: no centering constants, no skewness `β`. | DIFFERS (symmetric case only); correct |
 | `IsSubexponential` (def) | EKM Def 1.3.3 | `F` on `(0,∞)` with `F̄^{*2}(x)/F̄(x) → 2` | `μ(Iio 0) = 0`, `tail μ x > 0` for all `x` (the textbook `F(x) < 1`), and the limit `2`. Being a probability measure is a typeclass hypothesis on the theorems, not a field of the structure. | FAITHFUL |
 | `IsSubexponential.of_isRegularlyVarying` | EKM Cor 1.3.2 | `F̄ ∈ RV_{−α}`, `α ≥ 0` ⇒ subexponential | No sign hypothesis on `α`; it is automatically `α ≥ 0`. | FAITHFUL |
 | `tendsto_tail_sub_div` | EKM Lemma 1.3.5(a) | `F̄(x−y)/F̄(x) → 1` | Holds for every real `y`. | FAITHFUL |
@@ -72,7 +114,55 @@ References: [EKM] Embrechts–Klüppelberg–Mikosch, *Modelling Extremal Events
 | `tendsto_measure_max_div_tail`, `tendsto_measure_sum_div_measure_max` | EKM Lemma 1.3.1 | `P(max > x) ~ n F̄(x)`; `P(S_n > x) ~ P(M_n > x)` | Same. The max version needs only `tail > 0`. | FAITHFUL |
 | `kesten_bound` | EKM Lemma 1.3.5(c) | ∀ `ε > 0` ∃ `K` ∀ `n`, `x ≥ 0`: `F̄^{*n}(x) ≤ K(1+ε)^n F̄(x)` | Holds for all `n` and all real `x`. | FAITHFUL (slightly stronger) |
 
-## Findings (ranked by severity)
+## Status of first-audit findings
+
+1. **`ExtremeValueDistr.domainOfAtraction` roles swapped: FIXED.** The definition is now
+   `{F | ∃ As, ∀ x, ContinuousAt G.toCDF x → ((As n • F) x)^n → G.toCDF x}`, which is the
+   textbook domain of attraction of `G`. `domainOfAtraction_nonempty` now uses the witness `F`
+   from `G.isEVD`, so it means what it says.
+2. **PBdH only Fréchet "⇒": LARGELY RESOLVED.** There are now `iff` versions for Fréchet and
+   Weibull, a Gumbel version from an auxiliary function, and the unified "⇒" for every `ξ ∈ ℝ`
+   (`exists_tendstoUniformlyOn_excessSurvival_of_isInMDAGEV'`). What remains is new finding 2.
+3. **Karamata/old POT assume `F` antitone on ℝ: UNCHANGED** for the old theorems. The new
+   Balkema theorems take a `CumulativeDistributionFunction`, so `1 − F` is antitone
+   automatically and no extra hypothesis is needed.
+4. **`gpdSurvival` junk for `ξ < 0`: RESOLVED** by `gpdSurvival'`, which uses `max … 0`, and
+   that is what the Weibull and unified statements use.
+
+## New findings (second audit, ranked by severity)
+
+No vacuous hypotheses, `⊥` filters, wrong quantifier orders, or harmful junk-value dependencies
+were found. The suspicious points were checked in a scratch Lean file, and all checks compiled:
+`upperEndpointFilter F` is `NeBot` for every `F`; `⨆ x ∈ Ici 0, x = 0` (the pitfall is real, but
+it is avoided by the explicit bound); `orderStat ![3,1,2] 0 = 3`; `hill` on a sample with
+`−1` uses `log(−1) = 0`; and the unified PBdH instantiates on `standardExponentialCDF` with
+`ξ = 0`.
+
+1. **(Minor: scope) The GCLT is only the symmetric case.** `tendsto_map_convPow_of_isRegularlyVarying`
+   and the i.i.d. version require `μ.map neg = μ`. EKM Thm 2.2.8 / Feller XVII.5 cover general
+   `F` (tail balance `p, q`, centering `b_n`, skewed stable limits). Docstrings say "symmetric
+   case", so this is accurately labelled, but citing "[EKM, Theorem 2.2.8]" without
+   qualification overstates it. The general `IsStable` notion is never linked to the domain of
+   attraction.
+2. **(Minor: scope) PBdH converse.** The unified theorem is "⇒" only. The "⇐" directions exist
+   only for `ξ ≠ 0`, and only with the canonical scale `β(u) = u/α` or `(x_F−u)/α`; the textbook
+   "⇐" allows an arbitrary `β`. There is no Gumbel "uniform GPD ⇒ MDA(Λ)". The
+   `isInMDAGumbel_and_…` lemmas start from an auxiliary function, not from the GPD
+   approximation.
+3. **(Minor: scope) The von Mises criterion is only for `x_F = ∞`.** EKM Thm 3.3.27 also allows a
+   finite right endpoint (hypotheses on `(z, x_F)`, limit as `x ↑ x_F`). The `nhdsLT`
+   auxiliary-function criterion covers finite `x_F`, but no von Mises version of it is given.
+4. **(Cosmetic) `hill` on nonpositive order statistics** uses Mathlib's `Real.log x = log |x|`
+   (and `log 0 = 0`) instead of being undefined. This does not affect `tendstoInMeasure_hill`,
+   since `X_{(k+1)} → ∞` in probability. It would matter only if `hill` were used for finite-`n`
+   statements about samples that are not positive.
+5. **(Cosmetic) Junk values in auxiliary definitions.** `stableConst α` is `α · 0` outside
+   `(0,2)` (a non-integrable Bochner integral), and `orderStat x j = 0` for `j ≥ n`. Neither is
+   reached by a main theorem (`0 < α < 2` is assumed; `k(n) < n` eventually).
+   `IsSymmStable.isStrictlyStable` does not assume `α ≤ 2`, but it is vacuous there because
+   `IsSymmStable α c` is uninhabited for `α > 2`, `c > 0`.
+
+## First-audit findings (original text, for reference)
 
 1. **(Moderate; not used by any main theorem) `ExtremeValueDistr.domainOfAtraction` has its
    roles swapped.** `ExtremeValueDistribution.lean:56`. The docstring says "c.d.f.s `F` for
