@@ -595,6 +595,144 @@ theorem candidateExtremalIndex_unitSpectral (hα : 0 < α) :
   candidateExtremalIndex_eq_one hα (by simp [unitSpectral])
     fun k => by simp [unitSpectral]; omega
 
+/-- The event that some innovation before time `0` exceeds `u` and echoes at or after time `0`. -/
+def echoIntoFuture (L : ℝ → ℕ) (Z : ℤ → Ω → ℝ) (u : ℝ) : Set Ω :=
+  ⋃ j : ℕ, Z (-(j + 1)) ⁻¹' {z | u < z ∧ j + 1 ≤ L z}
+
+include hα in
+/-- The mass of the echoes into the future vanishes when `L(Z)` has a finite mean:
+`∑ⱼ P(Z > u, L(Z) ≥ j + 1) = E[L(Z); Z > u] → 0`. -/
+theorem tendsto_tsum_echoIntoFuture
+    (hLsum : Summable fun j : ℕ => (paretoMeasure 1 α).real {z | j + 1 ≤ L z}) :
+    Tendsto (fun u => ∑' j : ℕ, (paretoMeasure 1 α).real {z | u < z ∧ j + 1 ≤ L z}) atTop
+      (𝓝 0) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have h := tendsto_tsum_of_dominated_convergence (𝓕 := atTop) (g := fun _ : ℕ => (0 : ℝ))
+    (f := fun u j => (paretoMeasure 1 α).real {z | u < z ∧ j + 1 ≤ L z}) hLsum ?_ ?_
+  · simpa using h
+  · intro j
+    refine squeeze_zero' (Eventually.of_forall fun _ => measureReal_nonneg) ?_
+      (tendsto_rpow_neg_atTop hα)
+    filter_upwards [eventually_ge_atTop 1] with u hu
+    rw [← paretoMeasure_one_real_Ioi hα hu]
+    exact measureReal_mono fun z hz => hz.1
+  · exact Eventually.of_forall fun u j => by
+      rw [Real.norm_of_nonneg measureReal_nonneg]
+      exact measureReal_mono fun z hz => hz.2
+
+include hα hZ hlaw hLm in
+theorem measureReal_echoIntoFuture_le
+    (hLsum : Summable fun j : ℕ => (paretoMeasure 1 α).real {z | j + 1 ≤ L z}) (u : ℝ) :
+    P.real (echoIntoFuture L Z u) ≤
+      ∑' j : ℕ, (paretoMeasure 1 α).real {z | u < z ∧ j + 1 ≤ L z} := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have hm : ∀ j : ℕ, MeasurableSet {z : ℝ | u < z ∧ j + 1 ≤ L z} := fun j =>
+    measurableSet_Ioi.inter (hLm measurableSet_Ici)
+  have heq : ∀ j : ℕ, P.real (Z (-(j + 1)) ⁻¹' {z | u < z ∧ j + 1 ≤ L z}) =
+      (paretoMeasure 1 α).real {z | u < z ∧ j + 1 ≤ L z} := fun j =>
+    measureReal_preimage_eq hZ hlaw _ (hm j)
+  have hs : Summable fun j : ℕ => (paretoMeasure 1 α).real {z | u < z ∧ j + 1 ≤ L z} :=
+    hLsum.of_nonneg_of_le (fun _ => measureReal_nonneg) fun j => measureReal_mono fun z hz => hz.2
+  rw [echoIntoFuture]
+  simp_rw [← heq] at hs ⊢
+  exact measureReal_iUnion_le_tsum hs
+
+omit [IsProbabilityMeasure P] in
+/-- **No exceedance up to time `n`**: if no innovation at times `0, …, n - 1` exceeds `u ≥ 0` and
+no earlier innovation above `u` echoes at or after time `0`, then `M n ≤ u`. -/
+theorem partialMax_echoProcess_le {n : ℕ} (hn : 0 < n) {u : ℝ} (hu : 0 ≤ u) {ω : Ω}
+    (h1 : ∀ k < n, Z k ω ≤ u) (h2 : ω ∉ echoIntoFuture L Z u) :
+    partialMax (fun k : ℕ => echoProcess L Z k) n ω ≤ u := by
+  rw [partialMax_le_iff hn]
+  intro k hk
+  refine max_le (h1 k hk) (ciSup_le fun j => ?_)
+  simp only [echoTerm]
+  split_ifs with hL
+  · by_cases hkj : (j : ℤ) + 1 ≤ k
+    · obtain ⟨k', hk'⟩ : ∃ k' : ℕ, (k : ℤ) - (j + 1) = k' := ⟨k - (j + 1), by omega⟩
+      rw [hk']
+      exact h1 k' (by omega)
+    · obtain ⟨i, hi⟩ : ∃ i : ℕ, (k : ℤ) - (j + 1) = -(i + 1) := ⟨j - k, by omega⟩
+      rw [hi]
+      rw [hi] at hL
+      by_contra hcon
+      exact h2 (mem_iUnion.2 ⟨i, not_le.1 hcon, by omega⟩)
+  · exact hu
+
+include hα hZ hind hlaw hpos hLm hL1 in
+/-- **The extremal index of the echo process is `θ = 1/2`**, provided the echo lag of an
+innovation has finite mean, `E[L(Z)] = ∑ⱼ P(L(Z) ≥ j + 1) < ∞`, and grows to infinity with the
+innovation. Each exceedance cluster consists of two exceedances, an innovation and its echo,
+`L(Z)` time units later; since `E[L(Z); Z > uₙ] → 0`, the echoes of innovations before time `0`
+are negligible and `P(M n ≤ uₙ) ≈ P(Z ≤ uₙ)^n → exp (-τ / 2)`. -/
+theorem hasExtremalIndex_echoProcess (hLinf : Tendsto L atTop atTop)
+    (hLsum : Summable fun j : ℕ => (paretoMeasure 1 α).real {z | j + 1 ≤ L z}) :
+    HasExtremalIndex (fun k : ℕ => echoProcess L Z k) P (1 / 2) := by
+  have hT := hasSpectralTailProcess_echoProcess hα hZ hind hlaw hpos hLm hL1 hLinf
+  refine ⟨⟨by norm_num, by norm_num⟩, fun τ hτ u hu => ?_⟩
+  have hu' : Tendsto (fun n : ℕ => n * P.real {ω | u n < |echoProcess L Z 0 ω|}) atTop (𝓝 τ) := by
+    simpa [abs_of_nonneg (echoProcess_nonneg hpos _ _)] using hu
+  have hu0 : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess L Z 0 ω}) atTop (𝓝 τ) := by
+    simpa using hu
+  have hinf := hT.tendsto_atTop_of_tendsto_mul hu'
+  -- `n uₙ^(-α) → τ / 2`
+  set b : ℕ → ℝ := fun n => u n ^ (-α)
+  have hratio := (tendsto_measureReal_lt_echoProcess_div hα hZ hind hlaw hLm hL1 0).comp hinf
+  have hnb : Tendsto (fun n : ℕ => (n : ℝ) * b n) atTop (𝓝 (τ / 2)) := by
+    refine (hu0.div hratio two_ne_zero).congr' ?_
+    filter_upwards [hinf.eventually_ge_atTop 1] with n hn
+    have h0 : 0 < u n ^ (-α) := Real.rpow_pos_of_pos (by linarith) _
+    have hP : 0 < P.real {ω | u n < echoProcess L Z 0 ω} := by
+      refine h0.trans_le ?_
+      rw [← measureReal_lt_of_map_eq hZ hlaw hα 0 hn]
+      exact measureReal_mono fun ω hω => lt_of_lt_of_le hω (le_echoProcess 0 ω)
+    simp only [Pi.div_apply, Function.comp_apply, b]
+    field_simp
+  have hb : Tendsto b atTop (𝓝 0) := (tendsto_rpow_neg_atTop hα).comp hinf
+  have hpow := tendsto_one_sub_pow_exp_of_tendsto_mul (k := fun n => n) hb hnb
+  rw [show -(τ / 2) = -(1 / 2 * τ) by ring] at hpow
+  -- the iid part
+  have hidZ : ∀ k : ℕ, IdentDistrib (Z k) (Z ((0 : ℕ) : ℤ)) P P := fun k =>
+    ⟨(hZ _).aemeasurable, (hZ _).aemeasurable, by rw [hlaw, hlaw]⟩
+  have hindN : iIndepFun (fun k : ℕ => Z k) P :=
+    hind.precomp (g := fun k : ℕ => (k : ℤ)) Nat.cast_injective
+  have hiid : ∀ n, 1 ≤ u n → P.real (maxLE (fun k : ℕ => Z k) (Finset.range n) (u n)) =
+      (1 - b n) ^ n := by
+    intro n hn
+    rw [measureReal_maxLE_of_iIndepFun hindN hidZ, Finset.card_range]
+    congr 1
+    have hc : {ω | Z ((0 : ℕ) : ℤ) ω ≤ u n} = {ω | u n < Z 0 ω}ᶜ := by
+      ext ω; simp
+    rw [hc, probReal_compl_eq_one_sub (measurableSet_lt measurable_const (hZ 0)),
+      measureReal_lt_of_map_eq hZ hlaw hα 0 hn]
+  have hR := (tendsto_tsum_echoIntoFuture hα hLsum).comp hinf
+  have hlow : Tendsto (fun n => (1 - b n) ^ n -
+      ∑' j : ℕ, (paretoMeasure 1 α).real {z | u n < z ∧ j + 1 ≤ L z}) atTop
+        (𝓝 (Real.exp (-(1 / 2 * τ)))) := by
+    simpa using hpow.sub hR
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' hlow hpow ?_ ?_
+  · filter_upwards [hinf.eventually_ge_atTop 1, eventually_gt_atTop 0] with n hn hn0
+    rw [← hiid n hn]
+    have hsub : maxLE (fun k : ℕ => Z k) (Finset.range n) (u n) \ echoIntoFuture L Z (u n) ⊆
+        {ω | partialMax (fun k : ℕ => echoProcess L Z k) n ω ≤ u n} := by
+      rintro ω ⟨h1, h2⟩
+      exact partialMax_echoProcess_le hn0 (by linarith) (fun k hk => h1 k (Finset.mem_range.2 hk))
+        h2
+    have := measureReal_echoIntoFuture_le hα hZ hlaw hLm hLsum (P := P) (u n)
+    have h3 : P.real (maxLE (fun k : ℕ => Z k) (Finset.range n) (u n)) ≤
+        P.real (maxLE (fun k : ℕ => Z k) (Finset.range n) (u n) \ echoIntoFuture L Z (u n)) +
+          P.real (echoIntoFuture L Z (u n)) := by
+      refine (measureReal_mono (fun ω hω => ?_)).trans (measureReal_union_le _ _)
+      by_cases h : ω ∈ echoIntoFuture L Z (u n)
+      · exact Or.inr h
+      · exact Or.inl ⟨hω, h⟩
+    linarith [measureReal_mono (μ := P) hsub]
+  · filter_upwards [hinf.eventually_ge_atTop 1, eventually_gt_atTop 0] with n hn hn0
+    rw [← hiid n hn]
+    refine measureReal_mono fun ω hω t ht => ?_
+    have := (partialMax_le_iff hn0).1 hω t (Finset.mem_range.1 ht)
+    exact (le_echoProcess (L := L) t ω).trans this
+
 end Echo
 
 end ExtremeValueTheory
