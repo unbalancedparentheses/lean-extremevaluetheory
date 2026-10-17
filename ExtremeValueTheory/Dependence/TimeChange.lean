@@ -517,6 +517,142 @@ theorem HasSpectralTailProcess.lintegral_timeChange (hα : 0 < α) (hX : ∀ t, 
   refine tendsto_nhds_unique hL (hR.congr fun n => ?_)
   exact (lintegral_timeChange_eps hα hX hΘm hstat h i S hg (hε n)).symm
 
+/-- A shifted exceedance block has probability at most `ϑ`: by the time-change formula (tail
+form, `ε = 1`), `P(|Y_j| > 1, |Y_k| ≤ 1 for all k > j) ≤ P(|Y_k| ≤ 1 for all k ≥ 1) = ϑ`. -/
+private lemma measure_lastExceedance_le (hα : 0 < α) (hX : ∀ t, Measurable (X t))
+    (hΘm : ∀ t, Measurable (Θ t)) (hstat : HasShiftInvariantWindows P X)
+    (h : HasSpectralTailProcess P X α Q Θ) (j : ℕ) :
+    ((paretoMeasure 1 α).prod Q) {p | 1 < |p.1 * Θ j p.2| ∧
+        ∀ k : ℤ, (j : ℤ) < k → |p.1 * Θ k p.2| ≤ 1} ≤
+      ((paretoMeasure 1 α).prod Q) {p | ∀ k : ℕ, |p.1 * Θ (k + 1) p.2| ≤ 1} := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  set π := (paretoMeasure 1 α).prod Q
+  have hf : ∀ k : ℤ, Measurable fun p : ℝ × Ω' => |p.1 * Θ k p.2| := fun k =>
+    continuous_abs.measurable.comp (measurable_fst.mul ((hΘm _).comp measurable_snd))
+  -- the finite-horizon events
+  set a : ℕ → Set (ℝ × Ω') := fun n => {p | ∀ t ∈ Finset.Icc (1 : ℤ) n, |p.1 * Θ t p.2| ≤ 1}
+  have ha_meas : ∀ n, MeasurableSet (a n) := fun n => by
+    simp only [a, setOf_forall]
+    exact MeasurableSet.iInter fun t => MeasurableSet.iInter fun _ =>
+      measurableSet_le (hf t) measurable_const
+  have hbound : ∀ n : ℕ, π {p | 1 < |p.1 * Θ j p.2| ∧
+      ∀ k : ℤ, (j : ℤ) < k → |p.1 * Θ k p.2| ≤ 1} ≤ π (a n) := by
+    intro n
+    set S := Finset.Icc (1 : ℤ) n
+    have key := congrArg (fun m : Measure (S → ℝ) => m {y | ∀ t, |y t| ≤ 1})
+      (h.map_restrict_tailProcess_shift hα hX hΘm hstat (-(j : ℤ)) S one_pos)
+    have hB : MeasurableSet {y : S → ℝ | ∀ t, |y t| ≤ 1} := by
+      simp only [setOf_forall]
+      exact MeasurableSet.iInter fun t =>
+        measurableSet_le (continuous_abs.measurable.comp (measurable_pi_apply t))
+          measurable_const
+    have hm1 : Measurable fun p : ℝ × Ω' => fun t : S => p.1 * Θ (t - -(j : ℤ)) p.2 :=
+      measurable_pi_iff.2 fun t => measurable_fst.mul ((hΘm _).comp measurable_snd)
+    have hm2 : Measurable fun p : ℝ × Ω' => fun t : S => 1 * (p.1 * Θ t p.2) :=
+      measurable_pi_iff.2 fun t => measurable_const.mul
+        (measurable_fst.mul ((hΘm _).comp measurable_snd))
+    rw [Measure.map_apply hm1 hB, Measure.smul_apply, Measure.map_apply hm2 hB,
+      Measure.restrict_apply (hm1 hB), Measure.restrict_apply (hm2 hB)] at key
+    calc π {p | 1 < |p.1 * Θ j p.2| ∧ ∀ k : ℤ, (j : ℤ) < k → |p.1 * Θ k p.2| ≤ 1}
+        ≤ π ((fun p : ℝ × Ω' => fun t : S => p.1 * Θ (t - -(j : ℤ)) p.2) ⁻¹'
+            {y | ∀ t, |y t| ≤ 1} ∩ {p | 1 < |p.1 * Θ (-(-(j : ℤ))) p.2|}) := by
+          refine measure_mono fun p hp => ⟨fun t => ?_, ?_⟩
+          · have ht := (Finset.mem_Icc.1 t.2).1
+            exact hp.2 _ (by omega)
+          · simpa using hp.1
+      _ = _ := key
+      _ ≤ π (a n) := by
+          rw [Real.one_rpow, Real.toNNReal_one, one_smul]
+          refine (measure_mono inter_subset_left).trans (measure_mono fun p hp t ht => ?_)
+          have := hp ⟨t, ht⟩
+          simpa using this
+  -- pass to the limit `n → ∞`
+  have hanti : Antitone a := fun m n hmn p hp t ht =>
+    hp t (Finset.Icc_subset_Icc le_rfl (by exact_mod_cast hmn) ht)
+  have hlim := tendsto_measure_iInter_atTop (μ := π) (fun n => (ha_meas n).nullMeasurableSet)
+    hanti ⟨0, measure_ne_top _ _⟩
+  have hinter : (⋂ n, a n) = {p | ∀ k : ℕ, |p.1 * Θ (k + 1) p.2| ≤ 1} := by
+    ext p
+    simp only [mem_setOf_eq, mem_iInter, a, Finset.mem_Icc]
+    constructor
+    · intro hp k
+      exact_mod_cast hp (k + 1) ((k : ℤ) + 1) ⟨by omega, by push_cast; omega⟩
+    · intro hp n t ht
+      obtain ⟨k, rfl⟩ : ∃ k : ℕ, t = (k : ℤ) + 1 := ⟨(t - 1).toNat, by omega⟩
+      exact_mod_cast hp k
+  rw [hinter] at hlim
+  exact ge_of_tendsto hlim (Eventually.of_forall hbound)
+
+/-- **Positivity of the candidate extremal index** ([KS20, §7.5], [Planinić–Soulier 2018]). For a
+stationary series with spectral tail process `(Θ_t)` such that `Θ_t → 0` almost surely as
+`t → ∞`, the candidate extremal index is positive. The proof decomposes according to the last
+exceedance `j ≥ 0` of the level `1` by the tail process `Y_t = R Θ_t` (which exists because
+`|Y_0| = R > 1` and `Y_t → 0`), and bounds the probability of each such event by `ϑ` using the
+time-change formula. Only the forward condition `Θ_t → 0` (`t → +∞`) is used. -/
+theorem HasSpectralTailProcess.candidateExtremalIndex_pos (hα : 0 < α)
+    (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
+    (hstat : HasShiftInvariantWindows P X) (h : HasSpectralTailProcess P X α Q Θ)
+    (hlim : ∀ᵐ ω' ∂Q, Tendsto (fun k : ℕ => Θ k ω') atTop (𝓝 0)) :
+    0 < candidateExtremalIndex Q Θ α := by
+  classical
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  set π := (paretoMeasure 1 α).prod Q
+  have h0 := h.ae_abs_eq_one hΘm (hX 0)
+  have hπ1 : ∀ᵐ p ∂π, 1 < p.1 := Measure.quasiMeasurePreserving_fst.ae ae_one_lt_paretoMeasure
+  rw [candidateExtremalIndex_eq_measure hα hΘm h0]
+  have heq : π {p | ∀ k : ℕ, p.1 * |Θ (k + 1) p.2| ≤ 1} =
+      π {p | ∀ k : ℕ, |p.1 * Θ (k + 1) p.2| ≤ 1} := by
+    refine measure_congr (Filter.eventuallyEq_set.2 ?_)
+    filter_upwards [hπ1] with p hp
+    simp only [mem_setOf_eq, abs_mul, abs_of_pos (one_pos.trans hp)]
+  rw [heq, pos_iff_ne_zero]
+  intro hzero
+  set E : ℕ → Set (ℝ × Ω') := fun j => {p | 1 < |p.1 * Θ j p.2| ∧
+    ∀ k : ℤ, (j : ℤ) < k → |p.1 * Θ k p.2| ≤ 1}
+  have hE : ∀ j, π (E j) = 0 := fun j =>
+    le_antisymm ((measure_lastExceedance_le hα hX hΘm hstat h j).trans hzero.le) zero_le
+  have hU : π (⋃ j, E j) = 0 := measure_iUnion_null hE
+  have hae : ∀ᵐ p ∂π, p ∈ ⋃ j, E j := by
+    filter_upwards [hπ1, Measure.quasiMeasurePreserving_snd.ae h0,
+      Measure.quasiMeasurePreserving_snd.ae hlim] with p h1 h2 h3
+    have h3' : Tendsto (fun k : ℕ => |p.1 * Θ k p.2|) atTop (𝓝 0) := by
+      simpa using ((h3.const_mul p.1).abs)
+    obtain ⟨N, hN⟩ := eventually_atTop.1 (h3'.eventually (gt_mem_nhds one_pos))
+    have hr0 : 1 < |p.1 * Θ 0 p.2| := by
+      rw [abs_mul, h2, mul_one, abs_of_pos (one_pos.trans h1)]; exact h1
+    set T := (Finset.range N).filter fun k : ℕ => 1 < |p.1 * Θ (k : ℤ) p.2|
+    have h0T : 0 ∈ T := by
+      simp only [T, Finset.mem_filter, Finset.mem_range]
+      refine ⟨Nat.pos_of_ne_zero fun hN0 => ?_, by exact_mod_cast hr0⟩
+      have := hN 0 (by omega)
+      push_cast at this
+      linarith
+    set j := T.max' ⟨0, h0T⟩
+    have hjT : j ∈ T := T.max'_mem _
+    refine mem_iUnion.2 ⟨j, (Finset.mem_filter.1 hjT).2, fun k hk => ?_⟩
+    obtain ⟨m, rfl⟩ : ∃ m : ℕ, k = m := ⟨k.toNat, by omega⟩
+    have hjm : j < m := by exact_mod_cast hk
+    by_contra hcon
+    rw [not_le] at hcon
+    rcases le_or_gt N m with hNm | hNm
+    · linarith [hN m hNm]
+    · have hmT : m ∈ T := Finset.mem_filter.2 ⟨Finset.mem_range.2 hNm, hcon⟩
+      exact absurd (T.le_max' m hmT) (not_le.2 hjm)
+  have : π (⋃ j, E j)ᶜ = 0 := ae_iff.1 hae
+  have h1 : π univ ≤ 0 := by
+    calc π univ ≤ π (⋃ j, E j) + π (⋃ j, E j)ᶜ := by
+          rw [← measure_union disjoint_compl_right (MeasurableSet.iUnion fun j => ?_).compl,
+            union_compl_self]
+          simp only [E, Set.ofPred_and, setOf_forall]
+          refine (measurableSet_lt measurable_const ?_).inter (MeasurableSet.iInter fun k =>
+            MeasurableSet.iInter fun _ => measurableSet_le ?_ measurable_const)
+          · exact continuous_abs.measurable.comp
+              (measurable_fst.mul ((hΘm _).comp measurable_snd))
+          · exact continuous_abs.measurable.comp
+              (measurable_fst.mul ((hΘm _).comp measurable_snd))
+      _ = 0 := by rw [hU, this, add_zero]
+  simp at h1
+
 end SpectralForm
 
 end ExtremeValueTheory

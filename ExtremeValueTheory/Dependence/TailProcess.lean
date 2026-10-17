@@ -1118,6 +1118,18 @@ theorem candidateExtremalIndex_eq_measure [IsProbabilityMeasure Q] (hα : 0 < α
     ENNReal.sup_rpow_of_nonneg hα.le]
   simp [hω', b]
 
+/-- **The iid case** ([KS20, §7.5]): if `X_t` is independent of `X_0` for every `t ≠ 0` (for
+instance for an iid sequence), then every spectral tail process has candidate extremal index
+`ϑ = 1`. Only pairwise independence of each `X_t` with `X_0` is used. -/
+theorem HasSpectralTailProcess.candidateExtremalIndex_eq_one_of_indepFun {Ω : Type*}
+    {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P] {X : ℤ → Ω → ℝ}
+    [IsProbabilityMeasure Q] (hα : 0 < α) (hX : ∀ t, Measurable (X t))
+    (hΘm : ∀ t, Measurable (Θ t)) (h : HasSpectralTailProcess P X α Q Θ)
+    (hind : ∀ t : ℤ, t ≠ 0 → IndepFun (X t) (X 0) P) :
+    candidateExtremalIndex Q Θ α = 1 :=
+  candidateExtremalIndex_eq_one hα (h.ae_abs_eq_one hΘm (hX 0)) fun k =>
+    h.ae_eq_zero_of_indepFun hX hΘm (hind _ (by omega))
+
 end CandidateExtremalIndex
 
 end ExtremeValueTheory
