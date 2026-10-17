@@ -1,5 +1,78 @@
+/-
+Copyright (c) 2026 Federico Carrone. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Federico Carrone
+-/
 import ExtremeValueTheory.Multivariate.Dependence
 import Mathlib.MeasureTheory.Measure.Prokhorov
+
+/-!
+# The spectral representation of simple max-stable laws ("⇒")
+
+Every simple max-stable law `μ` on `ℝ^ι` (`ι` finite) has a **spectral measure**: a finite
+measure `H` on `[0, ∞]^ι`, concentrated on the unit sphere `{w ∈ [0, 1]^ι : max_i w i = 1}` of the
+sup norm, with `∫ w i dH(w) = 1` for every `i` and
+
+  `P(Y ≤ y) = exp (-∫ max_i w i / y i dH(w))`
+
+([dHF, Theorem 6.1.9 "⇒"]; [Res87, Proposition 5.11]; [dHR77]). Together with
+`exists_isSimpleMaxStable_hasSpectralMeasure` (the "⇐" direction, `MaxStable/Spectral.lean`) this
+characterizes the simple max-stable laws. In the bivariate case it gives the convexity of the
+Pickands dependence function for every simple max-stable law.
+
+## The construction
+
+Instead of building the exponent measure on `[0, ∞]^ι \ {0}` as a vague limit of `n P(Y / n ∈ ·)`
+and decomposing it in polar coordinates, we build the angular measure directly, by compactness.
+Write `R = max_i Y i` and `Θ = Y / R ∈ [0, 1]^ι` (`R > 0` a.s.). For `y` with positive coordinates
+put `X_y = max_i Y i / y i = R · g_y(Θ)`, `g_y(θ) = max_i θ i / y i`. Homogeneity of the exponent
+function gives the exact Fréchet tail `P(X_y > r) = 1 - exp (-V(y) / r)`, hence by the layer-cake
+formula
+
+  `E[min X_y c] = ∫₀ᶜ (1 - exp (-V(y) / t)) dt = V(y) log c + O(1)`
+
+(`tendsto_lintegral_min_div_log`). Consider the finite measures on the compact cube `[0, 1]^ι`
+
+  `Λ_M = E[min R M ; Θ ∈ ·] / log M`.
+
+Since `g_y(Θ) min R M = min X_y (g_y(Θ) M)` and `g_y` is bounded above and below by positive
+constants on the sphere, a sandwich gives `∫ g_y dΛ_M → V(y)` for every `y`
+(`IsSimpleMaxStable.tendsto_lintegral_spectralTest`), and in particular the masses converge to
+`V(1, …, 1)`. The masses being bounded, the measures `Λ_n` have a weak cluster point `P`
+(Prokhorov's theorem on a compact space, `isCompact_setOfPred_finiteMeasure_le_of_compactSpace`),
+and since `g_y` is continuous, `∫ g_y dP = V(y)` (`IsSimpleMaxStable.exists_angularMeasure`).
+The normalization `∫ w i dH = 1` follows by letting the other coordinates of `y` tend to `∞`,
+using `1 / y i ≤ V(y) ≤ ∑ j, 1 / y j`; the support on the sphere follows from the vanishing of
+`∫ (1 - max_i θ i) dΛ_n`. No uniqueness of the limit and no asymptotic independence of radius
+and angle are needed: only the values of `∫ g_y dP` are used.
+
+## Main results
+
+* `tendsto_lintegral_min_div_log`: `E[min X (a M)] / log M → v` when `P(X > r) = 1 - exp (-v / r)`.
+* `IsSimpleMaxStable.ae_pos`: a simple max-stable vector has positive coordinates a.s.
+* `IsSimpleMaxStable.exists_angularMeasure`: a finite measure `P` on `[0, 1]^ι`, concentrated on
+  `{max_i θ i = 1}`, with `∫ max_i θ i / y i dP(θ) = V(y)`.
+* `IsSimpleMaxStable.exists_hasSpectralMeasure`: **the spectral representation** — a finite
+  `H` on `[0, ∞]^ι` with `w ≤ 1` and `max_i w i = 1` `H`-a.e., `∫ w i dH = 1`, and
+  `HasSpectralMeasure μ H`.
+* `HasSpectralMeasure.measure_univ_toReal`: the total mass of a spectral measure on the sphere is
+  the extremal coefficient.
+* `IsSimpleMaxStable.exists_pickandsDependence_eq_pickandsSpectral`,
+  `IsSimpleMaxStable.convexOn_pickandsDependence`: every bivariate simple max-stable law has
+  `A(t) = ∫ max(t w 0, (1 - t) w 1) dH(w)`, so its Pickands function is convex.
+
+The spectral measure is not shown to be unique (it is, up to the choice of the sphere, by the
+uniqueness of the exponent measure; this is not formalized).
+
+## References
+
+* L. de Haan and A. Ferreira, *Extreme Value Theory: An Introduction*, Springer (2006),
+  Theorem 6.1.9 [dHF].
+* S. I. Resnick, *Extreme Values, Regular Variation, and Point Processes*, Springer (1987),
+  Proposition 5.11 [Res87].
+* L. de Haan and S. I. Resnick, *Limit theory for multivariate sample extremes*, Z. Wahrsch.
+  Verw. Gebiete 40 (1977) [dHR77].
+-/
 
 open MeasureTheory Filter Set Topology
 open scoped ENNReal NNReal BoundedContinuousFunction
@@ -214,6 +287,7 @@ noncomputable def spectralTest (y : ι → ℝ) : (ι → unitInterval) →ᵇ �
   BoundedContinuousFunction.mkOfCompact
     ⟨fun θ ↦ Finset.univ.sup fun i ↦ Real.toNNReal ((θ i : ℝ) / y i), by fun_prop⟩
 
+omit [Nonempty ι] in
 lemma coe_spectralTest {y : ι → ℝ} (hy : ∀ i, 0 < y i) (θ : ι → unitInterval) :
     (spectralTest y θ : ℝ≥0∞) = ⨆ i, ENNReal.ofReal (θ i) / ENNReal.ofReal (y i) := by
   simp only [spectralTest, BoundedContinuousFunction.mkOfCompact_apply, ContinuousMap.coe_mk,
@@ -223,6 +297,7 @@ lemma coe_spectralTest {y : ι → ℝ} (hy : ∀ i, 0 < y i) (θ : ι → unitI
   rw [← ENNReal.ofReal_div_of_pos (hy i)]
   rfl
 
+omit [Nonempty ι] in
 lemma measurable_spectralTest (y : ι → ℝ) :
     Measurable fun θ : ι → unitInterval ↦ (spectralTest y θ : ℝ≥0∞) :=
   (spectralTest y).continuous.measurable.coe_nnreal_ennreal
@@ -278,6 +353,7 @@ lemma sphereDefect_angular {x : ι → ℝ} (hx : ∀ i, 0 < x i) : sphereDefect
   refine tsub_eq_zero_of_le (Finset.le_sup_of_le (Finset.mem_univ k) (le_of_eq ?_))
   rw [coe_angular_of_pos hx, hk, div_self (hx k).ne', Real.toNNReal_one]
 
+omit [Nonempty ι] in
 lemma exists_eq_one_of_sphereDefect_eq_zero {θ : ι → unitInterval} (h : sphereDefect θ = 0) :
     ∃ i, (θ i : ℝ) = 1 := by
   simp only [sphereDefect, BoundedContinuousFunction.mkOfCompact_apply, ContinuousMap.coe_mk,
@@ -318,6 +394,7 @@ namespace IsSimpleMaxStable
 
 variable {μ : Measure (ι → ℝ)}
 
+omit [Nonempty ι] in
 /-- A simple max-stable vector has positive coordinates almost surely. -/
 lemma ae_pos (h : IsSimpleMaxStable μ) : ∀ᵐ x ∂μ, ∀ i, 0 < x i := by
   refine ae_all_iff.2 fun i ↦ ?_
@@ -505,6 +582,7 @@ variable {ι : Type*} [Fintype ι] {μ : Measure (ι → ℝ)}
 noncomputable def unitCubeToENNReal (θ : ι → unitInterval) : ι → ℝ≥0∞ :=
   fun i ↦ ENNReal.ofReal (θ i)
 
+omit [Fintype ι] in
 lemma measurable_unitCubeToENNReal : Measurable (unitCubeToENNReal (ι := ι)) :=
   measurable_pi_iff.2 fun i ↦
     ENNReal.measurable_ofReal.comp (measurable_subtype_coe.comp (measurable_pi_apply i))
@@ -606,6 +684,17 @@ theorem exists_hasSpectralMeasure (h : IsSimpleMaxStable μ) :
       h.exp_neg_maxStableExponent hy, ofReal_measureReal]
 
 end IsSimpleMaxStable
+
+omit [Fintype ι] in
+/-- The total mass of a spectral measure concentrated on the unit sphere of the sup norm is the
+extremal coefficient `θ = V(1, …, 1)`. -/
+theorem HasSpectralMeasure.measure_univ_toReal {H : Measure (ι → ℝ≥0∞)}
+    (hμ : HasSpectralMeasure μ H) (hH : ∀ᵐ w ∂H, ⨆ i, w i = 1) :
+    (H univ).toReal = extremalCoefficient μ := by
+  rw [extremalCoefficient, hμ.maxStableExponent_eq fun _ ↦ one_pos, ← lintegral_one]
+  congr 1
+  refine (lintegral_congr_ae (hH.mono fun w hw ↦ ?_)).symm
+  simp [hw]
 
 /-! ### Bivariate consequences: the Pickands dependence function -/
 
