@@ -165,7 +165,7 @@ theorem HasSpectralTailProcess.integral_tailProcess_shift (hα : 0 < α)
       measurable_const)]
     have : Yw ⁻¹' {y | |readW y j| = c} = {p : ℝ × Ω' | |p.1 * Θ j p.2| = c} := by
       ext p
-      simp only [mem_preimage, mem_setOf_eq, hYwdef]
+      simp only [mem_preimage, mem_ofPred_eq, hYwdef]
       rw [readW_mk (fun t => p.1 * Θ t p.2) hj]
     rw [this]
     exact prod_abs_mul_eq_null hα (hΘm j) hc
@@ -215,7 +215,7 @@ theorem HasSpectralTailProcess.integral_tailProcess_shift (hα : 0 < α)
         funext t
         rw [readW_mk (fun t => X t ω / x) (hWSi t t.2),
           readW_mk (fun t => X (t + -i) ω) (hWS t t.2), sub_eq_add_neg]
-      simp only [G, e1, e2, Set.indicator_apply, mem_setOf_eq, hsdef, A,
+      simp only [G, e1, e2, Set.indicator_apply, mem_ofPred_eq, hsdef, A,
         BoundedContinuousFunction.compContinuous_apply, ContinuousMap.coe_mk, e3, e4,
         abs_div, abs_of_pos hx0, lt_div_iff₀ hx0]
       by_cases c1 : x < |X 0 ω| <;> by_cases c2 : ε * x < |X (-i) ω| <;> simp [c1, c2]
@@ -234,7 +234,7 @@ theorem HasSpectralTailProcess.integral_tailProcess_shift (hα : 0 < α)
           readW_mk (fun t => X t ω) (hWS t t.2)]
         field_simp
       have hεx0 : 0 < ε * x := mul_pos hε hx0
-      simp only [G, e1, e2, Set.indicator_apply, mem_setOf_eq, hsdef, B,
+      simp only [G, e1, e2, Set.indicator_apply, mem_ofPred_eq, hsdef, B,
         BoundedContinuousFunction.compContinuous_apply, ContinuousMap.coe_mk, e3, e4,
         abs_div, abs_of_pos hεx0, div_lt_div_iff₀ hε hεx0, one_mul]
       have : ε * x < |X i ω| * ε ↔ x < |X i ω| := by
@@ -255,14 +255,14 @@ theorem HasSpectralTailProcess.integral_tailProcess_shift (hα : 0 < α)
     have e3 : readW (Yw p) (-i) = p.1 * Θ (-i) p.2 := readW_mk (fun t => p.1 * Θ t p.2) hWmi
     have e4 : (fun t : S => readW (Yw p) (t - i)) = fun t : S => p.1 * Θ (t - i) p.2 := by
       funext t; exact readW_mk (fun t => p.1 * Θ t p.2) (hWSi t t.2)
-    simp only [Set.indicator_apply, mem_setOf_eq, A, BoundedContinuousFunction.compContinuous_apply,
+    simp only [Set.indicator_apply, mem_ofPred_eq, A, BoundedContinuousFunction.compContinuous_apply,
       ContinuousMap.coe_mk, e3, e4]
   · congr 1
     funext p
     have e3 : readW (Yw p) i = p.1 * Θ i p.2 := readW_mk (fun t => p.1 * Θ t p.2) hWi
     have e4 : (fun t : S => ε * readW (Yw p) t) = fun t : S => ε * (p.1 * Θ t p.2) := by
       funext t; rw [readW_mk (fun t => p.1 * Θ t p.2) (hWS t t.2)]
-    simp only [Set.indicator_apply, mem_setOf_eq, B, BoundedContinuousFunction.compContinuous_apply,
+    simp only [Set.indicator_apply, mem_ofPred_eq, B, BoundedContinuousFunction.compContinuous_apply,
       ContinuousMap.coe_mk, e3, e4]
 
 /-- **Time change, tail-process form, measure version** ([BS09, Theorem 3.1 (ii)]): the law of
@@ -315,7 +315,7 @@ theorem paretoMeasure_lt_abs_mul {α : ℝ} (hα : 0 < α) {c : ℝ} (hc : 0 < c
     have hm : 1 ≤ m := le_max_right _ _
     have : {r : ℝ | c < |r * a|} ∩ Ioi 1 = Ioi m := by
       ext r
-      simp only [mem_inter_iff, mem_setOf_eq, mem_Ioi, m, max_lt_iff]
+      simp only [mem_inter_iff, mem_ofPred_eq, mem_Ioi, m, max_lt_iff]
       constructor
       · rintro ⟨h1, h2⟩
         rw [abs_mul, abs_of_pos (one_pos.trans h2)] at h1
@@ -369,7 +369,8 @@ private lemma lintegral_timeChange_eps (hα : 0 < α) (hX : ∀ t, Measurable (X
     measurableSet_lt measurable_const (hf _)
   have hA2 : MeasurableSet {p : ℝ × Ω' | 1 / ε < |p.1 * Θ i p.2|} :=
     measurableSet_lt measurable_const (hf _)
-  rw [lintegral_map hG hm1, lintegral_smul_measure, ENNReal.smul_def, smul_eq_mul, lintegral_map hG hm2,
+  rw [lintegral_map hG hm1, lintegral_smul_measure, ENNReal.smul_def, smul_eq_mul,
+    lintegral_map hG hm2,
     ← lintegral_indicator hA1, ← lintegral_indicator hA2] at key
   have h0 := h.ae_abs_eq_one hΘm (hX 0)
   have hπ : ∀ᵐ p ∂((paretoMeasure 1 α).prod Q), 1 < p.1 ∧ |Θ 0 p.2| = 1 := by
@@ -397,7 +398,7 @@ private lemma lintegral_timeChange_eps (hα : 0 < α) (hX : ∀ t, Measurable (X
           continuous_abs.measurable.comp (measurable_id.mul_const _))),
         paretoMeasure_lt_abs_mul hα hε]
     · filter_upwards [hπ] with p hp
-      simp only [Set.indicator_apply, mem_setOf_eq]
+      simp only [Set.indicator_apply, mem_ofPred_eq]
       split_ifs
       · congr 1
         funext t
@@ -430,7 +431,7 @@ private lemma lintegral_timeChange_eps (hα : 0 < α) (hX : ∀ t, Measurable (X
           continuous_abs.measurable.comp (measurable_id.mul_const _))),
         paretoMeasure_lt_abs_mul hα (by positivity)]
     · filter_upwards [hπ] with p hp
-      simp only [Set.indicator_apply, mem_setOf_eq]
+      simp only [Set.indicator_apply, mem_ofPred_eq]
       split_ifs with hpi
       · congr 1
         funext t
@@ -532,7 +533,7 @@ private lemma measure_lastExceedance_le (hα : 0 < α) (hX : ∀ t, Measurable (
   -- the finite-horizon events
   set a : ℕ → Set (ℝ × Ω') := fun n => {p | ∀ t ∈ Finset.Icc (1 : ℤ) n, |p.1 * Θ t p.2| ≤ 1}
   have ha_meas : ∀ n, MeasurableSet (a n) := fun n => by
-    simp only [a, setOf_forall]
+    simp only [a, ofPred_forall]
     exact MeasurableSet.iInter fun t => MeasurableSet.iInter fun _ =>
       measurableSet_le (hf t) measurable_const
   have hbound : ∀ n : ℕ, π {p | 1 < |p.1 * Θ j p.2| ∧
@@ -542,7 +543,7 @@ private lemma measure_lastExceedance_le (hα : 0 < α) (hX : ∀ t, Measurable (
     have key := congrArg (fun m : Measure (S → ℝ) => m {y | ∀ t, |y t| ≤ 1})
       (h.map_restrict_tailProcess_shift hα hX hΘm hstat (-(j : ℤ)) S one_pos)
     have hB : MeasurableSet {y : S → ℝ | ∀ t, |y t| ≤ 1} := by
-      simp only [setOf_forall]
+      simp only [ofPred_forall]
       exact MeasurableSet.iInter fun t =>
         measurableSet_le (continuous_abs.measurable.comp (measurable_pi_apply t))
           measurable_const
@@ -573,7 +574,7 @@ private lemma measure_lastExceedance_le (hα : 0 < α) (hX : ∀ t, Measurable (
     hanti ⟨0, measure_ne_top _ _⟩
   have hinter : (⋂ n, a n) = {p | ∀ k : ℕ, |p.1 * Θ (k + 1) p.2| ≤ 1} := by
     ext p
-    simp only [mem_setOf_eq, mem_iInter, a, Finset.mem_Icc]
+    simp only [mem_ofPred_eq, mem_iInter, a, Finset.mem_Icc]
     constructor
     · intro hp k
       exact_mod_cast hp (k + 1) ((k : ℤ) + 1) ⟨by omega, by push_cast; omega⟩
@@ -602,9 +603,9 @@ theorem HasSpectralTailProcess.candidateExtremalIndex_pos (hα : 0 < α)
   rw [candidateExtremalIndex_eq_measure hα hΘm h0]
   have heq : π {p | ∀ k : ℕ, p.1 * |Θ (k + 1) p.2| ≤ 1} =
       π {p | ∀ k : ℕ, |p.1 * Θ (k + 1) p.2| ≤ 1} := by
-    refine measure_congr (Filter.eventuallyEq_set.2 ?_)
+    refine measure_congr (Filter.eventuallyEqSet_iff.2 ?_)
     filter_upwards [hπ1] with p hp
-    simp only [mem_setOf_eq, abs_mul, abs_of_pos (one_pos.trans hp)]
+    simp only [abs_mul, abs_of_pos (one_pos.trans hp)]
   rw [heq, pos_iff_ne_zero]
   intro hzero
   set E : ℕ → Set (ℝ × Ω') := fun j => {p | 1 < |p.1 * Θ j p.2| ∧
@@ -643,7 +644,7 @@ theorem HasSpectralTailProcess.candidateExtremalIndex_pos (hα : 0 < α)
     calc π univ ≤ π (⋃ j, E j) + π (⋃ j, E j)ᶜ := by
           rw [← measure_union disjoint_compl_right (MeasurableSet.iUnion fun j => ?_).compl,
             union_compl_self]
-          simp only [E, Set.ofPred_and, setOf_forall]
+          simp only [E, Set.ofPred_and, ofPred_forall]
           refine (measurableSet_lt measurable_const ?_).inter (MeasurableSet.iInter fun k =>
             MeasurableSet.iInter fun _ => measurableSet_le ?_ measurable_const)
           · exact continuous_abs.measurable.comp

@@ -144,7 +144,8 @@ theorem TendstoLawCond.eventually_measure_ne_zero [IsProbabilityMeasure ν]
 
 /-- If the random elements eventually satisfy `g (Y i) = 0` almost surely on the conditioning
 events, for a nonnegative bounded continuous `g`, then `g = 0` almost surely under the limit. -/
-theorem TendstoLawCond.ae_eq_zero [OpensMeasurableSpace E] [l.NeBot] (h : TendstoLawCond P s Y l ν) [IsFiniteMeasure ν]
+theorem TendstoLawCond.ae_eq_zero [OpensMeasurableSpace E] [l.NeBot]
+    (h : TendstoLawCond P s Y l ν) [IsFiniteMeasure ν]
     (g : E →ᵇ ℝ) (hg : ∀ y, 0 ≤ g y) (hY : ∀ᶠ i in l, ∀ᵐ ω ∂P[|s i], g (Y i ω) = 0) :
     ∀ᵐ y ∂ν, g y = 0 := by
   have h0 : ∫ y, g y ∂ν = 0 := by
@@ -190,11 +191,13 @@ private def PolarGood (P : Measure Ω) (Z : Ω → ℝ) (T : Ω → E) (μ : Mea
     Tendsto (fun x => ∫ ω, F (Z ω / x, T ω) ∂P[|{ω | x < Z ω}]) atTop
       (𝓝 (∫ p, F p ∂((paretoMeasure 1 α).prod μ)))
 
-omit [IsProbabilityMeasure P] in
+omit [IsProbabilityMeasure P] [NormedAddCommGroup E] [NormedSpace ℝ E] [BorelSpace E]
+  [SecondCountableTopology E] [IsProbabilityMeasure μ] in
 private lemma polarGood_zero : PolarGood P Z T μ α (fun _ => 0) :=
   ⟨measurable_const, ⟨0, fun _ => by simp⟩, by simp⟩
 
-omit [IsProbabilityMeasure P] in
+omit [IsProbabilityMeasure P] [NormedAddCommGroup E] [NormedSpace ℝ E] [BorelSpace E]
+  [SecondCountableTopology E] in
 private lemma PolarGood.add (hα : 0 < α) (hZ : Measurable Z) (hT : Measurable T)
     {F G : ℝ × E → ℝ} (hF : PolarGood P Z T μ α F) (hG : PolarGood P Z T μ α G) :
     PolarGood P Z T μ α (fun p => F p + G p) := by
@@ -210,7 +213,8 @@ private lemma PolarGood.add (hα : 0 < α) (hZ : Measurable Z) (hT : Measurable 
     (integrable_of_abs_le (hFm.comp (hcomp x)) fun ω => hC _)
     (integrable_of_abs_le (hGm.comp (hcomp x)) fun ω => hD _)).symm
 
-omit [IsProbabilityMeasure P] in
+omit [IsProbabilityMeasure P] [NormedAddCommGroup E] [NormedSpace ℝ E] [BorelSpace E]
+  [SecondCountableTopology E] in
 private lemma polarGood_sum (hα : 0 < α) (hZ : Measurable Z) (hT : Measurable T)
     {F : ℕ → ℝ × E → ℝ} (s : Finset ℕ) (hF : ∀ i ∈ s, PolarGood P Z T μ α (F i)) :
     PolarGood P Z T μ α (fun p => ∑ i ∈ s, F i p) := by
@@ -221,9 +225,10 @@ private lemma polarGood_sum (hα : 0 < α) (hZ : Measurable Z) (hT : Measurable 
     exact (hF j (Finset.mem_insert_self j s)).add hα hZ hT
       (ih fun i hi => hF i (Finset.mem_insert_of_mem hi))
 
+omit [IsProbabilityMeasure P] [NormedSpace ℝ E] in
 /-- The basic test functions `1{r > u} g(θ)`, `u ≥ 1`: here
 `E[1{Z > u x} g(T) | Z > x] = P(Z > u x) / P(Z > x) · E[g(T) | Z > u x] → u^(-α) ∫ g dμ`. -/
-private lemma polarGood_indicator (hα : 0 < α) (hZ : Measurable Z) (hT : Measurable T)
+private lemma polarGood_indicator (hα : 0 < α) (hZ : Measurable Z) (_hT : Measurable T)
     (hRV : IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α))
     (hconv : TendstoLawCond P (fun x => {ω | x < Z ω}) (fun _ => T) atTop μ)
     {u : ℝ} (hu : 1 ≤ u) {g : E → ℝ} (hg : Continuous g) {C : ℝ} (hgC : ∀ θ, |g θ| ≤ C) :
@@ -267,7 +272,8 @@ private lemma polarGood_indicator (hα : 0 < α) (hZ : Measurable Z) (hT : Measu
   simp only [gb, BoundedContinuousFunction.mkOfBound_coe, ContinuousMap.coe_mk]
   field_simp
 
-omit [IsProbabilityMeasure P] in
+omit [IsProbabilityMeasure P] [NormedAddCommGroup E] [NormedSpace ℝ E] [BorelSpace E]
+  [SecondCountableTopology E] in
 /-- Approximation: a bounded measurable `F` which is approximated by good functions, up to an error
 controlled by a good function of small integral, is good. -/
 private lemma polarGood_of_approx (hα : 0 < α) (hZ : Measurable Z) (hT : Measurable T)
@@ -316,6 +322,7 @@ private lemma polarGood_of_approx (hα : 0 < α) (hZ : Measurable Z) (hT : Measu
   rw [abs_sub_comm (∫ p, G p ∂_)] at t2
   linarith
 
+omit [IsProbabilityMeasure P] in
 /-- The key step: `F(r, θ) = f(r • θ)` is good for bounded Lipschitz `f`. We discretize `r` on
 the grid `uᵢ = 1 + i δ`, `δ = 1/(n+1)`, `i ≤ (n+1)²`, writing the discretization as a telescoping
 sum of basic functions `1{r > uᵢ} gᵢ(θ)`; the error is at most
@@ -518,7 +525,8 @@ theorem tendstoLawCond_smul (hα : 0 < α) (hZ : Measurable Z) (hT : Measurable 
 omit [IsProbabilityMeasure P] [IsProbabilityMeasure μ] in
 /-- `(ρ ⊗ μ.map g).map (r, θ) ↦ r • θ` rewritten on `ρ ⊗ μ`. -/
 private lemma map_prod_map_smul {G F : Type*} {_ : MeasurableSpace G} [NormedAddCommGroup F]
-    [NormedSpace ℝ F] [MeasurableSpace F] [BorelSpace F] [SecondCountableTopology F] (ρ : Measure ℝ) [SFinite ρ]
+    [NormedSpace ℝ F] [MeasurableSpace F] [BorelSpace F] [SecondCountableTopology F]
+    (ρ : Measure ℝ) [SFinite ρ]
     {μ : Measure G} [SFinite μ] {g : G → F} (hg : Measurable g) :
     (ρ.prod (μ.map g)).map (fun p => p.1 • p.2) = (ρ.prod μ).map (fun p => p.1 • g p.2) := by
   have h : ρ.prod (μ.map g) = (ρ.prod μ).map (Prod.map id g) := by
@@ -629,6 +637,7 @@ theorem isRegularlyVarying_of_tendstoLawCond (hα : 0 < α) (hZ : Measurable Z)
     filter_upwards [eventually_gt_atTop 0] with x hx
     simp only [Function.comp_apply, id, inv_div, ← mul_assoc, inv_mul_cancel₀ hc.ne', one_mul]
 
+omit [IsProbabilityMeasure P] [IsProbabilityMeasure ν] in
 /-- **Polar decomposition, converse: spectral convergence** ([BS09, Theorem 2.1, (ii) ⇒ (iii)]).
 If the law of `(Z / x, V / x)` given `Z > x` converges weakly to `ν` whose first marginal is
 Pareto(`α`), then the law of `V / Z` given `Z > x` converges weakly to the law of `Y / R` under
@@ -755,7 +764,8 @@ theorem HasSpectralTailProcess.ae_abs_eq_one {Θ : ℤ → Ω' → ℝ} (hΘm : 
   have hg0 : ∀ y, 0 ≤ g y := fun y => le_min zero_le_one (abs_nonneg _)
   have key := (h.2 S).ae_eq_zero g hg0 (by
     filter_upwards [eventually_gt_atTop 0] with x hx
-    filter_upwards [ae_cond_mem (measurableSet_lt measurable_const (continuous_abs.measurable.comp hX))] with ω hω
+    filter_upwards [ae_cond_mem (measurableSet_lt measurable_const
+      (continuous_abs.measurable.comp hX))] with ω hω
     have hne : |X 0 ω| ≠ 0 := (hx.trans hω).ne'
     change min 1 (abs (abs (X 0 ω / abs (X 0 ω)) - 1)) = 0
     rw [abs_div, abs_abs, div_self hne]; simp)
@@ -808,7 +818,7 @@ theorem HasSpectralTailProcess.hasTailProcess {Θ : ℤ → Ω' → ℝ} (hα : 
     rw [window_div]
     exact key
 
-omit [IsProbabilityMeasure Q] in
+omit [IsProbabilityMeasure P] [IsProbabilityMeasure Q] in
 /-- The joint convergence of `(|X_0| / x, (X_t / x)_{t ∈ S})` for a time series with a tail
 process. -/
 private lemma HasTailProcess.joint {Y : ℤ → Ω' → ℝ} (hYm : ∀ t, Measurable (Y t))
@@ -1046,7 +1056,7 @@ theorem paretoMeasure_setOf_mul_le (hα : 0 < α) (b : ℝ≥0∞) :
   · have : {r : ℝ | ENNReal.ofReal r * ⊤ ≤ 1} ∩ Ioi 1 = ∅ := by
       refine Set.eq_empty_iff_forall_notMem.2 fun r ⟨h1, h2⟩ => ?_
       have h2 : (1 : ℝ) < r := h2
-      rw [mem_setOf_eq, ENNReal.mul_top (ENNReal.ofReal_pos.2 (by linarith)).ne'] at h1
+      rw [mem_ofPred_eq, ENNReal.mul_top (ENNReal.ofReal_pos.2 (by linarith)).ne'] at h1
       exact absurd h1 (by simp)
     rw [this, measure_empty, ENNReal.top_rpow_of_pos hα]
     simp
@@ -1055,7 +1065,7 @@ theorem paretoMeasure_setOf_mul_le (hα : 0 < α) (b : ℝ≥0∞) :
     have hbβ : b = ENNReal.ofReal β := (ENNReal.ofReal_toReal hb).symm
     have hset : {r : ℝ | ENNReal.ofReal r * b ≤ 1} ∩ Ioi 1 = {r | r * β ≤ 1} ∩ Ioi 1 := by
       ext r
-      simp only [mem_inter_iff, mem_setOf_eq, mem_Ioi, and_congr_left_iff]
+      simp only [mem_inter_iff, mem_ofPred_eq, mem_Ioi, and_congr_left_iff]
       intro hr
       rw [hbβ, ← ENNReal.ofReal_mul (by linarith), ENNReal.ofReal_le_one]
     rw [hset, hbβ, ENNReal.ofReal_rpow_of_nonneg hβ hα.le]
@@ -1068,16 +1078,16 @@ theorem paretoMeasure_setOf_mul_le (hα : 0 < α) (b : ℝ≥0∞) :
       · have hc : 1 ≤ β⁻¹ := one_le_inv₀ hpos |>.2 hβ1
         have : {r : ℝ | r * β ≤ 1} ∩ Ioi 1 = Ioi 1 \ Ioi β⁻¹ := by
           ext r
-          simp only [mem_inter_iff, mem_setOf_eq, mem_Ioi, mem_diff, not_lt]
+          simp only [mem_inter_iff, mem_ofPred_eq, mem_Ioi, Set.mem_sdiff, not_lt]
           rw [← le_div_iff₀ hpos, one_div, and_comm]
-        rw [this, measure_diff (Ioi_subset_Ioi hc) measurableSet_Ioi.nullMeasurableSet
+        rw [this, measure_sdiff (Ioi_subset_Ioi hc) measurableSet_Ioi.nullMeasurableSet
           (measure_ne_top _ _), paretoMeasure_one_Ioi hα le_rfl, paretoMeasure_one_Ioi hα hc,
           Real.inv_rpow hpos.le, Real.rpow_neg hpos.le, inv_inv, Real.one_rpow, ENNReal.ofReal_one,
           sup_eq_left.2 (ENNReal.ofReal_le_one.2 (Real.rpow_le_one hpos.le hβ1 hα.le))]
       · have : {r : ℝ | r * β ≤ 1} ∩ Ioi 1 = ∅ := by
           ext r
-          simp only [mem_inter_iff, mem_setOf_eq, mem_Ioi, mem_empty_iff_false, iff_false,
-            not_and, not_le]
+          simp only [mem_inter_iff, mem_ofPred_eq, mem_Ioi, mem_empty_iff_false, iff_false,
+            not_and]
           intro hr; nlinarith
         rw [this, measure_empty, sup_eq_right.2 (ENNReal.one_le_ofReal.2
           (Real.one_le_rpow hβ1.le hα.le)), tsub_self]
@@ -1095,7 +1105,7 @@ theorem candidateExtremalIndex_eq_measure [IsProbabilityMeasure Q] (hα : 0 < α
       ((paretoMeasure 1 α).prod Q) {p | ∀ k : ℕ, p.1 * |Θ (k + 1) p.2| ≤ 1} := by
   have := isProbabilityMeasure_paretoMeasure one_pos hα
   have hmeas : MeasurableSet {p : ℝ × Ω' | ∀ k : ℕ, p.1 * |Θ (k + 1) p.2| ≤ 1} := by
-    simp only [setOf_forall]
+    simp only [ofPred_forall]
     exact MeasurableSet.iInter fun k => measurableSet_le
       (measurable_fst.mul (continuous_abs.measurable.comp ((hΘm _).comp measurable_snd)))
       measurable_const
@@ -1106,7 +1116,7 @@ theorem candidateExtremalIndex_eq_measure [IsProbabilityMeasure Q] (hα : 0 < α
   have hset : (fun r : ℝ => (r, ω')) ⁻¹' {p : ℝ × Ω' | ∀ k : ℕ, p.1 * |Θ (k + 1) p.2| ≤ 1} =
       {r | ENNReal.ofReal r * b ≤ 1} := by
     ext r
-    simp only [mem_preimage, mem_setOf_eq, b, ENNReal.mul_iSup, iSup_le_iff]
+    simp only [mem_preimage, mem_ofPred_eq, b, ENNReal.mul_iSup, iSup_le_iff]
     refine forall_congr' fun k => ?_
     rcases le_or_gt r 0 with hr | hr
     · rw [ENNReal.ofReal_of_nonpos hr, zero_mul]
