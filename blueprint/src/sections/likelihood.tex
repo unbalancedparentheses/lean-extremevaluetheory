@@ -1,0 +1,72 @@
+\chapter{Likelihood inference for the GPD and the GEV}
+\label{chap:likelihood}
+
+We follow Smith, \emph{Maximum likelihood estimation in a class of nonregular cases}, Biometrika 72
+(1985), Coles (2001), Ch.~3--4, and [dHF, \S3.4].
+
+\begin{theorem}[Densities of the GPD and GEV]
+  \label{thm:gpd-gev-density}
+  \uses{def:gev}
+  \lean{ExtremeValueTheory.eq_withDensity_of_hasDerivAt_off, ExtremeValueTheory.integral_eq_one_of_eq_withDensity,
+    ExtremeValueTheory.gpdMeasure, ExtremeValueTheory.gpdMeasure_Ioi, ExtremeValueTheory.gpdMeasure_Iic,
+    ExtremeValueTheory.hasDerivAt_gpdCDF, ExtremeValueTheory.gpdMeasure_eq_withDensity,
+    ExtremeValueTheory.integral_gpdDensity, ExtremeValueTheory.gpdLogLik, ExtremeValueTheory.log_gpdDensity,
+    ExtremeValueTheory.continuous_gevFun, ExtremeValueTheory.hasDerivAt_gevFun,
+    ExtremeValueTheory.measure_gevCDF_eq_withDensity, ExtremeValueTheory.integral_gevDensity,
+    ExtremeValueTheory.gevLogLik}
+  \leanok
+  The GPD law (that of $\sigma(e^{\xi E} - 1)/\xi$ with $E$ standard exponential) has survival function $\bar G_{\xi,\sigma}$ and
+  density $\sigma^{-1}(1 + \xi x/\sigma)^{-1/\xi - 1}$ on its support; the GEV law has the density obtained by
+  differentiating $H_\xi$; both integrate to $1$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  A measure whose continuous distribution function is differentiable off finitely many points with derivative
+  $f \ge 0$ is $f \ud x$.
+\end{proof}
+
+\begin{theorem}[Exponential case]
+  \label{thm:mle-exponential}
+  \uses{thm:gpd-gev-density}
+  \lean{ExtremeValueTheory.gpdLogLik_zero_lt_sampleMean, ExtremeValueTheory.isMaxOn_gpdLogLik_zero,
+    ExtremeValueTheory.ae_tendsto_sampleMean_gpd_zero, ExtremeValueTheory.tendstoInDistribution_sampleMean_gpd_zero}
+  \leanok
+  For $\xi = 0$ the sample mean is the unique MLE of $\sigma$; it is strongly consistent and
+  $\sqrt n(\hat\sigma_n - \sigma) \Rightarrow N(0, \sigma^2)$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Mathlib's strong law and central limit theorem.
+\end{proof}
+
+\begin{theorem}[Scale MLE with known shape]
+  \label{thm:mle-scale}
+  \uses{thm:gpd-gev-density}
+  \lean{ExtremeValueTheory.hasDerivAt_gpdLogLik, ExtremeValueTheory.exists_gpdScaleScore_eq,
+    ExtremeValueTheory.gpdScaleScore_root_unique, ExtremeValueTheory.gpdLogLik_lt_of_score_eq,
+    ExtremeValueTheory.ae_existsUnique_gpdScaleMLE, ExtremeValueTheory.ae_tendsto_gpdScaleMLE}
+  \leanok
+  For known $\xi > -1$, $\xi \ne 0$, the score equation in $\sigma$ has a unique admissible root for positive data, it is the
+  unique maximizer of the likelihood, and it is strongly consistent for iid GPD data.
+\end{theorem}
+\begin{proof}
+  \leanok
+  The score $\sigma^{-1}((1 + \xi)\sum_i x_i/(\sigma + \xi x_i) - n)$ changes sign exactly once.
+\end{proof}
+
+\begin{theorem}[Wald consistency and the joint GPD MLE]
+  \label{thm:wald}
+  \uses{thm:gpd-gev-density}
+  \lean{ExtremeValueTheory.ae_tendsto_of_wald, ExtremeValueTheory.gpd_params_eq_of_gpdMeasure_eq,
+    ExtremeValueTheory.integral_log_gpdDensity_lt, ExtremeValueTheory.exists_isMaxOn_gpdLogLik,
+    ExtremeValueTheory.ae_tendsto_gpdMLE}
+  \leanok
+  On a compact metric parameter space, a criterion continuous in the parameter with an integrable envelope and a
+  unique maximizer of its expectation yields strongly consistent approximate maximizers [Wald 1949]. For the GPD
+  this gives strong consistency of the joint MLE of $(\xi, \sigma)$ on compact sets in $\{\xi > 0, \sigma > 0\}$. The range
+  $-1/2 < \xi \le 0$ (parameter-dependent support), asymptotic normality for $\xi \ne 0$, and the GEV MLE are not formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Uniform strong law over the compact set via the envelope; identifiability and the Kullback--Leibler inequality.
+\end{proof}
