@@ -461,4 +461,133 @@ end IsSimpleMaxStable
 
 end MaxRatio
 
+section Main
+
+variable {ι : Type*} [Fintype ι] {μ : Measure (ι → ℝ)}
+
+/-- The embedding `[0, 1]^ι → [0, ∞]^ι`. -/
+noncomputable def unitCubeToENNReal (θ : ι → unitInterval) : ι → ℝ≥0∞ :=
+  fun i ↦ ENNReal.ofReal (θ i)
+
+lemma measurable_unitCubeToENNReal : Measurable (unitCubeToENNReal (ι := ι)) :=
+  measurable_pi_iff.2 fun i ↦
+    ENNReal.measurable_ofReal.comp (measurable_subtype_coe.comp (measurable_pi_apply i))
+
+lemma measurable_spectralIntegrand (y : ι → ℝ) :
+    Measurable fun w : ι → ℝ≥0∞ ↦ ⨆ i, w i / ENNReal.ofReal (y i) :=
+  Measurable.iSup fun i ↦ (measurable_pi_apply i).div_const _
+
+lemma measurableSet_le_one : MeasurableSet {w : ι → ℝ≥0∞ | ∀ i, w i ≤ 1} := by
+  simp only [ofPred_forall]
+  exact MeasurableSet.iInter fun i ↦ measurableSet_le (measurable_pi_apply i) measurable_const
+
+namespace IsSimpleMaxStable
+
+/-- **The spectral representation of simple max-stable laws** ([dHF, Theorem 6.1.9 "⇒"];
+[Res87, Proposition 5.11]; de Haan–Resnick 1977): every simple max-stable law `μ` on `ℝ^ι`
+(`ι` finite) has a finite spectral measure `H`, concentrated on `[0, 1]^ι`, normalized by
+`∫ w i dH(w) = 1`, with `P(Y ≤ y) = exp (-∫ max_i w i / y i dH(w))`. -/
+theorem exists_hasSpectralMeasure (h : IsSimpleMaxStable μ) :
+    ∃ H : Measure (ι → ℝ≥0∞), IsFiniteMeasure H ∧ (∀ᵐ w ∂H, ∀ i, w i ≤ 1) ∧
+      (∀ i, ∫⁻ w, w i ∂H = 1) ∧ HasSpectralMeasure μ H := by
+  have := h.isProbabilityMeasure
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · refine ⟨0, inferInstance, by simp, fun i ↦ isEmptyElim i, fun y _ ↦ ?_⟩
+    rw [show Iic y = univ from eq_univ_of_forall fun x i ↦ isEmptyElim i, measure_univ]
+    simp
+  obtain ⟨P, hP⟩ := h.exists_angularMeasure
+  refine ⟨(P : Measure (ι → unitInterval)).map unitCubeToENNReal, inferInstance, ?_, ?_, ?_⟩
+  · rw [ae_map_iff measurable_unitCubeToENNReal.aemeasurable measurableSet_le_one]
+    exact Eventually.of_forall fun θ i ↦ ENNReal.ofReal_le_one.2 (θ i).2.2
+  · intro i
+    classical
+    rw [lintegral_map (measurable_pi_apply i) measurable_unitCubeToENNReal]
+    simp only [unitCubeToENNReal]
+    set I := ∫⁻ θ, ENNReal.ofReal (θ i : ℝ) ∂(P : Measure (ι → unitInterval))
+    -- the test points `y n = (1 at i, n + 1 elsewhere)`
+    set y : ℕ → ι → ℝ := fun n j ↦ if j = i then 1 else (n : ℝ) + 1 with hydef
+    have hy (n : ℕ) : ∀ j, 0 < y n j := fun j ↦ by
+      by_cases hj : j = i <;> simp [hydef, hj]; positivity
+    have hinv : Tendsto (fun n : ℕ ↦ ((n : ℝ) + 1)⁻¹) atTop (𝓝 0) :=
+      tendsto_inv_atTop_zero.comp (tendsto_natCast_atTop_atTop.atTop_add tendsto_const_nhds)
+    have hsum : Tendsto (fun n : ℕ ↦ ∑ j, (y n j)⁻¹) atTop (𝓝 1) := by
+      have : Tendsto (fun n : ℕ ↦ ∑ j, (y n j)⁻¹) atTop
+          (𝓝 (∑ j, if j = i then (1 : ℝ) else 0)) :=
+        tendsto_finsetSum _ fun j _ ↦ by
+          by_cases hj : j = i
+          · simp [hydef, hj]
+          · simpa [hydef, hj] using hinv
+      simpa only [Finset.sum_ite_eq', Finset.mem_univ, ite_true] using this
+    -- `I ≤ V(y n) ≤ ∑ j, 1 / y n j → 1`
+    have hle (n : ℕ) : I ≤ ENNReal.ofReal (∑ j, (y n j)⁻¹) := by
+      refine le_trans ?_ (ENNReal.ofReal_le_ofReal (h.maxStableExponent_le_sum_inv (hy n)))
+      rw [← hP _ (hy n)]
+      refine lintegral_mono fun θ ↦ ?_
+      rw [coe_spectralTest (hy n)]
+      refine le_iSup_of_le i (le_of_eq ?_)
+      simp [hydef]
+    -- `1 ≤ V(y n) ≤ I + P(univ) / (n + 1)`
+    have hge (n : ℕ) : 1 ≤ I + ENNReal.ofReal ((n : ℝ) + 1)⁻¹ * P.mass := by
+      have h1 : (1 : ℝ≥0∞) ≤ ENNReal.ofReal (maxStableExponent μ (y n)) := by
+        rw [← ENNReal.ofReal_one]
+        refine ENNReal.ofReal_le_ofReal ?_
+        simpa [hydef] using h.inv_le_maxStableExponent (hy n) i
+      rw [← hP _ (hy n)] at h1
+      have hpt : ∀ θ : ι → unitInterval, (spectralTest (y n) θ : ℝ≥0∞) ≤
+          ENNReal.ofReal (θ i : ℝ) + ENNReal.ofReal ((n : ℝ) + 1)⁻¹ := fun θ ↦ by
+        rw [coe_spectralTest (hy n)]
+        refine iSup_le fun j ↦ ?_
+        by_cases hj : j = i
+        · subst hj
+          simp [hydef]
+        · simp only [hydef, hj, ite_false]
+          refine le_add_left ((ENNReal.div_le_div_right (ENNReal.ofReal_le_one.2 (θ j).2.2)
+            _).trans (le_of_eq ?_))
+          rw [one_div, ENNReal.ofReal_inv_of_pos (by positivity)]
+      refine h1.trans ((lintegral_mono hpt).trans (le_of_eq ?_))
+      rw [lintegral_add_right _ measurable_const, lintegral_const, FiniteMeasure.ennreal_mass]
+    refine le_antisymm ?_ ?_
+    · have := ENNReal.tendsto_ofReal hsum
+      rw [ENNReal.ofReal_one] at this
+      exact ge_of_tendsto' this hle
+    · have : Tendsto (fun n : ℕ ↦ I + ENNReal.ofReal ((n : ℝ) + 1)⁻¹ * P.mass) atTop
+          (𝓝 (I + 0 * P.mass)) := by
+        refine tendsto_const_nhds.add (ENNReal.Tendsto.mul_const ?_ (Or.inr ENNReal.coe_ne_top))
+        simpa using ENNReal.tendsto_ofReal hinv
+      rw [zero_mul, add_zero] at this
+      exact ge_of_tendsto' this hge
+  · intro y hy
+    rw [lintegral_map (measurable_spectralIntegrand y) measurable_unitCubeToENNReal]
+    simp only [unitCubeToENNReal]
+    simp_rw [← coe_spectralTest hy]
+    rw [hP y hy, ENNReal.toReal_ofReal (h.maxStableExponent_pos hy).le,
+      h.exp_neg_maxStableExponent hy, ofReal_measureReal]
+
+end IsSimpleMaxStable
+
+/-! ### Bivariate consequences: the Pickands dependence function -/
+
+namespace IsSimpleMaxStable
+
+variable {ν : Measure (Fin 2 → ℝ)}
+
+/-- Every bivariate simple max-stable law has a normalized spectral measure, and its Pickands
+function is `A(t) = ∫ max(t w 0, (1 - t) w 1) dH(w)` on `[0, 1]`. -/
+theorem exists_pickandsDependence_eq_pickandsSpectral (h : IsSimpleMaxStable ν) :
+    ∃ H : Measure (Fin 2 → ℝ≥0∞), IsFiniteMeasure H ∧ (∀ i, ∫⁻ w, w i ∂H = 1) ∧
+      HasSpectralMeasure ν H ∧ EqOn (pickandsDependence ν) (pickandsSpectral H) (Icc 0 1) := by
+  obtain ⟨H, hfin, -, hH, hS⟩ := h.exists_hasSpectralMeasure
+  exact ⟨H, hfin, hH, hS, fun _ ht ↦ hS.pickandsDependence_eq hH ht⟩
+
+/-- **Convexity of the Pickands dependence function** ([Pickands 1981]; [dHF, §6.1.5]) for every
+bivariate simple max-stable law. -/
+theorem convexOn_pickandsDependence (h : IsSimpleMaxStable ν) :
+    ConvexOn ℝ (Icc 0 1) (pickandsDependence ν) := by
+  obtain ⟨H, -, -, hH, hS⟩ := h.exists_hasSpectralMeasure
+  exact hS.convexOn_pickands hH
+
+end IsSimpleMaxStable
+
+end Main
+
 end ExtremeValueTheory
