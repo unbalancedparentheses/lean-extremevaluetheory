@@ -210,6 +210,62 @@ theorem abs_measureReal_maxLE_echoProcess_le (hα : 0 < α) (hZ : ∀ t, Measura
   rw [abs_le]
   constructor <;> linarith
 
+/-- **The block condition `𝒜(uₙ)` for the echo process.** Let the echo lag `L` be measurable
+and choose truncation lags `lₙ`. If `uₙ ≥ 0` eventually, `rₙ → ∞`, `rₙ / n → 0`, `lₙ / rₙ → 0`,
+`(n / rₙ) · n P(L(Z) > lₙ) → 0` and `n P(X_0 > uₙ)` is bounded, then
+`P(M n ≤ uₙ) - P(M rₙ ≤ uₙ) ^ ⌊n / rₙ⌋ → 0`.
+
+The echo process is not `m`-dependent (the lag `L(Z)` is unbounded), but it is `lₙ`-dependent
+up to the event that an echo of lag `> lₙ` lands in `{0, …, n - 1}`, which has probability
+`≤ n P(L(Z) > lₙ)`; `conditionA_of_forall_abs_le` turns this into `𝒜(uₙ)`. -/
+theorem conditionA_echoProcess (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
+    (hind : iIndepFun Z P) (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α)
+    (hpos : ∀ t ω, 0 ≤ Z t ω) (hLm : Measurable L) {u : ℕ → ℝ} {r l : ℕ → ℕ}
+    (hu : ∀ᶠ n in atTop, 0 ≤ u n) (hr : Tendsto r atTop atTop)
+    (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hlr : Tendsto (fun n => (l n : ℝ) / r n) atTop (𝓝 0))
+    (hrate : Tendsto (fun n : ℕ => (n : ℝ) / r n *
+      (n * (paretoMeasure 1 α).real {z | l n + 1 ≤ L z})) atTop (𝓝 0))
+    {C : ℝ} (hC : ∀ᶠ n : ℕ in atTop, (n : ℝ) * P.real {ω | u n < echoProcess L Z 0 ω} ≤ C) :
+    ConditionA (fun k : ℕ => |echoProcess L Z k|) P u r := by
+  set q : ℕ → ℝ := fun n => n * (paretoMeasure 1 α).real {z | l n + 1 ≤ L z}
+  refine conditionA_of_forall_abs_le (l := fun n => l n + 1)
+    (α := fun n => if 0 ≤ u n then 2 * q n else 1) (C := C)
+    ((hasShiftInvariantWindows_echoProcess hZ hind hlaw hLm).isStationary_abs
+      (measurable_echoProcess hZ hLm))
+    (fun k => continuous_abs.measurable.comp (measurable_echoProcess hZ hLm k)) ?_ hr hrn ?_ ?_ ?_
+  · intro n A B hA hB hAB
+    split_ifs with h
+    · exact abs_measureReal_maxLE_echoProcess_le hα hZ hind hlaw hpos hLm hA hB hAB h
+    · have h1 : 0 ≤ P.real (maxLE (fun k : ℕ => |echoProcess L Z k|) (A ∪ B) (u n)) :=
+        measureReal_nonneg
+      have h2 : P.real (maxLE (fun k : ℕ => |echoProcess L Z k|) (A ∪ B) (u n)) ≤ 1 :=
+        measureReal_le_one
+      have h3 : 0 ≤ P.real (maxLE (fun k : ℕ => |echoProcess L Z k|) A (u n)) :=
+        measureReal_nonneg
+      have h4 : P.real (maxLE (fun k : ℕ => |echoProcess L Z k|) A (u n)) ≤ 1 :=
+        measureReal_le_one
+      have h5 : 0 ≤ P.real (maxLE (fun k : ℕ => |echoProcess L Z k|) B (u n)) :=
+        measureReal_nonneg
+      have h6 : P.real (maxLE (fun k : ℕ => |echoProcess L Z k|) B (u n)) ≤ 1 :=
+        measureReal_le_one
+      rw [abs_le]
+      constructor <;> nlinarith [mul_nonneg h3 h5, mul_le_mul h4 h6 h5 zero_le_one]
+  · have h := hlr.add (tendsto_const_nhds.div_atTop (tendsto_natCast_atTop_atTop.comp hr) :
+      Tendsto (fun n => (1 : ℝ) / r n) atTop (𝓝 0))
+    rw [add_zero] at h
+    refine h.congr fun n => ?_
+    push_cast
+    ring
+  · have h := hrate.const_mul 2
+    rw [mul_zero] at h
+    refine h.congr' ?_
+    filter_upwards [hu] with n hn
+    simp only [hn, ite_true, q]
+    ring
+  · filter_upwards [hC] with n hn
+    simpa [abs_of_nonneg (echoProcess_nonneg hpos _ _)] using hn
+
 end EchoConditionA
 
 end ExtremeValueTheory
