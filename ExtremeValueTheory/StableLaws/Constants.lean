@@ -210,6 +210,96 @@ theorem Gamma_mul_integral_sin_mul_rpow {α : ℝ} (hα0 : 0 < α) (hα1 : α < 
   rw [integral_sin_mul_exp_neg_mul hx, add_sub_cancel_right]
   ring
 
+variable {α : ℝ}
+
+theorem sin_pi_mul_div_two_pos (hα0 : 0 < α) (hα2 : α < 2) : 0 < sin (π * α / 2) :=
+  Real.sin_pos_of_pos_of_lt_pi (by positivity) (by nlinarith [pi_pos])
+
+theorem cos_pi_mul_div_two_ne_zero (hα0 : 0 < α) (hα2 : α < 2) (hα1 : α ≠ 1) :
+    cos (π * α / 2) ≠ 0 := by
+  rcases lt_or_gt_of_ne hα1 with h | h
+  · exact (Real.cos_pos_of_mem_Ioo ⟨by nlinarith [pi_pos], by nlinarith [pi_pos]⟩).ne'
+  · exact (Real.cos_neg_of_pi_div_two_lt_of_lt (by nlinarith [pi_pos])
+      (by nlinarith [pi_pos])).ne
+
+/-- `C_α = π / (2 sin (π α / 2) Γ(α))` for `0 < α < 2` ([Feller, Vol. II, §XVII.4]). -/
+theorem stableConst_eq_pi_div (hα0 : 0 < α) (hα2 : α < 2) :
+    stableConst α = π / (2 * sin (π * α / 2) * Gamma α) := by
+  have h := Gamma_mul_integral_one_sub_cos_mul_rpow hα0 hα2
+  have hs := sin_pi_mul_div_two_pos hα0 hα2
+  have hg : 0 < Gamma α := Real.Gamma_pos_of_pos hα0
+  rw [Real.Gamma_add_one hα0.ne'] at h
+  rw [stableConst, show π / (2 * sin (π * α / 2) * Gamma α) =
+    π / (2 * sin (π * α / 2)) / Gamma α by rw [div_div],
+    ← h]
+  field_simp
+
+/-- `C_1 = π / 2` ([Feller, Vol. II, §XVII.4]): the Cauchy case. -/
+theorem stableConst_one : stableConst 1 = π / 2 := by
+  rw [stableConst_eq_pi_div one_pos one_lt_two, mul_one, Real.sin_pi_div_two, Real.Gamma_one]
+  ring
+
+/-- `E_α = π / (2 cos (π α / 2) Γ(α))` for `0 < α < 2`, `α ≠ 1`. -/
+theorem stableSkewConst_eq_pi_div (hα0 : 0 < α) (hα2 : α < 2) (hα1 : α ≠ 1) :
+    stableSkewConst α = π / (2 * cos (π * α / 2) * Gamma α) := by
+  have hc := cos_pi_mul_div_two_ne_zero hα0 hα2 hα1
+  have hg : 0 < Gamma α := Real.Gamma_pos_of_pos hα0
+  rcases lt_or_gt_of_ne hα1 with h1 | h1
+  · have h := Gamma_mul_integral_sin_mul_rpow hα0 h1
+    rw [Real.Gamma_add_one hα0.ne'] at h
+    rw [stableSkewConst, ite_eq_left h1, show π / (2 * cos (π * α / 2) * Gamma α) =
+      π / (2 * cos (π * α / 2)) / Gamma α by rw [div_div],
+      ← h]
+    field_simp
+  · have h := Gamma_mul_integral_one_sub_cos_mul_rpow (α := α - 1) (by linarith) (by linarith)
+    rw [show α - 1 + 1 = α by ring, show -(α - 1) - 1 = -α by ring,
+      show π * (α - 1) / 2 = π * α / 2 - π / 2 by ring, Real.sin_sub_pi_div_two] at h
+    rw [stableSkewConst, ite_eq_right (by linarith), show π / (2 * cos (π * α / 2) * Gamma α) =
+      -(π / (2 * -cos (π * α / 2)) / Gamma α) by field_simp, ← h]
+    field_simp
+
+theorem Gamma_one_sub_eq (hα0 : 0 < α) (hα2 : α < 2) (hα1 : α ≠ 1) :
+    Gamma (1 - α) = π / (2 * sin (π * α / 2) * cos (π * α / 2) * Gamma α) := by
+  have hc := cos_pi_mul_div_two_ne_zero hα0 hα2 hα1
+  have hs := sin_pi_mul_div_two_pos hα0 hα2
+  have hg : 0 < Gamma α := Real.Gamma_pos_of_pos hα0
+  have h := Real.Gamma_mul_Gamma_one_sub α
+  rw [show π * α = 2 * (π * α / 2) by ring, Real.sin_two_mul] at h
+  have h' : Gamma α * Gamma (1 - α) * (2 * sin (π * α / 2) * cos (π * α / 2)) = π := by
+    rw [h]; field_simp
+  rw [eq_div_iff (by positivity)]
+  linear_combination h'
+
+/-- **Closed form of `C_α`**: `C_α = Γ(1 - α) cos (π α / 2)` for `0 < α < 2`, `α ≠ 1`
+([Feller, Vol. II, §XVII.4, (4.9)], [ST, (1.1.6)]). For `1 < α < 2` both factors are negative;
+equivalently `C_α = Γ(2 - α) cos (π α / 2) / (1 - α)`. -/
+theorem stableConst_eq_Gamma_mul_cos (hα0 : 0 < α) (hα2 : α < 2) (hα1 : α ≠ 1) :
+    stableConst α = Gamma (1 - α) * cos (π * α / 2) := by
+  have hc := cos_pi_mul_div_two_ne_zero hα0 hα2 hα1
+  have hs := sin_pi_mul_div_two_pos hα0 hα2
+  have hg : 0 < Gamma α := Real.Gamma_pos_of_pos hα0
+  rw [stableConst_eq_pi_div hα0 hα2, Gamma_one_sub_eq hα0 hα2 hα1]
+  field_simp
+
+/-- **Closed form of `E_α`**: `E_α = Γ(1 - α) sin (π α / 2)` for `0 < α < 2`, `α ≠ 1`
+([Feller, Vol. II, §XVII.4], [ST, (1.1.6)]). -/
+theorem stableSkewConst_eq_Gamma_mul_sin (hα0 : 0 < α) (hα2 : α < 2) (hα1 : α ≠ 1) :
+    stableSkewConst α = Gamma (1 - α) * sin (π * α / 2) := by
+  have hc := cos_pi_mul_div_two_ne_zero hα0 hα2 hα1
+  have hs := sin_pi_mul_div_two_pos hα0 hα2
+  have hg : 0 < Gamma α := Real.Gamma_pos_of_pos hα0
+  rw [stableSkewConst_eq_pi_div hα0 hα2 hα1, Gamma_one_sub_eq hα0 hα2 hα1]
+  field_simp
+
+/-- `E_α = C_α tan (π α / 2)` for `0 < α < 2`, `α ≠ 1` ([ST, (1.1.6)]). -/
+theorem stableSkewConst_eq_mul_tan (hα0 : 0 < α) (hα2 : α < 2) (hα1 : α ≠ 1) :
+    stableSkewConst α = stableConst α * tan (π * α / 2) := by
+  have hc := cos_pi_mul_div_two_ne_zero hα0 hα2 hα1
+  rw [stableSkewConst_eq_Gamma_mul_sin hα0 hα2 hα1, stableConst_eq_Gamma_mul_cos hα0 hα2 hα1,
+    Real.tan_eq_sin_div_cos, mul_assoc]
+  congr 1
+  field_simp
+
 end StableIntegral
 
 end ExtremeValueTheory
