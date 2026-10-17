@@ -87,6 +87,7 @@ import ExtremeValueTheory.Dependence.ThetaLeVartheta
 import ExtremeValueTheory.Dependence.BackwardTailProcess
 import ExtremeValueTheory.Dependence.MovingMaxTailProcess
 import ExtremeValueTheory.Dependence.Mixing
+import ExtremeValueTheory.Dependence.BetaMixing
 import ExtremeValueTheory.Dependence.MDependent
 import ExtremeValueTheory.Dependence.MDependentExamples
 import ExtremeValueTheory.ForMathlib.Probability.Process.Mixing
