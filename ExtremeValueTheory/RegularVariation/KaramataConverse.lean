@@ -8,7 +8,7 @@ import ExtremeValueTheory.RegularVariation.Representation
 import Mathlib.MeasureTheory.Integral.DivergenceTheorem
 
 /-!
-# Criteria for regular variation via logarithmic derivatives, and the converse of Karamata
+# Criteria for regular variation via logarithmic derivatives, and Karamata's theorem
 
 Following Bingham, Goldie and Teugels, *Regular Variation* (Cambridge University Press, 1987),
 henceforth [BGT], we give sufficient conditions for regular variation in terms of the
@@ -31,6 +31,9 @@ logarithmic derivative, and use them to prove the **converse half of Karamata's 
 * `ExtremeValueTheory.IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi`: **Karamata's theorem,
   converse half** ([BGT, Theorem 1.6.1]): if `F` is antitone with `∫ t in Ioi a, F t < ∞` and
   `x F(x) / ∫ t in Ioi x, F t → α - 1 > 0`, then `F ∈ RV_{-α}`.
+* `ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_zero_div`: **Karamata's theorem for
+  `∫ t in 0..x`** ([BGT, Proposition 1.5.8]): if `f` is measurable, locally integrable on
+  `[0, ∞)` and `f ∈ RV_ρ` with `ρ > -1`, then `(∫ t in 0..x, f t) / (x f x) → 1 / (ρ + 1)`.
 -/
 
 open Filter Topology Set Real MeasureTheory
@@ -272,6 +275,114 @@ theorem of_tendsto_mul_div_integral_Ioi {F : ℝ → ℝ} {α a : ℝ} (hF : Ant
   change x * F x / I x * I x * x ^ (-1 : ℝ) = F x
   rw [rpow_neg_one]
   field_simp
+
+/-- **Karamata's theorem for integrals over `[0, x]`** (the direct half, [BGT, Proposition 1.5.8]
+and [BGT, Theorem 1.5.11 (i)]): if `f` is measurable, integrable on every `[0, x]` and regularly
+varying with index `ρ > -1`, then `(∫ t in 0..x, f t) / (x * f x) → 1 / (ρ + 1)` as `x → ∞`.
+
+After the substitution `t = x u`, the part of the integral over `[x₀, x]` becomes
+`∫ u in Ioc 0 1, 1_{u > x₀ / x} f (x u) / f x`, which converges to `∫ u in 0..1, u ^ ρ` by
+dominated convergence with the Potter bound `2 u ^ (ρ - δ)`, `δ = (ρ + 1) / 2`; the part over
+`[0, x₀]` is negligible since `x f x → ∞`. -/
+theorem tendsto_integral_zero_div {f : ℝ → ℝ} {ρ : ℝ} (hf : IsRegularlyVarying f ρ)
+    (hm : Measurable f) (hρ : -1 < ρ) (hint : ∀ x, IntervalIntegrable f volume 0 x) :
+    Tendsto (fun x => (∫ t in (0 : ℝ)..x, f t) / (x * f x)) atTop (𝓝 (1 / (ρ + 1))) := by
+  set δ := (ρ + 1) / 2 with hδ_def
+  have hδ : 0 < δ := by rw [hδ_def]; linarith
+  have hexp : -1 < ρ - δ := by rw [hδ_def]; linarith
+  obtain ⟨x₀, hx₀, hfpos, hP⟩ := hf.potter_bound_of_measurable hm hδ one_lt_two
+  -- `x f x → ∞`
+  have hxf : Tendsto (fun x => x * f x) atTop atTop := by
+    have hfx₀ := hfpos x₀ le_rfl
+    have hlow : ∀ x ≥ x₀, f x₀ / (2 * x₀ ^ (ρ - δ)) * x ^ (ρ - δ + 1) ≤ x * f x := by
+      intro x hx
+      have hx0 : 0 < x := hx₀.trans_le hx
+      have hfx := hfpos x hx
+      have h := hP x hx x₀ le_rfl
+      have hu1 : x₀ / x ≤ 1 := (div_le_one hx0).2 hx
+      have hu0 : 0 < x₀ / x := div_pos hx₀ hx0
+      rw [max_eq_right (rpow_le_rpow_of_exponent_ge hu0 hu1 (by linarith)),
+        div_rpow hx₀.le hx0.le, div_le_iff₀ hfx] at h
+      have hA := rpow_pos_of_pos hx₀ (ρ - δ)
+      have hB := rpow_pos_of_pos hx0 (ρ - δ)
+      have key : f x₀ * x ^ (ρ - δ) ≤ 2 * x₀ ^ (ρ - δ) * f x := by
+        calc f x₀ * x ^ (ρ - δ) ≤ 2 * (x₀ ^ (ρ - δ) / x ^ (ρ - δ)) * f x * x ^ (ρ - δ) := by
+              gcongr
+          _ = 2 * x₀ ^ (ρ - δ) * f x := by field_simp
+      rw [rpow_add hx0, rpow_one, div_mul_eq_mul_div, div_le_iff₀ (by positivity)]
+      nlinarith
+    refine tendsto_atTop_mono' atTop ((eventually_ge_atTop x₀).mono hlow) ?_
+    exact (tendsto_rpow_atTop (by linarith : 0 < ρ - δ + 1)).const_mul_atTop
+      (div_pos hfx₀ (mul_pos two_pos (rpow_pos_of_pos hx₀ _)))
+  -- the value of the limit
+  have hlim : ∫ u in Ioc (0 : ℝ) 1, u ^ ρ = 1 / (ρ + 1) := by
+    rw [← intervalIntegral.integral_of_le zero_le_one, integral_rpow (Or.inl hρ), one_rpow,
+      zero_rpow (by linarith : ρ + 1 ≠ 0), sub_zero]
+  -- the main part, by dominated convergence
+  set g : ℝ → ℝ → ℝ := fun x u => (Ioi (x₀ / x)).indicator (fun u => f (x * u) / f x) u
+    with hg_def
+  have hmain : Tendsto (fun x => ∫ u in Ioc (0 : ℝ) 1, g x u) atTop (𝓝 (1 / (ρ + 1))) := by
+    rw [← hlim]
+    refine tendsto_integral_filter_of_dominated_convergence (fun u => 2 * u ^ (ρ - δ)) ?_ ?_ ?_ ?_
+    · exact Eventually.of_forall fun x => (((hm.comp (measurable_id.const_mul x)).div_const
+        _).indicator measurableSet_Ioi).aestronglyMeasurable
+    · filter_upwards [eventually_ge_atTop x₀] with x hx
+      refine ae_restrict_of_forall_mem measurableSet_Ioc fun u hu => ?_
+      have hx0 : 0 < x := hx₀.trans_le hx
+      simp only [hg_def]
+      by_cases hux : u ∈ Ioi (x₀ / x)
+      · rw [indicator_of_mem hux]
+        have hxu : x₀ ≤ x * u := by
+          have := (div_lt_iff₀ hx0).1 (mem_Ioi.1 hux)
+          linarith
+        have h := hP x hx (x * u) hxu
+        rw [mul_div_cancel_left₀ u hx0.ne',
+          max_eq_right (rpow_le_rpow_of_exponent_ge hu.1 hu.2 (by linarith))] at h
+        rw [Real.norm_eq_abs, abs_of_pos (div_pos (hfpos _ hxu) (hfpos _ hx))]
+        exact h
+      · rw [indicator_of_notMem hux, norm_zero]
+        exact mul_nonneg zero_le_two (rpow_nonneg hu.1.le _)
+    · exact (intervalIntegrable_iff_integrableOn_Ioc_of_le zero_le_one).1
+        ((intervalIntegral.intervalIntegrable_rpow' hexp).const_mul 2)
+    · refine ae_restrict_of_forall_mem measurableSet_Ioc fun u hu => ?_
+      have hu0 : 0 < u := hu.1
+      refine ((hf.2 u hu0).congr fun x => by rw [mul_comm]).congr' ?_
+      filter_upwards [eventually_gt_atTop (x₀ / u)] with x hx
+      have hx0 : 0 < x := lt_trans (div_pos hx₀ hu0) hx
+      have hmem : u ∈ Ioi (x₀ / x) := by
+        rw [mem_Ioi, div_lt_iff₀ hx0]
+        rw [div_lt_iff₀ hu0] at hx
+        linarith
+      simp only [hg_def, indicator_of_mem hmem]
+  -- the part over `[0, x₀]` is negligible
+  have hconst : Tendsto (fun x => (∫ t in (0 : ℝ)..x₀, f t) / (x * f x)) atTop (𝓝 0) := by
+    have := (tendsto_inv_atTop_zero.comp hxf).const_mul (∫ t in (0 : ℝ)..x₀, f t)
+    rw [mul_zero] at this
+    exact this.congr fun x => (div_eq_mul_inv _ _).symm
+  have := hconst.add hmain
+  rw [zero_add] at this
+  refine this.congr' ?_
+  filter_upwards [eventually_ge_atTop x₀] with x hx
+  have hx0 : 0 < x := hx₀.trans_le hx
+  have hfx := hfpos x hx
+  have hsplit := intervalIntegral.integral_add_adjacent_intervals (hint x₀)
+    ((hint x₀).symm.trans (hint x))
+  have hset : Ioc (0 : ℝ) 1 ∩ Ioi (x₀ / x) = Ioc (x₀ / x) 1 := by
+    ext u
+    simp only [mem_inter_iff, mem_Ioc, mem_Ioi]
+    constructor
+    · rintro ⟨⟨-, h2⟩, h3⟩
+      exact ⟨h3, h2⟩
+    · rintro ⟨h1, h2⟩
+      exact ⟨⟨(div_pos hx₀ hx0).trans h1, h2⟩, h1⟩
+  have hsub : ∫ u in Ioc (0 : ℝ) 1, g x u = (∫ t in x₀..x, f t) / (x * f x) := by
+    simp only [hg_def]
+    rw [setIntegral_indicator measurableSet_Ioi, hset,
+      ← intervalIntegral.integral_of_le ((div_le_one hx0).2 hx), intervalIntegral.integral_div,
+      intervalIntegral.integral_comp_mul_left f hx0.ne', mul_div_cancel₀ _ hx0.ne', mul_one,
+      smul_eq_mul]
+    field_simp
+  rw [hsub, ← hsplit, add_div]
 
 end IsRegularlyVarying
 
