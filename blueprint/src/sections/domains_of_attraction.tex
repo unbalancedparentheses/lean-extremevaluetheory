@@ -6,7 +6,8 @@ distribution $G$ if there are orientation preserving affine isomorphisms $A_n \i
 with $\big( (A_n . F)(x) \big)^n \to G(x)$ for every $x$, i.e., if the suitably normalized
 maximum of $n$ i.i.d.\ samples from $F$ converges in distribution to $G$. This chapter proves
 Gnedenko's characterizations of the Fréchet and Weibull domains of attraction in terms of
-regular variation. References: de Haan and Ferreira, \emph{Extreme Value Theory: An
+regular variation, and de Haan's characterization of the Gumbel domain of attraction in terms
+of an auxiliary function. References: de Haan and Ferreira, \emph{Extreme Value Theory: An
 Introduction}, Springer (2006) [dHF]; Resnick, \emph{Extreme Values, Regular Variation, and
 Point Processes}, Springer (1987) [Resnick]; Embrechts, Klüppelberg and Mikosch,
 \emph{Modelling Extremal Events}, Springer (1997) [EKM].
@@ -177,9 +178,243 @@ Point Processes}, Springer (1987) [Resnick]; Embrechts, Klüppelberg and Mikosch
 
 \section{The Gumbel domain of attraction}
 
-% TODO: The Gumbel domain of attraction (ExtremeValueTheory/DomainOfAttraction/Gumbel.lean)
-% is being formalized separately. Add its blueprint entries here (auxiliary function
-% characterization, von Mises condition, examples) once the Lean file is finished.
+Throughout this section $x_F = \sup \set{ x \; | \; F(x) < 1 } \in (-\infty, +\infty]$ denotes
+the right endpoint of $F$. We say that \emph{$t \uparrow x_F$} for $t \to +\infty$ when
+$x_F = +\infty$ (that is, $F < 1$ everywhere), and for $t \to x_F$ from the left when
+$x_F < \infty$ (that is, $F(x) < 1$ for $x < x_F$ and $F(x_F) = 1$). An \emph{auxiliary function}
+for $F$ is a function $f$, positive for $t$ near $x_F$, such that
+\begin{align*}
+  \lim_{t \uparrow x_F} \frac{1 - F(t + x f(t))}{1 - F(t)} \; = \; e^{-x}
+  \qquad \text{for every } x \in \bR .
+\end{align*}
 
-The Gumbel domain of attraction (sufficient conditions via an auxiliary function and the
-von Mises condition) is work in progress.
+\begin{definition}[Gumbel maximum domain of attraction]
+  \label{def:mda-gumbel}
+  \uses{def:cdf, def:std-Gumbel-cdf, lem:oriented-affine-action-on-cdf}
+  \lean{CumulativeDistributionFunction.IsInMDAGumbel}
+  \leanok
+  A c.d.f.\ $F$ is in the maximum domain of attraction of the standard Gumbel distribution
+  $\GumbelCDF(x) = \exp(-e^{-x})$ if there are $A_n \in \OriAffR$ with
+  $\big( (A_n . F)(x) \big)^n \to \GumbelCDF(x)$ for every $x \in \bR$.
+\end{definition}
+
+\begin{lemma}[Gumbel membership from the tail limit relation]
+  \label{lem:mda-gumbel-of-tendsto-mul}
+  \uses{def:mda-gumbel, thm:tfae-ev-limit}
+  \lean{CumulativeDistributionFunction.isInMDAGumbel_of_tendsto_mul,
+    CumulativeDistributionFunction.tendsto_mul_of_isInMDAGumbel}
+  \leanok
+  $F$ is in the Gumbel domain of attraction if and only if there are $a_n > 0$ and $b_n \in \bR$
+  with $n \big( 1 - F(a_n x + b_n) \big) \to e^{-x}$ for every $x \in \bR$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Since $-\log \GumbelCDF(x) = e^{-x}$ and $\GumbelCDF(x) \in (0, 1)$, this is the equivalence of
+  the limit relations (Theorem~\ref{thm:tfae-ev-limit}) with $A_n^{-1}(x) = a_n x + b_n$.
+\end{proof}
+
+\begin{lemma}[Generalized quantiles]
+  \label{lem:gumbel-quantile}
+  \lean{ExtremeValueTheory.Gumbel.quantile_spec}
+  \leanok
+  Let $g$ be antitone and right-continuous, and let $c$ be such that $g(x) \le c$ for some $x$
+  and $c < g(y)$ for some $y$. Then $q = \inf \set{ x \; | \; g(x) \le c }$ satisfies
+  $g(q) \le c$ and $c < g(y)$ for every $y < q$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  The set $\set{ x \; | \; g(x) \le c }$ is a nonempty up-set bounded below; right continuity
+  gives $g(q) \le c$, and $y < q$ means $y$ is not in the set.
+\end{proof}
+
+\begin{lemma}[Sufficiency, analytic core]
+  \label{lem:gumbel-sufficiency-core}
+  \lean{ExtremeValueTheory.Gumbel.tendsto_mul_of_auxiliary}
+  \leanok
+  Let $L$ be a filter on $\bR$, and let $g, f$ be eventually positive along $L$ with
+  $g(t + x f(t))/g(t) \to e^{-x}$ along $L$ for every $x$. Let $b_n \to L$ satisfy, eventually,
+  $g(b_n) \le 1/n < g(y)$ for all $y < b_n$. Then
+  $n \, g\big( b_n + x f(b_n) \big) \to e^{-x}$ for every $x$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  First, $n \, g(b_n) \to 1$: the upper bound $n \, g(b_n) \le 1$ holds by assumption, while for
+  $\delta > 0$ the point $b_n - \delta f(b_n) < b_n$ gives
+  $1 < n \, g(b_n - \delta f(b_n)) = n \, g(b_n) \cdot g(b_n - \delta f(b_n))/g(b_n)$, and the
+  ratio tends to $e^{\delta}$, so $\liminf n \, g(b_n) \ge e^{-\delta}$. Then
+  $n \, g(b_n + x f(b_n)) = n \, g(b_n) \cdot g(b_n + x f(b_n))/g(b_n) \to e^{-x}$.
+\end{proof}
+
+\begin{theorem}[Sufficiency via an auxiliary function]
+  \label{thm:mda-gumbel-of-auxiliary}
+  \uses{def:mda-gumbel, lem:mda-gumbel-of-tendsto-mul, lem:gumbel-quantile,
+    lem:gumbel-sufficiency-core}
+  \lean{CumulativeDistributionFunction.tendsto_mul_one_sub_of_auxiliary_atTop,
+    CumulativeDistributionFunction.isInMDAGumbel_of_auxiliary_atTop,
+    CumulativeDistributionFunction.isInMDAGumbel_of_auxiliary_nhdsLT}
+  \leanok
+  If $F$ admits an auxiliary function $f$ (with either $x_F = +\infty$ or $x_F < \infty$),
+  then $F$ is in the Gumbel domain of attraction, with normalizing constants
+  $b_n = F^{\leftarrow}(1 - 1/n) = \inf \set{ y \; | \; 1 - F(y) \le 1/n }$ and $a_n = f(b_n)$
+  [dHF, Theorem~1.1.8], [EKM, Theorem~3.3.26], [Resnick, Proposition~1.1].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Apply Lemma~\ref{lem:gumbel-quantile} to $g = 1 - F$ and $c = 1/n$: the quantiles $b_n$
+  satisfy $g(b_n) \le 1/n < g(y)$ for $y < b_n$, and $b_n \uparrow x_F$ since $g > 0$ to the left
+  of $x_F$ (and, for finite $x_F$, $g(x_F) = 0$ forces $b_n \le x_F$, while one checks from the
+  auxiliary relation that $b_n < x_F$ eventually). Lemma~\ref{lem:gumbel-sufficiency-core}, along
+  $L = \texttt{atTop}$ or $L = \mathcal{N}_{<}(x_F)$, gives
+  $n (1 - F(a_n x + b_n)) \to e^{-x}$, and Lemma~\ref{lem:mda-gumbel-of-tendsto-mul} concludes.
+\end{proof}
+
+\begin{theorem}[The von Mises condition]
+  \label{thm:von-mises}
+  \uses{thm:mda-gumbel-of-auxiliary}
+  \lean{CumulativeDistributionFunction.tendsto_auxiliary_of_vonMises,
+    CumulativeDistributionFunction.isInMDAGumbel_of_vonMises}
+  \leanok
+  Suppose $F$ is twice differentiable on $(z, \infty)$ with $F' > 0$ there, and
+  \begin{align*}
+    \lim_{t \to \infty} \frac{(1 - F(t)) \, F''(t)}{F'(t)^2} \; = \; -1 .
+  \end{align*}
+  Then $F < 1$ everywhere, $f = (1 - F)/F'$ is an auxiliary function, and hence $F$ is in the
+  Gumbel domain of attraction [dHF, Theorem~1.1.8], [EKM, Theorem~3.3.27],
+  [Resnick, Proposition~1.1].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Since $F$ is strictly increasing on $(z, \infty)$, $F < 1$ everywhere. The function
+  $f = (1 - F)/F'$ has derivative $f' = -1 - (1-F) F''/(F')^2 \to 0$. By the mean value theorem,
+  $|f(t + s f(t)) - f(t)| \le |s| f(t) \sup |f'|$ over the segment, so
+  $f(t + s f(t))/f(t) \to 1$ uniformly for $s$ in compact sets. With $g = 1 - F$ we have
+  $(\log g)' = -1/f$, hence
+  \begin{align*}
+    \log \frac{g(t + x f(t))}{g(t)} \; = \; - \int_0^x \frac{f(t)}{f(t + s f(t))} \, \ud s
+      \; \to \; -x .
+  \end{align*}
+  Theorem~\ref{thm:mda-gumbel-of-auxiliary} concludes.
+\end{proof}
+
+\begin{definition}[Standard exponential distribution]
+  \label{def:std-exponential-cdf}
+  \uses{def:cdf}
+  \lean{CumulativeDistributionFunction.standardExponentialCDF,
+    CumulativeDistributionFunction.standardExponentialCDF_apply_of_nonneg,
+    CumulativeDistributionFunction.standardExponentialCDF_apply_of_nonpos}
+  \leanok
+  The standard exponential c.d.f.\ is $F(x) = 1 - e^{-x}$ for $x \ge 0$ and $F(x) = 0$ for
+  $x \le 0$.
+\end{definition}
+
+\begin{proposition}[Examples of the Gumbel domain of attraction]
+  \label{prop:mda-gumbel-examples}
+  \uses{def:std-exponential-cdf, def:std-Gumbel-cdf, thm:von-mises, def:mda-gumbel}
+  \lean{CumulativeDistributionFunction.isInMDAGumbel_standardExponentialCDF,
+    CumulativeDistributionFunction.isInMDAGumbel_standardGumbelCDF}
+  \leanok
+  The standard exponential distribution and the standard Gumbel distribution $\GumbelCDF$ are in
+  the Gumbel domain of attraction.
+\end{proposition}
+\begin{proof}
+  \leanok
+  For the exponential distribution, $F' = e^{-x}$, $F'' = -e^{-x}$ and
+  $(1 - F) F''/(F')^2 = -1$ on $(0, \infty)$, so Theorem~\ref{thm:von-mises} applies. For
+  $\GumbelCDF$, take $a_n = 1$, $b_n = \log n$: then $\GumbelCDF(x + \log n)^n =
+  \exp(-n \, e^{-x}/n) = \GumbelCDF(x)$ for $n \ge 1$.
+\end{proof}
+
+\begin{lemma}[Comparison of levels]
+  \label{lem:gumbel-eventually-lt}
+  \lean{ExtremeValueTheory.Gumbel.eventually_lt_of_tendsto_natCast_mul,
+    ExtremeValueTheory.Gumbel.eventually_lt_of_tendsto_natCast_mul_one}
+  \leanok
+  Let $g$ be antitone. If $n \, g(p_n) \to \mu$ and $n \, g(q_n) \to \nu$ with $\nu < \mu$, then
+  eventually $p_n < q_n$. If $n \, g(b_n) \to 1$ and $g(t) > 0$, then eventually $t < b_n$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  If $q_n \le p_n$ then $n \, g(p_n) \le n \, g(q_n)$, which is eventually impossible. For the
+  second claim, $b_n \le t$ would give $n \, g(b_n) \ge n \, g(t) \to \infty$.
+\end{proof}
+
+\begin{lemma}[Necessity, analytic core]
+  \label{lem:gumbel-necessity-core}
+  \uses{lem:gumbel-eventually-lt}
+  \lean{ExtremeValueTheory.Gumbel.exists_auxiliary_of_tendsto_mul}
+  \leanok
+  Let $g$ be antitone, $a_n > 0$, and $n \, g(a_n x + b_n) \to e^{-x}$ for every $x$. Let $L$ be a
+  filter on $\bR$ (describing $t \uparrow x_F$) such that, for $t$ eventually in $L$, eventually
+  $t < b_n$, and such that for every $K$, eventually in $L$ there is $n \ge K$ with $b_n \le t$.
+  Then there is a positive function $f$ with $g(t + x f(t))/g(t) \to e^{-x}$ along $L$, for
+  every $x$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  We avoid the classical route through $\Pi$-variation of the quantile function and use a direct
+  sandwich argument. Comparing the levels $n$ and $n+1$ (Lemma~\ref{lem:gumbel-eventually-lt},
+  using $n \, g(b_{n+1}) \to 1 > e^{-\delta}$) gives, for every $\delta > 0$, eventually
+  $b_{n+1} < b_n + \delta a_n$. For $t$ in $L$ let $N(t) = \sup \set{ n \; | \; b_n \le t }$,
+  which is finite by the first hypothesis, so that $b_{N(t)} \le t < b_{N(t)+1}$, and
+  $N(t) \to \infty$ along $L$ by the second hypothesis. Put $f(t) = a_{N(t)}$ and $n = N(t)$.
+  Then $b_n \le t < b_n + \delta a_n$, so by monotonicity
+  \begin{align*}
+    \frac{g(a_n (x + \delta) + b_n)}{g(b_n)} \; \le \; \frac{g(t + x f(t))}{g(t)}
+      \; \le \; \frac{g(a_n x + b_n)}{g(a_n \delta + b_n)} ,
+  \end{align*}
+  and the outer ratios tend to $e^{-x - \delta}$ and $e^{-x + \delta}$. Letting $\delta \to 0$
+  concludes.
+\end{proof}
+
+\begin{theorem}[Necessity of the auxiliary function]
+  \label{thm:gumbel-necessity}
+  \uses{lem:mda-gumbel-of-tendsto-mul, lem:gumbel-necessity-core, lem:gumbel-eventually-lt}
+  \lean{CumulativeDistributionFunction.exists_auxiliary_atTop_of_isInMDAGumbel,
+    CumulativeDistributionFunction.exists_auxiliary_nhdsLT_of_isInMDAGumbel}
+  \leanok
+  If $F$ is in the Gumbel domain of attraction, then $F$ admits a positive auxiliary function,
+  both when $x_F = +\infty$ and when $x_F < \infty$ (de Haan 1970; [dHF, Theorem~1.2.5],
+  [Resnick, Proposition~1.4], [EKM, Theorem~3.3.26]).
+\end{theorem}
+\begin{proof}
+  \leanok
+  Lemma~\ref{lem:mda-gumbel-of-tendsto-mul} gives $a_n > 0$, $b_n$ with
+  $n (1 - F(a_n x + b_n)) \to e^{-x}$; in particular $n (1 - F(b_n)) \to 1$. Apply
+  Lemma~\ref{lem:gumbel-necessity-core} with $g = 1 - F$. Its first hypothesis follows from
+  Lemma~\ref{lem:gumbel-eventually-lt} since $1 - F(t) > 0$ for $t < x_F$. For the second: if
+  $x_F = \infty$, $b_K \le t$ for all large $t$; if $x_F < \infty$, choose $n \ge K$ with
+  $n (1 - F(b_n)) > 0$, so $b_n < x_F$, and then $b_n \le t$ for $t \in (b_n, x_F)$.
+\end{proof}
+
+\begin{lemma}[Finite right endpoint]
+  \label{lem:right-endpoint}
+  \uses{lem:gumbel-quantile}
+  \lean{CumulativeDistributionFunction.exists_rightEndpoint_of_not_lt_one}
+  \leanok
+  If $F(x_1) = 1$ for some $x_1$, then there is $x_F \in \bR$ with $F(x) < 1$ for $x < x_F$ and
+  $F(x_F) = 1$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Take $x_F = \inf \set{ x \; | \; 1 - F(x) \le 0 }$ and apply Lemma~\ref{lem:gumbel-quantile}
+  with $c = 0$.
+\end{proof}
+
+\begin{theorem}[De Haan's characterization of the Gumbel domain of attraction]
+  \label{thm:mda-gumbel-iff}
+  \uses{thm:mda-gumbel-of-auxiliary, thm:gumbel-necessity, lem:right-endpoint}
+  \lean{CumulativeDistributionFunction.isInMDAGumbel_iff_atTop,
+    CumulativeDistributionFunction.isInMDAGumbel_iff_nhdsLT,
+    CumulativeDistributionFunction.isInMDAGumbel_iff}
+  \leanok
+  A c.d.f.\ $F$ is in the Gumbel domain of attraction if and only if it admits an auxiliary
+  function. More precisely, either $F < 1$ everywhere and there is $f$, eventually positive, with
+  $(1 - F(t + x f(t)))/(1 - F(t)) \to e^{-x}$ as $t \to \infty$; or $F$ has a finite right
+  endpoint $x_F$ and there is $f$, positive near $x_F$, with the same relation as $t \uparrow x_F$
+  [dHF, Theorems~1.1.8 and~1.2.5], [EKM, Theorem~3.3.26], [Resnick, Propositions~1.1 and~1.4].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Combine Theorems~\ref{thm:mda-gumbel-of-auxiliary} and~\ref{thm:gumbel-necessity}; the case
+  split on whether $F$ reaches $1$ uses Lemma~\ref{lem:right-endpoint}.
+\end{proof}

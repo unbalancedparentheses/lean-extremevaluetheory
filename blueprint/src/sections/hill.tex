@@ -1,0 +1,291 @@
+\chapter{Order statistics and the Hill estimator}
+\label{chap:hill}
+
+This chapter develops the order statistics of a finite sample and proves the weak consistency of
+the Hill estimator of the extreme value index $\gamma = 1/\alpha$ of a regularly varying tail. We
+follow de Haan and Ferreira, \emph{Extreme Value Theory: An Introduction}, Springer (2006), \S3.2
+[dHF], and Mason, \emph{Laws of large numbers for sums of extreme values}, Ann.\ Probab.\ 10
+(1982) [Mason].
+
+\section{Order statistics}
+
+\begin{definition}[Descending order statistics]
+  \label{def:order-stat}
+  \lean{ExtremeValueTheory.orderStat, ExtremeValueTheory.orderStat_of_lt,
+    ExtremeValueTheory.orderStat_of_le}
+  \leanok
+  For a sample $x = (x_0, \ldots, x_{n-1}) \in \bR^n$, the descending order statistics
+  $X_{(1)} \ge X_{(2)} \ge \cdots \ge X_{(n)}$ are the entries of $x$ sorted decreasingly. In Lean
+  they are indexed from $0$: $\texttt{orderStat}\,x\,j = X_{(j+1)}$ for $j < n$ (and $0$, a junk
+  value, for $j \ge n$). They are obtained by reversing the increasing sort of the tuple $x$.
+\end{definition}
+
+\begin{definition}[Exceedance count]
+  \label{def:exceed-count}
+  \lean{ExtremeValueTheory.exceedCount, ExtremeValueTheory.exceedCount_eq_sum}
+  \leanok
+  The number of exceedances of the level $a$ by the sample $x$ is
+  $N_a(x) = \# \set{ i \; | \; x_i > a } = \sum_i \indof{\set{x_i > a}}$.
+\end{definition}
+
+\begin{lemma}[Basic properties of order statistics]
+  \label{lem:order-stat-basic}
+  \uses{def:order-stat}
+  \lean{ExtremeValueTheory.orderStat_perm, ExtremeValueTheory.sum_orderStat,
+    ExtremeValueTheory.orderStat_anti}
+  \leanok
+  The order statistics $(X_{(1)}, \ldots, X_{(n)})$ are a permutation of the sample; in particular
+  $\sum_{j=1}^n f(X_{(j)}) = \sum_i f(x_i)$ for every $f$. They are decreasing:
+  $X_{(j+1)} \le X_{(i+1)}$ for $i \le j < n$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  The sort is a permutation, and so is its composition with the reversal $\texttt{Fin.rev}$;
+  monotonicity is the monotonicity of the sorted tuple, reversed.
+\end{proof}
+
+\begin{lemma}[Duality between order statistics and exceedance counts]
+  \label{lem:order-stat-duality}
+  \uses{def:order-stat, def:exceed-count, lem:order-stat-basic}
+  \lean{ExtremeValueTheory.lt_orderStat_iff, ExtremeValueTheory.orderStat_le_iff}
+  \leanok
+  For $j < n$ and $a \in \bR$: $a < X_{(j+1)}$ if and only if $N_a(x) \ge j + 1$; equivalently
+  $X_{(j+1)} \le a$ if and only if $N_a(x) \le j$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  If $a < X_{(j+1)}$, then $X_{(1)}, \ldots, X_{(j+1)}$ all exceed $a$, and these are $j + 1$
+  distinct entries of the sample. Conversely, if $X_{(j+1)} \le a$, then only
+  $X_{(1)}, \ldots, X_{(j)}$ can exceed $a$, so $N_a(x) \le j$.
+\end{proof}
+
+\begin{lemma}[Measurability]
+  \label{lem:order-stat-measurable}
+  \uses{def:order-stat, def:exceed-count}
+  \lean{ExtremeValueTheory.measurable_exceedCount, ExtremeValueTheory.measurable_orderStat}
+  \leanok
+  If $X_0, \ldots, X_{n-1}$ are measurable random variables, then the exceedance counts and the
+  order statistics of $(X_0, \ldots, X_{n-1})$ are measurable.
+\end{lemma}
+\begin{proof}
+  \leanok
+  $N_a$ is a finite sum of indicators of measurable sets. For the order statistics, by
+  Lemma~\ref{lem:order-stat-duality} the sets $\set{ a < X_{(j+1)} }$ are measurable for all $a$.
+\end{proof}
+
+\begin{theorem}[Distribution of exceedance counts and order statistics]
+  \label{thm:exceed-count-binomial}
+  \uses{lem:order-stat-duality, lem:order-stat-measurable}
+  \lean{ExtremeValueTheory.measure_lt_orderStat_eq, ExtremeValueTheory.measure_exceedCount_eq,
+    ExtremeValueTheory.measure_lt_orderStat_eq_sum}
+  \leanok
+  For random variables $X_0, \ldots, X_{n-1}$ and $j < n$,
+  $\PR[X_{(j+1)} > a] = \PR[N_a \ge j + 1]$. If moreover the $X_i$ are independent with common
+  exceedance probability $p = \PR[X_i > a]$, then $N_a$ is binomial,
+  \begin{align*}
+    \PR[N_a = m] \; = \; \binom{n}{m} p^m (1 - p)^{n - m} ,
+    \qquad
+    \PR[X_{(j+1)} > a] \; = \; \sum_{m = j+1}^{n} \binom{n}{m} p^m (1 - p)^{n - m} .
+  \end{align*}
+\end{theorem}
+\begin{proof}
+  \leanok
+  The first identity is Lemma~\ref{lem:order-stat-duality} pointwise. The event $\set{N_a = m}$ is
+  the disjoint union over $m$-element subsets $S$ of indices of the events
+  $\bigcap_{i \in S} \set{X_i > a} \cap \bigcap_{i \notin S} \set{X_i \le a}$, each of probability
+  $p^m (1 - p)^{n-m}$ by independence. Summing over $m \ge j + 1$ gives the last formula.
+\end{proof}
+
+\section{The Hill estimator}
+
+\begin{definition}[Hill estimator]
+  \label{def:hill}
+  \uses{def:order-stat}
+  \lean{ExtremeValueTheory.hill}
+  \leanok
+  The Hill estimator based on the top $k + 1$ order statistics of a sample $x \in \bR^n$ is
+  \begin{align*}
+    H_{k,n} \; = \; \frac{1}{k} \sum_{i=1}^{k} \big( \log X_{(i)} - \log X_{(k+1)} \big) .
+  \end{align*}
+\end{definition}
+
+\begin{definition}[Log-excess]
+  \label{def:log-excess}
+  \lean{ExtremeValueTheory.logExcess, ExtremeValueTheory.logExcess_nonneg,
+    ExtremeValueTheory.logExcess_of_le, ExtremeValueTheory.logExcess_of_ge,
+    ExtremeValueTheory.logExcess_anti, ExtremeValueTheory.measurable_logExcess}
+  \leanok
+  The log-excess of $y$ over the threshold $t > 0$ is
+  $\log^+(y/t) = \log\big( \max(y, t)/t \big)$. It is nonnegative and measurable in $y$, equals $0$
+  for $y \le t$ and $\log y - \log t$ for $y \ge t$, and is antitone in $t$.
+\end{definition}
+
+\begin{lemma}[Log-excess representation of the Hill estimator]
+  \label{lem:hill-log-excess}
+  \uses{def:hill, def:log-excess, lem:order-stat-basic}
+  \lean{ExtremeValueTheory.hill_eq_sum_logExcess}
+  \leanok
+  If $k < n$ and $X_{(k+1)} > 0$, then
+  $H_{k,n} = \frac{1}{k} \sum_{i=0}^{n-1} \log^+ \big( x_i / X_{(k+1)} \big)$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  By Lemma~\ref{lem:order-stat-basic}, the sum over the sample equals the sum over the order
+  statistics. The terms with $j \ge k + 1$ vanish since $X_{(j)} \le X_{(k+1)}$, the term $j = k + 1$
+  vanishes, and for $j \le k$ the term is $\log X_{(j)} - \log X_{(k+1)}$.
+\end{proof}
+
+\begin{lemma}[A weak law of large numbers for triangular arrays]
+  \label{lem:chebyshev-wlln}
+  \lean{ExtremeValueTheory.tendsto_measure_abs_sum_div_sub}
+  \leanok
+  Let $X_0, X_1, \ldots$ be i.i.d., $g_n$ measurable with $g_n(X_0) \in L^2$, and $b_n > 0$ with
+  $n \, \EX[g_n(X_0)]/b_n \to m$ and $n \, \EX[g_n(X_0)^2]/b_n^2 \to 0$. Then
+  \begin{align*}
+    \frac{1}{b_n} \sum_{i<n} g_n(X_i) \; \to \; m \qquad \text{in probability.}
+  \end{align*}
+\end{lemma}
+\begin{proof}
+  \leanok
+  By pairwise independence, the variance of the normalized sum is at most
+  $n \, \EX[g_n(X_0)^2]/b_n^2 \to 0$, while its mean tends to $m$. Chebyshev's inequality
+  concludes.
+\end{proof}
+
+\begin{definition}[Survival function of a random variable]
+  \label{def:survival}
+  \lean{ExtremeValueTheory.survival, ExtremeValueTheory.survival_anti,
+    ExtremeValueTheory.survival_nonneg, ExtremeValueTheory.survival_pos,
+    ExtremeValueTheory.survival_eq_one_sub_cdf, ExtremeValueTheory.continuousWithinAt_survival,
+    ExtremeValueTheory.tendsto_survival_atTop}
+  \leanok
+  The survival function of a real random variable $Y$ is $\overline{F}(x) = \PR[Y > x]$. It is
+  nonnegative, antitone and right-continuous, equals $1 - F_Y(x)$ for the c.d.f.\ $F_Y$ of $Y$,
+  and tends to $0$ at $+\infty$. If it is regularly varying, it is everywhere positive.
+\end{definition}
+
+\begin{lemma}[Uniform exponential decay along geometric levels]
+  \label{lem:survival-exp-le}
+  \uses{def:survival, thm:rv-potter-monotone}
+  \lean{ExtremeValueTheory.exists_survival_exp_le}
+  \leanok
+  If $\overline{F}$ is regularly varying with index $-\alpha$, $\alpha > 0$, there is $x_0 > 0$
+  such that $\overline{F}(s e^u) \le 2 \, \overline{F}(s) \, e^{-(\alpha/2) u}$ for all $s \ge x_0$
+  and $u \ge 0$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  This is the Potter bound (Theorem~\ref{thm:rv-potter-monotone}) with $\delta = \alpha/2$ and
+  constant $2$, applied with $c = e^u \ge 1$.
+\end{proof}
+
+\begin{lemma}[Moments of the log-excess]
+  \label{lem:log-excess-moments}
+  \uses{def:log-excess, def:survival, lem:survival-exp-le}
+  \lean{ExtremeValueTheory.setOf_lt_logExcess, ExtremeValueTheory.integral_logExcess,
+    ExtremeValueTheory.integrableOn_mul_exp_neg, ExtremeValueTheory.lintegral_logExcess_sq_le,
+    ExtremeValueTheory.exists_memLp_logExcess}
+  \leanok
+  For $s, u > 0$, $\set{ \log^+(Y/s) > u } = \set{ Y > s e^u }$, and hence (layer cake formula)
+  \begin{align*}
+    \EX \big[ \log^+(Y/s) \big] \; = \; \int_0^\infty \overline{F}(s e^u) \, \ud u .
+  \end{align*}
+  If $\overline{F}$ is regularly varying with index $-\alpha$, $\alpha > 0$, there are $x_0, C$ such
+  that for $s \ge x_0$ the log-excess $\log^+(Y/s)$ is square integrable with
+  $\EX \big[ \log^+(Y/s)^2 \big] \le C \, \overline{F}(s)$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  The layer cake formula gives $\EX[\log^+(Y/s)^2] = \int_0^\infty 2u \, \overline{F}(s e^u) \, \ud u$,
+  and Lemma~\ref{lem:survival-exp-le} bounds it by
+  $4 \overline{F}(s) \int_0^\infty u \, e^{-(\alpha/2)u} \, \ud u < \infty$.
+\end{proof}
+
+\begin{lemma}[Integrated regular variation]
+  \label{lem:tail-integral-log-excess}
+  \uses{lem:log-excess-moments, lem:survival-exp-le, def:regularly-varying}
+  \lean{ExtremeValueTheory.integral_exp_neg_mul_Ioi, ExtremeValueTheory.tendsto_integral_logExcess_div}
+  \leanok
+  If $\overline{F}$ is regularly varying with index $-\alpha$, $\alpha > 0$, then
+  \begin{align*}
+    \lim_{s \to \infty} \frac{\EX \big[ \log^+(Y/s) \big]}{\overline{F}(s)} \; = \;
+    \lim_{s \to \infty} \int_0^\infty \frac{\overline{F}(s e^u)}{\overline{F}(s)} \, \ud u
+    \; = \; \int_0^\infty e^{-\alpha u} \, \ud u \; = \; \frac{1}{\alpha} .
+  \end{align*}
+\end{lemma}
+\begin{proof}
+  \leanok
+  Pointwise $\overline{F}(s e^u)/\overline{F}(s) \to e^{-\alpha u}$ by regular variation, and the
+  integrands are dominated by $2 e^{-(\alpha/2) u}$ (Lemma~\ref{lem:survival-exp-le}), so dominated
+  convergence applies.
+\end{proof}
+
+\begin{lemma}[Intermediate thresholds]
+  \label{lem:hill-threshold}
+  \lean{ExtremeValueTheory.threshold_spec}
+  \leanok
+  Let $\overline{F}$ be antitone and right-continuous with $\overline{F}(x) \to 0$ as
+  $x \to \infty$, and let $0 < p < \overline{F}(M)$. Then $u = \inf \set{ x \; | \; \overline{F}(x) \le p }$
+  satisfies $\overline{F}(u) \le p$, $p < \overline{F}(x)$ for $x < u$, and $M \le u$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  As in Lemma~\ref{lem:gumbel-quantile}.
+\end{proof}
+
+\begin{theorem}[Weak consistency of the Hill estimator]
+  \label{thm:hill-consistency}
+  \uses{lem:hill-log-excess, lem:chebyshev-wlln, lem:log-excess-moments,
+    lem:tail-integral-log-excess, lem:hill-threshold, thm:exceed-count-binomial,
+    lem:order-stat-duality, def:regularly-varying}
+  \lean{ExtremeValueTheory.tendstoInMeasure_hill}
+  \leanok
+  Let $X_0, X_1, \ldots$ be i.i.d.\ real random variables whose survival function
+  $\overline{F}(x) = \PR[X_0 > x]$ is regularly varying with index $-\alpha$, $\alpha > 0$, and let
+  $k = k(n)$ be an intermediate sequence: $k(n) \to \infty$ and $k(n)/n \to 0$. Then the Hill
+  estimator $H_{k(n),n}$ of $X_0, \ldots, X_{n-1}$ converges in probability to $1/\alpha$
+  [dHF, Theorem~3.2.2], [Mason].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Instead of the Rényi representation of exponential spacings used in [dHF], we use the tail
+  empirical process argument in the spirit of [Mason], which only needs Chebyshev's inequality.
+
+  \emph{Step 1 (deterministic).} By Lemma~\ref{lem:hill-log-excess},
+  $H_{k,n} = \frac{1}{k} \sum_i \log^+(X_i / X_{(k+1)})$, and $s \mapsto \sum_i \log^+(X_i/s)$ is
+  antitone (Definition~\ref{def:log-excess}).
+
+  \emph{Step 2 (thresholds).} Choose deterministic thresholds
+  $u_n = \inf \set{ x \; | \; \overline{F}(x) \le k/n }$. By Lemma~\ref{lem:hill-threshold},
+  right-continuity and regular variation, $u_n \to \infty$, $n \overline{F}(u_n)/k \to 1$, and
+  hence $n \overline{F}(c u_n)/k \to c^{-\alpha}$ for every $c > 0$.
+
+  \emph{Step 3 (laws of large numbers).} Fix $c > 0$. By Lemma~\ref{lem:chebyshev-wlln} with
+  $b_n = k(n)$:
+  the exceedance count satisfies $N_{c u_n}/k \to c^{-\alpha}$ in probability (its summands are
+  indicators with mean $\overline{F}(c u_n)$, and the second moment condition holds since
+  $k \to \infty$); and $\frac{1}{k} \sum_i \log^+(X_i/(c u_n)) \to c^{-\alpha}/\alpha$ in
+  probability, the mean being computed by Lemma~\ref{lem:tail-integral-log-excess} and the second
+  moment being $O(\overline{F}(c u_n)) = O(k/n)$ by Lemma~\ref{lem:log-excess-moments}.
+
+  \emph{Step 4 (sandwich).} By the duality
+  $X_{(k+1)} > a \iff N_a \ge k + 1$ (Lemma~\ref{lem:order-stat-duality}), Step 3 gives
+  $c_1 u_n < X_{(k+1)} \le c_2 u_n$ with probability tending to $1$ for any $c_1 < 1 < c_2$. On
+  this event, monotonicity (Step 1) sandwiches $H_{k,n}$ between the averages of log-excesses
+  over $c_2 u_n$ and over $c_1 u_n$, which are close to $c_2^{-\alpha}/\alpha$ and
+  $c_1^{-\alpha}/\alpha$. Letting $c_1, c_2 \to 1$ concludes.
+\end{proof}
+
+\begin{corollary}[Hill estimator for Pareto samples]
+  \label{cor:hill-pareto}
+  \uses{thm:hill-consistency, lem:rv-examples}
+  \lean{ExtremeValueTheory.tendstoInMeasure_hill_pareto}
+  \leanok
+  If $X_0, X_1, \ldots$ are i.i.d.\ Pareto$(\alpha)$, i.e.\ $\PR[X_0 > x] = x^{-\alpha}$ for
+  $x \ge 1$, and $k(n) \to \infty$, $k(n)/n \to 0$, then $H_{k(n),n} \to 1/\alpha$ in probability.
+\end{corollary}
+\begin{proof}
+  \leanok
+  The survival function agrees with $x^{-\alpha}$ for $x \ge 1$, hence is regularly varying with
+  index $-\alpha$; apply Theorem~\ref{thm:hill-consistency}.
+\end{proof}

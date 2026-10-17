@@ -3,12 +3,17 @@
 The Pickands--Balkema--de Haan theorem (Balkema and de Haan, 1974; Pickands, 1975) says
 that, for distributions in a maximum domain of attraction, the conditional distribution of
 the excess over a high threshold $u$ is, after rescaling, close to a generalized Pareto
-distribution. We prove the heavy-tailed (Fréchet) case; see Embrechts, Klüppelberg and
-Mikosch, \emph{Modelling Extremal Events} (1997), Theorem~3.4.13 [EKM], and McNeil, Frey
-and Embrechts, \emph{Quantitative Risk Management} (2005), \S5.2 [MFE].
+distribution. We first prove the heavy-tailed (Fréchet) case directly from regular variation,
+and then the general theorem for all three domains of attraction, as equivalences in the
+Fréchet and Weibull cases; see Embrechts, Klüppelberg and Mikosch, \emph{Modelling Extremal
+Events} (1997), Theorem~3.4.13 [EKM], de Haan and Ferreira, \emph{Extreme Value Theory: An
+Introduction} (2006), Theorem~1.1.6 [dHF], and McNeil, Frey and Embrechts, \emph{Quantitative
+Risk Management} (2005), \S5.2 [MFE].
 
 Throughout, $F \colon \bR \to \bR$ plays the role of a survival function
 $F(x) = \PR[X > x]$.
+
+\section{The Fréchet case}
 
 \begin{definition}[Generalized Pareto survival function]
   \label{def:gpd-survival}
@@ -111,4 +116,240 @@ $F(x) = \PR[X > x]$.
   \leanok
   $e(u)/u = \big( \int_u^\infty F(t) \, \ud t \big) / \big( u \, F(u) \big)$, so this is exactly
   Karamata's theorem (Theorem~\ref{thm:karamata}).
+\end{proof}
+
+
+\section{The general Pickands--Balkema--de Haan theorem}
+
+In this section $F$ is a c.d.f., $\overline{F} = 1 - F$ its tail, and
+$\overline{F}_u(x) = \overline{F}(u + x)/\overline{F}(u)$ the excess survival function of
+Definition~\ref{def:excess-survival} applied to $\overline{F}$.
+
+\begin{lemma}[A Pólya-type uniformity lemma]
+  \label{lem:polya-uniform}
+  \lean{ExtremeValueTheory.tendstoUniformlyOn_Ici_of_antitoneOn}
+  \leanok
+  Let $f_i$ be antitone on $[a, \infty)$ and bounded below by $c$ (eventually along a filter),
+  converging pointwise on $[a, \infty)$ to a continuous antitone function $G$ with
+  $G(x) \to c$ as $x \to \infty$. Then $f_i \to G$ uniformly on $[a, \infty)$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Let $\eps > 0$ and choose $M \ge a$ with $G(M) < c + \eps/2$. On $[a, M]$, $G$ is uniformly
+  continuous, so there is a finite grid $a = p_0 < p_1 < \cdots < p_N = M$ with oscillation of
+  $G$ less than $\eps/2$ between consecutive points; eventually $|f_i(p_k) - G(p_k)| < \eps/2$
+  for all $k$. For $x \in [p_k, p_{k+1}]$, monotonicity sandwiches $f_i(x)$ between $f_i(p_{k+1})$
+  and $f_i(p_k)$, and $G(x)$ between $G(p_{k+1})$ and $G(p_k)$, giving $|f_i(x) - G(x)| < \eps$.
+  For $x \ge M$, both $f_i(x)$ and $G(x)$ lie in $[c, f_i(M)]$ resp.\ $[c, G(M)]$, so again
+  $|f_i(x) - G(x)| < \eps$.
+\end{proof}
+
+\begin{lemma}[Uniform convergence in supremum form]
+  \label{lem:tendsto-iSup-abs-sub}
+  \lean{ExtremeValueTheory.tendsto_iSup_abs_sub_iff}
+  \leanok
+  If the errors $|f_i(x) - G(x)|$, $x \in s$, are eventually uniformly bounded, then
+  $\sup_{x \in s} |f_i(x) - G(x)| \to 0$ if and only if $f_i \to G$ uniformly on $s$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  The boundedness hypothesis makes the supremum a real number, and both statements say that
+  eventually $|f_i(x) - G(x)| \le \eps$ for all $x \in s$.
+\end{proof}
+
+\begin{lemma}[Regular variation from $c \ge 1$]
+  \label{lem:rv-of-one-le}
+  \uses{def:regularly-varying}
+  \lean{ExtremeValueTheory.isRegularlyVarying_of_one_le}
+  \leanok
+  If $h > 0$ eventually and $h(ct)/h(t) \to c^\rho$ for every $c \ge 1$, then $h$ is regularly
+  varying with index $\rho$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  For $0 < c < 1$, substitute $s = ct \to \infty$: $h(ct)/h(t) = \big( h(c^{-1} s)/h(s) \big)^{-1}
+  \to (c^{-\rho})^{-1} = c^\rho$.
+\end{proof}
+
+\begin{definition}[Generalized Pareto survival function, all shapes]
+  \label{def:gpd-survival-general}
+  \uses{def:gpd-survival}
+  \lean{ExtremeValueTheory.gpdSurvival'}
+  \leanok
+  For shape $\xi \in \bR$ and scale $\beta$ put
+  \begin{align*}
+    \overline{G}_{\xi,\beta}(x) \; = \;
+    \begin{cases}
+      \big( \max(1 + \xi x / \beta, 0) \big)^{-1/\xi} & \text{if } \xi \ne 0, \\
+      \exp(-x/\beta) & \text{if } \xi = 0 .
+    \end{cases}
+  \end{align*}
+  For $\xi < 0$ it vanishes for $x \ge -\beta/\xi$, the right endpoint of the GPD.
+\end{definition}
+
+\begin{lemma}[Properties of the general GPD]
+  \label{lem:gpd-general-properties}
+  \uses{def:gpd-survival-general, lem:gpd-properties}
+  \lean{ExtremeValueTheory.gpdSurvival'_eq_gpdSurvival, ExtremeValueTheory.gpdSurvival'_zero_left,
+    ExtremeValueTheory.gpdSurvival'_neg_inv, ExtremeValueTheory.gpdSurvival'_nonneg,
+    ExtremeValueTheory.gpdSurvival'_antitoneOn, ExtremeValueTheory.gpdSurvival'_zero_right,
+    ExtremeValueTheory.gpdSurvival'_le_one, ExtremeValueTheory.gpdSurvival'_continuousOn,
+    ExtremeValueTheory.gpdSurvival'_tendsto_atTop}
+  \leanok
+  Definition~\ref{def:gpd-survival-general} agrees with Definition~\ref{def:gpd-survival} for
+  $\xi \ge 0$, $\beta > 0$, $x \ge 0$, and $\overline{G}_{0,\beta}(x) = e^{-x/\beta}$. For
+  $\alpha > 0$, $\overline{G}_{-1/\alpha, 1}(x) = \big( \max(1 - x/\alpha, 0) \big)^\alpha$. For
+  $\beta > 0$, on $[0, \infty)$ the function $\overline{G}_{\xi,\beta}$ is nonnegative, at most
+  $1$, equal to $1$ at $0$, antitone and continuous, and it tends to $0$ at $+\infty$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Elementary properties of real powers and of $\exp$; for $\xi < 0$ continuity at the endpoint
+  $-\beta/\xi$ uses that the exponent $-1/\xi$ is positive.
+\end{proof}
+
+\begin{theorem}[Pickands--Balkema--de Haan, Fréchet case, as an equivalence]
+  \label{thm:pbdh-frechet-iff}
+  \uses{thm:mda-frechet-iff, thm:pickands-balkema-de-haan, lem:rv-of-one-le,
+    lem:tendsto-iSup-abs-sub}
+  \lean{CumulativeDistributionFunction.isInMDAFrechet_iff_tendstoUniformlyOn_excessSurvival,
+    CumulativeDistributionFunction.isInMDAFrechet_iff_tendsto_sup_excessSurvival}
+  \leanok
+  Let $\alpha > 0$. Then $F$ is in the maximum domain of attraction of $\FrechetCDF{\alpha}$ if
+  and only if, with $\beta(u) = u/\alpha$,
+  \begin{align*}
+    \lim_{u \to \infty} \; \sup_{x \ge 0} \; \Big| \frac{\overline{F}(u + \beta(u) x)}{\overline{F}(u)}
+      - \overline{G}_{1/\alpha, 1}(x) \Big| \; = \; 0
+  \end{align*}
+  [EKM, Theorem~3.4.13(b)].
+\end{theorem}
+\begin{proof}
+  \leanok
+  By Gnedenko's theorem (Theorem~\ref{thm:mda-frechet-iff}), membership is equivalent to
+  regular variation of $\overline{F}$ with index $-\alpha$, and
+  Theorem~\ref{thm:pickands-balkema-de-haan} gives the forward direction. Conversely, uniform
+  convergence gives pointwise convergence at $x = \alpha(c - 1)$ for $c \ge 1$, i.e.\
+  $\overline{F}(cu)/\overline{F}(u) \to c^{-\alpha}$ (at $x = 0$ it also shows $\overline{F} > 0$
+  eventually), and Lemma~\ref{lem:rv-of-one-le} gives regular variation. The supremum form follows
+  from Lemma~\ref{lem:tendsto-iSup-abs-sub}, the errors being bounded by $1$.
+\end{proof}
+
+\begin{theorem}[Pickands--Balkema--de Haan, Weibull case, as an equivalence]
+  \label{thm:pbdh-weibull-iff}
+  \uses{thm:mda-weibull-iff, lem:polya-uniform, lem:gpd-general-properties, lem:rv-of-one-le,
+    lem:tendsto-iSup-abs-sub}
+  \lean{CumulativeDistributionFunction.isInMDAWeibull_iff_tendstoUniformlyOn_excessSurvival,
+    CumulativeDistributionFunction.isInMDAWeibull_iff_tendsto_sup_excessSurvival}
+  \leanok
+  Let $\alpha > 0$. Then $F$ is in the maximum domain of attraction of $\WeibullCDF{\alpha}$ if
+  and only if $F$ has a finite right endpoint $x_F$ and, with $\beta(u) = (x_F - u)/\alpha$,
+  \begin{align*}
+    \lim_{u \uparrow x_F} \; \sup_{x \ge 0} \; \Big| \frac{\overline{F}(u + \beta(u) x)}{\overline{F}(u)}
+      - \overline{G}_{-1/\alpha, 1}(x) \Big| \; = \; 0
+  \end{align*}
+  [EKM, Theorem~3.4.13(b)].
+\end{theorem}
+\begin{proof}
+  \leanok
+  By Gnedenko's theorem (Theorem~\ref{thm:mda-weibull-iff}), membership is equivalent to a finite
+  right endpoint with $t \mapsto \overline{F}(x_F - t^{-1})$ regularly varying with index
+  $-\alpha$. Forward direction: for $0 \le x < \alpha$, put $c = (1 - x/\alpha)^{-1}$ and
+  $t = (x_F - u)^{-1} \to \infty$; then $u + \beta(u) x = x_F - (ct)^{-1}$, so the excess ratio
+  tends to $c^{-\alpha} = (1 - x/\alpha)^\alpha$. For $x \ge \alpha$, $u + \beta(u) x \ge x_F$ and
+  the ratio is $0 = \overline{G}_{-1/\alpha,1}(x)$. Pointwise convergence upgrades to uniform
+  convergence by the Pólya lemma (Lemma~\ref{lem:polya-uniform}) with $c = 0$, using
+  Lemma~\ref{lem:gpd-general-properties}. Conversely, evaluating at $x = \alpha(1 - c^{-1})$ for
+  $c \ge 1$ and composing with $u = x_F - t^{-1}$ gives the ratio limit, and
+  Lemma~\ref{lem:rv-of-one-le} gives regular variation. The supremum form follows from
+  Lemma~\ref{lem:tendsto-iSup-abs-sub}.
+\end{proof}
+
+\begin{theorem}[Pickands--Balkema--de Haan, Gumbel case]
+  \label{thm:pbdh-gumbel}
+  \uses{lem:polya-uniform, lem:gpd-general-properties, lem:tendsto-iSup-abs-sub,
+    thm:mda-gumbel-of-auxiliary}
+  \lean{CumulativeDistributionFunction.tendstoUniformlyOn_excessSurvival_of_auxiliary,
+    CumulativeDistributionFunction.tendsto_sup_excessSurvival_of_auxiliary,
+    CumulativeDistributionFunction.isInMDAGumbel_and_tendstoUniformlyOn_of_auxiliary_atTop,
+    CumulativeDistributionFunction.isInMDAGumbel_and_tendstoUniformlyOn_of_auxiliary_nhdsLT}
+  \leanok
+  Let $L$ be a filter on $\bR$ and $f$ eventually positive along $L$ with
+  $\overline{F}(u + x f(u))/\overline{F}(u) \to e^{-x}$ along $L$ for every $x \ge 0$. Then
+  \begin{align*}
+    \sup_{x \ge 0} \; \Big| \frac{\overline{F}(u + f(u) x)}{\overline{F}(u)} - e^{-x} \Big|
+      \; \to \; 0 \qquad \text{along } L
+  \end{align*}
+  [EKM, Theorem~3.4.13(b)], [dHF, Theorem~1.1.6]. In particular, if $f$ is an auxiliary function
+  for $F$ (as $u \to \infty$ when $x_F = \infty$, or as $u \uparrow x_F$ when $x_F < \infty$), then
+  $F$ is in the Gumbel domain of attraction and the excesses are uniformly approximated by the
+  GPD with $\xi = 0$ and $\beta = f$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  The excess functions $x \mapsto \overline{F}(u + f(u)x)/\overline{F}(u)$ are antitone and
+  nonnegative for $f(u) > 0$, and the limit $\overline{G}_{0,1}(x) = e^{-x}$ is continuous,
+  antitone, and tends to $0$; the Pólya lemma (Lemma~\ref{lem:polya-uniform}) gives uniform
+  convergence. Membership in the Gumbel domain is Theorem~\ref{thm:mda-gumbel-of-auxiliary}.
+\end{proof}
+
+\begin{definition}[Generalized extreme value domain of attraction]
+  \label{def:mda-gev}
+  \uses{def:mda-frechet, def:mda-weibull, def:mda-gumbel}
+  \lean{CumulativeDistributionFunction.IsInMDAGEV}
+  \leanok
+  For $\xi \in \bR$, $F$ is in the maximum domain of attraction of $H_\xi$ if: $\xi > 0$ and
+  $F$ is in the domain of attraction of $\FrechetCDF{1/\xi}$; or $\xi < 0$ and $F$ is in the
+  domain of attraction of $\WeibullCDF{-1/\xi}$; or $\xi = 0$ and $F$ is in the Gumbel domain of
+  attraction.
+\end{definition}
+
+\begin{definition}[The filter $u \uparrow x_F$]
+  \label{def:upper-endpoint-filter}
+  \lean{CumulativeDistributionFunction.upperEndpointFilter,
+    CumulativeDistributionFunction.upperEndpointFilter_eq_atTop,
+    CumulativeDistributionFunction.upperEndpointFilter_eq_nhdsLT}
+  \leanok
+  The filter $u \uparrow x_F$ is generated by the sets $(x, \infty) \cap \set{ y \; | \; F(y) < 1 }$
+  with $F(x) < 1$. It equals the filter $u \to \infty$ if $F < 1$ everywhere, and the filter
+  $u \to x_F^-$ of left neighbourhoods if $F$ has a finite right endpoint $x_F$.
+\end{definition}
+
+\begin{lemma}[Auxiliary functions along $u \uparrow x_F$]
+  \label{lem:auxiliary-upper-endpoint}
+  \uses{def:upper-endpoint-filter, thm:gumbel-necessity, lem:right-endpoint}
+  \lean{CumulativeDistributionFunction.exists_auxiliary_upperEndpointFilter_of_isInMDAGumbel}
+  \leanok
+  If $F$ is in the Gumbel domain of attraction, it has an auxiliary function along the filter
+  $u \uparrow x_F$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Split on whether $F$ reaches $1$ (Lemma~\ref{lem:right-endpoint}), rewrite the filter with
+  Definition~\ref{def:upper-endpoint-filter}, and apply Theorem~\ref{thm:gumbel-necessity}.
+\end{proof}
+
+\begin{theorem}[Pickands--Balkema--de Haan theorem]
+  \label{thm:pbdh-general}
+  \uses{def:mda-gev, def:upper-endpoint-filter, thm:pbdh-frechet-iff, thm:pbdh-weibull-iff,
+    thm:pbdh-gumbel, lem:auxiliary-upper-endpoint}
+  \lean{CumulativeDistributionFunction.exists_tendstoUniformlyOn_excessSurvival_of_isInMDAGEV,
+    CumulativeDistributionFunction.exists_tendstoUniformlyOn_excessSurvival_of_isInMDAGEV'}
+  \leanok
+  If $F$ is in the maximum domain of attraction of $H_\xi$, $\xi \in \bR$, then there is a scale
+  function $\beta$, eventually positive, with
+  \begin{align*}
+    \lim_{u \uparrow x_F} \; \sup_{x \ge 0} \; \Big| \frac{\overline{F}(u + \beta(u) x)}{\overline{F}(u)}
+      - \overline{G}_{\xi, 1}(x) \Big| \; = \; 0
+  \end{align*}
+  [EKM, Theorem~3.4.13(b)], [dHF, Theorem~1.1.6].
+\end{theorem}
+\begin{proof}
+  \leanok
+  For $\xi > 0$ take $\beta(u) = \xi u$ (Theorem~\ref{thm:pbdh-frechet-iff}, with
+  $\alpha = 1/\xi$; here $u \uparrow x_F$ is $u \to \infty$ since Fréchet membership forces
+  $F < 1$). For $\xi < 0$ take $\beta(u) = -\xi (x_F - u)$ (Theorem~\ref{thm:pbdh-weibull-iff},
+  with $\alpha = -1/\xi$). For $\xi = 0$ take $\beta = f$ an auxiliary function along
+  $u \uparrow x_F$ and apply Theorem~\ref{thm:pbdh-gumbel}. The first Lean form assumes the
+  auxiliary function in the case $\xi = 0$; the unconditional form supplies it by
+  Lemma~\ref{lem:auxiliary-upper-endpoint}.
 \end{proof}

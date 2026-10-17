@@ -1,0 +1,434 @@
+\chapter{Stable laws and the generalized central limit theorem}
+\label{chap:stable-laws}
+
+A probability measure $\mu$ on $\bR$ is \emph{stable} if sums of i.i.d.\ copies of $X \sim \mu$
+have, up to an affine change, the law of $X$. Stable laws are exactly the possible limits of
+normalized sums of i.i.d.\ random variables, and for heavy-tailed summands with regularly varying
+tails the limit is non-Gaussian. We follow Feller, \emph{An Introduction to Probability Theory
+and Its Applications}, Vol.~II (2nd ed., Wiley, 1971) [Feller]; Gnedenko and Kolmogorov,
+\emph{Limit Distributions for Sums of Independent Random Variables} (1954) [GK]; Samorodnitsky
+and Taqqu, \emph{Stable Non-Gaussian Random Processes} (1994) [ST]; and [EKM, \S2.2].
+
+We write $\varphi_\mu(t) = \int e^{itx} \, \ud \mu(x)$ for the characteristic function and
+$\mu^{*n}$ for the convolution power (Definition~\ref{def:convPow}).
+
+\section{Stable and symmetric stable laws}
+
+\begin{lemma}[Characteristic functions of convolution powers and affine images]
+  \label{lem:charfun-convpow}
+  \uses{def:convPow}
+  \lean{ExtremeValueTheory.charFun_convPow, ExtremeValueTheory.charFun_map_mul_add,
+    ExtremeValueTheory.ne_dirac_of_norm_charFun_lt_one}
+  \leanok
+  For a probability measure $\mu$, $\varphi_{\mu^{*n}} = \varphi_\mu^n$, and the law of $aX + b$,
+  $X \sim \mu$, has characteristic function $t \mapsto \varphi_\mu(a t) \, e^{i b t}$. A measure
+  whose characteristic function has modulus $< 1$ somewhere is not a Dirac mass.
+\end{lemma}
+\begin{proof}
+  \leanok
+  The characteristic function of a convolution is the product of the characteristic functions;
+  induct on $n$. The affine formula is a change of variables. A Dirac mass $\delta_x$ has
+  $|\varphi(t)| = |e^{itx}| = 1$.
+\end{proof}
+
+\begin{lemma}[Characteristic function criterion]
+  \label{lem:convpow-eq-map-of-charfun}
+  \uses{lem:charfun-convpow}
+  \lean{ExtremeValueTheory.convPow_eq_map_of_charFun}
+  \leanok
+  If $\varphi_\mu(t)^n = \varphi_\mu(a t) \, e^{i b t}$ for all $t$, then $\mu^{*n}$ is the law
+  of $aX + b$, $X \sim \mu$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Both sides are finite measures with the same characteristic function
+  (Lemma~\ref{lem:charfun-convpow}), and characteristic functions determine finite measures.
+\end{proof}
+
+\begin{definition}[Stable and strictly stable laws]
+  \label{def:stable}
+  \lean{ExtremeValueTheory.IsStable, ExtremeValueTheory.IsStrictlyStable,
+    ExtremeValueTheory.IsStrictlyStable.isStable}
+  \leanok
+  A probability measure $\mu$ on $\bR$ is \emph{stable} if it is not a Dirac mass and for every
+  $n \ge 1$ there are $a_n > 0$, $b_n \in \bR$ with $\mu^{*n} = \mathrm{law}(a_n X + b_n)$,
+  $X \sim \mu$ [Feller, \S VI.1], [GK, \S33], [ST, Definition~1.1.4]. It is \emph{strictly
+  stable} if one can take $b_n = 0$. Strictly stable laws are stable.
+\end{definition}
+
+\begin{proposition}[Gaussian laws are stable]
+  \label{prop:gaussian-stable}
+  \uses{def:stable, lem:convpow-eq-map-of-charfun}
+  \lean{ExtremeValueTheory.norm_charFun_gaussianReal_one_lt, ExtremeValueTheory.isStable_gaussianReal,
+    ExtremeValueTheory.isStrictlyStable_gaussianReal}
+  \leanok
+  For $v > 0$, the Gaussian law $N(m, v)$ is stable, with
+  $N(m, v)^{*n} = \mathrm{law}\big( \sqrt{n} X + (n - \sqrt{n}) m \big)$, and $N(0, v)$ is
+  strictly stable.
+\end{proposition}
+\begin{proof}
+  \leanok
+  With $\varphi(t) = e^{imt - vt^2/2}$ one checks $\varphi(t)^n = \varphi(\sqrt{n} t) \,
+  e^{i (n - \sqrt n) m t}$ and applies Lemma~\ref{lem:convpow-eq-map-of-charfun}; $|\varphi(1)| =
+  e^{-v/2} < 1$ excludes Dirac masses.
+\end{proof}
+
+\begin{definition}[Symmetric $\alpha$-stable laws]
+  \label{def:symm-stable}
+  \lean{ExtremeValueTheory.IsSymmStable, ExtremeValueTheory.IsSymmStable.isProbabilityMeasure',
+    ExtremeValueTheory.IsSymmStable.charFun_eq}
+  \leanok
+  A probability measure $\mu$ on $\bR$ is \emph{symmetric $\alpha$-stable with constant $c$},
+  written $S\alpha S(c)$, if $\varphi_\mu(t) = \exp(-c |t|^\alpha)$ for all $t$
+  [ST, (1.2.3)], [Feller, \S XVII.4], [EKM, \S2.2].
+\end{definition}
+
+\begin{lemma}[Closure properties of symmetric stable laws]
+  \label{lem:symm-stable-closure}
+  \uses{def:symm-stable, lem:charfun-convpow}
+  \lean{ExtremeValueTheory.IsSymmStable.unique, ExtremeValueTheory.IsSymmStable.conv,
+    ExtremeValueTheory.IsSymmStable.map_mul, ExtremeValueTheory.IsSymmStable.map_neg,
+    ExtremeValueTheory.IsSymmStable.convPow}
+  \leanok
+  An $S\alpha S(c)$ law is determined by $(\alpha, c)$. If $\mu$ is $S\alpha S(c)$ and $\nu$ is
+  $S\alpha S(d)$, then $\mu * \nu$ is $S\alpha S(c + d)$, $\mu^{*n}$ is $S\alpha S(nc)$, the law
+  of $rX$ is $S\alpha S(c |r|^\alpha)$, and the law of $-X$ is $\mu$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Characteristic functions determine laws; multiply characteristic functions for convolutions
+  and use $\varphi_{rX}(t) = \varphi_X(rt)$ (Lemma~\ref{lem:charfun-convpow}).
+\end{proof}
+
+\begin{theorem}[Symmetric stable laws are strictly stable]
+  \label{thm:symm-stable-strictly-stable}
+  \uses{lem:symm-stable-closure, lem:convpow-eq-map-of-charfun, def:stable}
+  \lean{ExtremeValueTheory.IsSymmStable.isStrictlyStable, ExtremeValueTheory.IsSymmStable.isStable,
+    ExtremeValueTheory.isSymmStable_gaussianReal}
+  \leanok
+  For $\alpha > 0$ and $c > 0$, an $S\alpha S(c)$ law is strictly stable with
+  $a_n = n^{1/\alpha}$ [Feller, \S VI.1], [ST, Theorem~1.1.3]. The centred Gaussian $N(0, v)$ is
+  $S2S(v/2)$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  $\exp(-c|t|^\alpha)^n = \exp(-c |n^{1/\alpha} t|^\alpha)$, so
+  Lemma~\ref{lem:convpow-eq-map-of-charfun} applies with $b = 0$; $|\varphi(1)| = e^{-c} < 1$.
+  For the Gaussian, $\varphi(t) = e^{-v t^2/2}$.
+\end{proof}
+
+\section{The Cauchy law}
+
+\begin{lemma}[Fourier transform of $e^{-2\pi|v|}$]
+  \label{lem:fourier-exp-abs}
+  \lean{ExtremeValueTheory.CauchyCharFun.expAbs, ExtremeValueTheory.CauchyCharFun.kernel_Ioi,
+    ExtremeValueTheory.CauchyCharFun.kernel_Iic, ExtremeValueTheory.CauchyCharFun.re_neg,
+    ExtremeValueTheory.CauchyCharFun.re_pos, ExtremeValueTheory.CauchyCharFun.integrableOn_Ioi,
+    ExtremeValueTheory.CauchyCharFun.integrableOn_Iic, ExtremeValueTheory.CauchyCharFun.integrable_expAbs,
+    ExtremeValueTheory.CauchyCharFun.continuous_expAbs, ExtremeValueTheory.CauchyCharFun.fourier_expAbs,
+    ExtremeValueTheory.CauchyCharFun.integral_cexp_mul_cauchyPDFReal}
+  \leanok
+  With the normalization $\hat f(w) = \int e^{-2\pi i v w} f(v) \, \ud v$, the Fourier transform of
+  $v \mapsto e^{-2\pi |v|}$ is the standard Cauchy density $w \mapsto 1/(\pi(1 + w^2))$.
+  Consequently $\int e^{itw} \, \frac{\ud w}{\pi(1 + w^2)} = e^{-|t|}$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Split the integral at $0$; on each half-line the integrand is a complex exponential
+  $e^{z v}$ with $\mathrm{Re}\, z$ of the right sign, and
+  $\frac{1}{2\pi(1 + iw)} + \frac{1}{2\pi(1 - iw)} = \frac{1}{\pi(1 + w^2)}$. The second claim
+  follows by Fourier inversion, $e^{-2\pi|v|}$ being continuous and integrable.
+\end{proof}
+
+\begin{theorem}[The Cauchy law is stable]
+  \label{thm:cauchy-stable}
+  \uses{lem:fourier-exp-abs, lem:convpow-eq-map-of-charfun, def:stable, def:symm-stable}
+  \lean{ExtremeValueTheory.charFun_cauchyMeasure, ExtremeValueTheory.norm_charFun_cauchyMeasure_one_lt,
+    ExtremeValueTheory.isStrictlyStable_cauchyMeasure, ExtremeValueTheory.isStable_cauchyMeasure,
+    ExtremeValueTheory.isSymmStable_cauchyMeasure}
+  \leanok
+  The Cauchy law with location $x_0$ and scale $\gamma$ (density
+  $\gamma/(\pi((x - x_0)^2 + \gamma^2))$) has characteristic function
+  $\varphi(t) = \exp(i t x_0 - \gamma |t|)$ [Feller, \S XV.2]. For $\gamma \ne 0$ it is strictly
+  stable with $a_n = n$, i.e.\ $(X_1 + \cdots + X_n)/n \sim X_1$, and $\mathrm{Cauchy}(0, \gamma)$
+  is $S1S(\gamma)$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  The characteristic function follows from Lemma~\ref{lem:fourier-exp-abs} by an affine change
+  of variables. Then $\varphi(t)^n = \varphi(nt)$ and Lemma~\ref{lem:convpow-eq-map-of-charfun}
+  applies; $|\varphi(1)| = e^{-\gamma} < 1$.
+\end{proof}
+
+\section{Lévy's continuity theorem}
+
+\begin{theorem}[Lévy's continuity theorem]
+  \label{thm:levy-continuity}
+  \lean{ExtremeValueTheory.continuous_charFun_probabilityMeasure,
+    ExtremeValueTheory.exists_tendsto_of_tendsto_charFun}
+  \leanok
+  Let $\mu_n$ be probability measures on a finite-dimensional real inner product space whose
+  characteristic functions converge pointwise to a function $f$ that is continuous at $0$. Then
+  there is a probability measure $\nu$ with $\varphi_\nu = f$, and $\mu_n \to \nu$ weakly
+  [Feller, \S XV.3, Theorem~2].
+\end{theorem}
+\begin{proof}
+  \leanok
+  By the tightness criterion (pointwise convergence of characteristic functions to a function
+  continuous at $0$ implies tightness) and Prokhorov's theorem, the closure of
+  $\set{\mu_n}$ is compact in the weak topology, so the sequence has a cluster point $\nu$. Since
+  $\nu \mapsto \varphi_\nu(t)$ is continuous for the weak topology, $\varphi_\nu = f$. Lévy's
+  convergence theorem with known limit then gives $\mu_n \to \nu$.
+\end{proof}
+
+\section{The stable constant}
+
+\begin{lemma}[Elementary integral bounds]
+  \label{lem:stable-integral-bounds}
+  \lean{ExtremeValueTheory.StableIntegral.one_sub_cos_nonneg,
+    ExtremeValueTheory.StableIntegral.one_sub_cos_le_two,
+    ExtremeValueTheory.StableIntegral.one_sub_cos_le_sq,
+    ExtremeValueTheory.StableIntegral.abs_sin_mul_rpow_le,
+    ExtremeValueTheory.StableIntegral.one_sub_cos_mul_rpow_le,
+    ExtremeValueTheory.StableIntegral.one_sub_cos_mul_rpow_nonneg,
+    ExtremeValueTheory.StableIntegral.intervalIntegrable_rpow_one_sub,
+    ExtremeValueTheory.StableIntegral.intervalIntegrable_sin_mul_rpow,
+    ExtremeValueTheory.StableIntegral.intervalIntegrable_one_sub_cos_mul_rpow,
+    ExtremeValueTheory.StableIntegral.integrableOn_one_sub_cos_mul_rpow,
+    ExtremeValueTheory.StableIntegral.integral_one_sub_cos_mul_rpow}
+  \leanok
+  $0 \le 1 - \cos x \le \min(2, x^2/2)$ and $|t \sin(tu) u^{-\alpha}| \le t^2 u^{1-\alpha}$ for
+  $u > 0$. For $0 < \alpha < 2$, $u \mapsto (1 - \cos(tu)) u^{-\alpha-1}$ is integrable on
+  $(0, \infty)$ and
+  \begin{align*}
+    \int_0^\infty (1 - \cos(tu)) \, u^{-\alpha-1} \, \ud u \; = \;
+    |t|^\alpha \int_0^\infty (1 - \cos u) \, u^{-\alpha-1} \, \ud u .
+  \end{align*}
+\end{lemma}
+\begin{proof}
+  \leanok
+  Near $0$ the integrand is bounded by $\frac{t^2}{2} u^{1-\alpha}$, integrable since $\alpha < 2$;
+  near $\infty$ by $2 u^{-\alpha-1}$, integrable since $\alpha > 0$. The scaling identity is the
+  substitution $u \mapsto u/|t|$ (and evenness of $\cos$).
+\end{proof}
+
+\begin{definition}[The stable constant]
+  \label{def:stable-const}
+  \uses{lem:stable-integral-bounds}
+  \lean{ExtremeValueTheory.StableIntegral.stableConst, ExtremeValueTheory.StableIntegral.stableConst_pos}
+  \leanok
+  For $0 < \alpha < 2$ let $C_\alpha = \alpha \int_0^\infty (1 - \cos u) \, u^{-\alpha-1} \, \ud u$
+  [Feller, \S XVII.4]. Then $C_\alpha > 0$. (Classically $C_\alpha = \Gamma(1-\alpha)
+  \cos(\pi\alpha/2)$ for $\alpha \ne 1$ and $C_1 = \pi/2$; only positivity is used.)
+\end{definition}
+
+\begin{lemma}[Integration by parts]
+  \label{lem:stable-integral-by-parts}
+  \uses{def:stable-const, lem:stable-integral-bounds}
+  \lean{ExtremeValueTheory.StableIntegral.intervalIntegral_sin_mul_rpow_eq,
+    ExtremeValueTheory.StableIntegral.tendsto_intervalIntegral_sin_mul_rpow}
+  \leanok
+  For $\alpha < 2$ and $M > 0$,
+  \begin{align*}
+    \int_0^M t \sin(tu) \, u^{-\alpha} \, \ud u \; = \; (1 - \cos(tM)) M^{-\alpha}
+      + \alpha \int_0^M (1 - \cos(tu)) \, u^{-\alpha-1} \, \ud u ,
+  \end{align*}
+  and for $0 < \alpha < 2$ this tends to $C_\alpha |t|^\alpha$ as $M \to \infty$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Integrate by parts on $[\eps, M]$ with $\frac{\ud}{\ud u}(1 - \cos(tu)) = t \sin(tu)$, and let
+  $\eps \to 0$ using $(1 - \cos(t\eps))\eps^{-\alpha} \le \frac{t^2}{2} \eps^{2-\alpha} \to 0$.
+  As $M \to \infty$, the boundary term is at most $2 M^{-\alpha} \to 0$, and
+  Lemma~\ref{lem:stable-integral-bounds} identifies the limit of the integral.
+\end{proof}
+
+\section{The generalized central limit theorem}
+
+\begin{definition}[Two-sided tail]
+  \label{def:abs-tail}
+  \lean{ExtremeValueTheory.absTail, ExtremeValueTheory.GCLT.measurableSet_abs_gt,
+    ExtremeValueTheory.GCLT.absTail_antitone, ExtremeValueTheory.GCLT.absTail_le_one}
+  \leanok
+  The two-sided tail of a measure $\mu$ on $\bR$ is $G(x) = \mu\set{ y \; | \; |y| > x }$, i.e.\
+  $G(x) = \PR[|X| > x]$ for $X \sim \mu$. It is antitone, and at most $1$ for a probability
+  measure.
+\end{definition}
+
+\begin{lemma}[Layer cake formula and truncation]
+  \label{lem:gclt-layer-cake}
+  \uses{def:abs-tail}
+  \lean{ExtremeValueTheory.GCLT.integrable_one_sub_cos, ExtremeValueTheory.GCLT.integral_one_sub_cos_min,
+    ExtremeValueTheory.GCLT.abs_integral_sub_le}
+  \leanok
+  For $a, M > 0$,
+  \begin{align*}
+    \int \big( 1 - \cos(t \min(|x|/a, M)) \big) \, \ud \mu(x) \; = \;
+      \int_0^M t \sin(tu) \, G(au) \, \ud u ,
+  \end{align*}
+  and replacing $\min(|x|/a, M)$ by $|x|/a$ changes the left side by at most $2 G(aM)$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Write $1 - \cos(t s) = \int_0^s t \sin(tu) \, \ud u$ and apply Fubini. The two integrands differ
+  only on $\set{|x| > aM}$, where both lie in $[0, 2]$.
+\end{proof}
+
+\begin{lemma}[Normalizing sequences and Potter domination]
+  \label{lem:gclt-domination}
+  \uses{def:regularly-varying, thm:rv-potter-monotone}
+  \lean{ExtremeValueTheory.GCLT.tendsto_atTop_of_tendsto_mul, ExtremeValueTheory.GCLT.tendsto_mul_comp_mul,
+    ExtremeValueTheory.GCLT.eventually_mul_comp_mul_le}
+  \leanok
+  Let $G$ be antitone, positive, at most $1$, and regularly varying with index $-\alpha$,
+  $\alpha > 0$, and let $n \, G(a_n) \to 1$. Then $a_n \to \infty$,
+  $n \, G(a_n u) \to u^{-\alpha}$ for every $u > 0$, and for every $\delta > 0$ there is $K$ such
+  that eventually $n \, G(a_n u) \le K (u^{-\alpha-\delta} + u^{-\alpha+\delta})$ for all
+  $u > 0$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  If $a_n$ did not tend to $\infty$, then $n \, G(a_n) \ge n \, G(A) \to \infty$ along a
+  subsequence. Then $n \, G(a_n u) = n \, G(a_n) \cdot G(a_n u)/G(a_n) \to u^{-\alpha}$. The
+  domination follows from the Potter bounds (Theorem~\ref{thm:rv-potter-monotone}) for
+  $a_n u$ large, and from $G \le 1$ together with $n \approx 1/G(a_n)$ for $a_n u$ bounded.
+\end{proof}
+
+\begin{lemma}[Dominated convergence on $(0, M)$]
+  \label{lem:gclt-dominated}
+  \uses{lem:gclt-domination, lem:stable-integral-bounds}
+  \lean{ExtremeValueTheory.GCLT.tendsto_setIntegral_sin_mul}
+  \leanok
+  Under the hypotheses of Lemma~\ref{lem:gclt-domination} with $\alpha < 2$, for every $t$ and
+  $M > 0$,
+  $\int_0^M t \sin(tu) \, n \, G(a_n u) \, \ud u \to \int_0^M t \sin(tu) \, u^{-\alpha} \, \ud u$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Choose $\delta > 0$ with $\alpha + \delta < 2$. Since $|t \sin(tu)| \le t^2 u$, the integrands
+  are dominated by $K t^2 (u^{1-\alpha-\delta} + u^{1-\alpha+\delta})$, integrable on $(0, M)$;
+  apply dominated convergence.
+\end{proof}
+
+\begin{lemma}[An approximation argument]
+  \label{lem:gclt-approx}
+  \lean{ExtremeValueTheory.GCLT.tendsto_of_approx}
+  \leanok
+  Suppose $|L_n - I_M(n)| \le R_M(n)$ for all $M > 0$ and $n$, with $I_M(n) \to J(M)$ and
+  $R_M(n) \to r(M)$ as $n \to \infty$, $J(M) \to c$ and $r(M) \to 0$ as $M \to \infty$. Then
+  $L_n \to c$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Given $\eps > 0$, choose $M$ with $|J(M) - c| < \eps/4$ and $r(M) < \eps/4$; then eventually
+  $|L_n - c| < \eps$.
+\end{proof}
+
+\begin{theorem}[Tauberian step]
+  \label{thm:gclt-tauberian}
+  \uses{lem:gclt-layer-cake, lem:gclt-domination, lem:gclt-dominated, lem:gclt-approx,
+    lem:stable-integral-by-parts, def:stable-const}
+  \lean{ExtremeValueTheory.GCLT.tendsto_mul_integral_one_sub_cos}
+  \leanok
+  Let $\mu$ be a probability measure whose two-sided tail $G$ is regularly varying with index
+  $-\alpha$, $0 < \alpha < 2$, and let $a_n > 0$ with $n \, G(a_n) \to 1$. Then for every $t$,
+  \begin{align*}
+    n \int \big( 1 - \cos(t x / a_n) \big) \, \ud \mu(x) \; \to \; C_\alpha |t|^\alpha
+  \end{align*}
+  [Feller, \S XVII.5], [GK, \S35]. No symmetry is needed.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Apply Lemma~\ref{lem:gclt-approx} with $L_n$ the left side, $I_M(n) = n \int_0^M t \sin(tu) \,
+  G(a_n u) \, \ud u$ (Lemma~\ref{lem:gclt-layer-cake}) and $R_M(n) = 2 n \, G(a_n M)$. Then
+  $I_M(n) \to \int_0^M t \sin(tu) \, u^{-\alpha} \, \ud u =: J(M)$ by
+  Lemma~\ref{lem:gclt-dominated}, $R_M(n) \to 2 M^{-\alpha} \to 0$ by
+  Lemma~\ref{lem:gclt-domination}, and $J(M) \to C_\alpha |t|^\alpha$ by
+  Lemma~\ref{lem:stable-integral-by-parts}.
+\end{proof}
+
+\begin{lemma}[Characteristic function of normalized sums]
+  \label{lem:gclt-charfun}
+  \uses{thm:gclt-tauberian, lem:charfun-convpow}
+  \lean{ExtremeValueTheory.GCLT.charFun_eq_integral_cos, ExtremeValueTheory.GCLT.tendsto_charFun_map_convPow,
+    ExtremeValueTheory.charFun_map_mul_sum}
+  \leanok
+  For a symmetric law $\mu$, $\varphi_\mu(s) = \int \cos(sx) \, \ud \mu(x)$ is real. Under the
+  hypotheses of Theorem~\ref{thm:gclt-tauberian} with $\mu$ symmetric, the law of
+  $(X_1 + \cdots + X_n)/a_n$ has characteristic function
+  $\varphi_\mu(t/a_n)^n \to \exp(-C_\alpha |t|^\alpha)$. For i.i.d.\ random variables,
+  $\varphi_{c(X_0 + \cdots + X_{n-1})}(t) = \varphi_{X_0}(ct)^n$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Symmetry kills the imaginary part. Write $\varphi_\mu(t/a_n) = 1 + g_n$ with
+  $n g_n = -n \int (1 - \cos(tx/a_n)) \, \ud \mu \to -C_\alpha|t|^\alpha$ by
+  Theorem~\ref{thm:gclt-tauberian}; then $(1 + g_n)^n \to \exp(-C_\alpha|t|^\alpha)$. The
+  characteristic function of the normalized sum is computed with Lemma~\ref{lem:charfun-convpow}
+  and independence.
+\end{proof}
+
+\begin{theorem}[Generalized central limit theorem, symmetric case]
+  \label{thm:gclt}
+  \uses{lem:gclt-charfun, thm:levy-continuity, def:symm-stable, def:stable-const,
+    def:convergence-in-distribution}
+  \lean{ExtremeValueTheory.tendsto_map_convPow_of_isRegularlyVarying,
+    ExtremeValueTheory.tendstoInDistribution_inv_mul_sum_of_isRegularlyVarying}
+  \leanok
+  Let $\mu$ be a symmetric probability law on $\bR$ whose two-sided tail $G(x) = \PR[|X| > x]$ is
+  regularly varying with index $-\alpha$, $0 < \alpha < 2$, and let $a_n > 0$ with
+  $n \, G(a_n) \to 1$. Then there is a probability measure $\nu$, symmetric $\alpha$-stable with
+  constant $C_\alpha$, such that the laws of $(X_1 + \cdots + X_n)/a_n$ converge weakly to
+  $\nu$. Equivalently, for i.i.d.\ $X_0, X_1, \ldots$ with law $\mu$ and $Y \sim S\alpha S(C_\alpha)$,
+  \begin{align*}
+    \frac{X_0 + \cdots + X_{n-1}}{a_n} \; \tendsinlaw \; Y
+  \end{align*}
+  [Feller, \S XVII.5, Theorem~2], [GK, \S35, Theorem~2], [EKM, Theorem~2.2.8].
+\end{theorem}
+\begin{proof}
+  \leanok
+  By Lemma~\ref{lem:gclt-charfun}, the characteristic functions converge pointwise to
+  $\exp(-C_\alpha|t|^\alpha)$, which is continuous. Lévy's continuity theorem
+  (Theorem~\ref{thm:levy-continuity}) produces the limit $\nu$ with this characteristic function
+  and the weak convergence; in particular, the limit exists without assuming the existence of
+  stable laws. The random-variable form follows from the formula for characteristic functions of
+  normalized i.i.d.\ sums in Lemma~\ref{lem:gclt-charfun} and uniqueness of $S\alpha S$ laws
+  (Lemma~\ref{lem:symm-stable-closure}).
+\end{proof}
+
+\begin{lemma}[Symmetrized Pareto law]
+  \label{lem:symm-pareto}
+  \uses{def:abs-tail, def:regularly-varying}
+  \lean{ExtremeValueTheory.SymmPareto.law, ExtremeValueTheory.SymmPareto.pareto_Ioi,
+    ExtremeValueTheory.SymmPareto.pareto_Iio_one, ExtremeValueTheory.SymmPareto.isProbabilityMeasure,
+    ExtremeValueTheory.SymmPareto.map_neg, ExtremeValueTheory.SymmPareto.absTail_eq,
+    ExtremeValueTheory.SymmPareto.isRegularlyVarying, ExtremeValueTheory.SymmPareto.tendsto_mul_absTail}
+  \leanok
+  For $\alpha > 0$, the symmetrized Pareto law $\frac{1}{2}\big( \mathrm{Pareto}(1, \alpha) +
+  \mathrm{law}(-X) \big)$ is a symmetric probability measure with $\PR[|X| > x] = x^{-\alpha}$ for
+  $x \ge 1$; its two-sided tail is regularly varying with index $-\alpha$, and
+  $a_n = (n + 1)^{1/\alpha}$ satisfies $n \, G(a_n) \to 1$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  The Pareto law has $\PR[X > x] = x^{-\alpha}$ for $x \ge 1$ and no mass below $1$; then
+  $n \, G(a_n) = n/(n + 1) \to 1$.
+\end{proof}
+
+\begin{theorem}[Existence of symmetric stable laws]
+  \label{thm:exists-symm-stable}
+  \uses{thm:gclt, lem:symm-pareto, lem:symm-stable-closure, def:stable-const,
+    thm:symm-stable-strictly-stable}
+  \lean{ExtremeValueTheory.exists_isSymmStable_stableConst, ExtremeValueTheory.exists_isSymmStable}
+  \leanok
+  For every $0 < \alpha \le 2$ and $c \ge 0$ there is a probability measure on $\bR$ with
+  characteristic function $t \mapsto \exp(-c |t|^\alpha)$ [Feller, \S XVII.4], [ST, \S1.1].
+\end{theorem}
+\begin{proof}
+  \leanok
+  For $\alpha < 2$, the generalized central limit theorem (Theorem~\ref{thm:gclt}) applied to the
+  symmetrized Pareto law (Lemma~\ref{lem:symm-pareto}) yields an $S\alpha S(C_\alpha)$ law;
+  scaling by $r = (c/C_\alpha)^{1/\alpha}$ (Lemma~\ref{lem:symm-stable-closure}, using
+  $C_\alpha > 0$) gives constant $c$. For $\alpha = 2$, take the Gaussian $N(0, 2c)$
+  (Theorem~\ref{thm:symm-stable-strictly-stable}).
+\end{proof}
