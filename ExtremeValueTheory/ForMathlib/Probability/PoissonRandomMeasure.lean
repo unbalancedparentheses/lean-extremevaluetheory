@@ -154,7 +154,7 @@ lemma measurable_sumDiracRange :
     (measurable_one.indicator hA).comp (measurable_pi_apply k)
 
 /-- The expectation of `∏_{k < n} g (Z k)` for an i.i.d. sequence `Z` with law `μ`. -/
-lemma integral_prod_range_infinitePi {g : E → ℂ} (hg : Measurable g) (n : ℕ) :
+lemma integral_prod_range_infinitePi {𝕜 : Type*} [RCLike 𝕜] {g : E → 𝕜} (hg : Measurable g) (n : ℕ) :
     ∫ z, ∏ k ∈ range n, g (z k) ∂(Measure.infinitePi fun _ : ℕ ↦ μ) = (∫ x, g x ∂μ) ^ n := by
   have := integral_restrict_infinitePi (μ := fun _ : ℕ ↦ μ) (s := range n)
     (f := fun y ↦ ∏ k : range n, g (y k)) ?_
