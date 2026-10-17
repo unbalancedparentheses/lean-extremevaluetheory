@@ -92,4 +92,205 @@ theorem ext_of_forall_integral_prod_pow_eq {μ ν : Measure (Fin k → I)} [IsFi
 
 end Moments
 
+/-! ### `exp (-a)` on `[0, ∞]` -/
+
+section ExpNeg
+
+lemma ereal_exp_neg_coe_add (a b : ℝ≥0∞) :
+    EReal.exp (-((a + b : ℝ≥0∞) : EReal)) =
+      EReal.exp (-(a : EReal)) * EReal.exp (-(b : EReal)) := by
+  rcases eq_or_ne a ∞ with rfl | ha
+  · simp
+  rcases eq_or_ne b ∞ with rfl | hb
+  · simp
+  rw [ereal_exp_neg_coe_of_ne_top (ENNReal.add_ne_top.2 ⟨ha, hb⟩), ereal_exp_neg_coe_of_ne_top ha,
+    ereal_exp_neg_coe_of_ne_top hb, ← ENNReal.ofReal_mul (Real.exp_pos _).le, ← Real.exp_add,
+    ENNReal.toReal_add ha hb, neg_add]
+
+lemma ereal_exp_neg_coe_sum {ι : Type*} (s : Finset ι) (f : ι → ℝ≥0∞) :
+    EReal.exp (-((∑ i ∈ s, f i : ℝ≥0∞) : EReal)) = ∏ i ∈ s, EReal.exp (-(f i : EReal)) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simp
+  | insert i s hi ih =>
+    rw [Finset.sum_insert hi, Finset.prod_insert hi, ereal_exp_neg_coe_add, ih]
+
+lemma ereal_exp_neg_coe_nat_mul (n : ℕ) (a : ℝ≥0∞) :
+    EReal.exp (-((n * a : ℝ≥0∞) : EReal)) = EReal.exp (-(a : EReal)) ^ n := by
+  induction n with
+  | zero => simp
+  | succ n ih => rw [Nat.cast_succ, add_mul, one_mul, ereal_exp_neg_coe_add, ih, pow_succ]
+
+end ExpNeg
+
+/-! ### Uniqueness of the law of a random measure -/
+
+section Uniqueness
+
+variable {Ω Ω' E : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  [MeasurableSpace E] {P : Measure Ω} {P' : Measure Ω'} {N : Ω → Measure E}
+  {N' : Ω' → Measure E}
+
+/-- The map `v ↦ (exp (-v i))_i` from `[0, ∞] ^ k` to the cube `[0, 1] ^ k`. -/
+noncomputable def expNegCube {k : ℕ} (v : Fin k → ℝ≥0∞) : Fin k → I := fun i ↦
+  ⟨(EReal.exp (-(v i : EReal))).toReal, ENNReal.toReal_nonneg,
+    ENNReal.toReal_le_of_le_ofReal zero_le_one
+      (by rw [ENNReal.ofReal_one]; exact ereal_exp_neg_coe_le_one _)⟩
+
+lemma measurable_expNegCube {k : ℕ} : Measurable (expNegCube (k := k)) := by
+  refine Measurable.of_eval fun i ↦ Measurable.subtype_mk ?_
+  exact ENNReal.measurable_toReal.comp
+    (continuous_ereal_exp_neg_coe.measurable.comp (measurable_pi_apply i))
+
+/-- A measurable left inverse of `expNegCube`. -/
+noncomputable def logCube {k : ℕ} (y : Fin k → I) : Fin k → ℝ≥0∞ := fun i ↦
+  if (y i : ℝ) = 0 then ∞ else ENNReal.ofReal (-Real.log (y i))
+
+lemma measurable_logCube {k : ℕ} : Measurable (logCube (k := k)) := by
+  refine Measurable.of_eval fun i ↦ Measurable.ite ?_ measurable_const ?_
+  · exact (measurable_subtype_coe.comp (measurable_pi_apply i)) (measurableSet_singleton 0)
+  · exact ENNReal.measurable_ofReal.comp
+      (Real.measurable_log.comp (measurable_subtype_coe.comp (measurable_pi_apply i))).neg
+
+lemma logCube_expNegCube {k : ℕ} (v : Fin k → ℝ≥0∞) : logCube (expNegCube v) = v := by
+  ext1 i
+  have hval : ((expNegCube v i : I) : ℝ) = (EReal.exp (-(v i : EReal))).toReal := rfl
+  show (if ((expNegCube v i : I) : ℝ) = 0 then ∞
+    else ENNReal.ofReal (-Real.log (expNegCube v i))) = v i
+  rcases eq_or_ne (v i) ∞ with h | h
+  · have h0 : ((expNegCube v i : I) : ℝ) = 0 := by rw [hval, h]; simp
+    simp only [h0, ite_true, h]
+  · have hpos : 0 < (EReal.exp (-(v i : EReal))).toReal := by
+      rw [ereal_exp_neg_coe_of_ne_top h, ENNReal.toReal_ofReal (Real.exp_pos _).le]
+      exact Real.exp_pos _
+    have hne : ¬ ((expNegCube v i : I) : ℝ) = 0 := by rw [hval]; exact hpos.ne'
+    simp only [hne, ite_false]
+    rw [hval, ereal_exp_neg_coe_of_ne_top h,
+      ENNReal.toReal_ofReal (Real.exp_pos _).le, Real.log_exp, neg_neg, ENNReal.ofReal_toReal h]
+
+/-- The moments of the law of `(exp (-M (A i)))_i` are values of the Laplace functional of the
+random measure `M`. -/
+lemma integral_prod_pow_map_expNegCube {Ω₀ : Type*} {mΩ₀ : MeasurableSpace Ω₀} (Q : Measure Ω₀)
+    [IsProbabilityMeasure Q] {M : Ω₀ → Measure E} (hM : Measurable M) {k : ℕ}
+    {A : Fin k → Set E} (hA : ∀ i, MeasurableSet (A i)) (a : Fin k → ℕ) :
+    ∫ y, ∏ i, (y i : ℝ) ^ a i ∂(Q.map (expNegCube ∘ fun ω i ↦ M ω (A i))) =
+      (∫⁻ ω, EReal.exp (-((∑ i, a i * M ω (A i) : ℝ≥0∞) : EReal)) ∂Q).toReal := by
+  have hW : Measurable fun ω (i : Fin k) ↦ M ω (A i) :=
+    Measurable.of_eval fun i ↦ (Measure.measurable_coe (hA i)).comp hM
+  have hg : Measurable fun y : Fin k → I ↦ ∏ i, (y i : ℝ) ^ a i :=
+    Finset.measurable_prod _ fun i _ ↦
+      (measurable_subtype_coe.comp (measurable_pi_apply i)).pow_const _
+  rw [integral_map (measurable_expNegCube.comp hW).aemeasurable hg.aestronglyMeasurable,
+    ← integral_toReal]
+  · congr 1
+    ext ω
+    rw [ereal_exp_neg_coe_sum, ENNReal.toReal_prod]
+    refine Finset.prod_congr rfl fun i _ ↦ ?_
+    rw [ereal_exp_neg_coe_nat_mul, ENNReal.toReal_pow]
+    rfl
+  · exact (continuous_ereal_exp_neg_coe.measurable.comp (Finset.measurable_sum _ fun i _ ↦
+      ((measurable_pi_apply i).comp hW).const_mul _)).aemeasurable
+  · exact ae_of_all _ fun ω ↦ (ereal_exp_neg_coe_le_one _).trans_lt ENNReal.one_lt_top
+
+/-- The joint law of the counts `(N (A 0), …, N (A (k-1)))` of a random measure on arbitrary
+measurable sets is determined by the Laplace functional of `N` on the simple functions
+`∑ i, a i 𝟙_{A i}` with `a i ∈ ℕ`. -/
+theorem map_apply_eq_of_lintegral_exp_neg_sum_eq [IsProbabilityMeasure P]
+    [IsProbabilityMeasure P'] (hN : Measurable N) (hN' : Measurable N')
+    (h : ∀ (k : ℕ) (A : Fin k → Set E), (∀ i, MeasurableSet (A i)) → ∀ a : Fin k → ℕ,
+      ∫⁻ ω, EReal.exp (-((∑ i, a i * N ω (A i) : ℝ≥0∞) : EReal)) ∂P =
+        ∫⁻ ω, EReal.exp (-((∑ i, a i * N' ω (A i) : ℝ≥0∞) : EReal)) ∂P')
+    {k : ℕ} (A : Fin k → Set E) (hA : ∀ i, MeasurableSet (A i)) :
+    P.map (fun ω i ↦ N ω (A i)) = P'.map (fun ω i ↦ N' ω (A i)) := by
+  have hV : Measurable fun ω (i : Fin k) ↦ N ω (A i) :=
+    Measurable.of_eval fun i ↦ (Measure.measurable_coe (hA i)).comp hN
+  have hV' : Measurable fun ω (i : Fin k) ↦ N' ω (A i) :=
+    Measurable.of_eval fun i ↦ (Measure.measurable_coe (hA i)).comp hN'
+  have hid : logCube ∘ expNegCube = (id : (Fin k → ℝ≥0∞) → (Fin k → ℝ≥0∞)) :=
+    funext logCube_expNegCube
+  suffices hY : P.map (expNegCube ∘ fun ω i ↦ N ω (A i)) =
+      P'.map (expNegCube ∘ fun ω i ↦ N' ω (A i)) by
+    rw [← Measure.map_id (μ := P.map _), ← Measure.map_id (μ := P'.map _), ← hid,
+      ← Measure.map_map measurable_logCube measurable_expNegCube,
+      ← Measure.map_map measurable_logCube measurable_expNegCube,
+      Measure.map_map measurable_expNegCube hV, Measure.map_map measurable_expNegCube hV', hY]
+  refine ext_of_forall_integral_prod_pow_eq fun a ↦ ?_
+  rw [integral_prod_pow_map_expNegCube P hN hA, integral_prod_pow_map_expNegCube P' hN' hA,
+    h k A hA a]
+
+/-- **The law of a random measure is determined by its Laplace functional on simple
+functions.** If two random measures `N` (under `P`) and `N'` (under `P'`) satisfy
+`E exp (-∑ i, a i N (A i)) = E exp (-∑ i, a i N' (A i))` for all finite families of measurable
+sets `A i` and all `a i ∈ ℕ`, then they have the same law on the space of measures. -/
+theorem map_eq_of_lintegral_exp_neg_sum_eq [IsProbabilityMeasure P] [IsProbabilityMeasure P']
+    (hN : Measurable N) (hN' : Measurable N')
+    (h : ∀ (k : ℕ) (A : Fin k → Set E), (∀ i, MeasurableSet (A i)) → ∀ a : Fin k → ℕ,
+      ∫⁻ ω, EReal.exp (-((∑ i, a i * N ω (A i) : ℝ≥0∞) : EReal)) ∂P =
+        ∫⁻ ω, EReal.exp (-((∑ i, a i * N' ω (A i) : ℝ≥0∞) : EReal)) ∂P') :
+    P.map N = P'.map N' := by
+  set C : Set (Set (Measure E)) := {S | ∃ (k : ℕ) (A : Fin k → Set E),
+    (∀ i, MeasurableSet (A i)) ∧ ∃ B : Set (Fin k → ℝ≥0∞), MeasurableSet B ∧
+      S = (fun μ i ↦ μ (A i)) ⁻¹' B} with hC
+  have hmeasA {k : ℕ} {A : Fin k → Set E} (hA : ∀ i, MeasurableSet (A i)) :
+      Measurable fun (μ : Measure E) (i : Fin k) ↦ μ (A i) :=
+    Measurable.of_eval fun i ↦ Measure.measurable_coe (hA i)
+  have hgen : (inferInstance : MeasurableSpace (Measure E)) = MeasurableSpace.generateFrom C := by
+    refine le_antisymm ?_ (MeasurableSpace.generateFrom_le ?_)
+    · refine iSup₂_le fun s hs ↦ ?_
+      rintro t ⟨B, hB, rfl⟩
+      exact MeasurableSpace.measurableSet_generateFrom ⟨1, fun _ ↦ s, fun _ ↦ hs,
+        (fun v ↦ v 0) ⁻¹' B, measurable_pi_apply 0 hB, rfl⟩
+    · rintro _ ⟨k, A, hA, B, hB, rfl⟩
+      exact hmeasA hA hB
+  have hpi : IsPiSystem C := by
+    rintro _ ⟨k₁, A₁, hA₁, B₁, hB₁, rfl⟩ _ ⟨k₂, A₂, hA₂, B₂, hB₂, rfl⟩ _
+    refine ⟨k₁ + k₂, Fin.append A₁ A₂, fun i ↦ ?_,
+      {v | (fun i ↦ v (Fin.castAdd k₂ i)) ∈ B₁ ∧ (fun i ↦ v (Fin.natAdd k₁ i)) ∈ B₂}, ?_, ?_⟩
+    · refine Fin.addCases (fun i ↦ ?_) (fun i ↦ ?_) i
+      · rw [Fin.append_left]; exact hA₁ i
+      · rw [Fin.append_right]; exact hA₂ i
+    · exact ((Measurable.of_eval fun i ↦ measurable_pi_apply _) hB₁).inter
+        ((Measurable.of_eval fun i ↦ measurable_pi_apply _) hB₂)
+    · ext μ
+      simp [Fin.append_left, Fin.append_right]
+  refine ext_of_generate_finite C hgen hpi ?_ (by simp [Measure.map_apply hN,
+    Measure.map_apply hN'])
+  rintro _ ⟨k, A, hA, B, hB, rfl⟩
+  rw [Measure.map_apply hN (hmeasA hA hB), Measure.map_apply hN' (hmeasA hA hB),
+    ← Set.preimage_comp, ← Set.preimage_comp,
+    ← Measure.map_apply ((hmeasA hA).comp hN) hB, ← Measure.map_apply ((hmeasA hA).comp hN') hB]
+  exact congrArg (· B) (map_apply_eq_of_lintegral_exp_neg_sum_eq hN hN' h A hA)
+
+/-- The integral of `∑ i, a i 𝟙_{A i}` against a measure. -/
+lemma lintegral_sum_mul_indicator_one {k : ℕ} (μ : Measure E) {A : Fin k → Set E}
+    (hA : ∀ i, MeasurableSet (A i)) (a : Fin k → ℝ≥0∞) :
+    ∫⁻ x, ∑ i, a i * (A i).indicator 1 x ∂μ = ∑ i, a i * μ (A i) := by
+  rw [lintegral_finsetSum _ fun i _ ↦ (measurable_one.indicator (hA i)).const_mul _]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  rw [lintegral_const_mul _ (measurable_one.indicator (hA i)), lintegral_indicator_one (hA i)]
+
+/-- **The law of a random measure is determined by its Laplace functional.** -/
+theorem map_eq_of_lintegral_exp_neg_lintegral_eq [IsProbabilityMeasure P]
+    [IsProbabilityMeasure P'] (hN : Measurable N) (hN' : Measurable N')
+    (h : ∀ f : E → ℝ≥0∞, Measurable f →
+      ∫⁻ ω, EReal.exp (-(∫⁻ x, f x ∂(N ω) : EReal)) ∂P =
+        ∫⁻ ω, EReal.exp (-(∫⁻ x, f x ∂(N' ω) : EReal)) ∂P') :
+    P.map N = P'.map N' := by
+  refine map_eq_of_lintegral_exp_neg_sum_eq hN hN' fun k A hA a ↦ ?_
+  have := h (fun x ↦ ∑ i, (a i : ℝ≥0∞) * (A i).indicator 1 x)
+    (Finset.measurable_sum _ fun i _ ↦ (measurable_one.indicator (hA i)).const_mul _)
+  simpa only [lintegral_sum_mul_indicator_one _ hA] using this
+
+/-- **Uniqueness in law of Poisson random measures.** Two Poisson random measures with the same
+σ-finite intensity have the same law. -/
+theorem IsPoissonRandomMeasure.map_eq {ν : Measure E} [SigmaFinite ν]
+    (hN : IsPoissonRandomMeasure N ν P) (hN' : IsPoissonRandomMeasure N' ν P') :
+    P.map N = P'.map N' := by
+  have := hN.isProbabilityMeasure
+  have := hN'.isProbabilityMeasure
+  refine map_eq_of_lintegral_exp_neg_lintegral_eq hN.measurable hN'.measurable fun f hf ↦ ?_
+  rw [hN.lintegral_exp_neg_lintegral hf, hN'.lintegral_exp_neg_lintegral hf]
+
+end Uniqueness
+
 end ProbabilityTheory
