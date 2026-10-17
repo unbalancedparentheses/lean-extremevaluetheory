@@ -133,4 +133,128 @@ theorem tendsto_measureReal_card_affine_mem_eq (hX : ∀ i, Measurable (X i))
 
 end Counts
 
+/-! ### The intensity measure `μ_G (x, ∞) = -log G(x)` -/
+
+section Intensity
+
+variable {G : CumulativeDistributionFunction} {u : ℝ}
+
+/-- The Stieltjes function `x ↦ log G (max x u)`, for a c.d.f. `G` with `G u > 0`. -/
+noncomputable def logCDFMax (G : CumulativeDistributionFunction) (hu : 0 < G u) :
+    StieltjesFunction ℝ where
+  toFun x := Real.log (G (max x u))
+  mono' x y hxy := Real.log_le_log (hu.trans_le (G.mono' (le_max_right _ _)))
+    (G.mono' (max_le_max hxy le_rfl))
+  right_continuous' x := by
+    have hG : ContinuousWithinAt G (Set.Ici (max x u)) (max x u) :=
+      G.toStieltjesFunction.right_continuous _
+    have hmax : ContinuousWithinAt (fun y ↦ max y u) (Set.Ici x) x :=
+      (continuous_id.max continuous_const).continuousWithinAt
+    have := ContinuousWithinAt.comp (f := fun y ↦ max y u) (x := x) hG hmax
+      fun y (hy : x ≤ y) ↦ (max_le_max hy le_rfl : max x u ≤ max y u)
+    exact ContinuousAt.comp_continuousWithinAt (g := Real.log)
+      (Real.continuousAt_log (hu.trans_le (G.mono' (le_max_right x u))).ne') this
+
+/-- The *exponent measure* of the c.d.f. `G` above the threshold `u` (with `G u > 0`): the measure
+on `ℝ` carried by `(u, ∞)` with `μ (a, b] = log G(b) - log G(a)` and `μ (a, ∞) = -log G(a)` for
+`u ≤ a ≤ b`. For an extreme value distribution `G`, this is the restriction to `(u, ∞)` of the
+intensity measure `μ_G (x, ∞] = -log G(x)` of the limiting Poisson process of exceedances. -/
+noncomputable def exceedanceMeasure (G : CumulativeDistributionFunction) (hu : 0 < G u) :
+    Measure ℝ :=
+  (logCDFMax G hu).measure
+
+lemma exceedanceMeasure_Ioc (hu : 0 < G u) {a b : ℝ} (hua : u ≤ a) (hab : a ≤ b) :
+    exceedanceMeasure G hu (Set.Ioc a b) = ENNReal.ofReal (Real.log (G b) - Real.log (G a)) := by
+  rw [exceedanceMeasure, StieltjesFunction.measure_Ioc]
+  change ENNReal.ofReal (Real.log (G (max b u)) - Real.log (G (max a u))) = _
+  rw [max_eq_left hua, max_eq_left (hua.trans hab)]
+
+lemma exceedanceMeasure_Ioi (hu : 0 < G u) {a : ℝ} (hua : u ≤ a) :
+    exceedanceMeasure G hu (Set.Ioi a) = ENNReal.ofReal (-Real.log (G a)) := by
+  have hlim : Tendsto (logCDFMax G hu) atTop (𝓝 0) := by
+    have h1 : Tendsto (fun x ↦ G (max x u)) atTop (𝓝 1) :=
+      G.tendsto_atTop.comp (tendsto_atTop_mono (fun x ↦ le_max_left x u) tendsto_id)
+    have := ((Real.continuousAt_log one_ne_zero).tendsto).comp h1
+    rw [Real.log_one] at this
+    exact this
+  rw [exceedanceMeasure, StieltjesFunction.measure_Ioi _ hlim]
+  change ENNReal.ofReal (0 - Real.log (G (max a u))) = _
+  rw [max_eq_left hua, zero_sub]
+
+/-- The intervals `(a, b]` and `(a, ∞)` above the threshold `u` at whose endpoints
+`G ∈ (0, 1)`. These form the class of sets on which the convergence of the point process of
+exceedances is stated. -/
+def IsExceedanceInterval (G : CumulativeDistributionFunction) (u : ℝ) (B : Set ℝ) : Prop :=
+  (∃ a b, u ≤ a ∧ a ≤ b ∧ G a ∈ Set.Ioo 0 1 ∧ G b ∈ Set.Ioo 0 1 ∧ B = Set.Ioc a b) ∨
+    ∃ a, u ≤ a ∧ G a ∈ Set.Ioo 0 1 ∧ B = Set.Ioi a
+
+lemma IsExceedanceInterval.measurableSet {B : Set ℝ} (hB : IsExceedanceInterval G u B) :
+    MeasurableSet B := by
+  rcases hB with ⟨a, b, -, -, -, -, rfl⟩ | ⟨a, -, -, rfl⟩
+  · exact measurableSet_Ioc
+  · exact measurableSet_Ioi
+
+lemma IsExceedanceInterval.exceedanceMeasure_ne_top (hu : 0 < G u) {B : Set ℝ}
+    (hB : IsExceedanceInterval G u B) : exceedanceMeasure G hu B ≠ ∞ := by
+  rcases hB with ⟨a, b, hua, hab, -, -, rfl⟩ | ⟨a, hua, -, rfl⟩
+  · rw [exceedanceMeasure_Ioc hu hua hab]; exact ENNReal.ofReal_ne_top
+  · rw [exceedanceMeasure_Ioi hu hua]; exact ENNReal.ofReal_ne_top
+
+variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+  {X : ℕ → Ω → ℝ} {F : CumulativeDistributionFunction} {As : ℕ → AffineIncrEquiv}
+
+/-- On exceedance intervals, `n P(A_n (X i) ∈ B) → μ_G(B)`. -/
+theorem IsExceedanceInterval.tendsto_nat_mul_measureReal (hX : ∀ i, Measurable (X i))
+    (hF : ∀ i x, P.real {ω | X i ω ≤ x} = F x)
+    (hlim : ∀ x, Tendsto (fun n : ℕ ↦ ((As n • F) x) ^ n) atTop (𝓝 (G x))) (hu : 0 < G u)
+    {B : Set ℝ} (hB : IsExceedanceInterval G u B) (i : ℕ) :
+    Tendsto (fun n : ℕ ↦ (n : ℝ) * P.real {ω | As n (X i ω) ∈ B}) atTop
+      (𝓝 (exceedanceMeasure G hu B).toReal) := by
+  rcases hB with ⟨a, b, hua, hab, hGa, hGb, rfl⟩ | ⟨a, hua, hGa, rfl⟩
+  · rw [exceedanceMeasure_Ioc hu hua hab, ENNReal.toReal_ofReal
+      (sub_nonneg.2 (Real.log_le_log hGa.1 (G.mono' hab)))]
+    exact tendsto_nat_mul_measureReal_affine_mem_Ioc hX hF hab hGa hGb (hlim a) (hlim b) i
+  · rw [exceedanceMeasure_Ioi hu hua, ENNReal.toReal_ofReal
+      (neg_nonneg.2 (Real.log_nonpos hGa.1.le hGa.2.le))]
+    exact tendsto_nat_mul_measureReal_lt_affine hX hF hGa (hlim a) i
+
+end Intensity
+
+/-! ### Convergence of the point process of exceedances -/
+
+section PointProcess
+
+variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+  {X : ℕ → Ω → ℝ} {F G : CumulativeDistributionFunction} {As : ℕ → AffineIncrEquiv} {u : ℝ}
+
+/-- **Convergence of the point process of exceedances** ([Resnick, Corollary 4.19],
+[EKM, Theorem 5.3.2], space component). Let `X_0, X_1, …` be iid with c.d.f. `F` in the maximum
+domain of attraction of `G` with normalizations `A_n`: `((A_n • F) x) ^ n → G x` for every `x`.
+Let `u` be a threshold with `G u > 0`, and let `N'` be a Poisson random measure whose intensity is
+the exponent measure `μ_G` above `u` (`μ_G (x, ∞) = -log G(x)`). Then the point processes
+`N_n = ∑_{i < n} δ_{A_n (X_i)}` converge to `N'` in the sense of finite-dimensional
+distributions of counts on disjoint exceedance intervals. -/
+theorem tendsto_measureReal_sumDiracRange_affine_eq (hX : ∀ i, Measurable (X i))
+    (hind : iIndepFun X P) (hF : ∀ i x, P.real {ω | X i ω ≤ x} = F x)
+    (hlim : ∀ x, Tendsto (fun n : ℕ ↦ ((As n • F) x) ^ n) atTop (𝓝 (G x))) (hu : 0 < G u)
+    {Ω' : Type*} {mΩ' : MeasurableSpace Ω'} {N' : Ω' → Measure ℝ} {P' : Measure Ω'}
+    (hN' : IsPoissonRandomMeasure N' (exceedanceMeasure G hu) P') {k : ℕ} {B : Fin k → Set ℝ}
+    (hB : ∀ j, IsExceedanceInterval G u (B j)) (hd : Pairwise (Function.onFun Disjoint B))
+    (m : Fin k → ℕ) :
+    Tendsto (fun n ↦ P.real {ω | ∀ j, sumDiracRange n (fun i ↦ As n (X i ω)) (B j) = m j})
+      atTop (𝓝 (P'.real {ω | ∀ j, N' ω (B j) = m j})) := by
+  classical
+  have hBm (j : Fin k) : MeasurableSet (B j) := (hB j).measurableSet
+  rw [hN'.measureReal_forall_apply_eq hBm (fun j ↦ (hB j).exceedanceMeasure_ne_top hu) hd]
+  have h := tendsto_measureReal_card_affine_mem_eq (As := As) hX hind hF hBm hd
+    (r := fun j ↦ (exceedanceMeasure G hu (B j)).toNNReal) (fun j ↦ ?_) m
+  · convert h using 3 with n
+    · ext ω
+      simp [sumDiracRange_apply_eq_card _ _ (hBm _)]
+    · simp [ENNReal.coe_toNNReal_eq_toReal]
+  · simpa [ENNReal.coe_toNNReal_eq_toReal] using
+      (hB j).tendsto_nat_mul_measureReal hX hF hlim hu 0
+
+end PointProcess
+
 end ExtremeValueTheory
