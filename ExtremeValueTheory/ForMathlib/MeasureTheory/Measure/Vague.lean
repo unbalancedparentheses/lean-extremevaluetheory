@@ -52,7 +52,8 @@ variable {X : Type*} [MeasurableSpace X]
 /-- The measures `μs i` converge *vaguely* to `μ` along the filter `l` if
 `∫ x, f x ∂μs i` tends to `∫ x, f x ∂μ` for every continuous compactly supported
 function `f : X → ℝ`. -/
-def TendstoVaguely [TopologicalSpace X] {ι : Type*} (μs : ι → Measure X) (l : Filter ι) (μ : Measure X) : Prop :=
+def TendstoVaguely [TopologicalSpace X] {ι : Type*} (μs : ι → Measure X) (l : Filter ι)
+    (μ : Measure X) : Prop :=
   ∀ f : X → ℝ, Continuous f → HasCompactSupport f →
     Tendsto (fun i ↦ ∫ x, f x ∂μs i) l (𝓝 (∫ x, f x ∂μ))
 
@@ -96,7 +97,8 @@ lemma exists_continuous_hasCompactSupport_one_on_zero_off [TopologicalSpace X]
     ∃ f : X → ℝ, Continuous f ∧ HasCompactSupport f ∧ 0 ≤ f ∧ (∀ x, f x ≤ 1) ∧
       (∀ x ∈ K, f x = 1) ∧ ∀ x ∉ U, f x = 0 := by
   obtain ⟨f, hfK, hfU, hfc, hf01⟩ :=
-    exists_continuous_one_zero_of_isCompact hK hU.isClosed_compl (disjoint_compl_right_iff_subset.2 hKU)
+    exists_continuous_one_zero_of_isCompact hK hU.isClosed_compl
+      (disjoint_compl_right_iff_subset.2 hKU)
   exact ⟨f, f.continuous, hfc, fun x ↦ (hf01 x).1, fun x ↦ (hf01 x).2, fun x hx ↦ hfK hx,
     fun x hx ↦ hfU hx⟩
 

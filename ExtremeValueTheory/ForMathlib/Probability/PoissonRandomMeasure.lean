@@ -89,7 +89,8 @@ lemma isProbabilityMeasure (hN : IsPoissonRandomMeasure N ν P) : IsProbabilityM
   have h := hN.map_eq_pi (n := 0) Fin.elim0 (fun i ↦ i.elim0) (fun i ↦ i.elim0)
     (fun i ↦ i.elim0)
   constructor
-  have hm : Measurable fun ω (i : Fin 0) ↦ N ω (Fin.elim0 i) := Measurable.of_eval fun (i : Fin 0) ↦ i.elim0
+  have hm : Measurable fun ω (i : Fin 0) ↦ N ω (Fin.elim0 i) :=
+    Measurable.of_eval fun (i : Fin 0) ↦ i.elim0
   have := congrArg (fun m ↦ m Set.univ) h
   simp only [Measure.map_apply hm MeasurableSet.univ, Set.preimage_univ] at this
   rw [this, Measure.pi_univ]
