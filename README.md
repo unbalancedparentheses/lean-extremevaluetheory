@@ -29,6 +29,10 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
 - **Gnedenko's characterization of the Weibull domain** (`isInMDAWeibull_iff`): `F` is in the
   domain of attraction of `exp(-(-x)^α)` if and only if it has a finite right endpoint `x_F` and
   `1 - F(x_F - 1/t)` is regularly varying with index `-α`.
+- **Gumbel domain, sufficient conditions**: the auxiliary-function criterion
+  `(1 - F(t + x f(t)))/(1 - F(t)) → e^(-x)` (infinite and finite right endpoint) and the
+  von Mises condition imply `F` is in the Gumbel domain; the exponential and Gumbel laws are
+  examples. (The converse, via Γ-variation, is not yet formalized.)
 - **Peaks over threshold, heavy-tailed case** (`tendstoUniformlyOn_excessSurvival`): if `F̄` is
   regularly varying with index `-α`, the scaled excess distribution `F̄(u + (u/α)x)/F̄(u)`
   converges to the generalized Pareto survival function `(1 + x/α)^(-α)` uniformly in `x ≥ 0`
