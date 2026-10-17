@@ -176,6 +176,9 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   and convexity), the extremal coefficient `θ_E = 2A(1/2)`, the upper tail dependence coefficient
   `λ_U = 2 − θ_E`, tail dependence of regularly varying vectors, and a.s. consistency of the Pickands
   estimator with known margins.
+- **The Skorokhod space** (`ForMathlib/Topology/Skorokhod/`): `D([0,1], E)` with the `J₁` metric, the
+  structure of càdlàg functions, `J₁` vs uniform convergence, separability (Billingsley Thm 12.2), and
+  Borel σ-algebra = σ-algebra of the projections (Thm 12.5). Completeness (`D` Polish) is not yet proved.
 - **Uniform convergence theorem and Karamata's representation theorem** for measurable slowly
   and regularly varying functions (no monotonicity), with two-sided Potter bounds
   (`isSlowlyVarying_iff_exists_representation`, `potter_bounds_of_measurable`).
@@ -185,7 +188,7 @@ The library contains no `sorry`.
 
 General-purpose results (vague convergence, Poisson random measures and point-process convergence,
 stationarity and mixing, Portmanteau extensions, the trigamma value `ψ'(1) = π²/6`, tightness from
-convergence in distribution) live in `ExtremeValueTheory/ForMathlib/`, import only Mathlib, pass
+convergence in distribution, the Skorokhod space) live in `ExtremeValueTheory/ForMathlib/`, import only Mathlib, pass
 Mathlib's linters, and are intended for upstreaming; see
 [`ForMathlib/UPSTREAMING.md`](ExtremeValueTheory/ForMathlib/UPSTREAMING.md) for the PR plan.
 
