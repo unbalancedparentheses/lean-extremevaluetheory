@@ -982,6 +982,173 @@ theorem tendstoInDistribution_tailProbEstimator_of_tendsto_bias {X : ℕ → Ω 
   rw [e] at hfinal
   exact hfinal
 
+omit [IsProbabilityMeasure P'] in
+/-- **The bias of the tail probability estimator is negligible for `ρ < 0`**: with
+`e_n = y_n / x_{k/n} → ∞` and `β_n = (k / n) e_n^{-1/γ} / F̄(y_n)`, `√k log β_n / log e_n → 0`.
+Indeed `log β_n = -(log (y_n / U(τ_n)) + r(n/k, D_n)) / γ` with `τ_n = 1 / F̄(y_n)`,
+`D_n = τ_n k / n`, and both terms are `O(A(n/k))`. -/
+theorem tendsto_sqrt_mul_log_tailProb_bias_of_neg {Y : Ω → ℝ} (hY : Measurable Y) {γ ρ lam : ℝ}
+    {A : ℝ → ℝ} (hγ : 0 < γ)
+    (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P Y)) γ ρ A) (hρ : ρ < 0)
+    {k : ℕ → ℕ} (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {y : ℕ → ℝ}
+    (he : Tendsto (fun n => y n / tailQuantile P Y ((k n : ℝ) / n)) atTop atTop) :
+    Tendsto (fun n => √(k n : ℝ) * Real.log ((k n : ℝ) / n *
+      (y n / tailQuantile P Y ((k n : ℝ) / n)) ^ (-(1 / γ)) / survival P Y (y n)) /
+      Real.log (y n / tailQuantile P Y ((k n : ℝ) / n))) atTop (𝓝 0) := by
+  set F := survival P Y with hFdef
+  set U := survivalQuantile F with hUdef
+  have hF := survival_anti (P := P) Y
+  have hrc := continuousWithinAt_survival (P := P) hY
+  have hF0 := tendsto_survival_atTop (P := P) hY
+  have hF1 := tendsto_survival_atBot (P := P) hY
+  have hGal : ∀ {t : ℝ}, 1 < t → ∀ x, U t ≤ x ↔ F x ≤ t⁻¹ := fun ht x =>
+    tailQuantile_le_iff hF hrc hF0 hF1 ht x
+  have hUm := measurable_tailQuantile hF hrc hF0 hF1
+  have hRV := h2.isRegularlyVarying_survival hY hγ
+  have hFpos : ∀ z, 0 < F z := survival_pos hRV
+  obtain ⟨B, hBm, h2B, hBA⟩ := h2.exists_measurable hUm
+  obtain ⟨C, t₀, -, hC⟩ := h2B.exists_bound_of_neg hUm hBm hρ
+  have hnk := tendsto_div_atTop_of_tendsto hk hkn
+  have hlamB : Tendsto (fun n => √(k n : ℝ) * B (n / k n)) atTop (𝓝 lam) := by
+    have := hlam.mul (hBA.comp hnk)
+    rw [mul_one] at this
+    refine this.congr' ?_
+    filter_upwards [hnk.eventually h2.eventually_ne_zero] with n hn
+    simp only [Function.comp_apply]
+    field_simp
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  obtain ⟨T₀, hT₀⟩ := eventually_atTop.1 h2.eventually_pos
+  have hℓ : Tendsto (fun n => Real.log (y n / tailQuantile P Y ((k n : ℝ) / n))) atTop atTop :=
+    tendsto_log_atTop.comp he
+  have hb : Tendsto (fun n => 3 * |C| / γ * (|lam| + 1) *
+      (Real.log (y n / tailQuantile P Y ((k n : ℝ) / n)))⁻¹) atTop (𝓝 0) := by
+    simpa using (tendsto_inv_atTop_zero.comp hℓ).const_mul (3 * |C| / γ * (|lam| + 1))
+  refine squeeze_zero_norm' ?_ hb
+  filter_upwards [hkR.eventually_gt_atTop 0,
+    (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0,
+    hkn.eventually (gt_mem_nhds one_pos), hnk.eventually_ge_atTop (max (max t₀ T₀) 2),
+    he.eventually_gt_atTop 1, hℓ.eventually_gt_atTop 0,
+    hlamB.abs.eventually (gt_mem_nhds (lt_add_one |lam|))] with n hk0 hn0 hkn1 hs hen hℓ0 hlamn
+  set s : ℝ := (n : ℝ) / k n with hs_def
+  have hs1 : 1 < s := lt_of_lt_of_le one_lt_two ((le_max_right _ _).trans hs)
+  have hs0 : 0 < s := one_pos.trans hs1
+  have hst₀ : t₀ ≤ s := ((le_max_left _ _).trans (le_max_left _ _)).trans hs
+  have hsT : T₀ ≤ s := ((le_max_right _ _).trans (le_max_left _ _)).trans hs
+  have hq : tailQuantile P Y ((k n : ℝ) / n) = U s := by
+    rw [tailQuantile_eq_survivalQuantile (div_pos hk0 hn0) hkn1, inv_div]
+  rw [hq] at hen hℓ0 ⊢
+  have hUs : 0 < U s := hT₀ s hsT
+  have hy : U s < y n := by rwa [one_lt_div hUs] at hen
+  have hy0 : 0 < y n := hUs.trans hy
+  set τ : ℝ := (F (y n))⁻¹ with hτ_def
+  have hτ0 : 0 < τ := inv_pos.2 (hFpos _)
+  have hsτ : s ≤ τ := by
+    have := (hGal hs1 (y n)).1 hy.le
+    exact (le_inv_comm₀ (hFpos _) hs0).1 this
+  have hτ1 : 1 < τ := hs1.trans_le hsτ
+  set D : ℝ := τ / s with hD_def
+  have hD1 : 1 ≤ D := by rw [hD_def, le_div_iff₀ hs0, one_mul]; exact hsτ
+  have hD0 : 0 < D := one_pos.trans_le hD1
+  have hDs : D * s = τ := div_mul_cancel₀ _ hs0.ne'
+  have hUτ : U τ ≤ y n := (hGal hτ1 (y n)).2 (by rw [hτ_def, inv_inv])
+  have hUτpos : 0 < U τ := hT₀ τ (hsT.trans hsτ)
+  have hlt : ∀ v, 1 < v → y n < U (v * τ) := by
+    intro v hv
+    by_contra hcon
+    have h' := (hGal (one_lt_mul_of_lt_of_le hv hτ1.le) (y n)).1 (not_lt.1 hcon)
+    rw [mul_inv, hτ_def, inv_inv] at h'
+    have : v⁻¹ * F (y n) < F (y n) :=
+      mul_lt_of_lt_one_left (hFpos _) (inv_lt_one_of_one_lt₀ hv)
+    linarith
+  have hrD := hC s hst₀ D hD1
+  rw [hDs] at hrD
+  have hCB : C * |B s| ≤ |C| * |B s| := mul_le_mul_of_nonneg_right (le_abs_self _) (abs_nonneg _)
+  have hup : log (y n) - log (U τ) ≤ 2 * (|C| * |B s|) := by
+    refine le_of_forall_pos_lt_add fun ε hε => ?_
+    set v := exp (ε / γ) with hv
+    have hv1 : 1 < v := one_lt_exp_iff.2 (by positivity)
+    have h1 := hC s hst₀ (v * D) (one_le_mul_of_one_le_of_one_le hv1.le hD1)
+    rw [show v * D * s = v * τ by rw [mul_assoc, hDs]] at h1
+    have h3 : log (y n) < log (U (v * τ)) := log_lt_log hy0 (hlt v hv1)
+    have hlogvD : γ * log (v * D) = ε + γ * log D := by
+      rw [log_mul (exp_pos _).ne' hD0.ne', log_exp]
+      field_simp
+    have h4 := (abs_le.1 h1).2
+    have h5 := (abs_le.1 hrD).1
+    linarith
+  have hlo : 0 ≤ log (y n) - log (U τ) := sub_nonneg.2 (log_le_log hUτpos hUτ)
+  have hβ : log ((k n : ℝ) / n * (y n / U s) ^ (-(1 / γ)) / F (y n)) =
+      -(1 / γ) * ((log (y n) - log (U τ)) + (log (U τ) - log (U s) - γ * log D)) := by
+    have hkn' : (k n : ℝ) / n = s⁻¹ := by rw [hs_def, inv_div]
+    have hFy : F (y n) = τ⁻¹ := by rw [hτ_def, inv_inv]
+    have hys : 0 < y n / U s := div_pos hy0 hUs
+    rw [log_div (mul_pos (div_pos hk0 hn0) (rpow_pos_of_pos hys _)).ne' (hFpos _).ne',
+      log_mul (div_pos hk0 hn0).ne' (rpow_pos_of_pos hys _).ne', log_rpow hys, hkn', hFy,
+      log_inv, log_inv, log_div hy0.ne' hUs.ne', hD_def, log_div hτ0.ne' hs0.ne']
+    field_simp
+    ring
+  have hsk : 0 < √(k n : ℝ) := sqrt_pos.2 hk0
+  rw [Real.norm_eq_abs, hβ, abs_div, abs_mul, abs_of_pos hsk, abs_of_pos hℓ0, div_eq_mul_inv]
+  refine mul_le_mul_of_nonneg_right ?_ (inv_nonneg.2 hℓ0.le)
+  have hlb : |-(1 / γ) * ((log (y n) - log (U τ)) + (log (U τ) - log (U s) - γ * log D))| ≤
+      3 / γ * (|C| * |B s|) := by
+    rw [abs_mul, abs_neg, abs_of_pos (one_div_pos.2 hγ)]
+    have h6 : |(log (y n) - log (U τ)) + (log (U τ) - log (U s) - γ * log D)| ≤
+        3 * (|C| * |B s|) := by
+      refine (abs_add_le _ _).trans ?_
+      rw [abs_of_nonneg hlo]
+      linarith
+    calc 1 / γ * |_| ≤ 1 / γ * (3 * (|C| * |B s|)) :=
+          mul_le_mul_of_nonneg_left h6 (one_div_pos.2 hγ).le
+      _ = 3 / γ * (|C| * |B s|) := by ring
+  calc √(k n : ℝ) * |_| ≤ √(k n : ℝ) * (3 / γ * (|C| * |B s|)) :=
+        mul_le_mul_of_nonneg_left hlb hsk.le
+    _ = 3 * |C| / γ * |√(k n : ℝ) * B s| := by
+        rw [abs_mul, abs_of_pos hsk]; ring
+    _ ≤ 3 * |C| / γ * (|lam| + 1) := mul_le_mul_of_nonneg_left hlamn.le (by positivity)
+
+/-- **Asymptotic normality of the tail probability estimator** ([dHF, Theorem 4.4.1], heavy
+tails). Let `X_0, X_1, …` be iid with tail quantile function of second-order regular variation
+with `γ > 0`, `ρ < 0` and auxiliary function `A`, let `k → ∞`, `k / n → 0`, `√k A(n/k) → λ`, and
+let the levels `y_n` satisfy `e_n = y_n / x_{k/n} → ∞` and `log e_n / √k → 0`. Then
+
+  `(√k / log e_n) (p̂(y_n) / P(X > y_n) - 1) ⇒ N(λ / ((1 - ρ) γ²), γ⁻²)`. -/
+theorem tendstoInDistribution_tailProbEstimator {X : ℕ → Ω → ℝ}
+    (hX : ∀ i, Measurable (X i)) (hindep : iIndepFun X P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ} {A : ℝ → ℝ} (hγ : 0 < γ)
+    (hρ : ρ < 0)
+    (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {y : ℕ → ℝ}
+    (he : Tendsto (fun n => y n / tailQuantile P (X 0) ((k n : ℝ) / n)) atTop atTop)
+    (hek : Tendsto (fun n => Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) /
+      √(k n : ℝ)) atTop (𝓝 0))
+    {Z : Ω' → ℝ}
+    (hZ : HasLaw Z (gaussianReal (lam / ((1 - ρ) * γ ^ 2)) (γ⁻¹ ^ 2).toNNReal) P') :
+    TendstoInDistribution (fun n ω => √(k n : ℝ) /
+      Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) *
+      (tailProbEstimator (fun i : Fin n => X i ω) (k n) (y n) /
+        (P {ω | y n < X 0 ω}).toReal - 1))
+      atTop Z (fun _ => P) P' := by
+  have hγ2 : (0 : ℝ) < γ ^ 2 := by positivity
+  have hZ0 : HasLaw (fun ω => γ ^ 2 * Z ω) (gaussianReal (lam / (1 - ρ)) (γ ^ 2).toNNReal) P' := by
+    have := gaussianReal_const_mul hZ (γ ^ 2)
+    convert this using 2
+    · have : (1 - ρ) ≠ 0 := by linarith
+      field_simp
+    · ext
+      simp only [NNReal.coe_mul, NNReal.coe_mk, Real.coe_toNNReal _ (sq_nonneg _)]
+      field_simp
+  have hν := tendsto_sqrt_mul_log_tailProb_bias_of_neg (P := P) (hX 0) hγ h2 hρ hk hkn hlam he
+  have := tendstoInDistribution_tailProbEstimator_of_tendsto_bias hX hindep hident hγ h2 hk hkn
+    hlam he hek hν hZ0
+  have e : (fun ω => γ ^ 2 * Z ω / γ ^ 2 + 0) = Z := by
+    funext ω
+    field_simp
+    simp
+  rwa [e] at this
+
 end TailProbNormality
 
 end ExtremeValueTheory
