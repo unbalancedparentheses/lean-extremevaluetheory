@@ -21,3 +21,4 @@ import ExtremeValueTheory.PeaksOverThreshold.Frechet
 import ExtremeValueTheory.RegularVariation.UniformConvergence
 import ExtremeValueTheory.RegularVariation.Representation
 import ExtremeValueTheory.DomainOfAttraction.Weibull
+import ExtremeValueTheory.HeavyTails.Subexponential
