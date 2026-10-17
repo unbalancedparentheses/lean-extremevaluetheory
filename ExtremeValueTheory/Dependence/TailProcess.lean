@@ -141,6 +141,12 @@ theorem TendstoLawCond.eventually_measure_ne_zero [IsProbabilityMeasure ν]
   simp [cond_eq_zero_of_meas_eq_zero hzero] at hi
   linarith
 
+/-- Weak limits of conditional laws are unique. -/
+theorem TendstoLawCond.unique [HasOuterApproxClosed E] [BorelSpace E] [l.NeBot]
+    {ν' : Measure E} [IsFiniteMeasure ν] [IsFiniteMeasure ν'] (h : TendstoLawCond P s Y l ν)
+    (h' : TendstoLawCond P s Y l ν') : ν = ν' :=
+  ext_of_forall_integral_eq_of_IsFiniteMeasure fun f => tendsto_nhds_unique (h f) (h' f)
+
 end TendstoLawCond
 
 /-- Integral against a conditional probability measure. -/
@@ -497,6 +503,194 @@ theorem tendstoLawCond_smul (hα : 0 < α) (hZ : Measurable Z) (hT : Measurable 
   refine this.congr fun x => ?_
   rw [integral_map (hY x).aemeasurable hL.continuous.aestronglyMeasurable]
 
+/-- `(Par ⊗ μ.map g).map (r, θ) ↦ r • θ` rewritten on `Par ⊗ μ`. -/
+private lemma map_prod_map_smul {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
+    [MeasurableSpace F] [BorelSpace F] [SecondCountableTopology F] (ρ : Measure ℝ) [SFinite ρ]
+    {g : E → F} (hg : Measurable g) :
+    (ρ.prod (μ.map g)).map (fun p => p.1 • p.2) = (ρ.prod μ).map (fun p => p.1 • g p.2) := by
+  have h : ρ.prod (μ.map g) = (ρ.prod μ).map (Prod.map id g) := by
+    rw [← Measure.map_prod_map _ _ measurable_id hg, Measure.map_id]
+  rw [h, Measure.map_map continuous_smul.measurable (measurable_id.prodMap hg)]
+  rfl
+
+/-- **Polar decomposition, joint form** ([BS09, Theorem 2.1, (iii) ⇒ (ii)]). If `P(Z > x)` is
+regularly varying with index `-α`, `α > 0`, and the law of `V / Z` given `Z > x` converges weakly
+to `μ`, then the law of `(Z / x, V / x)` given `Z > x` converges weakly to the law of `(R, R • Θ)`,
+with `R` Pareto(`α`) independent of `Θ ∼ μ`. -/
+theorem tendstoLawCond_polar {V : Ω → E} (hα : 0 < α) (hZ : Measurable Z) (hV : Measurable V)
+    (hRV : IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α))
+    (hconv : TendstoLawCond P (fun x => {ω | x < Z ω}) (fun _ ω => (Z ω)⁻¹ • V ω) atTop μ) :
+    TendstoLawCond P (fun x => {ω | x < Z ω}) (fun x ω => (Z ω / x, x⁻¹ • V ω)) atTop
+      (((paretoMeasure 1 α).prod μ).map fun p => (p.1, p.1 • p.2)) := by
+  have hg : Continuous fun θ : E => ((1 : ℝ), θ) := continuous_const.prodMk continuous_id
+  have hc' := hconv.comp hg
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have key := tendstoLawCond_smul (E := ℝ × E) (T := fun ω => ((1 : ℝ), (Z ω)⁻¹ • V ω)) hα hZ
+    (measurable_const.prodMk (hZ.inv.smul hV)) hRV hc'
+  rw [map_prod_map_smul _ hg.measurable] at key
+  have hfun : (fun p : ℝ × E => p.1 • ((1 : ℝ), p.2)) = fun p => (p.1, p.1 • p.2) := by
+    funext p; simp [Prod.smul_mk]
+  rw [hfun] at key
+  refine key.congr ?_
+  filter_upwards [eventually_gt_atTop 0] with x hx
+  filter_upwards [ae_cond_mem (measurableSet_lt measurable_const hZ)] with ω hω
+  have hZ0 : Z ω ≠ 0 := (hx.trans hω).ne'
+  simp only [Prod.smul_mk, smul_eq_mul, mul_one, smul_smul]
+  congr 2
+  field_simp
+
 end Polar
+
+/-! ### The converse -/
+
+section Converse
+
+variable {Ω E : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+  [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E]
+  [SecondCountableTopology E]
+  {Z : Ω → ℝ} {V : Ω → E} {ν : Measure (ℝ × E)} [IsProbabilityMeasure ν] {α : ℝ}
+
+omit [IsProbabilityMeasure P] [IsProbabilityMeasure ν] [NormedAddCommGroup E] [NormedSpace ℝ E]
+  [BorelSpace E] [SecondCountableTopology E] in
+/-- Under `ν`, the first coordinate is `> 1` almost surely if its law is Pareto. -/
+theorem ae_one_lt_fst_of_map_fst (hν : ν.map Prod.fst = paretoMeasure 1 α) :
+    ∀ᵐ p ∂ν, 1 < p.1 :=
+  ae_of_ae_map measurable_fst.aemeasurable (hν ▸ ae_one_lt_paretoMeasure)
+
+/-- **Polar decomposition, converse: regular variation** ([BS09, Theorem 2.1, (ii) ⇒ (i)]). If
+the law of `(Z / x, V / x)` given `Z > x` converges weakly to `ν` whose first marginal is
+Pareto(`α`), then `P(Z > x)` is regularly varying with index `-α`. -/
+theorem isRegularlyVarying_of_tendstoLawCond (hα : 0 < α) (hZ : Measurable Z)
+    (hV : Measurable V) (hν : ν.map Prod.fst = paretoMeasure 1 α)
+    (h : TendstoLawCond P (fun x => {ω | x < Z ω}) (fun x ω => (Z ω / x, x⁻¹ • V ω)) atTop ν) :
+    IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α) := by
+  have hS : ∀ y : ℝ, MeasurableSet {ω | y < Z ω} := fun y => measurableSet_lt measurable_const hZ
+  have hne := h.eventually_measure_ne_zero
+  have hpos : ∀ᶠ x in atTop, 0 < P.real {ω | x < Z ω} := by
+    filter_upwards [hne] with x hx
+    exact ENNReal.toReal_pos hx (measure_ne_top _ _)
+  have hY : ∀ x : ℝ, Measurable fun ω => (Z ω / x, x⁻¹ • V ω) := fun x =>
+    (hZ.div_const x).prodMk (hV.const_smul _)
+  -- the case `u ≥ 1`
+  have hge : ∀ u : ℝ, 1 ≤ u → Tendsto (fun x => P.real {ω | u * x < Z ω} / P.real {ω | x < Z ω})
+      atTop (𝓝 (u ^ (-α))) := by
+    intro u hu
+    have hμs : ∀ᶠ x in atTop, IsProbabilityMeasure
+        ((P[|{ω | x < Z ω}]).map fun ω => (Z ω / x, x⁻¹ • V ω)) := by
+      filter_upwards [hne] with x hx
+      have := cond_isProbabilityMeasure (μ := P) hx
+      infer_instance
+    have hlim := tendsto_measure_of_null_frontier_of_forall_integral_tendsto hμs (μ := ν)
+      (fun f => (h f).congr fun x => by
+        rw [integral_map (hY x).aemeasurable f.continuous.aestronglyMeasurable])
+      (E := {p : ℝ × E | u < p.1}) (by
+        refine measure_mono_null (frontier_lt_subset_eq continuous_const continuous_fst) ?_
+        have : ν {p : ℝ × E | u = p.1} = ν.map Prod.fst {u} := by
+          rw [Measure.map_apply measurable_fst (measurableSet_singleton u)]
+          congr 1; ext p; simp [eq_comm]
+        rw [this, hν, paretoMeasure_singleton])
+    have hνu : ν {p : ℝ × E | u < p.1} = ENNReal.ofReal (u ^ (-α)) := by
+      rw [← paretoMeasure_one_Ioi hα hu, ← hν, Measure.map_apply measurable_fst measurableSet_Ioi]
+      rfl
+    rw [hνu] at hlim
+    have hlim' := (ENNReal.tendsto_toReal ENNReal.ofReal_ne_top).comp hlim
+    rw [ENNReal.toReal_ofReal (Real.rpow_pos_of_pos (one_pos.trans_le hu) _).le] at hlim'
+    refine hlim'.congr' ?_
+    filter_upwards [eventually_gt_atTop 0] with x hx
+    have hsub : {ω | u * x < Z ω} ⊆ {ω | x < Z ω} := fun ω (hω : u * x < Z ω) =>
+      show x < Z ω by nlinarith
+    have hpre : (fun ω => (Z ω / x, x⁻¹ • V ω)) ⁻¹' {p : ℝ × E | u < p.1} = {ω | u * x < Z ω} := by
+      ext ω; simp [lt_div_iff₀ hx]
+    simp only [Function.comp_apply]
+    rw [Measure.map_apply (hY x) (measurableSet_lt measurable_const measurable_fst), hpre,
+      cond_apply (hS x), inter_eq_right.2 hsub, ENNReal.toReal_mul, ENNReal.toReal_inv,
+      ← measureReal_def, ← measureReal_def, div_eq_inv_mul]
+  refine ⟨hpos, fun c hc => ?_⟩
+  rcases le_or_gt 1 c with hc1 | hc1
+  · exact hge c hc1
+  · -- invert: `f(c x) / f(x) = (f(c⁻¹ (c x)) / f(c x))⁻¹`
+    have h1 := (hge c⁻¹ (one_le_inv₀ hc |>.2 hc1.le)).comp (tendsto_id.const_mul_atTop hc)
+    have h2 := h1.inv₀ (Real.rpow_pos_of_pos (inv_pos.2 hc) _).ne'
+    rw [Real.inv_rpow hc.le, Real.rpow_neg hc.le, inv_inv, ← Real.rpow_neg hc.le] at h2
+    refine h2.congr' ?_
+    filter_upwards [eventually_gt_atTop 0] with x hx
+    simp only [Function.comp_apply, id, inv_div, ← mul_assoc, inv_mul_cancel₀ hc.ne', one_mul]
+
+/-- **Polar decomposition, converse: spectral convergence** ([BS09, Theorem 2.1, (ii) ⇒ (iii)]).
+If the law of `(Z / x, V / x)` given `Z > x` converges weakly to `ν` whose first marginal is
+Pareto(`α`), then the law of `V / Z` given `Z > x` converges weakly to the law of `Y / R` under
+`(R, Y) ∼ ν`. -/
+theorem tendstoLawCond_spectral_of_tendstoLawCond (hZ : Measurable Z)
+    (hν : ν.map Prod.fst = paretoMeasure 1 α)
+    (h : TendstoLawCond P (fun x => {ω | x < Z ω}) (fun x ω => (Z ω / x, x⁻¹ • V ω)) atTop ν) :
+    TendstoLawCond P (fun x => {ω | x < Z ω}) (fun _ ω => (Z ω)⁻¹ • V ω) atTop
+      (ν.map fun p => p.1⁻¹ • p.2) := by
+  have hφ : Continuous fun p : ℝ × E => (max p.1 1)⁻¹ • p.2 :=
+    ((continuous_fst.max continuous_const).inv₀ fun p =>
+      (one_pos.trans_le (le_max_right _ _)).ne').smul continuous_snd
+  have key := h.comp hφ
+  have hmap : ν.map (fun p : ℝ × E => (max p.1 1)⁻¹ • p.2) = ν.map fun p => p.1⁻¹ • p.2 := by
+    refine Measure.map_congr ?_
+    filter_upwards [ae_one_lt_fst_of_map_fst hν] with p hp
+    rw [max_eq_left hp.le]
+  rw [hmap] at key
+  refine key.congr ?_
+  filter_upwards [eventually_gt_atTop 0] with x hx
+  filter_upwards [ae_cond_mem (measurableSet_lt measurable_const hZ)] with ω hω
+  have hZ0 : Z ω ≠ 0 := (hx.trans hω).ne'
+  have h1 : max (Z ω / x) 1 = Z ω / x := max_eq_left ((one_lt_div hx).2 hω).le
+  simp only [h1, smul_smul]
+  congr 1
+  field_simp
+
+/-- **Independence of the radial and spectral parts** ([BS09, Theorem 2.1], [KS20, Theorem
+5.2.2]). Under the hypotheses of `tendstoLawCond_spectral_of_tendstoLawCond`, `ν` is the law of
+`(R, R • Θ)` with `R` Pareto(`α`) independent of `Θ = Y / R`. -/
+theorem eq_map_prod_of_tendstoLawCond (hα : 0 < α) (hZ : Measurable Z) (hV : Measurable V)
+    (hν : ν.map Prod.fst = paretoMeasure 1 α)
+    (h : TendstoLawCond P (fun x => {ω | x < Z ω}) (fun x ω => (Z ω / x, x⁻¹ • V ω)) atTop ν) :
+    ν = (((paretoMeasure 1 α).prod (ν.map fun p => p.1⁻¹ • p.2)).map
+      fun p => (p.1, p.1 • p.2)) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have : IsProbabilityMeasure (ν.map fun p => p.1⁻¹ • p.2) :=
+    inferInstance
+  exact h.unique (tendstoLawCond_polar hα hZ hV
+    (isRegularlyVarying_of_tendstoLawCond hα hZ hV hν h)
+    (tendstoLawCond_spectral_of_tendstoLawCond hZ hν h))
+
+omit [IsProbabilityMeasure ν] in
+/-- The first marginal of the law of `(R, R • Θ)` is Pareto. -/
+theorem map_fst_map_polar (hα : 0 < α) (μ : Measure E) [IsProbabilityMeasure μ] :
+    (((paretoMeasure 1 α).prod μ).map fun p => (p.1, p.1 • p.2)).map Prod.fst =
+      paretoMeasure 1 α := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  rw [Measure.map_map measurable_fst (measurable_fst.prodMk continuous_smul.measurable)]
+  change ((paretoMeasure 1 α).prod μ).map Prod.fst = _
+  simp
+
+omit [IsProbabilityMeasure ν] in
+/-- **The Basrak–Segers equivalence for a random vector** ([BS09, Theorem 2.1, (ii) ⇔ (iii)]).
+The following are equivalent, for `α > 0`:
+* `P(Z > x)` is regularly varying with index `-α` and the law of `V / Z` given `Z > x` converges
+  weakly to some probability measure;
+* the law of `(Z / x, V / x)` given `Z > x` converges weakly to some probability measure with
+  Pareto(`α`) first marginal. -/
+theorem polar_iff (hα : 0 < α) (hZ : Measurable Z) (hV : Measurable V) :
+    (IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α) ∧
+      ∃ μ : Measure E, IsProbabilityMeasure μ ∧
+        TendstoLawCond P (fun x => {ω | x < Z ω}) (fun _ ω => (Z ω)⁻¹ • V ω) atTop μ) ↔
+    ∃ ν : Measure (ℝ × E), IsProbabilityMeasure ν ∧ ν.map Prod.fst = paretoMeasure 1 α ∧
+      TendstoLawCond P (fun x => {ω | x < Z ω}) (fun x ω => (Z ω / x, x⁻¹ • V ω)) atTop ν := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  constructor
+  · rintro ⟨hRV, μ, hμ, hconv⟩
+    exact ⟨_, inferInstance,
+      map_fst_map_polar hα μ, tendstoLawCond_polar hα hZ hV hRV hconv⟩
+  · rintro ⟨ν, hν, hfst, h⟩
+    exact ⟨isRegularlyVarying_of_tendstoLawCond hα hZ hV hfst h, _,
+      inferInstance,
+      tendstoLawCond_spectral_of_tendstoLawCond hZ hfst h⟩
+
+end Converse
 
 end ExtremeValueTheory
