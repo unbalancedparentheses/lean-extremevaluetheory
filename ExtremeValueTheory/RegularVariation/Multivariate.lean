@@ -337,6 +337,75 @@ theorem measure_smul_set (h : IsRegVarVector P X α μ) {t : ℝ} (ht : 0 < t) {
   rw [Set.preimage_smul_inv₀ ht.ne', Real.inv_rpow ht.le, ← Real.rpow_neg ht.le] at this
   exact this
 
+/-- Level sets `{ψ = c}`, `c > 0`, of a positively homogeneous function `ψ` are null for the
+exponent measure: there are uncountably many disjoint level sets `{ψ = t}`, `t ∈ (c / 2, c)`, in a
+region of finite mass, and they all have proportional masses by homogeneity. -/
+theorem measure_level_eq_zero (h : IsRegVarVector P X α μ) {ψ : E → ℝ} (hψ : Measurable ψ)
+    (hhom : ∀ t : ℝ, 0 < t → ∀ y, ψ (t • y) = t * ψ y) {c r : ℝ} (hc : 0 < c) (hr : 0 < r)
+    (hψr : ∀ y, c / 2 < ψ y → r < ‖y‖) : μ {y | ψ y = c} = 0 := by
+  have hfin : IsFiniteMeasure (μ.restrict {y | r < ‖y‖}) :=
+    isFiniteMeasure_restrict.2 (h.measure_lt_top r hr).ne
+  have hcount := Measure.countable_meas_level_set_pos (μ := μ.restrict {y | r < ‖y‖}) hψ
+  obtain ⟨t, ht, hct⟩ := (hcount.dense_compl ℝ).exists_between (show c / 2 < c by linarith)
+  have ht0 : 0 < t := lt_trans (half_pos hc) hct.1
+  have hνt : μ.restrict {y | r < ‖y‖} {y | ψ y = t} = 0 := by
+    simpa using ht
+  have hμt : μ {y | ψ y = t} = 0 := by
+    rw [Measure.restrict_apply (measurableSet_eq_fun hψ measurable_const)] at hνt
+    rwa [inter_eq_left.2 (show {y | ψ y = t} ⊆ {y | r < ‖y‖} from
+      fun y (hy : ψ y = t) => hψr y (by rw [hy]; exact hct.1))] at hνt
+  have hpre : {y | ψ y = c} = (fun y => (t / c) • y) ⁻¹' {y | ψ y = t} := by
+    ext y
+    simp only [mem_ofPred_eq, mem_preimage, hhom _ (div_pos ht0 hc)]
+    rw [div_mul_eq_mul_div, div_eq_iff hc.ne']
+    exact ⟨fun hy => by rw [hy], fun hy => mul_left_cancel₀ ht0.ne' hy⟩
+  have := congrArg (fun ν : Measure E => ν {y | ψ y = t}) (h.map_smul (div_pos ht0 hc))
+  simp only [Measure.map_apply (measurable_const_smul _)
+    (measurableSet_eq_fun hψ measurable_const), Measure.smul_apply, smul_eq_mul, hμt,
+    mul_zero] at this
+  rw [hpre, this]
+
+/-- The spheres `{‖y‖ = c}`, `c > 0`, are null for the exponent measure. -/
+theorem measure_norm_eq_zero (h : IsRegVarVector P X α μ) {c : ℝ} (hc : 0 < c) :
+    μ {y | ‖y‖ = c} = 0 :=
+  h.measure_level_eq_zero continuous_norm.measurable
+    (fun t ht y => by rw [norm_smul, Real.norm_eq_abs, abs_of_pos ht]) hc (half_pos hc)
+    fun _ hy => hy
+
+omit [MeasurableSpace E] [BorelSpace E] in
+theorem setOf_one_lt_norm_smul {x : ℝ} (hx : 0 < x) (v : E) :
+    1 < ‖x⁻¹ • v‖ ↔ x < ‖v‖ := by
+  rw [norm_smul, norm_inv, Real.norm_eq_abs, abs_of_pos hx, lt_inv_mul_iff₀ hx, mul_one]
+
+/-- The exponent measure is normalized: `μ {‖y‖ > 1} = 1`. -/
+theorem measure_one_lt_norm [IsFiniteMeasure P] (h : IsRegVarVector P X α μ)
+    (hX : Measurable X) : μ {y | 1 < ‖y‖} = 1 := by
+  have hm : MeasurableSet {y : E | 1 < ‖y‖} :=
+    measurableSet_lt measurable_const continuous_norm.measurable
+  have key := h.tendsto_measureReal hX hm one_pos (fun y (hy : 1 < ‖y‖) => hy.le)
+    (measure_mono_null (frontier_lt_subset_eq continuous_const continuous_norm) (by
+      simpa [eq_comm] using h.measure_norm_eq_zero one_pos))
+  have h1 : μ.real {y | 1 < ‖y‖} = 1 := by
+    refine tendsto_nhds_unique key (tendsto_const_nhds.congr' ?_)
+    filter_upwards [h.isRegularlyVarying.eventually_pos, eventually_gt_atTop 0] with x hx hx0
+    have : {ω | 1 < ‖x⁻¹ • X ω‖} = {ω | x < ‖X ω‖} := by
+      ext ω; exact setOf_one_lt_norm_smul hx0 (X ω)
+    rw [this, div_self hx.ne']
+  rw [← ofReal_measureReal (h.measure_lt_top 1 one_pos).ne, h1, ENNReal.ofReal_one]
+
+/-- The radial part of the exponent measure is Pareto: `μ {‖y‖ > u} = u ^ (-α)`. -/
+theorem measure_lt_norm [IsFiniteMeasure P] (h : IsRegVarVector P X α μ) (hX : Measurable X)
+    {u : ℝ} (hu : 0 < u) : μ {y | u < ‖y‖} = ENNReal.ofReal (u ^ (-α)) := by
+  have := congrArg (fun ν : Measure E => ν {y | 1 < ‖y‖}) (h.map_smul (inv_pos.2 hu))
+  simp only [Measure.map_apply (measurable_const_smul _)
+    (measurableSet_lt measurable_const continuous_norm.measurable), Measure.smul_apply,
+    smul_eq_mul, h.measure_one_lt_norm hX, mul_one] at this
+  rw [Real.inv_rpow hu.le, ← Real.rpow_neg hu.le] at this
+  rw [← this]
+  congr 1
+  ext y
+  exact (setOf_one_lt_norm_smul hu y).symm
+
 end IsRegVarVector
 
 end Definition
