@@ -248,4 +248,166 @@ theorem HasShiftInvariantWindows.clusterRatio_sub_le (hstat : HasShiftInvariantW
 
 end Identity
 
+/-! ### The gap formula -/
+
+section Gap
+
+variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {P : Measure Ω} [IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ}
+  {Q : Measure Ω'} [IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ} {u : ℕ → ℝ} {r : ℕ → ℕ}
+
+/-- For each fixed lag `m`, `clusterRatio + εₙ(m) → ϑ_m = P(|Y_t| ≤ 1, 0 < t ≤ m)`, the
+finite-horizon candidate extremal index of the tail process `Y = R Θ`. Stationarity, the spectral
+tail process, `uₙ → ∞`, `rₙ → ∞`. -/
+theorem HasSpectralTailProcess.tendsto_clusterRatio_add_clusterEscape (hα : 0 < α)
+    (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
+    (hstat : HasShiftInvariantWindows P X) (h : HasSpectralTailProcess P X α Q Θ)
+    (hu : Tendsto u atTop atTop) (hr : Tendsto r atTop atTop) (m : ℕ) :
+    Tendsto (fun n => clusterRatio P X u r n + clusterEscape P X u r m n) atTop
+      (𝓝 (((paretoMeasure 1 α).prod Q).real
+        {p | ∀ t ∈ Finset.Ioc (0 : ℤ) m, |p.1 * Θ t p.2| ≤ 1})) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  set π := (paretoMeasure 1 α).prod Q
+  have hs : ∀ x : ℝ, MeasurableSet {ω | x < |X 0 ω|} := fun x =>
+    measurableSet_lt measurable_const (continuous_abs.measurable.comp (hX 0))
+  set q : ℕ → ℝ := fun n => P.real (noReturnSet X (u n) m) / P.real {ω | u n < |X 0 ω|}
+  have hq : Tendsto q atTop
+      (𝓝 (π.real {p | ∀ t ∈ Finset.Ioc (0 : ℤ) m, |p.1 * Θ t p.2| ≤ 1})) := by
+    have key := (h.tendsto_cond_forall_le hα hX hΘm (Finset.Ioc (0 : ℤ) m)).comp hu
+    have key' := (ENNReal.tendsto_toReal (measure_ne_top π _)).comp key
+    refine key'.congr fun n => ?_
+    simp only [Function.comp_apply]
+    rw [cond_toReal_eq (hs _)]
+    rfl
+  have hmr : Tendsto (fun n => (m : ℝ) / r n) atTop (𝓝 0) :=
+    tendsto_const_nhds.div_atTop (tendsto_natCast_atTop_atTop.comp hr)
+  have hd : Tendsto (fun n => clusterRatio P X u r n + clusterEscape P X u r m n - q n) atTop
+      (𝓝 0) := by
+    refine squeeze_zero' ?_ ?_ hmr
+    · filter_upwards [hr.eventually_ge_atTop (m + 1)] with n hn
+      have := (hstat.clusterRatio_sub_le hX u r (m := m) (n := n) (by omega) (by omega)
+        (h.measureReal_lt_abs_pos _)).1
+      dsimp only [q]
+      linarith
+    · filter_upwards [hr.eventually_ge_atTop (m + 1)] with n hn
+      have := (hstat.clusterRatio_sub_le hX u r (m := m) (n := n) (by omega) (by omega)
+        (h.measureReal_lt_abs_pos _)).2
+      dsimp only [q]
+      linarith
+  have := hd.add hq
+  rw [zero_add] at this
+  exact this.congr fun n => by ring
+
+/-- **The gap formula.** For a stationary series with spectral tail process `Θ`, `uₙ → ∞` and
+`rₙ → ∞`, the cluster ratio converges to `L` if and only if the escape mass exists and equals
+`ϑ - L`:
+`P(M_{rₙ} > uₙ) / (rₙ P(|X_0| > uₙ)) → L  ↔  lim_m lim_n εₙ(m) = ϑ - L`.
+No anticlustering, no mixing, no `rₙ / n → 0`. -/
+theorem HasSpectralTailProcess.tendsto_clusterRatio_iff (hα : 0 < α)
+    (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
+    (hstat : HasShiftInvariantWindows P X) (h : HasSpectralTailProcess P X α Q Θ)
+    (hu : Tendsto u atTop atTop) (hr : Tendsto r atTop atTop) (L : ℝ) :
+    Tendsto (clusterRatio P X u r) atTop (𝓝 L) ↔
+      HasEscapeMass P X u r ((candidateExtremalIndex Q Θ α).toReal - L) := by
+  set ϑ := (candidateExtremalIndex Q Θ α).toReal
+  have hθlim := tendsto_measureReal_forall_le_candidateExtremalIndex hα hΘm
+    (h.ae_abs_eq_one hΘm (hX 0))
+  have hm := h.tendsto_clusterRatio_add_clusterEscape hα hX hΘm hstat hu hr
+  set θk : ℕ → ℝ := fun k => ((paretoMeasure 1 α).prod Q).real
+    {p | ∀ t ∈ Finset.Ioc (0 : ℤ) k, |p.1 * Θ t p.2| ≤ 1}
+  constructor
+  · intro hL δ hδ
+    obtain ⟨m₀, hm₀⟩ := (Metric.tendsto_atTop.1 hθlim) (δ / 2) (by linarith)
+    refine ⟨m₀, fun m hm' => ?_⟩
+    have hesc : Tendsto (fun n => clusterEscape P X u r m n) atTop (𝓝 (θk m - L)) :=
+      ((hm m).sub hL).congr fun n => by ring
+    filter_upwards [hesc.eventually (Metric.ball_mem_nhds _ (half_pos hδ))] with n hn
+    rw [Real.dist_eq] at hn
+    have h2 : |θk m - ϑ| < δ / 2 := by rw [← Real.dist_eq]; exact hm₀ m hm'
+    have h3 := abs_sub_le (clusterEscape P X u r m n) (θk m - L) (ϑ - L)
+    rw [show θk m - L - (ϑ - L) = θk m - ϑ by ring] at h3
+    linarith
+  · intro hη
+    rw [Metric.tendsto_atTop]
+    intro δ hδ
+    obtain ⟨m₀, hm₀⟩ := hη (δ / 4) (by linarith)
+    obtain ⟨m₁, hm₁⟩ := (Metric.tendsto_atTop.1 hθlim) (δ / 4) (by linarith)
+    set m := max m₀ m₁
+    obtain ⟨N, hN⟩ := eventually_atTop.1 ((hm₀ m (le_max_left _ _)).and
+      ((hm m).eventually (Metric.ball_mem_nhds _ (show 0 < δ / 4 by linarith))))
+    refine ⟨N, fun n hn => ?_⟩
+    obtain ⟨h1, h2⟩ := hN n hn
+    rw [Real.dist_eq] at h2
+    have h3 : |θk m - ϑ| < δ / 4 := by rw [← Real.dist_eq]; exact hm₁ m (le_max_right _ _)
+    rw [Real.dist_eq]
+    set a := clusterRatio P X u r n
+    set b := clusterEscape P X u r m n
+    have e : a - L = (a + b - θk m) - (b - (ϑ - L)) + (θk m - ϑ) := by ring
+    rw [e]
+    have h4 := abs_add_le ((a + b - θk m) - (b - (ϑ - L))) (θk m - ϑ)
+    have h5 := abs_sub (a + b - θk m) (b - (ϑ - L))
+    linarith
+
+/-- The escape mass is at most `ϑ`. -/
+theorem HasSpectralTailProcess.hasEscapeMass_le (hα : 0 < α)
+    (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
+    (hstat : HasShiftInvariantWindows P X) (h : HasSpectralTailProcess P X α Q Θ)
+    (hu : Tendsto u atTop atTop) (hr : Tendsto r atTop atTop) {η : ℝ}
+    (hη : HasEscapeMass P X u r η) : η ≤ (candidateExtremalIndex Q Θ α).toReal := by
+  have hL := (h.tendsto_clusterRatio_iff hα hX hΘm hstat hu hr
+    ((candidateExtremalIndex Q Θ α).toReal - η)).2 (by rwa [sub_sub_cancel])
+  have : 0 ≤ (candidateExtremalIndex Q Θ α).toReal - η :=
+    ge_of_tendsto hL (Eventually.of_forall fun n =>
+      div_nonneg measureReal_nonneg (mul_nonneg (Nat.cast_nonneg _) measureReal_nonneg))
+  linarith
+
+end Gap
+
+/-! ### Anticlustering means no escape -/
+
+section AC
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsFiniteMeasure P]
+  {X : ℤ → Ω → ℝ} {u : ℕ → ℝ} {r : ℕ → ℕ}
+
+/-- The escape at lag `m` is at most the anticlustering quantity
+`P(|X_0| > uₙ, max_{m ≤ t ≤ rₙ} |X_t| > uₙ) / P(|X_0| > uₙ)`. -/
+theorem clusterEscape_le (m n : ℕ) (hr : 0 < r n) :
+    clusterEscape P X u r m n ≤
+      P.real {ω | u n < |X 0 ω| ∧ ∃ t : ℤ, (m : ℤ) ≤ t ∧ t ≤ r n ∧ u n < |X t ω|} /
+        P.real {ω | u n < |X 0 ω|} := by
+  set A := P.real {ω | u n < |X 0 ω| ∧ ∃ t : ℤ, (m : ℤ) ≤ t ∧ t ≤ r n ∧ u n < |X t ω|}
+  have hR : (0 : ℝ) < r n := by exact_mod_cast hr
+  have hle : ∀ k ∈ Finset.range (r n), P.real (escapeSet X (u n) m k) ≤ A := fun k hk =>
+    measureReal_mono fun ω hω => by
+      obtain ⟨h0, -, t, ht, hlt⟩ := hω
+      rw [Finset.mem_Ioc] at ht
+      have hk := Finset.mem_range.1 hk
+      exact ⟨h0, t, by omega, by omega, hlt⟩
+  have hsum : ∑ k ∈ Finset.range (r n), P.real (escapeSet X (u n) m k) ≤ r n * A := by
+    calc _ ≤ ∑ _k ∈ Finset.range (r n), A := Finset.sum_le_sum hle
+      _ = r n * A := by simp
+  rw [clusterEscape, ← div_div]
+  exact div_le_div_of_nonneg_right ((div_le_iff₀' hR).2 hsum) measureReal_nonneg
+
+/-- **Forward anticlustering forces zero escape mass.** Together with
+`HasSpectralTailProcess.tendsto_clusterRatio_iff` this recovers
+`HasSpectralTailProcess.tendsto_blockRatio`. -/
+theorem ForwardAntiClusteringAt.hasEscapeMass_zero (hr : Tendsto r atTop atTop)
+    (hAC : ForwardAntiClusteringAt P X u r) : HasEscapeMass P X u r 0 := by
+  intro δ hδ
+  obtain ⟨m₀, hm₀⟩ := hAC δ hδ
+  refine ⟨m₀, fun m hm => ?_⟩
+  filter_upwards [hm₀, hr.eventually_gt_atTop 0] with n hn hrn
+  rw [sub_zero, abs_of_nonneg (clusterEscape_nonneg m n)]
+  refine (clusterEscape_le m n hrn).trans ?_
+  rcases (measureReal_nonneg (μ := P) (s := {ω | u n < |X 0 ω|})).eq_or_lt with h0 | h0
+  · rw [← h0, div_zero]; exact hδ.le
+  rw [div_le_iff₀ h0]
+  refine le_trans (measureReal_mono fun ω hω => ?_) hn
+  obtain ⟨h0, t, h1, h2, h3⟩ := hω
+  exact ⟨h0, t, le_trans (by exact_mod_cast hm) h1, h2, h3⟩
+
+end AC
+
 end ExtremeValueTheory
