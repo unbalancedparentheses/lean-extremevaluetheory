@@ -607,3 +607,36 @@ $\mu^{*n}$ for the convolution power (Definition~\ref{def:convPow}).
   \leanok
   Combine Theorem~\ref{thm:gclt-converse} with the sufficiency direction, Theorem~\ref{thm:gclt}.
 \end{proof}
+
+\begin{theorem}[Converse of the generalized CLT, general case]
+  \label{thm:gclt-converse-asymmetric}
+  \uses{thm:gclt-converse}
+  \lean{ExtremeValueTheory.GCLTConverse.symmLaw, ExtremeValueTheory.GCLTConverse.exists_tendsto_mul_integral_comp, ExtremeValueTheory.GCLTConverse.exists_tendsto_mul_tails_of_tendsto,
+    ExtremeValueTheory.GCLTConverse.exists_isRegularlyVarying_tailBalance_of_tendsto, ExtremeValueTheory.GCLTConverse.exists_tendsto_mul_sqRatio_of_tendsto}
+  \leanok
+  If $(S_n - b_n)/a_n$ converges weakly to a non-degenerate law, then for some $0 < \alpha \le 2$ the truncated second moment
+  is $RV_{2-\alpha}$; if $\alpha < 2$, the tail $\PR[|X| > x]$ is $RV_{-\alpha}$, $n\PR[|X| > a_n]$ converges to a positive
+  constant, the tails are balanced, $\PR[X > x]/\PR[|X| > x] \to p \in [0, 1]$, and $n\PR[X > a_n u] \to c_+ u^{-\alpha}$,
+  $n\PR[X < -a_n u] \to c_- u^{-\alpha}$ (the L\'evy measure) [Feller, \S XVII.5, Theorem~2], [Gnedenko--Kolmogorov,
+  \S35]. The limit is not identified as stable here.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Symmetrize: $X - X'$ satisfies the symmetric converse, and symmetrization inequalities give
+  $\PR[|X| > x] \sim \frac12 \PR[|X - X'| > x]$. Tail balance from second differences of $n \log \varphi$, in which the
+  centering cancels, and the kernel $\int_0^{s_0} (1 - \cos sz) \ud s$ with L\'evy's continuity theorem.
+\end{proof}
+
+\begin{theorem}[Domain of attraction of symmetric stable laws]
+  \label{thm:doa-symm-stable-iff}
+  \uses{thm:feller-criterion}
+  \lean{ExtremeValueTheory.GCLTConverse.normSeq, ExtremeValueTheory.GCLTConverse.tendsto_mul_absTail_normSeq, ExtremeValueTheory.GCLTConverse.tendsto_normSeq, ExtremeValueTheory.GCLTConverse.tendsto_map_convPow_normSeq,
+    ExtremeValueTheory.GCLTConverse.domainOfAttraction_isSymmStable_iff}
+  \leanok
+  For symmetric $X$ and $0 < \alpha < 2$: $X$ is in the domain of attraction of a symmetric $\alpha$-stable law if and only if
+  $\PR[|X| > x] \in RV_{-\alpha}$, with normalization $a_n = \inf\{x : \PR[|X| > x] \le 1/n\}$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  $n\PR[|X| > a_n] \to 1$ for this $a_n$; then Theorems~\ref{thm:gclt} and~\ref{thm:gclt-converse}.
+\end{proof}
