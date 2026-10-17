@@ -17,6 +17,8 @@ A stationary sequence `X` has *extremal index* `θ ∈ [0, 1]` if, whenever
 ## Main definitions and results
 
 * `ExtremeValueTheory.HasExtremalIndex X P θ`: `X` has extremal index `θ`.
+* `ExtremeValueTheory.HasExtremalIndexStrict X P θ`: `X` has extremal index `θ` and every `τ > 0`
+  is attained by a level sequence, as in [LLR, §3.7]; `HasExtremalIndexStrict.unique`.
 * `ExtremeValueTheory.hasExtremalIndex_one`: Leadbetter's conditions `D(uₙ)` and `D'(uₙ)` at all
   levels with `n P(X 0 > uₙ) → τ > 0` give extremal index `1` [LLR, Theorem 3.4.1].
 * `CumulativeDistributionFunction.IsExtremeValueDistr.continuous`: extreme value distributions
@@ -31,8 +33,12 @@ A stationary sequence `X` has *extremal index* `θ ∈ [0, 1]` if, whenever
 ## Remarks
 
 We quantify over *all* level sequences with `n P(X 0 > uₙ) → τ`. For marginals with atoms such
-sequences need not exist for every `τ`, in which case the condition is vacuous for that `τ`; the
-original definition [LLR, §3.7] asks for the existence of one such sequence for each `τ`.
+sequences need not exist for every `τ`, in which case `HasExtremalIndex` is vacuous for that `τ`
+(and `θ` need not be unique); the original definition [LLR, §3.7] also asks for the existence of
+such a sequence for each `τ`. This stronger notion is `HasExtremalIndexStrict`
+(= `HasExtremalIndex` plus `HasExceedanceLevels`); it determines `θ`
+(`HasExtremalIndexStrict.unique`) and follows from `HasExtremalIndex` when the marginal c.d.f. is
+continuous (`HasExtremalIndex.strict_of_continuous`).
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Finset
@@ -76,6 +82,76 @@ def HasExtremalIndex (X : ℕ → Ω → ℝ) (P : Measure Ω) (θ : ℝ) : Prop
   θ ∈ Set.Icc (0 : ℝ) 1 ∧ ∀ τ > 0, ∀ u : ℕ → ℝ,
     Tendsto (fun n : ℕ ↦ n * P.real {ω | u n < X 0 ω}) atTop (𝓝 τ) →
       Tendsto (fun n ↦ P.real {ω | partialMax X n ω ≤ u n}) atTop (𝓝 (Real.exp (-(θ * τ))))
+
+/-- The sequence `X` *admits exceedance levels* if for every `τ > 0` there is a level sequence
+`uₙ` with `n P(X 0 > uₙ) → τ`. This holds for instance when the marginal c.d.f. of `X 0` is
+continuous (`hasExceedanceLevels_of_continuous`); for marginals with atoms it may fail. -/
+def HasExceedanceLevels (X : ℕ → Ω → ℝ) (P : Measure Ω) : Prop :=
+  ∀ τ > 0, ∃ u : ℕ → ℝ, Tendsto (fun n : ℕ ↦ n * P.real {ω | u n < X 0 ω}) atTop (𝓝 τ)
+
+/-- **Extremal index in the sense of [LLR, §3.7].** `HasExtremalIndex X P θ` together with the
+existence, for every `τ > 0`, of levels `uₙ` with `n P(X 0 > uₙ) → τ`. Unlike
+`HasExtremalIndex`, which is vacuous at the values of `τ` not attained by any level sequence, this
+determines `θ` uniquely (`HasExtremalIndexStrict.unique`). -/
+structure HasExtremalIndexStrict (X : ℕ → Ω → ℝ) (P : Measure Ω) (θ : ℝ) : Prop where
+  /-- The limit relation defining the extremal index. -/
+  hasExtremalIndex : HasExtremalIndex X P θ
+  /-- Every `τ > 0` is attained by some level sequence. -/
+  hasExceedanceLevels : HasExceedanceLevels X P
+
+/-- **Uniqueness of the extremal index**: when exceedance levels exist, the extremal index is
+unique. -/
+theorem HasExtremalIndex.unique {θ θ' : ℝ} (h : HasExtremalIndex X P θ)
+    (h' : HasExtremalIndex X P θ') (hl : HasExceedanceLevels X P) : θ = θ' := by
+  obtain ⟨u, hu⟩ := hl 1 one_pos
+  have := tendsto_nhds_unique (h.2 1 one_pos u hu) (h'.2 1 one_pos u hu)
+  simpa using this
+
+/-- **Uniqueness of the extremal index** in the sense of [LLR, §3.7]. -/
+theorem HasExtremalIndexStrict.unique {θ θ' : ℝ} (h : HasExtremalIndexStrict X P θ)
+    (h' : HasExtremalIndexStrict X P θ') : θ = θ' :=
+  h.hasExtremalIndex.unique h'.hasExtremalIndex h.hasExceedanceLevels
+
+/-- Exceedance levels exist when the marginal c.d.f. `x ↦ P(X 0 ≤ x)` is continuous: one can then
+choose `uₙ` with `P(X 0 > uₙ) = τ / n` exactly for `n > τ`. -/
+theorem hasExceedanceLevels_of_continuous [IsProbabilityMeasure P] (hX0 : Measurable (X 0))
+    (hcont : Continuous fun x ↦ P.real {ω | X 0 ω ≤ x}) : HasExceedanceLevels X P := by
+  set G : ℝ → ℝ := fun x ↦ P.real {ω | X 0 ω ≤ x} with hG
+  have hGcdf : G = cdf (P.map (X 0)) := by
+    funext x
+    rw [cdf_eq_real, map_measureReal_apply hX0 measurableSet_Iic]
+    rfl
+  have hbot : Tendsto G atBot (𝓝 0) := hGcdf ▸ tendsto_cdf_atBot _
+  have htop : Tendsto G atTop (𝓝 1) := hGcdf ▸ tendsto_cdf_atTop _
+  have hsurv (v : ℝ) : P.real {ω | v < X 0 ω} = 1 - G v := by
+    have : {ω | v < X 0 ω} = {ω | X 0 ω ≤ v}ᶜ := by ext; simp
+    rw [this, probReal_compl_eq_one_sub (measurableSet_le hX0 measurable_const)]
+  intro τ hτ
+  have hrange (n : ℕ) (hn : τ < n) : 1 - τ / n ∈ Set.range G := by
+    have hn0 : (0 : ℝ) < n := hτ.trans hn
+    have h1 : 0 < 1 - τ / n := by rw [sub_pos, div_lt_one hn0]; exact hn
+    have h2 : 1 - τ / n < 1 := by linarith [div_pos hτ hn0]
+    refine mem_range_of_exists_le_of_exists_ge hcont ?_ ?_
+    · obtain ⟨a, ha⟩ := (hbot.eventually (gt_mem_nhds h1)).exists
+      exact ⟨a, ha.le⟩
+    · obtain ⟨b, hb⟩ := (htop.eventually (lt_mem_nhds h2)).exists
+      exact ⟨b, hb.le⟩
+  classical
+  refine ⟨fun n ↦ if hn : τ < n then (hrange n hn).choose else 0, ?_⟩
+  refine tendsto_const_nhds.congr' ?_
+  obtain ⟨N, hN⟩ := exists_nat_gt τ
+  filter_upwards [eventually_ge_atTop N] with n hn
+  have hτn : τ < n := hN.trans_le (by exact_mod_cast hn)
+  simp only [hτn, dite_true]
+  have hn0 : (n : ℝ) ≠ 0 := (hτ.trans hτn).ne'
+  rw [hsurv, (hrange n hτn).choose_spec, sub_sub_cancel, mul_div_cancel₀ τ hn0]
+
+/-- A sequence with extremal index `θ` and continuous marginal c.d.f. has extremal index `θ` in the
+sense of [LLR, §3.7]. -/
+theorem HasExtremalIndex.strict_of_continuous [IsProbabilityMeasure P] {θ : ℝ}
+    (h : HasExtremalIndex X P θ) (hX0 : Measurable (X 0))
+    (hcont : Continuous fun x ↦ P.real {ω | X 0 ω ≤ x}) : HasExtremalIndexStrict X P θ :=
+  ⟨h, hasExceedanceLevels_of_continuous hX0 hcont⟩
 
 /-- Under Leadbetter's conditions `D(uₙ)` and `D'(uₙ)` for all relevant level sequences, the
 extremal index is `1` [LLR, Theorem 3.4.1], [EKM, Theorem 4.4.3]. -/
