@@ -131,12 +131,12 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   (`le_candidateExtremalIndex`). Checked on the moving maximum, where `θ = ϑ = 1/2`.
 - **Mixing and m-dependence** (`ForMathlib/Probability/Process/Mixing.lean`, `Dependence/Mixing.lean`,
   `MDependent*.lean`): strong and β-mixing coefficients; α-mixing at a rate implies condition `𝒜`;
-  every stationary m-dependent sequence with a spectral tail process has extremal index `ϑ`
+  for every stationary m-dependent sequence with a spectral tail process, `|X|` has extremal index `ϑ`
   (`HasSpectralTailProcess.hasExtremalIndex_of_isMDependent`). Through this theorem: the moving
   maximum has `θ = 1/2` (second, independent proof) and finite moving averages have
   `θ = max ψ_j^α / Σ ψ_j^α` (`MovingAverage.hasExtremalIndex`). Infinite moving averages (by truncation,
-  `α < 1`): `θ = ϑ = sup ψ_j^α / Σ ψ_j^α` (`InfiniteMovingAverage.hasExtremalIndex`), and AR(1) has
-  `θ = 1 − φ^α` (`AR1.hasExtremalIndex`).
+  `α < 1`): `θ = ϑ = sup ψ_j^α / Σ ψ_j^α` (`InfiniteMovingAverage.hasExtremalIndex`), and AR(1) with
+  `0 < φ < 1` and nonnegative noise has `θ = 1 − φ^α` (`AR1.hasExtremalIndex`).
 - **Vague convergence and Poisson random measures** (`ForMathlib/`, Mathlib-only imports, intended
   for upstreaming): vague convergence with its portmanteau properties, Poisson random measures with
   existence for every s-finite intensity (`exists_isPoissonRandomMeasure`), Laplace functionals,

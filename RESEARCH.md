@@ -28,10 +28,12 @@ Hypothesis bookkeeping (the research value of the formal proofs):
 - The cluster ratio `P(M_{rₙ} > uₙ)/(rₙ P(|X₀| > uₙ)) → ϑ` needs only stationarity, the tail process,
   `uₙ, rₙ → ∞` and *forward* anticlustering at *one* level sequence: no mixing, no `rₙ/n → 0`.
 - `Θ_t → 0` follows from forward anticlustering at one level, without stationarity.
-- `θ ≤ ϑ` needs no anticlustering, only condition `𝒜` along one level sequence.
+- `θ ≤ ϑ` needs no anticlustering: besides stationarity, the spectral tail process and the
+  existence of `θ` (for `|X|`), it uses condition `𝒜` along one level sequence with
+  `nP(|X₀|>uₙ) → τ > 0`, `rₙ → ∞` and `rₙ/n → 0`.
 
-Also done: `𝒜` from α-mixing at a rate; every stationary m-dependent sequence with a spectral tail
-process has `θ = ϑ`; through it, the moving maximum (`θ = 1/2`) and finite moving averages
+Also done: `𝒜` from α-mixing at a rate; for every stationary m-dependent sequence with a spectral tail
+process, `|X|` has extremal index `ϑ`; through it, the moving maximum (`θ = 1/2`) and finite moving averages
 (`θ = max ψ^α/Σψ^α`) recover the classical values.
 
 Also done: Hill consistency under dependence (P2-adjacent), reduced to a variance bound on
