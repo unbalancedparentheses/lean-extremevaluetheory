@@ -1037,4 +1037,117 @@ theorem tendstoInDistribution_hill_comp_exp {E : ℕ → Ω → ℝ} (hEm : ∀ 
 
 end General
 
+/-! ### The tail quantile function and the quantile transform -/
+
+section TailQuantile
+
+/-- The **tail quantile function** `U(t) = (1 / (1 - F))^←(t) = inf {x | F̄(x) ≤ 1/t}` of a
+survival function `F̄`, for `t > 1` ([dHF, §1.1.2]); we set `U(t) = 0` for `t ≤ 1`. -/
+noncomputable def tailQuantile (F : ℝ → ℝ) (t : ℝ) : ℝ :=
+  if 1 < t then sInf {x | F x ≤ t⁻¹} else 0
+
+variable {F : ℝ → ℝ}
+
+/-- The Galois connection of the tail quantile function: for `t > 1`,
+`U(t) ≤ x ↔ F̄(x) ≤ 1/t`. -/
+theorem tailQuantile_le_iff (hF : Antitone F) (hrc : ∀ x, ContinuousWithinAt F (Ici x) x)
+    (h0 : Tendsto F atTop (𝓝 0)) (h1 : Tendsto F atBot (𝓝 1)) {t : ℝ} (ht : 1 < t) (x : ℝ) :
+    tailQuantile F t ≤ x ↔ F x ≤ t⁻¹ := by
+  have hp : 0 < t⁻¹ := inv_pos.2 (one_pos.trans ht)
+  have hp1 : t⁻¹ < 1 := inv_lt_one_of_one_lt₀ ht
+  obtain ⟨M, hM⟩ := (h1.eventually (lt_mem_nhds hp1)).exists
+  obtain ⟨hU1, hU2, -⟩ := threshold_spec hF hrc h0 hp hM
+  simp only [tailQuantile, ht, ↓reduceIte]
+  constructor
+  · intro hx
+    exact (hF hx).trans hU1
+  · intro hx
+    by_contra hcon
+    exact absurd hx (not_le.2 (hU2 x (not_le.1 hcon)))
+
+theorem monotoneOn_tailQuantile (hF : Antitone F) (hrc : ∀ x, ContinuousWithinAt F (Ici x) x)
+    (h0 : Tendsto F atTop (𝓝 0)) (h1 : Tendsto F atBot (𝓝 1)) :
+    MonotoneOn (tailQuantile F) (Ioi 1) := by
+  intro t ht t' ht' htt'
+  rw [tailQuantile_le_iff hF hrc h0 h1 ht]
+  have := (tailQuantile_le_iff hF hrc h0 h1 ht' (tailQuantile F t')).1 le_rfl
+  exact this.trans (inv_anti₀ (one_pos.trans ht) htt')
+
+theorem measurable_tailQuantile (hF : Antitone F) (hrc : ∀ x, ContinuousWithinAt F (Ici x) x)
+    (h0 : Tendsto F atTop (𝓝 0)) (h1 : Tendsto F atBot (𝓝 1)) :
+    Measurable (tailQuantile F) := by
+  refine measurable_of_restrict_of_restrict_compl (s := Ioi 1) measurableSet_Ioi ?_ ?_
+  · have : Monotone ((Ioi (1 : ℝ)).domRestrict (tailQuantile F)) := fun a b hab =>
+      monotoneOn_tailQuantile hF hrc h0 h1 a.2 b.2 hab
+    exact this.measurable
+  · have : (Ioi (1 : ℝ))ᶜ.domRestrict (tailQuantile F) = fun _ => 0 := by
+      ext ⟨t, ht⟩
+      have ht' : ¬ 1 < t := ht
+      simp [Set.domRestrict, tailQuantile, ht']
+    rw [this]
+    exact measurable_const
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+
+theorem tendsto_survival_atBot {Y : Ω → ℝ} (hY : Measurable Y) :
+    Tendsto (survival P Y) atBot (𝓝 1) := by
+  have h := (tendsto_cdf_atBot (μ := P.map Y)).const_sub 1
+  rw [sub_zero] at h
+  exact h.congr fun y => (survival_eq_one_sub_cdf (P := P) hY y).symm
+
+/-- **The quantile transform**: if `E` is standard exponential, then `U(e^E)` has the law of `Y`,
+where `U` is the tail quantile function of the survival function of `Y`. -/
+theorem map_eq_expMeasure_map_tailQuantile {Y : Ω → ℝ} (hY : Measurable Y) :
+    P.map Y = (expMeasure 1).map (fun e => tailQuantile (survival P Y) (exp e)) := by
+  set F := survival P Y with hFdef
+  have hF := survival_anti (P := P) Y
+  have hrc := continuousWithinAt_survival (P := P) hY
+  have h0 := tendsto_survival_atTop (P := P) hY
+  have h1 := tendsto_survival_atBot (P := P) hY
+  have hVm : Measurable fun e => tailQuantile F (exp e) :=
+    (measurable_tailQuantile hF hrc h0 h1).comp measurable_exp
+  refine measure_eq_of_Ioi fun a => ?_
+  rw [Measure.map_apply hY measurableSet_Ioi, Measure.map_apply hVm measurableSet_Ioi]
+  have hPa : P (Y ⁻¹' Ioi a) = ENNReal.ofReal (F a) := by
+    rw [hFdef, survival, ENNReal.ofReal_toReal (measure_ne_top _ _)]
+    rfl
+  have hF1 : F a ≤ 1 := ENNReal.toReal_le_of_le_ofReal zero_le_one (by simpa using prob_le_one)
+  have hnull : expMeasure 1 (Ioi 0)ᶜ = 0 := by
+    rw [compl_Ioi, expMeasure_Iic le_rfl]; simp
+  rw [hPa, ← measure_inter_conull hnull]
+  have hset : (fun e => tailQuantile F (exp e)) ⁻¹' Ioi a ∩ Ioi 0 =
+      {e | exp (-e) < F a} ∩ Ioi 0 := by
+    ext e
+    simp only [mem_inter_iff, mem_preimage, mem_Ioi, mem_ofPred_eq]
+    constructor
+    · rintro ⟨h, he⟩
+      refine ⟨?_, he⟩
+      have := mt (tailQuantile_le_iff hF hrc h0 h1 (one_lt_exp_iff.2 he) a).2 (not_le.2 h)
+      rw [not_le, ← exp_neg] at this
+      exact this
+    · rintro ⟨h, he⟩
+      refine ⟨?_, he⟩
+      by_contra hcon
+      rw [not_lt, tailQuantile_le_iff hF hrc h0 h1 (one_lt_exp_iff.2 he), ← exp_neg] at hcon
+      exact absurd h (not_lt.2 hcon)
+  rw [hset]
+  rcases (survival_nonneg (P := P) (Y := Y) a).lt_or_eq with hpos | hzero
+  · have e2 : {e | exp (-e) < F a} = Ioi (-log (F a)) := by
+      ext e
+      simp only [mem_ofPred_eq, mem_Ioi]
+      rw [← lt_log_iff_exp_lt hpos, neg_lt]
+    have hlog : log (F a) ≤ 0 := log_nonpos hpos.le hF1
+    rw [e2, Set.inter_eq_left.2 (Ioi_subset_Ioi (by linarith)),
+      expMeasure_Ioi (by linarith), neg_neg, exp_log hpos]
+
+  · have e2 : {e | exp (-e) < F a} = ∅ := by
+      ext e
+      simp only [mem_ofPred_eq, mem_empty_iff_false, iff_false, not_lt]
+      rw [hFdef, ← hzero]
+      exact (exp_pos _).le
+    rw [e2, empty_inter, measure_empty, hFdef, ← hzero, ENNReal.ofReal_zero]
+
+
+end TailQuantile
+
 end ExtremeValueTheory
