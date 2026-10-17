@@ -569,3 +569,41 @@ $\mu^{*n}$ for the convolution power (Definition~\ref{def:convPow}).
   Compare with $\int_0^\infty (e^{-v} - \mathbf 1\{v < 1\})/v \ud v = -\gamma$ and show
   $\int_0^\infty (\cos v - e^{-v})/v \ud v = 0$.
 \end{proof}
+
+\section{The converse: domains of attraction of symmetric stable laws}
+
+\begin{theorem}[Converse of the generalized CLT, symmetric case]
+  \label{thm:gclt-converse}
+  \uses{thm:gclt, thm:levy-continuity}
+  \lean{ExtremeValueTheory.GCLTConverse.truncSecondMoment, ExtremeValueTheory.GCLTConverse.tendsto_sq_mul_absTail_div_minSqMoment,
+    ExtremeValueTheory.GCLTConverse.exists_isRegularlyVarying_of_tendsto, ExtremeValueTheory.GCLTConverse.isRegularlyVarying_of_tendsto_isSymmStable}
+  \leanok
+  Let $\mu$ be symmetric and $a_n > 0$ with $S_n/a_n$ converging weakly to $\nu \ne \delta_0$. Then for some
+  $0 < \alpha \le 2$ the truncated second moment $U(x) = \E[X^2 \mathbf 1\{|X| \le x\}]$ is regularly varying with
+  index $2 - \alpha$, and if $\alpha < 2$ the tail $\PR[|X| > x]$ is regularly varying with index $-\alpha$
+  [Feller, \S XVII.5, Theorem~2], [Gnedenko--Kolmogorov, \S35]. If the limit is S$\alpha$S, then the tail is
+  $RV_{-\alpha}$ and $n\PR[|X| > a_n]$ converges to a positive constant.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Tightness gives uniform control of characteristic functions near $0$, so
+  $n(1 - \varphi(t/a_n)) \to -\log \psi(t)$. The canonical measures $n\,y^2/(1+y^2)\,\PR[X/a_n \in \ud y]$ converge weakly
+  (L\'evy continuity), giving a limit for $n\,\E[\min(1, X^2/(a_n x)^2)]$; monotonicity turns this into regular
+  variation, and an elementary Tauberian step gives the tail.
+\end{proof}
+
+\begin{theorem}[Feller's criterion, symmetric case]
+  \label{thm:feller-criterion}
+  \uses{thm:gclt-converse}
+  \lean{ExtremeValueTheory.GCLTConverse.isRegularlyVarying_truncSecondMoment_iff_absTail,
+    ExtremeValueTheory.GCLTConverse.isRegularlyVarying_truncSecondMoment_of_domainOfAttraction,
+    ExtremeValueTheory.GCLTConverse.tendsto_map_convPow_of_isRegularlyVarying_truncSecondMoment}
+  \leanok
+  For symmetric $X$ and $0 < \alpha < 2$: $U \in RV_{2-\alpha}$ iff $\PR[|X| > x] \in RV_{-\alpha}$, and $X$ is in the domain of
+  attraction of an S$\alpha$S law iff these hold [Feller, \S XVII.5]. The asymmetric case (tail balance) is not
+  formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Combine Theorem~\ref{thm:gclt-converse} with the sufficiency direction, Theorem~\ref{thm:gclt}.
+\end{proof}

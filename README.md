@@ -160,6 +160,10 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   sets bounded away from 0, homogeneity, the polar decomposition `μ = α r^{−α−1}dr ⊗ S`
   (`isRegVarVector_iff`, `IsRegVarVector.eq_polarMeasure`), tails of linear combinations, and
   asymptotic independence vs. full dependence examples.
+- **Converse of the generalized CLT, symmetric case** (`StableLaws/GeneralizedCLTConverse.lean`): if
+  `S_n/aₙ` converges to a non-degenerate limit, the truncated second moment is `RV_{2−α}` and (for
+  `α < 2`) the tail is `RV_{−α}` (`GCLTConverse.exists_isRegularlyVarying_of_tendsto`); Feller's criterion
+  in the symmetric case. The asymmetric case is not formalized.
 - **Uniform convergence theorem and Karamata's representation theorem** for measurable slowly
   and regularly varying functions (no monotonicity), with two-sided Potter bounds
   (`isSlowlyVarying_iff_exists_representation`, `potter_bounds_of_measurable`).
