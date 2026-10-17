@@ -47,7 +47,8 @@ Gumbel domain of attraction.
   `CumulativeDistributionFunction.isInMDAGumbel_standardGumbelCDF`: examples.
 
 The converse (de Haan's theorem: every `F` in the Gumbel domain of attraction admits such an
-auxiliary function, proved via `Γ`-variation) is not formalized here.
+auxiliary function) is in `ExtremeValueTheory.DomainOfAttraction.GumbelNecessity`, which also
+states the full characterization `isInMDAGumbel_iff`.
 -/
 
 open Filter Topology Set

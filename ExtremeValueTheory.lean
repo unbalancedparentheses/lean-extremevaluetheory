@@ -25,3 +25,4 @@ import ExtremeValueTheory.HeavyTails.Subexponential
 import ExtremeValueTheory.DomainOfAttraction.Gumbel
 import ExtremeValueTheory.Statistics.OrderStatistics
 import ExtremeValueTheory.Statistics.Hill
+import ExtremeValueTheory.DomainOfAttraction.GumbelNecessity
