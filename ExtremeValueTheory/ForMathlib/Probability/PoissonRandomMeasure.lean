@@ -34,6 +34,8 @@ is Poisson distributed with mean `ν(Aᵢ)`.
 * `ProbabilityTheory.IsPoissonRandomMeasure.iIndepFun`: counts on disjoint sets are independent.
 * `ProbabilityTheory.IsPoissonRandomMeasure.integral_exp_neg_sum`: the Laplace functional of a
   Poisson random measure evaluated at simple functions.
+* `ProbabilityTheory.IsPoissonRandomMeasure.of_map_eq_pi`: for a σ-finite intensity, the
+  condition that sets of infinite intensity have a.s. infinite count follows from the others.
 * `ProbabilityTheory.isPoissonRandomMeasure_sumDiracRange`: the random measure `∑_{k < K} δ_{Z k}`
   is a Poisson random measure with intensity `c • μ`.
 * `ProbabilityTheory.integral_exp_neg_integral_sumDiracRange`: the Laplace functional of this
@@ -47,7 +49,10 @@ is Poisson distributed with mean `ν(Aᵢ)`.
 
 The defining property `IsPoissonRandomMeasure.map_eq_pi` packages the Poisson marginals and the
 independence of counts on disjoint sets into the single statement that the joint law of the
-counts is a product of Poisson distributions. The joint laws are identified through
+counts is a product of Poisson distributions. The extra field `IsPoissonRandomMeasure.ae_eq_top`
+asks that sets of infinite intensity have almost surely infinite count; it is needed for intensities
+that are s-finite but not σ-finite, and is proved for the superposition construction by comparing
+with the partial superpositions, whose Laplace transforms tend to `0`. The joint laws are identified through
 characteristic functions (`charFun_eq_pi_iff`), and the countable superposition by dominated
 convergence of the characteristic functions of the partial sums.
 -/
@@ -62,9 +67,14 @@ namespace ProbabilityTheory
 variable {Ω E : Type*} {mΩ : MeasurableSpace Ω} [MeasurableSpace E]
 
 /-- A random measure `N : Ω → Measure E` is a *Poisson random measure* with intensity `ν` under
-the measure `P` if it is measurable and for all pairwise disjoint measurable sets
-`A 0, …, A (n - 1)` of finite `ν`-measure, the joint law of the counts `N (A i)` is the product of
-the Poisson distributions with means `ν (A i)`. -/
+the measure `P` if it is measurable, for all pairwise disjoint measurable sets
+`A 0, …, A (n - 1)` of finite `ν`-measure the joint law of the counts `N (A i)` is the product of
+the Poisson distributions with means `ν (A i)`, and every measurable set of infinite intensity
+almost surely has infinite count.
+
+The last condition is automatic when `ν` is σ-finite (`IsPoissonRandomMeasure.of_map_eq_pi`), but
+not for general (for instance s-finite) intensities: without it the zero random measure would be a
+Poisson random measure with intensity `∞ • Measure.dirac x`. -/
 structure IsPoissonRandomMeasure (N : Ω → Measure E) (ν : Measure E) (P : Measure Ω) : Prop where
   /-- A Poisson random measure is a measurable map into the space of measures. -/
   measurable : Measurable N
@@ -74,6 +84,136 @@ structure IsPoissonRandomMeasure (N : Ω → Measure E) (ν : Measure E) (P : Me
     Pairwise (Function.onFun Disjoint A) →
     P.map (fun ω i ↦ N ω (A i)) =
       Measure.pi fun i ↦ (poissonMeasure (ν (A i)).toNNReal).map (Nat.cast : ℕ → ℝ≥0∞)
+  /-- A measurable set of infinite intensity almost surely contains infinitely many points. -/
+  ae_eq_top : ∀ {A : Set E}, MeasurableSet A → ν A = ∞ → ∀ᵐ ω ∂P, N ω A = ∞
+
+/-! ### Consequences of the product-law condition
+
+The following auxiliary statements only use the measurability of `N` and the product-law
+condition `IsPoissonRandomMeasure.map_eq_pi`; they are used to show that for a σ-finite intensity
+the condition `IsPoissonRandomMeasure.ae_eq_top` follows from the other two. -/
+
+section MapEqPi
+
+variable {N : Ω → Measure E} {ν : Measure E} {P : Measure Ω}
+
+lemma isProbabilityMeasure_of_map_eq_pi
+    (hmap : ∀ {n : ℕ} (A : Fin n → Set E), (∀ i, MeasurableSet (A i)) → (∀ i, ν (A i) ≠ ∞) →
+      Pairwise (Function.onFun Disjoint A) →
+      P.map (fun ω i ↦ N ω (A i)) =
+        Measure.pi fun i ↦ (poissonMeasure (ν (A i)).toNNReal).map (Nat.cast : ℕ → ℝ≥0∞)) :
+    IsProbabilityMeasure P := by
+  have h := hmap (n := 0) Fin.elim0 (fun i ↦ i.elim0) (fun i ↦ i.elim0) (fun i ↦ i.elim0)
+  constructor
+  have hm : Measurable fun ω (i : Fin 0) ↦ N ω (Fin.elim0 i) :=
+    Measurable.of_eval fun (i : Fin 0) ↦ i.elim0
+  have := congrArg (fun m ↦ m Set.univ) h
+  simp only [Measure.map_apply hm MeasurableSet.univ, Set.preimage_univ] at this
+  rw [this, Measure.pi_univ]
+  simp
+
+lemma integral_exp_neg_sum_of_map_eq_pi (hmeas : Measurable N)
+    (hmap : ∀ {n : ℕ} (A : Fin n → Set E), (∀ i, MeasurableSet (A i)) → (∀ i, ν (A i) ≠ ∞) →
+      Pairwise (Function.onFun Disjoint A) →
+      P.map (fun ω i ↦ N ω (A i)) =
+        Measure.pi fun i ↦ (poissonMeasure (ν (A i)).toNNReal).map (Nat.cast : ℕ → ℝ≥0∞))
+    {n : ℕ} {A : Fin n → Set E}
+    (hA : ∀ i, MeasurableSet (A i)) (hνA : ∀ i, ν (A i) ≠ ∞)
+    (hd : Pairwise (Function.onFun Disjoint A)) (a : Fin n → ℝ) :
+    ∫ ω, Real.exp (-∑ i, a i * (N ω (A i)).toReal) ∂P =
+      Real.exp (-∑ i, (ν (A i)).toReal * (1 - Real.exp (-a i))) := by
+  have hm : Measurable fun ω (i : Fin n) ↦ N ω (A i) :=
+    Measurable.of_eval fun i ↦ (Measure.measurable_coe (hA i)).comp hmeas
+  have h := integral_map (μ := P) hm.aemeasurable
+    (f := fun x : Fin n → ℝ≥0∞ ↦ ∏ i, Real.exp (-(a i * (x i).toReal)))
+    (Finset.measurable_prod _ fun i _ ↦ Real.measurable_exp.comp
+      (((measurable_pi_apply i).ennreal_toReal.const_mul (a i)).neg)).aestronglyMeasurable
+  simp only at h
+  simp_rw [← Finset.sum_neg_distrib, Real.exp_sum, ← h, hmap A hA hνA hd,
+    integral_fintype_prod_eq_prod (f := fun i (x : ℝ≥0∞) ↦ Real.exp (-(a i * x.toReal)))]
+  refine Finset.prod_congr rfl fun i _ ↦ ?_
+  rw [integral_map (by fun_prop) (by fun_prop), integral_poissonMeasure]
+  simp only [ENNReal.toReal_natCast, smul_eq_mul]
+  set r : ℝ≥0 := (ν (A i)).toNNReal
+  have hr : (ν (A i)).toReal = r := rfl
+  rw [hr]
+  calc ∑' k : ℕ, Real.exp (-r) * r ^ k / k.factorial * Real.exp (-(a i * k))
+      = ∑' k : ℕ, Real.exp (-r) * ((r * Real.exp (-a i)) ^ k / k.factorial) := by
+        congr with k
+        rw [mul_pow, ← Real.exp_nat_mul]
+        ring_nf
+    _ = Real.exp (-r) * Real.exp (r * Real.exp (-a i)) := by
+        rw [tsum_mul_left, (NormedSpace.expSeries_div_hasSum_exp (r * Real.exp (-a i))).tsum_eq,
+          Real.exp_eq_exp_ℝ]
+    _ = Real.exp (-(r * (1 - Real.exp (-a i)))) := by
+        rw [← Real.exp_add]
+        ring_nf
+
+lemma integral_exp_neg_apply_of_map_eq_pi (hmeas : Measurable N)
+    (hmap : ∀ {n : ℕ} (A : Fin n → Set E), (∀ i, MeasurableSet (A i)) → (∀ i, ν (A i) ≠ ∞) →
+      Pairwise (Function.onFun Disjoint A) →
+      P.map (fun ω i ↦ N ω (A i)) =
+        Measure.pi fun i ↦ (poissonMeasure (ν (A i)).toNNReal).map (Nat.cast : ℕ → ℝ≥0∞))
+    {A : Set E} (hA : MeasurableSet A) (hνA : ν A ≠ ∞) :
+    ∫ ω, Real.exp (-(N ω A).toReal) ∂P = Real.exp (-((ν A).toReal * (1 - Real.exp (-1)))) := by
+  have := integral_exp_neg_sum_of_map_eq_pi hmeas hmap (n := 1) (A := fun _ ↦ A) (fun _ ↦ hA)
+    (fun _ ↦ hνA) (fun i j hij ↦ absurd (Subsingleton.elim i j) hij) (fun _ ↦ 1)
+  simpa using this
+
+end MapEqPi
+
+/-- If random variables `Y M ≤ X` satisfy `E exp (-Y M) → 0`, then `X = ∞` almost surely. -/
+lemma ae_eq_top_of_tendsto_integral_exp_neg {P : Measure Ω} [IsFiniteMeasure P]
+    {X : Ω → ℝ≥0∞} {Y : ℕ → Ω → ℝ≥0∞} (hY : ∀ M, Measurable (Y M))
+    (hle : ∀ M, ∀ᵐ ω ∂P, Y M ω ≤ X ω)
+    (h : Tendsto (fun M ↦ ∫ ω, Real.exp (-(Y M ω).toReal) ∂P) atTop (𝓝 0)) :
+    ∀ᵐ ω ∂P, X ω = ∞ := by
+  have hj (j : ℕ) : P {ω | X ω ≤ j} = 0 := by
+    have hbound (M : ℕ) : P.real {ω | X ω ≤ j} ≤
+        Real.exp j * ∫ ω, Real.exp (-(Y M ω).toReal) ∂P := by
+      have hint : Integrable (fun ω ↦ Real.exp (-(Y M ω).toReal)) P := by
+        refine Integrable.of_bound ((hY M).ennreal_toReal.neg.exp).aestronglyMeasurable 1
+          (Eventually.of_forall fun ω ↦ ?_)
+        rw [Real.norm_eq_abs, abs_of_pos (Real.exp_pos _), Real.exp_le_one_iff, neg_nonpos]
+        exact ENNReal.toReal_nonneg
+      have hmarkov := mul_meas_ge_le_integral_of_nonneg
+        (Eventually.of_forall fun ω ↦ (Real.exp_pos _).le) hint (Real.exp (-j))
+      have hsub : P.real {ω | X ω ≤ j} ≤
+          P.real {ω | Real.exp (-j) ≤ Real.exp (-(Y M ω).toReal)} := by
+        refine ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono_ae ?_)
+        filter_upwards [hle M] with ω hω hX
+        have hYj : Y M ω ≤ j := hω.trans hX
+        have hYj' : (Y M ω).toReal ≤ j := by
+          simpa using ENNReal.toReal_mono (ENNReal.natCast_ne_top j) hYj
+        exact Real.exp_le_exp.2 (by linarith)
+      calc P.real {ω | X ω ≤ j}
+          ≤ P.real {ω | Real.exp (-j) ≤ Real.exp (-(Y M ω).toReal)} := hsub
+        _ = Real.exp j * (Real.exp (-j) *
+            P.real {ω | Real.exp (-j) ≤ Real.exp (-(Y M ω).toReal)}) := by
+          rw [← mul_assoc, ← Real.exp_add]; simp
+        _ ≤ _ := mul_le_mul_of_nonneg_left hmarkov (Real.exp_pos _).le
+    have hlim := h.const_mul (Real.exp j)
+    rw [mul_zero] at hlim
+    have h0 : P.real {ω | X ω ≤ j} ≤ 0 := ge_of_tendsto' hlim hbound
+    exact (measureReal_eq_zero_iff).1 (le_antisymm h0 measureReal_nonneg)
+  have hall : ∀ᵐ ω ∂P, ∀ j : ℕ, ω ∉ {ω | X ω ≤ j} :=
+    ae_all_iff.2 fun j ↦ measure_eq_zero_iff_ae_notMem.1 (hj j)
+  filter_upwards [hall] with ω hω
+  by_contra hne
+  obtain ⟨j, hj⟩ := ENNReal.exists_nat_gt hne
+  exact hω j hj.le
+
+/-- If `r M` are finite and tend to `∞`, then `exp (-(r M * a)) → 0` for `a > 0`. -/
+lemma tendsto_exp_neg_toReal_mul {r : ℕ → ℝ≥0∞} (hr : ∀ M, r M ≠ ∞)
+    (hrt : Tendsto r atTop (𝓝 ∞)) {a : ℝ} (ha : 0 < a) :
+    Tendsto (fun M ↦ Real.exp (-((r M).toReal * a))) atTop (𝓝 0) := by
+  have htop : Tendsto (fun M ↦ (r M).toReal) atTop atTop := by
+    refine tendsto_atTop.2 fun b ↦ ?_
+    filter_upwards [ENNReal.tendsto_nhds_top_iff_nnreal.1 hrt b.toNNReal] with M hM
+    have := (ENNReal.toReal_lt_toReal ENNReal.coe_ne_top (hr M)).2 hM
+    rw [ENNReal.coe_toReal] at this
+    exact (Real.le_coe_toNNReal b).trans this.le
+  exact Real.tendsto_exp_atBot.comp (tendsto_neg_atTop_atBot.comp (htop.atTop_mul_const ha))
 
 namespace IsPoissonRandomMeasure
 
@@ -85,16 +225,8 @@ lemma measurable_apply (hN : IsPoissonRandomMeasure N ν P) {A : Set E} (hA : Me
   (Measure.measurable_coe hA).comp hN.measurable
 
 /-- The underlying measure of a Poisson random measure is a probability measure. -/
-lemma isProbabilityMeasure (hN : IsPoissonRandomMeasure N ν P) : IsProbabilityMeasure P := by
-  have h := hN.map_eq_pi (n := 0) Fin.elim0 (fun i ↦ i.elim0) (fun i ↦ i.elim0)
-    (fun i ↦ i.elim0)
-  constructor
-  have hm : Measurable fun ω (i : Fin 0) ↦ N ω (Fin.elim0 i) :=
-    Measurable.of_eval fun (i : Fin 0) ↦ i.elim0
-  have := congrArg (fun m ↦ m Set.univ) h
-  simp only [Measure.map_apply hm MeasurableSet.univ, Set.preimage_univ] at this
-  rw [this, Measure.pi_univ]
-  simp
+lemma isProbabilityMeasure (hN : IsPoissonRandomMeasure N ν P) : IsProbabilityMeasure P :=
+  isProbabilityMeasure_of_map_eq_pi hN.map_eq_pi
 
 /-- For a set `A` of finite intensity, `N A` is Poisson distributed with mean `ν A`. -/
 lemma hasLaw (hN : IsPoissonRandomMeasure N ν P) {A : Set E} (hA : MeasurableSet A)
@@ -132,33 +264,46 @@ lemma integral_exp_neg_sum (hN : IsPoissonRandomMeasure N ν P) {n : ℕ} {A : F
     (hA : ∀ i, MeasurableSet (A i)) (hνA : ∀ i, ν (A i) ≠ ∞)
     (hd : Pairwise (Function.onFun Disjoint A)) (a : Fin n → ℝ) :
     ∫ ω, Real.exp (-∑ i, a i * (N ω (A i)).toReal) ∂P =
-      Real.exp (-∑ i, (ν (A i)).toReal * (1 - Real.exp (-a i))) := by
-  have hm : Measurable fun ω (i : Fin n) ↦ N ω (A i) :=
-    Measurable.of_eval fun i ↦ hN.measurable_apply (hA i)
-  have h := integral_map (μ := P) hm.aemeasurable
-    (f := fun x : Fin n → ℝ≥0∞ ↦ ∏ i, Real.exp (-(a i * (x i).toReal)))
-    (Finset.measurable_prod _ fun i _ ↦ Real.measurable_exp.comp
-      (((measurable_pi_apply i).ennreal_toReal.const_mul (a i)).neg)).aestronglyMeasurable
-  simp only at h
-  simp_rw [← Finset.sum_neg_distrib, Real.exp_sum, ← h, hN.map_eq_pi A hA hνA hd,
-    integral_fintype_prod_eq_prod (f := fun i (x : ℝ≥0∞) ↦ Real.exp (-(a i * x.toReal)))]
-  refine Finset.prod_congr rfl fun i _ ↦ ?_
-  rw [integral_map (by fun_prop) (by fun_prop), integral_poissonMeasure]
-  simp only [ENNReal.toReal_natCast, smul_eq_mul]
-  set r : ℝ≥0 := (ν (A i)).toNNReal
-  have hr : (ν (A i)).toReal = r := rfl
-  rw [hr]
-  calc ∑' k : ℕ, Real.exp (-r) * r ^ k / k.factorial * Real.exp (-(a i * k))
-      = ∑' k : ℕ, Real.exp (-r) * ((r * Real.exp (-a i)) ^ k / k.factorial) := by
-        congr with k
-        rw [mul_pow, ← Real.exp_nat_mul]
-        ring_nf
-    _ = Real.exp (-r) * Real.exp (r * Real.exp (-a i)) := by
-        rw [tsum_mul_left, (NormedSpace.expSeries_div_hasSum_exp (r * Real.exp (-a i))).tsum_eq,
-          Real.exp_eq_exp_ℝ]
-    _ = Real.exp (-(r * (1 - Real.exp (-a i)))) := by
-        rw [← Real.exp_add]
-        ring_nf
+      Real.exp (-∑ i, (ν (A i)).toReal * (1 - Real.exp (-a i))) :=
+  integral_exp_neg_sum_of_map_eq_pi hN.measurable hN.map_eq_pi hA hνA hd a
+
+/-- **Laplace transform of a count.** For a measurable set `A` of finite intensity,
+`E exp (-N A) = exp (-ν A * (1 - exp (-1)))`. -/
+lemma integral_exp_neg_apply (hN : IsPoissonRandomMeasure N ν P) {A : Set E}
+    (hA : MeasurableSet A) (hνA : ν A ≠ ∞) :
+    ∫ ω, Real.exp (-(N ω A).toReal) ∂P = Real.exp (-((ν A).toReal * (1 - Real.exp (-1)))) :=
+  integral_exp_neg_apply_of_map_eq_pi hN.measurable hN.map_eq_pi hA hνA
+
+/-- **For a σ-finite intensity, the infinite-count condition is automatic.** A measurable random
+measure whose counts on disjoint sets of finite intensity have the product Poisson law is a Poisson
+random measure, provided the intensity is σ-finite: a set `A` of infinite intensity is exhausted by
+the sets `A ∩ spanningSets ν M` of finite intensity, whose counts are Poisson with means tending
+to `∞`. -/
+theorem of_map_eq_pi [SigmaFinite ν] (hmeas : Measurable N)
+    (hmap : ∀ {n : ℕ} (A : Fin n → Set E), (∀ i, MeasurableSet (A i)) → (∀ i, ν (A i) ≠ ∞) →
+      Pairwise (Function.onFun Disjoint A) →
+      P.map (fun ω i ↦ N ω (A i)) =
+        Measure.pi fun i ↦ (poissonMeasure (ν (A i)).toNNReal).map (Nat.cast : ℕ → ℝ≥0∞)) :
+    IsPoissonRandomMeasure N ν P where
+  measurable := hmeas
+  map_eq_pi := hmap
+  ae_eq_top := by
+    intro A hA hνA
+    have := isProbabilityMeasure_of_map_eq_pi hmap
+    have hB (M : ℕ) : MeasurableSet (A ∩ spanningSets ν M) :=
+      hA.inter (measurableSet_spanningSets ν M)
+    have hνB (M : ℕ) : ν (A ∩ spanningSets ν M) ≠ ∞ :=
+      ((measure_mono Set.inter_subset_right).trans_lt (measure_spanningSets_lt_top ν M)).ne
+    refine ae_eq_top_of_tendsto_integral_exp_neg (X := fun ω ↦ N ω A)
+      (Y := fun M ω ↦ N ω (A ∩ spanningSets ν M))
+      (fun M ↦ (Measure.measurable_coe (hB M)).comp hmeas)
+      (fun M ↦ ae_of_all _ fun ω ↦ measure_mono Set.inter_subset_left) ?_
+    simp_rw [integral_exp_neg_apply_of_map_eq_pi hmeas hmap (hB _) (hνB _)]
+    refine tendsto_exp_neg_toReal_mul hνB ?_ (a := 1 - Real.exp (-1))
+      (sub_pos.2 (Real.exp_lt_one_iff.2 (by norm_num)))
+    have h := tendsto_measure_iUnion_atTop (μ := ν) (s := fun M ↦ A ∩ spanningSets ν M)
+      fun i j hij ↦ Set.inter_subset_inter_right _ (monotone_spanningSets ν hij)
+    rwa [← Set.inter_iUnion, iUnion_spanningSets, Set.inter_univ, hνA] at h
 
 end IsPoissonRandomMeasure
 
@@ -430,6 +575,9 @@ theorem isPoissonRandomMeasure_sumDiracRange (c : ℝ≥0) (μ : Measure E) [IsP
     congr 1
     funext m
     simp
+  ae_eq_top := fun _ hνA ↦ absurd hνA (by
+    rw [Measure.smul_apply, ENNReal.smul_def, smul_eq_mul]
+    exact ENNReal.mul_ne_top ENNReal.coe_ne_top (measure_ne_top _ _))
 
 /-- The integral of a measurable function against `∑_{k < n} δ_{z k}`. -/
 lemma integral_sumDiracRange {f : E → ℝ} (hf : Measurable f) (n : ℕ) (z : ℕ → E) :
@@ -527,6 +675,53 @@ lemma integral_cexp_count_poissonSampleSeqMeasure {m : ℕ} {A : Fin m → Set E
   rw [← Finset.sum_mul]
   push_cast
   rfl
+
+/-- In the superposition `∑ₙ ∑_{k < K n} δ_{Z n k}`, a set of infinite intensity
+`∑ₙ c n • μ n` almost surely contains infinitely many points: the partial counts are independent
+Poisson variables whose means have divergent sum. -/
+lemma ae_sum_sumDiracRange_eq_top {A : Set E} (hA : MeasurableSet A)
+    (hνA : (Measure.sum fun n ↦ c n • μ n) A = ∞) :
+    ∀ᵐ ω ∂(poissonSampleSeqMeasure c μ),
+      (Measure.sum fun n ↦ sumDiracRange (ω n).1 (ω n).2) A = ∞ := by
+  have hfin (n : ℕ) : (c n • μ n) A ≠ ∞ := by
+    rw [Measure.smul_apply, ENNReal.smul_def, smul_eq_mul]
+    exact ENNReal.mul_ne_top ENNReal.coe_ne_top (measure_ne_top _ _)
+  have hcnt (x : ℕ × (ℕ → E)) : sumDiracRange x.1 x.2 A ≠ ∞ := by
+    rw [sumDiracRange_apply_eq_ofReal _ _ hA]
+    exact ENNReal.ofReal_ne_top
+  have hm1 : Measurable fun x : ℕ × (ℕ → E) ↦ sumDiracRange x.1 x.2 A :=
+    (Measure.measurable_coe hA).comp measurable_sumDiracRange
+  have hYm (M : ℕ) : Measurable fun ω : ℕ → ℕ × (ℕ → E) ↦
+      ∑ n ∈ range M, sumDiracRange (ω n).1 (ω n).2 A :=
+    Finset.measurable_sum _ fun n _ ↦ hm1.comp (measurable_pi_apply n)
+  have hle (M : ℕ) (ω : ℕ → ℕ × (ℕ → E)) : ∑ n ∈ range M, sumDiracRange (ω n).1 (ω n).2 A ≤
+      (Measure.sum fun n ↦ sumDiracRange (ω n).1 (ω n).2) A := by
+    rw [Measure.sum_apply _ hA]
+    exact ENNReal.sum_le_tsum _
+  refine ae_eq_top_of_tendsto_integral_exp_neg hYm (fun M ↦ ae_of_all _ (hle M)) ?_
+  have hprod (M : ℕ) (ω : ℕ → ℕ × (ℕ → E)) :
+      Real.exp (-(∑ n ∈ range M, sumDiracRange (ω n).1 (ω n).2 A).toReal) =
+        ∏ n ∈ range M, Real.exp (-(sumDiracRange (ω n).1 (ω n).2 A).toReal) := by
+    rw [ENNReal.toReal_sum fun n _ ↦ hcnt _, ← Finset.sum_neg_distrib, Real.exp_sum]
+  simp_rw [hprod]
+  have hint (M : ℕ) : ∫ ω, ∏ n ∈ range M, Real.exp (-(sumDiracRange (ω n).1 (ω n).2 A).toReal)
+      ∂(poissonSampleSeqMeasure c μ) =
+        ∏ n ∈ range M, Real.exp (-(((c n • μ n) A).toReal * (1 - Real.exp (-1)))) := by
+    have hg : Measurable fun x : ℕ × (ℕ → E) ↦ Real.exp (-(sumDiracRange x.1 x.2 A).toReal) :=
+      Real.measurable_exp.comp hm1.ennreal_toReal.neg
+    rw [poissonSampleSeqMeasure, integral_prod_range_infinitePi_of_ne (𝕜 := ℝ)
+      (X := fun _ ↦ ℕ × (ℕ → E)) (ρ := fun n ↦ poissonSampleMeasure (c n) (μ n))
+      (g := fun _ x ↦ Real.exp (-(sumDiracRange x.1 x.2 A).toReal)) (fun _ ↦ hg)]
+    refine Finset.prod_congr rfl fun n _ ↦ ?_
+    exact (isPoissonRandomMeasure_sumDiracRange (c n) (μ n)).integral_exp_neg_apply hA (hfin n)
+  simp_rw [hint]
+  have hsum : Tendsto (fun M ↦ ∑ n ∈ range M, (c n • μ n) A) atTop (𝓝 ∞) := by
+    have h := ENNReal.tendsto_nat_tsum fun n ↦ (c n • μ n) A
+    rwa [← Measure.sum_apply _ hA, hνA] at h
+  refine (tendsto_exp_neg_toReal_mul (fun M ↦ ENNReal.sum_ne_top.2 fun n _ ↦ hfin n) hsum
+    (a := 1 - Real.exp (-1)) (sub_pos.2 (Real.exp_lt_one_iff.2 (by norm_num)))).congr fun M ↦ ?_
+  rw [ENNReal.toReal_sum fun n _ ↦ hfin n, Finset.sum_mul, ← Finset.sum_neg_distrib,
+    Real.exp_sum]
 
 /-- **Superposition of Poisson random measures.** If `(K n, Z n)` are independent, `K n` is
 Poisson distributed with mean `c n` and `Z n` is an independent i.i.d. sequence with law `μ n`,
@@ -660,6 +855,7 @@ theorem isPoissonRandomMeasure_sum_sumDiracRange (c : ℕ → ℝ≥0) (μ : ℕ
     congr 1
     funext k
     simp
+  ae_eq_top hA hνA := ae_sum_sumDiracRange_eq_top hA hνA
 
 end Superposition
 
@@ -685,6 +881,7 @@ lemma isPoissonRandomMeasure_zero {P : Measure Ω} [IsProbabilityMeasure P] :
     rw [Measure.map_const, measure_univ, one_smul]
     simp_rw [Measure.map_dirac' (by fun_prop : Measurable (Nat.cast : ℕ → ℝ≥0∞)), Nat.cast_zero]
     rw [← Measure.infinitePi_eq_pi, Measure.infinitePi_dirac]
+  ae_eq_top := fun _ h ↦ absurd h (by simp)
 
 /-- A finite measure on a nonempty space is a nonnegative multiple of a probability measure. -/
 lemma exists_isProbabilityMeasure_smul_eq [Nonempty E] (ν : Measure E) [IsFiniteMeasure ν] :
