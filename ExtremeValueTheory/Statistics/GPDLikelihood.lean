@@ -299,4 +299,155 @@ theorem integrable_gpdMeasure_iff {f : ℝ → ℝ} (hf : Measurable f) :
 
 end GPD
 
+/-! ### The log-likelihood -/
+
+section LogLik
+
+variable {ξ σ x : ℝ} {n : ℕ}
+
+/-- The **GPD log-likelihood** `ℓ(ξ, σ; x) = ∑ᵢ log g_{ξ,σ}(xᵢ)` of a sample `x`. (Lean's
+convention `log 0 = 0` only matters outside the support, where the likelihood vanishes.) -/
+noncomputable def gpdLogLik (ξ σ : ℝ) (x : Fin n → ℝ) : ℝ := ∑ i, log (gpdDensity ξ σ (x i))
+
+/-- The log-density of the exponential law `GPD(0, σ)`: `-log σ - x / σ` for `x ≥ 0`. -/
+lemma log_gpdDensity_zero (hσ : 0 < σ) (hx : 0 ≤ x) :
+    log (gpdDensity 0 σ x) = -log σ - x / σ := by
+  simp only [gpdDensity, hx, zero_mul, zero_div, add_zero, zero_lt_one, and_self, ↓reduceIte]
+  rw [log_mul (inv_ne_zero hσ.ne') (exp_pos _).ne', log_inv, log_exp]
+  ring
+
+/-- The GPD log-density on the support: `-log σ - (1/ξ + 1) log (1 + ξ x / σ)`. -/
+lemma log_gpdDensity (hσ : 0 < σ) (hξ : ξ ≠ 0) (hx : 0 ≤ x) (hu : 0 < 1 + ξ * x / σ) :
+    log (gpdDensity ξ σ x) = -log σ - (1 / ξ + 1) * log (1 + ξ * x / σ) := by
+  simp only [gpdDensity, hx, hu, and_self, ↓reduceIte, hξ]
+  rw [log_mul (inv_ne_zero hσ.ne') (rpow_pos_of_pos hu _).ne', log_inv, log_rpow hu]
+  ring
+
+/-- The sample mean `(1/n) ∑ᵢ xᵢ`. -/
+noncomputable def sampleMean (x : Fin n → ℝ) : ℝ := (n : ℝ)⁻¹ * ∑ i, x i
+
+lemma natCast_mul_sampleMean (x : Fin n → ℝ) : n * sampleMean x = ∑ i, x i := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp [sampleMean]
+  · rw [sampleMean, ← mul_assoc, mul_inv_cancel₀ (by positivity), one_mul]
+
+/-- The exponential log-likelihood: `ℓ(0, σ; x) = -n log σ - n x̄ / σ` for a nonnegative sample. -/
+lemma gpdLogLik_zero_eq (hσ : 0 < σ) {x : Fin n → ℝ} (hx : ∀ i, 0 ≤ x i) :
+    gpdLogLik 0 σ x = -n * log σ - n * sampleMean x / σ := by
+  rw [gpdLogLik, Finset.sum_congr rfl fun i _ => log_gpdDensity_zero hσ (hx i),
+    natCast_mul_sampleMean, Finset.sum_sub_distrib, Finset.sum_const, Finset.card_univ,
+    Fintype.card_fin, nsmul_eq_mul, Finset.sum_div]
+  ring
+
+/-- **The exponential MLE is the sample mean.** For a nonnegative sample with positive mean,
+`σ̂ = x̄` is the unique maximizer over `σ > 0` of the `GPD(0, σ)` (exponential) log-likelihood. -/
+theorem gpdLogLik_zero_lt_sampleMean {x : Fin n → ℝ} (hx : ∀ i, 0 ≤ x i)
+    (hm : 0 < sampleMean x) (hσ : 0 < σ) (hne : σ ≠ sampleMean x) :
+    gpdLogLik 0 σ x < gpdLogLik 0 (sampleMean x) x := by
+  have hn : (0 : ℝ) < n := by
+    rcases Nat.eq_zero_or_pos n with rfl | hn
+    · simp [sampleMean] at hm
+    · exact_mod_cast hn
+  set m := sampleMean x
+  rw [gpdLogLik_zero_eq hσ hx, gpdLogLik_zero_eq hm hx]
+  have hr : 0 < m / σ := div_pos hm hσ
+  have hr1 : m / σ ≠ 1 := fun h => hne ((div_eq_one_iff_eq hσ.ne').1 h).symm
+  have hlog := log_lt_sub_one_of_pos hr hr1
+  rw [log_div hm.ne' hσ.ne'] at hlog
+  have : n * (log m - log σ) < n * (m / σ - 1) := mul_lt_mul_of_pos_left hlog hn
+  have e : (n : ℝ) * m / m = n := by field_simp
+  rw [e]
+  have e2 : (n : ℝ) * m / σ = n * (m / σ) := by ring
+  rw [e2]
+  linarith
+
+/-- The exponential MLE maximizes the likelihood. -/
+theorem isMaxOn_gpdLogLik_zero {x : Fin n → ℝ} (hx : ∀ i, 0 ≤ x i) (hm : 0 < sampleMean x) :
+    IsMaxOn (fun σ => gpdLogLik 0 σ x) (Ioi 0) (sampleMean x) := by
+  intro σ hσ
+  rcases eq_or_ne σ (sampleMean x) with h | h
+  · simp [h]
+  · exact (gpdLogLik_zero_lt_sampleMean hx hm hσ h).le
+
+end LogLik
+
+/-! ### The exponential case: consistency and asymptotic normality of the MLE -/
+
+section Exponential
+
+variable {σ : ℝ}
+
+lemma gpdTransform_zero (σ : ℝ) : gpdTransform 0 σ = fun t => σ * t := by
+  funext t; simp [gpdTransform]
+
+lemma gpdMeasure_zero_eq_map (σ : ℝ) : gpdMeasure 0 σ = (expMeasure 1).map (fun t => σ * t) := by
+  rw [gpdMeasure, stdExpMeasure_eq_expMeasure, gpdTransform_zero]
+
+lemma integrable_id_gpdMeasure_zero (σ : ℝ) : Integrable id (gpdMeasure 0 σ) := by
+  rw [integrable_gpdMeasure_iff measurable_id, gpdTransform_zero]
+  simpa using (integrable_pow_expMeasure 1).const_mul σ
+
+lemma integral_id_gpdMeasure_zero (σ : ℝ) : ∫ x, x ∂gpdMeasure 0 σ = σ := by
+  have := integral_gpdMeasure (ξ := 0) (σ := σ) measurable_id
+  simp only [id, gpdTransform_zero] at this
+  rw [this, integral_const_mul, integral_id_expMeasure, mul_one]
+
+lemma memLp_two_id_gpdMeasure_zero (σ : ℝ) : MemLp id 2 (gpdMeasure 0 σ) := by
+  rw [gpdMeasure_zero_eq_map, memLp_map_measure_iff aestronglyMeasurable_id
+    (by fun_prop)]
+  exact memLp_two_id_expMeasure.const_mul σ
+
+lemma variance_id_gpdMeasure_zero (σ : ℝ) : Var[id; gpdMeasure 0 σ] = σ ^ 2 := by
+  rw [gpdMeasure_zero_eq_map, variance_map aemeasurable_id (by fun_prop), Function.id_comp,
+    variance_const_mul, show (fun t : ℝ => t) = id from rfl, variance_id_expMeasure, mul_one]
+
+variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'} [IsProbabilityMeasure P']
+  {X : ℕ → Ω → ℝ}
+
+lemma sampleMean_eq_range (X : ℕ → Ω → ℝ) (n : ℕ) (ω : Ω) :
+    sampleMean (fun i : Fin n => X i ω) = (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, X i ω := by
+  rw [sampleMean, Fin.sum_univ_eq_sum_range (fun i => X i ω) n]
+
+omit [IsProbabilityMeasure P] in
+/-- **Strong consistency of the exponential MLE.** If `X₀, X₁, …` are iid `GPD(0, σ)`
+(exponential with mean `σ`), the MLE `σ̂ₙ = X̄ₙ` converges to `σ` almost surely. -/
+theorem ae_tendsto_sampleMean_gpd_zero (hX : ∀ i, HasLaw (X i) (gpdMeasure 0 σ) P)
+    (hind : iIndepFun X P) :
+    ∀ᵐ ω ∂P, Tendsto (fun n => sampleMean (fun i : Fin n => X i ω)) atTop (𝓝 σ) := by
+  have hint : Integrable (X 0) P := (hX 0).integrable (integrable_id_gpdMeasure_zero σ)
+  have hident : ∀ i, IdentDistrib (X i) (X 0) P P := fun i =>
+    ⟨(hX i).aemeasurable, (hX 0).aemeasurable, by rw [(hX i).map_eq, (hX 0).map_eq]⟩
+  have hmean : P[X 0] = σ := by rw [(hX 0).integral_eq, integral_id_gpdMeasure_zero]
+  filter_upwards [strong_law_ae X hint (fun i j hij => hind.indepFun hij) hident] with ω hω
+  rw [hmean] at hω
+  refine hω.congr fun n => ?_
+  rw [sampleMean_eq_range, smul_eq_mul]
+
+/-- **Asymptotic normality of the exponential MLE.** If `X₀, X₁, …` are iid `GPD(0, σ)`, then
+`√n (σ̂ₙ - σ) ⇒ N(0, σ²)`, where `σ̂ₙ = X̄ₙ` is the MLE. -/
+theorem tendstoInDistribution_sampleMean_gpd_zero (hX : ∀ i, HasLaw (X i) (gpdMeasure 0 σ) P)
+    (hind : iIndepFun X P) {Z : Ω' → ℝ} (hZ : HasLaw Z (gaussianReal 0 (σ ^ 2).toNNReal) P') :
+    TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) * (sampleMean (fun i : Fin n => X i ω) - σ))
+      atTop Z (fun _ => P) P' := by
+  have hident : ∀ i, IdentDistrib (X i) (X 0) P P := fun i =>
+    ⟨(hX i).aemeasurable, (hX 0).aemeasurable, by rw [(hX i).map_eq, (hX 0).map_eq]⟩
+  have hmean : P[X 0] = σ := by rw [(hX 0).integral_eq, integral_id_gpdMeasure_zero]
+  have hvar : Var[X 0; P] = σ ^ 2 := by rw [(hX 0).variance_eq, variance_id_gpdMeasure_zero]
+  have hL2 : MemLp (X 0) 2 P := (hX 0).memLp (memLp_two_id_gpdMeasure_zero σ)
+  have hZ' : HasLaw Z (gaussianReal 0 Var[X 0; P].toNNReal) P' := by rw [hvar]; exact hZ
+  have hclt := tendstoInDistribution_inv_sqrt_mul_sum_sub hZ' hL2 hind hident
+  rw [hmean] at hclt
+  convert hclt using 3 with n ω
+  rw [sampleMean_eq_range]
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp
+  · have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+    have hs : √(n : ℝ) ^ 2 = n := sq_sqrt hn'.le
+    have hs0 : √(n : ℝ) ≠ 0 := (sqrt_pos.2 hn').ne'
+    field_simp
+    rw [hs]
+
+end Exponential
+
 end ExtremeValueTheory
