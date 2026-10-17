@@ -113,3 +113,4 @@ import ExtremeValueTheory.Dependence.EchoProcess
 import ExtremeValueTheory.Multivariate.Dependence
 import ExtremeValueTheory.Multivariate.TailDependence
 import ExtremeValueTheory.Multivariate.PickandsEstimator
+import ExtremeValueTheory.Dependence.EchoPhaseTransition
