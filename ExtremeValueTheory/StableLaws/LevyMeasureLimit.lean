@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.StableLaws.GeneralizedCLTConverse
+import Mathlib.Analysis.Real.Pi.Bounds
 
 /-!
 # Convergence of the Lévy measures of normalized sums
@@ -360,6 +361,189 @@ theorem tendsto_exp_dfun
   exact ((hE (t + s)).mul (hE (t - s))).div ((hE t).pow 2) (pow_ne_zero 2 (hφ t))
 
 end SecondDifference
+
+section DfunBound
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a b : ℕ → ℝ}
+
+theorem one_sub_cos_le_two_mul_min (θ : ℝ) : 1 - Real.cos θ ≤ 2 * min 1 (θ ^ 2) := by
+  rcases le_total 1 (θ ^ 2) with h | h
+  · rw [min_eq_left h]; linarith [Real.neg_one_le_cos θ]
+  · rw [min_eq_right h]; nlinarith [Real.one_sub_sq_div_two_le_cos (x := θ)]
+
+theorem min_one_sq_sub_le (u v : ℝ) : min 1 ((u - v) ^ 2) ≤ 2 * min 1 (u ^ 2) + 2 * v ^ 2 := by
+  rcases le_total 1 (u ^ 2) with h | h
+  · rw [min_eq_left h]; nlinarith [min_le_left 1 ((u - v) ^ 2), sq_nonneg v]
+  · rw [min_eq_right h]; nlinarith [min_le_right 1 ((u - v) ^ 2), sq_nonneg (u + v)]
+
+omit [IsProbabilityMeasure μ] in
+theorem sqRatio_eq_integral_min' {c : ℝ} (hc : c ≠ 0) :
+    sqRatio μ c = ∫ x, min 1 ((c⁻¹ * x) ^ 2) ∂μ := by
+  rw [sqRatio]; simp_rw [sq_div_max_eq_min hc]
+
+/-- `Dₙ(t, s) = -2n ∫ (1 - cos (s z)) e^{itz} dρₙ(z)`, `ρₙ = law (X / aₙ - τₙ)`. -/
+theorem dfun_eq (n : ℕ) (t s : ℝ) :
+    dfun μ a n t s = -(2 * n : ℂ) * ∫ z, ((1 - Real.cos (s * z) : ℝ) : ℂ) *
+      Complex.exp (t * z * Complex.I) ∂(cLaw μ a n) := by
+  have hexp : ∀ u : ℝ, Integrable (fun y : ℝ => Complex.exp (u * y * Complex.I))
+      (cLaw μ a n) := fun u =>
+    Integrable.of_bound (by fun_prop) 1 (ae_of_all _ fun y => by
+      rw [← Complex.ofReal_mul, Complex.norm_exp_ofReal_mul_I])
+  have e : ∀ z : ℝ, ((1 - Real.cos (s * z) : ℝ) : ℂ) * Complex.exp (t * z * Complex.I) =
+      Complex.exp (t * z * Complex.I) - (Complex.exp ((t + s) * z * Complex.I) +
+        Complex.exp ((t - s) * z * Complex.I)) / 2 := by
+    intro z
+    rw [Complex.ofReal_sub, Complex.ofReal_one, sub_mul, one_mul, cos_mul_exp_eq]
+  simp_rw [e]
+  have h1 := hexp (t + s)
+  have h2 := hexp (t - s)
+  push_cast at h1 h2
+  have h12 : Integrable (fun y : ℝ => (Complex.exp ((t + s) * y * Complex.I) +
+      Complex.exp ((t - s) * y * Complex.I)) / 2) (cLaw μ a n) := (h1.add h2).div_const 2
+  rw [integral_sub (hexp t) h12, integral_div, integral_add h1 h2]
+  simp only [dfun, wfun, charFun_apply_real]
+  push_cast
+  ring
+
+/-- `|Dₙ(t, s)| ≤ 8 n E[min (1, (s X / aₙ)²)] + 8 s² n E[min (1, (X / aₙ)²)]`. -/
+theorem norm_dfun_le {n : ℕ} (ha : a n ≠ 0) {s : ℝ} (hs : s ≠ 0) (t : ℝ) :
+    ‖dfun μ a n t s‖ ≤ 8 * (n * sqRatio μ (a n / s)) + 8 * s ^ 2 * (n * sqRatio μ (a n)) := by
+  set τ := ctr μ a n
+  have hint : Integrable (fun z : ℝ => 1 - Real.cos (s * z)) (cLaw μ a n) :=
+    (integrable_const 1).sub (Integrable.of_bound (by fun_prop) 1
+      (ae_of_all _ fun z => by rw [Real.norm_eq_abs]; exact Real.abs_cos_le_one _))
+  have hnorm : ‖∫ z, ((1 - Real.cos (s * z) : ℝ) : ℂ) * Complex.exp (t * z * Complex.I)
+      ∂(cLaw μ a n)‖ ≤ ∫ z, (1 - Real.cos (s * z)) ∂(cLaw μ a n) := by
+    refine (norm_integral_le_integral_norm _).trans (le_of_eq (integral_congr_ae
+      (ae_of_all _ fun z => ?_)))
+    dsimp only
+    rw [norm_mul, ← Complex.ofReal_mul, Complex.norm_exp_ofReal_mul_I, mul_one,
+      Complex.norm_real, Real.norm_eq_abs, abs_of_nonneg (by linarith [Real.cos_le_one (s * z)])]
+  have hS := ctr_sq_le (μ := μ) ha
+  have hτ2 : τ ^ 2 ≤ sqRatio μ (a n) := hS
+  have hbd : ∫ z, (1 - Real.cos (s * z)) ∂(cLaw μ a n) ≤
+      4 * sqRatio μ (a n / s) + 4 * s ^ 2 * sqRatio μ (a n) := by
+    rw [cLaw, integral_map (by fun_prop) (by fun_prop)]
+    have hm : Integrable (fun x => min 1 (((a n / s)⁻¹ * x) ^ 2)) μ :=
+      Integrable.of_bound (by fun_prop) 1 (ae_of_all _ fun x => by
+        rw [Real.norm_eq_abs, abs_of_nonneg (le_min zero_le_one (sq_nonneg _))]
+        exact min_le_left _ _)
+    calc ∫ x, (1 - Real.cos (s * ((a n)⁻¹ * x - τ))) ∂μ
+        ≤ ∫ x, (4 * min 1 (((a n / s)⁻¹ * x) ^ 2) + 4 * s ^ 2 * τ ^ 2) ∂μ := by
+          refine integral_mono ((integrable_const 1).sub (Integrable.of_bound (by fun_prop) 1
+            (ae_of_all _ fun z => by rw [Real.norm_eq_abs]; exact Real.abs_cos_le_one _)))
+            ((hm.const_mul 4).add (integrable_const _)) fun x => ?_
+          have h1 := one_sub_cos_le_two_mul_min (s * ((a n)⁻¹ * x - τ))
+          have h2 := min_one_sq_sub_le (s * ((a n)⁻¹ * x)) (s * τ)
+          have e1 : s * ((a n)⁻¹ * x - τ) = s * ((a n)⁻¹ * x) - s * τ := by ring
+          have e2 : (a n / s)⁻¹ * x = s * ((a n)⁻¹ * x) := by
+            rw [inv_div]; field_simp
+          rw [e1] at h1
+          rw [e1, e2]
+          nlinarith
+      _ = 4 * sqRatio μ (a n / s) + 4 * s ^ 2 * τ ^ 2 := by
+          rw [integral_add (hm.const_mul 4) (integrable_const _), integral_const_mul,
+            integral_const, probReal_univ, one_smul,
+            sqRatio_eq_integral_min' (div_ne_zero ha hs)]
+      _ ≤ _ := by nlinarith [sq_nonneg s]
+  rw [dfun_eq, norm_mul, norm_neg, norm_mul, Complex.norm_ofNat, Complex.norm_natCast]
+  have hn : (0 : ℝ) ≤ n := Nat.cast_nonneg n
+  calc 2 * (n : ℝ) * ‖∫ z, ((1 - Real.cos (s * z) : ℝ) : ℂ) * Complex.exp (t * z * Complex.I)
+        ∂(cLaw μ a n)‖ ≤ 2 * n * (4 * sqRatio μ (a n / s) + 4 * s ^ 2 * sqRatio μ (a n)) :=
+        mul_le_mul_of_nonneg_left (hnorm.trans hbd) (by positivity)
+    _ = _ := by ring
+
+/-- **Uniform smallness of the second differences**: if `n E[min (1, (X / aₙ)²)]` is bounded
+and `n E[min (1, (s X / aₙ)²)]` is uniformly small for small `s`, then there is `s₀ > 0` with
+`|Dₙ(t, s)| ≤ 1` for all `t`, `0 ≤ s ≤ s₀` and `n` large. -/
+theorem exists_forall_norm_dfun_le (ha : ∀ n, 0 < a n)
+    (hS : ∃ C, ∀ᶠ n : ℕ in atTop, (n : ℝ) * sqRatio μ (a n) ≤ C)
+    (hsmall : ∀ η > 0, ∃ s₀ > 0, ∀ᶠ n : ℕ in atTop, (n : ℝ) * sqRatio μ (a n / s₀) ≤ η) :
+    ∃ s₀ > 0, ∀ᶠ n : ℕ in atTop, ∀ t s, 0 ≤ s → s ≤ s₀ → ‖dfun μ a n t s‖ ≤ 1 := by
+  obtain ⟨C, hC⟩ := hS
+  obtain ⟨s₁, hs₁, hη⟩ := hsmall (1 / 16) (by norm_num)
+  set C' := max C 0 + 1
+  have hC' : 0 < C' := by positivity
+  set s₀ := min (min s₁ 1) (1 / (16 * C'))
+  have hs₀ : 0 < s₀ := by positivity
+  refine ⟨s₀, hs₀, ?_⟩
+  filter_upwards [hC, hη] with n hn hn' t s hs0 hss
+  rcases hs0.lt_or_eq with hs | hs
+  · refine (norm_dfun_le (ha n).ne' hs.ne' t).trans ?_
+    have h1 : sqRatio μ (a n / s) ≤ sqRatio μ (a n / s₁) := by
+      refine sqRatio_antitoneOn (div_pos (ha n) hs₁) (div_pos (ha n) hs) ?_
+      exact div_le_div_of_nonneg_left (ha n).le hs (hss.trans ((min_le_left _ _).trans
+        (min_le_left _ _)))
+    have h2 : (n : ℝ) * sqRatio μ (a n / s) ≤ 1 / 16 :=
+      (mul_le_mul_of_nonneg_left h1 (Nat.cast_nonneg n)).trans hn'
+    have hs1 : s ≤ 1 := hss.trans ((min_le_left _ _).trans (min_le_right _ _))
+    have hsC : s ≤ 1 / (16 * C') := hss.trans (min_le_right _ _)
+    have hnC : (n : ℝ) * sqRatio μ (a n) ≤ C' := hn.trans (by
+      simp only [C']; linarith [le_max_left C 0])
+    have hnn : 0 ≤ (n : ℝ) * sqRatio μ (a n) :=
+      mul_nonneg (Nat.cast_nonneg n) (sqRatio_nonneg _)
+    have h3 : s ^ 2 * ((n : ℝ) * sqRatio μ (a n)) ≤ 1 / 16 := by
+      have : s * C' ≤ 1 / 16 := by
+        rw [le_div_iff₀ (by positivity)] at hsC; nlinarith
+      calc s ^ 2 * ((n : ℝ) * sqRatio μ (a n)) ≤ s * (s * C') := by
+            rw [sq, mul_assoc]
+            exact mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left hnC hs.le) hs.le
+        _ ≤ 1 * (1 / 16) := mul_le_mul hs1 this (by positivity) zero_le_one
+        _ = 1 / 16 := one_mul _
+    nlinarith
+  · subst hs
+    simp only [dfun, add_zero, sub_zero]
+    ring_nf
+    simp
+
+variable {ν : ProbabilityMeasure ℝ}
+
+/-- **Logarithmic second differences**: under the hypotheses of `tendsto_exp_dfun`, if
+`|Dₙ(t, s)| ≤ 1` eventually, then `R(t, s) = φ(t + s) φ(t - s) / φ(t)²` has positive real part
+and `Dₙ(t, s) → log R(t, s)`. -/
+theorem tendsto_dfun_log
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν))
+    (hφ : ∀ t, charFun (ν : Measure ℝ) t ≠ 0)
+    (hw : ∀ t, ∃ C, ∀ᶠ n : ℕ in atTop, ‖(n : ℂ) * wfun μ a n t‖ ≤ C) {t s : ℝ}
+    (hD : ∀ᶠ n : ℕ in atTop, ‖dfun μ a n t s‖ ≤ 1) :
+    Real.exp (-1) * Real.cos 1 ≤ (charFun (ν : Measure ℝ) (t + s) * charFun (ν : Measure ℝ)
+        (t - s) / charFun (ν : Measure ℝ) t ^ 2).re ∧
+      Tendsto (fun n => dfun μ a n t s) atTop
+        (𝓝 (Complex.log (charFun (ν : Measure ℝ) (t + s) * charFun (ν : Measure ℝ) (t - s) /
+          charFun (ν : Measure ℝ) t ^ 2))) := by
+  set R := charFun (ν : Measure ℝ) (t + s) * charFun (ν : Measure ℝ) (t - s) /
+    charFun (ν : Measure ℝ) t ^ 2
+  have hE := tendsto_exp_dfun hconv hφ hw t s
+  have hre : Real.exp (-1) * Real.cos 1 ≤ R.re := by
+    refine ge_of_tendsto ((Complex.continuous_re.tendsto _).comp hE) ?_
+    filter_upwards [hD] with n hn
+    simp only [Function.comp, Complex.exp_re]
+    have him : |(dfun μ a n t s).im| ≤ 1 := (Complex.abs_im_le_norm _).trans hn
+    have hre' : -1 ≤ (dfun μ a n t s).re :=
+      (abs_le.1 ((Complex.abs_re_le_norm _).trans hn)).1
+    have hcos : Real.cos 1 ≤ Real.cos (dfun μ a n t s).im := by
+      rw [← Real.cos_abs (dfun μ a n t s).im]
+      exact Real.cos_le_cos_of_nonneg_of_le_pi (abs_nonneg _) (by linarith [Real.pi_gt_three])
+        him
+    have hcos1 : 0 ≤ Real.cos 1 :=
+      Real.cos_nonneg_of_mem_Icc ⟨by linarith [Real.pi_gt_three], by
+        linarith [Real.pi_gt_three]⟩
+    exact mul_le_mul (Real.exp_le_exp.2 hre') hcos hcos1 (Real.exp_pos _).le
+  have hpos : 0 < R.re := lt_of_lt_of_le (mul_pos (Real.exp_pos _)
+    (Real.cos_pos_of_mem_Ioo ⟨by linarith [Real.pi_gt_three], by
+      linarith [Real.pi_gt_three]⟩)) hre
+  refine ⟨hre, ?_⟩
+  have hlog := ((continuousAt_clog (Complex.mem_slitPlane_iff.2 (Or.inl hpos))).tendsto
+    ).comp hE
+  refine hlog.congr' ?_
+  filter_upwards [hD] with n hn
+  have him : |(dfun μ a n t s).im| ≤ 1 := (Complex.abs_im_le_norm _).trans hn
+  simp only [Function.comp]
+  rw [Complex.log_exp (by linarith [abs_le.1 him, Real.pi_gt_three])
+    (by linarith [abs_le.1 him, Real.pi_gt_three])]
+
+end DfunBound
 
 end GCLTConverse
 
