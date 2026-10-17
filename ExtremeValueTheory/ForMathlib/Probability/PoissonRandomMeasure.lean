@@ -38,6 +38,8 @@ is Poisson distributed with mean `ν(Aᵢ)`.
   Poisson random measure.
 -/
 
+universe u
+
 open MeasureTheory Filter Finset
 open scoped ENNReal NNReal
 
@@ -118,6 +120,8 @@ section Construction
 noncomputable def sumDiracRange (n : ℕ) (z : ℕ → E) : Measure E :=
   ∑ k ∈ range n, Measure.dirac (z k)
 
+/-- The mass that `∑_{k < n} δ_{z k}` gives to a measurable set `A` is the number of indices
+`k < n` with `z k ∈ A`. -/
 lemma sumDiracRange_apply (n : ℕ) (z : ℕ → E) {A : Set E} (hA : MeasurableSet A) :
     sumDiracRange n z A = ∑ k ∈ range n, A.indicator 1 (z k) := by
   simp [sumDiracRange, Measure.coe_finsetSum, Finset.sum_apply, Measure.dirac_apply' _ hA]
@@ -139,6 +143,7 @@ lemma measurable_of_measurable_nat_prod {β : Type*} {mβ : MeasurableSpace β}
     Measurable fun ω : ℕ × (ℕ → E) ↦ F ω.1 ω.2 :=
   measurable_from_prod_countable_right hF
 
+/-- The random measure `ω ↦ ∑_{k < ω.1} δ_{ω.2 k}` is measurable. -/
 lemma measurable_sumDiracRange :
     Measurable fun ω : ℕ × (ℕ → E) ↦ sumDiracRange ω.1 ω.2 := by
   refine Measure.measurable_of_measurable_coe _ fun A hA ↦ ?_
@@ -335,5 +340,55 @@ theorem integral_exp_neg_integral_sumDiracRange {f : E → ℝ} (hf : Measurable
   ring_nf
 
 end Construction
+
+/-! ### Existence for a finite intensity -/
+
+section Existence
+
+/-- The Poisson distribution with mean `0` is the Dirac mass at `0`. -/
+lemma poissonMeasure_zero : poissonMeasure 0 = Measure.dirac 0 := by
+  refine Measure.ext_of_singleton fun n ↦ ?_
+  rw [poissonMeasure_singleton]
+  rcases n with _ | n
+  · simp
+  · simp [Measure.dirac_apply']
+
+/-- The zero random measure is a Poisson random measure with intensity `0`. -/
+lemma isPoissonRandomMeasure_zero {P : Measure Ω} [IsProbabilityMeasure P] :
+    IsPoissonRandomMeasure (fun _ : Ω ↦ (0 : Measure E)) 0 P where
+  measurable := measurable_const
+  map_eq_pi := by
+    intro n A _ _ _
+    simp only [Measure.coe_zero, Pi.zero_apply, ENNReal.toNNReal_zero, poissonMeasure_zero]
+    rw [Measure.map_const, measure_univ, one_smul]
+    simp_rw [Measure.map_dirac' (by fun_prop : Measurable (Nat.cast : ℕ → ℝ≥0∞)), Nat.cast_zero]
+    rw [← Measure.infinitePi_eq_pi, Measure.infinitePi_dirac]
+
+/-- **Existence of Poisson random measures**: every finite measure is the intensity of a Poisson
+random measure, defined on a probability space in the same universe. -/
+theorem exists_isPoissonRandomMeasure {E : Type u} [MeasurableSpace E] (ν : Measure E)
+    [IsFiniteMeasure ν] :
+    ∃ (Ω : Type u) (_ : MeasurableSpace Ω) (P : Measure Ω) (N : Ω → Measure E),
+      IsProbabilityMeasure P ∧ IsPoissonRandomMeasure N ν P := by
+  rcases eq_or_ne ν 0 with rfl | hν
+  · exact ⟨PUnit, inferInstance, Measure.dirac PUnit.unit, fun _ ↦ 0, inferInstance,
+      isPoissonRandomMeasure_zero⟩
+  have h0 : ν Set.univ ≠ 0 := Measure.measure_univ_ne_zero.2 hν
+  have htop : ν Set.univ ≠ ∞ := measure_ne_top ν _
+  let μ : Measure E := (ν Set.univ)⁻¹ • ν
+  have : IsProbabilityMeasure μ :=
+    ⟨by simp [μ, ENNReal.inv_mul_cancel h0 htop]⟩
+  have hcμ : (ν Set.univ).toNNReal • μ = ν := by
+    ext A hA
+    simp only [μ, Measure.smul_apply, smul_eq_mul, ENNReal.smul_def, ENNReal.coe_toNNReal htop]
+    rw [← mul_assoc, ENNReal.mul_inv_cancel h0 htop, one_mul]
+  refine ⟨ℕ × (ℕ → E), inferInstance, poissonSampleMeasure (ν Set.univ).toNNReal μ,
+    fun ω ↦ sumDiracRange ω.1 ω.2, inferInstance, ?_⟩
+  have h := isPoissonRandomMeasure_sumDiracRange (ν Set.univ).toNNReal μ
+  rwa [hcμ] at h
+
+end Existence
+
+
 
 end ProbabilityTheory
