@@ -58,6 +58,13 @@ theorem IsStableIndex.map_add_const {α : ℝ} (h : IsStableIndex α μ) (m : �
   · obtain ⟨b, hb⟩ := h.2 n hn
     exact ⟨_, convPow_map_add_eq m hb⟩
 
+theorem IsStableIndex.of_map_add_const {α m : ℝ} (h : IsStableIndex α (μ.map (· + m))) :
+    IsStableIndex α μ := by
+  have e : (μ.map (· + m)).map (· + -m) = μ := by
+    rw [Measure.map_map (measurable_add_const _) (measurable_add_const m)]
+    simp only [Function.comp_def, add_neg_cancel_right, Measure.map_id']
+  simpa [e] using h.map_add_const (-m)
+
 /-- A law with characteristic function `exp (-c |t|^α + i e sign(t) |t|^α)`, `α, c > 0`, is
 stable with index `α` (and `bₙ = 0`). -/
 theorem HasStableCharFun.isStableIndex {α c e : ℝ} (h : HasStableCharFun α c e μ) (hα0 : 0 < α)
@@ -237,5 +244,73 @@ theorem exists_map_add_eq_map_mul {a b b' : ℕ → ℝ} {s : ℝ} (hs : 0 < s) 
   exact ⟨c₀, by rw [hc₀, ProbabilityMeasure.toMeasure_map]⟩
 
 end Types
+
+section Identification
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a b : ℕ → ℝ}
+
+/-- **Identification of the limit**, from the symmetrized scaling limit. If `(Sₙ - bₙ) / aₙ → ν`
+and `n E[min (1, (X - X')² / (aₙ x)²)] → K x ^ (-α)`, `0 < α < 2`, then (besides regular
+variation and tail balance with `n P(|X| > aₙ) → B`) a shift of `ν` is the explicit stable law
+of the sufficiency theorems with scale `B`: apply the generalized CLT along `aₙ B^{1/α}` (for
+which `n P(|X| > aₙ B^{1/α}) → 1`) and use convergence of types with the same scale. -/
+theorem identify_of_tendsto_mul_sqRatio (ha : ∀ n, 0 < a n) {ν : ProbabilityMeasure ℝ}
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν))
+    {α K : ℝ} (hα0 : 0 < α) (hα2 : α < 2) (hK : 0 < K)
+    (hL : ∀ x : ℝ, 0 < x → Tendsto (fun n : ℕ => (n : ℝ) * sqRatio (symmLaw μ) (a n * x)) atTop
+      (𝓝 (K * x ^ (-α)))) :
+    IsRegularlyVarying (absTail μ) (-α) ∧ ∃ B > 0,
+      Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n)) atTop (𝓝 B) ∧ ∃ p, 0 ≤ p ∧ p ≤ 1 ∧
+      Tendsto (fun x => μ.real (Ioi x) / absTail μ x) atTop (𝓝 p) ∧ ∃ m : ℝ,
+      (α ≠ 1 → HasStableCharFun α (B * stableConst α) (B * ((2 * p - 1) * stableSkewConst α))
+        ((ν : Measure ℝ).map (· + m))) ∧
+      (α = 1 → HasStableOneCharFun (B * stableConst 1) (B * (2 * p - 1)) stableLogConst
+        ((ν : Measure ℝ).map (· + m))) := by
+  obtain ⟨hG, ⟨B, hB0, hB⟩, p, hp0, hp1, hp⟩ :=
+    tailBalance_of_tendsto_mul_sqRatio_symmLaw ha hconv hα0 hα2 hK hL
+  have hatop : Tendsto a atTop atTop :=
+    tendsto_atTop_of_tendsto_mul_comp (T := absTail μ) (L := fun _ => B)
+      (absTail_antitone.antitoneOn _) (fun x _ => absTail_pos hG x) ha hB
+  obtain ⟨s, hs, hsα⟩ : ∃ s : ℝ, 0 < s ∧ s ^ α = B :=
+    ⟨B ^ α⁻¹, rpow_pos_of_pos hB0 _, rpow_inv_rpow hB0.le hα0.ne'⟩
+  have ha' : ∀ n, 0 < a n * s := fun n => mul_pos (ha n) hs
+  have hna' : Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n * s)) atTop (𝓝 1) := by
+    have h := tendsto_mul_comp_mul_of_tendsto hG hatop hB hs
+    rwa [rpow_neg hs.le, hsα, mul_inv_cancel₀ hB0.ne'] at h
+  refine ⟨hG, B, hB0, hB, p, hp0, hp1, hp, ?_⟩
+  rcases lt_trichotomy α 1 with h1 | rfl | h1
+  · obtain ⟨ν', hν', hlim⟩ := tendsto_map_convPow_of_isRegularlyVarying_of_lt_one hα0 h1 hG hp
+      (a := fun n => a n * s) ha' hna'
+    obtain ⟨c₀, hc₀⟩ := exists_map_add_eq_map_mul (b' := fun _ => 0) hs ha hconv
+      (hlim.congr fun n => Subtype.ext (by simp only [sub_zero]))
+    refine ⟨c₀, fun _ => ?_, fun h => absurd h h1.ne⟩
+    rw [hc₀, ← hsα]
+    exact hν'.map_mul hs
+  · obtain ⟨ν', hν', hlim⟩ := tendsto_map_convPow_sub_of_isRegularlyVarying_one hG hp
+      (a := fun n => a n * s) ha' hna'
+    obtain ⟨c₀, hc₀⟩ := exists_map_add_eq_map_mul
+      (b' := fun n => (n : ℝ) * ∫ y in Icc (-(a n * s)) (a n * s), y ∂μ) hs ha hconv hlim
+    have hsB : s = B := by rwa [rpow_one] at hsα
+    refine ⟨c₀ + (2 * p - 1) * s * Real.log s, fun h => absurd rfl h, fun _ => ?_⟩
+    have e : (ν : Measure ℝ).map (· + (c₀ + (2 * p - 1) * s * Real.log s)) =
+        (ν' : Measure ℝ).map (fun x => s * x + (2 * p - 1) * s * Real.log s) := by
+      rw [show (fun x : ℝ => x + (c₀ + (2 * p - 1) * s * Real.log s)) =
+          (· + (2 * p - 1) * s * Real.log s) ∘ (· + c₀) by
+            funext x; simp only [Function.comp]; ring,
+        ← Measure.map_map (measurable_add_const _) (measurable_add_const _), hc₀,
+        Measure.map_map (measurable_add_const _) (measurable_const_mul _)]
+      rfl
+    rw [e, ← hsB]
+    exact hν'.map_mul_add hs
+  · obtain ⟨ν', hν', hlim⟩ := tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt h1 hα2 hG
+      hp (a := fun n => a n * s) ha' hna'
+    obtain ⟨c₀, hc₀⟩ := exists_map_add_eq_map_mul
+      (b' := fun n => (n : ℝ) * ∫ y, y ∂μ) hs ha hconv hlim
+    refine ⟨c₀, fun _ => ?_, fun h => absurd h h1.ne'⟩
+    rw [hc₀, ← hsα]
+    exact hν'.map_mul hs
+
+end Identification
 
 end ExtremeValueTheory
