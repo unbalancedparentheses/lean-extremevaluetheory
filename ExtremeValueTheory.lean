@@ -114,3 +114,4 @@ import ExtremeValueTheory.MaxStable.Spectral
 import ExtremeValueTheory.Dependence.StrictExtremalIndex
 import ExtremeValueTheory.Dependence.ThetaGap
 import ExtremeValueTheory.Dependence.EchoProcess
+import ExtremeValueTheory.Multivariate.Dependence
