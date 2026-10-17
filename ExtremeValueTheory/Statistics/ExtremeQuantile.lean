@@ -8,7 +8,58 @@ import ExtremeValueTheory.Statistics.Moment
 /-!
 # Extreme quantiles and tail probabilities: the Weissman estimators
 
-PLACEHOLDER
+Let `X_0, X_1, …` be iid with survival function `F̄(x) = P(X > x)` regularly varying with index
+`-α`, `α > 0` (extreme value index `γ = 1/α`), let `X_{(1)} ≥ ⋯ ≥ X_{(n)}` be the order
+statistics of the first `n` observations and `γ̂ = H_{k,n}` the Hill estimator, with `k → ∞`,
+`k / n → 0`. Writing `x_p = F^←(1 - p)` for the tail quantile, the **Weissman estimators**
+(Weissman, *Estimation of parameters and large quantiles based on the k largest
+observations*, JASA 73 (1978); de Haan and Ferreira, *Extreme Value Theory: An Introduction*,
+Springer 2006, §4.3–4.4 [dHF]; Embrechts, Klüppelberg and Mikosch, *Modelling Extremal Events*,
+Springer 1997, §6.4.1 [EKM]) are
+
+* `x̂_p = X_{(k+1)} (k / (n p)) ^ γ̂` for the quantile `x_p`, and
+* `p̂(y) = (k / n) (y / X_{(k+1)}) ^ (-1/γ̂)` for the tail probability `F̄(y)`.
+
+They extrapolate from the intermediate order statistic `X_{(k+1)} ≈ x_{k/n}` using the Pareto
+approximation `x_p / x_{k/n} ≈ (k / (n p)) ^ γ`.
+
+## Main definitions
+
+* `ExtremeValueTheory.tailQuantile P Y p = inf {x | P(Y > x) ≤ p}`.
+* `ExtremeValueTheory.weissman`, `ExtremeValueTheory.tailProbEstimator`: the two estimators.
+* `ExtremeValueTheory.IsBoundedInProbability`: tightness, `Z_n = O_P(1)`.
+* `ExtremeValueTheory.gevFun`, `ExtremeValueTheory.returnLevel`: the GEV distribution function
+  and its `m`-block return level `z_m`, with `H_ξ(z_m) = 1 - 1/m` (`gevFun_returnLevel`).
+
+## Main results
+
+* `tendsto_tailQuantile`: `x_{p_n} → ∞` and `F̄(c x_{p_n}) / p_n → c ^ (-α)` for `p_n ↓ 0`.
+* `tendsto_tailQuantile_div_tailQuantile`: `x_{p_n} / (x_{r_n} (r_n / p_n) ^ γ) → 1` when
+  `r_n / p_n` stays in a compact subset of `(0, ∞)` (via the uniform convergence theorem).
+* `tendstoInMeasure_orderStat_div_tailQuantile`: `X_{(k+1)} / x_{k/n} → 1` in probability.
+* `tendstoInMeasure_weissman_div_of_bias`: the reduction theorem. With `d_n = k / (n p_n)`, if
+  `(γ̂ - γ) log d_n → 0` in probability and `x_{p_n} / (x_{k/n} d_n ^ γ) → 1`, then
+  `x̂_{p_n} / x_{p_n} → 1` in probability.
+* `tendstoInMeasure_weissman_div`: ratio consistency for intermediate levels, `d_n ∈ [a, b]`,
+  under regular variation only.
+* `tendstoInMeasure_weissman_div_of_isBoundedInProbability`: ratio consistency for extreme
+  levels (e.g. `n p_n → c ∈ [0, ∞)`) given `√k (γ̂ - γ) = O_P(1)`, `log d_n / √k → 0` and the
+  bias condition; this composes with a central limit theorem for the Hill estimator.
+* `tendstoInMeasure_weissman_div_pareto`: for tails that are exactly Pareto beyond some point the
+  bias condition holds exactly, so only the rate conditions remain.
+* `tendstoInMeasure_tailProbEstimator_div_of_bias`, `tendstoInMeasure_tailProbEstimator_div`,
+  `tendstoInMeasure_tailProbEstimator_div_of_isBoundedInProbability`: the same three results for
+  `p̂(y_n) / F̄(y_n) → 1`, with `e_n = y_n / x_{k/n}` in place of `d_n`.
+
+## Proof
+
+Deterministically, `x̂_{p_n} / x_{p_n}` is the product of `X_{(k+1)} / x_{k/n}`,
+`exp ((γ̂ - γ) log d_n)` and `(x_{p_n} / (x_{k/n} d_n ^ γ))⁻¹`. The first factor tends to one by
+the duality between order statistics and exceedance counts and the weak law for binomial
+counts; the second by hypothesis; the third is the bias condition. For bounded `d_n` the
+uniform convergence theorem gives the bias condition, and consistency of the Hill estimator
+gives `(γ̂ - γ) log d_n → 0`. Without a second-order condition the bias condition can fail when
+`d_n → ∞`, which is why it is a hypothesis of the general results.
 -/
 
 open Filter Topology Set Real MeasureTheory ProbabilityTheory Finset
@@ -814,7 +865,8 @@ noncomputable def returnLevel (ξ m : ℝ) : ℝ :=
   else ((-Real.log (1 - 1 / m)) ^ (-ξ) - 1) / ξ
 
 /-- The return level is the `(1 - 1/m)` quantile of `H_ξ`: `H_ξ(z_m) = 1 - 1/m`. -/
-theorem gevFun_returnLevel (ξ : ℝ) {m : ℝ} (hm : 1 < m) : gevFun ξ (returnLevel ξ m) = 1 - 1 / m := by
+theorem gevFun_returnLevel (ξ : ℝ) {m : ℝ} (hm : 1 < m) :
+    gevFun ξ (returnLevel ξ m) = 1 - 1 / m := by
   have hm0 : 0 < m := one_pos.trans hm
   have h1 : 0 < 1 - 1 / m := by
     have : 1 / m < 1 := (div_lt_one hm0).2 hm
