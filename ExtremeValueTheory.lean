@@ -48,3 +48,4 @@ import ExtremeValueTheory.ForMathlib.MeasureTheory.Measure.Bonferroni
 import ExtremeValueTheory.Dependence.Leadbetter
 import ExtremeValueTheory.Dependence.ExtremalIndex
 import ExtremeValueTheory.Dependence.Examples
+import ExtremeValueTheory.Statistics.ExtremeQuantile
