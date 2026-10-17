@@ -31,7 +31,15 @@ the real case by monotonicity of `F` in `t` and continuity of `t ↦ F(y) ^ (1 /
 * `IsSimpleMaxStable.measure_Iic_pos`: `F(y) > 0` on `(0, ∞)^ι`.
 * `IsSimpleMaxStable.measureReal_Iic_smul`: `F(t y) = F(y) ^ (1 / t)` for real `t > 0`.
 * `IsSimpleMaxStable.maxStableExponent_smul`: `V(t y) = V(y) / t`.
-* `IsSimpleMaxStable.inv_le_maxStableExponent`: `V(y) ≥ 1 / y i` for each coordinate.
+* `IsSimpleMaxStable.exp_neg_maxStableExponent`: `F(y) = exp (-V(y))`.
+* `IsSimpleMaxStable.inv_le_maxStableExponent`, `IsSimpleMaxStable.maxStableExponent_le_sum_inv`:
+  `max_i 1 / y i ≤ V(y) ≤ ∑ i, 1 / y i` (complete dependence and independence are the extreme
+  cases).
+
+The converse of the spectral representation of `MaxStable/Spectral.lean` (every simple
+max-stable law has the form `F(y) = exp (-∫ max_i w i / y i dH(w))`, [dHF, Theorem 6.1.9 "⇒"])
+is not formalized: it needs the construction of the exponent measure on `[0, ∞]^ι \ {0}` from
+`V`, by vague limits of `n P(Y / n ∈ ·)`.
 
 ## References
 
@@ -190,6 +198,64 @@ theorem inv_le_maxStableExponent (h : IsSimpleMaxStable μ) {y : ι → ℝ} (hy
     exact measureReal_mono fun x hx ↦ hx i
   rw [maxStableExponent, le_neg, ← Real.log_exp (-(y i)⁻¹)]
   exact Real.log_le_log (h.measureReal_Iic_pos hy) hle
+
+omit [Finite ι] in
+/-- The marginal tail: `P(Y i > c) ≤ 1 / c`. -/
+lemma measureReal_lt_apply_le (h : IsSimpleMaxStable μ) (i : ι) {c : ℝ} (hc : 0 < c) :
+    μ.real {x | c < x i} ≤ c⁻¹ := by
+  have := h.isProbabilityMeasure
+  have hmeas : MeasurableSet {x : ι → ℝ | x i ≤ c} :=
+    measurableSet_le (measurable_pi_apply i) measurable_const
+  rw [show {x : ι → ℝ | c < x i} = {x | x i ≤ c}ᶜ by ext; simp, probReal_compl_eq_one_sub hmeas,
+    measureReal_def, h.measure_le i c hc, ENNReal.toReal_ofReal (Real.exp_pos _).le]
+  linarith [Real.add_one_le_exp (-c⁻¹)]
+
+/-- **Upper bound of the exponent function**: `V(y) ≤ ∑ i, 1 / y i` (the value for independent
+components). Together with `inv_le_maxStableExponent`, `max_i 1 / y i ≤ V(y) ≤ ∑ i, 1 / y i`. -/
+theorem maxStableExponent_le_sum_inv [Fintype ι] (h : IsSimpleMaxStable μ) {y : ι → ℝ}
+    (hy : ∀ i, 0 < y i) : maxStableExponent μ y ≤ ∑ i, (y i)⁻¹ := by
+  have := h.isProbabilityMeasure
+  set V := maxStableExponent μ y with hV
+  set S := ∑ i, (y i)⁻¹ with hS
+  have hV0 : 0 ≤ V := by
+    rw [hV, maxStableExponent, neg_nonneg]
+    exact Real.log_nonpos measureReal_nonneg measureReal_le_one
+  have key {t : ℝ} (ht : 0 < t) : V ≤ S + S * V / t := by
+    have hty : ∀ i, 0 < (t • y) i := fun i ↦ by simpa using mul_pos ht (hy i)
+    -- `1 - F(t y) ≤ S / t` by the union bound
+    have hunion : 1 - μ.real (Iic (t • y)) ≤ S / t := by
+      rw [← probReal_compl_eq_one_sub measurableSet_Iic]
+      have hcompl : (Iic (t • y))ᶜ = ⋃ i, {x : ι → ℝ | (t • y) i < x i} := by
+        ext x; simp [Pi.le_def, not_forall]
+      rw [hcompl]
+      refine (measureReal_iUnion_fintype_le _).trans ?_
+      refine (Finset.sum_le_sum fun i _ ↦ h.measureReal_lt_apply_le i (hty i)).trans ?_
+      rw [hS, Finset.sum_div]
+      refine Finset.sum_le_sum fun i _ ↦ le_of_eq ?_
+      simp only [Pi.smul_apply, smul_eq_mul, mul_inv]
+      field_simp
+    -- `F(t y) = exp (-V / t) ≤ 1 / (1 + V / t)`
+    have hF : μ.real (Iic (t • y)) = Real.exp (-(V / t)) := by
+      rw [← h.exp_neg_maxStableExponent hty, h.maxStableExponent_smul ht hy, hV, inv_mul_eq_div]
+    have hexp : Real.exp (-(V / t)) * (1 + V / t) ≤ 1 := by
+      have h1 := Real.add_one_le_exp (V / t)
+      have h2 : Real.exp (-(V / t)) * Real.exp (V / t) = 1 := by
+        rw [← Real.exp_add, neg_add_cancel, Real.exp_zero]
+      nlinarith [Real.exp_pos (-(V / t))]
+    rw [hF] at hunion
+    have hVt : 0 ≤ V / t := div_nonneg hV0 ht.le
+    -- `(V / t) / (1 + V / t) ≤ 1 - exp (-V / t) ≤ S / t`
+    have : V / t ≤ S / t * (1 + V / t) := by nlinarith [Real.exp_pos (-(V / t))]
+    have h3 : V / t * t = V := div_mul_cancel₀ V ht.ne'
+    have h4 : S / t * t = S := div_mul_cancel₀ S ht.ne'
+    calc V = V / t * t := h3.symm
+      _ ≤ S / t * (1 + V / t) * t := by gcongr
+      _ = S + S * V / t := by field_simp
+  have htend : Tendsto (fun t : ℝ ↦ S + S * V / t) atTop (𝓝 S) := by
+    have := (tendsto_const_nhds (x := S)).add
+      ((tendsto_const_nhds (x := S * V)).div_atTop (tendsto_id (x := (atTop : Filter ℝ))))
+    simpa using this
+  exact ge_of_tendsto htend ((eventually_gt_atTop 0).mono fun t ht ↦ key ht)
 
 end IsSimpleMaxStable
 

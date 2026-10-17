@@ -11,7 +11,65 @@ import Mathlib.Probability.Distributions.Gaussian.Real
 /-!
 # Spectral representation of max-stable vectors and processes
 
-DOC
+Let `N = ∑_k δ_{(ζ_k, s_k)}` be a Poisson random measure on `ℝ × S` with intensity
+`ζ ^ (-2) dζ ⊗ μ` (`radialMeasure 1 ⊗ μ`), and let `f i : S → [0, ∞]` with `∫ f i dμ = 1`. The
+vector (or, for an infinite index set `T`, the process)
+
+  `Y i = sup_k ζ_k f i (s_k)`
+
+is simple max-stable with distribution function
+
+  `P(Y ≤ y) = exp (-∫ max_i f i s / y i dμ(s))`
+
+([dHF, Theorem 6.1.9 and Theorem 9.4.1, "⇐"]; [Res87, Proposition 5.11]; [dH84]). With
+`S = [0, ∞]^ι`, `f i w = w i` and `μ = H` a measure on the simplex, this is the spectral measure
+representation of simple max-stable vectors; with `S = [0, ∞]^T` and `μ` the law of a nonnegative
+process `W` with `E W t = 1`, this is de Haan's representation `Y t = sup_k ζ_k W_k t` of
+max-stable processes with i.i.d. `W_k` (the marks `s_k` of a Poisson random measure with product
+intensity `ζ ^ (-2) dζ ⊗ μ`, `μ` a probability measure, are i.i.d. with law `μ`); only
+finite-dimensional distributions are used, so no path space is needed.
+
+The maximum over the points of a counting measure `m` is `essSup g m`, so that
+`essSup g m ≤ c ↔ m {g > c} = 0`; the joint law then reduces to the void probabilities
+`P(N A = 0) = exp (-ν A)` of the Poisson random measure.
+
+## Main results
+
+* `IsPoissonRandomMeasure.measure_apply_eq_zero`: void probabilities `P(N A = 0) = exp (-ν A)`.
+* `IsPoissonRandomMeasure.measure_forall_essSup_le`: the joint law of maxima of functions over
+  the points of a Poisson random measure, `P(∀ i, max_N g i ≤ c i) = exp (-ν (⋃ i, {g i > c i}))`.
+* `radialMeasure_prod_iUnion`: the exponent measure of the spectral construction,
+  `(ζ ^ (-2) dζ ⊗ μ) {∃ i, ζ f i s > c i} = ∫ max_i f i / c i dμ`.
+* `IsPoissonRandomMeasure.measure_spectralVector_le`: `P(Y ≤ y) = exp (-∫ max_i f i / y i dμ)`.
+* `IsPoissonRandomMeasure.measure_spectralVector_apply_le`: unit Fréchet margins.
+* `IsPoissonRandomMeasure.isSimpleMaxStable_map_spectralVector`: the law of `Y` is simple
+  max-stable.
+* `exists_isSimpleMaxStable_of_spectral`, `exists_isSimpleMaxStable_of_spectralMeasure`: every
+  spectral measure `H` with `∫ w i dH = 1` is the spectral measure of a simple max-stable law.
+* `IsPoissonRandomMeasure.isSimpleMaxStable_map_process`,
+  `IsPoissonRandomMeasure.measure_process_le`, `IsPoissonRandomMeasure.measure_process_apply_le`:
+  de Haan's max-stable processes; their finite-dimensional laws are simple max-stable, with
+  `P(Y tᵢ ≤ yᵢ ∀ i) = exp (-E max_i W tᵢ / yᵢ)`.
+* `smithKernel`, `IsPoissonRandomMeasure.isSimpleMaxStable_smith`: the Smith (Gaussian extreme
+  value) model on `ℝ`.
+* `independentSpectralMeasure`, `IsPoissonRandomMeasure.measure_spectralVector_le_independent`:
+  vertex masses give independent unit Fréchet components, `P(Y ≤ y) = ∏ i, exp (-1 / y i)`.
+* `comonotoneSpectralMeasure`, `IsPoissonRandomMeasure.measure_spectralVector_le_comonotone`:
+  a unit mass at `(1, …, 1)` gives complete dependence, `P(Y ≤ y) = min_i exp (-1 / y i)`.
+
+The Brown-Resnick model (`W t = exp (G t - Var (G t) / 2)` for a Gaussian process `G`) is an
+instance of `isSimpleMaxStable_map_process` once Gaussian processes are available; it is not
+spelled out.
+
+## References
+
+* L. de Haan, *A spectral representation for max-stable processes*, Ann. Probab. 12 (1984)
+  [dH84].
+* L. de Haan and A. Ferreira, *Extreme Value Theory: An Introduction*, Springer (2006),
+  Chapters 6 and 9 [dHF].
+* S. I. Resnick, *Extreme Values, Regular Variation, and Point Processes*, Springer (1987),
+  Chapter 5 [Res87].
+* R. L. Smith, *Max-stable processes and spatial extremes*, unpublished manuscript (1990).
 -/
 
 open MeasureTheory ProbabilityTheory Filter Set Topology
