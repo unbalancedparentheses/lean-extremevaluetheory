@@ -32,8 +32,9 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
 - **Characterization of the Gumbel domain** (`isInMDAGumbel_iff`): `F` is in the domain of
   attraction of `exp(-e^(-x))` if and only if there is a positive auxiliary function `f` with
   `(1 - F(t + x f(t)))/(1 - F(t)) → e^(-x)` as `t` tends to the right endpoint (finite or
-  infinite). The von Mises condition is a sufficient criterion; the exponential and Gumbel laws
-  are examples.
+  infinite). The von Mises condition is a sufficient criterion, for infinite and finite right
+  endpoints (`isInMDAGumbel_of_vonMises`, `isInMDAGumbel_of_vonMises_nhdsLT`); the exponential,
+  Gumbel and `1 - exp(-x/(1-x))` laws are examples.
 - **Pickands–Balkema–de Haan** (`exists_tendstoUniformlyOn_excessSurvival_of_isInMDAGEV'`): if `F`
   is in the domain of attraction of the extreme value law with shape `ξ ∈ ℝ`, there is a scale
   `β(u) > 0` with `F̄(u + β(u)x)/F̄(u)` converging to the generalized Pareto survival function of

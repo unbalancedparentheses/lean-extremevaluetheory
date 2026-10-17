@@ -296,6 +296,44 @@ for $F$ is a function $f$, positive for $t$ near $x_F$, such that
   Theorem~\ref{thm:mda-gumbel-of-auxiliary} concludes.
 \end{proof}
 
+\begin{theorem}[The von Mises condition, finite right endpoint]
+  \label{thm:von-mises-finite}
+  \uses{thm:mda-gumbel-of-auxiliary, thm:von-mises}
+  \lean{CumulativeDistributionFunction.tendsto_auxiliary_of_vonMises_nhdsLT,
+    CumulativeDistributionFunction.isInMDAGumbel_of_vonMises_nhdsLT}
+  \leanok
+  Let $z < x_F$. Suppose $F$ is twice differentiable on $(z, x_F)$ with $F' > 0$ there,
+  $F(t) \to 1$ as $t \uparrow x_F$, and
+  \begin{align*}
+    \lim_{t \uparrow x_F} \frac{(1 - F(t)) \, F''(t)}{F'(t)^2} \; = \; -1 .
+  \end{align*}
+  Then $x_F$ is the right endpoint of $F$, $f = (1 - F)/F'$ is an auxiliary function as
+  $t \uparrow x_F$, and $F$ is in the Gumbel domain of attraction [EKM, Theorem~3.3.27],
+  [dHF, Theorem~1.1.8]. The hypothesis $F(t) \to 1$ cannot be dropped: $1 - F(t) = e^{-t}$ on
+  $(0, 1)$ with a jump to $1$ at $1$ satisfies the other conditions but is not in the domain.
+\end{theorem}
+\begin{proof}
+  \leanok
+  The argument of Theorem~\ref{thm:von-mises} applies on $(z, x_F)$, once we know that
+  $t + x f(t) < x_F$ eventually. Near $x_F$ we have $f(t) \le \varepsilon (x_F - t)$: otherwise
+  $(\log(1-F))' = -1/f$ would be bounded on $(t, x_F)$, so $\log(1 - F)$ would stay bounded
+  below, contradicting $F(t) \to 1$.
+\end{proof}
+
+\begin{proposition}[A finite-endpoint example]
+  \label{prop:exp-neg-inv-gumbel}
+  \uses{thm:von-mises-finite}
+  \lean{CumulativeDistributionFunction.expNegInvCDF,
+    CumulativeDistributionFunction.isInMDAGumbel_expNegInvCDF}
+  \leanok
+  The c.d.f.\ $F(x) = 1 - \exp(-x/(1-x))$ on $[0, 1)$ is in the Gumbel domain of attraction,
+  with right endpoint $x_F = 1$.
+\end{proposition}
+\begin{proof}
+  \leanok
+  Here $(1-F)F''/(F')^2 = 2(1-x) - 1 \to -1$ as $x \uparrow 1$.
+\end{proof}
+
 \begin{definition}[Standard exponential distribution]
   \label{def:std-exponential-cdf}
   \uses{def:cdf}

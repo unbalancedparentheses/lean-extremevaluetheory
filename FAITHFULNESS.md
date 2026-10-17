@@ -89,6 +89,7 @@ Processes*.
 | † `IsInMDAGumbel` (def) | EKM §3.3.3, dHF Def 1.1.1 | `Fⁿ(a_n x + b_n) → Λ(x)` | Same shape as the Fréchet definition, for every `x`. Since `Λ` is continuous this is weak convergence. Inhabited: `isInMDAGumbel_standardExponentialCDF`, `isInMDAGumbel_standardGumbelCDF`. | FAITHFUL |
 | † `standardExponentialCDF` | — | `1 − e^{−x}` on `x ≥ 0` | `max 0 (1 − e^{−x})`, which is the same function. | FAITHFUL |
 | † `isInMDAGumbel_of_vonMises` | EKM Thm 3.3.27 / Ex. 3.3.24, dHF Thm 1.1.8 | `F''` exists near `x_F`, `F' > 0`, `(1−F)F''/(F')² → −1` ⇒ `F ∈ MDA(Λ)` | Same, but only for `x_F = +∞`: the hypotheses are on `(z, ∞)` with the limit at `atTop`, and they imply `F < 1` everywhere. | FAITHFUL (`x_F = ∞` only) |
+| `isInMDAGumbel_of_vonMises_nhdsLT` | EKM Thm 3.3.27, dHF Thm 1.1.8 | same, `x_F < ∞`, limit as `x ↑ x_F` | Hypotheses on `(z, x_F)`, limits along `𝓝[<] x_F`, and `F → 1` at `x_F` (needed: a jump at `x_F` breaks the conclusion). Instantiated by `isInMDAGumbel_expNegInvCDF`. | FAITHFUL |
 | † `isInMDAGumbel_iff_atTop` / `_nhdsLT` / `isInMDAGumbel_iff` | dHF Thm 1.1.8 + 1.2.5, EKM Thm 3.3.26 | `F ∈ MDA(Λ)` ⇔ ∃ `f > 0` with `F̄(t + x f(t))/F̄(t) → e^{−x}` as `t ↑ x_F`, for all `x` | The `iff` version splits on `x_F = ∞` (filter `atTop`, `F < 1`) or `x_F < ∞` (filter `𝓝[<] x_F`, `F < 1` on `(−∞,x_F)`, `F x_F = 1`). The quantifiers are right: one `f` for all `x`. The `f > 0` condition is "eventually" on the right side, and the necessity lemmas give it everywhere. `F̄ t > 0` along the filter, so `/0` is not an issue. When `t + x f(t) > x_F` the value `F̄ = 0` is the true value. | FAITHFUL |
 | † `gpdSurvival'` (def) | EKM Def 3.4.1 | `Ḡ_{ξ,β}`, all `ξ` | `(max (1+ξx/β) 0)^{−1/ξ}` for `ξ ≠ 0`, `e^{−x/β}` for `ξ = 0`. For `ξ < 0` the exponent is `> 0`, so beyond the endpoint the value is `0^{>0} = 0`, which is correct. Agrees with `gpdSurvival` for `ξ ≥ 0` (`gpdSurvival'_eq_gpdSurvival`). This fixes the `ξ < 0` junk of old finding #4. | FAITHFUL |
 | † `IsInMDAGEV` (def) | EKM Thm 3.4.5 / dHF Thm 1.1.3 | `F ∈ MDA(H_ξ)` | `ξ > 0`: `MDA(Φ_{1/ξ})`. `ξ < 0`: `MDA(Ψ_{−1/ξ})`. `ξ = 0`: `MDA(Λ)`. These are the right parameter maps. | FAITHFUL |
@@ -149,7 +150,11 @@ it is avoided by the explicit bound); `orderStat ![3,1,2] 0 = 3`; `hill` on a sa
    "⇐" allows an arbitrary `β`. There is no Gumbel "uniform GPD ⇒ MDA(Λ)". The
    `isInMDAGumbel_and_…` lemmas start from an auxiliary function, not from the GPD
    approximation.
-3. **(Minor: scope) The von Mises criterion is only for `x_F = ∞`.** EKM Thm 3.3.27 also allows a
+3. **RESOLVED: the von Mises criterion for finite `x_F`.** `isInMDAGumbel_of_vonMises_nhdsLT`
+   takes the hypotheses on `(z, x_F)` with limits along `𝓝[<] x_F`, plus `F t → 1` as
+   `t ↑ x_F` (no atom at `x_F`; a counterexample without it is in the docstring). It derives
+   `F < 1` on `(−∞, x_F)` and `F x_F = 1`. Original text: **(Minor: scope) The von Mises
+   criterion is only for `x_F = ∞`.** EKM Thm 3.3.27 also allows a
    finite right endpoint (hypotheses on `(z, x_F)`, limit as `x ↑ x_F`). The `nhdsLT`
    auxiliary-function criterion covers finite `x_F`, but no von Mises version of it is given.
 4. **(Cosmetic) `hill` on nonpositive order statistics** uses Mathlib's `Real.log x = log |x|`
