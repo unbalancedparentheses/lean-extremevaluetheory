@@ -732,4 +732,81 @@ theorem ae_tendsto_crossAvg_max (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ₀ : 
 
 end CrossLLN
 
+/-! ### The expansion along a sample -/
+
+section Pointwise
+
+variable {ξ σ₀ s : ℝ} {x : ℕ → ℝ} {n : ℕ}
+
+lemma scoreAvg_eq_inv_sqrt_mul (ξ σ₀ : ℝ) (x : ℕ → ℝ) (n : ℕ) :
+    scoreAvg ξ σ₀ x n =
+      (√(n : ℝ))⁻¹ * ((√(n : ℝ))⁻¹ * ∑ i ∈ Finset.range n, gpdScorePsi ξ σ₀ (x i)) := by
+  rw [scoreAvg, ← mul_assoc, ← mul_inv, mul_self_sqrt (Nat.cast_nonneg n)]
+
+/-- At an admissible root, `√n (s - σ₀) = √n Fₙ(σ₀) / ((1 + ξ) Qₙ(s))`. -/
+lemma sqrt_mul_sub_eq_div (h1ξ : 0 < 1 + ξ) (hn : 0 < n)
+    (hx : ∀ i, 0 < x i ∧ 0 < σ₀ + ξ * x i) (hb : ∀ i < n, 0 < s + ξ * x i)
+    (hroot : (1 + ξ) * ∑ i ∈ Finset.range n, x i / (s + ξ * x i) = n) :
+    √(n : ℝ) * (s - σ₀) = ((√(n : ℝ))⁻¹ * ∑ i ∈ Finset.range n, gpdScorePsi ξ σ₀ (x i)) /
+      ((1 + ξ) * crossAvg ξ σ₀ s x n) := by
+  have hR : 0 < (1 + ξ) * crossAvg ξ σ₀ s x n :=
+    mul_pos h1ξ (crossAvg_pos hn (fun i _ => (hx i).1) (fun i _ => (hx i).2) hb)
+  have hsq : 0 < √(n : ℝ) := sqrt_pos.2 (by exact_mod_cast hn)
+  have hid := scoreAvg_eq_of_root hn (fun i _ => (hx i).2) hb hroot
+  rw [scoreAvg_eq_inv_sqrt_mul] at hid
+  rw [eq_div_iff hR.ne']
+  have := congrArg (fun y => √(n : ℝ) * y) hid
+  rw [← mul_assoc, mul_inv_cancel₀ hsq.ne', one_mul] at this
+  rw [this]; ring
+
+/-- At an admissible root, the difference between `(1 + ξ) Qₙ(s)` and `(1 + ξ) Qₙ(max(s, σ₀))`
+is controlled by `ρ = |√n Fₙ(σ₀)| Mₙ / (√n (1 + ξ) Qₙ(σ₀))`. -/
+lemma abs_crossAvg_sub_max_le (h1ξ : 0 < 1 + ξ) (hn : 0 < n)
+    (hx : ∀ i, 0 < x i ∧ 0 < σ₀ + ξ * x i) (hb : ∀ i < n, 0 < s + ξ * x i)
+    (hroot : (1 + ξ) * ∑ i ∈ Finset.range n, x i / (s + ξ * x i) = n) :
+    |(1 + ξ) * crossAvg ξ σ₀ s x n - (1 + ξ) * crossAvg ξ σ₀ (max s σ₀) x n| ≤
+      2 * ((1 + ξ) * crossAvg ξ σ₀ σ₀ x n) *
+        (|(√(n : ℝ))⁻¹ * ∑ i ∈ Finset.range n, gpdScorePsi ξ σ₀ (x i)| *
+          (((1 + ξ) * crossAvg ξ σ₀ σ₀ x n)⁻¹ *
+            (runMax (fun i => 1 / (σ₀ + ξ * x i)) n / √(n : ℝ)))) +
+      |(1 + ξ) * crossAvg ξ σ₀ s x n - (1 + ξ) * crossAvg ξ σ₀ (max s σ₀) x n| *
+        cutoff (|(√(n : ℝ))⁻¹ * ∑ i ∈ Finset.range n, gpdScorePsi ξ σ₀ (x i)| *
+          (((1 + ξ) * crossAvg ξ σ₀ σ₀ x n)⁻¹ *
+            (runMax (fun i => 1 / (σ₀ + ξ * x i)) n / √(n : ℝ)))) := by
+  set A := (√(n : ℝ))⁻¹ * ∑ i ∈ Finset.range n, gpdScorePsi ξ σ₀ (x i)
+  set q := (1 + ξ) * crossAvg ξ σ₀ σ₀ x n
+  set M := runMax (fun i => 1 / (σ₀ + ξ * x i)) n
+  set ρ := |A| * (q⁻¹ * (M / √(n : ℝ)))
+  set W := |(1 + ξ) * crossAvg ξ σ₀ s x n - (1 + ξ) * crossAvg ξ σ₀ (max s σ₀) x n|
+  have hq : 0 < q := mul_pos h1ξ (crossAvg_pos hn (fun i _ => (hx i).1) (fun i _ => (hx i).2)
+    (fun i _ => (hx i).2))
+  have hρ0 : 0 ≤ ρ := mul_nonneg (abs_nonneg _) (mul_nonneg (inv_pos.2 hq).le
+    (div_nonneg (runMax_nonneg _ _) (sqrt_nonneg _)))
+  have hW0 : 0 ≤ W * cutoff ρ := mul_nonneg (abs_nonneg _) (cutoff_nonneg _)
+  have h2qρ : 0 ≤ 2 * q * ρ := by positivity
+  rcases le_or_gt σ₀ s with hs | hs
+  · -- above `σ₀` the two coincide
+    have : W = 0 := by simp only [W, max_eq_left hs, sub_self, abs_zero]
+    rw [this]; linarith
+  rcases lt_or_ge ρ (1 / 2) with hρ | hρ
+  · -- the lower-side bound
+    have hρ' : |scoreAvg ξ σ₀ x n| / q * M = ρ := by
+      rw [scoreAvg_eq_inv_sqrt_mul, abs_mul, abs_of_pos (inv_pos.2 (sqrt_pos.2
+        (by exact_mod_cast hn : (0 : ℝ) < n)))]
+      simp only [ρ, A]
+      ring
+    obtain ⟨h1, h2⟩ := crossAvg_sub_le h1ξ hn (fun i _ => (hx i).1) (fun i _ => (hx i).2) hb
+      hroot hs (M := M) (fun i hi => le_runMax (fun i => 1 / (σ₀ + ξ * x i)) hi)
+      (hρ'.symm ▸ hρ)
+    rw [hρ'] at h2
+    have : W ≤ 2 * q * ρ := by
+      simp only [W, max_eq_right hs.le]
+      rw [abs_of_nonneg h1]; exact h2
+    linarith
+  · -- otherwise the cutoff is one
+    rw [cutoff_of_ge hρ, mul_one]
+    linarith
+
+end Pointwise
+
 end ExtremeValueTheory
