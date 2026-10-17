@@ -27,6 +27,7 @@ import ExtremeValueTheory.Statistics.OrderStatistics
 import ExtremeValueTheory.Statistics.Hill
 import ExtremeValueTheory.DomainOfAttraction.GumbelNecessity
 import ExtremeValueTheory.PeaksOverThreshold.Balkema
+import ExtremeValueTheory.PeaksOverThreshold.Converse
 import ExtremeValueTheory.StableLaws.Basic
 import ExtremeValueTheory.StableLaws.Cauchy
 import ExtremeValueTheory.StableLaws.LevyContinuity
