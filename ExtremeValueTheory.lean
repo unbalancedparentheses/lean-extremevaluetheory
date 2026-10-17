@@ -86,3 +86,4 @@ import ExtremeValueTheory.Dependence.MovingMaxTailProcess
 import ExtremeValueTheory.ForMathlib.MeasureTheory.Function.ConvergenceInDistribution
 import ExtremeValueTheory.Statistics.ExtremeQuantileSecondOrder
 import ExtremeValueTheory.HeavyTails.LinearProcess
+import ExtremeValueTheory.HeavyTails.LinearProcessSeries

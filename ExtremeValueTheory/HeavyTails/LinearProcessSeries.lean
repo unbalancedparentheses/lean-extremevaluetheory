@@ -371,6 +371,130 @@ theorem ae_summable_mul [IsProbabilityMeasure P] {Z : ℕ → Ω → ℝ} {Z₀ 
   exact hω (abs_tsum_sub_sum_le (ψ := ψ) (z := fun j => Z j ω) (m := m₀) ENNReal.toReal_nonneg
     (ENNReal.ofReal_toReal hne).ge).1
 
+/-- **Tails of infinite moving averages with regularly varying noise, `α < 1`** ([EKM, Lemma
+A3.26], [DR85], [KS20, Chapter 15]). Let `(Z_j)_{j ≥ 0}` be independent copies of `Z₀`, with
+`P(|Z₀| > x)` regularly varying with index `-α`, `0 < δ < α < 1`, and tail balance
+`P(Z₀ > x) / P(|Z₀| > x) → p`. If `∑ |ψ_j|^δ < ∞`, then `X = ∑_j ψ_j Z_j` (which converges
+absolutely almost surely, `ae_summable_mul`) satisfies
+`P(X > x) / P(|Z₀| > x) → ∑_j |ψ_j|^α (p 1{ψ_j > 0} + (1 - p) 1{ψ_j < 0})`. -/
+theorem tendsto_measureReal_tsum_mul_div [IsProbabilityMeasure P] {Z : ℕ → Ω → ℝ} {Z₀ : Ω → ℝ}
+    (hZ : ∀ j, Measurable (Z j)) (hZ₀ : Measurable Z₀) (hind : iIndepFun Z P)
+    (hident : ∀ j, IdentDistrib (Z j) Z₀ P P) {α δ p : ℝ} (hδ : 0 < δ) (hδα : δ < α)
+    (hα1 : α < 1) (hL : IsRegularlyVarying (fun x => P.real {ω | x < |Z₀ ω|}) (-α))
+    (hp : Tendsto (fun x => P.real {ω | x < Z₀ ω} / P.real {ω | x < |Z₀ ω|}) atTop (𝓝 p))
+    {ψ : ℕ → ℝ} (hψ : Summable fun j => |ψ j| ^ δ) :
+    Tendsto (fun x => P.real {ω | x < ∑' j, ψ j * Z j ω} / P.real {ω | x < |Z₀ ω|}) atTop
+      (𝓝 (∑' j, tailWeight α p (ψ j))) := by
+  set L : ℝ → ℝ := fun x => P.real {ω | x < |Z₀ ω|} with hL_def
+  obtain ⟨hp0, hp1⟩ := tailBalance_mem_Icc hL.1 hp
+  obtain ⟨K, x₀, hK, hx₀, hR⟩ := exists_measure_tsum_gt_le hZ₀ hδα hα1 hL
+  obtain ⟨m₀, hm₀⟩ := exists_abs_le_one hδ hψ
+  set w : ℕ → ℝ := fun j => tailWeight α p (ψ j) with hw_def
+  have hw0 : ∀ j, 0 ≤ w j := fun j => (tailWeight_nonneg_le hp0 hp1).1
+  have hws : Summable w := summable_tailWeight hδ hδα.le hp0 hp1 hψ
+  set c := ∑' j, w j with hc_def
+  -- the remainders
+  set T : ℕ → ℝ := fun m => ∑' j, |ψ (j + m)| ^ δ with hT_def
+  have hT : Tendsto T atTop (𝓝 0) := tendsto_sum_nat_add fun j => |ψ j| ^ δ
+  set R : ℕ → Ω → ℝ≥0∞ := fun m ω => ∑' j, ENNReal.ofReal (|ψ (j + m)| * |Z (j + m) ω|)
+    with hR_def
+  -- the remainder bound, in real form
+  have hRb : ∀ m ≥ m₀, ∀ y ≥ x₀, P.real {ω | ENNReal.ofReal y < R m ω} ≤ K * T m * L y := by
+    intro m hm y hy
+    have h := hR (fun j => Z (j + m)) (fun j => hZ _) (fun j => hident _) (fun j => ψ (j + m))
+      (fun j => hm₀ _ (by omega)) ((summable_nat_add_iff m).2 hψ) y hy
+    have hT0 : 0 ≤ T m := tsum_nonneg fun j => rpow_nonneg (abs_nonneg _) _
+    exact ENNReal.toReal_le_of_le_ofReal (by have := hK.le; positivity) h
+  -- the remainder is negligible
+  have hRlim : ∀ m ≥ m₀, ∀ {ε : ℝ}, 0 < ε → ∀ {D : ℝ}, K * T m * ε ^ (-α) < D →
+      ∀ᶠ x in atTop, P.real {ω | ENNReal.ofReal (ε * x) < R m ω} / L x < D := by
+    intro m hm ε hε D hD
+    have hlim : Tendsto (fun x => K * T m * (L (ε * x) / L x)) atTop
+        (𝓝 (K * T m * ε ^ (-α))) := tendsto_const_nhds.mul (hL.2 ε hε)
+    filter_upwards [hlim.eventually (gt_mem_nhds hD), hL.1,
+      (tendsto_id.const_mul_atTop hε).eventually (eventually_ge_atTop x₀)] with x hx hLx hεx
+    refine lt_of_le_of_lt ?_ hx
+    rw [mul_div_assoc', div_le_div_iff_of_pos_right hLx]
+    exact hRb m hm _ hεx
+  -- finite moving averages
+  have hfin : ∀ m : ℕ, Tendsto (fun x => P.real {ω | x < ∑ j ∈ Finset.range m, ψ j * Z j ω} /
+      L x) atTop (𝓝 (∑ j ∈ Finset.range m, w j)) := fun m =>
+    tendsto_measureReal_sum_mul_div hZ hZ₀ hind hident hL hp ψ _
+  have hcm : Tendsto (fun m => ∑ j ∈ Finset.range m, w j) atTop (𝓝 c) :=
+    hws.hasSum.tendsto_sum_nat
+  rw [tendsto_order]
+  constructor
+  · -- lower bound
+    intro A hA
+    obtain ⟨ε, hε, -, hAε⟩ := exists_eps' (α := α) hA
+    set D := c * (1 + ε) ^ (-α) - A with hD
+    have hD0 : 0 < D := by rw [hD]; linarith
+    have hm1 : ∀ᶠ m in atTop, A + D / 2 < (∑ j ∈ Finset.range m, w j) * (1 + ε) ^ (-α) := by
+      have := hcm.mul_const ((1 + ε) ^ (-α))
+      exact this.eventually (lt_mem_nhds (by rw [hD]; linarith))
+    have hm2 : ∀ᶠ m in atTop, K * T m * ε ^ (-α) < D / 4 := by
+      have : Tendsto (fun m => K * T m * ε ^ (-α)) atTop (𝓝 (K * 0 * ε ^ (-α))) :=
+        (tendsto_const_nhds.mul hT).mul_const _
+      rw [mul_zero, zero_mul] at this
+      exact this.eventually (gt_mem_nhds (by positivity))
+    obtain ⟨m, hm1, hm2, hm⟩ := (hm1.and (hm2.and (eventually_ge_atTop m₀))).exists
+    have hS := tendsto_comp_mul_div hL (hfin m) (show (0 : ℝ) < 1 + ε by linarith)
+    filter_upwards [hS.eventually (lt_mem_nhds hm1), hRlim m hm hε hm2, hL.1,
+      eventually_ge_atTop 0] with x hx1 hx2 hLx hx0
+    have hsub : {ω | (1 + ε) * x < ∑ j ∈ Finset.range m, ψ j * Z j ω} ⊆
+        {ω | x < ∑' j, ψ j * Z j ω} ∪ {ω | ENNReal.ofReal (ε * x) < R m ω} := by
+      intro ω hω
+      simp only [mem_ofPred_eq, mem_union] at hω ⊢
+      by_cases h : ENNReal.ofReal (ε * x) < R m ω
+      · exact Or.inr h
+      · left
+        have := (abs_tsum_sub_sum_le (ψ := ψ) (z := fun j => Z j ω) (m := m)
+          (by positivity) (not_lt.1 h)).2
+        rw [abs_le] at this
+        linarith
+    have hle := (measureReal_mono (μ := P) hsub (measure_ne_top P _)).trans (measureReal_union_le _ _)
+    have : P.real {ω | (1 + ε) * x < ∑ j ∈ Finset.range m, ψ j * Z j ω} / L x ≤
+        P.real {ω | x < ∑' j, ψ j * Z j ω} / L x +
+          P.real {ω | ENNReal.ofReal (ε * x) < R m ω} / L x := by
+      rw [← add_div]; exact div_le_div_of_nonneg_right hle hLx.le
+    linarith
+  · -- upper bound
+    intro B hB
+    obtain ⟨ε, hε, hε1, -, hBε⟩ := exists_eps (c := c) (α := α) 1 hB
+    rw [one_mul] at hBε
+    set D := B - c * (1 - ε) ^ (-α) with hD
+    have hD0 : 0 < D := by rw [hD]; linarith
+    have hm2 : ∀ᶠ m in atTop, K * T m * ε ^ (-α) < D / 2 := by
+      have : Tendsto (fun m => K * T m * ε ^ (-α)) atTop (𝓝 (K * 0 * ε ^ (-α))) :=
+        (tendsto_const_nhds.mul hT).mul_const _
+      rw [mul_zero, zero_mul] at this
+      exact this.eventually (gt_mem_nhds (by positivity))
+    obtain ⟨m, hm2, hm⟩ := (hm2.and (eventually_ge_atTop m₀)).exists
+    have hcm_le : (∑ j ∈ Finset.range m, w j) * (1 - ε) ^ (-α) ≤ c * (1 - ε) ^ (-α) :=
+      mul_le_mul_of_nonneg_right (hws.sum_le_tsum _ fun j _ => hw0 j)
+        (rpow_nonneg (by linarith) _)
+    have hS := tendsto_comp_mul_div hL (hfin m) (show (0 : ℝ) < 1 - ε by linarith)
+    filter_upwards [hS.eventually (gt_mem_nhds (show _ < B - D / 2 by rw [hD] at *; linarith)),
+      hRlim m hm hε hm2, hL.1, eventually_ge_atTop 0] with x hx1 hx2 hLx hx0
+    have hsub : {ω | x < ∑' j, ψ j * Z j ω} ⊆
+        {ω | (1 - ε) * x < ∑ j ∈ Finset.range m, ψ j * Z j ω} ∪
+          {ω | ENNReal.ofReal (ε * x) < R m ω} := by
+      intro ω hω
+      simp only [mem_ofPred_eq, mem_union] at hω ⊢
+      by_cases h : ENNReal.ofReal (ε * x) < R m ω
+      · exact Or.inr h
+      · left
+        have := (abs_tsum_sub_sum_le (ψ := ψ) (z := fun j => Z j ω) (m := m)
+          (by positivity) (not_lt.1 h)).2
+        rw [abs_le] at this
+        linarith
+    have hle := (measureReal_mono (μ := P) hsub (measure_ne_top P _)).trans (measureReal_union_le _ _)
+    have : P.real {ω | x < ∑' j, ψ j * Z j ω} / L x ≤
+        P.real {ω | (1 - ε) * x < ∑ j ∈ Finset.range m, ψ j * Z j ω} / L x +
+          P.real {ω | ENNReal.ofReal (ε * x) < R m ω} / L x := by
+      rw [← add_div]; exact div_le_div_of_nonneg_right hle hLx.le
+    linarith
+
 end LinearProcess
 
 end ExtremeValueTheory

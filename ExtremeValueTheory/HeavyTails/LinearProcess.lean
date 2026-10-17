@@ -77,7 +77,7 @@ private theorem measureReal_inter_eq_mul {X Y : Ω → ℝ} (hXY : IndepFun X Y 
   simp only [measureReal_def, hXY.measure_inter_preimage_eq_mul _ _ hs ht, ENNReal.toReal_mul]
 
 /-- Choosing `ε ∈ (0, 1)` with `c (1 + s ε)^{-α}` close to `c`. -/
-private theorem exists_eps {c α : ℝ} (s : ℝ) {B : ℝ} (hB : c < B) :
+theorem exists_eps {c α : ℝ} (s : ℝ) {B : ℝ} (hB : c < B) :
     ∃ ε : ℝ, 0 < ε ∧ ε < 1 ∧ c * (1 + s * ε) ^ (-α) < B ∧ c * (1 - s * ε) ^ (-α) < B := by
   have hcont : ∀ t : ℝ, ContinuousAt (fun ε : ℝ => c * (1 + t * ε) ^ (-α)) 0 := fun t =>
     continuousAt_const.mul ((continuousAt_const.add (continuousAt_const.mul continuousAt_id)
@@ -89,7 +89,7 @@ private theorem exists_eps {c α : ℝ} (s : ℝ) {B : ℝ} (hB : c < B) :
   refine ⟨ε, h4, h3, h1, ?_⟩
   simpa [sub_eq_add_neg] using h2
 
-private theorem exists_eps' {c α : ℝ} {A : ℝ} (hA : A < c) :
+theorem exists_eps' {c α : ℝ} {A : ℝ} (hA : A < c) :
     ∃ ε : ℝ, 0 < ε ∧ ε < 1 ∧ A < c * (1 + ε) ^ (-α) := by
   have hcont : ContinuousAt (fun ε : ℝ => c * (1 + ε) ^ (-α)) 0 :=
     continuousAt_const.mul ((continuousAt_const.add continuousAt_id).rpow_const
