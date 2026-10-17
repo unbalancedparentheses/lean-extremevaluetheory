@@ -209,6 +209,119 @@ theorem tendsto_measureReal_add_div [IsProbabilityMeasure P] {X Y : Ω → ℝ} 
         rw [measureReal_inter_eq_mul hXY measurableSet_Ioi measurableSet_Ioi]
         rfl
 
+/-- **Tail of a finite sum of independent regularly varying variables.** If `(Y_i)` are
+independent with `P(Y_i > x) / L(x) → a_i`, `L` regularly varying, then for every finite set `s`,
+`P(∑_{i ∈ s} Y_i > x) / L(x) → ∑_{i ∈ s} a_i`. -/
+theorem tendsto_measureReal_finsetSum_div [IsProbabilityMeasure P] {ι : Type*} {Y : ι → Ω → ℝ}
+    (hY : ∀ i, Measurable (Y i)) (hind : iIndepFun Y P) {L : ℝ → ℝ} {α : ℝ}
+    (hL : IsRegularlyVarying L (-α)) {a : ι → ℝ}
+    (ha : ∀ i, Tendsto (fun x => P.real {ω | x < Y i ω} / L x) atTop (𝓝 (a i)))
+    (s : Finset ι) :
+    Tendsto (fun x => P.real {ω | x < ∑ i ∈ s, Y i ω} / L x) atTop (𝓝 (∑ i ∈ s, a i)) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty =>
+    simp only [Finset.sum_empty]
+    refine tendsto_const_nhds.congr' ?_
+    filter_upwards [eventually_ge_atTop 0] with x hx
+    have : {ω : Ω | x < 0} = ∅ := by ext; simp [hx.not_gt]
+    simp [this]
+  | insert i s hi ih =>
+    simp only [Finset.sum_insert hi]
+    have hindep : IndepFun (Y i) (fun ω => ∑ j ∈ s, Y j ω) P := by
+      have := (hind.indepFun_finsetSum_of_notMem hY hi).symm
+      convert this using 1
+      ext ω; simp
+    exact tendsto_measureReal_add_div (hY i) (Finset.measurable_sum s fun j _ => hY j) hindep hL
+      (ha i) ih
+
+/-- The *tail weight* `|ψ|^α (p 1{ψ > 0} + (1 - p) 1{ψ < 0})` of the coefficient `ψ`: the limit
+of `P(ψ Z > x) / P(|Z| > x)` under tail balance `P(Z > x) / P(|Z| > x) → p`. -/
+noncomputable def tailWeight (α p ψ : ℝ) : ℝ :=
+  |ψ| ^ α * ((if 0 < ψ then p else 0) + (if ψ < 0 then 1 - p else 0))
+
+theorem tailWeight_of_pos {α p ψ : ℝ} (hψ : 0 < ψ) : tailWeight α p ψ = ψ ^ α * p := by
+  simp [tailWeight, hψ, hψ.not_gt, abs_of_pos hψ]
+
+theorem tailWeight_of_neg {α p ψ : ℝ} (hψ : ψ < 0) : tailWeight α p ψ = |ψ| ^ α * (1 - p) := by
+  simp [tailWeight, hψ, hψ.not_gt]
+
+@[simp] theorem tailWeight_zero (α p : ℝ) : tailWeight α p 0 = 0 := by simp [tailWeight]
+
+/-- Under tail balance, the left tail `P(Z < -x) / P(|Z| > x) → 1 - p`. -/
+theorem tendsto_measureReal_neg_div [IsProbabilityMeasure P] {Z : Ω → ℝ} (hZ : Measurable Z)
+    (hpos : ∀ᶠ x in atTop, 0 < P.real {ω | x < |Z ω|}) {p : ℝ}
+    (hp : Tendsto (fun x => P.real {ω | x < Z ω} / P.real {ω | x < |Z ω|}) atTop (𝓝 p)) :
+    Tendsto (fun x => P.real {ω | x < -Z ω} / P.real {ω | x < |Z ω|}) atTop (𝓝 (1 - p)) := by
+  refine (tendsto_const_nhds.sub hp).congr' ?_
+  filter_upwards [hpos, eventually_ge_atTop 0] with x hx hx0
+  have hunion : {ω | x < |Z ω|} = {ω | x < Z ω} ∪ {ω | x < -Z ω} := by
+    ext ω; simp only [mem_ofPred_eq, mem_union, lt_abs]
+  have hdisj : Disjoint {ω | x < Z ω} {ω | x < -Z ω} := by
+    rw [Set.disjoint_left]
+    intro ω h1 h2
+    simp only [mem_ofPred_eq] at h1 h2
+    linarith
+  have hsum : P.real {ω | x < |Z ω|} = P.real {ω | x < Z ω} + P.real {ω | x < -Z ω} := by
+    rw [hunion, measureReal_union hdisj (measurableSet_lt measurable_const hZ.neg)]
+  rw [eq_div_iff hx.ne', sub_mul, one_mul, div_mul_cancel₀ _ hx.ne', hsum]
+  ring
+
+/-- **Tail of a scaled variable**: under regular variation of `P(|Z| > x)` with index `-α` and
+tail balance `P(Z > x) / P(|Z| > x) → p`, for every real `ψ`,
+`P(ψ Z > x) / P(|Z| > x) → tailWeight α p ψ = |ψ|^α (p 1{ψ > 0} + (1 - p) 1{ψ < 0})`. -/
+theorem tendsto_measureReal_mul_div [IsProbabilityMeasure P] {Z : Ω → ℝ} (hZ : Measurable Z)
+    {α p : ℝ} (hL : IsRegularlyVarying (fun x => P.real {ω | x < |Z ω|}) (-α))
+    (hp : Tendsto (fun x => P.real {ω | x < Z ω} / P.real {ω | x < |Z ω|}) atTop (𝓝 p))
+    (ψ : ℝ) :
+    Tendsto (fun x => P.real {ω | x < ψ * Z ω} / P.real {ω | x < |Z ω|}) atTop
+      (𝓝 (tailWeight α p ψ)) := by
+  rcases lt_trichotomy ψ 0 with hψ | rfl | hψ
+  · have habs : 0 < |ψ|⁻¹ := inv_pos.2 (abs_pos.2 hψ.ne)
+    have h := tendsto_comp_mul_div hL (tendsto_measureReal_neg_div hZ hL.1 hp) habs
+    rw [inv_rpow (abs_nonneg _), ← rpow_neg (abs_nonneg _), neg_neg] at h
+    rw [tailWeight_of_neg hψ, mul_comm]
+    refine h.congr fun x => ?_
+    congr 2
+    ext ω
+    simp only [mem_ofPred_eq, abs_of_neg hψ]
+    rw [inv_mul_lt_iff₀ (neg_pos.2 hψ), neg_mul_neg]
+  · simp only [zero_mul, tailWeight_zero]
+    refine tendsto_const_nhds.congr' ?_
+    filter_upwards [eventually_ge_atTop 0] with x hx
+    have : {ω : Ω | x < 0} = ∅ := by ext; simp [hx.not_gt]
+    simp [this]
+  · have h := tendsto_comp_mul_div hL hp (inv_pos.2 hψ)
+    rw [inv_rpow hψ.le, ← rpow_neg hψ.le, neg_neg] at h
+    rw [tailWeight_of_pos hψ, mul_comm]
+    refine h.congr fun x => ?_
+    congr 2
+    ext ω
+    simp only [mem_ofPred_eq]
+    rw [inv_mul_lt_iff₀ hψ, mul_comm]
+
+/-- **Tails of finite moving averages** ([EKM, Lemma A3.26], [DR85]). Let `(Z_j)` be independent
+copies of `Z_0` with `P(|Z_0| > x)` regularly varying with index `-α` and tail balance
+`P(Z_0 > x) / P(|Z_0| > x) → p`. Then for real coefficients `ψ_j` and every finite set `s`,
+`P(∑_{j ∈ s} ψ_j Z_j > x) / P(|Z_0| > x) → ∑_{j ∈ s} |ψ_j|^α (p 1{ψ_j > 0} + q 1{ψ_j < 0})`,
+`q = 1 - p`. -/
+theorem tendsto_measureReal_sum_mul_div [IsProbabilityMeasure P] {ι : Type*} {Z : ι → Ω → ℝ}
+    {Z₀ : Ω → ℝ} (hZ : ∀ j, Measurable (Z j)) (hZ₀ : Measurable Z₀) (hind : iIndepFun Z P)
+    (hident : ∀ j, IdentDistrib (Z j) Z₀ P P) {α p : ℝ}
+    (hL : IsRegularlyVarying (fun x => P.real {ω | x < |Z₀ ω|}) (-α))
+    (hp : Tendsto (fun x => P.real {ω | x < Z₀ ω} / P.real {ω | x < |Z₀ ω|}) atTop (𝓝 p))
+    (ψ : ι → ℝ) (s : Finset ι) :
+    Tendsto (fun x => P.real {ω | x < ∑ j ∈ s, ψ j * Z j ω} / P.real {ω | x < |Z₀ ω|}) atTop
+      (𝓝 (∑ j ∈ s, tailWeight α p (ψ j))) := by
+  refine tendsto_measureReal_finsetSum_div (Y := fun j ω => ψ j * Z j ω)
+    (fun j => (hZ j).const_mul _)
+    (hind.comp (fun j x => ψ j * x) fun j => measurable_const_mul _) hL (fun j => ?_) s
+  refine (tendsto_measureReal_mul_div hZ₀ hL hp (ψ j)).congr fun x => ?_
+  congr 1
+  simp only [measureReal_def]
+  exact congrArg ENNReal.toReal
+    (((hident j).comp (measurable_const_mul (ψ j))).measure_mem_eq measurableSet_Ioi).symm
+
 end LinearProcess
 
 end ExtremeValueTheory
