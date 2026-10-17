@@ -1,0 +1,11 @@
+lean-extremevaluetheory
+Copyright 2026 Federico Carrone
+
+This project includes code and blueprint material from ExtremeValueProject
+(https://github.com/kkytola/ExtremeValueProject, commit f7c9a8ce260d5cd526bb7f868010dee5afa7f746),
+Copyright (c) 2025 Kalle Kytölä and contributors, developed for the Aalto University
+course MS-EV0029 "Introduction to Formalized Mathematics in Lean".
+Licensed under the Apache License, Version 2.0.
+
+Files derived from ExtremeValueProject keep their original copyright headers and carry a
+notice describing the modifications made in this project.

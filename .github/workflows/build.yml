@@ -1,0 +1,16 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: leanprover/lean-action@v1
+      - name: Count remaining sorries
+        run: |
+          echo "Remaining sorries: $(grep -rnw sorry ExtremeValueTheory --include='*.lean' | wc -l)"
