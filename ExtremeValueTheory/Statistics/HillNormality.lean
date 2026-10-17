@@ -745,4 +745,96 @@ theorem tendstoInMeasure_meanExcess_fun {E : ℕ → Ω → ℝ} (hEm : ∀ i, M
 
 end ConditionalLLN
 
+/-! ### Auxiliary facts for the general case -/
+
+section Auxiliary
+
+variable {n : ℕ}
+
+/-- Order statistics commute with maps that are monotone on a set containing the sample. -/
+theorem orderStat_comp_monotoneOn {g : ℝ → ℝ} {S : Set ℝ} (hg : MonotoneOn g S)
+    {y : Fin n → ℝ} (hy : ∀ i, y i ∈ S) {j : ℕ} (hj : j < n) :
+    orderStat (g ∘ y) j = g (orderStat y j) := by
+  rw [orderStat_of_lt _ hj, orderStat_of_lt _ hj]
+  have hmono : Monotone ((g ∘ y) ∘ Tuple.sort y) := fun a b hab =>
+    hg (hy _) (hy _) (Tuple.monotone_sort y hab)
+  have : (g ∘ y) ∘ Tuple.sort (g ∘ y) = (g ∘ y) ∘ Tuple.sort y :=
+    Tuple.unique_monotone (Tuple.monotone_sort _) hmono
+  exact congrFun this _
+
+/-- The second-order remainder `log U(e^u e^s) - log U(e^s) - γ u`. -/
+noncomputable def logRemainder (U : ℝ → ℝ) (γ u s : ℝ) : ℝ :=
+  log (U (exp u * exp s)) - log (U (exp s)) - γ * u
+
+/-- The Hill estimator of the sample `U(e^{y_i})`, for `U` monotone on `(1, ∞)` and `y_i > 0`,
+splits into `γ` times the mean top excess of `y` and the mean second-order remainder. -/
+theorem hill_comp_exp_eq {U : ℝ → ℝ} (hU : MonotoneOn U (Ioi 1)) (γ : ℝ) {y : Fin n → ℝ}
+    (hy : ∀ i, 0 < y i) {k : ℕ} (hk : k < n) :
+    hill (fun i => U (exp (y i))) k =
+      γ * ((k : ℝ)⁻¹ * ∑ i ∈ Finset.range k, (orderStat y i - orderStat y k)) +
+        (k : ℝ)⁻¹ * ∑ i ∈ Finset.range k,
+          logRemainder U γ (orderStat y i - orderStat y k) (orderStat y k) := by
+  have hmono : MonotoneOn (fun x => U (exp x)) (Ioi 0) := fun a ha b hb hab =>
+    hU (one_lt_exp_iff.2 ha) (one_lt_exp_iff.2 hb) (exp_le_exp.2 hab)
+  have h := fun j (hj : j < n) => orderStat_comp_monotoneOn hmono (y := y) (fun i => hy i) hj
+  simp only [Function.comp_def] at h
+  rw [hill, show ∀ a b : ℕ → ℝ, γ * ((k : ℝ)⁻¹ * ∑ i ∈ Finset.range k, a i) +
+      (k : ℝ)⁻¹ * ∑ i ∈ Finset.range k, b i =
+      (k : ℝ)⁻¹ * ∑ i ∈ Finset.range k, (γ * a i + b i) by
+    intro a b; rw [Finset.sum_add_distrib, ← Finset.mul_sum]; ring]
+  congr 1
+  refine Finset.sum_congr rfl fun i hi => ?_
+  have hi' : i < n := (Finset.mem_range.1 hi).trans hk
+  rw [h i hi', h k hk, logRemainder, ← exp_add, sub_add_cancel]
+  ring
+
+theorem integral_boxCox_exp {ρ : ℝ} (hρ : ρ ≤ 0) :
+    ∫ u, boxCox ρ (exp u) ∂(expMeasure 1) = 1 / (1 - ρ) := by
+  simp_rw [boxCox_exp]
+  split_ifs with h
+  · rw [integral_id_expMeasure, h]; norm_num
+  · have hρ1 : ρ < 1 := by linarith
+    rw [integral_div, integral_sub (integrable_exp_mul_expMeasure hρ1) (integrable_const _),
+      integral_exp_mul_expMeasure hρ1]
+    simp only [integral_const, probReal_univ, smul_eq_mul, mul_one]
+    have : (1 : ℝ) - ρ ≠ 0 := by linarith
+    field_simp
+    ring
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+
+omit [IsProbabilityMeasure P] in
+theorem tendstoInMeasure_of_tendsto {a : ℕ → ℝ} {c : ℝ} (ha : Tendsto a atTop (𝓝 c)) :
+    TendstoInMeasure P (fun n (_ : Ω) => a n) atTop (fun _ => c) := by
+  rw [tendstoInMeasure_iff_dist]
+  intro ε hε
+  refine tendsto_const_nhds.congr' ?_
+  filter_upwards [Metric.tendsto_nhds.1 ha ε hε] with n hn
+  have : {x : Ω | ε ≤ dist (a n) c} = ∅ := by
+    ext x; simp [not_le.2 hn]
+  rw [this, measure_empty]
+
+omit [IsProbabilityMeasure P] in
+/-- If `f_n = g_n` outside events of vanishing probability and `g_n → c` in probability, then
+`f_n → c` in probability. -/
+theorem TendstoInMeasure.congr_of_measure_ne
+ {f g : ℕ → Ω → ℝ} {c : ℝ}
+    (hg : TendstoInMeasure P g atTop (fun _ => c))
+    (hfg : Tendsto (fun n => P {ω | f n ω ≠ g n ω}) atTop (𝓝 0)) :
+    TendstoInMeasure P f atTop (fun _ => c) := by
+  rw [tendstoInMeasure_iff_dist] at hg ⊢
+  intro ε hε
+  have h := hfg.add (hg ε hε)
+  rw [add_zero] at h
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds h (fun _ => bot_le)
+    fun n => (measure_mono fun ω hω => ?_).trans (measure_union_le _ _)
+  by_cases hfg' : f n ω = g n ω
+  · right
+    simp only [mem_ofPred_eq] at hω ⊢
+    rwa [← hfg']
+  · left
+    exact hfg'
+
+end Auxiliary
+
 end ExtremeValueTheory
