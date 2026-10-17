@@ -6,6 +6,7 @@ Authors: Federico Carrone
 import ExtremeValueTheory.Statistics.Hill
 import ExtremeValueTheory.ForMathlib.Probability.Process.Mixing
 import Mathlib.Probability.Moments.Covariance
+import ExtremeValueTheory.ForMathlib.Probability.Process.Stationary
 
 /-!
 # Consistency of the Hill estimator for dependent sequences
@@ -705,5 +706,212 @@ theorem tendstoInMeasure_hill_of_isMDependent {X : ℕ → Ω → ℝ} {m : ℕ}
       rw [survival]; field_simp
 
 end MDependent
+
+/-! ### Strongly mixing stationary sequences with a cluster condition -/
+
+section Mixing
+
+/-- A double sum over `i, j < n` of a function of the lag `|i - j|` is at most
+`n (b 0 + 2 ∑_{1 ≤ h < n} b h)`. -/
+theorem sum_sum_dist_le {b : ℕ → ℝ} (hb : ∀ h, 0 ≤ b h) (n : ℕ) :
+    ∑ i ∈ range n, ∑ j ∈ range n, b (i - j + (j - i)) ≤
+      n * (b 0 + 2 * ∑ h ∈ Ico 1 n, b h) := by
+  have hrow : ∀ i ∈ range n, ∑ j ∈ range n, b (i - j + (j - i)) ≤
+      b 0 + 2 * ∑ h ∈ Ico 1 n, b h := by
+    intro i hi
+    rw [Finset.mem_range] at hi
+    have hsplit : ∑ j ∈ range n, b (i - j + (j - i)) =
+        ∑ j ∈ (range n).filter (· < i), b (i - j) + ∑ j ∈ (range n).filter (· = i), b 0 +
+          ∑ j ∈ (range n).filter (i < ·), b (j - i) := by
+      rw [← Finset.sum_filter_add_sum_filter_not (range n) (· < i),
+        ← Finset.sum_filter_add_sum_filter_not ((range n).filter fun j => ¬ j < i) (· = i),
+        Finset.filter_filter, Finset.filter_filter, add_assoc]
+      congr 1
+      · refine Finset.sum_congr rfl fun j hj => ?_
+        rw [Finset.mem_filter] at hj
+        congr 1; omega
+      congr 1
+      · refine Finset.sum_congr (by ext j; simp only [Finset.mem_filter, Finset.mem_range]; omega)
+          fun j hj => ?_
+        rw [Finset.mem_filter] at hj
+        rw [hj.2]; simp
+      · refine Finset.sum_congr (by ext j; simp only [Finset.mem_filter, Finset.mem_range]; omega)
+          fun j hj => ?_
+        rw [Finset.mem_filter] at hj
+        congr 1; omega
+    have h1 : ∑ j ∈ (range n).filter (· < i), b (i - j) ≤ ∑ h ∈ Ico 1 n, b h := by
+      rw [← Finset.sum_image (g := fun j => i - j) (fun x hx y hy hxy => by
+        simp only [Finset.coe_filter, Finset.mem_range, Set.mem_ofPred_eq] at hx hy hxy; omega)]
+      refine Finset.sum_le_sum_of_subset_of_nonneg (fun h hh => ?_) fun h _ _ => hb h
+      simp only [Finset.mem_image, Finset.mem_filter, Finset.mem_range] at hh
+      obtain ⟨j, ⟨hj1, hj2⟩, rfl⟩ := hh
+      simp only [Finset.mem_Ico]; omega
+    have h2 : ∑ j ∈ (range n).filter (i < ·), b (j - i) ≤ ∑ h ∈ Ico 1 n, b h := by
+      rw [← Finset.sum_image (g := fun j => j - i) (fun x hx y hy hxy => by
+        simp only [Finset.coe_filter, Finset.mem_range, Set.mem_ofPred_eq] at hx hy hxy; omega)]
+      refine Finset.sum_le_sum_of_subset_of_nonneg (fun h hh => ?_) fun h _ _ => hb h
+      simp only [Finset.mem_image, Finset.mem_filter, Finset.mem_range] at hh
+      obtain ⟨j, ⟨hj1, hj2⟩, rfl⟩ := hh
+      simp only [Finset.mem_Ico]; omega
+    have h3 : ∑ j ∈ (range n).filter (· = i), b 0 = b 0 := by
+      have : (range n).filter (· = i) = {i} := by
+        ext j; simp only [Finset.mem_filter, Finset.mem_range, Finset.mem_singleton]; omega
+      rw [this, Finset.sum_singleton]
+    rw [hsplit, h3]
+    linarith
+  refine (Finset.sum_le_sum hrow).trans ?_
+  rw [sum_const, card_range, nsmul_eq_mul]
+
+variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+
+/-- The covariance of two exceedance indicators. -/
+theorem covariance_ite_lt {Y Z : Ω → ℝ} (hY : Measurable Y) (hZ : Measurable Z) (u : ℝ) :
+    cov[fun ω => if u < Y ω then (1 : ℝ) else 0, fun ω => if u < Z ω then (1 : ℝ) else 0; P] =
+      P.real ({ω | u < Y ω} ∩ {ω | u < Z ω}) - P.real {ω | u < Y ω} * P.real {ω | u < Z ω} := by
+  rw [covariance_eq_sub (memLp_ite_lt hY u 2) (memLp_ite_lt hZ u 2)]
+  have e : (fun ω => if u < Y ω then (1 : ℝ) else 0) * (fun ω => if u < Z ω then (1 : ℝ) else 0)
+      = ({ω | u < Y ω} ∩ {ω | u < Z ω}).indicator 1 := by
+    ext ω
+    simp only [Pi.mul_apply, Set.indicator, Set.mem_inter_iff, Set.mem_ofPred_eq, Pi.one_apply]
+    split_ifs <;> simp_all
+  rw [e, integral_indicator_one ((measurableSet_lt measurable_const hY).inter
+    (measurableSet_lt measurable_const hZ)), integral_ite_lt' hY, integral_ite_lt' hZ]
+  rfl
+
+/-- **Variance of exceedance counts of a stationary strongly mixing sequence.** For every
+`r`, `Var(∑_{i<n} 1{X_i > u}) ≤ n (F̄(u) + 2 ∑_{1 ≤ h ≤ r} P(X_0 > u, X_h > u) +
+2 ∑_{r < h < n} α(h))`: lags up to `r` are controlled by the joint exceedance probabilities
+(the cluster part), longer lags by the strong mixing coefficients. -/
+theorem variance_tailCount_le_of_isStationary {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
+    (hstat : IsStationary X P) (n r : ℕ) (u : ℝ) :
+    variance (tailCount X n u) P ≤ n * (survival P (X 0) u +
+      2 * ∑ h ∈ Icc 1 r, P.real {ω | u < X 0 ω ∧ u < X h ω} +
+      2 * ∑ h ∈ Ico (r + 1) n, (alphaMixing X P h).toReal) := by
+  set Y : ℕ → Ω → ℝ := fun i ω => if u < X i ω then 1 else 0 with hY
+  set p : ℕ → ℝ := fun h => P.real {ω | u < X 0 ω ∧ u < X h ω} with hp
+  set b : ℕ → ℝ := fun h => if h = 0 then survival P (X 0) u else if h ≤ r then p h
+    else (alphaMixing X P h).toReal with hb
+  have hb0 : ∀ h, 0 ≤ b h := fun h => by
+    simp only [hb]; split_ifs
+    · exact survival_nonneg _
+    · exact measureReal_nonneg
+    · exact ENNReal.toReal_nonneg
+  have hident := fun i => hstat.identDistrib hX i
+  -- the joint exceedance probabilities are shift invariant
+  have hpair : ∀ i h, P.real ({ω | u < X i ω} ∩ {ω | u < X (i + h) ω}) = p h := by
+    intro i h
+    have hC : MeasurableSet {x : ℕ → ℝ | u < x 0 ∧ u < x h} :=
+      (measurableSet_lt measurable_const (measurable_pi_apply 0)).inter
+        (measurableSet_lt measurable_const (measurable_pi_apply h))
+    have := hstat.measureReal_preimage_shift hX i hC
+    have e1 : {ω | u < X i ω} ∩ {ω | u < X (i + h) ω} =
+        (fun ω (t : ℕ) => X (t + i) ω) ⁻¹' {x : ℕ → ℝ | u < x 0 ∧ u < x h} := by
+      ext ω; simp [add_comm h i]
+    have e2 : {ω | u < X 0 ω ∧ u < X h ω} =
+        (fun ω (t : ℕ) => X t ω) ⁻¹' {x : ℕ → ℝ | u < x 0 ∧ u < x h} := by
+      ext ω; simp
+    show _ = P.real {ω | u < X 0 ω ∧ u < X h ω}
+    rw [e1, this, ← e2]
+  -- covariance bound for `i ≤ j`
+  have hcov' : ∀ i h, cov[Y i, Y (i + h); P] ≤ b h := by
+    intro i h
+    rw [hY, covariance_ite_lt (hX i) (hX (i + h)) u]
+    simp only [hb]
+    split_ifs with h0 hr
+    · subst h0
+      simp only [add_zero, Set.inter_self]
+      have := mul_nonneg (measureReal_nonneg (μ := P) (s := {ω | u < X i ω}))
+        (measureReal_nonneg (μ := P) (s := {ω | u < X i ω}))
+      have e : P.real {ω | u < X i ω} = survival P (X 0) u := by
+        show (P {ω | u < X i ω}).toReal = (P {ω | u < X 0 ω}).toReal
+        congr 1
+        exact (hident i).measure_mem_eq measurableSet_Ioi
+      linarith
+    · rw [hpair]
+      have := mul_nonneg (measureReal_nonneg (μ := P) (s := {ω | u < X i ω}))
+        (measureReal_nonneg (μ := P) (s := {ω | u < X (i + h) ω}))
+      linarith
+    · refine (le_abs_self _).trans ?_
+      refine abs_measureReal_inter_sub_le_alphaMixing (s := i) ?_ ?_
+      · exact comap_le_pastMeasurableSpace le_rfl _ ⟨Ioi u, measurableSet_Ioi, rfl⟩
+      · exact comap_le_futureMeasurableSpace le_rfl _ ⟨Ioi u, measurableSet_Ioi, rfl⟩
+  have hcov : ∀ i j, cov[Y i, Y j; P] ≤ b (i - j + (j - i)) := by
+    intro i j
+    rcases le_total i j with hij | hij
+    · obtain ⟨h, rfl⟩ := Nat.exists_eq_add_of_le hij
+      rw [show i - (i + h) + (i + h - i) = h by omega]
+      exact hcov' i h
+    · obtain ⟨h, rfl⟩ := Nat.exists_eq_add_of_le hij
+      rw [covariance_comm, show j + h - j + (j - (j + h)) = h by omega]
+      exact hcov' j h
+  have hYL2 : ∀ i, MemLp (Y i) 2 P := fun i => memLp_ite_lt (hX i) u 2
+  have hV : variance (tailCount X n u) P = ∑ i ∈ range n, ∑ j ∈ range n, cov[Y i, Y j; P] :=
+    variance_fun_sum' fun i _ => hYL2 i
+  rw [hV]
+  refine (Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => hcov i j).trans
+    ((sum_sum_dist_le hb0 n).trans ?_)
+  have hbs : ∑ h ∈ Ico 1 n, b h ≤ ∑ h ∈ Icc 1 r, p h +
+      ∑ h ∈ Ico (r + 1) n, (alphaMixing X P h).toReal := by
+    have e : ∀ h ∈ Finset.Ico 1 n, b h = if h ≤ r then p h else (alphaMixing X P h).toReal := by
+      intro h hh
+      rw [Finset.mem_Ico] at hh
+      have h0 : h ≠ 0 := by omega
+      simp only [hb, h0, ↓reduceIte]
+    rw [Finset.sum_congr rfl e, Finset.sum_ite]
+    gcongr
+    · intro h hh
+      simp only [Finset.mem_filter, Finset.mem_Ico, Finset.mem_Icc] at hh ⊢; omega
+    · intro h hh
+      simp only [Finset.mem_filter, Finset.mem_Ico] at hh ⊢; omega
+  have hb00 : b 0 = survival P (X 0) u := by simp [hb]
+  rw [hb00]
+  have hn : (0 : ℝ) ≤ n := Nat.cast_nonneg n
+  nlinarith
+
+/-- **Weak consistency of the Hill estimator for stationary strongly mixing sequences**
+(Resnick and Stărică 1995; Rootzén, Leadbetter and de Haan 1998). Let `X` be a stationary
+sequence whose marginal survival function `F̄` is regularly varying with index `-α`, `α > 0`,
+let `k(n) → ∞`, `k(n)/n → 0`, and let `r(n)` be a sequence of block lengths such that
+
+* (**cluster condition**) along every `u_n → ∞` with `n F̄(u_n) / k_n → c > 0`,
+  `(1/k_n) ∑_{1 ≤ h ≤ r_n} P(X_h > u_n | X_0 > u_n) → 0` (in particular, this holds whenever the
+  anticlustering-type sums `∑_{1 ≤ h ≤ r_n} P(X_h > u_n | X_0 > u_n)` stay bounded);
+* (**mixing condition**) `(n / k_n²) ∑_{r_n < h < n} α(h) → 0`.
+
+Then `H_{k(n),n} → 1/α` in probability. -/
+theorem tendstoInMeasure_hill_of_alphaMixing {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
+    (hstat : IsStationary X P) {α : ℝ} (hα : 0 < α)
+    (hRV : IsRegularlyVarying (fun x => (P {ω | x < X 0 ω}).toReal) (-α)) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (r : ℕ → ℕ)
+    (hclus : ∀ (u : ℕ → ℝ) (c : ℝ), 0 < c → Tendsto u atTop atTop →
+      Tendsto (fun n => n * (P {ω | u n < X 0 ω}).toReal / k n) atTop (𝓝 c) →
+      Tendsto (fun n => (∑ h ∈ Icc 1 (r n), P.real {ω | u n < X 0 ω ∧ u n < X h ω}) /
+        (P {ω | u n < X 0 ω}).toReal / k n) atTop (𝓝 0))
+    (hmix : Tendsto (fun n : ℕ => (n : ℝ) / (k n : ℝ) ^ 2 *
+      ∑ h ∈ Ico (r n + 1) n, (alphaMixing X P h).toReal) atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n ω => hill (fun i : Fin n => X i ω) (k n)) atTop
+      (fun _ => 1 / α) := by
+  have hident := fun i => hstat.identDistrib hX i
+  refine tendstoInMeasure_hill_of_variance hX hident hα hRV hk hkn fun u c hc hu hmean => ?_
+  have hFpos : ∀ x, 0 < (P {ω | x < X 0 ω}).toReal := survival_pos hRV
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hkinv : Tendsto (fun n => ((k n : ℝ))⁻¹) atTop (𝓝 0) := tendsto_inv_atTop_zero.comp hkR
+  have hb := ((hmean.mul hkinv).add ((hmean.mul (hclus u c hc hu hmean)).const_mul 2)).add
+    (hmix.const_mul 2)
+  simp only [mul_zero, add_zero] at hb
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hb
+    (Eventually.of_forall fun n => by have := variance_nonneg (tailCount X n (u n)) P; positivity)
+    ?_
+  filter_upwards [hkR.eventually_gt_atTop 0] with n hkn'
+  have h := variance_tailCount_le_of_isStationary hX hstat n (r n) (u n)
+  have hF := hFpos (u n)
+  calc variance (tailCount X n (u n)) P / (k n : ℝ) ^ 2
+      ≤ n * (survival P (X 0) (u n) +
+          2 * ∑ h ∈ Icc 1 (r n), P.real {ω | u n < X 0 ω ∧ u n < X h ω} +
+          2 * ∑ h ∈ Ico (r n + 1) n, (alphaMixing X P h).toReal) / (k n : ℝ) ^ 2 := by gcongr
+    _ = _ := by rw [survival]; field_simp
+
+end Mixing
 
 end ExtremeValueTheory
