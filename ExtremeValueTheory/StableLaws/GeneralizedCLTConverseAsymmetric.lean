@@ -205,6 +205,404 @@ theorem domainOfAttraction_isSymmStable_iff (hsymm : μ.map (fun x => -x) = μ) 
 
 end FellerIff
 
+section Symmetrization
+
+/-- The symmetrization of `μ`: the law of `X - X'`, with `X, X'` independent with law `μ`. -/
+noncomputable def symmLaw (μ : Measure ℝ) : Measure ℝ := (μ.prod μ).map (fun p => p.1 - p.2)
+
+theorem measurable_fst_sub_snd : Measurable (fun p : ℝ × ℝ => p.1 - p.2) :=
+  measurable_fst.sub measurable_snd
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ]
+
+instance : IsProbabilityMeasure (symmLaw μ) := by
+  unfold symmLaw; infer_instance
+
+theorem symmLaw_map_neg : (symmLaw μ).map (fun x => -x) = symmLaw μ := by
+  rw [symmLaw, Measure.map_map measurable_neg measurable_fst_sub_snd]
+  conv_rhs => rw [← Measure.prod_swap]
+  rw [Measure.map_map measurable_fst_sub_snd measurable_swap]
+  congr 1
+  funext p
+  simp
+
+theorem charFun_symmLaw (t : ℝ) :
+    charFun (symmLaw μ) t = ((Complex.normSq (charFun μ t) : ℝ) : ℂ) := by
+  rw [charFun_apply_real, symmLaw,
+    integral_map measurable_fst_sub_snd.aemeasurable (by fun_prop)]
+  have h : ∀ p : ℝ × ℝ, Complex.exp (t * ((p.1 - p.2 : ℝ) : ℂ) * Complex.I) =
+      Complex.exp (t * (p.1 : ℂ) * Complex.I) *
+        Complex.exp (((-t : ℝ) : ℂ) * (p.2 : ℂ) * Complex.I) := by
+    intro p
+    rw [← Complex.exp_add]
+    congr 1
+    push_cast
+    ring
+  simp_rw [h]
+  rw [integral_prod_mul (fun x : ℝ => Complex.exp (t * (x : ℂ) * Complex.I))
+    (fun y : ℝ => Complex.exp (((-t : ℝ) : ℂ) * (y : ℂ) * Complex.I)),
+    ← charFun_apply_real, ← charFun_apply_real, charFun_neg, Complex.mul_conj]
+
+/-- The symmetrization of a law which is not a Dirac mass is not `δ₀`. -/
+theorem symmLaw_ne_dirac {ν : Measure ℝ} [IsProbabilityMeasure ν]
+    (h : ∀ x, ν ≠ Measure.dirac x) : symmLaw ν ≠ Measure.dirac 0 := by
+  intro hd
+  have hS : MeasurableSet ({0}ᶜ : Set ℝ) := (measurableSet_singleton 0).compl
+  have h0 : symmLaw ν {0}ᶜ = 0 := by rw [hd]; simp
+  rw [symmLaw, Measure.map_apply measurable_fst_sub_snd hS,
+    Measure.prod_apply (measurable_fst_sub_snd hS)] at h0
+  rw [lintegral_eq_zero_iff (measurable_measure_prodMk_left (measurable_fst_sub_snd hS))] at h0
+  obtain ⟨x, hx⟩ := h0.exists
+  have hx' : ν {x}ᶜ = 0 := by
+    convert hx using 2
+    ext y
+    simp [sub_eq_zero, eq_comm]
+  apply h x
+  have h1 : ν {x} = 1 := (prob_compl_eq_zero_iff (measurableSet_singleton x)).1 hx'
+  rw [← Measure.restrict_eq_self_of_ae_mem (μ := ν) (s := {x}) (by
+    rw [ae_iff]; convert hx' using 2), Measure.restrict_singleton, h1, one_smul]
+
+/-- If `(Sₙ - bₙ) / aₙ → ν`, then the symmetrized sums `(Sₙ - S'ₙ) / aₙ` converge to the
+symmetrization of `ν`. -/
+theorem tendsto_map_convPow_symmLaw {a b : ℕ → ℝ} {ν : ProbabilityMeasure ℝ}
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν)) :
+    Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow (symmLaw μ) n).map ((a n)⁻¹ * ·), inferInstance⟩) atTop
+      (𝓝 ⟨symmLaw (ν : Measure ℝ), inferInstance⟩) := by
+  have hcf := ProbabilityMeasure.tendsto_iff_tendsto_charFun.1 hconv
+  refine ProbabilityMeasure.tendsto_iff_tendsto_charFun.2 fun t => ?_
+  have h := ((Complex.continuous_ofReal.comp Complex.continuous_normSq).tendsto _).comp
+    (hcf t)
+  simp only [ProbabilityMeasure.coe_mk, charFun_symmLaw] at h ⊢
+  refine h.congr fun n => ?_
+  simp only [Function.comp]
+  have hf : (fun x => (a n)⁻¹ * (x - b n)) = fun x => (a n)⁻¹ * x + (-((a n)⁻¹ * b n)) := by
+    funext x; ring
+  rw [hf, charFun_map_mul_add, charFun_map_mul, charFun_convPow, charFun_convPow,
+    charFun_symmLaw, map_mul, map_pow, Complex.normSq_eq_norm_sq (Complex.exp _),
+    show (((-((a n)⁻¹ * b n) : ℝ) : ℂ) * (t : ℂ) * Complex.I) =
+      ((-((a n)⁻¹ * b n) * t : ℝ) : ℂ) * Complex.I by push_cast; ring,
+    Complex.norm_exp_ofReal_mul_I]
+  push_cast
+  ring
+
+omit [IsProbabilityMeasure μ] in
+theorem absTail_symmLaw (r : ℝ) :
+    absTail (symmLaw μ) r = (μ.prod μ).real {p : ℝ × ℝ | r < |p.1 - p.2|} := by
+  rw [absTail, symmLaw, measureReal_def, measureReal_def,
+    Measure.map_apply measurable_fst_sub_snd (measurableSet_abs_gt r)]
+  rfl
+
+theorem measureReal_prod_prod (A B : Set ℝ) :
+    (μ.prod μ).real (A ×ˢ B) = μ.real A * μ.real B := by
+  rw [measureReal_def, Measure.prod_prod, ENNReal.toReal_mul]; rfl
+
+theorem measurableSet_abs_le' (u : ℝ) : MeasurableSet {y : ℝ | |y| ≤ u} :=
+  measurableSet_le continuous_abs.measurable measurable_const
+
+/-- **Weak symmetrization inequality, lower bound**: `2 P(|X| > s + u) P(|X| ≤ u) ≤
+P(|X - X'| > s)`. -/
+theorem two_mul_absTail_mul_le_absTail_symmLaw {s u : ℝ} (hs : 0 ≤ s) :
+    2 * absTail μ (s + u) * (1 - absTail μ u) ≤ absTail (symmLaw μ) s := by
+  set A := {y : ℝ | s + u < |y|}
+  set B := {y : ℝ | |y| ≤ u}
+  have hA : MeasurableSet A := measurableSet_abs_gt _
+  have hB : MeasurableSet B := measurableSet_abs_le' _
+  have hBc : μ.real B = 1 - absTail μ u := by
+    have : B = {y : ℝ | u < |y|}ᶜ := by ext y; simp [B]
+    rw [this, probReal_compl_eq_one_sub (measurableSet_abs_gt u)]; rfl
+  have hdisj : Disjoint (A ×ˢ B) (B ×ˢ A) := by
+    rw [Set.disjoint_left]
+    rintro ⟨x, y⟩ ⟨hx, -⟩ ⟨hx', -⟩
+    simp only [A, B, mem_ofPred_eq] at hx hx'
+    linarith
+  have hsub : A ×ˢ B ∪ B ×ˢ A ⊆ {p : ℝ × ℝ | s < |p.1 - p.2|} := by
+    rintro ⟨x, y⟩ (⟨hx, hy⟩ | ⟨hx, hy⟩) <;> simp only [A, B, mem_ofPred_eq] at hx hy ⊢
+    · have := abs_sub_abs_le_abs_sub x y; linarith
+    · have := abs_sub_abs_le_abs_sub y x; rw [abs_sub_comm] at this; linarith
+  rw [absTail_symmLaw]
+  calc 2 * absTail μ (s + u) * (1 - absTail μ u)
+      = (μ.prod μ).real (A ×ˢ B ∪ B ×ˢ A) := by
+        rw [measureReal_union hdisj (hB.prod hA), measureReal_prod_prod, measureReal_prod_prod,
+          hBc]
+        simp only [absTail, A]; ring
+    _ ≤ _ := measureReal_mono hsub
+
+/-- **Weak symmetrization inequality, upper bound** (one big jump): `P(|X - X'| > s + u) ≤
+2 P(|X| > s) + P(|X| > u)²`. -/
+theorem absTail_symmLaw_le {s u : ℝ} :
+    absTail (symmLaw μ) (s + u) ≤ 2 * absTail μ s + absTail μ u ^ 2 := by
+  set A := {y : ℝ | s < |y|}
+  set C := {y : ℝ | u < |y|}
+  have hsub : {p : ℝ × ℝ | s + u < |p.1 - p.2|} ⊆
+      (A ×ˢ univ ∪ univ ×ˢ A) ∪ C ×ˢ C := by
+    rintro ⟨x, y⟩ h
+    simp only [A, C, mem_ofPred_eq, mem_union, mem_prod, mem_univ, and_true, true_and] at h ⊢
+    by_contra hc
+    push Not at hc
+    obtain ⟨⟨h1, h2⟩, h3⟩ := hc
+    have h4 := abs_sub x y
+    rcases le_or_gt |x| u with h5 | h5
+    · linarith
+    · linarith [h3 h5]
+  rw [absTail_symmLaw]
+  calc _ ≤ (μ.prod μ).real ((A ×ˢ univ ∪ univ ×ˢ A) ∪ C ×ˢ C) := measureReal_mono hsub
+    _ ≤ (μ.prod μ).real (A ×ˢ univ) + (μ.prod μ).real (univ ×ˢ A) +
+        (μ.prod μ).real (C ×ˢ C) :=
+      (measureReal_union_le _ _).trans (add_le_add (measureReal_union_le _ _) le_rfl)
+    _ = _ := by
+      rw [measureReal_prod_prod, measureReal_prod_prod, measureReal_prod_prod]
+      simp only [probReal_univ, absTail, A, C]; ring
+
+end Symmetrization
+
+section TailComparison
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {α : ℝ}
+
+theorem tendsto_one_add_rpow (β : ℝ) :
+    Tendsto (fun ε : ℝ => (1 + ε) ^ β) (𝓝[>] 0) (𝓝 1) := by
+  have h : ContinuousAt (fun ε : ℝ => (1 + ε) ^ β) 0 :=
+    (continuous_const.add continuous_id).continuousAt.rpow_const (Or.inl (by norm_num))
+  have := h.tendsto
+  simp only [add_zero, Real.one_rpow] at this
+  exact this.mono_left nhdsWithin_le_nhds
+
+/-- Choose `ε ∈ (0, 1)` with `(1 + ε) ^ β` close to `1`. -/
+theorem exists_one_add_rpow_mem {β : ℝ} {U : Set ℝ} (hU : U ∈ 𝓝 (1 : ℝ)) :
+    ∃ ε : ℝ, 0 < ε ∧ ε < 1 ∧ (1 + ε) ^ β ∈ U := by
+  obtain ⟨ε, h1, h2⟩ := (((tendsto_one_add_rpow β).eventually hU).and
+    (Ioo_mem_nhdsGT (show (0 : ℝ) < 1 from one_pos))).exists
+  exact ⟨ε, h2.1, h2.2, h1⟩
+
+/-- Eventually `P(|X| > 2x) ≤ P(|X - X'| > x)`. -/
+theorem eventually_absTail_two_mul_le :
+    ∀ᶠ x in atTop, absTail μ (2 * x) ≤ absTail (symmLaw μ) x := by
+  filter_upwards [(tendsto_order.1 (tendsto_absTail_zero (μ := μ))).2 (1 / 2) (by norm_num),
+    eventually_ge_atTop 0] with x hx hx0
+  have h := two_mul_absTail_mul_le_absTail_symmLaw (μ := μ) (s := x) (u := x) hx0
+  rw [show x + x = 2 * x by ring] at h
+  have h0 : 0 ≤ absTail μ (2 * x) := measureReal_nonneg
+  nlinarith
+
+/-- **Tails of the symmetrization**: if `P(|X - X'| > ·)` is regularly varying with index
+`-α`, `α > 0`, then `P(|X| > x) / P(|X - X'| > x) → 1 / 2`. -/
+theorem tendsto_absTail_div_absTail_symmLaw
+    (hRV : IsRegularlyVarying (absTail (symmLaw μ)) (-α)) :
+    Tendsto (fun x => absTail μ x / absTail (symmLaw μ) x) atTop (𝓝 (1 / 2)) := by
+  have hGs : ∀ x, 0 < absTail (symmLaw μ) x := absTail_pos hRV
+  have hG0 := tendsto_absTail_zero (μ := μ)
+  have hGs0 := tendsto_absTail_zero (μ := symmLaw μ)
+  refine tendsto_order.2 ⟨fun b hb => ?_, fun b hb => ?_⟩
+  · -- lower bound, from `P(|X - X'| > (1 + ε) x) ≤ 2 P(|X| > x) + P(|X| > ε x)²`
+    obtain ⟨ε, hε0, -, hε⟩ := exists_one_add_rpow_mem (β := -α)
+      (Ioi_mem_nhds (show 2 * b < 1 by linarith))
+    have hε : 2 * b < (1 + ε) ^ (-α) := hε
+    have hsq : Tendsto (fun x => absTail μ (ε * x) ^ 2 / absTail (symmLaw μ) x) atTop (𝓝 0) := by
+      have hup : Tendsto (fun x => absTail (symmLaw μ) (ε / 2 * x) *
+          (absTail (symmLaw μ) (ε / 2 * x) / absTail (symmLaw μ) x)) atTop
+          (𝓝 (0 * (ε / 2) ^ (-α))) :=
+        (hGs0.comp (tendsto_id.const_mul_atTop (by positivity))).mul
+          (hRV.2 _ (by positivity))
+      rw [zero_mul] at hup
+      refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hup
+        (Eventually.of_forall fun x => div_nonneg (sq_nonneg _) (hGs x).le) ?_
+      filter_upwards [(tendsto_id.const_mul_atTop (show 0 < ε / 2 by positivity)).eventually
+        (eventually_absTail_two_mul_le (μ := μ))] with x hx
+      simp only [id] at hx
+      rw [show 2 * (ε / 2 * x) = ε * x by ring] at hx
+      rw [← mul_div_assoc, div_le_div_iff_of_pos_right (hGs x), sq]
+      exact mul_le_mul hx hx measureReal_nonneg (hGs _).le
+    have hlim : Tendsto (fun x => (absTail (symmLaw μ) ((1 + ε) * x) / absTail (symmLaw μ) x -
+        absTail μ (ε * x) ^ 2 / absTail (symmLaw μ) x) / 2) atTop
+        (𝓝 (((1 + ε) ^ (-α) - 0) / 2)) :=
+      ((hRV.2 _ (by positivity)).sub hsq).div_const 2
+    filter_upwards [(tendsto_order.1 hlim).1 b (by linarith)] with x hx
+    refine hx.trans_le ?_
+    have h := absTail_symmLaw_le (μ := μ) (s := x) (u := ε * x)
+    rw [show x + ε * x = (1 + ε) * x by ring] at h
+    rw [div_le_div_iff₀ two_pos (hGs x), ← sub_div, div_mul_eq_mul_div,
+      div_le_iff₀ (hGs x)]
+    nlinarith [hGs x]
+  · -- upper bound, from `2 P(|X| > x) P(|X| ≤ u) ≤ P(|X - X'| > x - u)`
+    obtain ⟨ε, hε0, -, hε⟩ := exists_one_add_rpow_mem (β := α)
+      (Iio_mem_nhds (show 1 < 2 * b by linarith))
+    have hε : (1 + ε) ^ α < 2 * b := hε
+    set c := (1 + ε)⁻¹ with hc
+    have hc0 : 0 < c := by positivity
+    have hlim : Tendsto (fun x => absTail (symmLaw μ) (c * x) / absTail (symmLaw μ) x /
+        (2 * (1 - absTail μ (ε * c * x)))) atTop (𝓝 (c ^ (-α) / (2 * (1 - 0)))) :=
+      (hRV.2 c hc0).div ((hG0.comp (tendsto_id.const_mul_atTop (by positivity))).const_sub 1
+        |>.const_mul 2) (by norm_num)
+    have hcα : c ^ (-α) = (1 + ε) ^ α := by
+      rw [hc, Real.inv_rpow (by positivity), Real.rpow_neg (by positivity), inv_inv]
+    rw [hcα] at hlim
+    filter_upwards [(tendsto_order.1 hlim).2 b (by linarith), eventually_ge_atTop 0,
+      (tendsto_id.const_mul_atTop (show 0 < ε * c by positivity)).eventually
+        ((tendsto_order.1 hG0).2 (1 / 2) (by norm_num))] with x hx hx0 hu
+    simp only [id] at hu
+    refine lt_of_le_of_lt ?_ hx
+    have h := two_mul_absTail_mul_le_absTail_symmLaw (μ := μ) (s := c * x) (u := ε * c * x)
+      (by positivity)
+    rw [show c * x + ε * c * x = x by rw [hc]; field_simp] at h
+    have h1 : 0 < 1 - absTail μ (ε * c * x) := by linarith
+    rw [div_div, le_div_iff₀ (mul_pos (hGs x) (mul_pos two_pos h1)), div_mul_eq_mul_div, div_le_iff₀ (hGs x)]
+    nlinarith [hGs x, hGs (c * x)]
+
+/-- If the symmetrized tail is regularly varying with index `-α`, `α > 0`, so is the tail. -/
+theorem isRegularlyVarying_absTail_of_symmLaw
+    (hRV : IsRegularlyVarying (absTail (symmLaw μ)) (-α)) :
+    IsRegularlyVarying (absTail μ) (-α) :=
+  hRV.of_tendsto_div (tendsto_absTail_div_absTail_symmLaw hRV) (by norm_num)
+
+theorem min_sq_sub_le_two (x a b : ℝ) :
+    min (x ^ 2) ((a - b) ^ 2) ≤ 2 * min (x ^ 2) (a ^ 2) + 2 * min (x ^ 2) (b ^ 2) := by
+  rcases le_total (x ^ 2) (a ^ 2) with h1 | h1 <;> rcases le_total (x ^ 2) (b ^ 2) with h2 | h2
+  · rw [min_eq_left h1, min_eq_left h2]; nlinarith [min_le_left (x ^ 2) ((a - b) ^ 2), sq_nonneg x]
+  · rw [min_eq_left h1, min_eq_right h2]
+    nlinarith [min_le_left (x ^ 2) ((a - b) ^ 2), sq_nonneg b]
+  · rw [min_eq_right h1, min_eq_left h2]
+    nlinarith [min_le_left (x ^ 2) ((a - b) ^ 2), sq_nonneg a]
+  · rw [min_eq_right h1, min_eq_right h2]
+    nlinarith [min_le_right (x ^ 2) ((a - b) ^ 2), sq_nonneg (a + b)]
+
+/-- `E[min (x², (X - X')²)] ≤ 4 E[min (x², X²)]`. -/
+theorem minSqMoment_symmLaw_le (x : ℝ) :
+    minSqMoment (symmLaw μ) x ≤ 4 * minSqMoment μ x := by
+  rw [minSqMoment, symmLaw, integral_map measurable_fst_sub_snd.aemeasurable (by fun_prop)]
+  have hi : ∀ (f : ℝ × ℝ → ℝ), Measurable f →
+      Integrable (fun p : ℝ × ℝ => min (x ^ 2) (f p ^ 2)) (μ.prod μ) := by
+    intro f hf
+    refine (integrable_const (x ^ 2)).mono' (by fun_prop) (ae_of_all _ fun p => ?_)
+    rw [Real.norm_eq_abs, abs_of_nonneg (le_min (sq_nonneg _) (sq_nonneg _))]
+    exact min_le_left _ _
+  calc ∫ p : ℝ × ℝ, min (x ^ 2) ((p.1 - p.2) ^ 2) ∂μ.prod μ
+      ≤ ∫ p : ℝ × ℝ, (2 * min (x ^ 2) (p.1 ^ 2) + 2 * min (x ^ 2) (p.2 ^ 2)) ∂μ.prod μ :=
+        integral_mono (hi _ measurable_fst_sub_snd)
+          (((hi _ measurable_fst).const_mul 2).add ((hi _ measurable_snd).const_mul 2))
+          fun p => min_sq_sub_le_two x p.1 p.2
+    _ = 4 * minSqMoment μ x := by
+        rw [integral_add ((hi _ measurable_fst).const_mul 2) ((hi _ measurable_snd).const_mul 2),
+          integral_const_mul, integral_const_mul,
+          integral_fun_fst (fun y : ℝ => min (x ^ 2) (y ^ 2)),
+          integral_fun_snd (fun y : ℝ => min (x ^ 2) (y ^ 2))]
+        simp only [probReal_univ, one_smul, minSqMoment]
+        ring
+
+/-- **The Gaussian case**: if `E[min (x², (X - X')²)]` is slowly varying, so is
+`E[min (x², X²)]`. -/
+theorem isRegularlyVarying_minSqMoment_of_symmLaw
+    (hZs : IsRegularlyVarying (minSqMoment (symmLaw μ)) 0) :
+    IsRegularlyVarying (minSqMoment μ) 0 := by
+  have hZpos : ∀ᶠ x in atTop, 0 < minSqMoment μ x := by
+    filter_upwards [hZs.1] with x hx
+    linarith [minSqMoment_symmLaw_le (μ := μ) x]
+  -- `x² P(|X| > x) / Z(x) → 0`
+  have hr : Tendsto (fun x => x ^ 2 * absTail μ x / minSqMoment μ x) atTop (𝓝 0) := by
+    have h1 := (tendsto_sq_mul_absTail_div_minSqMoment hZs).comp
+      (tendsto_id.const_mul_atTop (show (0 : ℝ) < 1 / 2 by norm_num))
+    have h2 := hZs.2 (1 / 2) (by norm_num)
+    rw [zero_div] at h1
+    have h3 : Tendsto (fun x => 16 * (((1 / 2 * x) ^ 2 * absTail (symmLaw μ) (1 / 2 * x) /
+        minSqMoment (symmLaw μ) (1 / 2 * x)) * (minSqMoment (symmLaw μ) (1 / 2 * x) /
+        minSqMoment (symmLaw μ) x))) atTop (𝓝 (16 * (0 * (1 / 2) ^ (0 : ℝ)))) :=
+      (h1.mul h2).const_mul 16
+    rw [zero_mul, mul_zero] at h3
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds h3 ?_ ?_
+    · filter_upwards [hZpos] with x hx
+      exact div_nonneg (mul_nonneg (sq_nonneg _) measureReal_nonneg) hx.le
+    · filter_upwards [hZpos, hZs.1, (tendsto_id.const_mul_atTop
+        (show (0 : ℝ) < 1 / 2 by norm_num)).eventually hZs.1,
+        (tendsto_id.const_mul_atTop (show (0 : ℝ) < 1 / 2 by norm_num)).eventually
+          (eventually_absTail_two_mul_le (μ := μ))] with x hx hxs hxs' hG
+      simp only [id] at hxs' hG
+      rw [show 2 * (1 / 2 * x) = x by ring] at hG
+      have h4 := minSqMoment_symmLaw_le (μ := μ) x
+      rw [div_mul_div_cancel₀ hxs'.ne', div_le_iff₀ hx]
+      calc x ^ 2 * absTail μ x ≤ x ^ 2 * absTail (symmLaw μ) (1 / 2 * x) :=
+            mul_le_mul_of_nonneg_left hG (sq_nonneg _)
+        _ = 16 * ((1 / 2 * x) ^ 2 * absTail (symmLaw μ) (1 / 2 * x) /
+              minSqMoment (symmLaw μ) x) * (minSqMoment (symmLaw μ) x / 4) := by
+            field_simp; ring
+        _ ≤ _ := mul_le_mul_of_nonneg_left (by linarith)
+            (mul_nonneg (by norm_num) (div_nonneg (mul_nonneg (sq_nonneg _) measureReal_nonneg)
+              hxs.le))
+  -- hence `Z(l x) / Z(x) → 1` for `l ≥ 1`
+  have hge : ∀ l : ℝ, 1 ≤ l →
+      Tendsto (fun x => minSqMoment μ (l * x) / minSqMoment μ x) atTop (𝓝 1) := by
+    intro l hl
+    have hup : Tendsto (fun x => 1 + (l ^ 2 - 1) * (x ^ 2 * absTail μ x / minSqMoment μ x))
+        atTop (𝓝 (1 + (l ^ 2 - 1) * 0)) := (hr.const_mul _).const_add 1
+    rw [mul_zero, add_zero] at hup
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hup ?_ ?_
+    · filter_upwards [hZpos, eventually_ge_atTop 0] with x hx hx0
+      rw [le_div_iff₀ hx, one_mul]
+      exact minSqMoment_mono hx0 (le_mul_of_one_le_left hx0 hl)
+    · filter_upwards [hZpos, eventually_ge_atTop 0] with x hx hx0
+      have := minSqMoment_sub_le (μ := μ) hx0 hl
+      rw [div_le_iff₀ hx, add_mul, one_mul, mul_assoc, div_mul_cancel₀ _ hx.ne']
+      nlinarith
+  refine ⟨hZpos, fun l hl => ?_⟩
+  rw [Real.rpow_zero]
+  rcases le_total 1 l with h1 | h1
+  · exact hge l h1
+  · have h := (hge l⁻¹ (one_le_inv₀ hl |>.2 h1)).comp (tendsto_id.const_mul_atTop hl)
+    have h' := h.inv₀ one_ne_zero
+    rw [inv_one] at h'
+    refine h'.congr' ?_
+    filter_upwards with x
+    simp only [Function.comp, id, inv_div]
+    rw [← mul_assoc, inv_mul_cancel₀ hl.ne', one_mul]
+
+end TailComparison
+
+section Converse
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a b : ℕ → ℝ}
+
+/-- The symmetrized form of the hypotheses: if `(Sₙ - bₙ) / aₙ → ν`, `ν` not a Dirac mass, then
+there are `0 < α ≤ 2` and `K > 0` with `n E[min (1, (X - X')² / (aₙ x)²)] → K x ^ (-α)`. -/
+theorem exists_tendsto_mul_sqRatio_symmLaw (ha : ∀ n, 0 < a n) {ν : ProbabilityMeasure ℝ}
+    (hnd : ∀ x, (ν : Measure ℝ) ≠ Measure.dirac x)
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν)) :
+    ∃ α : ℝ, 0 < α ∧ α ≤ 2 ∧ ∃ K > 0, ∀ x : ℝ, 0 < x →
+      Tendsto (fun n : ℕ => (n : ℝ) * sqRatio (symmLaw μ) (a n * x)) atTop
+        (𝓝 (K * x ^ (-α))) :=
+  exists_tendsto_mul_sqRatio_of_tendsto (ν := ⟨symmLaw (ν : Measure ℝ), inferInstance⟩)
+    symmLaw_map_neg ha (symmLaw_ne_dirac hnd) (tendsto_map_convPow_symmLaw hconv)
+
+/-- **Converse of the generalized central limit theorem, regular-variation part**
+([Feller, Vol. II, §XVII.5, Theorem 2], [GK, §35, Theorem 2]). Let `aₙ > 0`, `bₙ ∈ ℝ`, and
+suppose the laws of `(X₁ + ⋯ + Xₙ - bₙ) / aₙ` converge weakly to a law `ν` which is not a Dirac
+mass. Then there is `0 < α ≤ 2` such that the truncated second moment
+`U(x) = E[X² 1{|X| ≤ x}]` is regularly varying with index `2 - α`, and, if `α < 2`, the
+two-sided tail `P(|X| > x)` is regularly varying with index `-α`. No symmetry is assumed: the
+proof symmetrizes (`X - X'`), applies the symmetric converse, and transfers back with the weak
+symmetrization inequalities. -/
+theorem exists_isRegularlyVarying_of_tendsto_sub (ha : ∀ n, 0 < a n)
+    {ν : ProbabilityMeasure ℝ} (hnd : ∀ x, (ν : Measure ℝ) ≠ Measure.dirac x)
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν)) :
+    ∃ α, 0 < α ∧ α ≤ 2 ∧ IsRegularlyVarying (truncSecondMoment μ) (2 - α) ∧
+      (α < 2 → IsRegularlyVarying (absTail μ) (-α)) := by
+  obtain ⟨α, hα0, hα2, K, hK, hL⟩ := exists_tendsto_mul_sqRatio_symmLaw ha hnd hconv
+  have hZs := isRegularlyVarying_minSqMoment_of_tendsto_mul_sqRatio ha hK hL
+  rcases lt_or_eq_of_le hα2 with hlt | heq
+  · have hGs := isRegularlyVarying_absTail_of_minSqMoment (by linarith) hZs
+    rw [show 2 - α - 2 = -α by ring] at hGs
+    have hG := isRegularlyVarying_absTail_of_symmLaw hGs
+    exact ⟨α, hα0, hα2, isRegularlyVarying_truncSecondMoment_of_absTail hα0 hlt hG,
+      fun _ => hG⟩
+  · subst heq
+    refine ⟨2, hα0, le_rfl, ?_, fun h => absurd h (lt_irrefl _)⟩
+    rw [sub_self] at hZs ⊢
+    exact isRegularlyVarying_truncSecondMoment_of_minSqMoment (by norm_num)
+      (isRegularlyVarying_minSqMoment_of_symmLaw hZs)
+
+end Converse
+
 end GCLTConverse
 
 end ExtremeValueTheory

@@ -1515,18 +1515,42 @@ theorem tendsto_integral_gfun_atTop (P : ProbabilityMeasure ℝ) :
     · filter_upwards [eventually_gt_atTop 0] with x hx
       exact div_le_div_of_nonneg_left (by positivity) (by positivity) (le_max_right _ _)
 
-/-- **Converse of the generalized central limit theorem, symmetric case, with the index
-derived** (Feller's criterion, necessity: [Feller, Vol. II, §XVII.5, Theorem 2], [GK, §35]).
-Let `μ` be a symmetric probability law on `ℝ`, `aₙ > 0`, and suppose the laws of
-`(X₁ + ⋯ + Xₙ) / aₙ` converge weakly to a law `ν ≠ δ₀`. Then there is `0 < α ≤ 2` such that
-the truncated second moment `U(x) = E[X² 1{|X| ≤ x}]` is regularly varying with index `2 - α`,
-and, if `α < 2`, the two-sided tail `P(|X| > x)` is regularly varying with index `-α`. -/
-theorem exists_isRegularlyVarying_of_tendsto (hsymm : μ.map (fun x => -x) = μ)
+/-- If `n E[min (1, X² / (aₙ x)²)] → K x ^ (-α)` for all `x > 0`, with `K > 0`, then
+`Z(x) = E[min (x², X²)]` is regularly varying with index `2 - α`. -/
+theorem isRegularlyVarying_minSqMoment_of_tendsto_mul_sqRatio {μ : Measure ℝ}
+    [IsFiniteMeasure μ] {a : ℕ → ℝ} (ha : ∀ n, 0 < a n) {K α : ℝ} (hK : 0 < K)
+    (hL : ∀ x : ℝ, 0 < x → Tendsto (fun n : ℕ => (n : ℝ) * sqRatio μ (a n * x)) atTop
+      (𝓝 (K * x ^ (-α)))) :
+    IsRegularlyVarying (minSqMoment μ) (2 - α) := by
+  have hL1 : Tendsto (fun n : ℕ => (n : ℝ) * sqRatio μ (a n)) atTop (𝓝 K) := by
+    simpa using hL 1 one_pos
+  have hTpos : ∀ x, 0 < x → 0 < sqRatio μ x := by
+    obtain ⟨n, hn⟩ := ((tendsto_order.1 hL1).1 0 hK).exists
+    have h1 : 0 < sqRatio μ (a n) := by
+      by_contra hc
+      have : sqRatio μ (a n) = 0 := le_antisymm (not_lt.1 hc) (sqRatio_nonneg _)
+      rw [this, mul_zero] at hn
+      exact lt_irrefl _ hn
+    exact fun x hx => sqRatio_pos_of_pos (ha n) h1 hx
+  have hT : IsRegularlyVarying (sqRatio μ) (-α) :=
+    isRegularlyVarying_of_tendsto_mul_comp sqRatio_antitoneOn hTpos ha hK hL
+  have := (IsRegularlyVarying.rpow_id 2).mul hT
+  rw [← sub_eq_add_neg] at this
+  refine this.congr ?_
+  filter_upwards [eventually_gt_atTop 0] with x hx
+  rw [sqRatio_eq_div hx.ne', Real.rpow_two]
+  field_simp
+
+/-- **The scaling limit behind the converse GCLT** (symmetric case). Let `μ` be a symmetric
+probability law on `ℝ`, `aₙ > 0`, and suppose the laws of `(X₁ + ⋯ + Xₙ) / aₙ` converge weakly
+to a law `ν ≠ δ₀`. Then there are `0 < α ≤ 2` and `K > 0` with
+`n E[min (1, X² / (aₙ x)²)] → K x ^ (-α)` for every `x > 0`. -/
+theorem exists_tendsto_mul_sqRatio_of_tendsto (hsymm : μ.map (fun x => -x) = μ)
     (ha : ∀ n, 0 < a n) {ν : ProbabilityMeasure ℝ} (hnd : (ν : Measure ℝ) ≠ Measure.dirac 0)
     (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
       ⟨(convPow μ n).map ((a n)⁻¹ * ·), inferInstance⟩) atTop (𝓝 ν)) :
-    ∃ α, 0 < α ∧ α ≤ 2 ∧ IsRegularlyVarying (truncSecondMoment μ) (2 - α) ∧
-      (α < 2 → IsRegularlyVarying (absTail μ) (-α)) := by
+    ∃ α : ℝ, 0 < α ∧ α ≤ 2 ∧ ∃ K > 0, ∀ x : ℝ, 0 < x →
+      Tendsto (fun n : ℕ => (n : ℝ) * sqRatio μ (a n * x)) atTop (𝓝 (K * x ^ (-α))) := by
   obtain ⟨δ, hδ, hb⟩ := exists_nh_le hsymm hconv
   set B := Real.log 2
   have hB0 : 0 ≤ B := Real.log_nonneg one_le_two
@@ -1649,6 +1673,25 @@ theorem exists_isRegularlyVarying_of_tendsto (hsymm : μ.map (fun x => -x) = μ)
       exact minSqMoment_mono hx0.le (by linarith))
     have : (2 : ℝ) ^ (2 - α) < 1 := Real.rpow_lt_one_of_one_lt_of_neg one_lt_two (by linarith)
     linarith
+  refine ⟨α, hα0, hα2, L 1, hLpos 1 one_pos, fun x hx => ?_⟩
+  rw [hα, neg_neg, ← hLρ x hx]
+  exact hlimL x hx
+
+/-- **Converse of the generalized central limit theorem, symmetric case, with the index
+derived** (Feller's criterion, necessity: [Feller, Vol. II, §XVII.5, Theorem 2], [GK, §35]).
+Let `μ` be a symmetric probability law on `ℝ`, `aₙ > 0`, and suppose the laws of
+`(X₁ + ⋯ + Xₙ) / aₙ` converge weakly to a law `ν ≠ δ₀`. Then there is `0 < α ≤ 2` such that
+the truncated second moment `U(x) = E[X² 1{|X| ≤ x}]` is regularly varying with index `2 - α`,
+and, if `α < 2`, the two-sided tail `P(|X| > x)` is regularly varying with index `-α`. -/
+theorem exists_isRegularlyVarying_of_tendsto (hsymm : μ.map (fun x => -x) = μ)
+    (ha : ∀ n, 0 < a n) {ν : ProbabilityMeasure ℝ} (hnd : (ν : Measure ℝ) ≠ Measure.dirac 0)
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map ((a n)⁻¹ * ·), inferInstance⟩) atTop (𝓝 ν)) :
+    ∃ α, 0 < α ∧ α ≤ 2 ∧ IsRegularlyVarying (truncSecondMoment μ) (2 - α) ∧
+      (α < 2 → IsRegularlyVarying (absTail μ) (-α)) := by
+  obtain ⟨α, hα0, hα2, K, hK, hL⟩ := exists_tendsto_mul_sqRatio_of_tendsto hsymm ha hnd hconv
+  have hZ : IsRegularlyVarying (minSqMoment μ) (2 - α) :=
+    isRegularlyVarying_minSqMoment_of_tendsto_mul_sqRatio ha hK hL
   refine ⟨α, hα0, hα2, isRegularlyVarying_truncSecondMoment_of_minSqMoment (by linarith) hZ,
     fun hlt => ?_⟩
   have hG := isRegularlyVarying_absTail_of_minSqMoment (by linarith) hZ
