@@ -7,6 +7,7 @@ import ExtremeValueTheory.RegularVariation.Basic
 import ExtremeValueTheory.ForMathlib.MeasureTheory.Measure.Portmanteau
 import Mathlib.Probability.Distributions.Pareto
 import Mathlib.Probability.ConditionalProbability
+import Mathlib.Probability.Independence.Integration
 
 /-!
 # Regularly varying time series and the tail process
@@ -33,7 +34,7 @@ Moreover `ν` is then the law of `(R, R • Θ)` with `R` Pareto and independent
   probabilities `P[|s i]` converge weakly to `ν` along `l`.
 * `ExtremeValueTheory.HasSpectralTailProcess`: a time series `(X_t)_{t ∈ ℤ}` is jointly regularly
   varying with index `α`, with spectral tail process `(Θ_t)` ([BS09, Theorem 2.1 (iii)],
-  [KS20, Definition 5.1.1 and Theorem 5.2.2]).
+  [KS20, Chapter 5]).
 * `ExtremeValueTheory.HasTailProcess`: the tail process `(Y_t)` ([BS09, Theorem 2.1 (ii)]).
 
 ## Main results
@@ -477,7 +478,7 @@ private lemma polarGood_lipschitz (hα : 0 < α) (hZ : Measurable Z) (hT : Measu
     linarith
 
 /-- **Polar decomposition, direct part** ([BS09, Theorem 2.1, (iii) ⇒ (ii)], [KS20,
-Theorem 2.2.3]). Let `Z` be a random variable whose tail `P(Z > x)` is regularly varying with
+Chapter 5]).  Let `Z` be a random variable whose tail `P(Z > x)` is regularly varying with
 index `-α`, `α > 0`, and let `T` be a random vector such that the law of `T` given `Z > x`
 converges weakly to `μ`. Then the law of `(Z / x) • T` given `Z > x` converges weakly to the law of
 `R • Θ`, where `R` is Pareto(`α`) and independent of `Θ ∼ μ`. -/
@@ -655,8 +656,8 @@ theorem tendstoLawCond_spectral_of_tendstoLawCond (hZ : Measurable Z)
   congr 1
   field_simp
 
-/-- **Independence of the radial and spectral parts** ([BS09, Theorem 2.1], [KS20, Theorem
-5.2.2]). Under the hypotheses of `tendstoLawCond_spectral_of_tendstoLawCond`, `ν` is the law of
+/-- **Independence of the radial and spectral parts** ([BS09, Theorem 2.1], [KS20,
+Chapter 5]). Under the hypotheses of `tendstoLawCond_spectral_of_tendstoLawCond`, `ν` is the law of
 `(R, R • Θ)` with `R` Pareto(`α`) independent of `Θ = Y / R`. -/
 theorem eq_map_prod_of_tendstoLawCond (hα : 0 < α) (hZ : Measurable Z) (hV : Measurable V)
     (hν : ν.map Prod.fst = paretoMeasure 1 α)
@@ -716,8 +717,8 @@ variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'
 /-- A time series `(X_t)_{t ∈ ℤ}` is *jointly regularly varying with index `α`* and *spectral tail
 process* `(Θ_t)_{t ∈ ℤ}` (defined on `(Ω', Q)`) if `P(|X_0| > x)` is regularly varying with index
 `-α` and, for every finite window `S ⊆ ℤ`, the law of `(X_t / |X_0|)_{t ∈ S}` given `|X_0| > x`
-converges weakly to the law of `(Θ_t)_{t ∈ S}` ([BS09, Theorem 2.1 (iii)], [KS20, Definition
-5.1.1 and Theorem 5.2.2]). Windows are arbitrary finite sets, which covers the windows
+converges weakly to the law of `(Θ_t)_{t ∈ S}` ([BS09, Theorem 2.1 (iii)], [KS20,
+Chapter 5]). Windows are arbitrary finite sets, which covers the windows
 `{s, …, t}` of [KS20] and `{-n, …, n}` of [BS09]. -/
 def HasSpectralTailProcess (P : Measure Ω) (X : ℤ → Ω → ℝ) (α : ℝ) (Q : Measure Ω')
     (Θ : ℤ → Ω' → ℝ) : Prop :=
@@ -728,7 +729,7 @@ def HasSpectralTailProcess (P : Measure Ω) (X : ℤ → Ω → ℝ) (α : ℝ) 
 /-- A time series `(X_t)_{t ∈ ℤ}` has *tail process* `(Y_t)_{t ∈ ℤ}` (defined on `(Ω', Q)`) with
 index `α` if `|Y_0|` is Pareto(`α`), `P(|Y_0| > y) = y^(-α)` for `y ≥ 1`, and, for every finite
 window `S ⊆ ℤ`, the law of `(X_t / x)_{t ∈ S}` given `|X_0| > x` converges weakly to the law of
-`(Y_t)_{t ∈ S}` ([BS09, Theorem 2.1 (ii)], [KS20, Theorem 5.1.2]). -/
+`(Y_t)_{t ∈ S}` ([BS09, Theorem 2.1 (ii)], [KS20, Chapter 5]). -/
 def HasTailProcess (P : Measure Ω) (X : ℤ → Ω → ℝ) (α : ℝ) (Q : Measure Ω')
     (Y : ℤ → Ω' → ℝ) : Prop :=
   Q.map (fun ω' => |Y 0 ω'|) = paretoMeasure 1 α ∧
@@ -736,8 +737,7 @@ def HasTailProcess (P : Measure Ω) (X : ℤ → Ω → ℝ) (α : ℝ) (Q : Mea
       (fun x ω (t : S) => X t ω / x) atTop (Q.map fun ω' (t : S) => Y t ω')
 
 omit [IsProbabilityMeasure P] in
-/-- The spectral tail process satisfies `|Θ_0| = 1` almost surely ([BS09, §2], [KS20, Theorem
-5.2.2]). -/
+/-- The spectral tail process satisfies `|Θ_0| = 1` almost surely ([BS09, Theorem 2.1]). -/
 theorem HasSpectralTailProcess.ae_abs_eq_one {Θ : ℤ → Ω' → ℝ} (hΘm : ∀ t, Measurable (Θ t))
     (hX : Measurable (X 0)) (h : HasSpectralTailProcess P X α Q Θ) :
     ∀ᵐ ω' ∂Q, |Θ 0 ω'| = 1 := by
@@ -782,7 +782,7 @@ private lemma window_div (X : ℤ → Ω → ℝ) (S : Finset ℤ) :
   funext x ω t; simp [div_eq_inv_mul]
 
 /-- **From the spectral tail process to the tail process** ([BS09, Theorem 2.1, (iii) ⇒ (ii)],
-[KS20, Theorem 5.2.2]): if `(X_t)` has spectral tail process `(Θ_t)`, then it has tail process
+[KS20, Chapter 5]): if `(X_t)` has spectral tail process `(Θ_t)`, then it has tail process
 `Y_t = R Θ_t`, with `R` Pareto(`α`) independent of `(Θ_t)`, realized on the product space. -/
 theorem HasSpectralTailProcess.hasTailProcess {Θ : ℤ → Ω' → ℝ} (hα : 0 < α)
     (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
@@ -857,7 +857,7 @@ theorem HasTailProcess.hasSpectralTailProcess {Y : ℤ → Ω' → ℝ} (hα : 0
   funext ω' t
   simp [div_eq_inv_mul]
 
-/-- **Structure of the tail process** ([BS09, Theorem 2.1], [KS20, Theorem 5.2.2]): every finite
+/-- **Structure of the tail process** ([BS09, Theorem 2.1], [KS20, Chapter 5]): every finite
 window of the tail process is `(R Θ_t)_{t ∈ S}`, where `R` is Pareto(`α`) and independent of the
 spectral tail process `Θ_t = Y_t / |Y_0|`. -/
 theorem HasTailProcess.map_window_eq {Y : ℤ → Ω' → ℝ} (hα : 0 < α)
@@ -870,6 +870,165 @@ theorem HasTailProcess.map_window_eq {Y : ℤ → Ω' → ℝ} (hα : 0 < α)
     (hYm t).div (continuous_abs.measurable.comp (hYm 0))
   exact (h.2 S).unique ((h.hasSpectralTailProcess hα hX hYm).hasTailProcess hα hX hΘm |>.2 S)
 
+/-- **Independent coordinates do not cluster** (see [BS09, §2] and [KS20, Chapter 5]):
+if `X_t` is independent of `X_0`, then `Θ_t = 0` almost surely. In particular the spectral tail
+process of an iid sequence vanishes outside `t = 0`. Only the independence of the single pair
+`(X_t, X_0)` is used (no identical distribution, no joint independence). -/
+theorem HasSpectralTailProcess.ae_eq_zero_of_indepFun {Θ : ℤ → Ω' → ℝ}
+    (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
+    (h : HasSpectralTailProcess P X α Q Θ) {t : ℤ} (hind : IndepFun (X t) (X 0) P) :
+    ∀ᵐ ω' ∂Q, Θ t ω' = 0 := by
+  classical
+  set S : Finset ℤ := {t}
+  have ht : t ∈ S := Finset.mem_singleton_self t
+  set s : ℝ → Set Ω := fun x => {ω | x < |X 0 ω|}
+  have hZ : Measurable fun ω => |X 0 ω| := continuous_abs.measurable.comp (hX 0)
+  have hs : ∀ x, MeasurableSet (s x) := fun x => measurableSet_lt measurable_const hZ
+  set w : ℝ → Ω → (S → ℝ) := fun _ ω u => X u ω / |X 0 ω|
+  have hw : ∀ x, Measurable (w x) := fun x => measurable_pi_iff.2 fun u => (hX u).div hZ
+  have hpos : ∀ᶠ x in atTop, 0 < P.real (s x) := h.1.eventually_pos
+  have hconv0 : TendstoLawCond P s w atTop (Measure.dirac 0) := by
+    intro f
+    have hμs : ∀ᶠ x in atTop, IsProbabilityMeasure ((P[|s x]).map (w x)) := by
+      filter_upwards [hpos] with x hx
+      have : P (s x) ≠ 0 := fun h0 => by simp [measureReal_def, h0] at hx
+      have := cond_isProbabilityMeasure (μ := P) this
+      infer_instance
+    have key := tendsto_integral_of_forall_lipschitz hμs (μ := Measure.dirac (0 : S → ℝ)) ?_ f
+    · refine key.congr fun x => ?_
+      rw [integral_map (hw x).aemeasurable f.continuous.aestronglyMeasurable]
+    intro g ⟨C, hC⟩ ⟨K, hK⟩
+    have hgM : ∀ y, |g y| ≤ |g 0| + C := fun y => by
+      have := hC y 0
+      rw [Real.dist_eq] at this
+      linarith [abs_sub_abs_le_abs_sub (g y) (g 0)]
+    set M := |g 0| + C
+    have hM : 0 ≤ M := (abs_nonneg _).trans (hgM 0)
+    rw [integral_dirac]
+    set φ : ℝ → Ω → ℝ := fun x ω => min (2 * M) (K * |X t ω| / x)
+    have hXt : Measurable fun ω => |X t ω| := continuous_abs.measurable.comp (hX t)
+    have hφm : ∀ x, Measurable (φ x) := fun x =>
+      measurable_const.min ((measurable_const.mul hXt).div_const x)
+    have hφb : ∀ x, 0 < x → ∀ ω, |φ x ω| ≤ 2 * M := fun x hx ω => by
+      rw [abs_of_nonneg (le_min (by linarith) (by positivity))]
+      exact min_le_left _ _
+    have hφ : Tendsto (fun x => ∫ ω, φ x ω ∂P) atTop (𝓝 0) := by
+      have := tendsto_integral_filter_of_dominated_convergence (μ := P) (l := atTop)
+        (fun _ => 2 * M) (Eventually.of_forall fun x => (hφm x).aestronglyMeasurable)
+        ((eventually_gt_atTop 0).mono fun x hx => ae_of_all _ fun ω => by
+          simpa [Real.norm_eq_abs] using hφb x hx ω)
+        (integrable_const _)
+        (ae_of_all _ fun ω => (show Tendsto (fun x => φ x ω) atTop
+          (𝓝 (min (2 * M) 0)) from tendsto_const_nhds.min
+            (tendsto_const_nhds.div_atTop tendsto_id)))
+      simpa [min_eq_right (show (0 : ℝ) ≤ 2 * M by linarith)] using this
+    have hcond : ∀ᶠ x in atTop, ∫ ω, φ x ω ∂P[|s x] = ∫ ω, φ x ω ∂P := by
+      filter_upwards [hpos, eventually_gt_atTop 0] with x hx hx0
+      rw [integral_cond_eq, smul_eq_mul, ← integral_indicator (hs x)]
+      have hind' : IndepFun (φ x) ((s x).indicator fun _ => (1 : ℝ)) P := by
+        have := hind.comp (φ := fun y : ℝ => min (2 * M) (K * |y| / x))
+          (ψ := fun y : ℝ => (Ioi x).indicator (fun _ => (1 : ℝ)) |y|)
+          (measurable_const.min ((measurable_const.mul continuous_abs.measurable).div_const x))
+          ((measurable_const.indicator measurableSet_Ioi :
+            Measurable ((Ioi x).indicator fun _ : ℝ => (1 : ℝ))).comp continuous_abs.measurable)
+        convert this using 1 <;> funext ω <;> simp [φ, s, Set.indicator_apply]
+      have heq : (s x).indicator (φ x) = fun ω => φ x ω * (s x).indicator (fun _ => (1 : ℝ)) ω := by
+        funext ω; by_cases hω : ω ∈ s x <;> simp [hω]
+      rw [heq, hind'.integral_fun_mul_eq_mul_integral (hφm x).aestronglyMeasurable
+        ((measurable_const.indicator (hs x)).aestronglyMeasurable),
+        integral_indicator_const _ (hs x), smul_eq_mul, mul_one]
+      field_simp
+    rw [tendsto_iff_norm_sub_tendsto_zero]
+    refine squeeze_zero' (Eventually.of_forall fun _ => norm_nonneg _) ?_
+      (hφ.congr' (hcond.mono fun x hx => hx.symm))
+    filter_upwards [eventually_gt_atTop 0, hpos] with x hx0 hx
+    have : P (s x) ≠ 0 := fun h0 => by simp [measureReal_def, h0] at hx
+    have := cond_isProbabilityMeasure (μ := P) this
+    have hgw : Integrable (fun ω => g (w x ω)) (P[|s x]) :=
+      integrable_of_abs_le (hK.continuous.measurable.comp (hw x)) fun ω => hgM _
+    rw [integral_map (hw x).aemeasurable hK.continuous.aestronglyMeasurable,
+      Real.norm_eq_abs, show g 0 = ∫ _, g 0 ∂P[|s x] by simp,
+      ← integral_sub hgw (integrable_const _)]
+    refine (abs_integral_le_integral_abs).trans (integral_mono_ae (hgw.sub
+      (integrable_const _)).abs (integrable_of_abs_le (hφm x) (hφb x hx0)) ?_)
+    filter_upwards [ae_cond_mem (hs x)] with ω hω
+    have hω' : x < |X 0 ω| := hω
+    have hnorm : ‖w x ω‖ ≤ |X t ω| / x := by
+      refine (pi_norm_le_iff_of_nonneg (by positivity)).2 fun u => ?_
+      have hu : (u : ℤ) = t := Finset.mem_singleton.1 u.2
+      simp only [w, hu, Real.norm_eq_abs, abs_div, abs_abs]
+      exact div_le_div_of_nonneg_left (abs_nonneg _) hx0 hω'.le
+    refine le_min ?_ ?_
+    · linarith [abs_sub (g (w x ω)) (g 0), hgM (w x ω), hgM 0]
+    · have := hK.dist_le_mul (w x ω) 0
+      rw [Real.dist_eq, dist_zero_right] at this
+      calc _ ≤ K * ‖w x ω‖ := this
+        _ ≤ K * (|X t ω| / x) := by gcongr
+        _ = _ := by ring
+  have heq := (h.2 S).unique hconv0
+  have hae : ∀ᵐ y ∂(Q.map fun ω' (u : S) => Θ u ω'), y ⟨t, ht⟩ = 0 := by
+    rw [heq, ae_dirac_iff (measurableSet_eq_fun (measurable_pi_apply _) measurable_const)]
+    rfl
+  exact ae_of_ae_map (measurable_window hΘm S).aemeasurable hae
+
 end TimeSeries
+
+/-! ### The candidate extremal index -/
+
+section CandidateExtremalIndex
+
+variable {Ω' : Type*} {mΩ' : MeasurableSpace Ω'} {Q : Measure Ω'} {Θ : ℤ → Ω' → ℝ} {α : ℝ}
+
+/-- The *candidate extremal index* of a spectral tail process ([KS20, §7.5], [Planinić–Soulier,
+*The tail process revisited*, Extremes 21 (2018)]):
+`ϑ = E[sup_{k ≥ 0} |Θ_k|^α - sup_{k ≥ 1} |Θ_k|^α]`.
+The suprema are taken in `[0, ∞]`, with the truncated subtraction of `ℝ≥0∞`; in particular the
+integrand is `0` when `sup_{k ≥ 1} |Θ_k| = ∞`. When `sup_{k ≥ 1} |Θ_k| < ∞` almost surely (for
+instance when `|Θ_t| → 0`), this is the usual real-valued expectation. -/
+noncomputable def candidateExtremalIndex (Q : Measure Ω') (Θ : ℤ → Ω' → ℝ) (α : ℝ) : ℝ≥0∞ :=
+  ∫⁻ ω', (⨆ k : ℕ, ENNReal.ofReal |Θ k ω'| ^ α) - ⨆ k : ℕ, ENNReal.ofReal |Θ (k + 1) ω'| ^ α ∂Q
+
+/-- Splitting off the first term of a supremum over `ℕ`. -/
+theorem iSup_nat_eq_sup_iSup_succ {L : Type*} [CompleteLattice L] (f : ℕ → L) :
+    ⨆ k, f k = f 0 ⊔ ⨆ k, f (k + 1) := by
+  refine le_antisymm (iSup_le fun k => ?_) (sup_le (le_iSup f 0) (iSup_le fun k => le_iSup f _))
+  rcases k with _ | k
+  · exact le_sup_left
+  · exact le_sup_of_le_right (le_iSup (fun k => f (k + 1)) k)
+
+/-- The candidate extremal index is the expectation of `|Θ_0|^α ∧ ...`: pointwise, the
+integrand is at most `|Θ_0|^α`. -/
+theorem iSup_sub_iSup_succ_le (ω' : Ω') :
+    (⨆ k : ℕ, ENNReal.ofReal |Θ k ω'| ^ α) - ⨆ k : ℕ, ENNReal.ofReal |Θ (k + 1) ω'| ^ α ≤
+      ENNReal.ofReal |Θ 0 ω'| ^ α := by
+  rw [iSup_nat_eq_sup_iSup_succ (fun k : ℕ => ENNReal.ofReal |Θ k ω'| ^ α), tsub_le_iff_right]
+  exact sup_le le_self_add le_add_self
+
+/-- `ϑ ≤ 1` for a spectral tail process, using only `|Θ_0| = 1` almost surely
+([KS20, §7.5]). -/
+theorem candidateExtremalIndex_le_one [IsProbabilityMeasure Q]
+    (h0 : ∀ᵐ ω' ∂Q, |Θ 0 ω'| = 1) : candidateExtremalIndex Q Θ α ≤ 1 := by
+  calc candidateExtremalIndex Q Θ α ≤ ∫⁻ _, 1 ∂Q := by
+        refine lintegral_mono_ae ?_
+        filter_upwards [h0] with ω' hω'
+        refine (iSup_sub_iSup_succ_le ω').trans ?_
+        simp [hω']
+    _ = 1 := by simp
+
+/-- If `Θ_k = 0` almost surely for every `k ≥ 1` (as for an iid sequence, see
+`HasSpectralTailProcess.ae_eq_zero_of_indepFun`), then `ϑ = 1`. Uses `α > 0` and
+`|Θ_0| = 1` almost surely. -/
+theorem candidateExtremalIndex_eq_one [IsProbabilityMeasure Q] (hα : 0 < α)
+    (h0 : ∀ᵐ ω' ∂Q, |Θ 0 ω'| = 1) (hk : ∀ k : ℕ, ∀ᵐ ω' ∂Q, Θ (k + 1) ω' = 0) :
+    candidateExtremalIndex Q Θ α = 1 := by
+  have hk' : ∀ᵐ ω' ∂Q, ∀ k : ℕ, Θ (k + 1) ω' = 0 := ae_all_iff.2 hk
+  calc candidateExtremalIndex Q Θ α = ∫⁻ _, 1 ∂Q := by
+        refine lintegral_congr_ae ?_
+        filter_upwards [h0, hk'] with ω' h0' hk''
+        rw [iSup_nat_eq_sup_iSup_succ (fun k : ℕ => ENNReal.ofReal |Θ k ω'| ^ α)]
+        simp [hk'', h0', ENNReal.zero_rpow_of_pos hα]
+    _ = 1 := by simp
+
+end CandidateExtremalIndex
 
 end ExtremeValueTheory
