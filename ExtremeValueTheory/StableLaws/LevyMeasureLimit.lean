@@ -921,6 +921,138 @@ theorem exists_tendsto_mul_integral_kern (ha : ∀ n, 0 < a n) (hs₀ : 0 < s₀
 
 end LevyLimit
 
+section Vague
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a b : ℕ → ℝ} {ν : ProbabilityMeasure ℝ}
+
+/-- `f / k` as a bounded continuous function, for `f` vanishing near `0`. -/
+theorem exists_bcf_div_kern {s₀ : ℝ} (hs₀ : 0 < s₀) (f : ℝ →ᵇ ℝ) {x₀ : ℝ} (hx₀ : 0 < x₀)
+    (hf0 : ∀ z, |z| < x₀ → f z = 0) :
+    ∃ g : ℝ →ᵇ ℝ, ∀ z, kern s₀ z * g z = f z := by
+  obtain ⟨c, hc, hk⟩ := exists_le_kern hs₀ hx₀
+  have hcont : Continuous fun z => f z / kern s₀ z := by
+    refine continuous_iff_continuousAt.2 fun z => ?_
+    by_cases hz : z = 0
+    · subst hz
+      have hev : (fun z => f z / kern s₀ z) =ᶠ[𝓝 0] fun _ => (0 : ℝ) := by
+        filter_upwards [Metric.ball_mem_nhds (0 : ℝ) hx₀] with y hy
+        rw [Metric.mem_ball, Real.dist_eq, sub_zero] at hy
+        rw [hf0 y hy, zero_div]
+      exact (continuousAt_const.congr hev.symm)
+    · exact f.continuous.continuousAt.div continuous_kern.continuousAt (kern_pos hs₀ hz).ne'
+  have hbd : ∀ z, ‖f z / kern s₀ z‖ ≤ ‖f‖ / c := by
+    intro z
+    by_cases hz : |z| < x₀
+    · rw [hf0 z hz, zero_div, norm_zero]; positivity
+    · have hkz := hk z (not_lt.1 hz)
+      rw [norm_div, Real.norm_eq_abs (kern s₀ z), abs_of_pos (hc.trans_le hkz)]
+      exact div_le_div₀ (norm_nonneg _) (f.norm_coe_le_norm z) hc hkz
+  refine ⟨BoundedContinuousFunction.ofNormedAddCommGroup _ hcont _ hbd, fun z => ?_⟩
+  simp only [BoundedContinuousFunction.coe_ofNormedAddCommGroup]
+  by_cases hz : z = 0
+  · subst hz; rw [hf0 0 (by simpa using hx₀)]; simp
+  · rw [mul_div_cancel₀ _ (kern_pos hs₀ hz).ne']
+
+/-- **Vague convergence of `n P(X / aₙ ∈ ·)` away from `0`** (Gnedenko–Kolmogorov, Feller
+§XVII.2). Let `(Sₙ - bₙ) / aₙ → ν` weakly, where `φ_ν` does not vanish, and assume
+`n E[min (1, (X / aₙ)²)]` is bounded, `n E[min (1, (s X / aₙ)²)]` is uniformly small for small
+`s`, and `n P(|X| > 2 aₙ)` is bounded below. Then for every bounded Lipschitz `f` vanishing on a
+neighbourhood of `0`, `n E[f(X / aₙ)]` converges. -/
+theorem exists_tendsto_mul_integral_comp (ha : ∀ n, 0 < a n)
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν))
+    (hφ : ∀ t, charFun (ν : Measure ℝ) t ≠ 0)
+    (hS : ∃ C, ∀ᶠ n : ℕ in atTop, (n : ℝ) * sqRatio μ (a n) ≤ C)
+    (hsmall : ∀ η > 0, ∃ s₀ > 0, ∀ᶠ n : ℕ in atTop, (n : ℝ) * sqRatio μ (a n / s₀) ≤ η)
+    (hlow : ∃ c > 0, ∀ᶠ n : ℕ in atTop, c ≤ (n : ℝ) * absTail μ (2 * a n))
+    (f : ℝ →ᵇ ℝ) {x₀ : ℝ} (hx₀ : 0 < x₀) (hf0 : ∀ z, |z| < x₀ → f z = 0) {K : ℝ≥0}
+    (hfL : LipschitzWith K f) :
+    ∃ L, Tendsto (fun n : ℕ => (n : ℝ) * ∫ x, f ((a n)⁻¹ * x) ∂μ) atTop (𝓝 L) := by
+  obtain ⟨s₀, hs₀, hD⟩ := exists_forall_norm_dfun_le ha hS hsmall
+  have hw := exists_norm_mul_wfun_le ha hS
+  obtain ⟨L₀, -, P, hP⟩ := exists_tendsto_mul_integral_kern hconv hφ hw hD ha hs₀ hlow
+  obtain ⟨g, hg⟩ := exists_bcf_div_kern hs₀ f hx₀ hf0
+  refine ⟨L₀ * ∫ z, g z ∂(P : Measure ℝ), ?_⟩
+  have h1 := hP g
+  simp_rw [hg] at h1
+  -- the shift by `τₙ` is negligible
+  obtain ⟨C, hC⟩ := hS
+  set M := max 1 (4 / x₀ ^ 2)
+  have hτ0 : Tendsto (fun n => ctr μ a n) atTop (𝓝 0) := by
+    have hsq : Tendsto (fun n => ctr μ a n ^ 2) atTop (𝓝 0) := by
+      refine squeeze_zero' (Eventually.of_forall fun n => sq_nonneg _) ?_
+        ((tendsto_const_nhds (x := C)).div_atTop tendsto_natCast_atTop_atTop)
+      filter_upwards [hC, eventually_gt_atTop 0] with n hn hn0
+      have : (0 : ℝ) < n := by exact_mod_cast hn0
+      rw [le_div_iff₀ this]
+      have := ctr_sq_le (μ := μ) (ha n).ne'
+      nlinarith
+    have := (continuous_sqrt.tendsto 0).comp hsq
+    simp only [Function.comp_def, Real.sqrt_sq_eq_abs, Real.sqrt_zero] at this
+    exact (tendsto_zero_iff_abs_tendsto_zero _).2 this
+  have hdiff : Tendsto (fun n : ℕ => (n : ℝ) * ∫ x, f ((a n)⁻¹ * x) ∂μ -
+      (n : ℝ) * ∫ z, f z ∂(cLaw μ a n)) atTop (𝓝 0) := by
+    have hbound : ∀ᶠ n : ℕ in atTop, ‖(n : ℝ) * ∫ x, f ((a n)⁻¹ * x) ∂μ -
+        (n : ℝ) * ∫ z, f z ∂(cLaw μ a n)‖ ≤ K * M * max C 0 * |ctr μ a n| := by
+      filter_upwards [hC, (tendsto_order.1 hτ0.abs).2 (x₀ / 2) (by rw [abs_zero]; positivity)]
+        with n hn hτ
+      set τ := ctr μ a n
+      have hi1 : Integrable (fun x => f ((a n)⁻¹ * x)) μ :=
+        Integrable.of_bound (f.continuous.comp (by fun_prop)).aestronglyMeasurable ‖f‖
+          (ae_of_all _ fun x => f.norm_coe_le_norm _)
+      have hi2 : Integrable (fun x => f ((a n)⁻¹ * x - τ)) μ :=
+        Integrable.of_bound (f.continuous.comp (by fun_prop)).aestronglyMeasurable ‖f‖
+          (ae_of_all _ fun x => f.norm_coe_le_norm _)
+      have hpt : ∀ y : ℝ, |f y - f (y - τ)| ≤ K * |τ| * (M * min 1 (y ^ 2)) := by
+        intro y
+        by_cases hy : |y| < x₀ / 2
+        · have h1 : |y| < x₀ := by linarith
+          have h2 : |y - τ| < x₀ := by
+            have := abs_sub y τ; linarith
+          rw [hf0 y h1, hf0 _ h2, sub_zero, abs_zero]
+          positivity
+        · have hL := hfL.dist_le_mul y (y - τ)
+          rw [Real.dist_eq, Real.dist_eq, show y - (y - τ) = τ by ring] at hL
+          have hM : 1 ≤ M * min 1 (y ^ 2) := by
+            rcases le_total 1 (y ^ 2) with h | h
+            · rw [min_eq_left h, mul_one]; exact le_max_left _ _
+            · rw [min_eq_right h]
+              have hy2 : x₀ ^ 2 / 4 ≤ y ^ 2 := by
+                have : x₀ / 2 ≤ |y| := not_lt.1 hy
+                rw [← sq_abs y]; nlinarith
+              calc (1 : ℝ) = 4 / x₀ ^ 2 * (x₀ ^ 2 / 4) := by field_simp
+                _ ≤ M * y ^ 2 := mul_le_mul (le_max_right _ _) hy2 (by positivity)
+                    (by positivity)
+          calc |f y - f (y - τ)| ≤ K * |τ| := hL
+            _ = K * |τ| * 1 := (mul_one _).symm
+            _ ≤ _ := mul_le_mul_of_nonneg_left hM (by positivity)
+      rw [cLaw, integral_map (by fun_prop) f.continuous.aestronglyMeasurable, ← mul_sub,
+        ← integral_sub hi1 hi2, norm_mul, Real.norm_natCast]
+      have hint : ∫ x, ‖f ((a n)⁻¹ * x) - f ((a n)⁻¹ * x - τ)‖ ∂μ ≤
+          K * |τ| * (M * sqRatio μ (a n)) := by
+        rw [sqRatio_eq_integral_min (ha n).ne', ← integral_const_mul, ← integral_const_mul]
+        refine integral_mono (hi1.sub hi2).norm ((integrable_min_one_sq n).const_mul _
+          |>.const_mul _) fun x => ?_
+        simp only
+        rw [Real.norm_eq_abs]
+        exact (hpt _).trans_eq (by ring)
+      calc (n : ℝ) * ‖∫ x, (f ((a n)⁻¹ * x) - f ((a n)⁻¹ * x - τ)) ∂μ‖
+          ≤ n * (K * |τ| * (M * sqRatio μ (a n))) :=
+            mul_le_mul_of_nonneg_left ((norm_integral_le_integral_norm _).trans hint)
+              (Nat.cast_nonneg n)
+        _ = K * M * |τ| * (n * sqRatio μ (a n)) := by ring
+        _ ≤ K * M * |τ| * max C 0 :=
+            mul_le_mul_of_nonneg_left (hn.trans (le_max_left _ _)) (by positivity)
+        _ = _ := by ring
+    have := (hτ0.abs.const_mul (K * M * max C 0))
+    rw [abs_zero, mul_zero] at this
+    exact squeeze_zero_norm' hbound this
+  have := h1.add hdiff
+  rw [add_zero] at this
+  exact this.congr fun n => by ring
+
+end Vague
+
 end GCLTConverse
 
 end ExtremeValueTheory
