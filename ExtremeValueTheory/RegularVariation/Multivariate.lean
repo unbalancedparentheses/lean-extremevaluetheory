@@ -1054,4 +1054,46 @@ theorem IsRegVarVector.measure_ne_zero_ne_zero_eq_zero [IsFiniteMeasure P] {X₁
 
 end Examples
 
+section ExamplesPolar
+
+variable {Ω E : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+  [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E]
+  [SecondCountableTopology E] {α : ℝ}
+
+/-- **A regularly varying vector with a single direction**: if `Z ≥ 0` has a regularly varying
+tail with index `-α` and `‖v‖ = 1`, then `X = Z v` is regularly varying, with spectral measure
+`δ_v` and exponent measure `(α r ^ (-α - 1) dr) ⊗ δ_v`. -/
+theorem isRegVarVector_smul_const (hα : 0 < α) {Z : Ω → ℝ} (hZ : Measurable Z)
+    (hZ0 : ∀ ω, 0 ≤ Z ω) {v : E} (hv : ‖v‖ = 1)
+    (hRV : IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α)) :
+    IsRegVarVector P (fun ω => Z ω • v) α (polarMeasure α (Measure.dirac v)) := by
+  have hnorm : ∀ ω, ‖Z ω • v‖ = Z ω := fun ω => by
+    rw [norm_smul, hv, mul_one, Real.norm_eq_abs, abs_of_nonneg (hZ0 ω)]
+  refine isRegVarVector_polarMeasure hα (hZ.smul_const v) ?_ ?_
+  · simpa only [hnorm] using hRV
+  intro f
+  simp only [hnorm]
+  rw [integral_dirac]
+  refine tendsto_const_nhds.congr' ?_
+  filter_upwards [hRV.eventually_pos, eventually_gt_atTop 0] with x hx hx0
+  have hne : P {ω | x < Z ω} ≠ 0 := by
+    intro h0; rw [measureReal_def, h0, ENNReal.toReal_zero] at hx; exact lt_irrefl _ hx
+  have := cond_isProbabilityMeasure hne
+  rw [integral_congr_ae (g := fun _ => f v) ?_, integral_const, probReal_univ, one_smul]
+  filter_upwards [ae_cond_mem (measurableSet_lt measurable_const hZ)] with ω hω
+  rw [smul_smul, inv_mul_cancel₀ (hx0.trans hω).ne', one_smul]
+
+/-- **Full asymptotic dependence, existence**: if `Z ≥ 0` has a regularly varying tail with index
+`-α`, then `X = (Z, Z)` is regularly varying, with spectral measure `δ_(1,1)` (on the unit sphere of
+the sup norm); its exponent measure is concentrated on the diagonal
+(`IsRegVarVector.measure_offDiag_eq_zero`). -/
+theorem isRegVarVector_diag (hα : 0 < α) {Z : Ω → ℝ} (hZ : Measurable Z) (hZ0 : ∀ ω, 0 ≤ Z ω)
+    (hRV : IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α)) :
+    IsRegVarVector P (fun ω => (Z ω, Z ω)) α
+      (polarMeasure α (Measure.dirac ((1 : ℝ), (1 : ℝ)))) := by
+  have := isRegVarVector_smul_const hα hZ hZ0 (v := ((1 : ℝ), (1 : ℝ))) (by simp) hRV
+  simpa [Prod.smul_mk] using this
+
+end ExamplesPolar
+
 end ExtremeValueTheory
