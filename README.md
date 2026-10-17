@@ -23,6 +23,9 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
 - **Breiman's lemma** (`tendsto_measure_mul_div_measure`): for independent `X`, `Y ≥ 0` with
   `P(X > x)` regularly varying with index `-α` and `E[Y^(α+ε)] < ∞`,
   `P(XY > x) / P(X > x) → E[Y^α]`. Proved, standard axioms only.
+- **Gnedenko's characterization of the Fréchet domain** (`isInMDAFrechet_iff`): `F` is in the
+  maximum domain of attraction of the Fréchet law `exp(-x^(-α))` if and only if `1 - F` is
+  regularly varying with index `-α`. Both directions proved, standard axioms only.
 - Regular variation API: closure properties, uniform convergence theorem and Potter bounds for
   monotone functions.
 
