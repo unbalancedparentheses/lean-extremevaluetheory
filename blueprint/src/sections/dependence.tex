@@ -684,3 +684,18 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
   $\{X_0, \dots, X_n \le u\} = \{X_0 \le u\} \cap \{Z_1, \dots, Z_n \le u\}$, so $\PR[M_n \le u] = G(u) F(u)^{n-1}$; the fixed-point
   equation gives $\PR[X_0 > x] \sim x^{-\alpha}/(1 - \varphi^\alpha)$.
 \end{proof}
+
+\begin{corollary}[Uniqueness of the extremal index in the examples]
+  \label{cor:strict-all}
+  \uses{thm:strict-extremal-index, thm:infinite-ma-all-alpha, thm:armax, thm:echo-process}
+  \lean{ExtremeValueTheory.InfiniteMovingAverage.hasExtremalIndex_of_lt_one_strict, ExtremeValueTheory.AR1.hasExtremalIndex_of_pos_strict,
+    ExtremeValueTheory.ARMAX.hasExtremalIndex_candidate_strict, ExtremeValueTheory.logEchoProcess_hasExtremalIndex_strict,
+    ExtremeValueTheory.logEchoProcess_not_hasExtremalIndex_one}
+  \leanok
+  The extremal indices of infinite moving averages and AR(1) (every $\alpha > 0$), ARMAX and the echo process are
+  unique; in particular $1 = \vartheta$ is not an extremal index of the echo process.
+\end{corollary}
+\begin{proof}
+  \leanok
+  Their marginal tails are regularly varying, so Theorem~\ref{thm:strict-extremal-index} applies.
+\end{proof}
