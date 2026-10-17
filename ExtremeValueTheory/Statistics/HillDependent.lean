@@ -38,6 +38,29 @@ Ch. 9).
   identical marginals, `Var(∑_{i<n} 1{X_i > u}) ≤ (2m+1) n F̄(u)`.
 * `ExtremeValueTheory.tendstoInMeasure_hill_of_isMDependent`: **Hill consistency for
   `m`-dependent sequences** with identical marginals (no stationarity needed).
+* `ExtremeValueTheory.variance_tailCount_le_of_isStationary`: for a stationary sequence and any
+  block length `r`, `Var(∑_{i<n} 1{X_i > u}) ≤ n (F̄(u) + 2 ∑_{1≤h≤r} P(X_0 > u, X_h > u) +
+  2 ∑_{r<h<n} α(h))`.
+* `ExtremeValueTheory.tendstoInMeasure_hill_of_alphaMixing`: **Hill consistency for stationary
+  strongly mixing sequences** under the cluster condition
+  `(1/k_n) ∑_{1≤h≤r_n} P(X_h > u_n | X_0 > u_n) → 0` and the mixing condition
+  `(n/k_n²) ∑_{r_n<h<n} α(h) → 0`; `tendstoInMeasure_hill_of_alphaMixing_rate` replaces the latter
+  by `(n/k_n)² α(r_n + 1) → 0`.
+
+## Hypotheses used at each step
+
+* Chebyshev step (`tendsto_measure_abs_tailCount_div_sub`): measurability, identical marginals
+  (for the mean), the variance condition.
+* Riemann sandwich (`sum_le_logExcess`, `logExcess_le_sum`): deterministic.
+* Remainder (Markov): identical marginals, regular variation (Potter bounds via
+  `tendsto_integral_logExcess_div`).
+* Thresholds `t_n` (`exists_threshold`): regular variation, right-continuity of `F̄`, `k → ∞`,
+  `k/n → 0`.
+* `m`-dependence enters only through `variance_tailCount_le_of_isMDependent` (covariances vanish
+  beyond lag `m`; lags `≤ m` are bounded by `F̄(u)` since the indicators are nonnegative).
+* Strong mixing enters only through `variance_tailCount_le_of_isStationary`: stationarity makes
+  `P(X_i > u, X_{i+h} > u)` depend on `h` only, joint exceedances bound covariances at lags
+  `≤ r`, and `|Cov(1_A, 1_B)| ≤ α(h)` at lags `> r`.
 -/
 
 open Filter Topology Set Real MeasureTheory ProbabilityTheory Finset
@@ -911,6 +934,46 @@ theorem tendstoInMeasure_hill_of_alphaMixing {X : ℕ → Ω → ℝ} (hX : ∀ 
           2 * ∑ h ∈ Icc 1 (r n), P.real {ω | u n < X 0 ω ∧ u n < X h ω} +
           2 * ∑ h ∈ Ico (r n + 1) n, (alphaMixing X P h).toReal) / (k n : ℝ) ^ 2 := by gcongr
     _ = _ := by rw [survival]; field_simp
+
+omit [IsProbabilityMeasure P] in
+/-- The strong mixing coefficients of a process are antitone in the lag. -/
+theorem alphaMixing_anti {E : Type*} [MeasurableSpace E] (X : ℕ → Ω → E) :
+    Antitone (alphaMixing X P) := fun h h' hh =>
+  iSup_mono fun _ => strongMixingCoeff_mono le_rfl (futureMeasurableSpace_anti (by omega))
+
+/-- **Hill consistency under strong mixing, with a simple rate.** As
+`tendstoInMeasure_hill_of_alphaMixing`, with the mixing condition replaced by the sufficient
+`(n / k_n)² α(r_n + 1) → 0`. -/
+theorem tendstoInMeasure_hill_of_alphaMixing_rate {X : ℕ → Ω → ℝ}
+    (hX : ∀ i, Measurable (X i)) (hstat : IsStationary X P) {α : ℝ} (hα : 0 < α)
+    (hRV : IsRegularlyVarying (fun x => (P {ω | x < X 0 ω}).toReal) (-α)) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (r : ℕ → ℕ)
+    (hclus : ∀ (u : ℕ → ℝ) (c : ℝ), 0 < c → Tendsto u atTop atTop →
+      Tendsto (fun n => n * (P {ω | u n < X 0 ω}).toReal / k n) atTop (𝓝 c) →
+      Tendsto (fun n => (∑ h ∈ Icc 1 (r n), P.real {ω | u n < X 0 ω ∧ u n < X h ω}) /
+        (P {ω | u n < X 0 ω}).toReal / k n) atTop (𝓝 0))
+    (hmix : Tendsto (fun n : ℕ => ((n : ℝ) / k n) ^ 2 *
+      (alphaMixing X P (r n + 1)).toReal) atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n ω => hill (fun i : Fin n => X i ω) (k n)) atTop
+      (fun _ => 1 / α) := by
+  refine tendstoInMeasure_hill_of_alphaMixing hX hstat hα hRV hk hkn r hclus ?_
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hmix
+    (Eventually.of_forall fun n => mul_nonneg (by positivity)
+      (Finset.sum_nonneg fun _ _ => ENNReal.toReal_nonneg)) (Eventually.of_forall fun n => ?_)
+  have hs : ∑ h ∈ Ico (r n + 1) n, (alphaMixing X P h).toReal ≤
+      n * (alphaMixing X P (r n + 1)).toReal := by
+    calc ∑ h ∈ Ico (r n + 1) n, (alphaMixing X P h).toReal
+        ≤ ∑ h ∈ Ico (r n + 1) n, (alphaMixing X P (r n + 1)).toReal :=
+          Finset.sum_le_sum fun h hh => ENNReal.toReal_mono (alphaMixing_ne_top _)
+            (alphaMixing_anti X (Finset.mem_Ico.1 hh).1)
+      _ ≤ n * (alphaMixing X P (r n + 1)).toReal := by
+          rw [sum_const, nsmul_eq_mul, Nat.card_Ico]
+          gcongr
+          exact Nat.sub_le _ _
+  calc (n : ℝ) / (k n : ℝ) ^ 2 * ∑ h ∈ Ico (r n + 1) n, (alphaMixing X P h).toReal
+      ≤ (n : ℝ) / (k n : ℝ) ^ 2 * (n * (alphaMixing X P (r n + 1)).toReal) := by gcongr
+    _ = ((n : ℝ) / k n) ^ 2 * (alphaMixing X P (r n + 1)).toReal := by ring
 
 end Mixing
 

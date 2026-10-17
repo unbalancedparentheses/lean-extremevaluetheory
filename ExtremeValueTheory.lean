@@ -93,3 +93,4 @@ import ExtremeValueTheory.HeavyTails.LinearProcess
 import ExtremeValueTheory.HeavyTails.LinearProcessSeries
 import ExtremeValueTheory.Dependence.MovingAverage
 import ExtremeValueTheory.Dependence.MovingAverageTailProcess
+import ExtremeValueTheory.Statistics.HillDependent
