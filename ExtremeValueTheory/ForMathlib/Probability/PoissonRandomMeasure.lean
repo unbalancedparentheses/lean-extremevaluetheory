@@ -301,6 +301,39 @@ theorem isPoissonRandomMeasure_sumDiracRange (c : ℝ≥0) (μ : Measure E) [IsP
     funext m
     simp
 
+/-- The integral of a measurable function against `∑_{k < n} δ_{z k}`. -/
+lemma integral_sumDiracRange {f : E → ℝ} (hf : Measurable f) (n : ℕ) (z : ℕ → E) :
+    ∫ x, f x ∂(sumDiracRange n z) = ∑ k ∈ range n, f (z k) := by
+  rw [sumDiracRange, integral_finsetSum_measure fun k _ ↦
+    integrable_dirac' hf.stronglyMeasurable (by simp)]
+  exact Finset.sum_congr rfl fun k _ ↦ integral_dirac' _ _ hf.stronglyMeasurable
+
+/-- **Laplace functional** of the Poisson random measure `∑_{k < K} δ_{Z k}` with intensity
+`ν = c • μ`: for every measurable `f ≥ 0`, `E exp(-∫ f dN) = exp(-∫ (1 - exp (-f)) dν)`. -/
+theorem integral_exp_neg_integral_sumDiracRange {f : E → ℝ} (hf : Measurable f) (hf0 : 0 ≤ f) :
+    ∫ ω, Real.exp (-∫ x, f x ∂(sumDiracRange ω.1 ω.2)) ∂(poissonSampleMeasure c μ) =
+      Real.exp (-∫ x, (1 - Real.exp (-f x)) ∂(c • μ)) := by
+  have hexp : Measurable fun x ↦ Real.exp (-f x) := Real.measurable_exp.comp hf.neg
+  have hexp1 : ∀ x, ‖Real.exp (-f x)‖ ≤ 1 := fun x ↦ by
+    rw [Real.norm_eq_abs, abs_of_pos (Real.exp_pos _), Real.exp_le_one_iff, neg_nonpos]
+    exact hf0 x
+  have hint : Integrable (fun x ↦ Real.exp (-f x)) μ :=
+    Integrable.of_bound hexp.aestronglyMeasurable 1 (Eventually.of_forall hexp1)
+  have h1 (ω : ℕ × (ℕ → E)) : Real.exp (-∫ x, f x ∂(sumDiracRange ω.1 ω.2)) =
+      ∏ k ∈ range ω.1, Real.exp (-f (ω.2 k)) := by
+    rw [integral_sumDiracRange hf, ← Finset.sum_neg_distrib, Real.exp_sum]
+  simp_rw [h1]
+  apply Complex.ofReal_injective
+  rw [← integral_complex_ofReal]
+  simp only [Complex.ofReal_prod]
+  rw [integral_prod_range_poissonSampleMeasure (g := fun x ↦ (Real.exp (-f x) : ℂ))
+    (Complex.measurable_ofReal.comp hexp) (fun x ↦ by rw [Complex.norm_real]; exact hexp1 x),
+    integral_complex_ofReal, integral_smul_nnreal_measure, integral_sub (integrable_const _) hint]
+  simp only [integral_const, probReal_univ, NNReal.smul_def, smul_eq_mul]
+  rw [Complex.ofReal_exp]
+  push_cast
+  ring_nf
+
 end Construction
 
 end ProbabilityTheory
