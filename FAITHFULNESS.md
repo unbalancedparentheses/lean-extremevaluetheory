@@ -8,7 +8,9 @@ laws. Second audit (rows marked †): Gumbel MDA (`DomainOfAttraction/Gumbel.lea
 and stable laws / the generalized CLT (`StableLaws/*`). Third audit (rows marked ‡): the PBdH
 converse (`PeaksOverThreshold/Converse.lean`), the asymmetric GCLT
 (`StableLaws/GeneralizedCLT.lean`, `Constants.lean`), and random sums / ruin
-(`HeavyTails/RandomSums.lean`, `Ruin.lean`, `StretchedExponential.lean`). No `sorry`/`axiom`/`admit` found in
+(`HeavyTails/RandomSums.lean`, `Ruin.lean`, `StretchedExponential.lean`), Karamata's converse
+and the Fréchet/Weibull von Mises conditions, and the Pickands and moment estimators
+(`Statistics/Pickands.lean`, `Moment.lean`). No `sorry`/`axiom`/`admit` found in
 `ExtremeValueTheory/`.
 
 References: [EKM] Embrechts–Klüppelberg–Mikosch, *Modelling Extremal Events*;
@@ -107,6 +109,8 @@ Processes*.
 | † `orderStat` (def) | dHF §3.2 | `X_{(1)} ≥ ⋯ ≥ X_{(n)}` | `orderStat x j = X_{(j+1)}` through `Tuple.sort` and `Fin.rev`; junk `0` for `j ≥ n`. `lt_orderStat_iff` gives the exceedance duality. Checked on a concrete sample. | FAITHFUL |
 | † `hill` (def) | dHF (3.2.2) | `γ̂ = k⁻¹ Σ_{i<k} (log X_{n−i,n} − log X_{n−k,n})` | `k⁻¹ Σ_{i<k} (log X_{(i+1)} − log X_{(k+1)})`, the same formula. `Real.log` of a nonpositive order statistic is `log|x|` (junk; see finding 5). | FAITHFUL (positive samples) |
 | † `tendstoInMeasure_hill` | dHF Thm 3.2.2; Mason (1982) | iid, `F̄ ∈ RV_{−α}`, `α > 0`, `k → ∞`, `k/n → 0` ⇒ `γ̂ →_P 1/α` | Hypotheses: `iIndepFun X P`, `IdentDistrib (X i) (X 0)`, measurability, RV of `x ↦ P(X₀ > x).toReal` (finite measure, so `toReal` is safe), `k → ∞`, `k/n → 0`. The conclusion is `TendstoInMeasure` to the constant `1/α`. Not vacuous: `tendstoInMeasure_hill_pareto` instantiates RV. No positivity assumption on `X`, which matches dHF (junk logs occur only on an event of vanishing probability). Only the consistency direction; Mason's converse is not claimed. | FAITHFUL |
+| ‡ `pickands` (def), `tendstoInMeasure_pickands` | EKM Thm 6.4.1, dHF §3.3 | `F ∈ MDA(H_ξ)`, `k → ∞`, `k/n → 0` ⇒ `ξ̂ →_P ξ` | `pickands x k` uses `orderStat x k, 2k, 4k`, which are `X_{n−k,n}, X_{n−2k,n}, X_{n−4k,n}`. The hypotheses are iid (`iIndepFun`, `IdentDistrib`) with `F` the c.d.f. of `X 0` and `IsInMDAGEV ξ`. All `ξ ∈ ℝ`. Instantiated on the exponential law (`ξ = 0`). Junk values (`log` of a nonpositive ratio, order statistics with `4k ≥ n`) occur only on events of vanishing probability. | FAITHFUL |
+| ‡ `momentEstimator`, `tendstoInMeasure_momentEstimator_of_isInMDAGEV` | dHF §3.5 (Dekkers–Einmahl–de Haan) | `γ̂ = M₁ + 1 − ½(1 − M₁²/M₂)⁻¹ →_P ξ` for all `ξ` | Same formula. Only `ξ > 0` (regularly varying tails) is proved; `ξ ≤ 0` needs extended regular variation of `log U`. | DIFFERS (`ξ > 0` only); correct |
 | † `IsStable`, `IsStrictlyStable` (defs) | Feller VI.1 Def 1; ST Def 1.1.4 | non-degenerate, `μ^{*n} = law(a_n X + b_n)` (`b_n = 0` for strictly stable), `a_n > 0` | Same, for all `n ≥ 1`; non-degeneracy is `μ ≠ δ_x` for all `x`. Inhabited by Gaussian, Cauchy, and `IsSymmStable` with `0<α≤2`, `c>0`. | FAITHFUL |
 | † `IsSymmStable` (def) | ST (1.2.3), Feller XVII.4 | `SαS`: `φ(t) = exp(−c|t|^α)` | `IsProbabilityMeasure μ ∧ ∀ t, charFun μ t = exp(−c|t|^α)`. `|t|^α` is `rpow` of a nonnegative base, so there is no junk. See Conventions for parameter ranges. | FAITHFUL |
 | † `stableConst` (def) | Feller XVII.5 | `C_α = α ∫₀^∞ (1−cos u) u^{−α−1} du` | Same formula. The integral is Bochner, and is junk `0` when not integrable (`α ∉ (0,2)`). It is only used with `0 < α < 2`, where `stableConst_pos` proves it is positive and integrability is proved (`integrableOn_one_sub_cos_mul_rpow`). Value checked: `n∫(1−cos(tx/a_n))dμ → ∫(1−cos(tu)) d(u^{−α})`, which equals `C_α|t|^α`. | FAITHFUL |

@@ -289,3 +289,63 @@ follow de Haan and Ferreira, \emph{Extreme Value Theory: An Introduction}, Sprin
   The survival function agrees with $x^{-\alpha}$ for $x \ge 1$, hence is regularly varying with
   index $-\alpha$; apply Theorem~\ref{thm:hill-consistency}.
 \end{proof}
+
+\section{The Pickands and moment estimators}
+
+\begin{definition}[Pickands estimator]
+  \label{def:pickands}
+  \uses{def:order-stat}
+  \lean{ExtremeValueTheory.pickands}
+  \leanok
+  $\hat\xi_{k,n} = (\log 2)^{-1} \log \dfrac{X_{(k+1)} - X_{(2k+1)}}{X_{(2k+1)} - X_{(4k+1)}}$
+  [dHF, \S3.3], [EKM, \S6.4.2].
+\end{definition}
+
+\begin{theorem}[Consistency of the Pickands estimator]
+  \label{thm:pickands-consistency}
+  \uses{def:pickands, thm:pbdh-general, thm:pbdh-iff}
+  \lean{ExtremeValueTheory.tendstoInMeasure_pickands, ExtremeValueTheory.tendstoInMeasure_pickands_exponential,
+    ExtremeValueTheory.gpdSurvivalInv_pickands_ratio, ExtremeValueTheory.tendsto_measure_abs_exceedCount_div_sub,
+    ExtremeValueTheory.tendsto_measure_not_mem_orderStat}
+  \leanok
+  For iid samples with c.d.f.\ $F$ in the domain of attraction of $H_\xi$, $\xi \in \bR$
+  arbitrary, and $k \to \infty$, $k/n \to 0$, the Pickands estimator converges to $\xi$ in
+  probability [EKM, Theorem~6.4.1], [dHF, \S3.3].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Let $u_n$ be the $(1 - 8k/n)$-quantile and $\beta$ the scale from
+  Pickands--Balkema--de Haan. The number of exceedances of $u_n + \beta(u_n) x$, divided by $k$,
+  converges in probability to $8 \bar G_{\xi}(x)$, which localizes
+  $(X_{(jk+1)} - u_n)/\beta(u_n)$ near $\bar G_\xi^{-1}(j/8)$ for $j = 1, 2, 4$. The ratio of
+  differences of these three points is exactly $2^\xi$.
+\end{proof}
+
+\begin{definition}[Log-moments and the moment estimator]
+  \label{def:moment-estimator}
+  \uses{def:hill}
+  \lean{ExtremeValueTheory.logMoment, ExtremeValueTheory.logMoment_one, ExtremeValueTheory.momentEstimator}
+  \leanok
+  $M^{(j)}_{k,n} = k^{-1} \sum_{i<k} (\log X_{(i+1)} - \log X_{(k+1)})^j$, so $M^{(1)}$ is the
+  Hill estimator, and the moment estimator is
+  $\hat\gamma = M^{(1)} + 1 - \tfrac12 \big(1 - (M^{(1)})^2/M^{(2)}\big)^{-1}$ [dHF, \S3.5].
+\end{definition}
+
+\begin{theorem}[Consistency of the log-moments and the moment estimator, $\xi > 0$]
+  \label{thm:moment-consistency}
+  \uses{def:moment-estimator, thm:hill-consistency}
+  \lean{ExtremeValueTheory.tendstoInMeasure_logMoment, ExtremeValueTheory.tendstoInMeasure_momentEstimator,
+    ExtremeValueTheory.tendstoInMeasure_momentEstimator_of_isInMDAGEV, ExtremeValueTheory.tendstoInMeasure_hill_of_isInMDAGEV,
+    ExtremeValueTheory.tendstoInMeasure_momentEstimator_pareto, ExtremeValueTheory.tendsto_integral_logExcess_rpow_div}
+  \leanok
+  Under the hypotheses of Theorem~\ref{thm:hill-consistency},
+  $M^{(j)}_{k,n} \to j!/\alpha^j$ in probability for $j \ge 1$, and the moment estimator converges
+  to $1/\alpha$. Equivalently, for $F$ in the domain of attraction of $H_\xi$ with $\xi > 0$, both
+  the Hill and moment estimators are consistent for $\xi$. The case $\xi \le 0$ is not
+  formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  As for the Hill estimator, with $\E[\log^+(Y/s)^p] / \bar F(s) \to \Gamma(p+1)/\alpha^p$ in place
+  of the first log-moment.
+\end{proof}

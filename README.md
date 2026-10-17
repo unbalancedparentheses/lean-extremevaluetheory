@@ -60,6 +60,10 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   regularly varying with index `-α`, and `k → ∞`, `k/n → 0`, the Hill estimator
   `(1/k) Σ_{i<k} (log X₍ᵢ₊₁₎ - log X₍ₖ₊₁₎)` converges to `1/α` in probability. With order
   statistics and their binomial distribution.
+- **Pickands estimator consistency for every ξ** (`tendstoInMeasure_pickands`): for `F` in the
+  domain of attraction of `H_ξ`, `ξ ∈ ℝ`, the Pickands estimator converges to `ξ` in probability.
+  The **moment estimator** (Dekkers–Einmahl–de Haan) and the log-moments are consistent for
+  `ξ > 0` (`tendstoInMeasure_momentEstimator_of_isInMDAGEV`).
 - **Stable laws and the generalized central limit theorem, symmetric case**
   (`tendsto_map_convPow_of_isRegularlyVarying`): for iid symmetric `X` with `P(|X| > x)`
   regularly varying of index `-α`, `0 < α < 2`, and `n P(|X| > aₙ) → 1`, the law of
