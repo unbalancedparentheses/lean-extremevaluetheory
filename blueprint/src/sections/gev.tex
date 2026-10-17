@@ -61,7 +61,11 @@
   \lean{ExtremeValueTheory.measure_gevCDF_eq_map, ExtremeValueTheory.integral_id_gevCDF_zero, ExtremeValueTheory.integral_id_standardGumbelCDF,
     ExtremeValueTheory.integral_id_gevCDF, ExtremeValueTheory.integral_sq_gevCDF, ExtremeValueTheory.variance_id_gevCDF,
     ExtremeValueTheory.integral_id_standardFrechetCDF, ExtremeValueTheory.integral_id_standardWeibullCDF,
-    ExtremeValueTheory.integral_id_gevLocScaleCDF, ExtremeValueTheory.integral_mul_gevFun_pow_gevCDF}
+    ExtremeValueTheory.integral_id_gevLocScaleCDF, ExtremeValueTheory.integral_mul_gevFun_pow_gevCDF,
+    ExtremeValueTheory.variance_id_gevCDF_zero, ExtremeValueTheory.variance_id_standardGumbelCDF,
+    ExtremeValueTheory.variance_id_gevLocScaleCDF_zero,
+    ExtremeValueTheory.integral_mul_gevFun_pow_gevCDF_zero, Real.integral_log_sq_mul_exp_neg,
+    Complex.deriv_digamma_one, Complex.deriv_deriv_Gamma_one}
   \leanok
   $H_\xi$ is the law of $(T^{-\xi} - 1)/\xi$ ($-\log T$ for $\xi = 0$) with $T$ standard
   exponential. The Gumbel mean is Euler's constant $\gamma$; for $\xi < 1$, $\xi \ne 0$ the mean is
@@ -69,12 +73,15 @@
   $(\Gamma(1 - 2\xi) - \Gamma(1 - \xi)^2)/\xi^2$; the Fr\'echet mean is $\Gamma(1 - 1/\alpha)$ for
   $\alpha > 1$. The probability-weighted moments are
   $\E[X H_\xi(X)^r] = ((r+1)^\xi \Gamma(1 - \xi) - 1)/(\xi(r+1))$
-  [Hosking, Wallis and Wood 1985]. The Gumbel variance $\pi^2/6$ is not formalized.
+  [Hosking, Wallis and Wood 1985]. The Gumbel variance is $\pi^2/6$ ($\sigma^2\pi^2/6$ with scale
+  $\sigma$), and for $\xi = 0$ the probability-weighted moments are $(\gamma + \log(r+1))/(r+1)$.
 \end{theorem}
 \begin{proof}
   \leanok
   Substitute $x = (t^{-\xi} - 1)/\xi$ and use $\int_0^\infty t^{s-1} e^{-t} \ud t = \Gamma(s)$; the
-  Gumbel mean is $-\Gamma'(1) = \gamma$.
+  Gumbel mean is $-\Gamma'(1) = \gamma$. For the variance, differentiating Mathlib's reflection and duplication
+  formulas for the digamma function $\psi$ at $1/2$ gives $\psi'(1) = \pi^2/6$, hence
+  $\int_0^\infty (\log t)^2 e^{-t} \ud t = \Gamma''(1) = \gamma^2 + \pi^2/6$.
 \end{proof}
 
 \begin{theorem}[Block maxima]
