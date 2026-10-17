@@ -143,6 +143,10 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   every `α > 0`, `Σψ_j^δ < ∞` for some `δ < min(α, 1)`): `θ = ϑ = sup ψ_j^α / Σ ψ_j^α`
   (`InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_lt_one`), and AR(1) with
   `0 < φ < 1` and nonnegative noise has `θ = 1 − φ^α` (`AR1.hasExtremalIndex_of_pos`).
+- **Markov chains** (`Dependence/MarkovChain.lean`, `MarkovTailChain.lean`, `ARMAX.lean`): stationary chains
+  as random iterations (every kernel with an invariant law on a standard Borel space), the
+  multiplicative tail chain, and the max-autoregressive chain `X_{t+1} = max(φX_t, Z_{t+1})` with
+  `θ = ϑ = 1 − φ^α` (`ARMAX.hasExtremalIndex_candidate`).
 - **Max-stable vectors and processes** (`MaxStable/`): simple max-stable laws and their exponent
   function; de Haan's spectral construction from Poisson random measures for vectors and processes
   (`exists_isSimpleMaxStable_of_spectralMeasure`, `IsPoissonRandomMeasure.isSimpleMaxStable_map_process`),

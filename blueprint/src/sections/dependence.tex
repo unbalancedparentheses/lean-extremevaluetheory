@@ -632,3 +632,55 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
   \leanok
   Condition on the event: a constant sequence or an iid one.
 \end{proof}
+
+\section{Markov chains}
+
+\begin{theorem}[Stationary Markov chains as random iterations]
+  \label{thm:markov-chain}
+  \uses{def:stationary}
+  \lean{ExtremeValueTheory.RandomIteration.isStationary_chain, ExtremeValueTheory.RandomIteration.noiseKernel, ExtremeValueTheory.RandomIteration.noiseKernel_comp_eq, ExtremeValueTheory.RandomIteration.map_history_succ,
+    ExtremeValueTheory.RandomIteration.isStationary_canonicalChain, ExtremeValueTheory.RandomIteration.exists_isStationary_of_kernel}
+  \leanok
+  A chain $X_{t+1} = f(X_t, V_t)$ with iid innovations $V$ independent of $X_0$ and an invariant law $\pi$ ($(\pi \otimes \nu)
+  \circ f^{-1} = \pi$) is a stationary Markov chain with kernel $K(x, \cdot) = \nu \circ f(x, \cdot)^{-1}$. Every Markov kernel
+  on a standard Borel space with an invariant law $\pi$ arises this way, so stationary chains exist for it.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Stationarity by induction from the invariance; the representation of kernels by measurable maps of a
+  uniform variable.
+\end{proof}
+
+\begin{theorem}[Tail chain]
+  \label{thm:tail-chain}
+  \uses{thm:markov-chain, def:tail-process, def:candidate-extremal-index}
+  \lean{ExtremeValueTheory.RandomIteration.tendstoLawCond_tailChain, ExtremeValueTheory.RandomIteration.tendstoLawCond_tailChain_iid, ExtremeValueTheory.RandomIteration.abs_iter_sub_tailWalk_le,
+    ExtremeValueTheory.RandomIteration.candidateExtremalIndex_tailWalk}
+  \leanok
+  If $|f(x, v) - a(v) x| \le b(v)$ on an invariant set and $X_0/x$ given $X_0 > x$ converges in law, then for each
+  horizon $k$, $(X_t/x)_{t \le k}$ given $X_0 > x$ converges to the multiplicative random walk
+  $Y_t = Y_0 A_1 \cdots A_t$ with iid $A_s = a(V_s)$ independent of $Y_0$; for Pareto $Y_0$, the candidate extremal index
+  is $\PR[\sup_{k \ge 1} Y_0 |A_1 \cdots A_k| \le 1]$ [Perfekt 1994], [Janssen--Segers 2014], [KS20, Ch.~14].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Iterate the bound $|f(x,v) - a(v)x| \le b(v)$; the additive error is negligible after dividing by $x$.
+\end{proof}
+
+\begin{theorem}[ARMAX: $\theta = \vartheta = 1 - \varphi^\alpha$]
+  \label{thm:armax}
+  \uses{thm:tail-chain, thm:strict-extremal-index}
+  \lean{ExtremeValueTheory.ARMAX.step, ExtremeValueTheory.ARMAX.forall_iter_le_iff, ExtremeValueTheory.ARMAX.measureReal_partialMax_le, ExtremeValueTheory.ARMAX.tail_le, ExtremeValueTheory.ARMAX.le_tail, ExtremeValueTheory.ARMAX.isStationary,
+    ExtremeValueTheory.ARMAX.hasExtremalIndex, ExtremeValueTheory.ARMAX.isRegularlyVarying_tail, ExtremeValueTheory.ARMAX.hasExtremalIndexStrict, ExtremeValueTheory.ARMAX.stationaryLaw,
+    ExtremeValueTheory.ARMAX.map_stationaryLaw, ExtremeValueTheory.ARMAX.hasExtremalIndexStrict_canonical, ExtremeValueTheory.ARMAX.tendstoLawCond_tailChain,
+    ExtremeValueTheory.ARMAX.candidateExtremalIndex_tailChain, ExtremeValueTheory.ARMAX.hasExtremalIndex_candidate}
+  \leanok
+  The max-autoregressive chain $X_{t+1} = \max(\varphi X_t, Z_{t+1})$ with $0 < \varphi < 1$ and iid Pareto($\alpha$) noise has a
+  stationary law (that of $\sup_j \varphi^j Z_{-j}$), a regularly varying marginal, tail chain $Y_t = Y_0 \varphi^t$, and
+  extremal index $\theta = \vartheta = 1 - \varphi^\alpha$ [EKM, \S8.1], computed independently on both sides.
+\end{theorem}
+\begin{proof}
+  \leanok
+  $\{X_0, \dots, X_n \le u\} = \{X_0 \le u\} \cap \{Z_1, \dots, Z_n \le u\}$, so $\PR[M_n \le u] = G(u) F(u)^{n-1}$; the fixed-point
+  equation gives $\PR[X_0 > x] \sim x^{-\alpha}/(1 - \varphi^\alpha)$.
+\end{proof}
