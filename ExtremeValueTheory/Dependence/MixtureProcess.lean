@@ -8,7 +8,59 @@ import ExtremeValueTheory.Dependence.EchoProcess
 /-!
 # A mixture with no escaping mass and no extremal index
 
-DOCSTRING
+Let `(Z_t)_{t ∈ ℤ}` be iid Pareto(`α`) and let `E` be an event, independent of the whole sequence
+`Z`, with `p = P(E) ∈ (0, 1)`. The **mixture process** is
+`X_t = Z_0` on `E` (a constant sequence) and `X_t = Z_t` off `E` (an iid sequence).
+
+* Its spectral tail process is the mixture of the two spectral tail processes: `Θ ≡ 1` with
+  probability `p`, `Θ_t = 1{t = 0}` with probability `1 - p`; so `ϑ = 1 - p`.
+* For blocks with `rₙ → ∞`, `rₙ uₙ^(-α) → 0` the cluster ratio tends to `1 - p = ϑ`: the escape
+  mass of `Dependence/ThetaGap.lean` is `η = 0`. Yet forward anticlustering fails (on `E` the
+  exceedance at `0` recurs at every lag).
+* `P(M_n ≤ uₙ) → p + (1 - p) e^(-τ)` when `n P(X_0 > uₙ) → τ`: the limit is not of the form
+  `e^(-θ τ)`, so there is no extremal index, and the block condition `𝒜(uₙ)` fails.
+
+So `η = 0` is strictly weaker than anticlustering, and `η = 0` does not imply that `θ` exists:
+the identity `θ = ϑ - η` of `Dependence/ThetaGap.lean` needs `𝒜(uₙ)`, which is exactly what the
+mixture (a non-ergodic process) violates.
+
+## Main definitions
+
+* `mixtureProcess E Z`: the model.
+* `innovationSigma Z`: the σ-algebra `σ(Z_t, t ∈ ℤ)`; independence of `E` is stated as
+  `Indep (generateFrom {E}) (innovationSigma Z) P`.
+* `mixtureCoin p`: the law `p δ_true + (1 - p) δ_false` on `Bool`;
+  `mixtureSpectral t b = 1` if `b` or `t = 0`, else `0`.
+
+## Main results, with the hypotheses each one uses
+
+Common hypotheses: `E` measurable (`hE`), independent of `σ(Z)` (`hEZ`); `Z` measurable (`hZ`),
+iid (`hind`, `hlaw : P.map (Z t) = paretoMeasure 1 α`), and where stated `α > 0` (`hα`) and
+`Z ≥ 0` pointwise (`hpos`).
+
+* `measureReal_partialMax_mixture_le` (`hE hEZ hZ hind hlaw`): for `n ≥ 1`,
+  `P(M_n ≤ u) = p (1 - F̄(u)) + (1 - p) (1 - F̄(u))^n` with `F̄(u) = P(Z_0 > u)`.
+* `tendsto_partialMax_mixture` (same): `n P(X_0 > uₙ) → τ` gives
+  `P(M_n ≤ uₙ) → p + (1 - p) e^(-τ)`.
+* `not_hasExtremalIndex_mixture` (`+ hα`, `0 < p < 1`): no `θ` is an extremal index.
+* `tendsto_clusterRatio_mixture` (`hE hEZ hα hZ hind hlaw hpos`, `uₙ → ∞`, `rₙ → ∞`,
+  `rₙ uₙ^(-α) → 0`): the cluster ratio tends to `1 - p`.
+* `not_forwardAntiClusteringAt_mixture` (`hEZ hα hZ hlaw hpos`, `p > 0`, `uₙ → ∞`, `rₙ → ∞`).
+* `hasShiftInvariantWindows_mixture` (`hE hEZ hZ hind hlaw`): stationarity.
+* `hasSpectralTailProcess_mixture` (`hE hEZ hα hZ hind hlaw hpos`) and
+  `candidateExtremalIndex_mixture` (`α > 0`): `Θ` as above, `ϑ = 1 - p`.
+* `hasEscapeMass_mixture` (`hE hEZ hα hZ hind hlaw hpos`, `uₙ → ∞`, `rₙ → ∞`,
+  `rₙ uₙ^(-α) → 0`): `η = 0`.
+* `not_conditionA_mixture` (`hE hEZ hα hZ hind hlaw hpos`, `0 < p < 1`, `n P(X_0 > uₙ) → τ > 0`,
+  `rₙ → ∞`, `rₙ / n → 0`): `𝒜(uₙ)` fails for `|X|`. Proof: under `𝒜(uₙ)`, `η = 0` would force
+  `P(M_n ≤ uₙ) → e^(-(1 - p) τ) < p + (1 - p) e^(-τ)` (strict convexity of `exp`).
+
+## Remarks
+
+* The limit `p + (1 - p) e^(-τ)` is the classical behaviour of a non-ergodic stationary sequence:
+  conditionally on the regime, each regime has an extremal index (`0` for the constant sequence,
+  `1` for the iid one), but the mixture has none.
+* The innovations are assumed nonnegative pointwise (`hpos`), as in `Dependence/EchoProcess.lean`.
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set BoundedContinuousFunction
