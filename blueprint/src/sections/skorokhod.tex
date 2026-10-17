@@ -65,3 +65,24 @@ for upstreaming.
   that move finitely many points to rationals. Projections are measurable via upper semicontinuity of
   $x \mapsto \inf_{s \in (a,b)} g(x(s))$; conversely paths are approximated by grid step functions.
 \end{proof}
+
+\begin{theorem}[$D$ is Polish]
+  \label{thm:skorokhod-polish}
+  \uses{thm:skorokhod-borel}
+  \lean{unitInterval.logSlopeNorm, billingsleyEDist, billingsleyEDist_le_iSup_edist,
+    skorokhodEDist_le_exp_billingsleyEDist_sub_one, IsCadlag.exists_billingsleyEDist_lt,
+    SkorokhodSpace.homeomorphBillingsley, SkorokhodSpace.Billingsley.instCompleteSpace,
+    SkorokhodSpace.instIsCompletelyMetrizableSpace, SkorokhodSpace.instPolishSpace,
+    IsCadlag.of_tendstoUniformly, IsCadlag.comp_orderIso}
+  \leanok
+  Billingsley's metric $d^\circ(x, y) = \inf_\lambda \max(\|\lambda\|^\circ, \|x - y \circ \lambda\|_\infty)$, with the log-slope norm
+  $\|\lambda\|^\circ = \sup_{s < t} |\log((\lambda t - \lambda s)/(t - s))|$, is a metric on $D$ inducing the $J_1$ topology, and $(D, d^\circ)$ is
+  complete for complete $E$ [Billingsley, Theorems~12.1 and~12.2]. Hence $D([0,1], E)$ is Polish for every complete
+  separable metric space $E$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  $d \le e^{d^\circ} - 1$, and conversely $d$-small implies $d^\circ$-small at a fixed c\`adl\`ag function. Completeness: a $d^\circ$-Cauchy
+  sequence has a subsequence with summable distances; compose the time changes and pass to a uniform limit, which
+  is c\`adl\`ag.
+\end{proof}

@@ -182,7 +182,8 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   estimator with known margins.
 - **The Skorokhod space** (`ForMathlib/Topology/Skorokhod/`): `D([0,1], E)` with the `J₁` metric, the
   structure of càdlàg functions, `J₁` vs uniform convergence, separability (Billingsley Thm 12.2), and
-  Borel σ-algebra = σ-algebra of the projections (Thm 12.5). Completeness (`D` Polish) is not yet proved.
+  Borel σ-algebra = σ-algebra of the projections (Thm 12.5), and `D` is Polish via Billingsley's complete
+  metric `d°` (Thms 12.1–12.2, `SkorokhodSpace.instPolishSpace`).
 - **Uniform convergence theorem and Karamata's representation theorem** for measurable slowly
   and regularly varying functions (no monotonicity), with two-sided Potter bounds
   (`isSlowlyVarying_iff_exists_representation`, `potter_bounds_of_measurable`).
