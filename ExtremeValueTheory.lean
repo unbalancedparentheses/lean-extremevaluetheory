@@ -82,6 +82,7 @@ import ExtremeValueTheory.ForMathlib.Probability.RandomMeasureLaw
 import ExtremeValueTheory.RegularVariation.Multivariate
 import ExtremeValueTheory.Dependence.StationaryWindows
 import ExtremeValueTheory.Dependence.Anticlustering
+import ExtremeValueTheory.Dependence.ThetaLeVartheta
 import ExtremeValueTheory.Dependence.MovingMaxTailProcess
 import ExtremeValueTheory.Dependence.Mixing
 import ExtremeValueTheory.Dependence.MDependent
