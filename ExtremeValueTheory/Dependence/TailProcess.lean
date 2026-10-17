@@ -141,6 +141,17 @@ theorem TendstoLawCond.eventually_measure_ne_zero [IsProbabilityMeasure ν]
   simp [cond_eq_zero_of_meas_eq_zero hzero] at hi
   linarith
 
+/-- If the random elements eventually satisfy `g (Y i) = 0` almost surely on the conditioning
+events, for a nonnegative bounded continuous `g`, then `g = 0` almost surely under the limit. -/
+theorem TendstoLawCond.ae_eq_zero [OpensMeasurableSpace E] [l.NeBot] (h : TendstoLawCond P s Y l ν) [IsFiniteMeasure ν]
+    (g : E →ᵇ ℝ) (hg : ∀ y, 0 ≤ g y) (hY : ∀ᶠ i in l, ∀ᵐ ω ∂P[|s i], g (Y i ω) = 0) :
+    ∀ᵐ y ∂ν, g y = 0 := by
+  have h0 : ∫ y, g y ∂ν = 0 := by
+    refine tendsto_nhds_unique (h g) (tendsto_const_nhds.congr' ?_)
+    filter_upwards [hY] with i hi
+    rw [integral_eq_zero_of_ae hi]
+  exact (integral_eq_zero_iff_of_nonneg hg (g.integrable ν)).1 h0
+
 /-- Weak limits of conditional laws are unique. -/
 theorem TendstoLawCond.unique [HasOuterApproxClosed E] [BorelSpace E] [l.NeBot]
     {ν' : Measure E} [IsFiniteMeasure ν] [IsFiniteMeasure ν'] (h : TendstoLawCond P s Y l ν)
@@ -503,10 +514,11 @@ theorem tendstoLawCond_smul (hα : 0 < α) (hZ : Measurable Z) (hT : Measurable 
   refine this.congr fun x => ?_
   rw [integral_map (hY x).aemeasurable hL.continuous.aestronglyMeasurable]
 
-/-- `(Par ⊗ μ.map g).map (r, θ) ↦ r • θ` rewritten on `Par ⊗ μ`. -/
-private lemma map_prod_map_smul {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
-    [MeasurableSpace F] [BorelSpace F] [SecondCountableTopology F] (ρ : Measure ℝ) [SFinite ρ]
-    {g : E → F} (hg : Measurable g) :
+omit [IsProbabilityMeasure P] [IsProbabilityMeasure μ] in
+/-- `(ρ ⊗ μ.map g).map (r, θ) ↦ r • θ` rewritten on `ρ ⊗ μ`. -/
+private lemma map_prod_map_smul {G F : Type*} {_ : MeasurableSpace G} [NormedAddCommGroup F]
+    [NormedSpace ℝ F] [MeasurableSpace F] [BorelSpace F] [SecondCountableTopology F] (ρ : Measure ℝ) [SFinite ρ]
+    {μ : Measure G} [SFinite μ] {g : G → F} (hg : Measurable g) :
     (ρ.prod (μ.map g)).map (fun p => p.1 • p.2) = (ρ.prod μ).map (fun p => p.1 • g p.2) := by
   have h : ρ.prod (μ.map g) = (ρ.prod μ).map (Prod.map id g) := by
     rw [← Measure.map_prod_map _ _ measurable_id hg, Measure.map_id]
@@ -692,5 +704,172 @@ theorem polar_iff (hα : 0 < α) (hZ : Measurable Z) (hV : Measurable V) :
       tendstoLawCond_spectral_of_tendstoLawCond hZ hfst h⟩
 
 end Converse
+
+/-! ### Regularly varying time series -/
+
+section TimeSeries
+
+variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {P : Measure Ω} [IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ}
+  {Q : Measure Ω'} [IsProbabilityMeasure Q]
+
+/-- A time series `(X_t)_{t ∈ ℤ}` is *jointly regularly varying with index `α`* and *spectral tail
+process* `(Θ_t)_{t ∈ ℤ}` (defined on `(Ω', Q)`) if `P(|X_0| > x)` is regularly varying with index
+`-α` and, for every finite window `S ⊆ ℤ`, the law of `(X_t / |X_0|)_{t ∈ S}` given `|X_0| > x`
+converges weakly to the law of `(Θ_t)_{t ∈ S}` ([BS09, Theorem 2.1 (iii)], [KS20, Definition
+5.1.1 and Theorem 5.2.2]). Windows are arbitrary finite sets, which covers the windows
+`{s, …, t}` of [KS20] and `{-n, …, n}` of [BS09]. -/
+def HasSpectralTailProcess (P : Measure Ω) (X : ℤ → Ω → ℝ) (α : ℝ) (Q : Measure Ω')
+    (Θ : ℤ → Ω' → ℝ) : Prop :=
+  IsRegularlyVarying (fun x => P.real {ω | x < |X 0 ω|}) (-α) ∧
+    ∀ S : Finset ℤ, TendstoLawCond P (fun x => {ω | x < |X 0 ω|})
+      (fun _ ω (t : S) => X t ω / |X 0 ω|) atTop (Q.map fun ω' (t : S) => Θ t ω')
+
+/-- A time series `(X_t)_{t ∈ ℤ}` has *tail process* `(Y_t)_{t ∈ ℤ}` (defined on `(Ω', Q)`) with
+index `α` if `|Y_0|` is Pareto(`α`), `P(|Y_0| > y) = y^(-α)` for `y ≥ 1`, and, for every finite
+window `S ⊆ ℤ`, the law of `(X_t / x)_{t ∈ S}` given `|X_0| > x` converges weakly to the law of
+`(Y_t)_{t ∈ S}` ([BS09, Theorem 2.1 (ii)], [KS20, Theorem 5.1.2]). -/
+def HasTailProcess (P : Measure Ω) (X : ℤ → Ω → ℝ) (α : ℝ) (Q : Measure Ω')
+    (Y : ℤ → Ω' → ℝ) : Prop :=
+  Q.map (fun ω' => |Y 0 ω'|) = paretoMeasure 1 α ∧
+    ∀ S : Finset ℤ, TendstoLawCond P (fun x => {ω | x < |X 0 ω|})
+      (fun x ω (t : S) => X t ω / x) atTop (Q.map fun ω' (t : S) => Y t ω')
+
+omit [IsProbabilityMeasure P] in
+/-- The spectral tail process satisfies `|Θ_0| = 1` almost surely ([BS09, §2], [KS20, Theorem
+5.2.2]). -/
+theorem HasSpectralTailProcess.ae_abs_eq_one {Θ : ℤ → Ω' → ℝ} (hΘm : ∀ t, Measurable (Θ t))
+    (hX : Measurable (X 0)) (h : HasSpectralTailProcess P X α Q Θ) :
+    ∀ᵐ ω' ∂Q, |Θ 0 ω'| = 1 := by
+  set S : Finset ℤ := {0}
+  have h0 : (0 : ℤ) ∈ S := Finset.mem_singleton_self 0
+  let g : (S → ℝ) →ᵇ ℝ := BoundedContinuousFunction.mkOfBound
+    ⟨fun y => min 1 |(|y ⟨0, h0⟩|) - 1|, continuous_const.min
+      (((continuous_apply _).abs.sub continuous_const).abs)⟩ 1 fun y z => by
+      simp only [ContinuousMap.coe_mk, Real.dist_eq]
+      have := min_le_left 1 |(|y ⟨0, h0⟩|) - 1|
+      have := min_le_left 1 |(|z ⟨0, h0⟩|) - 1|
+      have : 0 ≤ min 1 |(|y ⟨0, h0⟩|) - 1| := le_min zero_le_one (abs_nonneg _)
+      have : 0 ≤ min 1 |(|z ⟨0, h0⟩|) - 1| := le_min zero_le_one (abs_nonneg _)
+      rw [abs_le]; constructor <;> linarith
+  have hg0 : ∀ y, 0 ≤ g y := fun y => le_min zero_le_one (abs_nonneg _)
+  have key := (h.2 S).ae_eq_zero g hg0 (by
+    filter_upwards [eventually_gt_atTop 0] with x hx
+    filter_upwards [ae_cond_mem (measurableSet_lt measurable_const (continuous_abs.measurable.comp hX))] with ω hω
+    have hne : |X 0 ω| ≠ 0 := (hx.trans hω).ne'
+    change min 1 (abs (abs (X 0 ω / abs (X 0 ω)) - 1)) = 0
+    rw [abs_div, abs_abs, div_self hne]; simp)
+  have hm : Measurable fun ω' (t : S) => Θ t ω' := measurable_pi_iff.2 fun t : S => hΘm (t : ℤ)
+  have := ae_of_ae_map hm.aemeasurable key
+  filter_upwards [this] with ω' hω'
+  change min 1 |(|Θ 0 ω'|) - 1| = 0 at hω'
+  rcases min_eq_iff.1 hω' with ⟨h1, -⟩ | ⟨h1, -⟩
+  · exact absurd h1 one_ne_zero
+  · linarith [abs_eq_zero.1 h1]
+
+omit [IsProbabilityMeasure Q] in
+private lemma measurable_window {Y : ℤ → Ω' → ℝ} (hY : ∀ t, Measurable (Y t)) (S : Finset ℤ) :
+    Measurable fun ω' (t : S) => Y t ω' :=
+  measurable_pi_iff.2 fun t : S => hY (t : ℤ)
+
+private lemma window_div_abs (X : ℤ → Ω → ℝ) (S : Finset ℤ) :
+    (fun (_ : ℝ) ω (t : S) => X t ω / |X 0 ω|) =
+      fun _ ω => (|X 0 ω|)⁻¹ • fun t : S => X t ω := by
+  funext x ω t; simp [div_eq_inv_mul]
+
+private lemma window_div (X : ℤ → Ω → ℝ) (S : Finset ℤ) :
+    (fun (x : ℝ) ω (t : S) => X t ω / x) = fun x ω => x⁻¹ • fun t : S => X t ω := by
+  funext x ω t; simp [div_eq_inv_mul]
+
+/-- **From the spectral tail process to the tail process** ([BS09, Theorem 2.1, (iii) ⇒ (ii)],
+[KS20, Theorem 5.2.2]): if `(X_t)` has spectral tail process `(Θ_t)`, then it has tail process
+`Y_t = R Θ_t`, with `R` Pareto(`α`) independent of `(Θ_t)`, realized on the product space. -/
+theorem HasSpectralTailProcess.hasTailProcess {Θ : ℤ → Ω' → ℝ} (hα : 0 < α)
+    (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
+    (h : HasSpectralTailProcess P X α Q Θ) :
+    HasTailProcess P X α ((paretoMeasure 1 α).prod Q) (fun t p => p.1 * Θ t p.2) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have hZ : Measurable fun ω => |X 0 ω| := continuous_abs.measurable.comp (hX 0)
+  constructor
+  · have hae : ∀ᵐ p ∂((paretoMeasure 1 α).prod Q), |p.1 * Θ 0 p.2| = p.1 := by
+      filter_upwards [Measure.quasiMeasurePreserving_fst.ae ae_one_lt_paretoMeasure,
+        Measure.quasiMeasurePreserving_snd.ae (h.ae_abs_eq_one hΘm (hX 0))] with p h1 h2
+      rw [abs_mul, h2, mul_one, abs_of_pos (one_pos.trans h1)]
+    rw [Measure.map_congr hae]
+    simp
+  · intro S
+    have hconv := h.2 S
+    rw [window_div_abs] at hconv
+    have key := (tendstoLawCond_polar hα hZ (measurable_window hX S) h.1 hconv).comp
+      continuous_snd
+    rw [Measure.map_map measurable_snd (measurable_fst.prodMk continuous_smul.measurable)] at key
+    change TendstoLawCond _ _ _ _ (((paretoMeasure 1 α).prod _).map fun p => p.1 • p.2) at key
+    rw [map_prod_map_smul _ (measurable_window hΘm S)] at key
+    rw [window_div]
+    exact key
+
+omit [IsProbabilityMeasure Q] in
+/-- The joint convergence of `(|X_0| / x, (X_t / x)_{t ∈ S})` for a time series with a tail
+process. -/
+private lemma HasTailProcess.joint {Y : ℤ → Ω' → ℝ} (hYm : ∀ t, Measurable (Y t))
+    (h : HasTailProcess P X α Q Y) (S : Finset ℤ) :
+    TendstoLawCond P (fun x => {ω | x < |X 0 ω|})
+      (fun x ω => (|X 0 ω| / x, x⁻¹ • fun t : S => X t ω)) atTop
+      (Q.map fun ω' => (|Y 0 ω'|, fun t : S => Y t ω')) := by
+  classical
+  set S' := insert 0 S
+  let π : (S' → ℝ) → ℝ × (S → ℝ) := fun y =>
+    (|y ⟨0, Finset.mem_insert_self 0 S⟩|, fun t => y ⟨t, Finset.mem_insert_of_mem t.2⟩)
+  have hπ : Continuous π :=
+    (continuous_apply _).abs.prodMk (continuous_pi fun t => continuous_apply _)
+  have key := (h.2 S').comp hπ
+  rw [Measure.map_map hπ.measurable (measurable_window hYm S')] at key
+  refine key.congr ?_
+  filter_upwards [eventually_gt_atTop 0] with x hx
+  refine ae_of_all _ fun ω => ?_
+  simp only [π, abs_div, abs_of_pos hx]
+  congr 1
+  funext t
+  simp [div_eq_inv_mul]
+
+/-- **From the tail process to the spectral tail process** ([BS09, Theorem 2.1, (ii) ⇒ (iii)]):
+if `(X_t)` has tail process `(Y_t)`, then `P(|X_0| > x)` is regularly varying with index `-α` and
+`Θ_t = Y_t / |Y_0|` is a spectral tail process. -/
+theorem HasTailProcess.hasSpectralTailProcess {Y : ℤ → Ω' → ℝ} (hα : 0 < α)
+    (hX : ∀ t, Measurable (X t)) (hYm : ∀ t, Measurable (Y t)) (h : HasTailProcess P X α Q Y) :
+    HasSpectralTailProcess P X α Q (fun t ω' => Y t ω' / |Y 0 ω'|) := by
+  have hZ : Measurable fun ω => |X 0 ω| := continuous_abs.measurable.comp (hX 0)
+  have hYw : ∀ S : Finset ℤ, Measurable fun ω' => (|Y 0 ω'|, fun t : S => Y t ω') := fun S =>
+    (continuous_abs.measurable.comp (hYm 0)).prodMk (measurable_window hYm S)
+  have hfst : ∀ S : Finset ℤ,
+      (Q.map fun ω' => (|Y 0 ω'|, fun t : S => Y t ω')).map Prod.fst = paretoMeasure 1 α := by
+    intro S
+    rw [Measure.map_map measurable_fst
+      (hYw S)]
+    exact h.1
+  refine ⟨isRegularlyVarying_of_tendstoLawCond hα hZ (measurable_window hX ∅) (hfst ∅)
+    (h.joint hYm ∅), fun S => ?_⟩
+  have key := tendstoLawCond_spectral_of_tendstoLawCond hZ (hfst S) (h.joint hYm S)
+  rw [Measure.map_map (show Measurable fun p : ℝ × (S → ℝ) => p.1⁻¹ • p.2 from
+    measurable_fst.inv.smul measurable_snd) (hYw S)] at key
+  rw [window_div_abs]
+  convert key using 2
+  funext ω' t
+  simp [div_eq_inv_mul]
+
+/-- **Structure of the tail process** ([BS09, Theorem 2.1], [KS20, Theorem 5.2.2]): every finite
+window of the tail process is `(R Θ_t)_{t ∈ S}`, where `R` is Pareto(`α`) and independent of the
+spectral tail process `Θ_t = Y_t / |Y_0|`. -/
+theorem HasTailProcess.map_window_eq {Y : ℤ → Ω' → ℝ} (hα : 0 < α)
+    (hX : ∀ t, Measurable (X t)) (hYm : ∀ t, Measurable (Y t)) (h : HasTailProcess P X α Q Y)
+    (S : Finset ℤ) :
+    Q.map (fun ω' (t : S) => Y t ω') = ((paretoMeasure 1 α).prod Q).map
+      (fun p (t : S) => p.1 * (Y t p.2 / |Y 0 p.2|)) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have hΘm : ∀ t, Measurable fun ω' => Y t ω' / |Y 0 ω'| := fun t =>
+    (hYm t).div (continuous_abs.measurable.comp (hYm 0))
+  exact (h.2 S).unique ((h.hasSpectralTailProcess hα hX hYm).hasTailProcess hα hX hΘm |>.2 S)
+
+end TimeSeries
 
 end ExtremeValueTheory
