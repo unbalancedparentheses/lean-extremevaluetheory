@@ -7,9 +7,67 @@ import ExtremeValueTheory.Dependence.ThetaGap
 import ExtremeValueTheory.Dependence.MDependentExamples
 
 /-!
-# The echo process: `θ < ϑ`
+# The echo process: an explicit stationary sequence with `θ < ϑ`
 
-TODO
+Let `(Z_t)_{t ∈ ℤ}` be iid Pareto(`α`) and let `L : ℝ → ℕ` be an *echo lag* with `L ≥ 1`,
+`L(z) → ∞` as `z → ∞` and `E[L(Z)] < ∞`. The **echo process** is
+`X_t = max(Z_t, max {Z_s : s < t, s + L(Z_s) = t})`:
+every innovation appears at its own time and once more, `L(Z_s)` time units later. Large
+innovations echo far away.
+
+* The tail process only sees fixed lags. Given `X_0 > x`, the exceedance comes from an innovation
+  at `0` (whose echo is at lag `L(Z_0) → ∞`) or from the echo of an innovation at lag
+  `-L → -∞`; either way nothing else is large at any fixed lag. So the spectral tail process is
+  `Θ_t = 1{t = 0}`, as for an iid sequence, and `ϑ = 1`.
+* But every exceedance cluster consists of *two* exceedances (an innovation and its echo), and
+  `P(X_0 > x) ~ 2 P(Z > x)`. The extremal index is `θ = 1/2`.
+* The missing half of the cluster is exactly the escaping mass of `Dependence/ThetaGap.lean`: for
+  blocks `rₙ` longer than the echo lag of an exceedance (`E[L(Z); Z > uₙ] = o(rₙ P(Z > uₙ))`) but
+  with `rₙ P(Z > uₙ) → 0`, the cluster ratio tends to `1/2` and the escape mass is
+  `1/2 = ϑ - θ`. Forward anticlustering fails.
+
+The model is much simpler than the stable-regenerative model of Bai–Wang (arXiv:2110.07499), and
+everything is explicit. It is a stationary *factor* of an iid sequence (hence mixing in the
+ergodic-theoretic sense; not formalized here) and satisfies the conclusion `P(M n ≤ uₙ) → exp (-θ τ)` of the extremal
+index directly; the block condition `A(uₙ)` is not used anywhere.
+
+## Main definitions
+
+* `echoTerm`, `echoProcess`: the model.
+* `echoSource L Z t x j`: the sources of an exceedance of `x` at time `t` (`j = 0`: `Z_t > x`;
+  `j ≥ 1`: `Z_{t - j} > x` with `L(Z_{t - j}) = j`).
+* `unitSpectral`: the spectral tail process `Θ_t = 1{t = 0}` on the one-point space.
+* `logLag z = ⌊log z⌋₊ + 1`: a concrete echo lag.
+
+## Main results
+
+General tools:
+* `hasSpectralTailProcess_of_asymptoticIndependence`: if `X_0 ≥ 0` is regularly varying and
+  `P(|X_t| > ε x | |X_0| > x) → 0` for all `t ≠ 0`, `ε > 0`, then `Θ_t = 1{t = 0}`.
+* `hasShiftInvariantWindows_of_shift`: measurable shift functionals of iid noise are stationary.
+* `le_measureReal_iUnion_of_pairwise`: `P(⋃ Aⱼ) ≥ S - S²` for pairwise independent events.
+
+The echo process (hypotheses: `α > 0`, iid Pareto(`α`) innovations, `L` measurable, `L ≥ 1`,
+plus `L → ∞` and `E[L(Z)] < ∞` where stated):
+* `hasShiftInvariantWindows_echoProcess`: stationarity.
+* `isRegularlyVarying_echoProcess`, `tendsto_measureReal_lt_echoProcess_div`:
+  `P(X_0 > x) ~ 2 x^(-α)`.
+* `hasSpectralTailProcess_echoProcess`, `candidateExtremalIndex_unitSpectral`: `Θ = e_0`,
+  `ϑ = 1` (uses `L → ∞`, not `E[L(Z)] < ∞`).
+* `hasExtremalIndex_echoProcess`: `θ = 1/2` (uses `E[L(Z)] < ∞`).
+* `echoProcess_theta_lt_vartheta`: all of the above together.
+* `tendsto_clusterRatio_echoProcess`, `hasEscapeMass_echoProcess`,
+  `not_forwardAntiClusteringAt_echoProcess`: the cluster ratio tends to `1/2`, the escape mass is
+  `1/2`, anticlustering fails.
+* `logEchoProcess_theta_lt_vartheta`, `logEchoProcess_hasEscapeMass`: the same for
+  `L(z) = ⌊log z⌋₊ + 1`, where the condition on the blocks is `log uₙ = o(rₙ)`.
+
+## Remarks
+
+* For blocks shorter than the echo lag of an exceedance the cluster ratio tends to `ϑ = 1`
+  instead (both exceedances of a cluster are then seen as separate clusters); this mesoscopic
+  phase transition at the scale of `L(uₙ)` is not formalized.
+* The innovations are assumed nonnegative pointwise (`hpos`), a harmless normalization.
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set BoundedContinuousFunction

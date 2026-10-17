@@ -32,32 +32,41 @@ so this is the part of the cluster that "escapes to infinity" as `n → ∞` and
 ## Main results, with the hypotheses each one uses
 
 * `HasShiftInvariantWindows.clusterRatio_sub_le`: the exact identity behind everything:
-  `0 ≤ clusterRatio - (qₙ(m) - εₙ(m)) ≤ m / rₙ`, where `qₙ(m) = P(max_{0<t≤m} |X_t| ≤ uₙ | |X_0| > uₙ)`
-  (stationarity only, no tail process).
+  `0 ≤ clusterRatio - (qₙ(m) - εₙ(m)) ≤ m / rₙ`, where
+  `qₙ(m) = P(max_{0<t≤m} |X_t| ≤ uₙ | |X_0| > uₙ)` (stationarity only, no tail process).
 * `HasSpectralTailProcess.tendsto_clusterRatio_iff`: **the gap formula.** Under stationarity,
   the spectral tail process, `uₙ → ∞` and `rₙ → ∞`:
   `clusterRatio → L ↔ HasEscapeMass P X u r (ϑ - L)`.
   So the cluster ratio converges iff the escape mass exists, and then `lim = ϑ - η`.
-* `HasEscapeMass.unique`, `HasEscapeMass.nonneg`, `HasEscapeMass.le_candidateExtremalIndex`:
-  `0 ≤ η ≤ ϑ`.
+* `HasEscapeMass.unique`, `HasEscapeMass.nonneg`, `HasSpectralTailProcess.hasEscapeMass_le`:
+  the escape mass is unique and `0 ≤ η ≤ ϑ`.
 * `ForwardAntiClusteringAt.hasEscapeMass_zero`: forward anticlustering gives `η = 0`; this
-  recovers `HasSpectralTailProcess.tendsto_blockRatio`. The converse fails (see the mixture
-  example in `Dependence/ThetaGapExamples.lean`): `η = 0` is strictly weaker than anticlustering.
+  recovers `HasSpectralTailProcess.tendsto_blockRatio`.
 * `HasSpectralTailProcess.tendsto_partialMax_iff_hasEscapeMass`: under `A(uₙ)`,
   `n P(|X_0| > uₙ) → τ > 0`, `rₙ / n → 0`: `P(M n ≤ uₙ) → exp (-θ τ) ↔ HasEscapeMass (ϑ - θ)`.
 * `HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex`: if the extremal index `θ` exists,
   then along every level sequence and block length satisfying `A(uₙ)` the escape mass exists and
   equals `ϑ - θ`. In particular the escape mass does not depend on the choice of `uₙ`, `rₙ`.
 * `HasSpectralTailProcess.eq_candidateExtremalIndex_iff_hasEscapeMass_zero`: **`θ = ϑ` iff no
-  cluster mass escapes**, under `A(uₙ)` along one level sequence.
+  cluster mass escapes**, under `A(uₙ)` along one level sequence;
+  `HasSpectralTailProcess.lt_candidateExtremalIndex_iff`: `θ < ϑ` iff the escape mass is positive.
 
 ## Remarks
 
-* The gap formula is an exact, two-sided statement; it replaces the inequality `θ ≤ ϑ` by
-  `θ = ϑ - η`, and turns the Bai–Wang phenomenon `θ < ϑ` into the checkable statement `η > 0`.
-* The correct condition for `θ = ϑ` is not anticlustering but the *averaged* condition `η = 0`:
-  returns at lags `≥ m` within the block are allowed as long as they occur, in the mean, at lags
-  `o(rₙ)` (weight `1 - Tₙ / rₙ → 0`)… or with probability `→ 0`.
+* The gap formula is an exact, two-sided statement: it replaces the inequality `θ ≤ ϑ` by
+  `θ = ϑ - η`, and turns the phenomenon `θ < ϑ` (Bai–Wang) into the checkable statement `η > 0`.
+  An explicit stationary example with `θ = 1/2`, `ϑ = 1`, `η = 1/2` is the echo process of
+  `Dependence/EchoProcess.lean`.
+* `η = 0` is weaker than (forward) anticlustering in two ways: only the *first* return after a
+  quiet period `(0, m]` counts, so a cluster that the tail process sees at finite lags may keep
+  returning (for a mixture of a constant sequence and an iid sequence, anticlustering fails while
+  `η = 0` and the cluster ratio tends to `ϑ`; this example is not formalized here); and returns are
+  weighted by `1 - Tₙ / rₙ`, so returns near the end of the block are discounted.
+* The escape mass depends on `uₙ` and `rₙ` only through `ϑ - θ` once `A(uₙ)` holds
+  (`HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex`). Without `A(uₙ)` it can depend on
+  the block length: for the echo process with echo lag `L(Z)`, blocks much shorter than the echo
+  lag of an exceedance give cluster ratio `ϑ = 1`, longer ones `1/2` (only the second regime is
+  formalized).
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set
