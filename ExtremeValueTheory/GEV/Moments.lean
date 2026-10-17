@@ -401,4 +401,49 @@ theorem integral_id_gevLocScaleCDF_zero (μ : ℝ) {σ : ℝ} (hσ : 0 < σ) :
     AffineIncrEquiv.coefs_fst_mkOfCoefs, AffineIncrEquiv.coefs_snd_mkOfCoefs]
   ring
 
+/-! ### Probability-weighted moments -/
+
+/-- On the exponential scale the GEV distribution function is explicit:
+`H_ξ((t ^ (-ξ) - 1) / ξ) = e^{-t}` for `t > 0`. -/
+lemma gevFun_gevTransform (ξ : ℝ) {t : ℝ} (ht : 0 < t) : gevFun ξ (gevTransform ξ t) = exp (-t) := by
+  by_cases h0 : ξ = 0
+  · simp [gevFun, gevTransform, h0, exp_log ht]
+  · have hk : 1 + ξ * gevTransform ξ t = t ^ (-ξ) := by
+      simp only [gevTransform, h0, ↓reduceIte]; field_simp; ring
+    have hpos : 0 < 1 + ξ * gevTransform ξ t := hk ▸ rpow_pos_of_pos ht _
+    simp only [gevFun, h0, ↓reduceIte, hpos]
+    rw [hk, ← rpow_mul ht.le, show -ξ * (-1 / ξ) = 1 by field_simp, rpow_one]
+
+private lemma integrableOn_rpow_mul_exp_neg_mul {a r : ℝ} (ha : 0 < a) (hr : 0 < r) :
+    IntegrableOn (fun t ↦ t ^ (a - 1) * exp (-(r * t))) (Ioi 0) := by
+  refine (integrableOn_rpow_mul_exp_neg_mul_rpow (s := a - 1) (p := 1) (b := r) (by linarith)
+    one_pos hr).congr_fun (fun t _ ↦ ?_) measurableSet_Ioi
+  simp [rpow_one, neg_mul]
+
+/-- **Probability-weighted moments of the GEV law** (Hosking, Wallis and Wood, *Estimation of
+the generalized extreme-value distribution by the method of probability-weighted moments*,
+Technometrics 27 (1985)): for `ξ < 1`, `ξ ≠ 0` and `r ∈ ℕ`,
+`β_r = E[X H_ξ(X) ^ r] = ((r + 1) ^ ξ Γ(1 - ξ) - 1) / (ξ (r + 1))`. -/
+theorem integral_mul_gevFun_pow_gevCDF {ξ : ℝ} (hξ : ξ < 1) (h0 : ξ ≠ 0) (r : ℕ) :
+    ∫ x, x * gevFun ξ x ^ r ∂(gevCDF ξ).measure =
+      (((r : ℝ) + 1) ^ ξ * Gamma (1 - ξ) - 1) / (ξ * ((r : ℝ) + 1)) := by
+  have hr : (0 : ℝ) < r + 1 := by positivity
+  have hmeas : Measurable fun x ↦ x * gevFun ξ x ^ r :=
+    measurable_id.mul ((monotone_gevFun ξ).measurable.pow_const r)
+  have key : ∀ t ∈ Ioi (0 : ℝ), exp (-t) * (gevTransform ξ t * gevFun ξ (gevTransform ξ t) ^ r) =
+      ξ⁻¹ * (t ^ ((1 - ξ) - 1) * exp (-((r + 1) * t))) -
+        ξ⁻¹ * (t ^ ((1 : ℝ) - 1) * exp (-((r + 1) * t))) := by
+    intro t ht
+    rw [gevFun_gevTransform ξ ht, ← exp_nat_mul, sub_sub_cancel_left, sub_self, rpow_zero,
+      show -(((r : ℝ) + 1) * t) = -t + r * -t by ring, exp_add]
+    simp only [gevTransform, h0, ↓reduceIte]
+    field_simp
+  rw [integral_gevCDF ξ hmeas, setIntegral_congr_fun measurableSet_Ioi key,
+    integral_sub ((integrableOn_rpow_mul_exp_neg_mul (by linarith) hr).const_mul _)
+      ((integrableOn_rpow_mul_exp_neg_mul one_pos hr).const_mul _),
+    integral_const_mul, integral_const_mul, integral_rpow_mul_exp_neg_mul_Ioi (by linarith) hr,
+    integral_rpow_mul_exp_neg_mul_Ioi one_pos hr, Gamma_one, rpow_one,
+    div_rpow zero_le_one hr.le, one_rpow, rpow_sub hr, rpow_one]
+  field_simp
+
 end ExtremeValueTheory
