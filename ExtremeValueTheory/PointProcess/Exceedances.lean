@@ -163,6 +163,12 @@ noncomputable def exceedanceMeasure (G : CumulativeDistributionFunction) (hu : 0
     Measure ℝ :=
   (logCDFMax G hu).measure
 
+instance (hu : 0 < G u) : IsLocallyFiniteMeasure (exceedanceMeasure G hu) := by
+  unfold exceedanceMeasure; infer_instance
+
+instance (hu : 0 < G u) : SigmaFinite (exceedanceMeasure G hu) := by
+  unfold exceedanceMeasure; infer_instance
+
 lemma exceedanceMeasure_Ioc (hu : 0 < G u) {a b : ℝ} (hua : u ≤ a) (hab : a ≤ b) :
     exceedanceMeasure G hu (Set.Ioc a b) = ENNReal.ofReal (Real.log (G b) - Real.log (G a)) := by
   rw [exceedanceMeasure, StieltjesFunction.measure_Ioc]
@@ -254,6 +260,140 @@ theorem tendsto_measureReal_sumDiracRange_affine_eq (hX : ∀ i, Measurable (X i
     · simp [ENNReal.coe_toNNReal_eq_toReal]
   · simpa [ENNReal.coe_toNNReal_eq_toReal] using
       (hB j).tendsto_nat_mul_measureReal hX hF hlim hu 0
+
+/-- The number of time points `(i + 1) / n`, `i < n`, in the interval `(s, t] ⊆ [0, 1]` is
+`⌊n t⌋ - ⌊n s⌋`. -/
+lemma card_filter_range_add_one_div_mem_Ioc {n : ℕ} (hn : 0 < n) {s t : ℝ} (hs : 0 ≤ s)
+    (ht : t ≤ 1) :
+    #{i ∈ range n | (((i : ℕ) : ℝ) + 1) / n ∈ Set.Ioc s t} = ⌊n * t⌋₊ - ⌊n * s⌋₊ := by
+  have hn' : (0 : ℝ) < n := Nat.cast_pos.2 hn
+  rw [← Nat.card_Ico]
+  congr 1
+  ext i
+  simp only [Finset.mem_filter, Finset.mem_range, Set.mem_Ioc, Finset.mem_Ico]
+  have h1 : ((i : ℝ) + 1) / n ≤ t ↔ i < ⌊n * t⌋₊ := by
+    rw [div_le_iff₀ hn', Nat.lt_iff_add_one_le]
+    by_cases hnt : 0 ≤ n * t
+    · rw [Nat.le_floor_iff hnt]
+      push_cast
+      rw [mul_comm]
+    · push Not at hnt
+      rw [Nat.floor_of_nonpos hnt.le]
+      constructor
+      · intro h
+        nlinarith [(i.cast_nonneg : (0 : ℝ) ≤ i)]
+      · intro h
+        omega
+  have h2 : s < ((i : ℝ) + 1) / n ↔ ⌊n * s⌋₊ ≤ i := by
+    rw [lt_div_iff₀ hn', ← not_lt, Nat.lt_iff_add_one_le, Nat.le_floor_iff (by positivity),
+      not_le]
+    push_cast
+    rw [mul_comm]
+  rw [h1, h2]
+  constructor
+  · rintro ⟨-, h, h'⟩
+    exact ⟨h, h'⟩
+  · rintro ⟨h, h'⟩
+    refine ⟨?_, h, h'⟩
+    have : ⌊n * t⌋₊ ≤ n := by
+      refine Nat.floor_le_of_le ?_
+      nlinarith
+    omega
+
+/-- The proportion of the time points `(i + 1) / n`, `i < n`, in `(s, t] ⊆ [0, 1]` tends to
+`t - s`. -/
+lemma tendsto_card_filter_range_add_one_div_mem_Ioc {s t : ℝ} (hs : 0 ≤ s) (hst : s ≤ t)
+    (ht : t ≤ 1) :
+    Tendsto (fun n : ℕ ↦ (#{i ∈ range n | (((i : ℕ) : ℝ) + 1) / n ∈ Set.Ioc s t} : ℝ) / n) atTop
+      (𝓝 (t - s)) := by
+  have hT := (tendsto_nat_floor_mul_div_atTop (hs.trans hst)).comp tendsto_natCast_atTop_atTop
+  have hS := (tendsto_nat_floor_mul_div_atTop hs).comp tendsto_natCast_atTop_atTop
+  refine (hT.sub hS).congr' ?_
+  filter_upwards [eventually_gt_atTop 0] with n hn
+  simp only [Function.comp_apply]
+  rw [card_filter_range_add_one_div_mem_Ioc hn hs ht, Nat.cast_sub, sub_div, mul_comm t,
+    mul_comm s]
+  exact Nat.floor_le_floor (by gcongr)
+
+/-- **Convergence of the point process of exceedances, time-space version**
+([Resnick, Corollary 4.19], [EKM, Theorem 5.3.2]). Let `X_0, X_1, …` be iid with c.d.f. `F` in
+the maximum domain of attraction of `G` with normalizations `A_n`, and let `u` be a threshold
+with `G u > 0`. Let `N'` be a Poisson random measure on `ℝ × ℝ` with intensity
+`Leb|_{(0, 1]} × μ_G`, where `μ_G` is the exponent measure above `u`. Then the point processes
+`N_n = ∑_{i < n} δ_{((i + 1) / n, A_n (X_i))}` converge to `N'` in the sense of
+finite-dimensional distributions of counts on disjoint rectangles `(s, t] × C` with
+`0 ≤ s ≤ t ≤ 1` and `C` an exceedance interval. -/
+theorem tendsto_measureReal_sumDiracRange_timeSpace_eq (hX : ∀ i, Measurable (X i))
+    (hind : iIndepFun X P) (hF : ∀ i x, P.real {ω | X i ω ≤ x} = F x)
+    (hlim : ∀ x, Tendsto (fun n : ℕ ↦ ((As n • F) x) ^ n) atTop (𝓝 (G x))) (hu : 0 < G u)
+    {Ω' : Type*} {mΩ' : MeasurableSpace Ω'} {N' : Ω' → Measure (ℝ × ℝ)} {P' : Measure Ω'}
+    (hN' : IsPoissonRandomMeasure N'
+      ((volume.restrict (Set.Ioc (0 : ℝ) 1)).prod (exceedanceMeasure G hu)) P')
+    {k : ℕ} {s t : Fin k → ℝ} {C : Fin k → Set ℝ} (hs : ∀ j, 0 ≤ s j) (hst : ∀ j, s j ≤ t j)
+    (ht : ∀ j, t j ≤ 1) (hC : ∀ j, IsExceedanceInterval G u (C j))
+    (hd : Pairwise (Function.onFun Disjoint fun j ↦ Set.Ioc (s j) (t j) ×ˢ C j))
+    (m : Fin k → ℕ) :
+    Tendsto (fun n ↦ P.real {ω | ∀ j, sumDiracRange n (fun i ↦ (((i : ℝ) + 1) / n, As n (X i ω)))
+        (Set.Ioc (s j) (t j) ×ˢ C j) = m j}) atTop
+      (𝓝 (P'.real {ω | ∀ j, N' ω (Set.Ioc (s j) (t j) ×ˢ C j) = m j})) := by
+  classical
+  set B : Fin k → Set (ℝ × ℝ) := fun j ↦ Set.Ioc (s j) (t j) ×ˢ C j with hBdef
+  have hBm (j : Fin k) : MeasurableSet (B j) := measurableSet_Ioc.prod (hC j).measurableSet
+  have hνB (j : Fin k) : (volume.restrict (Set.Ioc (0 : ℝ) 1)).prod (exceedanceMeasure G hu)
+      (B j) = ENNReal.ofReal (t j - s j) * exceedanceMeasure G hu (C j) := by
+    rw [hBdef, Measure.prod_prod, Measure.restrict_apply measurableSet_Ioc,
+      Set.inter_eq_left.2 (Set.Ioc_subset_Ioc (hs j) (ht j)), Real.volume_Ioc]
+  have hνB' (j : Fin k) : (volume.restrict (Set.Ioc (0 : ℝ) 1)).prod (exceedanceMeasure G hu)
+      (B j) ≠ ∞ := by
+    rw [hνB]
+    exact ENNReal.mul_ne_top ENNReal.ofReal_ne_top ((hC j).exceedanceMeasure_ne_top hu)
+  rw [hN'.measureReal_forall_apply_eq hBm hνB' hd]
+  -- the probability that the `i`-th point lies in `B j`
+  have hpre (n i : ℕ) (j : Fin k) : P.real ((fun ω ↦ (((i : ℝ) + 1) / n, As n (X i ω))) ⁻¹' B j) =
+      if ((i : ℝ) + 1) / n ∈ Set.Ioc (s j) (t j) then P.real {ω | As n (X 0 ω) ∈ C j} else 0 := by
+    rw [hBdef, Set.mk_preimage_prod, Set.preimage_const]
+    split_ifs
+    · rw [Set.univ_inter, measureReal_affine_mem_eq hX hF (As n) i (hC j).measurableSet]
+      rfl
+    · simp
+  have h := tendsto_measureReal_card_filter_range_eq (P := fun _ ↦ P)
+    (Z := fun n i ω ↦ (((i : ℝ) + 1) / n, As n (X i ω)))
+    (fun n i ↦ measurable_const.prodMk ((As n).measurable.comp (hX i)))
+    (fun n ↦ hind.comp (fun i y ↦ (((i : ℝ) + 1) / n, As n y))
+      fun i ↦ measurable_const.prodMk (As n).measurable) hBm hd
+    (r := fun j ↦ ((volume.restrict (Set.Ioc (0 : ℝ) 1)).prod (exceedanceMeasure G hu)
+      (B j)).toNNReal) (fun j ↦ ?_) (fun ε hε ↦ ?_) m
+  · convert h using 3 with n
+    · ext ω
+      refine forall_congr' fun j ↦ ?_
+      rw [show Set.Ioc (s j) (t j) ×ˢ C j = B j from rfl, sumDiracRange_apply_eq_card _ _ (hBm j),
+        Nat.cast_inj]
+      convert Iff.rfl
+    · simp [ENNReal.coe_toNNReal_eq_toReal]
+  · simp only [hpre, ← Finset.sum_filter, Finset.sum_const, nsmul_eq_mul,
+      ENNReal.coe_toNNReal_eq_toReal, hνB, ENNReal.toReal_mul,
+      ENNReal.toReal_ofReal (sub_nonneg.2 (hst j))]
+    have hrate := (hC j).tendsto_nat_mul_measureReal hX hF hlim hu 0
+    refine ((tendsto_card_filter_range_add_one_div_mem_Ioc (hs j) (hst j) (ht j)).mul
+      hrate).congr' ?_
+    filter_upwards [eventually_gt_atTop 0] with n hn
+    have hn' : (n : ℝ) ≠ 0 := Nat.cast_ne_zero.2 hn.ne'
+    field_simp
+  · have hzero (j : Fin k) : Tendsto (fun n : ℕ ↦ P.real {ω | As n (X 0 ω) ∈ C j}) atTop
+        (𝓝 0) := by
+      have := ((hC j).tendsto_nat_mul_measureReal hX hF hlim hu 0).div_atTop
+        tendsto_natCast_atTop_atTop
+      refine this.congr' ?_
+      filter_upwards [eventually_ne_atTop 0] with n hn
+      field_simp
+    have hev : ∀ᶠ n in atTop, ∀ j, P.real {ω | As n (X 0 ω) ∈ C j} ≤ ε := by
+      rw [eventually_all]
+      exact fun j ↦ (hzero j).eventually (eventually_le_nhds hε)
+    filter_upwards [hev] with n hn i _ j
+    rw [hpre]
+    split_ifs
+    · exact hn j
+    · exact hε.le
 
 end PointProcess
 
