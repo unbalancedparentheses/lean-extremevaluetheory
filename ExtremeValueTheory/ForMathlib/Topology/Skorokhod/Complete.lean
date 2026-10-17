@@ -15,12 +15,50 @@ public import Mathlib.Topology.UniformSpace.UniformApproximation
 /-!
 # Completeness of the Skorokhod space: Billingsley's metric `d°`
 
-PLACEHOLDER
+The Skorokhod `J₁` metric `d` on `D([0, 1], E)` is not complete. Following
+[Billingsley, *Convergence of Probability Measures*, §12][billingsley1999] we introduce an
+equivalent complete metric `d°`. For a time change `φ` (an order automorphism of `I = [0, 1]`)
+let
+`‖φ‖° = sup_{s < t} |log ((φ t - φ s) / (t - s))|`
+be its *log-slope norm*, with values in `ℝ≥0∞` (it is finite exactly when `φ` is bi-Lipschitz),
+and let
+`d°(x, y) = inf_φ max (‖φ‖°, sup_t edist (x t) (y (φ t)))`.
+
+The proof of completeness is Billingsley's: given a sequence with `d°(xₙ, xₙ₊₁) < 2⁻ⁿ` choose
+time changes `μₙ` realising these distances. The compositions `μₙ₊ₘ ∘ ⋯ ∘ μₙ` converge, as
+`m → ∞`, to time changes `λₙ` with `‖λₙ‖° ≤ 2¹⁻ⁿ` and `λₙ = λₙ₊₁ ∘ μₙ`, the functions
+`xₙ ∘ λₙ⁻¹` are uniformly Cauchy, and their uniform limit `y` is càdlàg with `d°(xₙ, y) → 0`.
+
+## Main definitions
+
+* `unitInterval.logSlopeNorm φ`: the log-slope norm `‖φ‖°` of a time change.
+* `billingsleyEDist x y`: Billingsley's distance `d°` between functions `I → E`.
+* `SkorokhodSpace.Billingsley E`: a type synonym for `D([0, 1], E)` carrying the metric `d°`.
+* `SkorokhodSpace.homeomorphBillingsley`: the identity `D([0, 1], E) ≃ₜ Billingsley E`.
+
+## Main statements
+
+* `billingsleyEDist_triangle`, `billingsleyEDist_comm`, `billingsleyEDist_self`, and
+  `SkorokhodSpace.Billingsley.instMetricSpace`: `d°` is a metric on `D([0, 1], E)`.
+* `skorokhodEDist_le_exp_billingsleyEDist_sub_one`: `d ≤ exp d° - 1` (Billingsley (12.16)).
+* `IsCadlag.exists_billingsleyEDist_lt`: at a càdlàg `x`, `d`-small implies `d°`-small
+  (Billingsley, Theorem 12.1). Hence `d` and `d°` are topologically equivalent
+  (`SkorokhodSpace.homeomorphBillingsley`).
+* `SkorokhodSpace.Billingsley.instCompleteSpace`: `(D, d°)` is complete when `E` is
+  (Billingsley, Theorem 12.2).
+* `SkorokhodSpace.instIsCompletelyMetrizableSpace`, `SkorokhodSpace.instPolishSpace`:
+  `D([0, 1], E)` with the `J₁` topology is completely metrizable, and Polish when `E` is moreover
+  separable.
+* `IsCadlag.of_tendstoUniformly`: a uniform limit of càdlàg functions is càdlàg.
+
+## References
+
+* [P. Billingsley, *Convergence of Probability Measures*][billingsley1999]
 -/
 
 @[expose] public section
 
-open Filter Set Topology Metric unitInterval
+open Filter Set Topology Metric unitInterval TopologicalSpace
 open scoped ENNReal
 
 namespace unitInterval
@@ -346,3 +384,315 @@ theorem IsCadlag.exists_billingsleyEDist_lt (hx : IsCadlag x) (hε : 0 < ε) :
     _ = ε₁ := ENNReal.add_halves ε₁
 
 end billingsleyEDist
+
+lemma billingsleyEDist_ne_top {E : Type*} [PseudoMetricSpace E] {x y : I → E}
+    (hx : Bornology.IsBounded (range x)) (hy : Bornology.IsBounded (range y)) :
+    billingsleyEDist x y ≠ ⊤ := by
+  obtain ⟨C, hC⟩ := Metric.isBounded_iff.1 (hx.union hy)
+  have hC0 : 0 ≤ C := dist_nonneg.trans (hC (Or.inl ⟨0, rfl⟩) (Or.inl ⟨0, rfl⟩))
+  exact ne_top_of_le_ne_top ENNReal.ofReal_ne_top ((billingsleyEDist_le_iSup_edist x y).trans
+    (iSup_le fun t ↦ (edist_le_ofReal hC0).2 (hC (Or.inl ⟨t, rfl⟩) (Or.inr ⟨t, rfl⟩))))
+
+/-! ### Uniform limits of càdlàg functions -/
+
+/-- A uniform limit of càdlàg functions with values in a complete space is càdlàg. -/
+theorem IsCadlag.of_tendstoUniformly {X : Type*} [TopologicalSpace X] [LinearOrder X]
+    [PseudoEMetricSpace E] [CompleteSpace E] {F : ℕ → X → E} {f : X → E}
+    (hF : ∀ n, IsCadlag (F n)) (h : TendstoUniformly F f atTop) : IsCadlag f where
+  isRightContinuous x := continuousWithinAt_Ioi_iff_Ici.2 <|
+    continuousWithinAt_of_locally_uniform_approx_of_continuousWithinAt self_mem_Ici
+      fun u hu ↦ by
+        obtain ⟨n, hn⟩ := (h u hu).exists
+        exact ⟨univ, univ_mem, F n, continuousWithinAt_Ioi_iff_Ici.1 ((hF n).isRightContinuous x),
+          fun y _ ↦ hn y⟩
+  tendsto_nhdsLT x := by
+    rcases eq_or_neBot (𝓝[<] x) with hb | hb
+    · exact ⟨f x, by rw [hb]; exact tendsto_bot⟩
+    refine cauchy_map_iff_exists_tendsto.1 (EMetric.cauchy_iff.2 ⟨(hb.map f).ne, fun ε hε ↦ ?_⟩)
+    set δ := ε / 2 / 2
+    have hδ : 0 < δ := ENNReal.half_pos (ENNReal.half_pos hε.ne').ne'
+    obtain ⟨n, hn⟩ := (EMetric.tendstoUniformly_iff.1 h δ hδ).exists
+    obtain ⟨l, hl⟩ := (hF n).tendsto_nhdsLT x
+    have key (c : X) (hc : c ∈ F n ⁻¹' Metric.eball l δ) : edist (f c) l < ε / 2 :=
+      calc edist (f c) l ≤ edist (f c) (F n c) + edist (F n c) l := edist_triangle _ _ _
+        _ < δ + δ := ENNReal.add_lt_add (hn c) hc
+        _ = ε / 2 := ENNReal.add_halves _
+    refine ⟨f '' (F n ⁻¹' Metric.eball l δ), image_mem_map (hl (Metric.eball_mem_nhds l hδ)), ?_⟩
+    rintro _ ⟨a, ha, rfl⟩ _ ⟨b, hb, rfl⟩
+    calc edist (f a) (f b) ≤ edist (f a) l + edist (f b) l := edist_triangle_right _ _ _
+      _ < ε / 2 + ε / 2 := ENNReal.add_lt_add (key a ha) (key b hb)
+      _ = ε := ENNReal.add_halves ε
+
+/-- Composing a càdlàg function with a time change gives a càdlàg function. -/
+theorem IsCadlag.comp_orderIso [TopologicalSpace E] {f : I → E} (hf : IsCadlag f)
+    (ψ : I ≃o I) : IsCadlag (f ∘ ψ) where
+  isRightContinuous t :=
+    (hf.isRightContinuous (ψ t)).comp ψ.continuous.continuousWithinAt
+      fun _ hs ↦ ψ.strictMono hs
+  tendsto_nhdsLT t := by
+    obtain ⟨l, hl⟩ := hf.tendsto_nhdsLT (ψ t)
+    exact ⟨l, hl.comp (tendsto_nhdsWithin_iff.2 ⟨(ψ.continuous.tendsto t).mono_left
+      nhdsWithin_le_nhds, eventually_nhdsWithin_of_forall fun _ hs ↦ ψ.strictMono hs⟩)⟩
+
+namespace unitInterval
+
+/-- A self-map of the unit interval fixing `0` and `1` whose increments are within a factor
+`exp (± r)` of the increments of the identity is a time change. -/
+lemma exists_orderIso_of_slope {f : I → I} {r : ℝ} (h0 : f 0 = 0) (h1 : f 1 = 1)
+    (h : ∀ s t : I, s ≤ t → Real.exp (-r) * ((t : ℝ) - s) ≤ (f t : ℝ) - f s ∧
+      (f t : ℝ) - f s ≤ Real.exp r * ((t : ℝ) - s)) :
+    ∃ φ : I ≃o I, ∀ t, φ t = f t := by
+  have hmono : StrictMono f := fun s t hst ↦ by
+    have h₁ := (h s t hst.le).1
+    have : 0 < (t : ℝ) - s := sub_pos.2 (Subtype.coe_lt_coe.2 hst)
+    have := mul_pos (Real.exp_pos (-r)) this
+    exact Subtype.coe_lt_coe.1 (by linarith)
+  have key (s t : I) (hst : s ≤ t) : dist (f s) (f t) ≤ Real.exp r * dist s t := by
+    have hst' : 0 ≤ (t : ℝ) - s := sub_nonneg.2 (Subtype.coe_le_coe.2 hst)
+    have hf' : 0 ≤ (f t : ℝ) - f s :=
+      (mul_nonneg (Real.exp_pos _).le hst').trans (h s t hst).1
+    rw [dist_comm, Subtype.dist_eq, Real.dist_eq, abs_of_nonneg hf', dist_comm, Subtype.dist_eq,
+      Real.dist_eq, abs_of_nonneg hst']
+    exact (h s t hst).2
+  have hcont : Continuous f := by
+    refine (LipschitzWith.of_dist_le_mul (K := ⟨Real.exp r, (Real.exp_pos r).le⟩)
+      fun s t ↦ ?_).continuous
+    rcases le_total s t with hst | hst
+    · exact key s t hst
+    · rw [dist_comm, dist_comm s]
+      exact key t s hst
+  have hsurj : Function.Surjective f := fun y ↦
+    intermediate_value_univ 0 1 hcont ⟨by rw [h0]; exact nonneg', by rw [h1]; exact le_one'⟩
+  exact ⟨StrictMono.orderIsoOfSurjective f hmono hsurj, fun t ↦ rfl⟩
+
+/-- The composition `μ (n + m - 1) ∘ ⋯ ∘ μ (n + 1) ∘ μ n` of `m` consecutive time changes. -/
+noncomputable def compSeq (μ : ℕ → I ≃o I) : ℕ → ℕ → I ≃o I
+  | _, 0 => OrderIso.refl I
+  | n, m + 1 => (μ n).trans (compSeq μ (n + 1) m)
+
+lemma compSeq_succ_apply (μ : ℕ → I ≃o I) (n m : ℕ) (t : I) :
+    compSeq μ n (m + 1) t = compSeq μ (n + 1) m (μ n t) := rfl
+
+lemma compSeq_succ_apply' (μ : ℕ → I ≃o I) (n m : ℕ) (t : I) :
+    compSeq μ n (m + 1) t = μ (n + m) (compSeq μ n m t) := by
+  induction m generalizing n t with
+  | zero => rfl
+  | succ m ih =>
+    rw [compSeq_succ_apply, ih (n + 1), compSeq_succ_apply, show n + 1 + m = n + (m + 1) by omega]
+
+lemma logSlopeNorm_compSeq_le {μ : ℕ → I ≃o I}
+    (hμ : ∀ n, logSlopeNorm (μ n) ≤ ENNReal.ofReal ((1 / 2 : ℝ) ^ n)) (n m : ℕ) :
+    logSlopeNorm (compSeq μ n m) ≤ ENNReal.ofReal (2 * (1 / 2 : ℝ) ^ n) := by
+  induction m generalizing n with
+  | zero => simp [compSeq]
+  | succ m ih =>
+    calc logSlopeNorm (compSeq μ n (m + 1))
+        ≤ logSlopeNorm (μ n) + logSlopeNorm (compSeq μ (n + 1) m) := logSlopeNorm_trans _ _
+      _ ≤ ENNReal.ofReal ((1 / 2 : ℝ) ^ n) + ENNReal.ofReal (2 * (1 / 2 : ℝ) ^ (n + 1)) :=
+          add_le_add (hμ n) (ih (n + 1))
+      _ = ENNReal.ofReal (2 * (1 / 2 : ℝ) ^ n) := by
+          rw [← ENNReal.ofReal_add (by positivity) (by positivity)]
+          congr 1
+          ring
+
+end unitInterval
+
+private lemma ofReal_half_pow (n : ℕ) : ENNReal.ofReal ((1 / 2 : ℝ) ^ n) = 1 / 2 ^ n := by
+  rw [ENNReal.ofReal_pow (by norm_num), one_div, ENNReal.ofReal_inv_of_pos (by norm_num),
+    ENNReal.ofReal_ofNat, one_div, ENNReal.inv_pow]
+
+private lemma tendsto_ofReal_two_mul_half_pow :
+    Tendsto (fun n : ℕ ↦ ENNReal.ofReal (2 * (1 / 2 : ℝ) ^ n)) atTop (𝓝 0) := by
+  rw [← ENNReal.ofReal_zero]
+  refine ENNReal.tendsto_ofReal ?_
+  simpa using (tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num : (0 : ℝ) ≤ 1 / 2)
+    (by norm_num)).const_mul 2
+
+private lemma exists_ofReal_exp_sub_one_lt {ε : ℝ≥0∞} (hε : 0 < ε) :
+    ∃ r > 0, ENNReal.ofReal (Real.exp r - 1) < ε := by
+  have hT : Tendsto (fun r ↦ ENNReal.ofReal (Real.exp r - 1)) (𝓝[>] 0) (𝓝 0) := by
+    have := (ENNReal.continuous_ofReal.comp
+      (by fun_prop : Continuous fun r : ℝ ↦ Real.exp r - 1)).tendsto 0
+    simp only [Function.comp_apply, Real.exp_zero, sub_self, ENNReal.ofReal_zero] at this
+    exact this.mono_left nhdsWithin_le_nhds
+  obtain ⟨r, hr, hr0⟩ := ((hT.eventually (gt_mem_nhds hε)).and self_mem_nhdsWithin).exists
+  exact ⟨r, hr0, hr⟩
+
+/-! ### The Skorokhod space with Billingsley's metric -/
+
+namespace SkorokhodSpace
+
+/-- The Skorokhod space `D([0, 1], E)` equipped with Billingsley's metric `d°`
+(`billingsleyEDist`) instead of the Skorokhod `J₁` metric. The two metrics induce the same
+topology (`SkorokhodSpace.homeomorphBillingsley`), and `d°` is complete when `E` is
+([Billingsley, Theorem 12.2][billingsley1999]). -/
+def Billingsley (E : Type*) [TopologicalSpace E] := SkorokhodSpace E
+
+section TopologicalSpace
+
+variable [TopologicalSpace E]
+
+/-- The identity map from the Skorokhod space to its copy with Billingsley's metric. -/
+def toBillingsley : SkorokhodSpace E ≃ Billingsley E := Equiv.refl _
+
+namespace Billingsley
+
+instance instFunLike : FunLike (Billingsley E) I E :=
+  inferInstanceAs (FunLike (SkorokhodSpace E) I E)
+
+@[simp]
+lemma coe_toBillingsley (x : SkorokhodSpace E) : ⇑(toBillingsley x) = x := rfl
+
+@[simp]
+lemma coe_toBillingsley_symm (x : Billingsley E) : ⇑(toBillingsley.symm x) = x := rfl
+
+lemma isCadlag (x : Billingsley E) : IsCadlag x := (toBillingsley.symm x).isCadlag
+
+end Billingsley
+
+end TopologicalSpace
+
+namespace Billingsley
+
+/-- Billingsley's pseudo extended metric `d°` on `D([0, 1], E)`. -/
+noncomputable instance instPseudoEMetricSpace [PseudoEMetricSpace E] :
+    PseudoEMetricSpace (Billingsley E) where
+  edist x y := billingsleyEDist x y
+  edist_self x := billingsleyEDist_self x
+  edist_comm x y := billingsleyEDist_comm x y
+  edist_triangle x y z := billingsleyEDist_triangle x y z
+
+lemma edist_def [PseudoEMetricSpace E] (x y : Billingsley E) :
+    edist x y = billingsleyEDist x y := rfl
+
+/-- Billingsley's extended metric `d°` on `D([0, 1], E)`. -/
+noncomputable instance instEMetricSpace [EMetricSpace E] : EMetricSpace (Billingsley E) where
+  eq_of_edist_eq_zero h := toBillingsley.symm.injective <|
+    eq_of_edist_eq_zero (α := SkorokhodSpace E)
+      (skorokhodEDist_eq_zero_of_billingsleyEDist_eq_zero h)
+
+/-- Billingsley's pseudometric `d°` on `D([0, 1], E)`. -/
+noncomputable instance instPseudoMetricSpace [PseudoMetricSpace E] :
+    PseudoMetricSpace (Billingsley E) :=
+  PseudoEMetricSpace.toPseudoMetricSpace fun x y ↦
+    billingsleyEDist_ne_top (toBillingsley.symm x).isBounded_range
+      (toBillingsley.symm y).isBounded_range
+
+/-- Billingsley's metric `d°` on `D([0, 1], E)`. -/
+noncomputable instance instMetricSpace [MetricSpace E] : MetricSpace (Billingsley E) where
+  eq_of_dist_eq_zero {x y} h := eq_of_edist_eq_zero <| by
+    rw [edist_dist, h, ENNReal.ofReal_zero]
+
+/-- **Billingsley, Theorem 12.2.** The Skorokhod space `D([0, 1], E)` is complete for
+Billingsley's metric `d°` when `E` is complete. -/
+instance instCompleteSpace [PseudoEMetricSpace E] [CompleteSpace E] :
+    CompleteSpace (Billingsley E) := by
+  refine EMetric.complete_of_convergent_controlled_sequences
+    (fun n ↦ ENNReal.ofReal ((1 / 2 : ℝ) ^ n)) (fun n ↦ ENNReal.ofReal_pos.2 (by positivity))
+    fun u hu ↦ ?_
+  have hu' (n : ℕ) : billingsleyEDist (u n) (u (n + 1)) < ENNReal.ofReal ((1 / 2 : ℝ) ^ n) :=
+    hu n n (n + 1) le_rfl (Nat.le_succ n)
+  choose μ hμ hμxy using fun n ↦ exists_timeChange_of_billingsleyEDist_lt (hu' n)
+  -- The compositions `μ (n + m - 1) ∘ ⋯ ∘ μ n` converge, as `m → ∞`, to a time change `λ n`.
+  have hP (n m : ℕ) := logSlopeNorm_compSeq_le (fun n ↦ (hμ n).le) n m
+  have hPb (n m : ℕ) (s t : I) (hst : s ≤ t) :=
+    (logSlopeNorm_le_ofReal_iff (by positivity)).1 (hP n m) s t hst
+  have hμd (k : ℕ) (t : I) : dist (μ k t) t ≤ 2 * (1 / 2 : ℝ) ^ k := by
+    refine (dist_apply_le_of_logSlopeNorm_le (by positivity) (hμ k).le t).trans ?_
+    have := Real.abs_exp_sub_one_le (x := (1 / 2 : ℝ) ^ k)
+      (by rw [abs_of_nonneg (by positivity)]; exact pow_le_one₀ (by norm_num) (by norm_num))
+    rw [abs_of_nonneg (by positivity : (0 : ℝ) ≤ (1 / 2) ^ k)] at this
+    exact (le_abs_self _).trans this
+  have hcauchy (n : ℕ) (t : I) : CauchySeq fun m ↦ compSeq μ n m t := by
+    refine cauchySeq_of_le_geometric_two (C := 4 * (1 / 2 : ℝ) ^ n) fun m ↦ ?_
+    rw [dist_comm, compSeq_succ_apply']
+    refine (hμd (n + m) _).trans (le_of_eq ?_)
+    rw [pow_add, one_div_pow (2 : ℝ) m]
+    ring
+  choose L hL using fun n t ↦ cauchySeq_tendsto_of_complete (hcauchy n t)
+  have hLrec (n : ℕ) (t : I) : L n t = L (n + 1) (μ n t) :=
+    tendsto_nhds_unique ((tendsto_add_atTop_iff_nat 1).2 (hL n t)) (hL (n + 1) (μ n t))
+  have hLb (n : ℕ) (s t : I) (hst : s ≤ t) :
+      Real.exp (-(2 * (1 / 2 : ℝ) ^ n)) * ((t : ℝ) - s) ≤ (L n t : ℝ) - L n s ∧
+        (L n t : ℝ) - L n s ≤ Real.exp (2 * (1 / 2 : ℝ) ^ n) * ((t : ℝ) - s) := by
+    have hc (v : I) : Tendsto (fun m ↦ (compSeq μ n m v : ℝ)) atTop (𝓝 (L n v : ℝ)) :=
+      (continuous_subtype_val.tendsto _).comp (hL n v)
+    have hd := (hc t).sub (hc s)
+    exact ⟨ge_of_tendsto hd (Eventually.of_forall fun m ↦ (hPb n m s t hst).1),
+      le_of_tendsto hd (Eventually.of_forall fun m ↦ (hPb n m s t hst).2)⟩
+  have hL0 (n : ℕ) : L n 0 = 0 := tendsto_nhds_unique (hL n 0)
+    (tendsto_const_nhds.congr fun m ↦ ((compSeq μ n m).map_bot).symm)
+  have hL1 (n : ℕ) : L n 1 = 1 := tendsto_nhds_unique (hL n 1)
+    (tendsto_const_nhds.congr fun m ↦ ((compSeq μ n m).map_top).symm)
+  choose lam hlam using fun n ↦ exists_orderIso_of_slope (hL0 n) (hL1 n) (hLb n)
+  have hlamn (n : ℕ) : logSlopeNorm (lam n) ≤ ENNReal.ofReal (2 * (1 / 2 : ℝ) ^ n) :=
+    (logSlopeNorm_le_ofReal_iff (by positivity)).2 fun s t hst ↦ by
+      rw [hlam, hlam]; exact hLb n s t hst
+  have hlamrec (n : ℕ) (t : I) : lam (n + 1) (μ n t) = lam n t := by
+    rw [hlam, hlam, hLrec n t]
+  -- The functions `u n ∘ (λ n)⁻¹` converge uniformly.
+  set yy : ℕ → I → E := fun n s ↦ u n ((lam n).symm s)
+  have hyy (n : ℕ) (s : I) : edist (yy n s) (yy (n + 1) s) ≤ 1 / 2 ^ n := by
+    have : (lam (n + 1)).symm s = μ n ((lam n).symm s) := by
+      rw [OrderIso.symm_apply_eq, hlamrec, OrderIso.apply_symm_apply]
+    simp only [yy]
+    rw [this, ← ofReal_half_pow]
+    exact (hμxy n _).le
+  choose Y hY using fun s ↦ cauchySeq_tendsto_of_complete
+    (cauchySeq_of_edist_le_geometric_two 1 ENNReal.one_ne_top (hyy · s))
+  have hYb (n : ℕ) (s : I) : edist (yy n s) (Y s) ≤ ENNReal.ofReal (2 * (1 / 2 : ℝ) ^ n) := by
+    refine (edist_le_of_edist_le_geometric_two_of_tendsto 1 (hyy · s) (hY s) n).trans_eq ?_
+    rw [ENNReal.ofReal_mul (by norm_num), ofReal_half_pow, ENNReal.ofReal_ofNat, mul_one,
+      mul_one_div]
+  have hunif : TendstoUniformly yy Y atTop :=
+    EMetric.tendstoUniformly_iff.2 fun ε hε ↦
+      (tendsto_ofReal_two_mul_half_pow.eventually (gt_mem_nhds hε)).mono fun n hn s ↦ by
+        rw [edist_comm]; exact (hYb n s).trans_lt hn
+  have hYc : IsCadlag Y :=
+    IsCadlag.of_tendstoUniformly (fun n ↦ (isCadlag (u n)).comp_orderIso (lam n).symm) hunif
+  refine ⟨toBillingsley ⟨Y, hYc⟩, EMetric.tendsto_nhds.2 fun ε hε ↦ ?_⟩
+  filter_upwards [tendsto_ofReal_two_mul_half_pow.eventually (gt_mem_nhds hε)] with n hn
+  rw [edist_def]
+  refine lt_of_le_of_lt (billingsleyEDist_le_of_forall (lam n) (hlamn n) fun t ↦ ?_) hn
+  have : u n t = yy n (lam n t) := by simp [yy]
+  rw [this]
+  exact hYb n _
+
+end Billingsley
+
+/-- **Billingsley, Theorem 12.1.** The identity map from the Skorokhod space with the `J₁`
+metric to the Skorokhod space with Billingsley's metric `d°` is a homeomorphism: the two metrics
+are topologically equivalent. -/
+noncomputable def homeomorphBillingsley [PseudoEMetricSpace E] :
+    SkorokhodSpace E ≃ₜ Billingsley E where
+  toEquiv := toBillingsley
+  continuous_toFun := EMetric.continuous_iff.2 fun x ε hε ↦ by
+    obtain ⟨δ, hδ, h⟩ := x.isCadlag.exists_billingsleyEDist_lt hε
+    refine ⟨δ, hδ, fun y hy ↦ ?_⟩
+    rw [Billingsley.edist_def, billingsleyEDist_comm]
+    exact h y (by rw [skorokhodEDist_comm]; exact hy)
+  continuous_invFun := EMetric.continuous_iff.2 fun x ε hε ↦ by
+    obtain ⟨r, hr, hrε⟩ := exists_ofReal_exp_sub_one_lt hε
+    exact ⟨ENNReal.ofReal r, ENNReal.ofReal_pos.2 hr,
+      fun y hy ↦ (skorokhodEDist_le_of_billingsleyEDist_lt hr.le hy).trans_lt hrε⟩
+
+@[simp]
+lemma coe_homeomorphBillingsley [PseudoEMetricSpace E] :
+    ⇑(homeomorphBillingsley : SkorokhodSpace E ≃ₜ Billingsley E) = toBillingsley := rfl
+
+/-- The Skorokhod space `D([0, 1], E)` with the `J₁` topology is completely metrizable when
+`E` is a complete (extended) metric space: Billingsley's metric `d°` is a compatible complete
+metric. -/
+instance instIsCompletelyMetrizableSpace [EMetricSpace E] [CompleteSpace E] :
+    IsCompletelyMetrizableSpace (SkorokhodSpace E) :=
+  homeomorphBillingsley.isClosedEmbedding.IsCompletelyMetrizableSpace
+
+/-- **Billingsley, Theorem 12.2.** The Skorokhod space `D([0, 1], E)` with the `J₁` topology is
+a Polish space when `E` is a complete separable (extended) metric space. -/
+instance instPolishSpace [EMetricSpace E] [CompleteSpace E] [SeparableSpace E] :
+    PolishSpace (SkorokhodSpace E) :=
+  inferInstance
+
+end SkorokhodSpace
+
+example : PolishSpace (SkorokhodSpace ℝ) := inferInstance

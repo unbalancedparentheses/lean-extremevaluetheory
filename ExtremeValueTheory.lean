@@ -100,6 +100,7 @@ import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.Metric
 import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.TimeChange
 import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.Measurable
 import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.Separable
+import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.Complete
 import ExtremeValueTheory.Statistics.ExtremeQuantileSecondOrder
 import ExtremeValueTheory.Statistics.ExtremeQuantileRhoZero
 import ExtremeValueTheory.HeavyTails.LinearProcess
