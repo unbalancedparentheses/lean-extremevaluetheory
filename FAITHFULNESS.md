@@ -11,8 +11,10 @@ converse (`PeaksOverThreshold/Converse.lean`), the asymmetric GCLT
 (`HeavyTails/RandomSums.lean`, `Ruin.lean`, `StretchedExponential.lean`), Karamata's converse
 and the Fréchet/Weibull von Mises conditions, the Pickands and moment estimators
 (`Statistics/Pickands.lean`, `Moment.lean`), extreme quantiles (`Statistics/ExtremeQuantile.lean`), upper order statistics and records
-(`Statistics/UpperOrderStatistics.lean`, `Records.lean`), and stationary sequences and the extremal index
-(`Dependence/`, `ForMathlib/Probability/Process/Stationary.lean`). No `sorry`/`axiom`/`admit` found in
+(`Statistics/UpperOrderStatistics.lean`, `Records.lean`), stationary sequences and the extremal index
+(`Dependence/`, `ForMathlib/Probability/Process/Stationary.lean`), and vague convergence and
+Poisson random measures (`ForMathlib/MeasureTheory/Measure/Vague.lean`,
+`ForMathlib/Probability/{PoissonRandomMeasure,BinomialPointProcess}.lean`). No `sorry`/`axiom`/`admit` found in
 `ExtremeValueTheory/`.
 
 References: [EKM] Embrechts–Klüppelberg–Mikosch, *Modelling Extremal Events*;
@@ -134,6 +136,9 @@ Processes*.
 | ‡ `tendsto_measureReal_partialMax_le_exp` | LLR Thm 3.4.1, EKM Thm 4.4.3 | stationary, `D`, `D'`, `n P(X₀>uₙ) → τ` ⇒ `P(M_n ≤ uₙ) → e^{−τ}` | Same. | FAITHFUL |
 | ‡ `HasExtremalIndex` (def) | LLR §3.7, EKM Def 8.1.1 | `θ ∈ [0,1]` with `P(M_n ≤ uₙ(τ)) → e^{−θτ}` whenever `n P(X₀>uₙ(τ)) → τ` | Quantifies over all such level sequences. When the marginal has atoms, no such sequence may exist for some `τ`, and the condition is then vacuous there (as in the textbook, which assumes such levels exist). Uniqueness of `θ` is not proved. | FAITHFUL |
 | ‡ `tendsto_measureReal_partialMax_le_pow`, `isExtremeValueDistr_pow` | LLR Thm 3.7.1, EKM Thm 8.1.2 | `F^n(aₙx+bₙ) → H(x)` and extremal index `θ > 0` ⇒ `P(M_n ≤ aₙx+bₙ) → H(x)^θ`, an EVD of the same type | Same; `θ > 0` is required, as in the textbook. Instantiated by `hasExtremalIndex_movingMax` (`θ = 1/2`) and the iid case. | FAITHFUL |
+| ‡ `Measure.TendstoVaguely` (def) | Resnick §3.4, Kallenberg §4.1 | `∫ f dμ_i → ∫ f dμ` for `f ∈ C_c` | Same, as a predicate (no topology on `Measure X`). Portmanteau lemmas assume regularity, which is automatic for locally finite measures on locally compact second-countable Hausdorff spaces. | FAITHFUL |
+| ‡ `IsPoissonRandomMeasure` (def), `exists_isPoissonRandomMeasure` | Resnick §3.3, Kallenberg Thm 3.6 | independent Poisson counts on disjoint sets, `N(A) ~ Po(ν(A))` | Measurable `N : Ω → Measure E` for Mathlib's σ-algebra on measures; the joint law of counts on any finite disjoint family of finite-`ν` sets is the product of Poissons. Existence for s-finite `ν` (covers σ-finite). | FAITHFUL |
+| ‡ `tendsto_laplace_sumDiracRange_of_tendstoVaguely` | Resnick Prop 3.21 | `n μₙ → ν` vaguely ⇒ binomial process `⇒ PRM(ν)` | Only convergence of Laplace functionals at `f ∈ C_c^+` is proved; convergence in law of random measures is not stated (no vague topology on `Measure E` yet). The Laplace functional of a general PRM is proved for simple `f` only. | DIFFERS (Laplace functionals only); correct |
 | `IsSubexponential` (def) | EKM Def 1.3.3 | `F` on `(0,∞)` with `F̄^{*2}(x)/F̄(x) → 2` | `μ(Iio 0) = 0`, `tail μ x > 0` for all `x` (the textbook `F(x) < 1`), and the limit `2`. Being a probability measure is a typeclass hypothesis on the theorems, not a field of the structure. | FAITHFUL |
 | `IsSubexponential.of_isRegularlyVarying` | EKM Cor 1.3.2 | `F̄ ∈ RV_{−α}`, `α ≥ 0` ⇒ subexponential | No sign hypothesis on `α`; it is automatically `α ≥ 0`. | FAITHFUL |
 | `tendsto_tail_sub_div` | EKM Lemma 1.3.5(a) | `F̄(x−y)/F̄(x) → 1` | Holds for every real `y`. | FAITHFUL |

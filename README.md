@@ -93,6 +93,11 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   (`tendsto_measureReal_partialMax_le_exp`), the extremal index `θ` (`HasExtremalIndex`), and
   `P(M_n ≤ aₙx + bₙ) → H(x)^θ` with `H^θ` of the same type. Iid sequences have `θ = 1`; the moving
   maximum `max(Z_t, Z_{t+1})` has `θ = 1/2`.
+- **Vague convergence and Poisson random measures** (`ForMathlib/`, Mathlib-only imports, intended
+  for upstreaming): vague convergence with its portmanteau properties, Poisson random measures with
+  existence for every s-finite intensity (`exists_isPoissonRandomMeasure`), Laplace functionals,
+  and convergence of Laplace functionals of binomial point processes to the Poisson one
+  (`tendsto_laplace_sumDiracRange_of_tendstoVaguely`).
 - **Uniform convergence theorem and Karamata's representation theorem** for measurable slowly
   and regularly varying functions (no monotonicity), with two-sided Potter bounds
   (`isSlowlyVarying_iff_exists_representation`, `potter_bounds_of_measurable`).

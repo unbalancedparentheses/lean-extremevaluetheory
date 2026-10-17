@@ -1,0 +1,104 @@
+\chapter{Vague convergence and Poisson random measures}
+\label{chap:point-processes}
+
+This chapter builds general infrastructure for the point-process approach to extremes, following
+Resnick, \emph{Extreme Values, Regular Variation, and Point Processes}, Springer (1987),
+Chapter~3 [Resnick], and Kallenberg, \emph{Random Measures, Theory and Applications}, Springer
+(2017) [Kallenberg]. It lives in \texttt{ForMathlib/} and depends only on Mathlib, so that it can
+be upstreamed.
+
+\section{Vague convergence}
+
+\begin{definition}[Vague convergence]
+  \label{def:vague}
+  \lean{MeasureTheory.Measure.TendstoVaguely}
+  \leanok
+  Measures $\mu_i$ on a topological space converge vaguely to $\mu$ if
+  $\int f \, \ud\mu_i \to \int f \, \ud\mu$ for every continuous, compactly supported
+  $f \colon X \to \bR$ [Resnick, \S3.4], [Kallenberg, \S4.1].
+\end{definition}
+
+\begin{theorem}[Basic properties of vague convergence]
+  \label{thm:vague-portmanteau}
+  \uses{def:vague}
+  \lean{MeasureTheory.Measure.ext_of_forall_integral_eq_of_hasCompactSupport, MeasureTheory.Measure.TendstoVaguely.unique,
+    MeasureTheory.Measure.TendstoVaguely.limsup_measure_le_of_isCompact,
+    MeasureTheory.Measure.TendstoVaguely.le_liminf_measure_of_isOpen,
+    MeasureTheory.Measure.TendstoVaguely.tendsto_measure_of_null_frontier,
+    MeasureTheory.FiniteMeasure.tendstoVaguely_of_tendsto, MeasureTheory.ProbabilityMeasure.tendstoVaguely_of_tendsto}
+  \leanok
+  For regular measures on a locally compact Hausdorff space: vague limits are unique;
+  $\limsup \mu_i(K) \le \mu(K)$ for compact $K$; $\mu(U) \le \liminf \mu_i(U)$ for open $U$; and
+  $\mu_i(B) \to \mu(B)$ when $\overline B$ is compact and $\mu(\partial B) = 0$. Weak convergence of
+  finite or probability measures implies vague convergence [Kallenberg, Lemma~4.1].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Approximate indicators of compact and open sets from above and below by continuous compactly
+  supported functions (Urysohn), and use regularity.
+\end{proof}
+
+\section{Poisson random measures}
+
+\begin{definition}[Poisson random measure]
+  \label{def:prm}
+  \lean{ProbabilityTheory.IsPoissonRandomMeasure, ProbabilityTheory.IsPoissonRandomMeasure.hasLaw,
+    ProbabilityTheory.IsPoissonRandomMeasure.iIndepFun}
+  \leanok
+  A measurable map $N \colon \Omega \to \mathcal M(E)$ is a Poisson random measure with intensity
+  $\nu$ if for disjoint measurable $A_1, \dots, A_n$ of finite $\nu$-measure the counts
+  $N(A_1), \dots, N(A_n)$ are independent and $N(A_i)$ is Poisson with mean $\nu(A_i)$
+  [Resnick, \S3.3], [Kallenberg, \S3.2].
+\end{definition}
+
+\begin{theorem}[Existence of Poisson random measures]
+  \label{thm:prm-exists}
+  \uses{def:prm}
+  \lean{ProbabilityTheory.sumDiracRange, ProbabilityTheory.poissonSampleMeasure, ProbabilityTheory.isPoissonRandomMeasure_sumDiracRange,
+    ProbabilityTheory.isPoissonRandomMeasure_sum_sumDiracRange, ProbabilityTheory.exists_isPoissonRandomMeasure}
+  \leanok
+  For a finite intensity $c\mu$ with $\mu$ a probability measure, $N = \sum_{k < K} \delta_{Z_k}$ with
+  $K \sim \mathrm{Poisson}(c)$ independent of iid $Z_k \sim \mu$ is a Poisson random measure. A
+  superposition of independent such measures is a Poisson random measure with the summed intensity,
+  so Poisson random measures exist for every s-finite (in particular every $\sigma$-finite)
+  intensity [Kallenberg, Theorem~3.6].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Conditionally on $K$, the counts are multinomial; the joint law is identified through
+  characteristic functions. For superpositions, independent Poisson counts add.
+\end{proof}
+
+\begin{theorem}[Laplace functional]
+  \label{thm:prm-laplace}
+  \uses{thm:prm-exists}
+  \lean{ProbabilityTheory.IsPoissonRandomMeasure.integral_exp_neg_sum, ProbabilityTheory.integral_exp_neg_integral_sumDiracRange}
+  \leanok
+  $\E \exp(-\int f \, \ud N) = \exp(-\int (1 - e^{-f}) \, \ud\nu)$ for simple $f \ge 0$ and every
+  Poisson random measure, and for every measurable $f \ge 0$ for the finite-intensity
+  construction [Resnick, Proposition~3.6].
+\end{theorem}
+\begin{proof}
+  \leanok
+  For simple $f$, independence and the Poisson Laplace transform. For the construction, condition on
+  $K$: $\E e^{-\int f \ud N} = \E (\int e^{-f} \ud\mu)^K$.
+\end{proof}
+
+\begin{theorem}[Binomial point processes converge to Poisson]
+  \label{thm:binomial-to-poisson}
+  \uses{thm:prm-laplace, thm:vague-portmanteau}
+  \lean{ProbabilityTheory.integral_exp_neg_integral_sumDiracRange_infinitePi,
+    ProbabilityTheory.tendsto_laplace_sumDiracRange_of_tendstoVaguely,
+    ProbabilityTheory.tendsto_laplace_sumDiracRange_poissonSampleMeasure}
+  \leanok
+  Let $N_n = \sum_{k<n} \delta_{Z_{n,k}}$ with $Z_{n,k}$ iid of law $\mu_n$. If $n \mu_n \to \nu$
+  vaguely, then for continuous compactly supported $f \ge 0$,
+  $\E \exp(-\int f \ud N_n) \to \exp(-\int (1 - e^{-f}) \ud\nu)$ [Resnick, Proposition~3.21].
+  Convergence in law of the random measures, which needs a topology on $\mathcal M(E)$, is not yet
+  formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  $\E e^{-\int f \ud N_n} = (1 - \int (1 - e^{-f}) \ud\mu_n)^n$, and $n \int (1 - e^{-f}) \ud\mu_n \to
+  \int (1 - e^{-f}) \ud\nu$ by vague convergence.
+\end{proof}
