@@ -15,7 +15,7 @@ quantile function. By de Haan's theorem ([dHF, Theorem 1.1.6]), `F ∈ MDA(H_γ)
 
   `(U(t x) - U(t)) / a(t) → (x ^ γ - 1) / γ`   (`log x` if `γ = 0`)
 
-for every `x > 0`. Here we prove the direction `F ∈ MDA(H_γ) ⇒ U ∈ ERV_γ`.
+for every `x > 0`. Both directions are proved here.
 
 ## Main results
 
@@ -24,10 +24,19 @@ for every `x > 0`. Here we prove the direction `F ∈ MDA(H_γ) ⇒ U ∈ ERV_γ
   of the domain of attraction condition** ([dHF, Theorem 1.1.6]): if `F ∈ MDA(H_γ)` then `U` is
   extended regularly varying with index `γ`, with auxiliary function `a(t) = β(U(t))`, where `β`
   is the scale function of the Pickands–Balkema–de Haan theorem.
+* `CumulativeDistributionFunction.isInMDAGEV_of_isExtendedRegularlyVarying_tailQuantile` and
+  `isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile`: the converse, hence the
+  equivalence `F ∈ MDA(H_γ) ⟺ U ∈ ERV_γ`.
 * `CumulativeDistributionFunction.isRegularlyVarying_tailQuantile_of_pos`: for `γ > 0`, `U` is
   regularly varying with index `γ` and `a(t) ~ γ U(t)`.
 * `CumulativeDistributionFunction.exists_isRegularlyVarying_tailQuantile_of_neg`: for `γ < 0`,
   `U(∞) = lim U` is finite and `U(∞) - U` is regularly varying with index `γ`.
+* `CumulativeDistributionFunction.exists_isExtendedRegularlyVarying_log_tailQuantile`: if
+  `U(∞) > 0`, `log U` is extended regularly varying with index `γ₋ = min γ 0` and auxiliary
+  function `a / U`, and `a / U → γ₊ = max γ 0` ([dHF, Lemma 3.5.1]).
+* `CumulativeDistributionFunction.tendsto_mul_one_sub_exp_log_tailQuantile`,
+  `exists_mul_one_sub_exp_log_tailQuantile_le`: the resulting tail asymptotics on the
+  logarithmic scale, with a Potter-type domination (used for the moment estimator).
 
 ## Proof
 
@@ -37,6 +46,14 @@ relative jumps at its quantiles (`tendsto_quantile_of_tendstoUniformlyOn_excessS
 `F̄ (U(s)) ~ 1/s`, so `Ḡ(z(t)) ≈ F̄(U(t x)) / F̄(U(t)) → 1/x` by uniformity, and therefore
 `z(t) → Λ_γ(1/x) = (x ^ γ - 1) / γ`. The case `x < 1` follows from the case `x > 1`
 (`IsExtendedRegularlyVarying.of_one_lt`).
+
+For the converse let `τ(u) = 1 / F̄(u)` and `β(u) = a(τ(u))`. Extended regular variation of `U`
+rules out an atom at `x_F`, so `τ(u) → ∞` as `u ↑ x_F`; moreover
+`U(τ(u)) ≤ u < U(τ(u) y)` for every `y > 1`, so `(u - U(τ(u))) / a(τ(u)) → 0`. Comparing
+`u + β(u) x` with `U(τ(u) y)` gives `F̄(u + β(u) x) / F̄(u) → Ḡ_{γ,1}(x)` for `x ≥ 0`
+(`tendsto_mul_one_sub_of_tendsto_div`); the convergence is uniform by monotonicity, and the
+converse of the Pickands–Balkema–de Haan theorem
+(`isInMDAGEV_of_tendstoUniformlyOn_excessSurvival`) concludes.
 
 ## References
 
@@ -439,5 +456,250 @@ theorem exists_mul_one_sub_exp_log_tailQuantile_le {ρ : ℝ} (hρ : ρ ≤ 0) {
     refine h2.trans (hratio _ (by positivity) ?_)
     rw [div_le_div_iff₀ (by linarith) (by linarith)]
     nlinarith
+
+/-! ### The converse: extended regular variation of `U` implies `F ∈ MDA(H_γ)` -/
+
+/-- **Tail asymptotics from the quantile form**: if `U` is extended regularly varying with index
+`γ` and auxiliary function `a`, `τ → ∞` along a filter and `(w - U(τ)) / a(τ) → x ≥ 0`, then
+`τ F̄(w) → Ḡ_{γ,1}(x)`. -/
+theorem tendsto_mul_one_sub_of_tendsto_div {γ : ℝ} {a : ℝ → ℝ}
+    (hU : IsExtendedRegularlyVarying F.tailQuantile γ a) {ι : Type*} {L : Filter ι}
+    {τ w : ι → ℝ} (hτ : Tendsto τ L atTop) {x : ℝ} (hx : 0 ≤ x)
+    (hw : Tendsto (fun i => (w i - F.tailQuantile (τ i)) / a (τ i)) L (𝓝 x)) :
+    Tendsto (fun i => τ i * (1 - F (w i))) L (𝓝 (gpdSurvival' γ 1 x)) := by
+  set U := F.tailQuantile with hU_def
+  set G := gpdSurvival' γ 1 x with hG_def
+  have hG0 : 0 ≤ G := gpdSurvival'_nonneg _ _ _
+  have hlim : ∀ v : ℝ, 0 < v → Tendsto (fun i => (U (v⁻¹ * τ i) - U (τ i)) / a (τ i)) L
+      (𝓝 (gpdSurvivalInv γ v)) := by
+    intro v hv
+    have := (hU.2 v⁻¹ (inv_pos.2 hv)).comp hτ
+    rwa [← gpdSurvivalInv_inv (inv_pos.2 hv), inv_inv] at this
+  have hev : ∀ v : ℝ, 0 < v → ∀ᶠ i in L, 0 < τ i ∧ 0 < a (τ i) ∧ 1 < v⁻¹ * τ i := by
+    intro v hv
+    have hs := tendsto_id.const_mul_atTop (inv_pos.2 hv)
+    filter_upwards [hτ.eventually (eventually_gt_atTop 0), hτ.eventually hU.1,
+      hτ.eventually (hs.eventually (eventually_gt_atTop 1))] with i h0 h1 h2
+    exact ⟨h0, h1, h2⟩
+  have hup : ∀ v : ℝ, 0 < v → gpdSurvivalInv γ v < x → ∀ᶠ i in L, τ i * (1 - F (w i)) ≤ v := by
+    intro v hv hvx
+    have hm : (gpdSurvivalInv γ v + x) / 2 ∈ Ioo (gpdSurvivalInv γ v) x :=
+      ⟨by linarith, by linarith⟩
+    filter_upwards [(hlim v hv).eventually (gt_mem_nhds hm.1),
+      hw.eventually (lt_mem_nhds hm.2), hev v hv] with i h1 h2 h3
+    obtain ⟨h0, ha, hy1⟩ := h3
+    rw [div_lt_iff₀ ha] at h1
+    rw [lt_div_iff₀ ha] at h2
+    have hlt : U (v⁻¹ * τ i) ≤ w i := by linarith
+    have h4 := (F.tailQuantile_spec hy1).1
+    have h5 : 1 - F (w i) ≤ 1 - F (U (v⁻¹ * τ i)) := sub_le_sub_left (F.mono' hlt) 1
+    calc τ i * (1 - F (w i)) ≤ τ i * (1 / (v⁻¹ * τ i)) :=
+          mul_le_mul_of_nonneg_left (h5.trans h4) h0.le
+      _ = v := by field_simp
+  have hlow : ∀ v : ℝ, 0 < v → x < gpdSurvivalInv γ v → ∀ᶠ i in L, v < τ i * (1 - F (w i)) := by
+    intro v hv hvx
+    have hm : (gpdSurvivalInv γ v + x) / 2 ∈ Ioo x (gpdSurvivalInv γ v) :=
+      ⟨by linarith, by linarith⟩
+    filter_upwards [(hlim v hv).eventually (lt_mem_nhds hm.2),
+      hw.eventually (gt_mem_nhds hm.1), hev v hv] with i h1 h2 h3
+    obtain ⟨h0, ha, hy1⟩ := h3
+    rw [lt_div_iff₀ ha] at h1
+    rw [div_lt_iff₀ ha] at h2
+    have hlt : w i < U (v⁻¹ * τ i) := by linarith
+    have h4 := (F.tailQuantile_spec hy1).2 _ hlt
+    calc v = τ i * (1 / (v⁻¹ * τ i)) := by field_simp
+      _ < τ i * (1 - F (w i)) := mul_lt_mul_of_pos_left h4 h0
+  rw [tendsto_order]
+  refine ⟨fun b hb => ?_, fun b hb => ?_⟩
+  · rcases lt_or_ge b 0 with hb0 | hb0
+    · filter_upwards [hτ.eventually (eventually_gt_atTop 0)] with i hi
+      have h1 := F.apply_le_one (w i)
+      exact hb0.trans_le (mul_nonneg hi.le (by linarith))
+    have hGpos : 0 < G := hb0.trans_lt hb
+    set v := (b + G) / 2 with hv
+    have hv0 : 0 < v := by rw [hv]; linarith
+    have hvG : v < G := by rw [hv]; linarith
+    have hbv : b < v := by rw [hv]; linarith
+    have hΛ : gpdSurvivalInv γ G = x := gpdSurvivalInv_gpdSurvival' hGpos
+    have := gpdSurvivalInv_lt_gpdSurvivalInv (ξ := γ) hv0 hvG
+    filter_upwards [hlow v hv0 (by rw [← hΛ]; exact this)] with i hi
+    exact hbv.trans hi
+  · rcases hG0.lt_or_eq with hGpos | hGzero
+    · set v := (G + b) / 2 with hv
+      have hv0 : 0 < v := by rw [hv]; linarith
+      have hGv : G < v := by rw [hv]; linarith
+      have hvb : v < b := by rw [hv]; linarith
+      have hΛ : gpdSurvivalInv γ G = x := gpdSurvivalInv_gpdSurvival' hGpos
+      have := gpdSurvivalInv_lt_gpdSurvivalInv (ξ := γ) hGpos hGv
+      filter_upwards [hup v hv0 (by rw [← hΛ]; exact this)] with i hi
+      exact hi.trans_lt hvb
+    · have hb0 : 0 < b := hGzero ▸ hb
+      set v := min (b / 2) (1 / 2) with hv
+      have hv0 : 0 < v := lt_min (half_pos hb0) (by norm_num)
+      have hvb : v < b := lt_of_le_of_lt (min_le_left _ _) (half_lt_self hb0)
+      have hx0 : x ≠ 0 := by
+        rintro rfl
+        rw [hG_def, gpdSurvival'_zero_right] at hGzero
+        exact one_ne_zero hGzero.symm
+      have hx : gpdSurvivalInv γ v < x := by
+        by_contra hcon
+        push Not at hcon
+        have h1 := gpdSurvival'_antitoneOn (ξ := γ) one_pos (mem_Ici.2 hx)
+          (mem_Ici.2 (hx.trans hcon)) hcon
+        rw [gpdSurvival'_gpdSurvivalInv hv0, ← hG_def, ← hGzero] at h1
+        linarith
+      filter_upwards [hup v hv0 hx] with i hi
+      exact hi.trans_lt hvb
+
+/-- If `U` is extended regularly varying, then `F` has no atom at its right endpoint:
+`F̄(u) → 0` as `u ↑ x_F`. -/
+theorem tendsto_one_sub_upperEndpointFilter_of_isExtendedRegularlyVarying {γ : ℝ}
+    {a : ℝ → ℝ} (hU : IsExtendedRegularlyVarying F.tailQuantile γ a) :
+    Tendsto (fun u => 1 - F u) F.upperEndpointFilter (𝓝 0) := by
+  rw [tendsto_order]
+  refine ⟨fun b hb => ?_, fun ε hε => ?_⟩
+  · filter_upwards [F.eventually_tail_pos_upperEndpointFilter] with u hu
+    exact hb.trans hu
+  suffices h : ∃ y, F y < 1 ∧ 1 - F y < ε by
+    obtain ⟨y, hy1, hy2⟩ := h
+    filter_upwards [F.eventually_gt_upperEndpointFilter hy1] with u hu
+    have := F.mono' hu.1.le
+    change F y ≤ F u at this
+    linarith
+  by_contra hcon
+  push Not at hcon
+  -- then `U(t) = U(2t)` for large `t`, contradicting `D_γ(2) ≠ 0`
+  have hset : ∀ t : ℝ, 1 / ε < t → {y | 1 - F y ≤ 1 / t} = {y | F y = 1} := by
+    intro t ht
+    have ht0 : 0 < t := lt_trans (by positivity) ht
+    have h1t : 1 / t < ε := by
+      rw [div_lt_iff₀ ht0]
+      rw [div_lt_iff₀ hε] at ht
+      linarith
+    ext y
+    simp only [mem_ofPred_eq]
+    constructor
+    · intro hy
+      by_contra hy1
+      have := hcon y (lt_of_le_of_ne (F.apply_le_one y) hy1)
+      linarith
+    · intro hy
+      rw [hy, sub_self]
+      positivity
+  have heq : ∀ᶠ t in atTop, F.tailQuantile (2 * t) - F.tailQuantile t = 0 := by
+    filter_upwards [eventually_gt_atTop (1 / ε), eventually_gt_atTop 0] with t ht ht0
+    simp only [tailQuantile]
+    rw [hset t ht, hset (2 * t) (by linarith), sub_self]
+  have h2 := hU.2 2 two_pos
+  have h0 : Tendsto (fun t => (F.tailQuantile (2 * t) - F.tailQuantile t) / a t) atTop (𝓝 0) := by
+    refine tendsto_const_nhds.congr' ?_
+    filter_upwards [heq] with t ht
+    rw [ht, zero_div]
+  have := tendsto_nhds_unique h2 h0
+  exact (extRVLimit_pos (γ := γ) one_lt_two).ne' this
+
+/-- **The quantile form of the domain of attraction condition, converse** ([dHF, Theorem
+1.1.6]): if the tail quantile function `U(t) = F^←(1 - 1/t)` is extended regularly varying with
+index `γ`, then `F ∈ MDA(H_γ)`. The scale `β(u) = a(1 / F̄(u))` makes the excess distribution
+converge to the generalized Pareto distribution, and the converse of the Pickands–Balkema–de Haan
+theorem applies. -/
+theorem isInMDAGEV_of_isExtendedRegularlyVarying_tailQuantile {γ : ℝ} {a : ℝ → ℝ}
+    (hU : IsExtendedRegularlyVarying F.tailQuantile γ a) : F.IsInMDAGEV γ := by
+  set U := F.tailQuantile with hU_def
+  have hF0 := F.tendsto_one_sub_upperEndpointFilter_of_isExtendedRegularlyVarying hU
+  set τ : ℝ → ℝ := fun u => 1 / (1 - F u) with hτ_def
+  have hτ : Tendsto τ F.upperEndpointFilter atTop := by
+    have h1 : Tendsto (fun u => 1 - F u) F.upperEndpointFilter (𝓝[>] 0) :=
+      tendsto_nhdsWithin_iff.2 ⟨hF0, F.eventually_tail_pos_upperEndpointFilter⟩
+    refine (tendsto_inv_nhdsGT_zero.comp h1).congr fun u => ?_
+    simp only [Function.comp_apply, hτ_def, one_div]
+  set β : ℝ → ℝ := fun u => a (τ u) with hβ_def
+  have hβ : ∀ᶠ u in F.upperEndpointFilter, 0 < β u := hτ.eventually hU.1
+  have hτF : ∀ᶠ u in F.upperEndpointFilter, τ u * (1 - F u) = 1 ∧ 1 < τ u := by
+    filter_upwards [F.eventually_tail_pos_upperEndpointFilter,
+      hτ.eventually (eventually_gt_atTop 1)] with u h1 h2
+    exact ⟨by simp only [hτ_def]; field_simp, h2⟩
+  -- `(u - U(τ(u))) / a(τ(u)) → 0`
+  have hshift : Tendsto (fun u => (u - U (τ u)) / a (τ u)) F.upperEndpointFilter (𝓝 0) := by
+    rw [tendsto_order]
+    refine ⟨fun b hb => ?_, fun ε hε => ?_⟩
+    · filter_upwards [hτF, hβ] with u h1 h2
+      refine hb.trans_le (div_nonneg ?_ h2.le)
+      rw [sub_nonneg]
+      by_contra hcon
+      have := (F.tailQuantile_spec h1.2).2 u (not_le.1 hcon)
+      have e : 1 / τ u = 1 - F u := by
+        rw [div_eq_iff (lt_trans one_pos h1.2).ne', mul_comm]; exact h1.1.symm
+      linarith
+    · -- choose `y > 1` with `D_γ(y) < ε`
+      have hc : Tendsto (gpdSurvivalInv γ) (𝓝[<] 1) (𝓝 0) := by
+        have := (continuousAt_gpdSurvivalInv (ξ := γ) one_pos).tendsto
+        rw [gpdSurvivalInv_one] at this
+        exact this.mono_left nhdsWithin_le_nhds
+      obtain ⟨v, hv1, hv2⟩ := ((hc.eventually (gt_mem_nhds hε)).and
+        (Ioo_mem_nhdsLT (show (1 / 2 : ℝ) < 1 by norm_num))).exists
+      have hv0 : 0 < v := by linarith [hv2.1]
+      have hlim := ((hU.2 v⁻¹ (inv_pos.2 hv0)).comp hτ)
+      rw [← gpdSurvivalInv_inv (inv_pos.2 hv0), inv_inv] at hlim
+      have hvi : 1 < v⁻¹ := (one_lt_inv₀ hv0).2 hv2.2
+      filter_upwards [hlim.eventually (gt_mem_nhds hv1), hτF, hβ] with u h1 h2 h3
+      simp only [Function.comp_apply] at h1
+      refine lt_of_le_of_lt ?_ h1
+      refine div_le_div_of_nonneg_right ?_ h3.le
+      have hu : u < U (v⁻¹ * τ u) := by
+        by_contra hcon
+        push Not at hcon
+        have h4 := (F.tailQuantile_spec (one_lt_mul_of_lt_of_le hvi h2.2.le)).1
+        have h5 : 1 - F u ≤ 1 - F (U (v⁻¹ * τ u)) := sub_le_sub_left (F.mono' hcon) 1
+        have h6 : 1 / (v⁻¹ * τ u) < 1 / τ u := by
+          have hτ0 : 0 < τ u := lt_trans one_pos h2.2
+          exact one_div_lt_one_div_of_lt hτ0 (lt_mul_of_one_lt_left hτ0 hvi)
+        have e : 1 / τ u = 1 - F u := by
+          rw [div_eq_iff (lt_trans one_pos h2.2).ne', mul_comm]; exact h2.1.symm
+        linarith
+      linarith
+  -- pointwise convergence of the excess distribution
+  have hpt : ∀ x ∈ Ici (0 : ℝ), Tendsto (fun u => excessSurvival (fun y ↦ 1 - F y) u (β u * x))
+      F.upperEndpointFilter (𝓝 (gpdSurvival' γ 1 x)) := by
+    intro x hx
+    have hw : Tendsto (fun u => (u + β u * x - U (τ u)) / a (τ u)) F.upperEndpointFilter
+        (𝓝 x) := by
+      have := hshift.add_const x
+      rw [zero_add] at this
+      refine this.congr' ?_
+      filter_upwards [hβ] with u hu
+      simp only [hβ_def] at hu ⊢
+      field_simp
+      ring
+    refine (F.tendsto_mul_one_sub_of_tendsto_div hU hτ (mem_Ici.1 hx) hw).congr' ?_
+    filter_upwards [hτF] with u hu
+    simp only [excessSurvival, hτ_def]
+    have h1 : 0 < 1 - F u := by
+      by_contra h
+      push Not at h
+      have := hu.1
+      have : τ u * (1 - F u) ≤ 0 := mul_nonpos_of_nonneg_of_nonpos (by linarith [hu.2]) h
+      linarith
+    field_simp
+  refine isInMDAGEV_of_tendstoUniformlyOn_excessSurvival hβ ?_
+  refine tendstoUniformlyOn_Ici_of_antitoneOn (c := 0) ?_ ?_ (gpdSurvival'_antitoneOn one_pos)
+    (gpdSurvival'_continuousOn one_pos) (gpdSurvival'_tendsto_atTop one_pos) hpt
+  · filter_upwards [hβ] with u hu
+    intro x hx y hy hxy
+    simp only [excessSurvival]
+    refine div_le_div_of_nonneg_right ?_ (by linarith [F.apply_le_one u])
+    have := F.mono' (show u + β u * x ≤ u + β u * y by nlinarith)
+    linarith
+  · refine Eventually.of_forall fun u x _ => ?_
+    simp only [excessSurvival]
+    exact div_nonneg (by linarith [F.apply_le_one (u + β u * x)]) (by linarith [F.apply_le_one u])
+
+/-- **The quantile form of the domain of attraction condition** ([dHF, Theorem 1.1.6]):
+`F ∈ MDA(H_γ)` if and only if the tail quantile function `U(t) = F^←(1 - 1/t)` is extended
+regularly varying with index `γ`. -/
+theorem isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile (γ : ℝ) :
+    F.IsInMDAGEV γ ↔ ∃ a : ℝ → ℝ, IsExtendedRegularlyVarying F.tailQuantile γ a :=
+  ⟨F.isExtendedRegularlyVarying_tailQuantile, fun ⟨_, ha⟩ =>
+    F.isInMDAGEV_of_isExtendedRegularlyVarying_tailQuantile ha⟩
 
 end CumulativeDistributionFunction

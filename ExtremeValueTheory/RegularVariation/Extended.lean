@@ -37,6 +37,13 @@ tail quantile function `U = F^←(1 - 1/·)` of a distribution in the domain of 
 * `IsExtendedRegularlyVarying.exists_tendsto_of_neg`, `.isRegularlyVarying_sub_of_neg`: for
   `γ < 0` and monotone `f`, `f(∞) = lim f` exists, `(f(∞) - f t) / a t → -1 / γ`, and
   `f(∞) - f` is regularly varying with index `γ` ([dHF, Lemma 1.2.9]).
+* `IsExtendedRegularlyVarying.tendsto_aux_div_zero_of_nonpos`: for `γ ≤ 0` and eventually
+  positive `f`, `a t / f t → 0` ([dHF, Lemma 1.2.9]).
+* `IsExtendedRegularlyVarying.exists_sub_le_of_nonpos`: a Potter-type bound
+  `f (y t) - f t ≤ C a(t) y ^ δ` for `γ ≤ 0` ([dHF, Theorem B.2.18]).
+* `IsExtendedRegularlyVarying.log`: if `f > 0` is eventually monotone and extended regularly
+  varying with index `γ`, then `log f` is extended regularly varying with index `min γ 0` and
+  auxiliary function `a / f` ([dHF, Lemma 3.5.1]).
 
 The monotonicity assumption (satisfied by tail quantile functions) replaces the measurability
 assumption of [dHF, Appendix B]; some regularity is needed, since `f t = t ^ γ + H (log t)` with
