@@ -376,4 +376,152 @@ theorem tendstoInMeasure_orderStat_div_tailQuantile {X : ℕ → Ω → ℝ}
 
 end Localization
 
+/-! ### The Weissman estimator of extreme quantiles -/
+
+section Weissman
+
+/-- The **Weissman estimator** of the tail quantile `x_p = F^←(1 - p)` based on the top `k + 1`
+order statistics: `x̂_p = X_{(k+1)} (k / (n p)) ^ γ̂`, with `γ̂ = H_{k,n}` the Hill estimator
+(Weissman 1978; [dHF, §4.3]; [EKM, §6.4.1]). -/
+noncomputable def weissman {n : ℕ} (x : Fin n → ℝ) (k : ℕ) (p : ℝ) : ℝ :=
+  orderStat x k * ((k : ℝ) / (n * p)) ^ hill x k
+
+variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+
+/-- **Ratio consistency of the Weissman estimator, reduction form** ([dHF, Theorem 4.3.1]).
+Let the iid `X_i` have survival function regularly varying with index `-α`, `α > 0`, let
+`k → ∞`, `k / n → 0`, and let `p_n > 0` with extrapolation factor `d_n = k / (n p_n)`. If
+
+* the estimation error of `γ̂ = H_{k,n}` is negligible on the extrapolation scale,
+  `(γ̂ - 1/α) log d_n → 0` in probability, and
+* the deterministic extrapolation (bias) condition `x_{p_n} / (x_{k/n} d_n ^ (1/α)) → 1` holds,
+
+then `x̂_{p_n} / x_{p_n} → 1` in probability. Both conditions are automatic when `d_n` stays
+bounded (`tendstoInMeasure_weissman_div`); for genuinely extreme quantiles (`n p_n → c < ∞`,
+`d_n → ∞`) the first follows from a rate `√k (γ̂ - 1/α) = O_P(1)` with `log d_n / √k → 0`
+(`tendstoInMeasure_weissman_div_of_isBoundedInProbability`), while the second is a second-order
+condition on the tail, holding e.g. for exact Pareto tails. -/
+theorem tendstoInMeasure_weissman_div_of_bias {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
+    (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {α : ℝ} (hα : 0 < α)
+    (hRV : IsRegularlyVarying (fun x => (P {ω | x < X 0 ω}).toReal) (-α)) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    {p : ℕ → ℝ} (hp0 : ∀ᶠ n in atTop, 0 < p n)
+    (hlog : TendstoInMeasure P (fun n ω => (hill (fun i : Fin n => X i ω) (k n) - 1 / α) *
+      Real.log ((k n : ℝ) / (n * p n))) atTop (fun _ => 0))
+    (hbias : Tendsto (fun n => tailQuantile P (X 0) (p n) /
+      (tailQuantile P (X 0) ((k n : ℝ) / n) * ((k n : ℝ) / (n * p n)) ^ (1 / α))) atTop
+      (𝓝 1)) :
+    TendstoInMeasure P (fun n ω => weissman (fun i : Fin n => X i ω) (k n) (p n) /
+      tailQuantile P (X 0) (p n)) atTop (fun _ => 1) := by
+  have hloc := tendstoInMeasure_orderStat_div_tailQuantile hX hindep hident hα hRV hk hkn
+  have hexp := tendstoInMeasure_comp hlog (φ := Real.exp) Real.continuous_exp.continuousAt
+  have hdet := tendstoInMeasure_const_of_tendsto (P := P) (hbias.inv₀ one_ne_zero)
+  have h := tendstoInMeasure_mul (tendstoInMeasure_mul hloc hexp) hdet
+  simp only [Real.exp_zero, mul_one, inv_one] at h
+  refine tendstoInMeasure_of_eventuallyEq h ?_
+  change IsRegularlyVarying (survival P (X 0)) (-α) at hRV
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hkpos : ∀ᶠ n in atTop, (0 : ℝ) < k n := hkR.eventually_gt_atTop 0
+  have hnpos : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < n :=
+    (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0
+  have hr0 : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < k n / n := by
+    filter_upwards [hkpos, hnpos] with n h1 h2; positivity
+  obtain ⟨hs, -⟩ := tendsto_tailQuantile (hX 0) hRV hr0 hkn
+  filter_upwards [hs.eventually_gt_atTop 0, hp0, hkpos, hnpos,
+    hbias.eventually (lt_mem_nhds zero_lt_one)] with n hsn hpn hkpos' hnpos' hq ω
+  set d := (k n : ℝ) / (n * p n) with hd_def
+  have hd : 0 < d := by positivity
+  have hdγ : 0 < d ^ (1 / α) := rpow_pos_of_pos hd _
+  have hqn : tailQuantile P (X 0) (p n) ≠ 0 := by
+    intro h0; rw [h0, zero_div] at hq; exact lt_irrefl _ hq
+  have e : Real.exp ((hill (fun i : Fin n => X i ω) (k n) - 1 / α) * Real.log d) =
+      d ^ hill (fun i : Fin n => X i ω) (k n) / d ^ (1 / α) := by
+    rw [← Real.rpow_sub hd, rpow_def_of_pos hd, mul_comm]
+  simp only [weissman]
+  rw [← hd_def, e]
+  field_simp
+
+/-- **Ratio consistency of the Weissman estimator at intermediate levels** ([dHF, §4.3];
+[EKM, §6.4.1]): under regular variation of the tail with index `-α`, `α > 0`, with `k → ∞`,
+`k / n → 0` and `p_n` comparable to `k / n` (the extrapolation factor `d_n = k / (n p_n)` stays
+in a compact subset `[a, b]` of `(0, ∞)`), `x̂_{p_n} / x_{p_n} → 1` in probability. -/
+theorem tendstoInMeasure_weissman_div {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
+    (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {α : ℝ} (hα : 0 < α)
+    (hRV : IsRegularlyVarying (fun x => (P {ω | x < X 0 ω}).toReal) (-α)) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    {p : ℕ → ℝ} (hp0 : ∀ᶠ n in atTop, 0 < p n) {a b : ℝ} (ha : 0 < a)
+    (hd : ∀ᶠ n in atTop, (k n : ℝ) / (n * p n) ∈ Icc a b) :
+    TendstoInMeasure P (fun n ω => weissman (fun i : Fin n => X i ω) (k n) (p n) /
+      tailQuantile P (X 0) (p n)) atTop (fun _ => 1) := by
+  have hhill := tendstoInMeasure_hill hX hindep hident hα hRV hk hkn
+  have hZ := tendstoInMeasure_comp hhill (φ := fun x => x - 1 / α)
+    (continuousAt_id.sub continuousAt_const)
+  simp only [sub_self] at hZ
+  have hlog0 := tendstoInMeasure_mul_zero_of_bounded hZ
+    (a := fun n => Real.log ((k n : ℝ) / (n * p n)))
+    (C := max |Real.log a| |Real.log b|) (hd.mono fun n hn =>
+      abs_le_max_abs_abs (Real.log_le_log ha hn.1)
+        (Real.log_le_log (ha.trans_le hn.1) hn.2))
+  have hlog : TendstoInMeasure P (fun n ω => (hill (fun i : Fin n => X i ω) (k n) - 1 / α) *
+      Real.log ((k n : ℝ) / (n * p n))) atTop (fun _ => 0) :=
+    tendstoInMeasure_of_eventuallyEq hlog0 (Eventually.of_forall fun n ω => mul_comm _ _)
+  change IsRegularlyVarying (survival P (X 0)) (-α) at hRV
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hkpos : ∀ᶠ n in atTop, (0 : ℝ) < k n := hkR.eventually_gt_atTop 0
+  have hnpos : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < n :=
+    (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0
+  have hr0 : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < k n / n := by
+    filter_upwards [hkpos, hnpos] with n h1 h2; positivity
+  have hd' : ∀ᶠ n in atTop, (k n : ℝ) / n / p n ∈ Icc a b := by
+    simpa only [div_div] using hd
+  -- `p_n ≤ (k/n) / a`, hence `p_n → 0`
+  have hp : Tendsto p atTop (𝓝 0) := by
+    have hu := hkn.div_const a
+    rw [zero_div] at hu
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hu
+      (hp0.mono fun n hn => hn.le) ?_
+    filter_upwards [hd', hp0] with n hn hpn
+    rw [le_div_iff₀ ha, mul_comm, ← le_div_iff₀ hpn]
+    exact hn.1
+  have hbias := tendsto_tailQuantile_div_tailQuantile (hX 0) hα hRV hp0 hp hr0 hkn ha hd'
+  simp only [div_div] at hbias
+  exact tendstoInMeasure_weissman_div_of_bias hX hindep hident hα hRV hk hkn hp0 hlog hbias
+
+/-- **Ratio consistency of the Weissman estimator for extreme quantiles, given a rate for the
+Hill estimator** ([dHF, Theorem 4.3.1]; Weissman 1978). If, besides regular variation of the
+tail and `k → ∞`, `k / n → 0`,
+
+* `√k (γ̂ - 1/α)` is bounded in probability (as follows from the asymptotic normality of the
+  Hill estimator),
+* the extrapolation factor satisfies `log d_n / √k → 0`, where `d_n = k / (n p_n)`, and
+* the extrapolation (bias) condition `x_{p_n} / (x_{k/n} d_n ^ (1/α)) → 1` holds,
+
+then `x̂_{p_n} / x_{p_n} → 1` in probability. This covers `n p_n → c ∈ [0, ∞)`, i.e. quantiles
+beyond the range of the sample. -/
+theorem tendstoInMeasure_weissman_div_of_isBoundedInProbability {X : ℕ → Ω → ℝ}
+    (hX : ∀ i, Measurable (X i)) (hindep : iIndepFun X P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {α : ℝ} (hα : 0 < α)
+    (hRV : IsRegularlyVarying (fun x => (P {ω | x < X 0 ω}).toReal) (-α)) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    {p : ℕ → ℝ} (hp0 : ∀ᶠ n in atTop, 0 < p n)
+    (hrate : IsBoundedInProbability P (fun n ω =>
+      Real.sqrt (k n) * (hill (fun i : Fin n => X i ω) (k n) - 1 / α)))
+    (hd : Tendsto (fun n => Real.log ((k n : ℝ) / (n * p n)) / Real.sqrt (k n)) atTop (𝓝 0))
+    (hbias : Tendsto (fun n => tailQuantile P (X 0) (p n) /
+      (tailQuantile P (X 0) ((k n : ℝ) / n) * ((k n : ℝ) / (n * p n)) ^ (1 / α))) atTop
+      (𝓝 1)) :
+    TendstoInMeasure P (fun n ω => weissman (fun i : Fin n => X i ω) (k n) (p n) /
+      tailQuantile P (X 0) (p n)) atTop (fun _ => 1) := by
+  have h0 := tendstoInMeasure_mul_zero_of_isBoundedInProbability hrate hd
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hlog : TendstoInMeasure P (fun n ω => (hill (fun i : Fin n => X i ω) (k n) - 1 / α) *
+      Real.log ((k n : ℝ) / (n * p n))) atTop (fun _ => 0) := by
+    refine tendstoInMeasure_of_eventuallyEq h0 ?_
+    filter_upwards [hkR.eventually_gt_atTop 0] with n hn ω
+    have : Real.sqrt (k n) ≠ 0 := (Real.sqrt_pos.2 hn).ne'
+    field_simp
+  exact tendstoInMeasure_weissman_div_of_bias hX hindep hident hα hRV hk hkn hp0 hlog hbias
+
+end Weissman
+
 end ExtremeValueTheory
