@@ -9,7 +9,23 @@ import ExtremeValueTheory.Dependence.TailProcess
 /-!
 # The tail process of the moving maximum
 
-PLACEHOLDER
+Let `(Z_t)_{t ∈ ℤ}` be iid Pareto(`α`) (nonnegative) and `X_t = max(Z_t, Z_{t+1})`. Given
+`|X_0| > x`, one of `Z_0`, `Z_1` is large (each with probability `1/2`) and all nearby innovations
+are of smaller order, so the extremal cluster is `(X_{-1}, X_0) ≈ (Z_0, Z_0)` or
+`(X_0, X_1) ≈ (Z_1, Z_1)`. The spectral tail process is `Θ_t = 1{t ∈ {-1, 0}}` or
+`Θ_t = 1{t ∈ {0, 1}}` with probability `1/2` each, and the candidate extremal index is `ϑ = 1/2`,
+the block extremal index computed directly in `hasExtremalIndex_movingMax`. This is a consistency
+check of the tail-process framework against the block framework.
+
+## Main results
+
+* `ExtremeValueTheory.hasSpectralTailProcess_movingMax`: the spectral tail process.
+* `ExtremeValueTheory.candidateExtremalIndex_movingMax`: `ϑ = 1/2`.
+* `ExtremeValueTheory.hasExtremalIndex_movingMax_candidateExtremalIndex`: the block extremal index
+  of `(X_n)_{n ∈ ℕ}` is `ϑ`.
+
+The innovations are assumed nonnegative pointwise (`hpos`), a harmless normalization of a Pareto
+sequence which avoids null-set bookkeeping.
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set BoundedContinuousFunction
@@ -105,7 +121,8 @@ theorem measureReal_lt_of_map_eq (hZ : ∀ t, Measurable (Z t))
     (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α) (hα : 0 < α) (t : ℤ) {x : ℝ} (hx : 1 ≤ x) :
     P.real {ω | x < Z t ω} = x ^ (-α) := by
   have : {ω | x < Z t ω} = Z t ⁻¹' Ioi x := rfl
-  rw [this, ← map_measureReal_apply (hZ t) measurableSet_Ioi, hlaw, paretoMeasure_one_real_Ioi hα hx]
+  rw [this, ← map_measureReal_apply (hZ t) measurableSet_Ioi, hlaw,
+    paretoMeasure_one_real_Ioi hα hx]
 
 omit [IsProbabilityMeasure P] in
 theorem measureReal_lt_inter_lt_of_ne (hZ : ∀ t, Measurable (Z t)) (hind : iIndepFun Z P)
@@ -155,7 +172,8 @@ theorem isRegularlyVarying_movingMax :
   · have key : Tendsto (fun x : ℝ => c ^ (-α) * ((2 - c ^ (-α) * x ^ (-α)) / (2 - x ^ (-α))))
         atTop (𝓝 (c ^ (-α))) := by
       have := (((tendsto_const_nhds (x := (2 : ℝ))).sub (hy.const_mul (c ^ (-α)))).div
-        ((tendsto_const_nhds (x := (2 : ℝ))).sub hy) (by norm_num : (2 : ℝ) - 0 ≠ 0)).const_mul (c ^ (-α))
+        ((tendsto_const_nhds (x := (2 : ℝ))).sub hy)
+        (by norm_num : (2 : ℝ) - 0 ≠ 0)).const_mul (c ^ (-α))
       simpa using this
     refine key.congr' ?_
     filter_upwards [eventually_ge_atTop 1, eventually_ge_atTop (1 / c)] with x hx hxc

@@ -9,7 +9,54 @@ import ExtremeValueTheory.Dependence.ExtremalIndex
 /-!
 # Anticlustering and the extremal index
 
-PLACEHOLDER
+We link the candidate extremal index `ϑ = E[sup_{k ≥ 0} |Θ_k|^α - sup_{k ≥ 1} |Θ_k|^α]` of a
+stationary regularly varying series ([KS20, §7.5], [Planinić–Soulier 2018]) with the block
+extremal index `θ` of `Dependence/ExtremalIndex.lean`, following [BS09, §4] and [KS20, §6.1, §7.5].
+
+Throughout, `|X|` is used: `M_r = max_{0 ≤ t < r} |X_t|`. For `X ≥ 0` this is the usual maximum.
+
+## Main definitions
+
+* `AntiClusteringAt P X u r`: anticlustering along a level sequence `uₙ` with block lengths `rₙ`,
+  `lim_m limsup_n P(max_{m ≤ |t| ≤ rₙ} |X_t| > uₙ | |X_0| > uₙ) = 0`, in `ε`–`m` form.
+* `ForwardAntiClusteringAt P X u r`: its forward half (`m ≤ t ≤ rₙ`); all results use only this.
+* `AntiClustering P X a r`: the condition `AC(rₙ)` of [BS09, (4.1)], [KS20, Definition 6.1.3]
+  (`AntiClusteringAt` at every level `aₙ x`, `x > 0`).
+* `ConditionA X P u r`: the block condition `P(M n ≤ uₙ) - P(M rₙ ≤ uₙ) ^ ⌊n / rₙ⌋ → 0`.
+
+## Main results, with the hypotheses each one uses
+
+* `HasSpectralTailProcess.tendsto_cond_forall_le`, `HasSpectralTailProcess.tendsto_cond_exists_lt`:
+  conditional window probabilities converge to those of the tail process `Y = R Θ`
+  (spectral tail process only).
+* `HasSpectralTailProcess.tendsto_zero_of_forwardAntiClusteringAt`: forward anticlustering at a
+  single level sequence `uₙ → ∞` with `rₙ → ∞` implies `Θ_t → 0` a.s. (no stationarity).
+* `HasSpectralTailProcess.candidateExtremalIndex_pos_of_antiClustering`: `AC(rₙ)` with
+  `n P(|X_0| > aₙ) → 1`, `rₙ → ∞` gives `Θ_t → 0` and `ϑ > 0` (stationarity for `ϑ > 0` only).
+* `HasShiftInvariantWindows.measureReal_exists_lt_eq_sum`: the first-exceedance decomposition
+  `P(M_r > x) = ∑_{k < r} P(|X_0| > x, max_{0 < t ≤ k} |X_t| ≤ x)` (stationarity only).
+* `HasSpectralTailProcess.tendsto_blockRatio`: `P(M_{rₙ} > uₙ) / (rₙ P(|X_0| > uₙ)) → ϑ` under
+  stationarity, `uₙ → ∞`, `rₙ → ∞` and forward anticlustering at `uₙ` (no `rₙ / n → 0`, no mixing).
+* `HasSpectralTailProcess.tendsto_partialMax_abs`: adding `n P(|X_0| > uₙ) → τ`, `rₙ / n → 0`
+  and `A(uₙ)`: `P(M n ≤ uₙ) → exp (-ϑ τ)`.
+* `HasSpectralTailProcess.hasExtremalIndex_abs`,
+  `HasSpectralTailProcess.hasExtremalIndex_of_nonneg`: the extremal index exists and equals `ϑ` ([BS09, §4], [KS20, §7.5]).
+* `HasSpectralTailProcess.tendsto_partialMax_abs_of_antiClustering`: the same in the normalization
+  `uₙ = aₙ x`: `P(M n ≤ aₙ x) → exp (-ϑ x^(-α))`.
+* `HasSpectralTailProcess.le_candidateExtremalIndex_of_tendsto_blockRatio`: without
+  anticlustering, every limit of the cluster ratio is `≤ ϑ`.
+* `HasSpectralTailProcess.le_candidateExtremalIndex`: `θ ≤ ϑ` without anticlustering, assuming
+  `A(uₙ)` along one level sequence with `n P(|X_0| > uₙ) → τ > 0`, `rₙ → ∞`, `rₙ / n → 0`.
+
+## Remarks on the literature
+
+* Only the forward half of anticlustering, at a single level sequence, is used anywhere. For
+  `Θ_t → 0` the passage from level `1` to all levels uses the independent Pareto radius of
+  `Y = R Θ`, so anticlustering at other levels `aₙ x` is not needed.
+* The hypotheses of [KS20, Lemma 7.5.4] (`θ ≤ ϑ`) could not be checked against the text. The
+  version proved here assumes the block condition `A(uₙ)` along one level sequence and no
+  anticlustering; it is an upper bound for every limit of the cluster ratio, the lower bound being
+  where anticlustering enters.
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set BoundedContinuousFunction
@@ -229,7 +276,7 @@ theorem HasSpectralTailProcess.tendsto_atTop_of_tendsto_mul (h : HasSpectralTail
   exact absurd (measureReal_mono (μ := P) fun ω (hω : C < |X 0 ω|) => hcon.trans hω)
     (not_le.2 hn)
 
-/-- **Anticlustering implies `Θ_t → 0`** ([BS09, Proposition 4.2], [KS20, Lemma 6.1.?]).
+/-- **Anticlustering implies `Θ_t → 0`** ([BS09, Proposition 4.2], [KS20, §6.1]).
 Let `(X_t)` have spectral tail process `(Θ_t)` with index `α > 0`, let `uₙ → ∞` and `rₙ → ∞`, and
 assume the forward anticlustering bound `ForwardAntiClusteringAt P X u r`. Then
 `Θ_t → 0` almost surely as `t → +∞`.
