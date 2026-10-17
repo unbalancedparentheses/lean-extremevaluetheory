@@ -60,13 +60,14 @@ so this is the part of the cluster that "escapes to infinity" as `n → ∞` and
 * `η = 0` is weaker than (forward) anticlustering in two ways: only the *first* return after a
   quiet period `(0, m]` counts, so a cluster that the tail process sees at finite lags may keep
   returning (for a mixture of a constant sequence and an iid sequence, anticlustering fails while
-  `η = 0` and the cluster ratio tends to `ϑ`; this example is not formalized here); and returns are
+  `η = 0` and the cluster ratio tends to `ϑ`, but there is no extremal index:
+  `Dependence/MixtureProcess.lean`); and returns are
   weighted by `1 - Tₙ / rₙ`, so returns near the end of the block are discounted.
 * The escape mass depends on `uₙ` and `rₙ` only through `ϑ - θ` once `A(uₙ)` holds
   (`HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex`). Without `A(uₙ)` it can depend on
   the block length: for the echo process with echo lag `L(Z)`, blocks much shorter than the echo
-  lag of an exceedance give cluster ratio `ϑ = 1`, longer ones `1/2` (only the second regime is
-  formalized).
+  lag of an exceedance give cluster ratio `ϑ = 1`, longer ones `1/2`, with a continuous
+  transition at block lengths `≍ log n` (`Dependence/EchoPhaseTransition.lean`).
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set
