@@ -19,9 +19,10 @@ endpoint of `F` and there is a positive function `f` with
 the Gumbel domain of attraction, with normalizing constants `b n = F^← (1 - 1 / n)`
 (here `sInf {y | 1 - F y ≤ 1 / n}`) and `a n = f (b n)`. Both the case `x_F = +∞` and the case of
 a finite right endpoint are treated. We then derive the von Mises condition
-`(1 - F) F'' / (F') ^ 2 → -1`, which yields the auxiliary function `f = (1 - F) / F'`, and
-deduce that the standard exponential distribution and the Gumbel distribution itself are in the
-Gumbel domain of attraction.
+`(1 - F) F'' / (F') ^ 2 → -1` (as `t → ∞`, or as `t ↑ x_F` for a finite right endpoint at which
+`F` is continuous), which yields the auxiliary function `f = (1 - F) / F'`, and deduce that the
+standard exponential distribution, the Gumbel distribution itself and the finite-endpoint
+distribution `1 - exp (-x / (1 - x))` on `[0, 1)` are in the Gumbel domain of attraction.
 
 ## References
 
@@ -42,9 +43,13 @@ Gumbel domain of attraction.
   `CumulativeDistributionFunction.isInMDAGumbel_of_auxiliary_nhdsLT`: sufficiency via an
   auxiliary function, for infinite and finite right endpoint.
 * `CumulativeDistributionFunction.tendsto_auxiliary_of_vonMises`,
-  `CumulativeDistributionFunction.isInMDAGumbel_of_vonMises`: the von Mises condition.
+  `CumulativeDistributionFunction.isInMDAGumbel_of_vonMises`: the von Mises condition, `x_F = ∞`.
+* `CumulativeDistributionFunction.tendsto_auxiliary_of_vonMises_nhdsLT`,
+  `CumulativeDistributionFunction.isInMDAGumbel_of_vonMises_nhdsLT`: the von Mises condition for
+  a finite right endpoint `x_F`.
 * `CumulativeDistributionFunction.isInMDAGumbel_standardExponentialCDF`,
-  `CumulativeDistributionFunction.isInMDAGumbel_standardGumbelCDF`: examples.
+  `CumulativeDistributionFunction.isInMDAGumbel_standardGumbelCDF`,
+  `CumulativeDistributionFunction.isInMDAGumbel_expNegInvCDF`: examples.
 
 The converse (de Haan's theorem: every `F` in the Gumbel domain of attraction admits such an
 auxiliary function) is in `ExtremeValueTheory.DomainOfAttraction.GumbelNecessity`, which also
@@ -360,23 +365,25 @@ theorem isInMDAGumbel_of_auxiliary_nhdsLT (F : CumulativeDistributionFunction) {
 
 /-! ### The von Mises condition -/
 
-/-- A mean value theorem with an unordered pair of points. -/
-private lemma exists_eq_mul_sub_of_hasDerivAt {φ φ' : ℝ → ℝ} {T : ℝ}
-    (hd : ∀ s > T, HasDerivAt φ (φ' s) s) {a b : ℝ} (ha : T < a) (hb : T < b) :
-    ∃ ξ, T < ξ ∧ |ξ - a| ≤ |b - a| ∧ φ b - φ a = φ' ξ * (b - a) := by
-  have hcont : ∀ u v, T < u → ContinuousOn φ (Icc u v) := fun u v hu s hs ↦
-    (hd s (by linarith [hs.1])).continuousAt.continuousWithinAt
+/-- A mean value theorem with an unordered pair of points of an order-connected set. -/
+private lemma exists_eq_mul_sub_of_hasDerivAt {φ φ' : ℝ → ℝ} {S : Set ℝ} (hS : S.OrdConnected)
+    (hd : ∀ s ∈ S, HasDerivAt φ (φ' s) s) {a b : ℝ} (ha : a ∈ S) (hb : b ∈ S) :
+    ∃ ξ ∈ S, |ξ - a| ≤ |b - a| ∧ φ b - φ a = φ' ξ * (b - a) := by
+  have hmem : ∀ u v, u ∈ S → v ∈ S → ∀ s ∈ Icc u v, s ∈ S := fun u v hu hv s hs ↦
+    hS.out hu hv hs
+  have hcont : ∀ u v, u ∈ S → v ∈ S → ContinuousOn φ (Icc u v) := fun u v hu hv s hs ↦
+    (hd s (hmem u v hu hv s hs)).continuousAt.continuousWithinAt
   rcases lt_trichotomy a b with hab | rfl | hab
-  · obtain ⟨ξ, hξ, e⟩ := exists_hasDerivAt_eq_slope φ φ' hab (hcont a b ha)
-      fun s hs ↦ hd s (by linarith [hs.1])
-    refine ⟨ξ, by linarith [hξ.1], ?_, ?_⟩
+  · obtain ⟨ξ, hξ, e⟩ := exists_hasDerivAt_eq_slope φ φ' hab (hcont a b ha hb)
+      fun s hs ↦ hd s (hmem a b ha hb s (Ioo_subset_Icc_self hs))
+    refine ⟨ξ, hmem a b ha hb ξ (Ioo_subset_Icc_self hξ), ?_, ?_⟩
     · rw [abs_of_pos (by linarith [hξ.1] : 0 < ξ - a), abs_of_pos (by linarith : 0 < b - a)]
       linarith [hξ.2]
     · rw [e, div_mul_cancel₀ _ (sub_ne_zero.2 hab.ne')]
   · exact ⟨a, ha, by simp, by simp⟩
-  · obtain ⟨ξ, hξ, e⟩ := exists_hasDerivAt_eq_slope φ φ' hab (hcont b a hb)
-      fun s hs ↦ hd s (by linarith [hs.1])
-    refine ⟨ξ, by linarith [hξ.1], ?_, ?_⟩
+  · obtain ⟨ξ, hξ, e⟩ := exists_hasDerivAt_eq_slope φ φ' hab (hcont b a hb ha)
+      fun s hs ↦ hd s (hmem b a hb ha s (Ioo_subset_Icc_self hs))
+    refine ⟨ξ, hmem b a hb ha ξ (Ioo_subset_Icc_self hξ), ?_, ?_⟩
     · rw [abs_of_neg (by linarith [hξ.2] : ξ - a < 0), abs_of_neg (by linarith : b - a < 0)]
       linarith [hξ.1]
     · have : a - b ≠ 0 := sub_ne_zero.2 hab.ne'
@@ -384,13 +391,67 @@ private lemma exists_eq_mul_sub_of_hasDerivAt {φ φ' : ℝ → ℝ} {T : ℝ}
       field_simp
       ring
 
-/-- A Lipschitz bound from a bounded derivative. -/
-private lemma abs_sub_le_of_hasDerivAt {φ φ' : ℝ → ℝ} {T ε : ℝ}
-    (hd : ∀ s > T, HasDerivAt φ (φ' s) s) (hbd : ∀ s > T, |φ' s| ≤ ε) {a b : ℝ} (ha : T < a)
-    (hb : T < b) : |φ b - φ a| ≤ ε * |b - a| := by
-  obtain ⟨ξ, hξ, -, e⟩ := exists_eq_mul_sub_of_hasDerivAt hd ha hb
+/-- A Lipschitz bound from a bounded derivative on an order-connected set. -/
+private lemma abs_sub_le_of_hasDerivAt {φ φ' : ℝ → ℝ} {S : Set ℝ} {ε : ℝ} (hS : S.OrdConnected)
+    (hd : ∀ s ∈ S, HasDerivAt φ (φ' s) s) (hbd : ∀ s ∈ S, |φ' s| ≤ ε) {a b : ℝ} (ha : a ∈ S)
+    (hb : b ∈ S) : |φ b - φ a| ≤ ε * |b - a| := by
+  obtain ⟨ξ, hξ, -, e⟩ := exists_eq_mul_sub_of_hasDerivAt hS hd ha hb
   rw [e, abs_mul]
   exact mul_le_mul_of_nonneg_right (hbd ξ hξ) (abs_nonneg _)
+
+/-- The tolerance used in the von Mises argument: for `η > 0` there is `ε > 0` with
+`ε |x| ≤ 1 / 2` and `2 ε x ^ 2 < η`. -/
+private lemma exists_vonMises_tolerance (x : ℝ) {η : ℝ} (hη : 0 < η) :
+    ∃ ε > 0, ε * |x| ≤ 1 / 2 ∧ 2 * ε * x ^ 2 < η := by
+  set ε := min (1 / (2 * (|x| + 1))) (η / (2 * (x ^ 2 + 1))) with hε
+  have hεpos : 0 < ε := lt_min (by positivity) (by positivity)
+  refine ⟨ε, hεpos, ?_, ?_⟩
+  · have h1' : ε ≤ 1 / (2 * (|x| + 1)) := min_le_left _ _
+    have : 1 / (2 * (|x| + 1)) * |x| ≤ 1 / 2 := by
+      rw [div_mul_eq_mul_div, one_mul, div_le_div_iff₀ (by positivity) two_pos]
+      linarith [abs_nonneg x]
+    nlinarith [abs_nonneg x]
+  · have h1' : ε ≤ η / (2 * (x ^ 2 + 1)) := min_le_right _ _
+    have : 2 * (η / (2 * (x ^ 2 + 1))) * x ^ 2 < η := by
+      rw [show 2 * (η / (2 * (x ^ 2 + 1))) * x ^ 2 = η * (x ^ 2 / (x ^ 2 + 1)) by
+        field_simp]
+      have : x ^ 2 / (x ^ 2 + 1) < 1 := by
+        rw [div_lt_one (by positivity)]; linarith
+      nlinarith
+    nlinarith [sq_nonneg x]
+
+/-- The common core of the von Mises argument: on an order-connected set `S` where
+`(log g)' = -1 / f`, `f > 0` and `|f'| ≤ ε`, the increment `log g (t + x f t) - log g t` is
+within `η` of `-x` whenever both `t` and `t + x f t` lie in `S`. -/
+private lemma dist_log_sub_lt_of_vonMises {g f fd : ℝ → ℝ} {S : Set ℝ} (hS : S.OrdConnected)
+    (hφ : ∀ s ∈ S, HasDerivAt (fun t ↦ Real.log (g t)) (-1 / f s) s)
+    (hfd : ∀ s ∈ S, HasDerivAt f (fd s) s) (hfpos : ∀ s ∈ S, 0 < f s) {ε x η : ℝ}
+    (hεpos : 0 < ε) (hbd : ∀ s ∈ S, |fd s| ≤ ε) (hη : 0 < η) (hεx : ε * |x| ≤ 1 / 2)
+    (hεη : 2 * ε * x ^ 2 < η) {t : ℝ} (ht : t ∈ S) (htx : t + x * f t ∈ S) :
+    dist (Real.log (g (t + x * f t)) - Real.log (g t)) (-x) < η := by
+  have hft := hfpos t ht
+  obtain ⟨ξ, hξ, hξt, e⟩ := exists_eq_mul_sub_of_hasDerivAt hS hφ ht htx
+  rw [add_sub_cancel_left] at e hξt
+  rw [abs_mul, abs_of_pos hft] at hξt
+  have hfξ_close : |f ξ - f t| ≤ ε * |x| * f t := by
+    have := abs_sub_le_of_hasDerivAt hS hfd hbd ht hξ
+    calc |f ξ - f t| ≤ ε * |ξ - t| := this
+      _ ≤ ε * (|x| * f t) := mul_le_mul_of_nonneg_left hξt hεpos.le
+      _ = ε * |x| * f t := by ring
+  have hfξ : f t / 2 ≤ f ξ := by
+    have : ε * |x| * f t ≤ 1 / 2 * f t := mul_le_mul_of_nonneg_right hεx hft.le
+    linarith [neg_abs_le (f ξ - f t)]
+  have hfξpos : 0 < f ξ := by linarith
+  rw [Real.dist_eq, e, sub_neg_eq_add]
+  have key : -1 / f ξ * (x * f t) + x = x * (f ξ - f t) / f ξ := by
+    field_simp
+    ring
+  rw [key, abs_div, abs_mul, abs_of_pos hfξpos, div_lt_iff₀ hfξpos]
+  calc |x| * |f ξ - f t| ≤ |x| * (ε * |x| * f t) :=
+        mul_le_mul_of_nonneg_left hfξ_close (abs_nonneg x)
+    _ = ε * x ^ 2 * f t := by rw [← sq_abs x]; ring
+    _ < η * (f t / 2) := by nlinarith
+    _ ≤ η * f ξ := mul_le_mul_of_nonneg_left hfξ hη.le
 
 /-- **The von Mises condition** ([dHF, Theorem 1.1.8], [EKM, Theorem 3.3.27],
 [Resnick, Proposition 1.1]): if `F` is twice differentiable on `(z, ∞)` with `F' = F₁ > 0`,
@@ -407,7 +468,8 @@ theorem tendsto_auxiliary_of_vonMises (F : CumulativeDistributionFunction) {z : 
     intro x
     set y := max x (z + 1) with hy
     have hzy : z < y := lt_max_of_lt_right (by linarith)
-    obtain ⟨ξ, hξ, -, e⟩ := exists_eq_mul_sub_of_hasDerivAt h1 hzy (show z < y + 1 by linarith)
+    obtain ⟨ξ, hξ, -, e⟩ := exists_eq_mul_sub_of_hasDerivAt ordConnected_Ioi h1 hzy
+      (show z < y + 1 by linarith)
     rw [show y + 1 - y = 1 by ring, mul_one] at e
     have := hpos ξ hξ
     have := F.mono' (le_max_left x (z + 1))
@@ -442,32 +504,16 @@ theorem tendsto_auxiliary_of_vonMises (F : CumulativeDistributionFunction) {z : 
   have hD : Tendsto (fun t ↦ Real.log (g (t + x * f t)) - Real.log (g t)) atTop (𝓝 (-x)) := by
     rw [Metric.tendsto_nhds]
     intro η hη
-    set ε := min (1 / (2 * (|x| + 1))) (η / (2 * (x ^ 2 + 1))) with hε
-    have hεpos : 0 < ε := lt_min (by positivity) (by positivity)
-    have hεx : ε * |x| ≤ 1 / 2 := by
-      have h1' : ε ≤ 1 / (2 * (|x| + 1)) := min_le_left _ _
-      have : 1 / (2 * (|x| + 1)) * |x| ≤ 1 / 2 := by
-        rw [div_mul_eq_mul_div, one_mul, div_le_div_iff₀ (by positivity) two_pos]
-        linarith [abs_nonneg x]
-      nlinarith [abs_nonneg x]
-    have hεη : 2 * ε * x ^ 2 < η := by
-      have h1' : ε ≤ η / (2 * (x ^ 2 + 1)) := min_le_right _ _
-      have : 2 * (η / (2 * (x ^ 2 + 1))) * x ^ 2 < η := by
-        rw [show 2 * (η / (2 * (x ^ 2 + 1))) * x ^ 2 = η * (x ^ 2 / (x ^ 2 + 1)) by
-          field_simp]
-        have : x ^ 2 / (x ^ 2 + 1) < 1 := by
-          rw [div_lt_one (by positivity)]; linarith
-        nlinarith
-      nlinarith [sq_nonneg x]
+    obtain ⟨ε, hεpos, hεx, hεη⟩ := exists_vonMises_tolerance x hη
     obtain ⟨T, hT⟩ := eventually_atTop.1
       (hfd0.eventually (Icc_mem_nhds (neg_lt_zero.2 hεpos) hεpos))
     set T₀ := max T z with hT₀
     have hT₀z : ∀ s > T₀, z < s := fun s hs ↦ lt_of_le_of_lt (le_max_right _ _) hs
-    have hbd : ∀ s > T₀, |fd s| ≤ ε := fun s hs ↦
+    have hbd : ∀ s ∈ Ioi T₀, |fd s| ≤ ε := fun s hs ↦
       abs_le.2 (hT s (le_of_lt (lt_of_le_of_lt (le_max_left _ _) hs)))
-    have hd₀ : ∀ s > T₀, HasDerivAt f (fd s) s := fun s hs ↦ hfderiv s (hT₀z s hs)
+    have hd₀ : ∀ s ∈ Ioi T₀, HasDerivAt f (fd s) s := fun s hs ↦ hfderiv s (hT₀z s hs)
     have hlip : ∀ a b, T₀ < a → T₀ < b → |f b - f a| ≤ ε * |b - a| :=
-      fun a b ha hb ↦ abs_sub_le_of_hasDerivAt hd₀ hbd ha hb
+      fun a b ha hb ↦ abs_sub_le_of_hasDerivAt ordConnected_Ioi hd₀ hbd ha hb
     set T₁ := T₀ + 1 with hT₁
     have hfT₁ : 0 < f T₁ := hfpos T₁ (hT₀z T₁ (by linarith))
     filter_upwards [eventually_gt_atTop (T₁ + 2 * |x| * f T₁)] with t ht
@@ -484,29 +530,8 @@ theorem tendsto_auxiliary_of_vonMises (F : CumulativeDistributionFunction) {z : 
       have e2 : ε * |x| * (t - T₁) ≤ 1 / 2 * (t - T₁) :=
         mul_le_mul_of_nonneg_right hεx (by linarith)
       nlinarith
-    obtain ⟨ξ, hξ, hξt, e⟩ := exists_eq_mul_sub_of_hasDerivAt (fun s hs ↦ hφ s (hT₀z s hs))
-      (show T₀ < t by linarith) hTx
-    rw [add_sub_cancel_left] at e hξt
-    rw [abs_mul, abs_of_pos hft] at hξt
-    have hfξ_close : |f ξ - f t| ≤ ε * |x| * f t := by
-      have := hlip t ξ (by linarith) hξ
-      calc |f ξ - f t| ≤ ε * |ξ - t| := this
-        _ ≤ ε * (|x| * f t) := mul_le_mul_of_nonneg_left hξt hεpos.le
-        _ = ε * |x| * f t := by ring
-    have hfξ : f t / 2 ≤ f ξ := by
-      have : ε * |x| * f t ≤ 1 / 2 * f t := mul_le_mul_of_nonneg_right hεx hft.le
-      linarith [neg_abs_le (f ξ - f t)]
-    have hfξpos : 0 < f ξ := by linarith
-    rw [Real.dist_eq, e, sub_neg_eq_add]
-    have key : -1 / f ξ * (x * f t) + x = x * (f ξ - f t) / f ξ := by
-      field_simp
-      ring
-    rw [key, abs_div, abs_mul, abs_of_pos hfξpos, div_lt_iff₀ hfξpos]
-    calc |x| * |f ξ - f t| ≤ |x| * (ε * |x| * f t) :=
-          mul_le_mul_of_nonneg_left hfξ_close (abs_nonneg x)
-      _ = ε * x ^ 2 * f t := by rw [← sq_abs x]; ring
-      _ < η * (f t / 2) := by nlinarith
-      _ ≤ η * f ξ := mul_le_mul_of_nonneg_left hfξ hη.le
+    exact dist_log_sub_lt_of_vonMises ordConnected_Ioi (fun s hs ↦ hφ s (hT₀z s hs)) hd₀
+      (fun s hs ↦ hfpos s (hT₀z s hs)) hεpos hbd hη hεx hεη (show T₀ < t by linarith) hTx
   have := (Real.continuous_exp.tendsto _).comp hD
   refine this.congr fun t ↦ ?_
   simp only [Function.comp_apply]
@@ -524,6 +549,174 @@ theorem isInMDAGumbel_of_vonMises (F : CumulativeDistributionFunction) {z : ℝ}
   refine F.isInMDAGumbel_of_auxiliary_atTop hF (f := fun t ↦ (1 - F t) / F₁ t) ?_ h
   filter_upwards [eventually_gt_atTop z] with t ht
   exact div_pos (by linarith [hF t]) (hpos t ht)
+
+/-- **The von Mises condition, finite right endpoint** ([dHF, Theorem 1.1.8],
+[EKM, Theorem 3.3.27], [Resnick, Proposition 1.1]): let `z < x_F`, and suppose `F` is twice
+differentiable on `(z, x_F)` with `F' = F₁ > 0` and `F'' = F₂` there, `F (t) → 1` as `t ↑ x_F`
+(so `F` has no atom at `x_F`), and `(1 - F) F'' / (F') ^ 2 → -1` as `t ↑ x_F`. Then `x_F` is the
+right endpoint of `F` (`F < 1` on `(-∞, x_F)` and `F x_F = 1`) and `f = (1 - F) / F'` is an
+auxiliary function: `(1 - F (t + x * f t)) / (1 - F t) → exp (-x)` as `t ↑ x_F`, for every `x`.
+
+The key extra step compared with `x_F = ∞` is that `f (t) = o(x_F - t)`, which keeps
+`t + x * f t` to the left of `x_F`. (Without the continuity of `F` at `x_F` the statement fails:
+`1 - F (t) = exp (-t)` on `(0, 1)` with an atom at `1` satisfies the other hypotheses.) -/
+theorem tendsto_auxiliary_of_vonMises_nhdsLT (F : CumulativeDistributionFunction) {z xF : ℝ}
+    (hz : z < xF) {F₁ F₂ : ℝ → ℝ} (h1 : ∀ x ∈ Ioo z xF, HasDerivAt F (F₁ x) x)
+    (h2 : ∀ x ∈ Ioo z xF, HasDerivAt F₁ (F₂ x) x) (hpos : ∀ x ∈ Ioo z xF, 0 < F₁ x)
+    (hF1 : Tendsto F (𝓝[<] xF) (𝓝 1))
+    (hvm : Tendsto (fun t ↦ (1 - F t) * F₂ t / F₁ t ^ 2) (𝓝[<] xF) (𝓝 (-1))) :
+    (∀ x < xF, F x < 1) ∧ F xF = 1 ∧
+      ∀ x, Tendsto (fun t ↦ (1 - F (t + x * ((1 - F t) / F₁ t))) / (1 - F t)) (𝓝[<] xF)
+        (𝓝 (Real.exp (-x))) := by
+  have hF : ∀ x < xF, F x < 1 := by
+    intro x hx
+    set y := max x ((z + xF) / 2) with hy
+    have hzy : y ∈ Ioo z xF :=
+      ⟨lt_max_of_lt_right (by linarith), max_lt hx (by linarith)⟩
+    have hy' : (y + xF) / 2 ∈ Ioo z xF := ⟨by linarith [hzy.1], by linarith [hzy.2]⟩
+    obtain ⟨ξ, hξ, -, e⟩ := exists_eq_mul_sub_of_hasDerivAt ordConnected_Ioo h1 hzy hy'
+    have := mul_pos (hpos ξ hξ) (show 0 < (y + xF) / 2 - y by linarith [hzy.2])
+    have := F.mono' (le_max_left x ((z + xF) / 2))
+    have := F.apply_le_one ((y + xF) / 2)
+    linarith
+  have heq : F xF = 1 :=
+    le_antisymm (F.apply_le_one xF) (le_of_tendsto hF1
+      (eventually_nhdsWithin_of_forall (s := Iio xF) fun t ht ↦ F.mono' (le_of_lt ht)))
+  refine ⟨hF, heq, fun x ↦ ?_⟩
+  set S := Ioo z xF with hSdef
+  set g : ℝ → ℝ := fun t ↦ 1 - F t with hgdef
+  have gpos : ∀ t < xF, 0 < g t := fun t ht ↦ by simp only [hgdef]; linarith [hF t ht]
+  have hg0 : Tendsto g (𝓝[<] xF) (𝓝 0) := by
+    have := hF1.const_sub 1
+    rwa [sub_self] at this
+  set f : ℝ → ℝ := fun t ↦ g t / F₁ t with hfdef
+  set fd : ℝ → ℝ := fun t ↦ ((0 - F₁ t) * F₁ t - g t * F₂ t) / F₁ t ^ 2 with hfd
+  have hfderiv : ∀ s ∈ S, HasDerivAt f (fd s) s := fun s hs ↦
+    ((hasDerivAt_const s 1).sub (h1 s hs)).fun_div (h2 s hs) (hpos s hs).ne'
+  have hfd0 : Tendsto fd (𝓝[<] xF) (𝓝 0) := by
+    have := (tendsto_const_nhds (x := (-1 : ℝ))).sub hvm
+    rw [sub_neg_eq_add, neg_add_cancel] at this
+    refine this.congr' ?_
+    filter_upwards [Ioo_mem_nhdsLT hz] with s hs
+    have := (hpos s hs).ne'
+    simp only [hfd, hgdef]
+    field_simp
+    ring
+  have hφ : ∀ s ∈ S, HasDerivAt (fun t ↦ Real.log (g t)) (-1 / f s) s := by
+    intro s hs
+    have := ((hasDerivAt_const s (1 : ℝ)).sub (h1 s hs)).log (gpos s hs.2).ne'
+    convert this using 1
+    have := (hpos s hs).ne'
+    have := (gpos s hs.2).ne'
+    simp only [hfdef, hgdef, Pi.sub_apply]
+    field_simp
+    ring
+  have hfpos : ∀ s ∈ S, 0 < f s := fun s hs ↦ div_pos (gpos s hs.2) (hpos s hs)
+  -- Near `x_F`, `|f'| ≤ ε` and `f t ≤ ε (x_F - t)`.
+  have hloc : ∀ ε > 0, ∃ T₀ < xF, z ≤ T₀ ∧ (∀ s ∈ Ioo T₀ xF, |fd s| ≤ ε) ∧
+      ∀ s ∈ Ioo T₀ xF, f s ≤ ε * (xF - s) := by
+    intro ε hεpos
+    obtain ⟨T, hTx, hT⟩ := (nhdsLT_basis xF).eventually_iff.1
+      (hfd0.eventually (Icc_mem_nhds (neg_lt_zero.2 hεpos) hεpos))
+    set T₀ := max T z with hT₀
+    have hT₀x : T₀ < xF := max_lt hTx hz
+    have hsub : ∀ s ∈ Ioo T₀ xF, s ∈ S := fun s hs ↦
+      ⟨lt_of_le_of_lt (le_max_right _ _) hs.1, hs.2⟩
+    have hbd : ∀ s ∈ Ioo T₀ xF, |fd s| ≤ ε := fun s hs ↦
+      abs_le.2 (hT ⟨lt_of_le_of_lt (le_max_left _ _) hs.1, hs.2⟩)
+    refine ⟨T₀, hT₀x, le_max_right _ _, hbd, fun t ht ↦ ?_⟩
+    by_contra hcon
+    push Not at hcon
+    set δ := f t - ε * (xF - t) with hδ
+    have hδpos : 0 < δ := by linarith
+    -- `f ≥ δ` on `(t, x_F)`, hence `g` is bounded below there, contradicting `g → 0`.
+    have hfδ : ∀ s ∈ Ioo t xF, δ ≤ f s := by
+      intro s hs
+      have hs' : s ∈ Ioo T₀ xF := ⟨ht.1.trans hs.1, hs.2⟩
+      have := abs_sub_le_of_hasDerivAt ordConnected_Ioo (fun u hu ↦ hfderiv u (hsub u hu))
+        hbd ht hs'
+      rw [abs_of_pos (by linarith [hs.1] : 0 < s - t)] at this
+      have := neg_abs_le (f s - f t)
+      nlinarith [hs.2]
+    have hglow : ∀ s ∈ Ioo t xF, Real.log (g t) - (xF - t) / δ ≤ Real.log (g s) := by
+      intro s hs
+      have hcont : ContinuousOn (fun u ↦ Real.log (g u)) (Icc t s) := fun u hu ↦
+        (hφ u (hsub u ⟨lt_of_lt_of_le ht.1 hu.1, lt_of_le_of_lt hu.2 hs.2⟩)).continuousAt
+          |>.continuousWithinAt
+      obtain ⟨ξ, hξ, e⟩ := exists_hasDerivAt_eq_slope (fun u ↦ Real.log (g u))
+        (fun u ↦ -1 / f u) hs.1 hcont fun u hu ↦
+          hφ u (hsub u ⟨ht.1.trans hu.1, hu.2.trans hs.2⟩)
+      have hfξ : δ ≤ f ξ := hfδ ξ ⟨hξ.1, hξ.2.trans hs.2⟩
+      have hst : 0 < s - t := by linarith [hs.1]
+      rw [eq_div_iff hst.ne'] at e
+      have h1ξ : 1 / f ξ ≤ 1 / δ := one_div_le_one_div_of_le hδpos hfξ
+      have : 1 / f ξ * (s - t) ≤ 1 / δ * (xF - t) :=
+        mul_le_mul h1ξ (by linarith [hs.2]) hst.le (by positivity)
+      rw [div_eq_mul_one_div (xF - t), mul_comm (xF - t)]
+      have e' : Real.log (g s) - Real.log (g t) = -(1 / f ξ * (s - t)) := by
+        rw [← e]; ring
+      linarith
+    obtain ⟨s, hs, hgs⟩ := ((show ∀ᶠ s in 𝓝[<] xF, s ∈ Ioo t xF from Ioo_mem_nhdsLT ht.2).and
+      (hg0.eventually (gt_mem_nhds (Real.exp_pos (Real.log (g t) - (xF - t) / δ))))).exists
+    have := Real.exp_le_exp.2 (hglow s hs)
+    rw [Real.exp_log (gpos s hs.2)] at this
+    linarith
+  -- Eventually `t + x f t < x_F`.
+  have hin : ∀ᶠ t in 𝓝[<] xF, t + x * f t < xF := by
+    obtain ⟨T₀, hT₀x, hzT₀, -, hsmall⟩ := hloc (1 / (2 * (|x| + 1))) (by positivity)
+    filter_upwards [Ioo_mem_nhdsLT hT₀x] with t ht
+    have h1 := hsmall t ht
+    have hft : 0 < f t := hfpos t ⟨lt_of_le_of_lt hzT₀ ht.1, ht.2⟩
+    have : |x| * f t ≤ |x| * (1 / (2 * (|x| + 1)) * (xF - t)) :=
+      mul_le_mul_of_nonneg_left h1 (abs_nonneg x)
+    have : |x| * (1 / (2 * (|x| + 1))) ≤ 1 / 2 := by
+      rw [mul_one_div, div_le_div_iff₀ (by positivity) two_pos]
+      linarith [abs_nonneg x]
+    have := le_abs_self x
+    nlinarith [ht.2, abs_nonneg x]
+  have hD : Tendsto (fun t ↦ Real.log (g (t + x * f t)) - Real.log (g t)) (𝓝[<] xF)
+      (𝓝 (-x)) := by
+    rw [Metric.tendsto_nhds]
+    intro η hη
+    obtain ⟨ε, hεpos, hεx, hεη⟩ := exists_vonMises_tolerance x hη
+    obtain ⟨T₀, hT₀x, hzT₀, hbd, hsmall⟩ := hloc ε hεpos
+    have hsub : ∀ s ∈ Ioo T₀ xF, s ∈ S := fun s hs ↦ ⟨lt_of_le_of_lt hzT₀ hs.1, hs.2⟩
+    filter_upwards [Ioo_mem_nhdsLT (show (2 * T₀ + xF) / 3 < xF by linarith)] with t ht
+    have htS : t ∈ Ioo T₀ xF := ⟨by linarith [ht.1], ht.2⟩
+    have hft : 0 < f t := hfpos t (hsub t htS)
+    have e1 : |x| * f t ≤ |x| * (ε * (xF - t)) :=
+      mul_le_mul_of_nonneg_left (hsmall t htS) (abs_nonneg x)
+    have e2 : ε * |x| * (xF - t) ≤ 1 / 2 * (xF - t) :=
+      mul_le_mul_of_nonneg_right hεx (by linarith [ht.2])
+    have hxf : |x * f t| ≤ (xF - t) / 2 := by
+      rw [abs_mul, abs_of_pos hft]; nlinarith
+    have htx : t + x * f t ∈ Ioo T₀ xF := by
+      have := abs_le.1 hxf
+      constructor <;> linarith [ht.1, ht.2]
+    exact dist_log_sub_lt_of_vonMises ordConnected_Ioo (fun s hs ↦ hφ s (hsub s hs))
+      (fun s hs ↦ hfderiv s (hsub s hs)) (fun s hs ↦ hfpos s (hsub s hs)) hεpos hbd hη hεx
+      hεη htS htx
+  have := (Real.continuous_exp.tendsto _).comp hD
+  refine this.congr' ?_
+  filter_upwards [hin, self_mem_nhdsWithin] with t ht ht'
+  simp only [Function.comp_apply]
+  rw [Real.exp_sub, Real.exp_log (gpos _ ht), Real.exp_log (gpos _ ht')]
+
+/-- **The von Mises condition implies the Gumbel domain of attraction, finite right endpoint**
+([EKM, Theorem 3.3.27], [dHF, Theorem 1.1.8]): if `z < x_F`, `F` is twice differentiable on
+`(z, x_F)` with `F' > 0` there, `F (t) → 1` as `t ↑ x_F` and `(1 - F) F'' / (F') ^ 2 → -1` as
+`t ↑ x_F`, then `F` is in the Gumbel domain of attraction. -/
+theorem isInMDAGumbel_of_vonMises_nhdsLT (F : CumulativeDistributionFunction) {z xF : ℝ}
+    (hz : z < xF) {F₁ F₂ : ℝ → ℝ} (h1 : ∀ x ∈ Ioo z xF, HasDerivAt F (F₁ x) x)
+    (h2 : ∀ x ∈ Ioo z xF, HasDerivAt F₁ (F₂ x) x) (hpos : ∀ x ∈ Ioo z xF, 0 < F₁ x)
+    (hF1 : Tendsto F (𝓝[<] xF) (𝓝 1))
+    (hvm : Tendsto (fun t ↦ (1 - F t) * F₂ t / F₁ t ^ 2) (𝓝[<] xF) (𝓝 (-1))) :
+    F.IsInMDAGumbel := by
+  obtain ⟨hF, heq, h⟩ := F.tendsto_auxiliary_of_vonMises_nhdsLT hz h1 h2 hpos hF1 hvm
+  refine F.isInMDAGumbel_of_auxiliary_nhdsLT hF heq (f := fun t ↦ (1 - F t) / F₁ t) ?_ h
+  filter_upwards [Ioo_mem_nhdsLT hz] with t ht
+  exact div_pos (by linarith [hF t ht.2]) (hpos t ht)
+
 
 /-! ### Examples -/
 
@@ -599,5 +792,96 @@ theorem isInMDAGumbel_standardGumbelCDF : standardGumbelCDF.IsInMDAGumbel := by
     one_mul, neg_add, Real.exp_add, Real.exp_neg (Real.log _), Real.exp_log hn']
   congr 1
   field_simp
+
+private lemma exp_one_mul_expNegInvGlue_one_sub {x : ℝ} (hx : x < 1) :
+    Real.exp 1 * expNegInvGlue (1 - x) = Real.exp (1 - (1 - x)⁻¹) := by
+  simp only [expNegInvGlue, not_le.2 (by linarith : (0 : ℝ) < 1 - x), ↓reduceIte,
+    ← Real.exp_add]
+  congr 1
+
+/-- A distribution with finite right endpoint `x_F = 1` in the Gumbel domain of attraction:
+`F x = 1 - exp (-x / (1 - x)) = 1 - exp (1 - 1 / (1 - x))` for `0 ≤ x < 1`, `F x = 0` for
+`x < 0` and `F x = 1` for `x ≥ 1`. -/
+noncomputable def expNegInvCDF : CumulativeDistributionFunction where
+  toFun x := max 0 (1 - Real.exp 1 * expNegInvGlue (1 - x))
+  mono' := fun x y hxy ↦ max_le_max le_rfl (sub_le_sub_left (mul_le_mul_of_nonneg_left
+    (expNegInvGlue.monotone (by linarith)) (Real.exp_pos 1).le) 1)
+  right_continuous' := fun x ↦ (continuous_const.max (continuous_const.sub (continuous_const.mul
+    ((expNegInvGlue.contDiff (n := 0)).continuous.comp
+      (continuous_const.sub continuous_id))))).continuousWithinAt
+  tendsto_atTop := by
+    refine tendsto_const_nhds.congr' ?_
+    filter_upwards [eventually_ge_atTop 1] with x hx
+    rw [expNegInvGlue.zero_of_nonpos (by linarith), mul_zero, sub_zero, max_eq_right zero_le_one]
+  tendsto_atBot := by
+    refine tendsto_const_nhds.congr' ?_
+    filter_upwards [eventually_le_atBot 0] with x hx
+    refine (max_eq_left ?_).symm
+    rw [exp_one_mul_expNegInvGlue_one_sub (by linarith)]
+    have : (1 - x)⁻¹ ≤ 1 := inv_le_one_of_one_le₀ (by linarith)
+    have := Real.add_one_le_exp (1 - (1 - x)⁻¹)
+    linarith
+
+lemma expNegInvCDF_apply_of_mem_Ioo {x : ℝ} (hx : x ∈ Ioo 0 1) :
+    expNegInvCDF x = 1 - Real.exp (1 - (1 - x)⁻¹) := by
+  change max 0 (1 - Real.exp 1 * expNegInvGlue (1 - x)) = _
+  rw [exp_one_mul_expNegInvGlue_one_sub hx.2]
+  refine max_eq_right ?_
+  have : 1 < (1 - x)⁻¹ := one_lt_inv₀ (by linarith [hx.2]) |>.2 (by linarith [hx.1])
+  have := Real.exp_lt_one_iff.2 (show 1 - (1 - x)⁻¹ < 0 by linarith)
+  linarith
+
+/-- The distribution `F x = 1 - exp (-x / (1 - x))` on `[0, 1)` (right endpoint `x_F = 1`) is in
+the Gumbel domain of attraction, via the finite-endpoint von Mises condition:
+`(1 - F) F'' / (F') ^ 2 = 2 (1 - x) - 1 → -1` as `x ↑ 1`. -/
+theorem isInMDAGumbel_expNegInvCDF : expNegInvCDF.IsInMDAGumbel := by
+  set G : ℝ → ℝ := fun x ↦ Real.exp (1 - (1 - x)⁻¹) with hG
+  have hGd : ∀ x < 1, HasDerivAt G (-(G x / (1 - x) ^ 2)) x := by
+    intro x hx
+    have hx' : 1 - x ≠ 0 := by linarith
+    have := ((((hasDerivAt_id x).const_sub 1).inv hx').const_sub 1).exp
+    convert this using 1
+    · rfl
+    · show -(G x / (1 - x) ^ 2) = Real.exp (1 - (1 - x)⁻¹) * -(- -1 / (1 - x) ^ 2)
+      simp only [hG]
+      ring
+  have hE : ∀ x ∈ Ioo (0 : ℝ) 1, expNegInvCDF x = 1 - G x :=
+    fun x hx ↦ expNegInvCDF_apply_of_mem_Ioo hx
+  refine expNegInvCDF.isInMDAGumbel_of_vonMises_nhdsLT (z := 0) (xF := 1) one_pos
+    (F₁ := fun x ↦ G x / (1 - x) ^ 2) (F₂ := fun x ↦ G x * (2 * (1 - x) - 1) / (1 - x) ^ 4)
+    (fun x hx ↦ ?_) (fun x hx ↦ ?_) (fun x hx ↦ ?_) ?_ ?_
+  · have h : HasDerivAt (fun y ↦ 1 - G y) (G x / (1 - x) ^ 2) x := by
+      simpa using (hGd x hx.2).const_sub 1
+    refine h.congr_of_eventuallyEq ?_
+    filter_upwards [Ioo_mem_nhds hx.1 hx.2] with y hy
+    exact hE y hy
+  · have hx' : 1 - x ≠ 0 := by linarith [hx.2]
+    have := (hGd x hx.2).div (((hasDerivAt_id x).const_sub 1).pow 2) (pow_ne_zero 2 hx')
+    convert this using 1
+    · rfl
+    · simp only [id, Pi.pow_apply]
+      field_simp
+      ring
+  · have : 0 < 1 - x := by linarith [hx.2]
+    exact div_pos (Real.exp_pos _) (by positivity)
+  · have hc : Continuous (fun x ↦ max 0 (1 - Real.exp 1 * expNegInvGlue (1 - x))) :=
+      continuous_const.max (continuous_const.sub (continuous_const.mul
+        ((expNegInvGlue.contDiff (n := 0)).continuous.comp (continuous_const.sub continuous_id))))
+    have := (hc.tendsto 1).mono_left (nhdsWithin_le_nhds (s := Iio 1))
+    simp only [sub_self, expNegInvGlue.zero, mul_zero, sub_zero,
+      max_eq_right zero_le_one] at this
+    exact this
+  · have hc : Tendsto (fun t : ℝ ↦ 2 * (1 - t) - 1) (𝓝[<] 1) (𝓝 (2 * (1 - 1) - 1)) :=
+      ((continuous_const.mul (continuous_const.sub continuous_id)).sub
+        continuous_const).continuousAt.tendsto.mono_left nhdsWithin_le_nhds
+    rw [show (2 : ℝ) * (1 - 1) - 1 = -1 by norm_num] at hc
+    refine hc.congr' ?_
+    filter_upwards [Ioo_mem_nhdsLT one_pos] with t ht
+    rw [hE t ht]
+    have : 1 - t ≠ 0 := by linarith [ht.2]
+    have := (Real.exp_pos (1 - (1 - t)⁻¹)).ne'
+    simp only [hG]
+    field_simp
+    ring
 
 end CumulativeDistributionFunction
