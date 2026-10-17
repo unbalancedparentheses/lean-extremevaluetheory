@@ -53,7 +53,9 @@ jobs:
           restore-keys: MathlibDoc-
 
       - name: Build project API documentation
-        run: ~/.elan/bin/lake -R -Kenv=dev build ExtremeValueTheory:docs
+        run: |
+          ~/.elan/bin/lake -R -Kenv=dev update doc-gen4
+          ~/.elan/bin/lake -R -Kenv=dev build ExtremeValueTheory:docs
       
       - name: Check for `home_page` folder # this is meant to detect a Jekyll-based website
         id: check_home_page
