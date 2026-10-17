@@ -40,7 +40,8 @@ Throughout, `|X|` is used: `M_r = max_{0 ≤ t < r} |X_t|`. For `X ≥ 0` this i
 * `HasSpectralTailProcess.tendsto_partialMax_abs`: adding `n P(|X_0| > uₙ) → τ`, `rₙ / n → 0`
   and `A(uₙ)`: `P(M n ≤ uₙ) → exp (-ϑ τ)`.
 * `HasSpectralTailProcess.hasExtremalIndex_abs`,
-  `HasSpectralTailProcess.hasExtremalIndex_of_nonneg`: the extremal index exists and equals `ϑ` ([BS09, §4], [KS20, §7.5]).
+  `HasSpectralTailProcess.hasExtremalIndex_of_nonneg`: the extremal index exists and equals
+  `ϑ` ([BS09, §4], [KS20, §7.5]).
 * `HasSpectralTailProcess.tendsto_partialMax_abs_of_antiClustering`: the same in the normalization
   `uₙ = aₙ x`: `P(M n ≤ aₙ x) → exp (-ϑ x^(-α))`.
 * `HasSpectralTailProcess.le_candidateExtremalIndex_of_tendsto_blockRatio`: without
