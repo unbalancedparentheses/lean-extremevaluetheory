@@ -158,6 +158,12 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
 
 The library contains no `sorry`.
 
+General-purpose results (vague convergence, Poisson random measures and point-process convergence,
+stationarity and mixing, Portmanteau extensions, the trigamma value `ψ'(1) = π²/6`, tightness from
+convergence in distribution) live in `ExtremeValueTheory/ForMathlib/`, import only Mathlib, pass
+Mathlib's linters, and are intended for upstreaming; see
+[`ForMathlib/UPSTREAMING.md`](ExtremeValueTheory/ForMathlib/UPSTREAMING.md) for the PR plan.
+
 The development started from [ExtremeValueProject](https://github.com/kkytola/ExtremeValueProject);
 several of its statements were false as written and have been corrected. See
 [`TRIAGE.md`](TRIAGE.md) for the list of corrections.
