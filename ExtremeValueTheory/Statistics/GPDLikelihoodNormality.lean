@@ -482,7 +482,8 @@ theorem isBoundedInProbability_scoreSumNorm (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0
     rw [hS n, integral_const_mul]
     simp_rw [Finset.sum_apply]
     rw [integral_finsetSum _ fun i _ => (hL2 i).integrable one_le_two]
-    exact mul_eq_zero_of_right _ (Finset.sum_eq_zero fun i _ => integral_gpdScorePsi_comp hξ hξ0 hσ₀ (hX i))
+    exact mul_eq_zero_of_right _
+      (Finset.sum_eq_zero fun i _ => integral_gpdScorePsi_comp hξ hξ0 hσ₀ (hX i))
   have hvar : ∀ n, Var[scoreSumNorm ξ σ₀ X n; P] ≤ v := fun n => by
     rw [hS n, variance_const_mul, IndepFun.variance_sum (fun i _ => hL2 i)
       (fun i _ j _ hij => hind'.indepFun hij)]
@@ -513,5 +514,133 @@ theorem isBoundedInProbability_scoreSumNorm (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0
     _ ≤ e * (v / e + 1) := by rw [mul_add, mul_div_cancel₀ _ he.ne']; linarith
 
 end ScoreCLT
+
+/-! ### The largest observations: `max_{i<n} 1/(σ₀ + ξ Xᵢ) = o_P(√n)` -/
+
+section RunMax
+
+lemma runMax_le {f : ℕ → ℝ} {C : ℝ} (hC : 0 ≤ C) (hf : ∀ i, f i ≤ C) (n : ℕ) :
+    runMax f n ≤ C := by
+  induction n with
+  | zero => exact hC
+  | succ n ih => exact max_le ih (hf n)
+
+lemma aemeasurable_runMax {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
+    {f : ℕ → Ω → ℝ} (hf : ∀ i, AEMeasurable (f i) P) (n : ℕ) :
+    AEMeasurable (fun ω => runMax (fun i => f i ω) n) P := by
+  induction n with
+  | zero => exact aemeasurable_const
+  | succ n ih => exact ih.max (hf n)
+
+/-- `n (C/√n)^β → 0` for `β > 2`. -/
+lemma tendsto_natCast_mul_div_sqrt_rpow {C β : ℝ} (hC : 0 ≤ C) (hβ : 2 < β) :
+    Tendsto (fun n : ℕ => (n : ℝ) * (C / √(n : ℝ)) ^ β) atTop (𝓝 0) := by
+  have hlim : Tendsto (fun n : ℕ => C ^ β * (n : ℝ) ^ (-(β / 2 - 1))) atTop (𝓝 (C ^ β * 0)) :=
+    ((tendsto_rpow_neg_atTop (by linarith)).comp tendsto_natCast_atTop_atTop).const_mul _
+  rw [mul_zero] at hlim
+  refine hlim.congr' ?_
+  filter_upwards [eventually_gt_atTop 0] with n hn
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+  rw [div_rpow hC (sqrt_nonneg _), sqrt_eq_rpow, ← rpow_mul hn'.le,
+    show -(β / 2 - 1) = 1 - 1 / 2 * β by ring, rpow_sub hn', rpow_one]
+  ring
+
+variable {ξ σ₀ : ℝ} {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
+  [IsProbabilityMeasure P] {X : ℕ → Ω → ℝ}
+
+/-- For `ξ < 0`, `P(σ₀ + ξ X < u) = (u/σ₀)^{-1/ξ}` for `0 < u ≤ σ₀`. -/
+lemma gpdMeasure_add_mul_lt (hξ : ξ < 0) (hσ₀ : 0 < σ₀) {u : ℝ} (hu : 0 < u) (huσ : u ≤ σ₀) :
+    gpdMeasure ξ σ₀ {x | σ₀ + ξ * x < u} = ENNReal.ofReal ((u / σ₀) ^ (-(1 / ξ))) := by
+  have hset : {x : ℝ | σ₀ + ξ * x < u} = Ioi ((u - σ₀) / ξ) := by
+    ext x
+    simp only [mem_ofPred_eq, mem_Ioi]
+    rw [div_lt_iff_of_neg hξ]
+    constructor <;> intro h <;> linarith
+  have hx0 : 0 ≤ (u - σ₀) / ξ := div_nonneg_of_nonpos (by linarith) hξ.le
+  rw [hset, gpdMeasure_Ioi hσ₀ hx0]
+  congr 1
+  have h' : ξ * ((u - σ₀) / ξ) = u - σ₀ := mul_div_cancel₀ _ hξ.ne
+  have : 1 + ξ * ((u - σ₀) / ξ) / σ₀ = u / σ₀ := by
+    rw [h']; field_simp; ring
+  simp only [gpdSurvival', hξ.ne, ↓reduceIte, this, max_eq_left (div_pos hu hσ₀).le]
+
+/-- **The largest observations are `o_P(√n)` on the scale of the score**:
+`max_{i<n} 1/(σ₀ + ξ Xᵢ) / √n → 0` in probability. For `ξ > 0` the maximum is at most `1/σ₀`;
+for `-1/2 < ξ < 0` this is the tail estimate `n P(σ₀ + ξ X < u/√n) ≍ n^{1 + 1/(2ξ)} → 0`. -/
+theorem tendstoInMeasure_runMax_div_sqrt (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ₀ : 0 < σ₀)
+    (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ σ₀) P) :
+    TendstoInMeasure P (fun n ω => runMax (fun i => 1 / (σ₀ + ξ * X i ω)) n / √(n : ℝ))
+      atTop (fun _ => 0) := by
+  have hmeas : ∀ n, AEStronglyMeasurable
+      (fun ω => runMax (fun i => 1 / (σ₀ + ξ * X i ω)) n / √(n : ℝ)) P := fun n =>
+    ((aemeasurable_runMax (fun i => by have := (hX i).aemeasurable; fun_prop) n).div_const
+      _).aestronglyMeasurable
+  rcases lt_or_gt_of_ne hξ0 with hneg | hpos
+  · -- `ξ < 0`: the tail estimate
+    set β := -(1 / ξ)
+    have hβ : 2 < β := by
+      have : 1 / ξ < -2 := by rw [div_lt_iff_of_neg hneg]; linarith
+      simp only [β]; linarith
+    rw [tendstoInMeasure_iff_dist]
+    intro η hη
+    have hlim := (ENNReal.continuous_ofReal.tendsto 0).comp
+      (tendsto_natCast_mul_div_sqrt_rpow (C := 2 / (η * σ₀)) (by positivity) hβ)
+    rw [ENNReal.ofReal_zero] at hlim
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hlim
+      (Eventually.of_forall fun _ => bot_le) ?_
+    -- for large `n`, `2/(η √n) ≤ σ₀`
+    have hsmall : ∀ᶠ n : ℕ in atTop, 2 / (η * √(n : ℝ)) ≤ σ₀ := by
+      have : Tendsto (fun n : ℕ => 2 / (η * √(n : ℝ))) atTop (𝓝 0) := by
+        refine tendsto_const_nhds.div_atTop (Tendsto.const_mul_atTop hη ?_)
+        exact tendsto_sqrt_atTop.comp tendsto_natCast_atTop_atTop
+      exact this.eventually (ge_mem_nhds hσ₀)
+    filter_upwards [hsmall, eventually_gt_atTop 0] with n hn hn0
+    have hsq : 0 < √(n : ℝ) := sqrt_pos.2 (by exact_mod_cast hn0)
+    set u := 2 / (η * √(n : ℝ))
+    have hu : 0 < u := by positivity
+    have hsub : {ω | η ≤ dist (runMax (fun i => 1 / (σ₀ + ξ * X i ω)) n / √(n : ℝ)) 0} ⊆
+        ⋃ i ∈ Finset.range n, X i ⁻¹' {x | σ₀ + ξ * x < u} := by
+      intro ω hω
+      simp only [mem_ofPred_eq, Real.dist_eq, sub_zero] at hω
+      rw [abs_of_nonneg (div_nonneg (runMax_nonneg _ _) hsq.le), le_div_iff₀ hsq] at hω
+      obtain ⟨i, hi, hfi⟩ := exists_le_of_le_runMax _ (by positivity) hω
+      refine mem_iUnion₂.2 ⟨i, Finset.mem_range.2 hi, ?_⟩
+      simp only [mem_preimage, mem_ofPred_eq]
+      have hpos' : 0 < 1 / (σ₀ + ξ * X i ω) := lt_of_lt_of_le (by positivity) hfi
+      have ha : 0 < σ₀ + ξ * X i ω := one_div_pos.1 hpos'
+      rw [le_div_iff₀ ha] at hfi
+      have : σ₀ + ξ * X i ω ≤ 1 / (η * √(n : ℝ)) := by
+        rw [le_div_iff₀ (by positivity)]; linarith
+      have : 1 / (η * √(n : ℝ)) < u := by
+        simp only [u]; exact div_lt_div_of_pos_right (by norm_num) (by positivity)
+      linarith
+    refine (measure_mono hsub).trans ((measure_biUnion_finset_le _ _).trans ?_)
+    have hS : MeasurableSet {x : ℝ | σ₀ + ξ * x < u} :=
+      measurableSet_lt (by fun_prop) measurable_const
+    have heach : ∀ i, P (X i ⁻¹' {x | σ₀ + ξ * x < u}) =
+        ENNReal.ofReal ((u / σ₀) ^ β) := fun i => by
+      rw [← Measure.map_apply_of_aemeasurable (hX i).aemeasurable hS, (hX i).map_eq,
+        gpdMeasure_add_mul_lt hneg hσ₀ hu hn]
+    simp only [heach, Finset.sum_const, Finset.card_range, nsmul_eq_mul]
+    rw [← ENNReal.ofReal_natCast, ← ENNReal.ofReal_mul (Nat.cast_nonneg _)]
+    refine le_of_eq ?_
+    simp only [Function.comp_apply, u]
+    congr 3
+    field_simp
+  · -- `ξ > 0`: the maximum is at most `1/σ₀`
+    have hsupp : ∀ᵐ ω ∂P, ∀ i, 0 < X i ω := ae_all_iff.2 fun i =>
+      (ae_of_ae_map (hX i).aemeasurable ((hX i).map_eq ▸ ae_gpdMeasure hσ₀)).mono fun _ h => h.1
+    refine tendstoInMeasure_zero_of_ae_eventually_abs_le hmeas
+      (g := fun n _ => 1 / σ₀ / √(n : ℝ)) (fun _ => aestronglyMeasurable_const) ?_
+      (tendstoInMeasure_const_of_tendsto (tendsto_const_nhds.div_atTop
+        (tendsto_sqrt_atTop.comp tendsto_natCast_atTop_atTop)))
+    filter_upwards [hsupp] with ω hω
+    refine Eventually.of_forall fun n => ?_
+    rw [abs_of_nonneg (div_nonneg (runMax_nonneg _ _) (sqrt_nonneg _))]
+    refine div_le_div_of_nonneg_right (runMax_le (by positivity) (fun i => ?_) n) (sqrt_nonneg _)
+    have := hω i
+    exact one_div_le_one_div_of_le hσ₀ (by nlinarith)
+
+end RunMax
 
 end ExtremeValueTheory
