@@ -61,10 +61,16 @@ Progress on P1 (the gap θ < ϑ), 2026-10-17:
   `Θ_t = 1{t = 0}` (so `ϑ = 1`, `|Y_t| → 0`), extremal index `θ = 1/2`, escape mass `1/2`. This is a much
   simpler mechanism for `θ < ϑ` than the Bai–Wang stable-regenerative model (novelty not checked
   against the literature).
-- Not formalized: a mixture (constant w.p. `p`, iid otherwise) with `η = 0` but no extremal index and
-  failing anticlustering (so `η = 0` is strictly weaker than AC); the short-block side of the echo
-  process (blocks shorter than the echo lag should give ratio → `ϑ = 1`), i.e. a block-length phase
-  transition of the kind asked about in P1; condition `𝒜` for the echo process.
+- **Block-length phase transition** (`Dependence/EchoPhaseTransition.lean`): for the echo process the
+  cluster ratio tends to `1 = ϑ` for `rₙ = o(log n)`, to `(1 + min(1/(cα), 1))/2` for `rₙ/log n → c`, and to
+  `1/2 = θ` for `log n = o(rₙ)`: a continuous transition with a kink at `c = 1/α`, the scale of the echo
+  lag `(1/α) log n`. Condition `𝒜` fails whenever `rₙ/log n` has a finite limit and holds for long blocks
+  (`Dependence/EchoConditionA.lean`), where `θ = ϑ − η` then applies through the general theorem.
+  This is a concrete instance of the block-length phase transitions asked about in P1.
+- **Mixture** (`Dependence/MixtureProcess.lean`): constant with probability `p`, iid otherwise. `η = 0`
+  (cluster ratio → `ϑ = 1 − p`), but anticlustering and `𝒜` fail and no extremal index exists (maxima
+  converge to `p + (1−p)e^{−τ}`). So `η = 0` is strictly weaker than anticlustering and does not imply
+  that `θ` exists.
 
 ## Open problems
 

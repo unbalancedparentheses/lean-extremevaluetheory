@@ -581,3 +581,54 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
   produces exactly two exceedances within a block ($\E L(Z) < \infty$), so maxima behave as for iid
   sequences with half the exceedance rate.
 \end{proof}
+
+\begin{theorem}[Block-length phase transition for the echo process]
+  \label{thm:echo-phase-transition}
+  \uses{thm:echo-process, thm:gap-formula}
+  \lean{ExtremeValueTheory.tendsto_clusterRatio_sub_echoProcess, ExtremeValueTheory.logEchoProcess_levels, ExtremeValueTheory.logEchoProcess_short_blocks,
+    ExtremeValueTheory.logEchoProcess_critical_blocks, ExtremeValueTheory.logEchoProcess_phase_transition, ExtremeValueTheory.logEchoProcess_not_conditionA}
+  \leanok
+  For the echo process with $L(z) = \lfloor \log z \rfloor + 1$ and $n \PR[X_0 > u_n] \to \tau > 0$, the cluster ratio tends to
+  $1 = \vartheta$ when $r_n = o(\log n)$, to $(1 + \min(1/(c\alpha), 1))/2$ when $r_n / \log n \to c \in (0, \infty)$, and to
+  $1/2 = \theta$ when $\log n = o(r_n)$, $r_n = o(n)$. Condition $\mathcal A$ fails whenever $r_n/\log n$ has a finite
+  limit. So the block length must exceed the echo lag $(1/\alpha)\log n$ for the cluster ratio to estimate $\theta$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  With $S$ the expected number of shocks producing an exceedance in the block, $S - S^2 \le \PR[M_r > u] \le S$, so the
+  ratio is asymptotically $(1 + \E[\min(L(Z)/r, 1) \mid Z > u])/2$; for $L = \lfloor \log z \rfloor + 1$ the echo lag of an
+  exceeding shock concentrates at $(1/\alpha)\log n$.
+\end{proof}
+
+\begin{theorem}[Condition $\mathcal A$ for the echo process]
+  \label{thm:echo-condition-a}
+  \uses{thm:echo-process, thm:mixing-condition-a}
+  \lean{ExtremeValueTheory.conditionA_echoProcess, ExtremeValueTheory.conditionA_logEchoProcess,
+    ExtremeValueTheory.logEchoProcess_tendsto_partialMax_of_conditionA, ExtremeValueTheory.logEchoProcess_hasEscapeMass_of_conditionA}
+  \leanok
+  For long blocks ($\log n = o(r_n)$, $r_n = o(n)$) the echo process satisfies $\mathcal A$, so $\theta = \vartheta - \eta$
+  applies through the general theorem: $\PR[M_n \le u_n] \to e^{-\tau/2}$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Truncate echo lags at $l_n = \lceil (2/\alpha)\log n \rceil$; blocks more than $l_n$ apart are then independent, with error
+  at most $n\PR[L(Z) > l_n]$.
+\end{proof}
+
+\begin{proposition}[A mixture with no escape mass and no extremal index]
+  \label{prop:mixture}
+  \uses{thm:gap-formula}
+  \lean{ExtremeValueTheory.hasShiftInvariantWindows_mixture, ExtremeValueTheory.hasSpectralTailProcess_mixture,
+    ExtremeValueTheory.candidateExtremalIndex_mixture, ExtremeValueTheory.tendsto_clusterRatio_mixture, ExtremeValueTheory.hasEscapeMass_mixture,
+    ExtremeValueTheory.not_forwardAntiClusteringAt_mixture, ExtremeValueTheory.tendsto_partialMax_mixture,
+    ExtremeValueTheory.not_hasExtremalIndex_mixture, ExtremeValueTheory.not_conditionA_mixture}
+  \leanok
+  Let $X_t = Z_0$ on an event of probability $p \in (0,1)$ independent of the iid Pareto sequence $Z$, and $X_t = Z_t$
+  otherwise. Then $\vartheta = 1 - p$, the cluster ratio tends to $\vartheta$ (escape mass $0$), yet anticlustering and
+  condition $\mathcal A$ fail and $\PR[M_n \le u_n] \to p + (1-p)e^{-\tau}$, so no extremal index exists. Hence $\eta = 0$ is
+  strictly weaker than anticlustering and does not imply that $\theta$ exists.
+\end{proposition}
+\begin{proof}
+  \leanok
+  Condition on the event: a constant sequence or an iid one.
+\end{proof}

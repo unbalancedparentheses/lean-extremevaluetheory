@@ -132,7 +132,8 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   mixing or block condition at all (`le_candidateExtremalIndex'`). The gap is exact: `θ = ϑ − η` with `η`
   the *escape mass* of returns at lags growing with the level (`HasSpectralTailProcess.tendsto_clusterRatio_iff`,
   `lt_candidateExtremalIndex_iff`), and an explicit *echo process* has `θ = 1/2 < ϑ = 1` although its
-  tail process tends to 0 (`logEchoProcess_theta_lt_vartheta`). Checked on the moving maximum, where `θ = ϑ = 1/2`.
+  tail process tends to 0 (`logEchoProcess_theta_lt_vartheta`). Its cluster ratio has a block-length phase
+  transition at `rₙ ≍ log n` (`logEchoProcess_phase_transition`). Checked on the moving maximum, where `θ = ϑ = 1/2`.
 - **Mixing and m-dependence** (`ForMathlib/Probability/Process/Mixing.lean`, `Dependence/Mixing.lean`,
   `MDependent*.lean`): strong and β-mixing coefficients; α-mixing at a rate implies condition `𝒜`;
   for every stationary m-dependent sequence with a spectral tail process, `|X|` has extremal index `ϑ`
