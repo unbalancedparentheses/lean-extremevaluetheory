@@ -6,6 +6,7 @@ Authors: Federico Carrone
 import ExtremeValueTheory.MaxStable.Basic
 import ExtremeValueTheory.ForMathlib.Probability.PoissonRandomMeasure
 import ExtremeValueTheory.RegularVariation.Multivariate
+import Mathlib.Probability.Distributions.Gaussian.Real
 
 /-!
 # Spectral representation of max-stable vectors and processes
@@ -322,5 +323,192 @@ theorem _root_.ProbabilityTheory.IsPoissonRandomMeasure.isSimpleMaxStable_map_sp
 
 end Spectral
 
+
+
+/-! ### Existence: every spectral measure gives a simple max-stable law -/
+
+section Existence
+
+universe u
+
+variable {S : Type u} [MeasurableSpace S] {ι : Type*} [Fintype ι]
+
+/-- **Every spectral representation gives a simple max-stable law** ([dHF, Theorem 6.1.9],
+"⇐"; [Res87, Proposition 5.11]). If `μ` is an s-finite measure on `S` and `f i ≥ 0` satisfy
+`∫ f i dμ = 1`, there is a simple max-stable law with distribution function
+`F(y) = exp (-∫ max_i f i s / y i dμ(s))`, namely the law of `Y i = sup_k ζ_k f i (s_k)` for a
+Poisson random measure `∑ δ_{(ζ_k, s_k)}` with intensity `ζ ^ (-2) dζ ⊗ μ`. -/
+theorem exists_isSimpleMaxStable_of_spectral (μ : Measure S) [SFinite μ]
+    {f : ι → S → ℝ≥0∞} (hf : ∀ i, Measurable (f i)) (hfi : ∀ i, ∫⁻ s, f i s ∂μ = 1) :
+    ∃ ν : Measure (ι → ℝ), IsSimpleMaxStable ν ∧ ∀ y : ι → ℝ, (∀ i, 0 < y i) →
+      ν (Iic y) =
+        ENNReal.ofReal (Real.exp (-(∫⁻ s, ⨆ i, f i s / ENNReal.ofReal (y i) ∂μ).toReal)) := by
+  obtain ⟨Ω, _, P, N, _, hN⟩ := exists_isPoissonRandomMeasure ((radialMeasure 1).prod μ)
+  have hY := measurable_spectralVector hN.measurable hf
+  refine ⟨P.map fun ω ↦ spectralVector f (N ω), hN.isSimpleMaxStable_map_spectralVector hf hfi,
+    fun y hy ↦ ?_⟩
+  rw [Measure.map_apply hY measurableSet_Iic]
+  exact hN.measure_spectralVector_le hf (fun i ↦ by simp [hfi i]) hy
+
+/-- **Spectral measures on `[0, ∞]^ι`** ([dHF, Theorem 6.1.9], "⇐"). For every s-finite measure
+`H` on `ι → [0, ∞]` with `∫ w i dH(w) = 1` (for instance a measure on the unit simplex
+normalized this way) there is a simple max-stable law with
+`F(y) = exp (-∫ max_i w i / y i dH(w))`. -/
+theorem exists_isSimpleMaxStable_of_spectralMeasure (H : Measure (ι → ℝ≥0∞)) [SFinite H]
+    (hH : ∀ i, ∫⁻ w, w i ∂H = 1) :
+    ∃ ν : Measure (ι → ℝ), IsSimpleMaxStable ν ∧ ∀ y : ι → ℝ, (∀ i, 0 < y i) →
+      ν (Iic y) =
+        ENNReal.ofReal (Real.exp (-(∫⁻ w, ⨆ i, w i / ENNReal.ofReal (y i) ∂H).toReal)) :=
+  exists_isSimpleMaxStable_of_spectral H (fun i ↦ measurable_pi_apply i) hH
+
+end Existence
+
+/-! ### Max-stable processes -/
+
+section Process
+
+variable {S T : Type*} [MeasurableSpace S] {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
+  {N : Ω → Measure (ℝ × S)} {μ : Measure S} {W : T → S → ℝ≥0∞}
+
+/-- **de Haan's spectral representation of max-stable processes, constructive direction**
+([dHF, Theorem 9.4.1]; [de Haan 1984]). Let `N = ∑ δ_{(ζ_k, s_k)}` be a Poisson random measure on
+`ℝ × S` with intensity `ζ ^ (-2) dζ ⊗ μ` and `W t : S → [0, ∞]` with `∫ W t dμ = 1` for every
+`t`. Then every finite-dimensional law of the process `Y t = sup_k ζ_k W t (s_k)`
+(`spectralVector W (N ω) t`) is simple max-stable.
+
+When `μ` is a probability measure, the `s_k` are i.i.d. with law `μ` given the `ζ_k`, so
+`W_k = W · (s_k)` are i.i.d. nonnegative processes with `E W_k t = 1`; taking `S = T → [0, ∞]`
+and `W t w = w t`, `μ` is the law of an arbitrary such process. -/
+theorem _root_.ProbabilityTheory.IsPoissonRandomMeasure.isSimpleMaxStable_map_process
+    [SFinite μ] (hN : IsPoissonRandomMeasure N ((radialMeasure 1).prod μ) P)
+    (hW : ∀ t, Measurable (W t)) (hW1 : ∀ t, ∫⁻ s, W t s ∂μ = 1) {ι : Type*} [Fintype ι]
+    (t : ι → T) :
+    IsSimpleMaxStable (P.map fun ω i ↦ spectralVector W (N ω) (t i)) :=
+  hN.isSimpleMaxStable_map_spectralVector (f := fun i ↦ W (t i)) (fun i ↦ hW (t i))
+    (fun i ↦ hW1 (t i))
+
+/-- **Finite-dimensional distributions of de Haan's process**:
+`P(Y t₁ ≤ y₁, …, Y tₙ ≤ yₙ) = exp (-∫ max_i W tᵢ s / yᵢ dμ(s))`, i.e.
+`exp (-E max_i W(tᵢ) / yᵢ)` when `μ` is the law of `W`. -/
+theorem _root_.ProbabilityTheory.IsPoissonRandomMeasure.measure_process_le
+    [SFinite μ] (hN : IsPoissonRandomMeasure N ((radialMeasure 1).prod μ) P)
+    (hW : ∀ t, Measurable (W t)) (hW1 : ∀ t, ∫⁻ s, W t s ∂μ = 1) {ι : Type*} [Fintype ι]
+    (t : ι → T) {y : ι → ℝ} (hy : ∀ i, 0 < y i) :
+    P {ω | ∀ i, spectralVector W (N ω) (t i) ≤ y i} =
+      ENNReal.ofReal (Real.exp (-(∫⁻ s, ⨆ i, W (t i) s / ENNReal.ofReal (y i) ∂μ).toReal)) :=
+  hN.measure_spectralVector_le (f := fun i ↦ W (t i)) (fun i ↦ hW (t i))
+    (fun i ↦ by simp [hW1 (t i)]) hy
+
+/-- **Unit Fréchet margins of de Haan's process**: `P(Y t ≤ y) = exp (-1 / y)`. -/
+theorem _root_.ProbabilityTheory.IsPoissonRandomMeasure.measure_process_apply_le
+    [SFinite μ] (hN : IsPoissonRandomMeasure N ((radialMeasure 1).prod μ) P)
+    (hW : ∀ t, Measurable (W t)) (hW1 : ∀ t, ∫⁻ s, W t s ∂μ = 1) (t : T) {y : ℝ} (hy : 0 < y) :
+    P {ω | spectralVector W (N ω) t ≤ y} = ENNReal.ofReal (Real.exp (-y⁻¹)) :=
+  hN.measure_spectralVector_apply_le hW hW1 t hy
+
+/-- The kernel of the **Smith (Gaussian extreme value) model** on `ℝ` ([Smith 1990]): the moving
+maximum process `Y t = sup_k ζ_k φ(t - u_k)`, with `φ` the centered Gaussian density of variance
+`v` and `∑ δ_{(ζ_k, u_k)}` a Poisson random measure with intensity `ζ ^ (-2) dζ ⊗ du`. -/
+noncomputable def smithKernel (v : ℝ≥0) (t u : ℝ) : ℝ≥0∞ := gaussianPDF 0 v (t - u)
+
+lemma lintegral_smithKernel {v : ℝ≥0} (hv : v ≠ 0) (t : ℝ) :
+    ∫⁻ u, smithKernel v t u = 1 := by
+  change ∫⁻ u, gaussianPDF 0 v (t - u) = 1
+  rw [lintegral_sub_left_eq_self (fun x ↦ gaussianPDF 0 v x) t,
+    lintegral_gaussianPDF_eq_one 0 hv]
+
+lemma measurable_smithKernel (v : ℝ≥0) (t : ℝ) : Measurable (smithKernel v t) :=
+  (measurable_gaussianPDF 0 v).comp (measurable_const.sub measurable_id)
+
+/-- The finite-dimensional laws of the Smith model are simple max-stable. -/
+theorem _root_.ProbabilityTheory.IsPoissonRandomMeasure.isSimpleMaxStable_smith
+    {N : Ω → Measure (ℝ × ℝ)} (hN : IsPoissonRandomMeasure N ((radialMeasure 1).prod volume) P)
+    {v : ℝ≥0} (hv : v ≠ 0) {ι : Type*} [Fintype ι] (t : ι → ℝ) :
+    IsSimpleMaxStable (P.map fun ω i ↦ spectralVector (smithKernel v) (N ω) (t i)) :=
+  hN.isSimpleMaxStable_map_process (measurable_smithKernel v) (lintegral_smithKernel hv) t
+
+end Process
+
+/-! ### Examples: independence and complete dependence -/
+
+section Examples
+
+variable {ι : Type*} [Fintype ι] [DecidableEq ι] {Ω : Type*} {mΩ : MeasurableSpace Ω}
+  {P : Measure Ω} {N : Ω → Measure (ℝ × (ι → ℝ≥0∞))}
+
+/-- The spectral measure of **independence**: unit masses at the vertices `e i` of the simplex. -/
+noncomputable def independentSpectralMeasure : Measure (ι → ℝ≥0∞) :=
+  ∑ i, Measure.dirac (Pi.single i 1)
+
+/-- The spectral measure of **complete dependence**: a unit mass at `(1, …, 1)`. -/
+noncomputable def comonotoneSpectralMeasure : Measure (ι → ℝ≥0∞) := Measure.dirac fun _ ↦ 1
+
+instance : IsFiniteMeasure (independentSpectralMeasure (ι := ι)) := by
+  unfold independentSpectralMeasure; infer_instance
+
+instance : IsProbabilityMeasure (comonotoneSpectralMeasure (ι := ι)) := by
+  unfold comonotoneSpectralMeasure; infer_instance
+
+lemma lintegral_independentSpectralMeasure {g : (ι → ℝ≥0∞) → ℝ≥0∞} (hg : Measurable g) :
+    ∫⁻ w, g w ∂independentSpectralMeasure = ∑ i, g (Pi.single i 1) := by
+  rw [independentSpectralMeasure, lintegral_finsetSum_measure]
+  exact Finset.sum_congr rfl fun i _ ↦ lintegral_dirac' _ hg
+
+lemma lintegral_apply_independentSpectralMeasure (i : ι) :
+    ∫⁻ w, w i ∂independentSpectralMeasure = 1 := by
+  rw [lintegral_independentSpectralMeasure (measurable_pi_apply i)]
+  simp [Pi.single_apply]
+
+omit [Fintype ι] [DecidableEq ι] in
+lemma lintegral_apply_comonotoneSpectralMeasure (i : ι) :
+    ∫⁻ w, w i ∂(comonotoneSpectralMeasure (ι := ι)) = 1 := by
+  rw [comonotoneSpectralMeasure, lintegral_dirac' _ (measurable_pi_apply i)]
+
+omit [Fintype ι] in
+lemma iSup_single_div (i : ι) (c : ι → ℝ≥0∞) :
+    ⨆ j, (Pi.single i 1 : ι → ℝ≥0∞) j / c j = (c i)⁻¹ := by
+  refine le_antisymm (iSup_le fun j ↦ ?_) (le_iSup_of_le i (by simp))
+  by_cases hj : j = i
+  · subst hj; simp
+  · simp [hj]
+
+/-- **Independence**: for the vertex spectral measure, `P(Y ≤ y) = ∏ i, exp (-1 / y i)`. -/
+theorem _root_.ProbabilityTheory.IsPoissonRandomMeasure.measure_spectralVector_le_independent
+    (hN : IsPoissonRandomMeasure N ((radialMeasure 1).prod independentSpectralMeasure) P)
+    {y : ι → ℝ} (hy : ∀ i, 0 < y i) :
+    P {ω | spectralVector (fun i w ↦ w i) (N ω) ≤ y} =
+      ∏ i, ENNReal.ofReal (Real.exp (-(y i)⁻¹)) := by
+  rw [hN.measure_spectralVector_le (fun i ↦ measurable_pi_apply i)
+    (fun i ↦ by simp [lintegral_apply_independentSpectralMeasure]) hy,
+    lintegral_independentSpectralMeasure
+      (Measurable.iSup fun j ↦ (measurable_pi_apply j).div_const _)]
+  simp_rw [iSup_single_div]
+  rw [ENNReal.toReal_sum fun i _ ↦ ENNReal.inv_ne_top.2 (ENNReal.ofReal_pos.2 (hy i)).ne',
+    ← Finset.sum_neg_distrib, Real.exp_sum,
+    ENNReal.ofReal_prod_of_nonneg fun i _ ↦ (Real.exp_pos _).le]
+  simp [ENNReal.toReal_inv, ENNReal.toReal_ofReal (hy _).le]
+
+/-- **Complete dependence**: for the spectral measure `δ_(1, …, 1)`,
+`P(Y ≤ y) = min_i exp (-1 / y i) = min_i P(Y i ≤ y i)`. -/
+omit [DecidableEq ι] in
+theorem _root_.ProbabilityTheory.IsPoissonRandomMeasure.measure_spectralVector_le_comonotone
+    [Nonempty ι]
+    (hN : IsPoissonRandomMeasure N ((radialMeasure 1).prod comonotoneSpectralMeasure) P)
+    {y : ι → ℝ} (hy : ∀ i, 0 < y i) :
+    P {ω | spectralVector (fun i w ↦ w i) (N ω) ≤ y} =
+      ⨅ i, ENNReal.ofReal (Real.exp (-(y i)⁻¹)) := by
+  rw [hN.measure_spectralVector_le (fun i ↦ measurable_pi_apply i)
+    (fun i ↦ by simp [lintegral_apply_comonotoneSpectralMeasure]) hy, comonotoneSpectralMeasure,
+    lintegral_dirac' _ (Measurable.iSup fun j ↦ (measurable_pi_apply j).div_const _)]
+  obtain ⟨j₀, hj₀⟩ := Finite.exists_min y
+  have hsup : ⨆ j, (1 : ℝ≥0∞) / ENNReal.ofReal (y j) = (ENNReal.ofReal (y j₀))⁻¹ := by
+    refine le_antisymm (iSup_le fun j ↦ ?_) (le_iSup_of_le j₀ (by simp))
+    rw [one_div]
+    exact ENNReal.inv_le_inv.2 (ENNReal.ofReal_le_ofReal (hj₀ j))
+  rw [hsup, ENNReal.toReal_inv, ENNReal.toReal_ofReal (hy j₀).le]
+  exact le_antisymm (le_iInf fun j ↦ ENNReal.ofReal_le_ofReal (Real.exp_le_exp.2
+    (neg_le_neg (inv_anti₀ (hy j₀) (hj₀ j))))) (iInf_le _ j₀)
+
+end Examples
 
 end ExtremeValueTheory
