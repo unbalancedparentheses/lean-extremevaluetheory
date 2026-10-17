@@ -20,6 +20,10 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
 - **Karamata's tail-integral theorem** (`IsRegularlyVarying.tendsto_integral_Ioi_div`): for an
   antitone survival function regularly varying with index `-α`, `α > 1`,
   `∫ₓ^∞ F̄(t) dt / (x F̄(x)) → 1/(α-1)`. Proved, standard axioms only.
+- **Karamata's theorem, both halves and the `[0, x]` version**
+  (`IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi`, `tendsto_integral_zero_div`,
+  `tendsto_integral_Ioi_div_of_measurable`): the converse half, integrals over `[0, x]`, and the
+  tail-integral theorem for measurable (not necessarily monotone) functions.
 - **Breiman's lemma** (`tendsto_measure_mul_div_measure`): for independent `X`, `Y ≥ 0` with
   `P(X > x)` regularly varying with index `-α` and `E[Y^(α+ε)] < ∞`,
   `P(XY > x) / P(X > x) → E[Y^α]`. Proved, standard axioms only.
@@ -29,6 +33,9 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
 - **Gnedenko's characterization of the Weibull domain** (`isInMDAWeibull_iff`): `F` is in the
   domain of attraction of `exp(-(-x)^α)` if and only if it has a finite right endpoint `x_F` and
   `1 - F(x_F - 1/t)` is regularly varying with index `-α`.
+- **Von Mises conditions for Fréchet and Weibull** (`isInMDAFrechet_of_vonMises`,
+  `isInMDAWeibull_of_vonMises`): `x F'(x)/(1 − F(x)) → α` (resp. `(x_F − x) F'(x)/(1 − F(x)) → α`)
+  gives the domain of attraction. Pareto and Beta(1, α) are examples.
 - **Characterization of the Gumbel domain** (`isInMDAGumbel_iff`): `F` is in the domain of
   attraction of `exp(-e^(-x))` if and only if there is a positive auxiliary function `f` with
   `(1 - F(t + x f(t)))/(1 - F(t)) → e^(-x)` as `t` tends to the right endpoint (finite or

@@ -456,3 +456,48 @@ for $F$ is a function $f$, positive for $t$ near $x_F$, such that
   Combine Theorems~\ref{thm:mda-gumbel-of-auxiliary} and~\ref{thm:gumbel-necessity}; the case
   split on whether $F$ reaches $1$ uses Lemma~\ref{lem:right-endpoint}.
 \end{proof}
+
+\section{Von Mises conditions for the Fr\'echet and Weibull domains}
+
+\begin{theorem}[Von Mises condition, Fr\'echet]
+  \label{thm:von-mises-frechet}
+  \uses{thm:mda-frechet-iff, thm:karamata-converse}
+  \lean{CumulativeDistributionFunction.isRegularlyVarying_of_vonMises, CumulativeDistributionFunction.isInMDAFrechet_of_vonMises}
+  \leanok
+  If $F$ is differentiable on $(z, \infty)$ and $x F'(x)/(1 - F(x)) \to \alpha > 0$, then
+  $1 - F \in RV_{-\alpha}$ and $F$ is in the Fr\'echet domain of attraction
+  [EKM, Corollary~3.3.8], [dHF, Theorem~1.1.8].
+\end{theorem}
+\begin{proof}
+  \leanok
+  $(\log(1-F))'(x) = -F'(x)/(1-F(x))$, so $x (\log(1 - F))' \to -\alpha$; apply
+  Theorem~\ref{thm:karamata-converse} and Theorem~\ref{thm:mda-frechet-iff}.
+\end{proof}
+
+\begin{theorem}[Von Mises condition, Weibull]
+  \label{thm:von-mises-weibull}
+  \uses{thm:mda-weibull-iff, thm:karamata-converse}
+  \lean{CumulativeDistributionFunction.isRegularlyVarying_of_vonMises_nhdsLT, CumulativeDistributionFunction.isInMDAWeibull_of_vonMises}
+  \leanok
+  If $F$ is differentiable on $(z, x_F)$ and $(x_F - x) F'(x)/(1 - F(x)) \to \alpha > 0$ as
+  $x \uparrow x_F$, then $x_F$ is the right endpoint of $F$, $t \mapsto 1 - F(x_F - 1/t)$ is in
+  $RV_{-\alpha}$, and $F$ is in the Weibull domain of attraction [EKM, Corollary~3.3.13].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Substitute $x = x_F - 1/t$ and argue as in Theorem~\ref{thm:von-mises-frechet}.
+\end{proof}
+
+\begin{proposition}[Pareto and power-law examples]
+  \label{prop:von-mises-examples}
+  \uses{thm:von-mises-frechet, thm:von-mises-weibull}
+  \lean{CumulativeDistributionFunction.paretoCDF, CumulativeDistributionFunction.isInMDAFrechet_paretoCDF, CumulativeDistributionFunction.powerCDF, CumulativeDistributionFunction.isInMDAWeibull_powerCDF}
+  \leanok
+  The Pareto law $1 - x^{-\alpha}$ on $[1, \infty)$ is in the Fr\'echet domain, and the law
+  $1 - (1 - x)^\alpha$ on $[0, 1]$ (uniform for $\alpha = 1$, Beta$(1, \alpha)$ in general) is in
+  the Weibull domain.
+\end{proposition}
+\begin{proof}
+  \leanok
+  The von Mises ratios are identically $\alpha$.
+\end{proof}

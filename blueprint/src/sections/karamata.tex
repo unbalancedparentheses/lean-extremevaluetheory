@@ -55,3 +55,48 @@ Fréchet domain of attraction (Chapter~\ref{chap:domains-of-attraction}).
   large it is dominated by $2 u^{-\alpha + \delta}$, which is integrable on $(1, \infty)$.
   Dominated convergence yields the limit $\int_1^\infty u^{-\alpha} \, \ud u = \frac{1}{\alpha - 1}$.
 \end{proof}
+
+\begin{theorem}[Karamata's theorem, relaxed hypotheses]
+  \label{thm:karamata-relaxed}
+  \uses{thm:karamata}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_Ioi_div_of_measurable,
+    ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_Ioi_div_of_antitoneOn}
+  \leanok
+  The conclusion of Theorem~\ref{thm:karamata} holds for every measurable $F \in RV_{-\alpha}$,
+  $\alpha > 1$, and for every $F \in RV_{-\alpha}$ that is antitone on some $[a, \infty)$
+  [BGT, Proposition~1.5.10].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Potter bounds for measurable regularly varying functions give the domination needed in the
+  proof of Theorem~\ref{thm:karamata}.
+\end{proof}
+
+\begin{theorem}[Karamata's theorem, converse half]
+  \label{thm:karamata-converse}
+  \uses{thm:karamata-representation}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi, ExtremeValueTheory.IsRegularlyVarying.of_log_sub_eq_integral,
+    ExtremeValueTheory.IsRegularlyVarying.of_tendsto_mul_deriv_div, ExtremeValueTheory.IsRegularlyVarying.of_abs_log_sub_le, ExtremeValueTheory.IsRegularlyVarying.of_tendsto}
+  \leanok
+  Let $F$ be antitone and integrable on $(a, \infty)$, and $\alpha > 1$. If
+  $x F(x) / \int_x^\infty F \to \alpha - 1$, then $F \in RV_{-\alpha}$ [BGT, Theorem~1.6.1].
+  Similarly, if $g > 0$ is differentiable with $x g'(x)/g(x) \to \rho$, then $g \in RV_\rho$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  With $I(x) = \int_x^\infty F$, $(\log I)'(x) = -F(x)/I(x)$, so $x (\log I)'(x) \to 1 - \alpha$.
+  The representation theorem gives $I \in RV_{1-\alpha}$, and $F = (I/x) \cdot (x F/I)$.
+\end{proof}
+
+\begin{theorem}[Karamata's theorem for integrals over $[0, x]$]
+  \label{thm:karamata-zero}
+  \uses{thm:karamata-relaxed}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_zero_div}
+  \leanok
+  If $f \in RV_\rho$ is measurable and locally integrable on $[0, \infty)$ and $\rho > -1$, then
+  $\int_0^x f / (x f(x)) \to 1/(\rho + 1)$ [BGT, Proposition~1.5.8].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Uniform convergence on compacts and Potter bounds near $0$ after rescaling $t = x s$.
+\end{proof}
