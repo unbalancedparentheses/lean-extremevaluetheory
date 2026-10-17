@@ -355,3 +355,72 @@ $X_1 \sim \mu$, $X_2 \sim \nu$.
   Dominated convergence on $\int_0^{x/2} \bar F(x-t)/\bar F(x) \, \mu(\ud t)$, with
   $g(t) = \exp(\tau t^\tau)$ for the Weibull tail.
 \end{proof}
+
+\section{Examples, the class $\mathcal S^*$ and convolution roots}
+
+\begin{proposition}[Weibull and Pareto laws]
+  \label{prop:subexp-examples}
+  \uses{thm:weibull-subexp}
+  \lean{ExtremeValueTheory.lawOfCDF, ExtremeValueTheory.tail_lawOfCDF, ExtremeValueTheory.weibullCDF, ExtremeValueTheory.weibullTailLaw, ExtremeValueTheory.tail_weibullTailLaw,
+    ExtremeValueTheory.isSubexponential_weibullTailLaw, ExtremeValueTheory.tail_paretoMeasure,
+    ExtremeValueTheory.isRegularlyVarying_tail_paretoMeasure, ExtremeValueTheory.isSubexponential_paretoMeasure}
+  \leanok
+  The law with $\bar F(x) = e^{-x^\tau}$ on $[0, \infty)$ exists and is subexponential for
+  $0 < \tau < 1$; Pareto laws are regularly varying and subexponential [EKM, Table~1.4.3].
+\end{proposition}
+\begin{proof}
+  \leanok
+  Build the law from its c.d.f.\ and apply Theorem~\ref{thm:weibull-subexp}, resp.\ regular variation.
+\end{proof}
+
+\begin{theorem}[The lognormal law is subexponential]
+  \label{thm:lognormal-subexp}
+  \uses{thm:weibull-subexp}
+  \lean{ExtremeValueTheory.gaussianTail, ExtremeValueTheory.gaussianTail_le, ExtremeValueTheory.le_gaussianTail, ExtremeValueTheory.tendsto_gaussianTail_div,
+    ExtremeValueTheory.lognormal, ExtremeValueTheory.tail_lognormal, ExtremeValueTheory.IsSubexponential.lognormal}
+  \leanok
+  The Gaussian tail satisfies the Mills-ratio asymptotics $\bar\Phi(c) \sim v \varphi(c)/(c - m)$,
+  and the law of $e^Z$, $Z \sim N(m, v)$, $v > 0$, is subexponential [EKM, Example~1.4.7].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Mills' inequalities give long-tailedness and the domination needed in the Pitman-type criterion.
+\end{proof}
+
+\begin{definition}[The class $\mathcal S^*$]
+  \label{def:s-star}
+  \lean{ExtremeValueTheory.tailConvInt, ExtremeValueTheory.IsSStar}
+  \leanok
+  A law on $[0, \infty)$ with finite mean $m$ is in $\mathcal S^*$ if
+  $\int_0^x \bar F(x - y) \bar F(y) \, \ud y / \bar F(x) \to 2m$ [Kl\"uppelberg 1988].
+\end{definition}
+
+\begin{theorem}[Properties of $\mathcal S^*$]
+  \label{thm:s-star}
+  \uses{def:s-star, thm:ruin}
+  \lean{ExtremeValueTheory.IsSStar.isSubexponential, ExtremeValueTheory.IsSStar.isSubexponential_integratedTail,
+    ExtremeValueTheory.IsSStar.tendsto_pkRuin_div, ExtremeValueTheory.IsSStar.of_isRegularlyVarying, ExtremeValueTheory.isSStar_paretoMeasure}
+  \leanok
+  $\mathcal S^* \subseteq \mathcal S$, and $F \in \mathcal S^*$ implies that the integrated tail law
+  $F_I$ is subexponential, so the Embrechts--Veraverbeke ruin asymptotics hold. Regularly varying
+  tails with $\alpha > 1$ are in $\mathcal S^*$ [Kl\"uppelberg 1988, Theorem~3.2].
+\end{theorem}
+\begin{proof}
+  \leanok
+  The convolution integral of $F_I$ is expressed through $\int_0^x \bar F(x-y)\bar F(y)\ud y$.
+\end{proof}
+
+\begin{theorem}[Convolution roots]
+  \label{thm:conv-roots}
+  \uses{thm:subexp-closure}
+  \lean{ExtremeValueTheory.IsSubexponential.tendsto_tail_div_tail_convPow, ExtremeValueTheory.IsSubexponential.of_convPow}
+  \leanok
+  If $F$ is concentrated on $[0, \infty)$ and $F^{*n}$ is subexponential for some $n \ge 1$, then
+  $F$ is subexponential and $\bar F / \overline{F^{*n}} \to 1/n$
+  [Embrechts, Goldie and Veraverbeke 1979].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Compare $\overline{F^{*n}}$ with $\bar F$ through the single big jump and use
+  closure under tail equivalence.
+\end{proof}

@@ -61,7 +61,10 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   equivalence and convolution; random sums `P(S_N > x) ~ E N · P(X > x)`
   (`IsSubexponential.tendsto_tail_compound_div`); the Embrechts–Veraverbeke ruin asymptotics
   `ψ(u) ~ F̄_I(u)/ρ` from the Pollaczek–Khinchine formula (`tendsto_pkRuin_div`,
-  `tendsto_pkRuin_div_mul_tail`); Weibull-type tails `exp(-x^τ)`, `τ < 1`, are subexponential.
+  `tendsto_pkRuin_div_mul_tail`); Weibull-type tails `exp(-x^τ)`, `τ < 1`, are subexponential. The lognormal law
+  is subexponential (`IsSubexponential.lognormal`), the class `𝒮*` is contained in `𝒮` and gives
+  subexponential integrated tails (`IsSStar.isSubexponential_integratedTail`), and `𝒮` is closed
+  under convolution roots (`IsSubexponential.of_convPow`).
 - **Hill estimator consistency** (`tendstoInMeasure_hill`): for iid samples whose tail is
   regularly varying with index `-α`, and `k → ∞`, `k/n → 0`, the Hill estimator
   `(1/k) Σ_{i<k} (log X₍ᵢ₊₁₎ - log X₍ₖ₊₁₎)` converges to `1/α` in probability. With order
