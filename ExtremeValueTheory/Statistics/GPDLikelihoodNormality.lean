@@ -192,4 +192,154 @@ theorem integral_gpdScoreDeriv (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ₀ : 0
 
 end ScoreMoments
 
+/-! ### The deterministic expansion of the likelihood equation -/
+
+section Expansion
+
+variable {ξ σ₀ s t t' : ℝ} {x : ℕ → ℝ} {n : ℕ}
+
+/-- The empirical score at `σ₀`: `Fₙ(σ₀) = n⁻¹ ∑_{i<n} ψ(xᵢ)`. -/
+noncomputable def scoreAvg (ξ σ₀ : ℝ) (x : ℕ → ℝ) (n : ℕ) : ℝ :=
+  (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, gpdScorePsi ξ σ₀ (x i)
+
+/-- `Qₙ(t) = n⁻¹ ∑_{i<n} xᵢ / ((σ₀ + ξ xᵢ)(t + ξ xᵢ))`: the difference quotient of the score
+between `t` and `σ₀` is `-(1 + ξ) Qₙ(t)`. -/
+noncomputable def crossAvg (ξ σ₀ t : ℝ) (x : ℕ → ℝ) (n : ℕ) : ℝ :=
+  (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, x i / ((σ₀ + ξ * x i) * (t + ξ * x i))
+
+/-- The running maximum `max(0, f 0, …, f (n-1))`. -/
+noncomputable def runMax (f : ℕ → ℝ) : ℕ → ℝ
+  | 0 => 0
+  | n + 1 => max (runMax f n) (f n)
+
+lemma runMax_nonneg (f : ℕ → ℝ) (n : ℕ) : 0 ≤ runMax f n := by
+  induction n with
+  | zero => exact le_rfl
+  | succ n ih => exact ih.trans (le_max_left _ _)
+
+lemma le_runMax (f : ℕ → ℝ) {i n : ℕ} (hi : i < n) : f i ≤ runMax f n := by
+  induction n with
+  | zero => exact absurd hi (Nat.not_lt_zero _)
+  | succ n ih =>
+    rcases Nat.lt_succ_iff_lt_or_eq.1 hi with h | rfl
+    · exact (ih h).trans (le_max_left _ _)
+    · exact le_max_right _ _
+
+lemma exists_le_of_le_runMax (f : ℕ → ℝ) {n : ℕ} {η : ℝ} (hη : 0 < η) (h : η ≤ runMax f n) :
+    ∃ i < n, η ≤ f i := by
+  induction n with
+  | zero => exact absurd h (not_le.2 hη)
+  | succ n ih =>
+    rcases le_max_iff.1 h with h' | h'
+    · obtain ⟨i, hi, hfi⟩ := ih h'
+      exact ⟨i, hi.trans (Nat.lt_succ_self n), hfi⟩
+    · exact ⟨n, Nat.lt_succ_self n, h'⟩
+
+/-- **The exact expansion of the score.** At an admissible root `s` of the likelihood equation,
+`Fₙ(σ₀) = (s - σ₀) (1 + ξ) Qₙ(s)`. -/
+theorem scoreAvg_eq_of_root (hn : 0 < n) (ha : ∀ i < n, 0 < σ₀ + ξ * x i)
+    (hb : ∀ i < n, 0 < s + ξ * x i)
+    (hroot : (1 + ξ) * ∑ i ∈ Finset.range n, x i / (s + ξ * x i) = n) :
+    scoreAvg ξ σ₀ x n = (s - σ₀) * ((1 + ξ) * crossAvg ξ σ₀ s x n) := by
+  have hn' : (n : ℝ) ≠ 0 := by exact_mod_cast hn.ne'
+  have h1 : ∑ i ∈ Finset.range n, gpdScorePsi ξ σ₀ (x i) =
+      (1 + ξ) * ∑ i ∈ Finset.range n, x i / (σ₀ + ξ * x i) - n := by
+    simp only [gpdScorePsi, Finset.sum_sub_distrib, ← Finset.mul_sum, Finset.sum_const,
+      Finset.card_range, nsmul_eq_mul, mul_one]
+  have h2 : ∑ i ∈ Finset.range n, x i / (σ₀ + ξ * x i) -
+      ∑ i ∈ Finset.range n, x i / (s + ξ * x i) =
+      (s - σ₀) * ∑ i ∈ Finset.range n, x i / ((σ₀ + ξ * x i) * (s + ξ * x i)) := by
+    rw [← Finset.sum_sub_distrib, Finset.mul_sum]
+    refine Finset.sum_congr rfl fun i hi => ?_
+    have h1 := (ha i (Finset.mem_range.1 hi)).ne'
+    have h2 := (hb i (Finset.mem_range.1 hi)).ne'
+    rw [div_sub_div _ _ h1 h2, mul_div_assoc']
+    congr 1
+    ring
+  unfold scoreAvg crossAvg
+  rw [h1, ← hroot]
+  have : (1 + ξ) * ∑ i ∈ Finset.range n, x i / (σ₀ + ξ * x i) -
+      (1 + ξ) * ∑ i ∈ Finset.range n, x i / (s + ξ * x i) =
+      (1 + ξ) * ((s - σ₀) * ∑ i ∈ Finset.range n, x i / ((σ₀ + ξ * x i) * (s + ξ * x i))) := by
+    rw [← h2]; ring
+  rw [this]
+  ring
+
+lemma crossAvg_anti (hx : ∀ i < n, 0 ≤ x i) (ha : ∀ i < n, 0 < σ₀ + ξ * x i)
+    (ht : ∀ i < n, 0 < t + ξ * x i) (htt' : t ≤ t') :
+    crossAvg ξ σ₀ t' x n ≤ crossAvg ξ σ₀ t x n := by
+  unfold crossAvg
+  refine mul_le_mul_of_nonneg_left (Finset.sum_le_sum fun i hi => ?_) (by positivity)
+  have hi := Finset.mem_range.1 hi
+  exact div_le_div_of_nonneg_left (hx i hi) (mul_pos (ha i hi) (ht i hi))
+    (mul_le_mul_of_nonneg_left (by linarith) (ha i hi).le)
+
+lemma crossAvg_pos (hn : 0 < n) (hx : ∀ i < n, 0 < x i) (ha : ∀ i < n, 0 < σ₀ + ξ * x i)
+    (ht : ∀ i < n, 0 < t + ξ * x i) : 0 < crossAvg ξ σ₀ t x n := by
+  unfold crossAvg
+  refine mul_pos (by positivity) (Finset.sum_pos (fun i hi => ?_) ⟨0, by simpa using hn⟩)
+  have hi := Finset.mem_range.1 hi
+  exact div_pos (hx i hi) (mul_pos (ha i hi) (ht i hi))
+
+/-- **The lower side of the expansion.** At an admissible root `s < σ₀`, with
+`ρ = |Fₙ(σ₀)| M / ((1 + ξ) Qₙ(σ₀)) < 1/2`, where `M ≥ 1/(σ₀ + ξ xᵢ)` for all `i < n`,
+`0 ≤ (1 + ξ) Qₙ(s) - (1 + ξ) Qₙ(σ₀) ≤ 2 (1 + ξ) Qₙ(σ₀) ρ`. -/
+theorem crossAvg_sub_le (h1ξ : 0 < 1 + ξ) (hn : 0 < n) (hx : ∀ i < n, 0 < x i)
+    (ha : ∀ i < n, 0 < σ₀ + ξ * x i) (hb : ∀ i < n, 0 < s + ξ * x i)
+    (hroot : (1 + ξ) * ∑ i ∈ Finset.range n, x i / (s + ξ * x i) = n) (hs : s < σ₀) {M : ℝ}
+    (hM : ∀ i < n, 1 / (σ₀ + ξ * x i) ≤ M)
+    (hρ : |scoreAvg ξ σ₀ x n| / ((1 + ξ) * crossAvg ξ σ₀ σ₀ x n) * M < 1 / 2) :
+    0 ≤ (1 + ξ) * crossAvg ξ σ₀ s x n - (1 + ξ) * crossAvg ξ σ₀ σ₀ x n ∧
+      (1 + ξ) * crossAvg ξ σ₀ s x n - (1 + ξ) * crossAvg ξ σ₀ σ₀ x n ≤
+        2 * ((1 + ξ) * crossAvg ξ σ₀ σ₀ x n) *
+          (|scoreAvg ξ σ₀ x n| / ((1 + ξ) * crossAvg ξ σ₀ σ₀ x n) * M) := by
+  set q₀ := (1 + ξ) * crossAvg ξ σ₀ σ₀ x n
+  set R := (1 + ξ) * crossAvg ξ σ₀ s x n
+  set ρ := |scoreAvg ξ σ₀ x n| / q₀ * M
+  have hq₀ : 0 < q₀ := mul_pos h1ξ (crossAvg_pos hn hx ha ha)
+  have hRq : q₀ ≤ R := mul_le_mul_of_nonneg_left
+    (crossAvg_anti (fun i hi => (hx i hi).le) ha hb hs.le) h1ξ.le
+  have hid := scoreAvg_eq_of_root hn ha hb hroot
+  set d := σ₀ - s
+  have hd : 0 < d := sub_pos.2 hs
+  have habs : |scoreAvg ξ σ₀ x n| = d * R := by
+    rw [hid, abs_mul, abs_of_neg (by linarith : s - σ₀ < 0), abs_of_pos (hq₀.trans_le hRq)]
+    ring
+  have hdq : d ≤ |scoreAvg ξ σ₀ x n| / q₀ := by
+    rw [le_div_iff₀ hq₀, habs]
+    exact mul_le_mul_of_nonneg_left hRq hd.le
+  have hM0 : 0 ≤ M := (one_div_pos.2 (ha 0 hn)).le.trans (hM 0 hn)
+  have hρ0 : 0 ≤ ρ := mul_nonneg (div_nonneg (abs_nonneg _) hq₀.le) hM0
+  -- each denominator shrinks by at most the factor `1 - ρ`
+  have hbi : ∀ i < n, (1 - ρ) * (σ₀ + ξ * x i) ≤ s + ξ * x i := fun i hi => by
+    have h1 : d * (1 / (σ₀ + ξ * x i)) ≤ ρ := (mul_le_mul_of_nonneg_left (hM i hi) hd.le).trans
+      (mul_le_mul_of_nonneg_right hdq hM0)
+    have h2 : d ≤ ρ * (σ₀ + ξ * x i) := by
+      rw [mul_one_div, div_le_iff₀ (ha i hi)] at h1; exact h1
+    have : s + ξ * x i = σ₀ + ξ * x i - d := by simp only [d]; ring
+    rw [this]; linarith
+  have h1ρ : 0 < 1 - ρ := by linarith
+  have hQ : crossAvg ξ σ₀ s x n ≤ crossAvg ξ σ₀ σ₀ x n / (1 - ρ) := by
+    rw [le_div_iff₀ h1ρ]
+    unfold crossAvg
+    rw [mul_comm, mul_left_comm, Finset.mul_sum]
+    refine mul_le_mul_of_nonneg_left (Finset.sum_le_sum fun i hi => ?_) (by positivity)
+    have hi := Finset.mem_range.1 hi
+    have hai := ha i hi
+    have hbi' := hbi i hi
+    rw [mul_div_assoc', div_le_div_iff₀ (mul_pos hai (hb i hi)) (mul_pos hai hai)]
+    have := (hx i hi).le
+    nlinarith [mul_le_mul_of_nonneg_left hbi' (mul_nonneg this hai.le)]
+  refine ⟨by linarith, ?_⟩
+  have : R ≤ q₀ / (1 - ρ) := by
+    simp only [R, q₀]
+    rw [mul_div_assoc]
+    exact mul_le_mul_of_nonneg_left hQ h1ξ.le
+  have h3 : q₀ / (1 - ρ) - q₀ ≤ 2 * q₀ * ρ := by
+    rw [div_sub' h1ρ.ne', div_le_iff₀ h1ρ]
+    nlinarith [mul_nonneg (mul_nonneg hρ0 hq₀.le) (by linarith : (0:ℝ) ≤ 1 - 2 * ρ)]
+  linarith
+
+end Expansion
+
 end ExtremeValueTheory
