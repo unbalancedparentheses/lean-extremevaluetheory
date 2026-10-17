@@ -450,4 +450,182 @@ theorem tendstoInDistribution_sampleMean_gpd_zero (hX : ∀ i, HasLaw (X i) (gpd
 
 end Exponential
 
+/-! ### The scale MLE for a known shape -/
+
+section FixedShape
+
+variable {ξ σ : ℝ} {n : ℕ} {x : Fin n → ℝ}
+
+/-- The admissible scales for a sample `x` at shape `ξ`: the `σ > 0` such that every `xᵢ` lies in
+the support of `GPD(ξ, σ)`, i.e. `σ + ξ xᵢ > 0`. Outside this set the likelihood vanishes. -/
+def gpdScaleDomain (ξ : ℝ) (x : Fin n → ℝ) : Set ℝ := {σ | 0 < σ ∧ ∀ i, 0 < σ + ξ * x i}
+
+/-- The **scale score** `∑ᵢ xᵢ / (σ + ξ xᵢ)`: the likelihood equation in `σ` for a known shape
+`ξ` reads `(1 + ξ) ∑ᵢ xᵢ / (σ + ξ xᵢ) = n` (`hasDerivAt_gpdLogLik`). -/
+noncomputable def gpdScaleScore (ξ σ : ℝ) (x : Fin n → ℝ) : ℝ := ∑ i, x i / (σ + ξ * x i)
+
+lemma mem_gpdScaleDomain_of_le {τ : ℝ} (hσ : σ ∈ gpdScaleDomain ξ x)
+    (h : σ ≤ τ) : τ ∈ gpdScaleDomain ξ x :=
+  ⟨hσ.1.trans_le h, fun i => (hσ.2 i).trans_le (by linarith)⟩
+
+lemma gpdScaleScore_anti (hx : ∀ i, 0 ≤ x i) {τ : ℝ} (hσ : σ ∈ gpdScaleDomain ξ x)
+    (h : σ ≤ τ) : gpdScaleScore ξ τ x ≤ gpdScaleScore ξ σ x :=
+  Finset.sum_le_sum fun i _ => div_le_div_of_nonneg_left (hx i) (hσ.2 i) (by linarith)
+
+lemma gpdScaleScore_strictAnti (hn : 0 < n) (hx : ∀ i, 0 < x i) {τ : ℝ}
+    (hσ : σ ∈ gpdScaleDomain ξ x) (h : σ < τ) : gpdScaleScore ξ τ x < gpdScaleScore ξ σ x :=
+  Finset.sum_lt_sum_of_nonempty ⟨⟨0, hn⟩, Finset.mem_univ _⟩ fun i _ =>
+    div_lt_div_of_pos_left (hx i) (hσ.2 i) (by linarith)
+
+lemma continuousOn_gpdScaleScore :
+    ContinuousOn (fun s => gpdScaleScore ξ s x) (gpdScaleDomain ξ x) := by
+  unfold gpdScaleScore
+  refine continuousOn_finsetSum _ fun i _ => ?_
+  exact continuousOn_const.div (continuousOn_id.add continuousOn_const) fun s hs => (hs.2 i).ne'
+
+lemma eventually_mem_gpdScaleDomain (hσ : σ ∈ gpdScaleDomain ξ x) :
+    ∀ᶠ s in 𝓝 σ, s ∈ gpdScaleDomain ξ x := by
+  refine (lt_mem_nhds hσ.1).and (eventually_all.2 fun i => ?_)
+  exact (continuous_id.add continuous_const).continuousAt.eventually (lt_mem_nhds (hσ.2 i))
+
+/-- **The scale score is the derivative of the log-likelihood**: on the admissible scales,
+`∂ℓ/∂σ = σ⁻¹ ((1 + ξ) ∑ᵢ xᵢ / (σ + ξ xᵢ) - n)`. -/
+theorem hasDerivAt_gpdLogLik (hξ : ξ ≠ 0) (hx : ∀ i, 0 ≤ x i) (hσ : σ ∈ gpdScaleDomain ξ x) :
+    HasDerivAt (fun s => gpdLogLik ξ s x)
+      (σ⁻¹ * ((1 + ξ) * gpdScaleScore ξ σ x - n)) σ := by
+  have heq : (fun s => gpdLogLik ξ s x) =ᶠ[𝓝 σ]
+      fun s => ∑ i, (1 / ξ * log s - (1 / ξ + 1) * log (s + ξ * x i)) := by
+    filter_upwards [eventually_mem_gpdScaleDomain hσ] with s hs
+    refine Finset.sum_congr rfl fun i _ => ?_
+    have hu : 1 + ξ * x i / s = (s + ξ * x i) / s := by field_simp [hs.1.ne']
+    have hu' : 0 < 1 + ξ * x i / s := hu ▸ div_pos (hs.2 i) hs.1
+    rw [log_gpdDensity hs.1 hξ (hx i) hu', hu, log_div (hs.2 i).ne' hs.1.ne']
+    ring
+  refine HasDerivAt.congr_of_eventuallyEq ?_ heq
+  have hterm : ∀ i, HasDerivAt (fun s => 1 / ξ * log s - (1 / ξ + 1) * log (s + ξ * x i))
+      (σ⁻¹ * ((1 + ξ) * (x i / (σ + ξ * x i)) - 1)) σ := by
+    intro i
+    have h1 := (hasDerivAt_log hσ.1.ne').const_mul (1 / ξ)
+    have h2 := (((hasDerivAt_id σ).add_const (ξ * x i)).log (hσ.2 i).ne').const_mul (1 / ξ + 1)
+    refine (h1.sub h2).congr_deriv ?_
+    have := hσ.2 i
+    have := hσ.1
+    simp only [id]
+    field_simp
+    ring
+  convert HasDerivAt.sum (u := Finset.univ) fun i _ => hterm i using 1
+  · funext s; simp
+  · rw [gpdScaleScore, ← Finset.mul_sum, Finset.sum_sub_distrib, ← Finset.mul_sum]
+    simp
+
+/-- Near the lower end of the admissible scales the score exceeds `n / (1 + ξ)`. -/
+lemma exists_lt_gpdScaleScore (hξ1 : -1 < ξ) (hξ : ξ ≠ 0) (hn : 0 < n) (hx : ∀ i, 0 < x i) :
+    ∃ σ ∈ gpdScaleDomain ξ x, (n : ℝ) < (1 + ξ) * gpdScaleScore ξ σ x := by
+  have h1ξ : 0 < 1 + ξ := by linarith
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+  rcases lt_or_gt_of_ne hξ with hneg | hpos
+  · -- `ξ < 0`: the term of the largest observation blows up at the lower end `-ξ max xᵢ`
+    obtain ⟨i₀, -, hi₀⟩ := Finset.exists_max_image Finset.univ x ⟨⟨0, hn⟩, Finset.mem_univ _⟩
+    set δ := x i₀ * (1 + ξ) / (2 * n)
+    have hδ : 0 < δ := div_pos (mul_pos (hx i₀) h1ξ) (by positivity)
+    have hmem : -ξ * x i₀ + δ ∈ gpdScaleDomain ξ x := by
+      refine ⟨by nlinarith [hx i₀], fun i => ?_⟩
+      have : ξ * x i₀ ≤ ξ * x i := mul_le_mul_of_nonpos_left (hi₀ i (Finset.mem_univ _)) hneg.le
+      linarith
+    refine ⟨_, hmem, ?_⟩
+    have hsingle : x i₀ / (-ξ * x i₀ + δ + ξ * x i₀) ≤ gpdScaleScore ξ (-ξ * x i₀ + δ) x :=
+      Finset.single_le_sum (f := fun i => x i / (-ξ * x i₀ + δ + ξ * x i))
+        (fun i _ => div_nonneg (hx i).le (hmem.2 i).le) (Finset.mem_univ i₀)
+    have he : x i₀ / (-ξ * x i₀ + δ + ξ * x i₀) = 2 * n / (1 + ξ) := by
+      rw [show -ξ * x i₀ + δ + ξ * x i₀ = δ by ring]
+      simp only [δ]
+      field_simp [(hx i₀).ne']
+    rw [he] at hsingle
+    have : (1 + ξ) * (2 * n / (1 + ξ)) = 2 * n := by field_simp
+    nlinarith
+  · -- `ξ > 0`: the score is continuous at `σ = 0`, where it equals `n / ξ`
+    have hcont : ContinuousAt (fun s => (1 + ξ) * gpdScaleScore ξ s x) 0 := by
+      unfold gpdScaleScore
+      refine continuousAt_const.mul (tendsto_finsetSum _ fun i _ => ?_)
+      exact continuousAt_const.div (continuousAt_id.add continuousAt_const)
+        (by simp; exact ⟨hpos.ne', (hx i).ne'⟩)
+    have h0 : (n : ℝ) < (1 + ξ) * gpdScaleScore ξ 0 x := by
+      have : gpdScaleScore ξ 0 x = n / ξ := by
+        simp only [gpdScaleScore, zero_add]
+        rw [Finset.sum_congr rfl fun i _ => show x i / (ξ * x i) = 1 / ξ by
+          field_simp [(hx i).ne']]
+        simp [div_eq_mul_inv]
+      rw [this, ← sub_pos]
+      have : (1 + ξ) * (n / ξ) - n = n / ξ := by field_simp; ring
+      rw [this]; positivity
+    obtain ⟨s, hs, hs0⟩ := (((hcont.eventually (lt_mem_nhds h0)).filter_mono
+      nhdsWithin_le_nhds).and (self_mem_nhdsWithin (s := Ioi (0 : ℝ)))).exists
+    exact ⟨s, ⟨hs0, fun i => by have := hx i; positivity⟩, hs⟩
+
+/-- **Existence of the scale MLE.** For a known shape `ξ > -1`, `ξ ≠ 0`, and a sample of
+positive observations, the likelihood equation `(1 + ξ) ∑ᵢ xᵢ / (σ + ξ xᵢ) = n` has a root among
+the admissible scales. -/
+theorem exists_gpdScaleScore_eq (hξ1 : -1 < ξ) (hξ : ξ ≠ 0) (hn : 0 < n) (hx : ∀ i, 0 < x i) :
+    ∃ σ ∈ gpdScaleDomain ξ x, (1 + ξ) * gpdScaleScore ξ σ x = n := by
+  obtain ⟨σ₁, hσ₁, h₁⟩ := exists_lt_gpdScaleScore hξ1 hξ hn hx
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+  have hlim : Tendsto (fun s => (1 + ξ) * gpdScaleScore ξ s x) atTop (𝓝 0) := by
+    have : Tendsto (fun s => gpdScaleScore ξ s x) atTop (𝓝 0) := by
+      unfold gpdScaleScore
+      rw [show (0 : ℝ) = ∑ _i : Fin n, (0 : ℝ) by simp]
+      exact tendsto_finsetSum _ fun i _ =>
+        tendsto_const_nhds.div_atTop (tendsto_atTop_add_const_right _ _ tendsto_id)
+    simpa using this.const_mul (1 + ξ)
+  obtain ⟨σ₂, h₂, hle⟩ := ((hlim.eventually (gt_mem_nhds hn')).and
+    (eventually_ge_atTop σ₁)).exists
+  have hsub : Icc σ₁ σ₂ ⊆ gpdScaleDomain ξ x := fun s hs => mem_gpdScaleDomain_of_le hσ₁ hs.1
+  have hcont : ContinuousOn (fun s => (1 + ξ) * gpdScaleScore ξ s x) (Icc σ₁ σ₂) :=
+    (continuousOn_const.mul continuousOn_gpdScaleScore).mono hsub
+  obtain ⟨σ, hσ, hσeq⟩ := intermediate_value_Icc' hle hcont ⟨h₂.le, h₁.le⟩
+  exact ⟨σ, hsub hσ, hσeq⟩
+
+/-- **Uniqueness of the root of the scale likelihood equation.** -/
+theorem gpdScaleScore_root_unique (hξ1 : -1 < ξ) (hn : 0 < n) (hx : ∀ i, 0 < x i) {σ τ : ℝ}
+    (hσ : σ ∈ gpdScaleDomain ξ x) (hτ : τ ∈ gpdScaleDomain ξ x)
+    (hσe : (1 + ξ) * gpdScaleScore ξ σ x = n) (hτe : (1 + ξ) * gpdScaleScore ξ τ x = n) :
+    σ = τ := by
+  have h1ξ : 0 < 1 + ξ := by linarith
+  by_contra hne
+  rcases lt_or_gt_of_ne hne with h | h
+  · have := mul_lt_mul_of_pos_left (gpdScaleScore_strictAnti hn hx hσ h) h1ξ
+    linarith
+  · have := mul_lt_mul_of_pos_left (gpdScaleScore_strictAnti hn hx hτ h) h1ξ
+    linarith
+
+/-- **The root of the scale likelihood equation is the unique maximizer of the likelihood.**
+For a known shape `ξ > -1`, `ξ ≠ 0`, and positive observations, if `σ̂` solves
+`(1 + ξ) ∑ᵢ xᵢ / (σ̂ + ξ xᵢ) = n`, then `ℓ(ξ, σ) < ℓ(ξ, σ̂)` for every other admissible `σ`. The
+score `σ ↦ ∂ℓ/∂σ` changes sign exactly once, from `+` to `-`, at `σ̂`. -/
+theorem gpdLogLik_lt_of_score_eq (hξ1 : -1 < ξ) (hξ : ξ ≠ 0) (hn : 0 < n) (hx : ∀ i, 0 < x i)
+    {σh : ℝ} (hσh : σh ∈ gpdScaleDomain ξ x) (hroot : (1 + ξ) * gpdScaleScore ξ σh x = n)
+    (hσ : σ ∈ gpdScaleDomain ξ x) (hne : σ ≠ σh) : gpdLogLik ξ σ x < gpdLogLik ξ σh x := by
+  have h1ξ : 0 < 1 + ξ := by linarith
+  have hx0 : ∀ i, 0 ≤ x i := fun i => (hx i).le
+  have hd := fun s (hs : s ∈ gpdScaleDomain ξ x) => hasDerivAt_gpdLogLik hξ hx0 hs
+  have hcont : ∀ a b, a ∈ gpdScaleDomain ξ x →
+      ContinuousOn (fun s => gpdLogLik ξ s x) (Icc a b) := fun a b ha s hs =>
+    (hd s (mem_gpdScaleDomain_of_le ha hs.1)).continuousAt.continuousWithinAt
+  rcases lt_or_gt_of_ne hne with h | h
+  · refine strictMonoOn_of_deriv_pos (convex_Icc σ σh) (hcont σ σh hσ) (fun t ht => ?_)
+      ⟨le_rfl, h.le⟩ ⟨h.le, le_rfl⟩ h
+    rw [interior_Icc] at ht
+    have hst := mem_gpdScaleDomain_of_le hσ ht.1.le
+    rw [(hd t hst).deriv]
+    have := mul_lt_mul_of_pos_left (gpdScaleScore_strictAnti hn hx hst ht.2) h1ξ
+    exact mul_pos (inv_pos.2 hst.1) (by linarith)
+  · refine strictAntiOn_of_deriv_neg (convex_Icc σh σ) (hcont σh σ hσh) (fun t ht => ?_)
+      ⟨le_rfl, h.le⟩ ⟨h.le, le_rfl⟩ h
+    rw [interior_Icc] at ht
+    have hst := mem_gpdScaleDomain_of_le hσh ht.1.le
+    rw [(hd t hst).deriv]
+    have := mul_lt_mul_of_pos_left (gpdScaleScore_strictAnti hn hx hσh ht.1) h1ξ
+    exact mul_neg_of_pos_of_neg (inv_pos.2 hst.1) (by linarith)
+
+end FixedShape
+
 end ExtremeValueTheory
