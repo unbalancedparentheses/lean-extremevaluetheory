@@ -549,6 +549,200 @@ theorem measure_abs_mean_sub_ge_le {X : ℕ → Ω → ℝ} (hindep : iIndepFun 
   calc variance T P * (k * ε ^ 2) ≤ (k : ℝ) * P[X 0 ^ 2] * (k * ε ^ 2) := by gcongr
     _ = P[X 0 ^ 2] * (k * ε) ^ 2 := by ring
 
+/-- **A conditional law of large numbers for the top excesses.** Let the `E_i` be iid standard
+exponential, `k(n) → ∞`, `k(n) < n` and `E_{(k+1)} → ∞` in probability. Let `φ(u, s)` be
+jointly measurable, dominated by `C e^{u/4}` for `u ≥ 0` and `s ≥ s₀`, and converging to `H(u)`
+as `s → ∞`. Then `(1/k) ∑_{i<k} φ(E_{(i+1)} - E_{(k+1)}, E_{(k+1)}) → E H(E_0)` in probability.
+
+The proof conditions on `E_{(k+1)}` via the Rényi representation, under which the top excesses
+are iid exponential, and applies Chebyshev's inequality conditionally. -/
+theorem tendstoInMeasure_meanExcess_fun {E : ℕ → Ω → ℝ} (hEm : ∀ i, Measurable (E i))
+    (hE : ∀ i, HasLaw (E i) (expMeasure 1) P) (hind : iIndepFun E P) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : ∀ᶠ n in atTop, k n < n)
+    (hok : ∀ M, Tendsto (fun n => P {ω | orderStat (fun i : Fin n => E i ω) (k n) < M}) atTop
+      (𝓝 0))
+    {φ : ℝ → ℝ → ℝ} (hφ : Measurable (Function.uncurry φ)) {C s₀ : ℝ}
+    (hdom : ∀ s ≥ s₀, ∀ u ≥ 0, |φ u s| ≤ C * exp (u / 4)) {H : ℝ → ℝ}
+    (hlim : ∀ u ≥ 0, Tendsto (fun s => φ u s) atTop (𝓝 (H u))) :
+    TendstoInMeasure P (fun n ω => ((k n : ℝ))⁻¹ * ∑ i ∈ Finset.range (k n),
+        φ (orderStat (fun i : Fin n => E i ω) i - orderStat (fun i : Fin n => E i ω) (k n))
+          (orderStat (fun i : Fin n => E i ω) (k n)))
+      atTop (fun _ => ∫ u, H u ∂(expMeasure 1)) := by
+  set m : ℝ → ℝ := fun s => ∫ u, φ u s ∂(expMeasure 1) with hm
+  have hφs : ∀ s, Measurable fun u => φ u s := fun s =>
+    measurable_uncurry_comp hφ measurable_id measurable_const
+  have hmm : Measurable m := by
+    have := (hφ.comp measurable_swap).stronglyMeasurable.integral_prod_right'
+      (ν := expMeasure 1)
+    exact this.measurable
+  have hae : ∀ᵐ u ∂(expMeasure 1), 0 ≤ u := ae_nonneg_expMeasure
+  have hbint : Integrable (fun u => C * exp (u / 4)) (expMeasure 1) := by
+    have := (integrable_exp_mul_expMeasure (a := 1 / 4) (by norm_num)).const_mul C
+    refine this.congr (Eventually.of_forall fun u => ?_)
+    simp only
+    ring_nf
+  have hmlim : Tendsto m atTop (𝓝 (∫ u, H u ∂(expMeasure 1))) := by
+    refine tendsto_integral_filter_of_dominated_convergence (fun u => C * exp (u / 4))
+      (Eventually.of_forall fun s => (hφs s).aestronglyMeasurable) ?_ hbint ?_
+    · filter_upwards [eventually_ge_atTop s₀] with s hs
+      filter_upwards [hae] with u hu
+      rw [Real.norm_eq_abs]
+      exact hdom s hs u hu
+    · filter_upwards [hae] with u hu
+      exact hlim u hu
+  -- Chebyshev, for a fixed threshold `s`
+  have hsq : ∀ s ≥ s₀, ∫ u, φ u s ^ 2 ∂(expMeasure 1) ≤ C ^ 2 * 2 := by
+    intro s hs
+    have h2 : Integrable (fun u => C ^ 2 * exp (1 / 2 * u)) (expMeasure 1) :=
+      (integrable_exp_mul_expMeasure (by norm_num)).const_mul _
+    calc ∫ u, φ u s ^ 2 ∂(expMeasure 1) ≤ ∫ u, C ^ 2 * exp (1 / 2 * u) ∂(expMeasure 1) := by
+          refine integral_mono_of_nonneg (Eventually.of_forall fun _ => sq_nonneg _) h2 ?_
+          filter_upwards [hae] with u hu
+          have := hdom s hs u hu
+          have h0 : 0 ≤ C * exp (u / 4) := (abs_nonneg _).trans this
+          calc φ u s ^ 2 = |φ u s| ^ 2 := (sq_abs _).symm
+            _ ≤ (C * exp (u / 4)) ^ 2 := pow_le_pow_left₀ (abs_nonneg _) this 2
+            _ = C ^ 2 * exp (1 / 2 * u) := by rw [mul_pow, ← exp_nat_mul]; ring_nf
+      _ = C ^ 2 * 2 := by
+          rw [integral_const_mul, integral_exp_mul_expMeasure (by norm_num)]; norm_num
+  have hL2 : ∀ s ≥ s₀, MemLp (fun u => φ u s) 2 (expMeasure 1) := by
+    intro s hs
+    refine (memLp_two_iff_integrable_sq (hφs s).aestronglyMeasurable).2 ?_
+    refine Integrable.mono' ((integrable_exp_mul_expMeasure (a := 1 / 2) (by norm_num)).const_mul
+      (C ^ 2)) ((hφs s).pow_const 2).aestronglyMeasurable ?_
+    filter_upwards [hae] with u hu
+    have := hdom s hs u hu
+    rw [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
+    calc φ u s ^ 2 = |φ u s| ^ 2 := (sq_abs _).symm
+      _ ≤ (C * exp (u / 4)) ^ 2 := pow_le_pow_left₀ (abs_nonneg _) this 2
+      _ = C ^ 2 * exp (1 / 2 * u) := by rw [mul_pow, ← exp_nat_mul]; ring_nf
+  have hcheb : ∀ s ≥ s₀, ∀ j : ℕ, 0 < j → ∀ ε > 0,
+      P {ω | ε ≤ |(j : ℝ)⁻¹ * ∑ i ∈ Finset.range j, φ (E i ω) s - m s|} ≤
+        ENNReal.ofReal (C ^ 2 * 2 / (j * ε ^ 2)) := by
+    intro s hs j hj ε hε
+    have hX := measure_abs_mean_sub_ge_le (X := fun i ω => φ (E i ω) s)
+      (hind.comp (fun _ x => φ x s) fun _ => hφs s)
+      (fun i => ⟨(hφs s).comp_aemeasurable (hE i).aemeasurable,
+        (hφs s).comp_aemeasurable (hE 0).aemeasurable, by
+          rw [show (fun ω => φ (E i ω) s) = (fun u => φ u s) ∘ E i from rfl,
+            show (fun ω => φ (E 0 ω) s) = (fun u => φ u s) ∘ E 0 from rfl,
+            ← Measure.map_map (hφs s) (hEm i), ← Measure.map_map (hφs s) (hEm 0),
+            (hE i).map_eq, (hE 0).map_eq]⟩)
+      ((hE 0).memLp_comp (hL2 s hs)) hj hε
+    have e1 : P[fun ω => φ (E 0 ω) s] = m s :=
+      (hE 0).integral_comp (f := fun u => φ u s) (hφs s).aestronglyMeasurable
+    have e2 : P[(fun ω => φ (E 0 ω) s) ^ 2] = ∫ u, φ u s ^ 2 ∂(expMeasure 1) := by
+      rw [← (hE 0).integral_comp (f := fun u => φ u s ^ 2)
+        ((hφs s).pow_const 2).aestronglyMeasurable]
+      rfl
+    rw [e1, e2] at hX
+    refine hX.trans (ENNReal.ofReal_le_ofReal ?_)
+    gcongr
+    exact hsq s hs
+  rw [tendstoInMeasure_iff_dist]
+  intro ε hε
+  obtain ⟨s₁, hs₁⟩ := eventually_atTop.1 ((hmlim.eventually (Metric.ball_mem_nhds _
+    (half_pos hε))).and (eventually_ge_atTop s₀))
+  set ε' := ε / 2 with hε'
+  have hε'0 : 0 < ε' := half_pos hε
+  set B : Set (ℝ × ℝ) := {q | s₁ ≤ q.2 ∧ ε' ≤ |q.1 - m q.2|} with hB
+  have hBm : MeasurableSet B :=
+    (measurableSet_le measurable_const measurable_snd).inter (measurableSet_le measurable_const
+      (continuous_abs.measurable.comp (measurable_fst.sub (hmm.comp measurable_snd))))
+  -- the conditional Chebyshev bound, via the Rényi representation
+  have hbound : ∀ᶠ n in atTop, P {ω | s₁ ≤ orderStat (fun i : Fin n => E i ω) (k n) ∧
+      ε' ≤ |((k n : ℝ))⁻¹ * ∑ i ∈ Finset.range (k n),
+        φ (orderStat (fun i : Fin n => E i ω) i - orderStat (fun i : Fin n => E i ω) (k n))
+          (orderStat (fun i : Fin n => E i ω) (k n)) -
+        m (orderStat (fun i : Fin n => E i ω) (k n))|} ≤
+      ENNReal.ofReal (C ^ 2 * 2 / (k n * ε' ^ 2)) := by
+    filter_upwards [hkn, hk.eventually_gt_atTop 0] with n hn hk0
+    set j := k n with hj
+    set F : ℝ → ℝ → ℝ≥0∞ := fun x s => B.indicator 1 ((j : ℝ)⁻¹ * x, s) with hF
+    have hFm : Measurable (Function.uncurry F) :=
+      (measurable_one.indicator hBm).comp ((measurable_const.mul measurable_fst).prodMk
+        measurable_snd)
+    have hmo := measurable_orderStat_pi (n := n) j
+    have hSm : MeasurableSet {y : Fin n → ℝ | ((j : ℝ)⁻¹ * ∑ i ∈ Finset.range j,
+        φ (orderStat y i - orderStat y j) (orderStat y j), orderStat y j) ∈ B} :=
+      hBm.preimage ((measurable_const.mul (Finset.measurable_sum _ fun i _ =>
+        measurable_uncurry_comp hφ ((measurable_orderStat_pi i).sub hmo) hmo)).prodMk hmo)
+    have e1 := (hasLaw_vec_of_iid hE hind n).measure_eq hSm
+    have e2 := lintegral_orderStat_excess hn hφ hFm
+    have e0 : P {ω | s₁ ≤ orderStat (fun i : Fin n => E i ω) j ∧
+        ε' ≤ |((j : ℝ))⁻¹ * ∑ i ∈ Finset.range j,
+          φ (orderStat (fun i : Fin n => E i ω) i - orderStat (fun i : Fin n => E i ω) j)
+            (orderStat (fun i : Fin n => E i ω) j) -
+          m (orderStat (fun i : Fin n => E i ω) j)|} =
+        ∫⁻ y, ∫⁻ z, F (∑ i, φ (z i) (orderStat y j)) (orderStat y j)
+          ∂(Measure.pi fun _ : Fin j => expMeasure 1)
+          ∂(Measure.pi fun _ : Fin n => expMeasure 1) := by
+      refine (e1.trans ?_).trans e2
+      rw [← lintegral_indicator_one hSm]
+      rfl
+    rw [e0]
+    have inner : ∀ s, ∫⁻ z, F (∑ i, φ (z i) s) s ∂(Measure.pi fun _ : Fin j => expMeasure 1) ≤
+        ENNReal.ofReal (C ^ 2 * 2 / (j * ε' ^ 2)) := by
+      intro s
+      by_cases hs : s₁ ≤ s
+      · have hTm : MeasurableSet {z : Fin j → ℝ | ε' ≤ |(j : ℝ)⁻¹ * ∑ i, φ (z i) s - m s|} :=
+          measurableSet_le measurable_const (continuous_abs.measurable.comp
+            ((measurable_const.mul (Finset.measurable_sum _ fun i _ =>
+              (hφs s).comp (measurable_pi_apply i))).sub_const _))
+        have e3 : ∫⁻ z, F (∑ i, φ (z i) s) s ∂(Measure.pi fun _ : Fin j => expMeasure 1) =
+            (Measure.pi fun _ : Fin j => expMeasure 1)
+              {z | ε' ≤ |(j : ℝ)⁻¹ * ∑ i, φ (z i) s - m s|} := by
+          rw [← lintegral_indicator_one hTm]
+          congr 1 with z
+          simp [hF, hB, Set.indicator, hs]
+        have e4 := (hasLaw_vec_of_iid hE hind j).measure_eq hTm
+        rw [e3, ← e4]
+        have := hcheb s ((hs₁ s hs).2) j hk0 ε' hε'0
+        refine le_of_eq_of_le ?_ this
+        congr 1
+        ext ω
+        simp only [mem_ofPred_eq]
+        rw [Fin.sum_univ_eq_sum_range (fun i => φ (E i ω) s) j]
+      · have : ∀ z : Fin j → ℝ, F (∑ i, φ (z i) s) s = 0 := fun z => by
+          simp [hF, hB, Set.indicator, hs]
+        simp [this]
+    calc ∫⁻ y, ∫⁻ z, F (∑ i, φ (z i) (orderStat y j)) (orderStat y j)
+          ∂(Measure.pi fun _ : Fin j => expMeasure 1) ∂(Measure.pi fun _ : Fin n => expMeasure 1)
+        ≤ ∫⁻ _, ENNReal.ofReal (C ^ 2 * 2 / (j * ε' ^ 2))
+          ∂(Measure.pi fun _ : Fin n => expMeasure 1) := lintegral_mono fun y => inner _
+      _ = ENNReal.ofReal (C ^ 2 * 2 / (j * ε' ^ 2)) := by simp
+  have htend : Tendsto (fun n => ENNReal.ofReal (C ^ 2 * 2 / (k n * ε' ^ 2))) atTop (𝓝 0) := by
+    rw [← ENNReal.ofReal_zero]
+    refine ENNReal.tendsto_ofReal ?_
+    have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop :=
+      (tendsto_natCast_atTop_atTop (R := ℝ)).comp hk
+    have := (tendsto_inv_atTop_zero.comp hkR).const_mul (C ^ 2 * 2 / ε' ^ 2)
+    rw [mul_zero] at this
+    refine this.congr fun n => ?_
+    simp only [Function.comp_apply]
+    field_simp
+  have h0 := (hok s₁).add htend
+  rw [add_zero] at h0
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds h0
+    (Eventually.of_forall fun _ => bot_le) ?_
+  filter_upwards [hbound] with n hn
+  refine (measure_mono ?_).trans ((measure_union_le _ _).trans (add_le_add le_rfl hn))
+
+  intro ω hω
+  simp only [mem_ofPred_eq, Real.dist_eq, mem_union] at hω ⊢
+  by_contra hcon
+  push Not at hcon
+  obtain ⟨h1, h2⟩ := hcon
+  have h3 := (hs₁ _ h1).1
+  rw [Real.dist_eq] at h3
+  have h4 := h2 h1
+  have := abs_sub_le ((k n : ℝ)⁻¹ * ∑ i ∈ Finset.range (k n),
+    φ (orderStat (fun i : Fin n => E i ω) i - orderStat (fun i : Fin n => E i ω) (k n))
+      (orderStat (fun i : Fin n => E i ω) (k n)))
+    (m (orderStat (fun i : Fin n => E i ω) (k n))) (∫ u, H u ∂(expMeasure 1))
+  linarith
+
+
 end ConditionalLLN
 
 end ExtremeValueTheory
