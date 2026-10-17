@@ -150,8 +150,8 @@ noncomputable def paretoCDF {α : ℝ} (hα : 0 < α) : CumulativeDistributionFu
   toFun x := 1 - (max x 1) ^ (-α)
   mono' := fun x y hxy ↦ sub_le_sub_left (Real.rpow_le_rpow_of_nonpos
     (lt_of_lt_of_le one_pos (le_max_right _ _)) (max_le_max hxy le_rfl) (by linarith)) 1
-  right_continuous' := fun x ↦ (continuous_const.sub ((continuous_id.max continuous_const).rpow_const
-    fun y ↦ Or.inl (lt_of_lt_of_le one_pos (le_max_right y 1)).ne')).continuousWithinAt
+  right_continuous' := fun x ↦ (continuous_const.sub
+    ((continuous_id.max continuous_const).rpow_const fun y ↦ Or.inl (lt_of_lt_of_le one_pos (le_max_right y 1)).ne')).continuousWithinAt
   tendsto_atTop := by
     have h := (tendsto_rpow_neg_atTop hα).const_sub (1 : ℝ)
     rw [sub_zero] at h

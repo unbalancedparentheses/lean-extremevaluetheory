@@ -34,6 +34,10 @@ logarithmic derivative, and use them to prove the **converse half of Karamata's 
 * `ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_zero_div`: **Karamata's theorem for
   `∫ t in 0..x`** ([BGT, Proposition 1.5.8]): if `f` is measurable, locally integrable on
   `[0, ∞)` and `f ∈ RV_ρ` with `ρ > -1`, then `(∫ t in 0..x, f t) / (x f x) → 1 / (ρ + 1)`.
+* `ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_Ioi_div_of_measurable` and
+  `ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_Ioi_div_of_antitoneOn`: Karamata's
+  theorem for tail integrals ([BGT, Proposition 1.5.10]) for measurable, resp. eventually
+  antitone, `F` (generalizing `IsRegularlyVarying.tendsto_integral_Ioi_div`).
 -/
 
 open Filter Topology Set Real MeasureTheory
@@ -383,6 +387,67 @@ theorem tendsto_integral_zero_div {f : ℝ → ℝ} {ρ : ℝ} (hf : IsRegularly
       smul_eq_mul]
     field_simp
   rw [hsub, ← hsplit, add_div]
+
+/-- **Karamata's theorem** for tail integrals, measurable version ([BGT, Proposition 1.5.10]): if
+`F` is measurable and regularly varying with index `-α`, `α > 1` (no monotonicity is assumed),
+then `(∫ t in Ioi x, F t) / (x * F x) → 1 / (α - 1)` as `x → ∞`. Compare
+`IsRegularlyVarying.tendsto_integral_Ioi_div` (for antitone `F`), of which this is a
+generalization. -/
+theorem tendsto_integral_Ioi_div_of_measurable {F : ℝ → ℝ} {α : ℝ} (hm : Measurable F)
+    (hRV : IsRegularlyVarying F (-α)) (hα : 1 < α) :
+    Tendsto (fun x => (∫ t in Ioi x, F t) / (x * F x)) atTop (𝓝 (1 / (α - 1))) := by
+  set δ := (α - 1) / 2 with hδ_def
+  have hδ : 0 < δ := by rw [hδ_def]; linarith
+  have hexp : -α + δ < -1 := by rw [hδ_def]; linarith
+  obtain ⟨x₀, hx₀, hFpos, hP⟩ := hRV.potter_bound_of_measurable hm hδ one_lt_two
+  -- Change of variables `t = x * u`.
+  have hsub : ∀ᶠ x in atTop,
+      ∫ u in Ioi (1 : ℝ), F (x * u) / F x = (∫ t in Ioi x, F t) / (x * F x) := by
+    filter_upwards [eventually_gt_atTop 0] with x hx
+    rw [integral_div, integral_comp_mul_left_Ioi F 1 hx, mul_one, smul_eq_mul, inv_mul_eq_div,
+      div_div]
+  have hlim : ∫ u in Ioi (1 : ℝ), u ^ (-α) = 1 / (α - 1) := by
+    rw [integral_Ioi_rpow_of_lt (by linarith) one_pos, one_rpow]
+    rw [show -α + 1 = -(α - 1) by ring, neg_div_neg_eq]
+  rw [← hlim]
+  refine Tendsto.congr' hsub ?_
+  refine tendsto_integral_filter_of_dominated_convergence (fun u => 2 * u ^ (-α + δ)) ?_ ?_ ?_ ?_
+  · exact Eventually.of_forall fun x =>
+      ((hm.comp (measurable_id.const_mul x)).div_const _).aestronglyMeasurable
+  · filter_upwards [eventually_ge_atTop x₀] with x hx
+    refine ae_restrict_of_forall_mem measurableSet_Ioi fun u hu => ?_
+    have hu : 1 < u := hu
+    have hx0 : 0 < x := hx₀.trans_le hx
+    have hxu : x₀ ≤ x * u := by nlinarith
+    have h := hP x hx (x * u) hxu
+    rw [mul_div_cancel_left₀ u hx0.ne',
+      max_eq_left (rpow_le_rpow_of_exponent_le hu.le (by linarith))] at h
+    rw [Real.norm_eq_abs, abs_of_pos (div_pos (hFpos _ hxu) (hFpos _ hx))]
+    exact h
+  · exact (integrableOn_Ioi_rpow_of_lt hexp one_pos).const_mul 2
+  · refine ae_restrict_of_forall_mem measurableSet_Ioi fun u hu => ?_
+    have hu : (0 : ℝ) < u := zero_lt_one.trans hu
+    exact (hRV.2 u hu).congr fun x => by rw [mul_comm]
+
+/-- **Karamata's theorem** for tail integrals of eventually antitone functions: if `F` is antitone
+on some `[a, ∞)` and regularly varying with index `-α`, `α > 1`, then
+`(∫ t in Ioi x, F t) / (x * F x) → 1 / (α - 1)` as `x → ∞`. -/
+theorem tendsto_integral_Ioi_div_of_antitoneOn {F : ℝ → ℝ} {α a : ℝ} (hF : AntitoneOn F (Ici a))
+    (hRV : IsRegularlyVarying F (-α)) (hα : 1 < α) :
+    Tendsto (fun x => (∫ t in Ioi x, F t) / (x * F x)) atTop (𝓝 (1 / (α - 1))) := by
+  set G : ℝ → ℝ := fun t => F (max t a) with hG
+  have hGa : Antitone G := fun s t hst =>
+    hF (mem_Ici.2 (le_max_right s a)) (mem_Ici.2 (le_max_right t a)) (max_le_max hst le_rfl)
+  have hFG : F =ᶠ[atTop] G := by
+    filter_upwards [eventually_ge_atTop a] with x hx
+    simp [hG, max_eq_left hx]
+  refine (tendsto_integral_Ioi_div hGa (hRV.congr hFG) hα).congr' ?_
+  filter_upwards [eventually_ge_atTop a] with x hx
+  have hint : ∫ t in Ioi x, G t = ∫ t in Ioi x, F t :=
+    setIntegral_congr_fun measurableSet_Ioi fun t ht => by
+      simp [hG, max_eq_left (hx.trans (le_of_lt ht))]
+  rw [hint]
+  simp [hG, max_eq_left hx]
 
 end IsRegularlyVarying
 
