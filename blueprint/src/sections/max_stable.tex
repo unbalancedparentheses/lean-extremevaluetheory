@@ -1,0 +1,69 @@
+\chapter{Max-stable vectors and processes}
+\label{chap:max-stable}
+
+We follow de Haan, \emph{A spectral representation for max-stable processes}, Ann.\ Probab.\ 12
+(1984) [dH84], [dHF, Ch.~6 and~9] and [Resnick, Ch.~5].
+
+\begin{definition}[Simple max-stable vector]
+  \label{def:simple-max-stable}
+  \uses{def:max-stable}
+  \lean{ExtremeValueTheory.IsSimpleMaxStable, ExtremeValueTheory.maxStableExponent}
+  \leanok
+  A law $\mu$ on $\bR^d$ is simple max-stable if it has unit Fr\'echet margins
+  $\PR[Y_i \le y] = e^{-1/y}$ and $\PR[Y \le y]^n = \PR[Y \le y/n]$ for $n \ge 1$, $y > 0$. Its exponent
+  function is $V(y) = -\log \PR[Y \le y]$ [dHF, \S6.1].
+\end{definition}
+
+\begin{theorem}[Homogeneity of the exponent function]
+  \label{thm:max-stable-exponent}
+  \uses{def:simple-max-stable}
+  \lean{ExtremeValueTheory.IsSimpleMaxStable.measure_Iic_pos, ExtremeValueTheory.IsSimpleMaxStable.measureReal_Iic_smul,
+    ExtremeValueTheory.IsSimpleMaxStable.maxStableExponent_smul, ExtremeValueTheory.IsSimpleMaxStable.exp_neg_maxStableExponent,
+    ExtremeValueTheory.IsSimpleMaxStable.inv_le_maxStableExponent, ExtremeValueTheory.IsSimpleMaxStable.maxStableExponent_le_sum_inv}
+  \leanok
+  $\PR[Y \le ty] = \PR[Y \le y]^{1/t}$ for all real $t > 0$, so $V(ty) = V(y)/t$, and
+  $\max_i 1/y_i \le V(y) \le \sum_i 1/y_i$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Rational $t$ from max-stability, then monotonicity and continuity.
+\end{proof}
+
+\begin{theorem}[Spectral construction of max-stable vectors]
+  \label{thm:max-stable-spectral}
+  \uses{def:simple-max-stable, thm:prm-exists, thm:prm-uniqueness}
+  \lean{ExtremeValueTheory.spectralMax, ExtremeValueTheory.spectralVector, ProbabilityTheory.IsPoissonRandomMeasure.measure_apply_eq_zero, ProbabilityTheory.IsPoissonRandomMeasure.measure_forall_essSup_le,
+    ExtremeValueTheory.radialMeasure_prod_iUnion, ProbabilityTheory.IsPoissonRandomMeasure.measure_spectralVector_le,
+    ProbabilityTheory.IsPoissonRandomMeasure.isSimpleMaxStable_map_spectralVector, ExtremeValueTheory.exists_isSimpleMaxStable_of_spectral,
+    ExtremeValueTheory.exists_isSimpleMaxStable_of_spectralMeasure}
+  \leanok
+  Let $N$ be a Poisson random measure on $(0, \infty) \times S$ with intensity $\zeta^{-2} \ud\zeta \otimes \mu$ and
+  $f_i \ge 0$ with $\int f_i \ud\mu = 1$. Then $Y_i = \max_{(\zeta, s) \in N} \zeta f_i(s)$ is simple max-stable with
+  $\PR[Y \le y] = \exp(-\int \max_i f_i(s)/y_i \, \mu(\ud s))$. In particular every measure $H$ with
+  $\int w_i \ud H = 1$ is the spectral measure of a simple max-stable law [dH84], [Resnick,
+  Proposition~5.11]. The converse (every simple max-stable law has a spectral measure) is not
+  formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  $\{Y \le y\}$ is the event that $N$ has no point in $\bigcup_i \{\zeta f_i(s) > y_i\}$, whose intensity is
+  $\int \max_i f_i/y_i \ud\mu$.
+\end{proof}
+
+\begin{theorem}[Spectral representation of max-stable processes]
+  \label{thm:max-stable-process}
+  \uses{thm:max-stable-spectral}
+  \lean{ProbabilityTheory.IsPoissonRandomMeasure.isSimpleMaxStable_map_process, ProbabilityTheory.IsPoissonRandomMeasure.measure_process_le, ExtremeValueTheory.smithKernel,
+    ProbabilityTheory.IsPoissonRandomMeasure.isSimpleMaxStable_smith, ExtremeValueTheory.independentSpectralMeasure, ExtremeValueTheory.comonotoneSpectralMeasure,
+    ProbabilityTheory.IsPoissonRandomMeasure.measure_spectralVector_le_independent, ProbabilityTheory.IsPoissonRandomMeasure.measure_spectralVector_le_comonotone}
+  \leanok
+  For $W \colon T \to S \to [0, \infty]$ with $\int W(t) \ud\mu = 1$, the process $Y(t) = \max_{(\zeta,s) \in N} \zeta W(t)(s)$
+  has simple max-stable finite-dimensional laws with
+  $\PR[Y(t_i) \le y_i \ \forall i] = \exp(-\int \max_i W(t_i)/y_i \ud\mu)$ [dH84]. Examples: the Smith model
+  with a Gaussian kernel; independence (spectral mass on the vertices) gives
+  $\prod_i e^{-1/y_i}$, complete dependence gives $\min_i e^{-1/y_i}$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Apply Theorem~\ref{thm:max-stable-spectral} to the finitely many functions $W(t_i)$.
+\end{proof}

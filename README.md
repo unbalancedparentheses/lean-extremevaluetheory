@@ -66,8 +66,7 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   subexponential integrated tails (`IsSStar.isSubexponential_integratedTail`), and `𝒮` is closed
   under convolution roots (`IsSubexponential.of_convPow`).
 - **Linear processes** (`HeavyTails/LinearProcess*.lean`, `Dependence/MovingAverage*.lean`): tails of
-  `Σ ψ_j Z_j` for regularly varying noise with tail balance (finite sums; infinite sums for
-  `α < 1`), and the spectral tail process of finite moving averages with candidate extremal index
+  `Σ ψ_j Z_j` for regularly varying noise with tail balance (finite and infinite sums, every `α > 0`), and the spectral tail process of finite moving averages with candidate extremal index
   `ϑ = max ψ_j^α / Σ ψ_j^α` (`MovingAverage.candidateExtremalIndex_spectral`).
 - **Hill estimator consistency** (`tendstoInMeasure_hill`): for iid samples whose tail is
   regularly varying with index `-α`, and `k → ∞`, `k/n → 0`, the Hill estimator
@@ -135,8 +134,13 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   (`HasSpectralTailProcess.hasExtremalIndex_of_isMDependent`). Through this theorem: the moving
   maximum has `θ = 1/2` (second, independent proof) and finite moving averages have
   `θ = max ψ_j^α / Σ ψ_j^α` (`MovingAverage.hasExtremalIndex`). Infinite moving averages (by truncation,
-  `α < 1`): `θ = ϑ = sup ψ_j^α / Σ ψ_j^α` (`InfiniteMovingAverage.hasExtremalIndex`), and AR(1) with
-  `0 < φ < 1` and nonnegative noise has `θ = 1 − φ^α` (`AR1.hasExtremalIndex`).
+  every `α > 0`, `Σψ_j^δ < ∞` for some `δ < min(α, 1)`): `θ = ϑ = sup ψ_j^α / Σ ψ_j^α`
+  (`InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_lt_one`), and AR(1) with
+  `0 < φ < 1` and nonnegative noise has `θ = 1 − φ^α` (`AR1.hasExtremalIndex_of_pos`).
+- **Max-stable vectors and processes** (`MaxStable/`): simple max-stable laws and their exponent
+  function; de Haan's spectral construction from Poisson random measures for vectors and processes
+  (`exists_isSimpleMaxStable_of_spectralMeasure`, `IsPoissonRandomMeasure.isSimpleMaxStable_map_process`),
+  with the Smith model, independence and complete dependence.
 - **Vague convergence and Poisson random measures** (`ForMathlib/`, Mathlib-only imports, intended
   for upstreaming): vague convergence with its portmanteau properties, Poisson random measures with
   existence for every s-finite intensity (`exists_isPoissonRandomMeasure`), Laplace functionals,

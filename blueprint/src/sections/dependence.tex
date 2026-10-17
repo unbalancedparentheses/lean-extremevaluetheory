@@ -410,3 +410,24 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
   \leanok
   $\sup_j \varphi^{j\alpha} / \sum_j \varphi^{j\alpha} = 1 - \varphi^\alpha$.
 \end{proof}
+
+\begin{theorem}[Infinite moving averages and AR(1) for every $\alpha > 0$]
+  \label{thm:infinite-ma-all-alpha}
+  \uses{thm:infinite-ma, cor:ar1}
+  \lean{ExtremeValueTheory.LinearProcess.tsum_mul_le_rpow_tsum, ExtremeValueTheory.LinearProcess.exists_measure_tsum_gt_le_of_lt_one,
+    ExtremeValueTheory.LinearProcess.ae_summable_mul_of_lt_one, ExtremeValueTheory.LinearProcess.tendsto_measureReal_tsum_mul_div_of_lt_one,
+    ExtremeValueTheory.InfiniteMovingAverage.hasExtremalIndex_of_lt_one, ExtremeValueTheory.InfiniteMovingAverage.hasSpectralTailProcess_of_lt_one,
+    ExtremeValueTheory.InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_lt_one, ExtremeValueTheory.AR1.ae_process_eq_of_pos,
+    ExtremeValueTheory.AR1.hasExtremalIndex_of_pos, ExtremeValueTheory.AR1.hasSpectralTailProcess_of_pos}
+  \leanok
+  The conclusions of Theorem~\ref{thm:infinite-ma} and Corollary~\ref{cor:ar1} hold for every
+  $\alpha > 0$ under $\sum_j \psi_j^\delta < \infty$ for some $0 < \delta < \alpha$ with $\delta < 1$; in particular AR(1)
+  with $0 < \varphi < 1$ has extremal index $1 - \varphi^\alpha$ for all $\alpha > 0$. (For $\alpha > 1$ this condition is
+  slightly stronger than the optimal $\sum_j \psi_j < \infty$.)
+\end{theorem}
+\begin{proof}
+  \leanok
+  With $q = \alpha + 1 - \delta$ and $\beta = \delta + (1-\delta) q$, weighted H\"older gives
+  $\sum |c_j||Z_j| \le (\sum |c_j|^\beta |Z_j|^q)^{1/q}$ when $\sum |c_j|^\delta \le 1$. Since $|Z|^q$ has tail index
+  $\alpha/q < 1$, the $\alpha < 1$ remainder bound applies.
+\end{proof}
