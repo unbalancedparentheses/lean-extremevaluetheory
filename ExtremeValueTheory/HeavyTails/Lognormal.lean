@@ -10,6 +10,38 @@ import Mathlib.Analysis.SpecialFunctions.Log.Monotone
 /-!
 # The lognormal distribution is subexponential
 
+The lognormal law `LN(m, v)`, the law of `exp Z` for `Z ∼ N(m, v)`, is subexponential
+([EKM, Example 1.4.7 and Table 1.4.3]). It is the standard example of a subexponential law whose
+tail is neither regularly varying nor of Weibull type.
+
+## Main definitions
+
+* `ExtremeValueTheory.gaussianTail m v c = P(Z > c)`, `Z ∼ N(m, v)`.
+* `ExtremeValueTheory.lognormal m v`: the push-forward of `gaussianReal m v` under `exp`.
+
+## Main results
+
+* `gaussianTail_le`, `le_gaussianTail`: the **Mills-ratio bounds**: for `c > m`,
+  `p(c) / ((c - m)(1/v + 1/(c - m)²)) ≤ Φ̄(c) ≤ v p(c) / (c - m)`, where `p = gaussianPDFReal m v`.
+* `tendsto_gaussianTail_div`: the **Mills ratio** `Φ̄(c) ~ v p(c) / (c - m)` as `c → ∞`.
+* `tail_lognormal`: `F̄(x) = Φ̄(log x)` for `x > 0`.
+* `tendsto_tail_lognormal_sub_div`: the lognormal law is long-tailed.
+* `IsSubexponential.lognormal`: **the lognormal law is subexponential**.
+
+Here [EKM] is Embrechts, Klüppelberg and Mikosch, *Modelling Extremal Events for Insurance and
+Finance* (Springer, 1997).
+
+## Proof outline
+
+We apply the dominated-convergence criterion `IsSubexponential.of_dominated`. With
+`a = log (x - t)`, `b = log x`, the Mills bounds give, for `m + 1 ≤ a ≤ b`,
+`Φ̄(a) / Φ̄(b) ≤ (b - m)/(a - m) · (1 + v/(b - m)²) · exp(((b - m)² - (a - m)²) / (2v))`.
+For `x ≥ 2 e^{m+1}` and `0 ≤ t ≤ x/2` this yields
+`F̄(x - t) / F̄(x) ≤ (1 + 2t/x)(1 + v/(log x - m)²) exp(2t (log x - m) / (v x))`, which tends to
+`1` for fixed `t` (long tail) and, since `(log x - m)/x` is decreasing on `[e^{m+1}, ∞)`, is
+dominated by `2(1 + v) exp((log (max (2t) e^{m+1}) - m)/v)`, a function of polynomial growth,
+hence integrable against the lognormal law. Finally
+`F̄(x/2)² / F̄(x) ≲ exp(-(log x)² / (2v) + O(log x)) → 0`.
 -/
 
 open Filter Topology Set Real MeasureTheory ProbabilityTheory
@@ -342,6 +374,111 @@ private theorem integrable_domFun (hv : v ≠ 0) : Integrable (domFun m v) (logn
   · rw [max_eq_right h]; linarith [exp_pos ((log (2 * exp s) - m) / v)]
   · rw [max_eq_left h]; linarith [exp_pos ((log (exp (m + 1)) - m) / v)]
 
+private theorem tendsto_log_sub_div_atTop :
+    Tendsto (fun x => (log x - m) / x) atTop (𝓝 0) := by
+  have h1 := Real.tendsto_pow_log_div_mul_add_atTop 1 0 1 one_ne_zero
+  have h2 : Tendsto (fun x : ℝ => m / x) atTop (𝓝 0) := tendsto_const_nhds.div_atTop tendsto_id
+  have := h1.sub h2
+  rw [sub_zero] at this
+  refine this.congr' ?_
+  filter_upwards [eventually_gt_atTop 0] with x hx
+  simp only [pow_one, one_mul, add_zero]
+  ring
+
+/-- **The lognormal law is long-tailed**: `F̄(x - t) / F̄(x) → 1` for every `t ≥ 0`. -/
+theorem tendsto_tail_lognormal_sub_div (hv : v ≠ 0) {t : ℝ} (ht : 0 ≤ t) :
+    Tendsto (fun x => tail (lognormal m v) (x - t) / tail (lognormal m v) x) atTop (𝓝 1) := by
+  have hF := tail_lognormal_pos (m := m) hv
+  have h1 : Tendsto (fun x : ℝ => 2 * t / x) atTop (𝓝 0) := tendsto_const_nhds.div_atTop tendsto_id
+  have h2 : Tendsto (fun x : ℝ => (v : ℝ) / (log x - m) ^ 2) atTop (𝓝 0) := by
+    refine tendsto_const_nhds.div_atTop ?_
+    exact (tendsto_pow_atTop two_ne_zero).comp (tendsto_atTop_add_const_right _ (-m)
+      tendsto_log_atTop)
+  have h3 : Tendsto (fun x => exp (2 * t * ((log x - m) / x) / v)) atTop (𝓝 1) := by
+    have := (continuous_exp.tendsto _).comp
+      (((tendsto_log_sub_div_atTop (m := m)).const_mul (2 * t)).div_const (v : ℝ))
+    simp only [mul_zero, zero_div, exp_zero] at this
+    exact this
+  have hU := ((h1.const_add 1).mul (h2.const_add 1)).mul h3
+  simp only [add_zero, mul_one] at hU
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hU ?_ ?_
+  · exact Eventually.of_forall fun x => (one_le_div (hF x)).2 (tail_antitone (by linarith))
+  · filter_upwards [eventually_ge_atTop (2 * exp (m + 1)), eventually_ge_atTop (2 * t)]
+      with x hx hxt
+    rw [div_le_iff₀ (hF x)]
+    exact tail_lognormal_sub_le hv hx ht (by linarith)
+
+/-- `F̄(x / 2)² / F̄(x) → 0` for the lognormal law. -/
+theorem tendsto_tail_lognormal_half_sq_div (hv : v ≠ 0) :
+    Tendsto (fun x => tail (lognormal m v) (x / 2) ^ 2 / tail (lognormal m v) x) atTop
+      (𝓝 0) := by
+  have hv' : (0 : ℝ) < v := by positivity
+  have hF := tail_lognormal_pos (m := m) hv
+  set L := log 2
+  set K := (√(2 * π * v))⁻¹
+  set C := v * K * (2 * (1 + v))
+  -- the exponent tends to `-∞`
+  have harg : Tendsto (fun x => -(log x - L - m - 1) ^ 2 / (2 * v) + (1 + 2 * L) / (2 * v))
+      atTop atBot := by
+    refine tendsto_atBot_add_const_right _ _ ?_
+    refine Tendsto.atBot_div_const (by positivity) ?_
+    refine tendsto_neg_atTop_atBot.comp ?_
+    exact (tendsto_pow_atTop two_ne_zero).comp
+      (tendsto_atTop_add_const_right _ (-(L + m + 1)) tendsto_log_atTop |>.congr
+        fun x => by ring)
+  have hlim : Tendsto (fun x => C * exp (-(log x - L - m - 1) ^ 2 / (2 * v) +
+      (1 + 2 * L) / (2 * v))) atTop (𝓝 (C * 0)) :=
+    (tendsto_exp_atBot.comp harg).const_mul C
+  rw [mul_zero] at hlim
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hlim
+    (Eventually.of_forall fun x => div_nonneg (sq_nonneg _) (hF x).le) ?_
+  filter_upwards [eventually_ge_atTop (4 * exp (m + 1))] with x hx
+  have hx0 : 0 < x := lt_of_lt_of_le (by positivity) hx
+  have hx2 : 0 < x / 2 := by positivity
+  have ha : m + 1 ≤ log (x / 2) := (le_log_iff_exp_le hx2).2 (by linarith)
+  have haL : log (x / 2) = log x - L := log_div hx0.ne' two_ne_zero
+  -- `F̄(x/2) ≤ v p(log(x/2))`
+  have hup : tail (lognormal m v) (x / 2) ≤ v * K * exp (-(log x - L - m) ^ 2 / (2 * v)) := by
+    rw [tail_lognormal hx2]
+    refine (gaussianTail_le hv (by linarith)).trans ?_
+    rw [div_le_iff₀ (by linarith), gaussianPDFReal_def, haL]
+    have : 0 ≤ v * K * exp (-(log x - L - m) ^ 2 / (2 * v)) := by positivity
+    have h1 : 1 ≤ log x - L - m := by linarith
+    nlinarith
+  -- `F̄(x/2) ≤ 2(1 + v) exp((log x - m)/v) F̄(x)`
+  have hrat : tail (lognormal m v) (x / 2) ≤
+      2 * (1 + v) * exp ((log x - m) / v) * tail (lognormal m v) x := by
+    have h := tail_lognormal_sub_le hv (m := m) (x := x) (t := x / 2) (by linarith) hx2.le le_rfl
+    rw [show x - x / 2 = x / 2 by ring] at h
+    refine h.trans ?_
+    have hlog : m + 1 ≤ log x := (le_log_iff_exp_le hx0).2 (by linarith [exp_pos (m + 1)])
+    have e1 : 1 + 2 * (x / 2) / x = 2 := by field_simp; ring
+    have e2 : 2 * (x / 2) * ((log x - m) / x) / v = (log x - m) / v := by field_simp
+    rw [e1, e2]
+    have : (v : ℝ) / (log x - m) ^ 2 ≤ v := div_le_self hv'.le (one_le_pow₀ (by linarith))
+    have := hF x
+    gcongr
+  rw [div_le_iff₀ (hF x), sq]
+  have hnn := (hF (x / 2)).le
+  calc tail (lognormal m v) (x / 2) * tail (lognormal m v) (x / 2)
+      ≤ (v * K * exp (-(log x - L - m) ^ 2 / (2 * v))) *
+          (2 * (1 + v) * exp ((log x - m) / v) * tail (lognormal m v) x) :=
+        mul_le_mul hup hrat hnn (by positivity)
+    _ = C * exp (-(log x - L - m - 1) ^ 2 / (2 * v) + (1 + 2 * L) / (2 * v)) *
+          tail (lognormal m v) x := by
+        rw [show C * exp (-(log x - L - m - 1) ^ 2 / (2 * v) + (1 + 2 * L) / (2 * v)) =
+          C * (exp (-(log x - L - m) ^ 2 / (2 * v)) * exp ((log x - m) / v)) by
+            rw [← exp_add]; congr 2; field_simp; ring]
+        ring
+
 end Lognormal
+
+/-- **The lognormal law is subexponential ([EKM, Example 1.4.7 and Table 1.4.3]).** For every
+`m ∈ ℝ` and variance `v > 0`, the law of `exp Z`, `Z ∼ N(m, v)`, is subexponential. -/
+theorem IsSubexponential.lognormal (m : ℝ) {v : ℝ≥0} (hv : v ≠ 0) :
+    IsSubexponential (lognormal m v) :=
+  IsSubexponential.of_dominated lognormal_Iio_zero (tail_lognormal_pos hv)
+    (fun _ ht => tendsto_tail_lognormal_sub_div hv ht) (integrable_domFun hv)
+    (fun _ _ ht htx => ratio_le_domFun hv ht htx) (tendsto_tail_lognormal_half_sq_div hv)
 
 end ExtremeValueTheory
