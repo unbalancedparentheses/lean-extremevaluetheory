@@ -763,6 +763,159 @@ theorem tendstoInMeasure_logMoment_div_of_log_tailQuantile {X : ℕ → Ω → �
     intro ε hε
     simpa only [Real.dist_eq] using (main ε hε).2
 
+/-- Convergence in probability to a constant is unaffected by changing the random variables on
+finitely many indices. -/
+theorem tendstoInMeasure_congr_eventually {ι : Type*} {l : Filter ι} {f g : ι → Ω → ℝ} {a : ℝ}
+    (hg : TendstoInMeasure P g l (fun _ => a)) (h : ∀ᶠ n in l, ∀ ω, f n ω = g n ω) :
+    TendstoInMeasure P f l (fun _ => a) := by
+  rw [tendstoInMeasure_iff_dist] at hg ⊢
+  intro ε hε
+  refine (hg ε hε).congr' ?_
+  filter_upwards [h] with n hn
+  simp only [hn]
+
+/-- If `f_n → a` in probability and the deterministic `c_n → c`, then `c_n f_n → c a` in
+probability. -/
+theorem tendstoInMeasure_const_mul_of_tendsto {ι : Type*} {l : Filter ι} {f : ι → Ω → ℝ}
+    {a c : ℝ} {cn : ι → ℝ} (hf : TendstoInMeasure P f l (fun _ => a))
+    (hc : Tendsto cn l (𝓝 c)) :
+    TendstoInMeasure P (fun n ω => cn n * f n ω) l (fun _ => c * a) := by
+  rw [tendstoInMeasure_iff_dist] at hf ⊢
+  intro ε hε
+  set M := |c| + 1 with hM
+  have hM0 : 0 < M := by positivity
+  have hδ : 0 < ε / (2 * M) := by positivity
+  have h1 : ∀ᶠ n in l, |cn n| ≤ M := by
+    filter_upwards [hc.eventually (Metric.ball_mem_nhds c one_pos)] with n hn
+    have hn' : |cn n - c| < 1 := by simpa [Metric.mem_ball, Real.dist_eq] using hn
+    have := abs_sub_abs_le_abs_sub (cn n) c
+    linarith
+  have h2 : ∀ᶠ n in l, |cn n - c| * |a| < ε / 2 := by
+    have : Tendsto (fun n => |cn n - c| * |a|) l (𝓝 (|c - c| * |a|)) :=
+      ((hc.sub_const c).abs).mul_const _
+    rw [sub_self, abs_zero, zero_mul] at this
+    exact this.eventually (gt_mem_nhds (half_pos hε))
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds (hf _ hδ)
+    (Eventually.of_forall fun _ => bot_le) ?_
+  filter_upwards [h1, h2] with n hn1 hn2
+  refine measure_mono fun ω hω => ?_
+  simp only [Set.mem_ofPred_eq, Real.dist_eq] at hω ⊢
+  by_contra hcon
+  push Not at hcon
+  have e : cn n * f n ω - c * a = cn n * (f n ω - a) + (cn n - c) * a := by ring
+  have : |cn n * f n ω - c * a| < ε := by
+    rw [e]
+    calc |cn n * (f n ω - a) + (cn n - c) * a|
+        ≤ |cn n| * |f n ω - a| + |cn n - c| * |a| := by
+          rw [← abs_mul, ← abs_mul]; exact abs_add_le _ _
+      _ ≤ M * (ε / (2 * M)) + |cn n - c| * |a| := by
+          gcongr
+      _ < M * (ε / (2 * M)) + ε / 2 := by linarith
+      _ = ε := by field_simp; ring
+  linarith
+
+/-- For an intermediate sequence (`k → ∞`, `k / n → 0`), `n / k → ∞`. -/
+theorem tendsto_div_atTop_of_intermediate {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
+    (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0)) :
+    Tendsto (fun n : ℕ => (n : ℝ) / k n) atTop atTop := by
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hkpos : ∀ᶠ n in atTop, (0 : ℝ) < k n := hkR.eventually_gt_atTop 0
+  have hnpos : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < n :=
+    (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0
+  have h1 : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝[>] 0) := by
+    refine tendsto_nhdsWithin_iff.2 ⟨hkn, ?_⟩
+    filter_upwards [hkpos, hnpos] with n h1 h2
+    exact div_pos h1 h2
+  refine (tendsto_inv_nhdsGT_zero.comp h1).congr fun n => ?_
+  simp only [Function.comp_apply, inv_div]
+
+/-- **Weak consistency of the log-moments for every extreme value index** ([dHF, Lemma 3.5.1
+and the proof of Theorem 3.5.2]). Let `X_0, X_1, …` be iid with c.d.f. `F ∈ MDA(H_γ)`, `γ ∈ ℝ`,
+with positive right endpoint `U(∞) = x_F > 0`, and let `k(n) → ∞`, `k(n) / n → 0`. Then for the
+auxiliary function `a` of the extended regular variation of the tail quantile function `U`,
+`M^{(1)} U(n/k) / a(n/k) → 1 / (1 - γ₋)` and
+`M^{(2)} (U(n/k) / a(n/k))² → 2 / ((1 - γ₋)(1 - 2γ₋))` in probability, `γ₋ = min γ 0`. -/
+theorem tendstoInMeasure_logMoment_of_isInMDAGEV {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
+    (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P)
+    {F : CumulativeDistributionFunction} (hF : ∀ x, F x = (P {ω | X 0 ω ≤ x}).toReal)
+    {γ : ℝ} (hMDA : F.IsInMDAGEV γ) (hxF : ∃ y, 0 < y ∧ F y < 1) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0)) :
+    ∃ a : ℝ → ℝ, IsExtendedRegularlyVarying F.tailQuantile γ a ∧
+      TendstoInMeasure P (fun n ω => logMoment (fun i : Fin n => X i ω) (k n) 1 *
+          F.tailQuantile ((n : ℝ) / k n) / a ((n : ℝ) / k n)) atTop
+        (fun _ => 1 / (1 - min γ 0)) ∧
+      TendstoInMeasure P (fun n ω => logMoment (fun i : Fin n => X i ω) (k n) 2 *
+          (F.tailQuantile ((n : ℝ) / k n) / a ((n : ℝ) / k n)) ^ 2) atTop
+        (fun _ => 2 / ((1 - min γ 0) * (1 - 2 * min γ 0))) := by
+  obtain ⟨a, ha, hpos, ⟨c, hmono⟩, hV, -⟩ :=
+    F.exists_isExtendedRegularlyVarying_log_tailQuantile hMDA hxF
+  obtain ⟨h1, h2⟩ := tendstoInMeasure_logMoment_div_of_log_tailQuantile hX hindep hident hF
+    (min_le_right γ 0) hV hmono hpos hk hkn
+  refine ⟨a, ha, tendstoInMeasure_congr_eventually h1 (Eventually.of_forall fun n ω => ?_),
+    tendstoInMeasure_congr_eventually h2 (Eventually.of_forall fun n ω => ?_)⟩
+  · rw [div_div_eq_mul_div]
+  · rw [div_pow, div_pow, div_div_eq_mul_div, mul_div_assoc]
+
+/-- **Weak consistency of the moment estimator for every extreme value index** (Dekkers,
+Einmahl and de Haan 1989; [dHF, Theorem 3.5.2]). Let `X_0, X_1, …` be iid with c.d.f.
+`F ∈ MDA(H_γ)`, `γ ∈ ℝ`, with positive right endpoint `x_F > 0`, and let `k(n) → ∞`,
+`k(n) / n → 0`. Then the moment estimator `γ̂_M` converges to `γ` in probability. -/
+theorem tendstoInMeasure_momentEstimator_of_isInMDAGEV' {X : ℕ → Ω → ℝ}
+    (hX : ∀ i, Measurable (X i)) (hindep : iIndepFun X P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P)
+    {F : CumulativeDistributionFunction} (hF : ∀ x, F x = (P {ω | X 0 ω ≤ x}).toReal)
+    {γ : ℝ} (hMDA : F.IsInMDAGEV γ) (hxF : ∃ y, 0 < y ∧ F y < 1) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n ω => momentEstimator (fun i : Fin n => X i ω) (k n)) atTop
+      (fun _ => γ) := by
+  obtain ⟨a, -, hpos, ⟨c, hmono⟩, hV, hqlim⟩ :=
+    F.exists_isExtendedRegularlyVarying_log_tailQuantile hMDA hxF
+  set ρ := min γ 0 with hρ_def
+  have hρ : ρ ≤ 0 := min_le_right γ 0
+  obtain ⟨h1, h2⟩ := tendstoInMeasure_logMoment_div_of_log_tailQuantile hX hindep hident hF
+    hρ hV hmono hpos hk hkn
+  set q : ℝ → ℝ := fun t => a t / F.tailQuantile t with hq_def
+  have ht := tendsto_div_atTop_of_intermediate hk hkn
+  set μ₁ : ℝ := 1 / (1 - ρ) with hμ₁
+  set μ₂ : ℝ := 2 / ((1 - ρ) * (1 - 2 * ρ)) with hμ₂
+  have h1ρ : 0 < 1 - ρ := by linarith
+  have h2ρ : 0 < 1 - 2 * ρ := by linarith
+  have hμ₂0 : μ₂ ≠ 0 := by rw [hμ₂]; positivity
+  have hratio : 1 - μ₁ ^ 2 / μ₂ = 1 / (2 * (1 - ρ)) := by
+    rw [hμ₁, hμ₂]
+    field_simp
+    ring
+  -- `A²/B → μ₁² / μ₂`
+  have hAB := tendstoInMeasure_comp₂ h1 h2 (φ := fun p => p.1 ^ 2 / p.2)
+    ((continuousAt_fst.pow 2).div continuousAt_snd hμ₂0)
+  -- `q_n A → γ₊ μ₁`
+  have hqA := tendstoInMeasure_const_mul_of_tendsto h1 (hqlim.comp ht)
+  have hcont : ContinuousAt (fun p : ℝ × ℝ => p.1 + 1 - 1 / 2 * (1 - p.2)⁻¹)
+      (max γ 0 * μ₁, μ₁ ^ 2 / μ₂) := by
+    refine (continuousAt_fst.add continuousAt_const).sub (continuousAt_const.mul
+      ((continuousAt_const.sub continuousAt_snd).inv₀ ?_))
+    change 1 - μ₁ ^ 2 / μ₂ ≠ 0
+    rw [hratio]
+    positivity
+  have hE := tendstoInMeasure_comp₂ hqA hAB hcont
+  have hval : max γ 0 * μ₁ + 1 - 1 / 2 * (1 - μ₁ ^ 2 / μ₂)⁻¹ = γ := by
+    rw [hratio, hμ₁]
+    rcases le_or_gt γ 0 with hγ | hγ
+    · rw [max_eq_right hγ, hρ_def, min_eq_left hγ]
+      field_simp
+      ring
+    · rw [max_eq_left hγ.le, hρ_def, min_eq_right hγ.le]
+      norm_num
+  beta_reduce at hE
+  rw [hval] at hE
+  refine tendstoInMeasure_congr_eventually hE ?_
+  filter_upwards [ht.eventually hV.1] with n hn ω
+  simp only [momentEstimator, Function.comp_apply]
+  have hq : q ((n : ℝ) / k n) ≠ 0 := hn.ne'
+  congr 2
+  · rw [mul_comm, div_mul_cancel₀ _ hq]
+  · rw [div_pow, div_div_div_cancel_right₀ (pow_ne_zero 2 hq)]
+
 end Consistency
 
 end ExtremeValueTheory

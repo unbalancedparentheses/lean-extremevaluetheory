@@ -73,3 +73,4 @@ import ExtremeValueTheory.Statistics.Renyi
 import ExtremeValueTheory.Statistics.HillNormality
 import ExtremeValueTheory.RegularVariation.Extended
 import ExtremeValueTheory.DomainOfAttraction.Quantile
+import ExtremeValueTheory.Statistics.MomentGeneral
