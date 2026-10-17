@@ -386,10 +386,11 @@ private lemma conv_claimJ (hU : TendstoUniformlyOn
       _ = sInf S := by field_simp
   linarith
 
-/-- Quantile points at levels `λ → 0+` tend to the right endpoint, and `F̄` at the quantile is
-asymptotic to the level. -/
-private lemma conv_tendsto_quantile {κ : Type*} {l : Filter κ} {lam : κ → ℝ}
-    (hlam : Tendsto lam l (𝓝[>] 0)) :
+/-- **Quantiles under the uniform GPD approximation.** The quantile points
+`q(λ) = sInf {y | F̄ y ≤ λ}` at levels `λ → 0+` tend to the right endpoint, and `F̄` at the
+quantile is asymptotic to the level: `F̄ (q λ) / λ → 1` (no relative jumps). -/
+theorem tendsto_quantile_of_tendstoUniformlyOn_excessSurvival {κ : Type*} {l : Filter κ}
+    {lam : κ → ℝ} (hlam : Tendsto lam l (𝓝[>] 0)) :
     Tendsto (fun k ↦ sInf {y | 1 - F y ≤ lam k}) l F.upperEndpointFilter ∧
       Tendsto (fun k ↦ (1 - F (sInf {y | 1 - F y ≤ lam k})) / lam k) l (𝓝 1) ∧
       ∀ x₀, F x₀ < 1 → ∀ᶠ k in l, 0 < lam k ∧ 1 - F (sInf {y | 1 - F y ≤ lam k}) ≤ lam k ∧
@@ -445,7 +446,7 @@ private lemma conv_step {c : ℝ} (hc : 1 < c) :
     refine tendsto_nhdsWithin_iff.2 ⟨by simpa using hG0.const_mul c, ?_⟩
     filter_upwards [F.eventually_tail_pos_upperEndpointFilter] with t ht
     exact mul_pos hc0 ht
-  obtain ⟨hs, hJ, hspec⟩ := conv_tendsto_quantile hβ hU hlam
+  obtain ⟨hs, hJ, hspec⟩ := tendsto_quantile_of_tendstoUniformlyOn_excessSurvival hβ hU hlam
   obtain ⟨y₀, hy₀⟩ := (F.tendsto_atBot.eventually (gt_mem_nhds one_pos)).exists
   have hsp := hspec y₀ hy₀
   have hst : ∀ᶠ t in F.upperEndpointFilter, s t ≤ t ∧ 0 < 1 - F t ∧ 0 < β (s t) ∧
@@ -589,7 +590,7 @@ private lemma conv_seq : ∃ a b : ℕ → ℝ, (∀ n, 0 < a n) ∧ ∀ x T : �
     have : (1 : ℝ) ≤ n := by exact_mod_cast hn
     show (0 : ℝ) < 1 / (n : ℝ)
     exact div_pos one_pos (by linarith)
-  obtain ⟨hb, hJ, -⟩ := conv_tendsto_quantile hβ hU hlam
+  obtain ⟨hb, hJ, -⟩ := tendsto_quantile_of_tendstoUniformlyOn_excessSurvival hβ hU hlam
   set b : ℕ → ℝ := fun n ↦ sInf {y | 1 - F y ≤ 1 / (n : ℝ)} with hb_def
   refine ⟨fun n ↦ if 0 < β (b n) then β (b n) else 1, b, fun n ↦ ?_, fun x T h ↦ ?_⟩
   · simp only
