@@ -817,7 +817,7 @@ theorem tendstoInMeasure_of_tendsto {a : ℕ → ℝ} {c : ℝ} (ha : Tendsto a 
 omit [IsProbabilityMeasure P] in
 /-- If `f_n = g_n` outside events of vanishing probability and `g_n → c` in probability, then
 `f_n → c` in probability. -/
-theorem TendstoInMeasure.congr_of_measure_ne
+theorem _root_.MeasureTheory.TendstoInMeasure.congr_of_measure_ne
  {f g : ℕ → Ω → ℝ} {c : ℝ}
     (hg : TendstoInMeasure P g atTop (fun _ => c))
     (hfg : Tendsto (fun n => P {ω | f n ω ≠ g n ω}) atTop (𝓝 0)) :
@@ -836,5 +836,205 @@ theorem TendstoInMeasure.congr_of_measure_ne
     exact hfg'
 
 end Auxiliary
+
+/-! ### The general case, on the exponential scale -/
+
+section General
+
+variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'} [IsProbabilityMeasure P']
+
+theorem eventually_lt_of_tendsto_div {k : ℕ → ℕ}
+    (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0)) : ∀ᶠ n in atTop, k n < n := by
+  filter_upwards [hkn.eventually (gt_mem_nhds one_pos),
+    (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0] with n h1 h2
+  rw [div_lt_one h2] at h1
+  exact_mod_cast h1
+
+theorem IsSecondOrderRegularlyVarying.exists_div_eq_abs_div {U A : ℝ → ℝ} {γ ρ : ℝ}
+    (h : IsSecondOrderRegularlyVarying U γ ρ A) :
+    ∃ T, ∀ x ≥ T, A x ≠ 0 ∧ ∀ y ≥ T, A x / A y = |A x| / |A y| := by
+  rcases h.sign with h' | h'
+  · obtain ⟨T, hT⟩ := eventually_atTop.1 h'
+    exact ⟨T, fun x hx => ⟨(hT x hx).ne', fun y hy => by
+      rw [abs_of_pos (hT x hx), abs_of_pos (hT y hy)]⟩⟩
+  · obtain ⟨T, hT⟩ := eventually_atTop.1 h'
+    exact ⟨T, fun x hx => ⟨(hT x hx).ne, fun y hy => by
+      rw [abs_of_neg (hT x hx), abs_of_neg (hT y hy), neg_div_neg_eq]⟩⟩
+
+/-- **Asymptotic normality of the Hill estimator on the exponential scale.** Let the `E_i` be iid
+standard exponential, and let `U` be measurable, monotone on `(1, ∞)` and of second-order regular
+variation with indices `γ > 0`, `ρ ≤ 0` and auxiliary function `A`. If `k(n) → ∞`,
+`k(n) / n → 0` and `√k A(n/k) → λ`, then the Hill estimator of the sample `U(e^{E_i})` satisfies
+`√k (H_{k,n} - γ) ⇒ N(λ / (1 - ρ), γ²)`. -/
+theorem tendstoInDistribution_hill_comp_exp {E : ℕ → Ω → ℝ} (hEm : ∀ i, Measurable (E i))
+    (hE : ∀ i, HasLaw (E i) (expMeasure 1) P) (hind : iIndepFun E P)
+    {U A : ℝ → ℝ} {γ ρ lam : ℝ} (hγ : 0 < γ) (hU : Measurable U) (hUm : MonotoneOn U (Ioi 1))
+    (h2 : IsSecondOrderRegularlyVarying U γ ρ A) {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
+    (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {Z : Ω' → ℝ}
+    (hZ : HasLaw Z (gaussianReal (lam / (1 - ρ)) (γ ^ 2).toNNReal) P') :
+    TendstoInDistribution (fun n ω =>
+        √(k n : ℝ) * (hill (fun i : Fin n => U (exp (E i ω))) (k n) - γ))
+      atTop Z (fun _ => P) P' := by
+  -- a measurable auxiliary function
+  obtain ⟨B, hBm, h2B, hBA⟩ := h2.exists_measurable hU
+  have hnk := tendsto_div_atTop_of_tendsto hk hkn
+  have hkn' := eventually_lt_of_tendsto_div hkn
+  have hlamB : Tendsto (fun n => √(k n : ℝ) * B (n / k n)) atTop (𝓝 lam) := by
+    have := hlam.mul (hBA.comp hnk)
+    rw [mul_one] at this
+    refine this.congr' ?_
+    filter_upwards [hnk.eventually h2.eventually_ne_zero] with n hn
+    simp only [Function.comp_apply]
+    field_simp
+  -- the main term
+  set c₀ := lam / (1 - ρ) with hc₀
+  have hY1 : HasLaw (fun ω => (Z ω - c₀) / γ) (gaussianReal 0 1) P' := by
+    have := gaussianReal_div_const (gaussianReal_sub_const hZ c₀) γ
+    convert this using 2
+    · simp
+    · ext
+      simp only [NNReal.coe_one, NNReal.coe_div, NNReal.coe_mk, Real.coe_toNNReal _ (sq_nonneg _)]
+      field_simp
+  have hT1 := (tendstoInDistribution_meanExcess hEm hE hind hk hkn' hY1).continuous_comp
+    (g := fun x => γ * x) (by fun_prop)
+  -- the bias term: domination and pointwise limit of the normalized remainder
+  obtain ⟨C, t₀, ht₀, hbd⟩ := h2B.exists_bound hU hBm (δ := 1 / 4) (by norm_num)
+  set φ : ℝ → ℝ → ℝ := fun u s => logRemainder U γ u s / B (exp s) with hφ
+  have hRm : Measurable (Function.uncurry (logRemainder U γ)) := by
+    unfold logRemainder
+    refine ((hU.comp ((measurable_exp.comp measurable_fst).mul
+      (measurable_exp.comp measurable_snd))).log.sub (hU.comp
+      (measurable_exp.comp measurable_snd)).log).sub (measurable_fst.const_mul γ)
+  have hφm : Measurable (Function.uncurry φ) :=
+    hRm.div (hBm.comp (measurable_exp.comp measurable_snd))
+  have hdom : ∀ s ≥ log t₀, ∀ u ≥ 0, |φ u s| ≤ |C| * exp (u / 4) := by
+    intro s hs u hu
+    have hts : t₀ ≤ exp s := (log_le_iff_le_exp ht₀).1 hs
+    have h1 := hbd (exp s) hts (exp u) (one_le_exp hu)
+    rw [log_exp, rpow_def_of_pos (exp_pos u), log_exp] at h1
+    have e : logRemainder U γ u s = log (U (exp u * exp s)) - log (U (exp s)) - γ * u := rfl
+    simp only [hφ, abs_div]
+    rcases eq_or_ne (B (exp s)) 0 with h0 | h0
+    · simp [h0]; positivity
+    rw [div_le_iff₀ (abs_pos.2 h0), e]
+    calc _ ≤ C * |B (exp s)| * exp (u * (1 / 4)) := h1
+      _ ≤ |C| * |B (exp s)| * exp (u * (1 / 4)) := by gcongr; exact le_abs_self C
+      _ = |C| * exp (u / 4) * |B (exp s)| := by ring_nf
+  have hlimφ : ∀ u ≥ (0 : ℝ), Tendsto (fun s => φ u s) atTop (𝓝 (boxCox ρ (exp u))) := by
+    intro u _
+    refine ((h2B.tendsto_log (exp_pos u)).comp tendsto_exp_atTop).congr fun s => ?_
+    simp only [Function.comp_apply, hφ, logRemainder, log_exp]
+  -- localization of `E_{(k+1)}`
+  have hD := tendstoInMeasure_orderStat_sub_log hEm hE hind hk hkn
+  have hok : ∀ M, Tendsto (fun n => P {ω | orderStat (fun i : Fin n => E i ω) (k n) < M})
+      atTop (𝓝 0) := by
+    intro M
+    have hD1 := (tendstoInMeasure_iff_dist.1 hD) 1 one_pos
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hD1
+      (Eventually.of_forall fun _ => bot_le) ?_
+    filter_upwards [(tendsto_log_atTop.comp hnk).eventually_ge_atTop (M + 1)] with n hn
+    refine measure_mono fun ω hω => ?_
+    simp only [mem_ofPred_eq, Real.dist_eq, sub_zero, Function.comp_apply] at hω hn ⊢
+    rw [abs_sub_comm, abs_of_pos (by linarith)]
+    linarith
+  -- the normalized remainder average converges to `1 / (1 - ρ)`
+  have hW := tendstoInMeasure_meanExcess_fun hEm hE hind hk hkn' hok hφm hdom hlimφ
+  rw [integral_boxCox_exp h2.nonpos] at hW
+  -- the ratio `B(e^{E_{(k+1)}}) / B(n / k)` converges to `1`
+  obtain ⟨T, hT⟩ := h2B.exists_div_eq_abs_div
+  have hBabs : Measurable fun t => |B t| := continuous_abs.measurable.comp hBm
+  have hR := tendstoInMeasure_ratio_of_isRegularlyVarying h2B.isRegularlyVarying_abs hBabs hD
+    (tendsto_log_atTop.comp hnk)
+  have hQ : TendstoInMeasure P (fun n ω => B (exp (orderStat (fun i : Fin n => E i ω) (k n))) /
+      B (n / k n)) atTop (fun _ => 1) := by
+    refine hR.congr_of_measure_ne ?_
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds (hok (log (max T 1)))
+      (Eventually.of_forall fun _ => bot_le) ?_
+    filter_upwards [hnk.eventually_ge_atTop (max T 1)] with n hn
+    refine measure_mono fun ω hω => ?_
+    simp only [mem_ofPred_eq, Function.comp_apply] at hω ⊢
+    by_contra hcon
+    rw [not_lt] at hcon
+    apply hω
+    have hpos : (0 : ℝ) < n / k n := lt_of_lt_of_le one_pos ((le_max_right _ _).trans hn)
+    rw [add_sub_cancel, exp_log hpos]
+    have hx : T ≤ exp (orderStat (fun i : Fin n => E i ω) (k n)) := by
+      have := (log_le_iff_le_exp (lt_of_lt_of_le one_pos (le_max_right T 1))).1 hcon
+      exact (le_max_left _ _).trans this
+    exact (hT _ hx).2 _ ((le_max_left _ _).trans hn)
+  -- the bias term
+  have hdet := tendstoInMeasure_of_tendsto (P := P) hlamB
+  have hprod := tendstoInMeasure_comp₂ (tendstoInMeasure_comp₂ hdet hQ
+    (φ := fun p => p.1 * p.2) (by fun_prop)) hW (φ := fun p => p.1 * p.2) (by fun_prop)
+  simp only [mul_one] at hprod
+  -- measurability
+  have hmo : ∀ n j, Measurable fun ω => orderStat (fun i : Fin n => E i ω) j := fun n j =>
+    measurable_orderStat (fun i => hEm i) j
+  have hT2m : ∀ n, AEMeasurable (fun ω => √(k n : ℝ) * B (n / k n) *
+      (B (exp (orderStat (fun i : Fin n => E i ω) (k n))) / B (n / k n)) *
+      (((k n : ℝ))⁻¹ * ∑ i ∈ Finset.range (k n), φ (orderStat (fun i : Fin n => E i ω) i -
+        orderStat (fun i : Fin n => E i ω) (k n)) (orderStat (fun i : Fin n => E i ω) (k n))))
+      P := fun n =>
+    ((measurable_const.mul ((hBm.comp (measurable_exp.comp (hmo n (k n)))).div_const _)).mul
+      (measurable_const.mul (Finset.measurable_sum _ fun i _ => measurable_uncurry_comp hφm
+        ((hmo n i).sub (hmo n (k n))) (hmo n (k n))))).aemeasurable
+  -- Slutsky
+  have hS := hT1.add_of_tendstoInMeasure_const hprod hT2m
+  have hS' := hS.congr_limit hZ.aemeasurable (by
+    congr 1
+    funext ω
+    simp only [Function.comp_apply]
+    field_simp
+    ring)
+  have hYm : ∀ n, AEMeasurable (fun ω =>
+      √(k n : ℝ) * (hill (fun i : Fin n => U (exp (E i ω))) (k n) - γ)) P := fun n =>
+    (measurable_const.mul (((measurable_hill_pi n (k n)).comp (measurable_pi_iff.2 fun i =>
+      hU.comp (measurable_exp.comp (hEm i)))).sub_const _)).aemeasurable
+  refine tendstoInDistribution_of_tendstoInMeasure_sub _ Z hS' ?_ hYm
+  have hzero : TendstoInMeasure P (fun (_ : ℕ) (_ : Ω) => (0 : ℝ)) atTop (fun _ => 0) :=
+    tendstoInMeasure_of_tendsto tendsto_const_nhds
+  have hnull : ∀ n : ℕ, P {ω | ∃ i : Fin n, E i ω ≤ 0} = 0 := by
+    intro n
+    have : {ω | ∃ i : Fin n, E i ω ≤ 0} = ⋃ i : Fin n, {ω | E i ω ≤ 0} := by ext; simp
+    rw [this]
+    refine measure_iUnion_null fun i => ?_
+    have := (hE i).measure_eq (p := fun x => x ≤ 0) measurableSet_Iic
+    rw [this]
+    have h0 := expMeasure_Iic (le_refl (0 : ℝ))
+    simp only [neg_zero, exp_zero, sub_self, ENNReal.ofReal_zero] at h0
+    exact h0
+  refine hzero.congr_of_measure_ne ?_
+  have h0 := hok (log (max T 1))
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds h0
+    (Eventually.of_forall fun _ => bot_le) ?_
+  filter_upwards [hnk.eventually_ge_atTop (max T 1), hkn'] with n hn hkn
+  refine (measure_mono fun ω hω => ?_).trans ((measure_union_le
+    {ω | ∃ i : Fin n, E i ω ≤ 0} {ω | orderStat (fun i : Fin n => E i ω) (k n) < log (max T 1)}).trans
+    (by rw [hnull n, zero_add]))
+  simp only [mem_ofPred_eq, mem_union] at hω ⊢
+  by_contra hcon
+  push Not at hcon
+  obtain ⟨hpos, hok'⟩ := hcon
+  apply hω
+  have hT1' : max T 1 ≤ exp (orderStat (fun i : Fin n => E i ω) (k n)) :=
+    (log_le_iff_le_exp (lt_of_lt_of_le one_pos (le_max_right T 1))).1 hok'
+  have hb1 : B (exp (orderStat (fun i : Fin n => E i ω) (k n))) ≠ 0 :=
+    (hT _ ((le_max_left _ _).trans hT1')).1
+  have hb2 : B (n / k n) ≠ 0 := (hT _ ((le_max_left _ _).trans hn)).1
+  have hh := hill_comp_exp_eq hUm γ (y := fun i : Fin n => E i ω) hpos hkn
+  simp only [Pi.sub_apply, Pi.add_apply, Function.comp_apply]
+  rw [hh, hφ]
+  simp only
+  rw [← Finset.sum_div]
+  field_simp
+  ring
+
+
+
+
+
+end General
 
 end ExtremeValueTheory
