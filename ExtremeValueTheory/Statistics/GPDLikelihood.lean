@@ -735,8 +735,9 @@ lemma integral_div_gpdMeasure_lt {a b : ℝ} (hab : a < b)
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} {X : ℕ → Ω → ℝ}
 
 /-- The strong law of large numbers for a function of an iid sequence. -/
-lemma ae_tendsto_avg_comp {μ : Measure ℝ} (hX : ∀ i, HasLaw (X i) μ P) (hind : iIndepFun X P)
-    {g : ℝ → ℝ} (hg : Measurable g) (hgi : Integrable g μ) :
+lemma ae_tendsto_avg_comp {α : Type*} {mα : MeasurableSpace α} {X : ℕ → Ω → α} {μ : Measure α}
+    (hX : ∀ i, HasLaw (X i) μ P) (hind : iIndepFun X P)
+    {g : α → ℝ} (hg : Measurable g) (hgi : Integrable g μ) :
     ∀ᵐ ω ∂P, Tendsto (fun n : ℕ => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, g (X i ω)) atTop
       (𝓝 (∫ y, g y ∂μ)) := by
   have hint : Integrable (g ∘ X 0) P := (hX 0).integrable_comp hgi
