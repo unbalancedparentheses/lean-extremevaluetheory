@@ -39,6 +39,13 @@ supported function `f : X → ℝ`. This is the natural mode of convergence for 
 ## Implementation notes
 
 We define vague convergence as a predicate rather than through a topology on `Measure X`.
+The predicate is stated for arbitrary measures; local finiteness or regularity of the limit is
+not built into the definition but assumed, as type-class arguments such as `[μ.Regular]` or
+`[IsFiniteMeasureOnCompacts μ]`, by the results that need it. Building `IsLocallyFiniteMeasure`
+into the definition would not by itself give uniqueness of limits (on locally compact Hausdorff
+spaces that are not second countable a locally finite measure need not be regular), so the
+assumptions are left to the individual statements, in the style of Mathlib's type-class-based
+hypotheses.
 -/
 
 open Filter Set Topology ENNReal
@@ -51,7 +58,16 @@ variable {X : Type*} [MeasurableSpace X]
 
 /-- The measures `μs i` converge *vaguely* to `μ` along the filter `l` if
 `∫ x, f x ∂μs i` tends to `∫ x, f x ∂μ` for every continuous compactly supported
-function `f : X → ℝ`. -/
+function `f : X → ℝ`.
+
+**Warning.** No finiteness or regularity assumption is made on `μs i` or `μ`. Since the Bochner
+integral of a non-integrable function is `0`, a measure that is not locally finite can be a vague
+limit in a degenerate way: for instance all integrals of continuous compactly supported functions
+against `∞ • μ` vanish, so every sequence converging vaguely to `0` also converges vaguely to
+`∞ • μ`, and vague limits are in general not unique. The intended setting is that of
+Radon measures: uniqueness of the limit (`TendstoVaguely.unique`) and the portmanteau-type
+statements below assume the limit is regular or finite on compact sets, and every result that
+needs such an assumption states it explicitly. -/
 def TendstoVaguely [TopologicalSpace X] {ι : Type*} (μs : ι → Measure X) (l : Filter ι)
     (μ : Measure X) : Prop :=
   ∀ f : X → ℝ, Continuous f → HasCompactSupport f →
