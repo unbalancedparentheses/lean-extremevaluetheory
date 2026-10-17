@@ -57,3 +57,4 @@ import ExtremeValueTheory.ForMathlib.Probability.PoissonRandomMeasure
 import ExtremeValueTheory.ForMathlib.Probability.BinomialPointProcess
 import ExtremeValueTheory.ForMathlib.MeasureTheory.Measure.Portmanteau
 import ExtremeValueTheory.Dependence.TailProcess
+import ExtremeValueTheory.Dependence.TimeChange
