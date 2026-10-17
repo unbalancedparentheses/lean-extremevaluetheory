@@ -487,6 +487,114 @@ theorem isRegularlyVarying_echoProcess :
   refine h.congr (Eventually.of_forall fun x => ?_)
   simp only [abs_of_nonneg (echoProcess_nonneg hpos _ _)]
 
+include hind in
+omit [IsProbabilityMeasure P] in
+/-- Two sources of exceedances at times `0` and `t ≠ 0` are either distinct innovations
+(independent) or the same innovation, which then has echo lag `|t|`; the latter is impossible
+above a level `z₀` beyond which all echo lags exceed `|t|`. -/
+theorem measure_echoSource_inter_le {t : ℤ} (ht : t ≠ 0) {z₀ : ℝ}
+    (hz₀ : ∀ z, z₀ ≤ z → t.natAbs < L z) (hLm : Measurable L) {x y : ℝ} (hx : z₀ ≤ x)
+    (j j' : ℕ) :
+    P (echoSource L Z 0 x j ∩ echoSource L Z t y j') ≤
+      P (echoSource L Z 0 x j) * P (echoSource L Z t y j') := by
+  by_cases h : (0 : ℤ) - j = t - j'
+  · have hempty : echoSource L Z 0 x j ∩ echoSource L Z t y j' = ∅ := by
+      ext ω
+      simp only [echoSource, mem_inter_iff, mem_ofPred_eq, mem_empty_iff_false, iff_false,
+        not_and]
+      rintro ⟨h1, h2⟩ _ h4
+      rw [← h] at h4
+      have hL := hz₀ _ (hx.trans h1.le)
+      rcases h2 with h2 | h2 <;> rcases h4 with h4 | h4 <;> omega
+    rw [hempty, measure_empty]
+    exact zero_le
+  · rw [echoSource_eq, echoSource_eq]
+    exact le_of_eq ((hind.indepFun h).measure_inter_preimage_eq_mul _ _
+      (measurableSet_echoSourceSet hLm x j) (measurableSet_echoSourceSet hLm y j'))
+
+include hα hZ hind hlaw hLm hL1 in
+/-- **Pair bound**: for `t ≠ 0`, `P(X_0 > x, X_t > y) ≤ 2 x^(-α) · 2 y^(-α)` for `x` large and
+`y ≥ 1`. -/
+theorem eventually_measureReal_lt_echoProcess_inter_le (hLinf : Tendsto L atTop atTop) {t : ℤ}
+    (ht : t ≠ 0) : ∃ z₀ : ℝ, ∀ x y : ℝ, z₀ ≤ x → 1 ≤ y →
+      P.real {ω | x < echoProcess L Z 0 ω ∧ y < echoProcess L Z t ω} ≤
+        2 * x ^ (-α) * (2 * y ^ (-α)) := by
+  obtain ⟨z₁, hz₁⟩ := eventually_atTop.1 (hLinf.eventually_gt_atTop t.natAbs)
+  refine ⟨max z₁ 1, fun x y hx hy => ?_⟩
+  have hx1 : 1 ≤ x := (le_max_right _ _).trans hx
+  have hsx := hasSum_measureReal_echoSource hα hZ hlaw hLm hL1 0 hx1
+  have hsy := hasSum_measureReal_echoSource hα hZ hlaw hLm hL1 t hy
+  have htsum : ∀ (s : ℤ) (w : ℝ) (c : ℝ),
+      HasSum (fun j => P.real (echoSource L Z s w j)) c →
+        ∑' j, P (echoSource L Z s w j) = ENNReal.ofReal c := by
+    intro s w c hc
+    rw [← hc.tsum_eq, ENNReal.ofReal_tsum_of_nonneg (fun _ => measureReal_nonneg) hc.summable]
+    exact tsum_congr fun j => (ENNReal.ofReal_toReal (measure_ne_top _ _)).symm
+  have hsub : {ω | x < echoProcess L Z 0 ω ∧ y < echoProcess L Z t ω} ⊆
+      ⋃ j, ⋃ j', echoSource L Z 0 x j ∩ echoSource L Z t y j' := by
+    intro ω ⟨h1, h2⟩
+    obtain ⟨j, hj⟩ := mem_iUnion.1 (setOf_lt_echoProcess_subset (by linarith) 0 h1)
+    obtain ⟨j', hj'⟩ := mem_iUnion.1 (setOf_lt_echoProcess_subset (by linarith) t h2)
+    exact mem_iUnion.2 ⟨j, mem_iUnion.2 ⟨j', hj, hj'⟩⟩
+  have hbound : P {ω | x < echoProcess L Z 0 ω ∧ y < echoProcess L Z t ω} ≤
+      ENNReal.ofReal (2 * x ^ (-α)) * ENNReal.ofReal (2 * y ^ (-α)) := by
+    calc _ ≤ P (⋃ j, ⋃ j', echoSource L Z 0 x j ∩ echoSource L Z t y j') := measure_mono hsub
+      _ ≤ ∑' j, ∑' j', P (echoSource L Z 0 x j ∩ echoSource L Z t y j') :=
+          (measure_iUnion_le _).trans (ENNReal.tsum_le_tsum fun j => measure_iUnion_le _)
+      _ ≤ ∑' j, ∑' j', P (echoSource L Z 0 x j) * P (echoSource L Z t y j') :=
+          ENNReal.tsum_le_tsum fun j => ENNReal.tsum_le_tsum fun j' =>
+            measure_echoSource_inter_le hind ht (fun z hz => hz₁ z hz) hLm
+              ((le_max_left _ _).trans hx) j j'
+      _ = (∑' j, P (echoSource L Z 0 x j)) * ∑' j', P (echoSource L Z t y j') := by
+          rw [← ENNReal.tsum_mul_right]
+          exact tsum_congr fun j => ENNReal.tsum_mul_left
+      _ = _ := by rw [htsum 0 x _ hsx, htsum t y _ hsy]
+  have hpos1 : 0 ≤ 2 * x ^ (-α) := by positivity
+  have hpos2 : 0 ≤ 2 * y ^ (-α) := by positivity
+  refine ENNReal.toReal_le_of_le_ofReal (by positivity) ?_
+  rwa [ENNReal.ofReal_mul hpos1]
+
+include hα hZ hind hlaw hpos hLm hL1 in
+/-- **The echo process is asymptotically independent at every fixed lag**: the echo of a large
+innovation comes at lag `L(Z) → ∞`. -/
+theorem tendsto_echoProcess_cond (hLinf : Tendsto L atTop atTop) {t : ℤ} (ht : t ≠ 0)
+    {ε : ℝ} (hε : 0 < ε) :
+    Tendsto (fun x => P.real {ω | x < |echoProcess L Z 0 ω| ∧ ε * x < |echoProcess L Z t ω|} /
+      P.real {ω | x < |echoProcess L Z 0 ω|}) atTop (𝓝 0) := by
+  obtain ⟨z₀, hz₀⟩ := eventually_measureReal_lt_echoProcess_inter_le hα hZ hind hlaw hLm hL1
+    hLinf ht
+  have hlim : Tendsto (fun x : ℝ => 4 * (ε * x) ^ (-α)) atTop (𝓝 0) := by
+    simpa using ((tendsto_rpow_neg_atTop hα).comp
+      (tendsto_id.const_mul_atTop hε)).const_mul 4
+  refine squeeze_zero' (Eventually.of_forall fun x => div_nonneg measureReal_nonneg
+    measureReal_nonneg) ?_ hlim
+  filter_upwards [eventually_ge_atTop z₀, eventually_ge_atTop 1,
+    eventually_ge_atTop (1 / ε)] with x hxz hx1 hxε
+  have hεx : 1 ≤ ε * x := by rwa [div_le_iff₀' hε] at hxε
+  simp only [abs_of_nonneg (echoProcess_nonneg hpos _ _)]
+  have h0 : 0 < x ^ (-α) := Real.rpow_pos_of_pos (by linarith) _
+  have hlow : x ^ (-α) ≤ P.real {ω | x < echoProcess L Z 0 ω} := by
+    rw [← measureReal_lt_of_map_eq hZ hlaw hα 0 hx1]
+    exact measureReal_mono fun ω hω => lt_of_lt_of_le hω (le_echoProcess 0 ω)
+  rw [div_le_iff₀ (h0.trans_le hlow)]
+  calc _ ≤ 2 * x ^ (-α) * (2 * (ε * x) ^ (-α)) := hz₀ x (ε * x) hxz hεx
+    _ = 4 * (ε * x) ^ (-α) * x ^ (-α) := by ring
+    _ ≤ _ := by gcongr
+
+include hα hZ hind hlaw hpos hLm hL1 in
+/-- **The spectral tail process of the echo process is trivial**: `Θ_t = 1{t = 0}`. -/
+theorem hasSpectralTailProcess_echoProcess (hLinf : Tendsto L atTop atTop) :
+    HasSpectralTailProcess P (echoProcess L Z) α (Measure.dirac ()) unitSpectral :=
+  hasSpectralTailProcess_of_asymptoticIndependence (measurable_echoProcess hZ hLm)
+    (echoProcess_nonneg hpos 0) (isRegularlyVarying_echoProcess hα hZ hind hlaw hpos hLm hL1)
+    fun _ ht _ hε => tendsto_echoProcess_cond hα hZ hind hlaw hpos hLm hL1 hLinf ht hε
+
+/-- **The candidate extremal index of the echo process is `ϑ = 1`.** -/
+theorem candidateExtremalIndex_unitSpectral (hα : 0 < α) :
+    candidateExtremalIndex (Measure.dirac ()) unitSpectral α = 1 :=
+  candidateExtremalIndex_eq_one hα (by simp [unitSpectral])
+    fun k => by simp [unitSpectral]; omega
+
 end Echo
 
 end ExtremeValueTheory
