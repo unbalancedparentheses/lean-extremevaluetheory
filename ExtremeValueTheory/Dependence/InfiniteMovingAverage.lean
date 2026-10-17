@@ -33,8 +33,10 @@ main theorem `θ = ϑ`).
   `y ≥ x₀`.
 * `InfiniteMovingAverage.hasExtremalIndex`: the extremal index of `X` is
   `(sup_j ψ_j)^α / ∑_j ψ_j^α`.
-* `InfiniteMovingAverage.hasExtremalIndex_ar1`: the AR(1) process `X_t = φ X_{t-1} + Z_t`,
-  `0 < φ < 1`, i.e. `ψ_j = φ^j`, has extremal index `1 - φ^α` ([EKM, Example 8.1.?], [KS20]).
+* The AR(1) process `X_t = φ X_{t-1} + Z_t`, `0 < φ < 1`, i.e. `ψ_j = φ^j`, has extremal
+  index `1 - φ^α`: `AR1.hasExtremalIndex` in `Dependence/AR1.lean`.
+* The spectral tail process `Θ_t = ψ_{J+t} / ψ_J` and `θ = ϑ`:
+  `Dependence/InfiniteMovingAverageTailProcess.lean`.
 
 ## Hypotheses
 

@@ -14,7 +14,7 @@ index `-α`, the stationary AR(1) process `X_t = φ X_{t-1} + Z_t` is the infini
 
   `θ = 1 - φ^α`
 
-([EKM, §8.1 and Example 8.4.?], [Chernick 1981], [KS20, Chapter 15]), the case `ψ_j = φ^j` of
+([EKM, §8.1], [Chernick 1981], [KS20, Chapter 15]), the case `ψ_j = φ^j` of
 `InfiniteMovingAverage.hasExtremalIndex`: `sup_j φ^{jα} = 1` and `∑_j φ^{jα} = 1 / (1 - φ^α)`.
 
 ## Main results

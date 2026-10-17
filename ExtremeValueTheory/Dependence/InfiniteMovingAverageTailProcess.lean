@@ -847,6 +847,28 @@ theorem candidateExtremalIndex_spectral (hδα : δ ≤ α) (hpos : ∃ j, 0 < �
 
 end Candidate
 
+/-- **`θ = ϑ` for infinite moving averages** ([DR85], [KS20, Chapter 15]): under the hypotheses
+of `hasExtremalIndex`, `X` has spectral tail process `Θ_t = ψ_{J+t} / ψ_J`, and its extremal index
+is the candidate extremal index `ϑ` of `Θ`, namely `sup_j ψ_j^α / ∑_j ψ_j^α`. -/
+theorem hasSpectralTailProcess_and_hasExtremalIndex [IsProbabilityMeasure P]
+    (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+    (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
+    (hδα : δ < α) (hα1 : α < 1)
+    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
+    HasSpectralTailProcess P (process ψ Z) α (indexLaw ψ α) (spectral ψ) ∧
+      HasExtremalIndex (fun n : ℕ => process ψ Z n) P
+        (candidateExtremalIndex (indexLaw ψ α) (spectral ψ) α).toReal := by
+  refine ⟨hasSpectralTailProcess hZ hind hident hZ0 hδ hδα hα1 hL hψ0 hψ hpos, ?_⟩
+  rw [candidateExtremalIndex_spectral hψ0 hδ hψ hδα.le hpos, ENNReal.toReal_ofReal]
+  · exact hasExtremalIndex hZ hind hident hZ0 hδ hδα hα1 hL hψ0 hψ hpos
+  · obtain ⟨k, hk⟩ := hpos
+    exact div_nonneg (Real.rpow_nonneg ((hψ0 k).trans (le_ciSup (f := ψ)
+      ⟨ψ (Classical.choose (exists_forall_le hψ0 hδ hψ ⟨k, hk⟩)), by
+        rintro _ ⟨j, rfl⟩
+        exact (Classical.choose_spec (exists_forall_le hψ0 hδ hψ ⟨k, hk⟩)).2 j⟩ k)) _)
+      (tsum_nonneg fun j => Real.rpow_nonneg (hψ0 j) _)
+
 end InfiniteMovingAverage
 
 end ExtremeValueTheory
