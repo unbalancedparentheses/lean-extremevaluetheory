@@ -97,6 +97,7 @@ import ExtremeValueTheory.HeavyTails.LinearProcessSeriesLarge
 import ExtremeValueTheory.Dependence.MovingAverage
 import ExtremeValueTheory.Dependence.MovingAverageTailProcess
 import ExtremeValueTheory.Statistics.HillDependent
+import ExtremeValueTheory.Statistics.HillCluster
 import ExtremeValueTheory.Dependence.InfiniteMovingAverage
 import ExtremeValueTheory.Dependence.AR1
 import ExtremeValueTheory.Dependence.InfiniteMovingAverageTailProcess
