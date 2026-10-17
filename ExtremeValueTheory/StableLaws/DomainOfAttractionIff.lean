@@ -568,4 +568,95 @@ theorem norm_charFun_map_add_const {ν : Measure ℝ} (m t : ℝ) :
 
 end IndexBound
 
+section Iff
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {α : ℝ}
+
+/-- The centering of the generalized CLT: `bₙ = 0` for `α < 1`, the truncated mean
+`n E[X 1{|X| ≤ aₙ}]` for `α = 1`, and `n E X` for `α > 1`. -/
+noncomputable def stableCentering (μ : Measure ℝ) (α : ℝ) (a : ℕ → ℝ) (n : ℕ) : ℝ :=
+  if α < 1 then 0 else if α = 1 then n * ∫ y in Icc (-a n) (a n), y ∂μ else n * ∫ y, y ∂μ
+
+/-- **Generalized CLT with the canonical normalization** (asymmetric case). If
+`P(|X| > ·) ∈ RV(-α)`, `0 < α < 2`, and `P(X > x) / P(|X| > x) → p`, then with
+`aₙ = normSeq μ n = inf {x : P(|X| > x) ≤ 1 / n}` and `bₙ = stableCentering μ α aₙ n`, the laws
+of `(Sₙ - bₙ) / aₙ` converge weakly to a law `ν` which is stable with index `α`, with
+characteristic function `exp (-C_α |t|^α + i (2p - 1) E_α sign(t) |t|^α)` (`α ≠ 1`) or
+`exp (-C₁ |t| + i (2p - 1) (κ t - t log |t|))` (`α = 1`). -/
+theorem tendsto_map_convPow_sub_normSeq (hα0 : 0 < α) (hα2 : α < 2)
+    (hRV : IsRegularlyVarying (absTail μ) (-α)) {p : ℝ}
+    (hp : Tendsto (fun x => μ.real (Ioi x) / absTail μ x) atTop (𝓝 p)) :
+    ∃ ν : ProbabilityMeasure ℝ, IsStableIndex α ν ∧
+      (α ≠ 1 → HasStableCharFun α (stableConst α) ((2 * p - 1) * stableSkewConst α) ν) ∧
+      (α = 1 → HasStableOneCharFun (stableConst 1) (2 * p - 1) stableLogConst ν) ∧
+      Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+        ⟨(convPow μ n).map (fun x => (normSeq μ n)⁻¹ * (x - stableCentering μ α (normSeq μ) n)),
+          inferInstance⟩) atTop (𝓝 ν) := by
+  obtain ⟨a', ha', hea⟩ := exists_pos_eventuallyEq (tendsto_normSeq hRV)
+  have hna : Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a' n)) atTop (𝓝 1) :=
+    (tendsto_mul_absTail_normSeq hRV).congr' (hea.mono fun n hn => by simp [hn])
+  have hC := stableConst_pos hα0 hα2
+  rcases lt_trichotomy α 1 with h1 | rfl | h1
+  · obtain ⟨ν, hν, hlim⟩ :=
+      tendsto_map_convPow_of_isRegularlyVarying_of_lt_one hα0 h1 hRV hp ha' hna
+    refine ⟨ν, hν.isStableIndex hα0 hC, fun _ => hν, fun h => absurd h h1.ne,
+      hlim.congr' (hea.mono fun n hn => Subtype.ext ?_)⟩
+    simp only [stableCentering, h1, ↓reduceIte, sub_zero, hn]
+  · obtain ⟨ν, hν, hlim⟩ := tendsto_map_convPow_sub_of_isRegularlyVarying_one hRV hp ha' hna
+    refine ⟨ν, hν.isStableIndex hC, fun h => absurd rfl h, fun _ => hν,
+      hlim.congr' (hea.mono fun n hn => Subtype.ext ?_)⟩
+    simp only [stableCentering, lt_self_iff_false, ↓reduceIte, hn]
+  · obtain ⟨ν, hν, hlim⟩ :=
+      tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt h1 hα2 hRV hp ha' hna
+    refine ⟨ν, hν.isStableIndex hα0 hC, fun _ => hν, fun h => absurd h h1.ne',
+      hlim.congr' (hea.mono fun n hn => Subtype.ext ?_)⟩
+    simp only [stableCentering, not_lt.2 h1.le, h1.ne', ↓reduceIte, hn]
+
+/-- **Feller's criterion for the domain of attraction of a stable law**
+([Feller, Vol. II, §XVII.5, Theorem 2], [GK, §35, Theorem 2], [EKM, Theorem 2.2.8]). Let
+`0 < α < 2`. There are `aₙ > 0`, `bₙ` and a law `ν`, stable with index `α`, such that
+`(X₁ + ⋯ + Xₙ - bₙ) / aₙ → ν` weakly, if and only if the two-sided tail `P(|X| > ·)` is
+regularly varying with index `-α` and the tails are balanced, `P(X > x) / P(|X| > x) → p` for
+some `p ∈ [0, 1]`. In that case `aₙ = normSeq μ n` and `bₙ = stableCentering μ α aₙ n` work
+(`tendsto_map_convPow_sub_normSeq`).
+
+Necessity: the converse GCLT gives an index `α'` and the symmetrized scaling limit; the lower
+bound `|φ_ν(t)|² ≥ exp (-6 K t^{α'})` forces `α' ≤ α < 2`
+(`IsStableIndex.le_of_exp_le`), the limit is then identified as an explicit `α'`-stable law up
+to a shift (`identify_of_tendsto_mul_sqRatio`), and uniqueness of the index gives `α' = α`. -/
+theorem domainOfAttraction_isStableIndex_iff (hα0 : 0 < α) (hα2 : α < 2) :
+    (∃ a : ℕ → ℝ, (∀ n, 0 < a n) ∧ ∃ b : ℕ → ℝ, ∃ ν : ProbabilityMeasure ℝ,
+      IsStableIndex α ν ∧ Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+        ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν)) ↔
+      IsRegularlyVarying (absTail μ) (-α) ∧ ∃ p, 0 ≤ p ∧ p ≤ 1 ∧
+        Tendsto (fun x => μ.real (Ioi x) / absTail μ x) atTop (𝓝 p) := by
+  constructor
+  · rintro ⟨a, ha, b, ν, hν, hconv⟩
+    obtain ⟨α', hα'0, -, K, hK, hL⟩ := exists_tendsto_mul_sqRatio_symmLaw ha hν.1.ne_dirac hconv
+    have hle : α' ≤ α := hν.le_of_exp_le hα0 (C := 6 * K) fun t ht => by
+      simpa [mul_assoc] using exp_le_norm_charFun_sq ha hconv hK hL ht
+    obtain ⟨hG, B, hB0, -, p, hp0, hp1, hp, m, hm1, hm2⟩ :=
+      identify_of_tendsto_mul_sqRatio ha hconv hα'0 (hle.trans_lt hα2) hK hL
+    have heq : α' = α := by
+      rcases eq_or_ne α' 1 with h1 | h1
+      · subst h1
+        have hc := mul_pos hB0 (stableConst_pos one_pos (by norm_num : (1 : ℝ) < 2))
+        refine hν.eq_of_norm_charFun hc fun t => ?_
+        rw [← norm_charFun_map_add_const m, (hm2 rfl).2, Complex.norm_exp, rpow_one]
+        simp [stableExponentOne]
+      · have hc := mul_pos hB0 (stableConst_pos hα'0 (hle.trans_lt hα2))
+        refine hν.eq_of_norm_charFun hc fun t => ?_
+        rw [← norm_charFun_map_add_const m, (hm1 h1).2, Complex.norm_exp]
+        simp [stableExponent]
+    subst heq
+    exact ⟨hG, p, hp0, hp1, hp⟩
+  · rintro ⟨hRV, p, -, -, hp⟩
+    obtain ⟨ν, hν, -, -, hlim⟩ := tendsto_map_convPow_sub_normSeq hα0 hα2 hRV hp
+    obtain ⟨a', ha', hea⟩ := exists_pos_eventuallyEq (tendsto_normSeq hRV)
+    refine ⟨a', ha', stableCentering μ α (normSeq μ), ν, hν,
+      hlim.congr' (hea.mono fun n hn => Subtype.ext ?_)⟩
+    simp only [hn]
+
+end Iff
+
 end ExtremeValueTheory
