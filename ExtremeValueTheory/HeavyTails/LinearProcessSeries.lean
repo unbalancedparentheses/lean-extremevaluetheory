@@ -115,6 +115,68 @@ theorem exists_lintegral_trunc_le [IsProbabilityMeasure P] {Z : Ω → ℝ} (hZ 
   rw [mul_assoc]
   linarith
 
+/-- **Per-term bounds.** Under regular variation of `P(|Z| > x)` with index `-α`
+(`δ < α < 1`) there are `K > 0`, `x₀ > 0` such that for `x ≥ x₀` and `|c| ≤ 1`:
+`P(|c| |Z| > x) ≤ 2 |c|^δ P(|Z| > x)` and `E[|c| |Z| 1{|c| |Z| ≤ x}] ≤ K x |c|^δ P(|Z| > x)`. -/
+theorem exists_term_bounds [IsProbabilityMeasure P] {Z : Ω → ℝ} (hZ : Measurable Z)
+    {α δ : ℝ} (hδα : δ < α) (hα1 : α < 1)
+    (hL : IsRegularlyVarying (fun x => P.real {ω | x < |Z ω|}) (-α)) :
+    ∃ K x₀ : ℝ, 0 < K ∧ 0 < x₀ ∧ ∀ x ≥ x₀, ∀ c : ℝ, |c| ≤ 1 →
+      P {ω | x < |c| * |Z ω|} ≤ ENNReal.ofReal (2 * |c| ^ δ * P.real {ω | x < |Z ω|}) ∧
+      ∫⁻ ω, ENNReal.ofReal (if |c| * |Z ω| ≤ x then |c| * |Z ω| else 0) ∂P ≤
+        ENNReal.ofReal (K * x * |c| ^ δ * P.real {ω | x < |Z ω|}) := by
+  set L : ℝ → ℝ := fun x => P.real {ω | x < |Z ω|} with hL_def
+  have hanti : Antitone L := antitone_measureReal_lt_abs Z
+  obtain ⟨K₁, x₁, hK₁, hx₁, hT⟩ := exists_lintegral_trunc_le hZ hα1 hL
+  obtain ⟨x₂, hx₂, hpos, hP⟩ := hL.potter_bound (a := 0) (Or.inr (hanti.antitoneOn _))
+    (show 0 < α - δ by linarith) one_lt_two
+  -- the Potter bound in the form `L (x / c) ≤ 2 c^δ L x`
+  have hPot : ∀ x ≥ x₂, ∀ c : ℝ, 0 < c → c ≤ 1 → L (x / c) ≤ 2 * c ^ δ * L x := by
+    intro x hx c hc hc1
+    have hx0 : 0 < x := hx₂.trans_le hx
+    have hxc : x ≤ x / c := le_div_self hx0.le hc hc1
+    have h := hP x hx (x / c) (hx.trans hxc)
+    have hr : x / c / x = c⁻¹ := by field_simp
+    rw [hr, show -α + (α - δ) = -δ by ring, show -α - (α - δ) = -(2 * α - δ) by ring] at h
+    have hc1' : 1 ≤ c⁻¹ := one_le_inv₀ hc |>.2 hc1
+    rw [max_eq_left (rpow_le_rpow_of_exponent_le hc1' (by linarith)),
+      inv_rpow hc.le, ← rpow_neg hc.le, neg_neg, div_le_iff₀ (hpos x hx)] at h
+    linarith
+  refine ⟨2 * K₁, max x₁ x₂, by positivity, lt_max_of_lt_left hx₁, fun x hx c hc1 => ?_⟩
+  have hx0 : 0 < x := hx₁.trans_le ((le_max_left _ _).trans hx)
+  rcases (abs_nonneg c).eq_or_lt with hc0 | hc0
+  · -- `c = 0`
+    rw [← hc0]
+    simp only [zero_mul, hx0.not_gt, ofPred_false, measure_empty, zero_le, true_and]
+    simp [hx0.le]
+  have hxc : x ≤ x / |c| := le_div_self hx0.le hc0 hc1
+  have hPc := hPot x ((le_max_right _ _).trans hx) |c| hc0 hc1
+  constructor
+  · have : {ω | x < |c| * |Z ω|} = {ω | x / |c| < |Z ω|} := by
+      ext ω; simp only [mem_ofPred_eq]; rw [div_lt_iff₀' hc0]
+    rw [this, ← ofReal_measureReal (measure_ne_top _ _)]
+    exact ENNReal.ofReal_le_ofReal hPc
+  · have hfun : (fun ω => ENNReal.ofReal (if |c| * |Z ω| ≤ x then |c| * |Z ω| else 0)) =
+        fun ω => ENNReal.ofReal |c| * ENNReal.ofReal (if |Z ω| ≤ x / |c| then |Z ω| else 0) := by
+      funext ω
+      rw [← ENNReal.ofReal_mul hc0.le]
+      have : (|Z ω| ≤ x / |c|) ↔ (|c| * |Z ω| ≤ x) := le_div_iff₀' hc0
+      by_cases h : |c| * |Z ω| ≤ x
+      · simp [h, this.2 h]
+      · simp [h, mt this.1 h]
+    rw [hfun, lintegral_const_mul' _ _ ENNReal.ofReal_ne_top]
+    have hT' := hT (x / |c|) ((le_max_left _ _).trans (hx.trans hxc))
+    calc ENNReal.ofReal |c| * ∫⁻ ω, ENNReal.ofReal (if |Z ω| ≤ x / |c| then |Z ω| else 0) ∂P
+        ≤ ENNReal.ofReal |c| * ENNReal.ofReal (K₁ * (x / |c|) * L (x / |c|)) := by gcongr
+      _ = ENNReal.ofReal (K₁ * x * L (x / |c|)) := by
+          rw [← ENNReal.ofReal_mul hc0.le]
+          congr 1
+          field_simp
+      _ ≤ ENNReal.ofReal (2 * K₁ * x * |c| ^ δ * L x) := by
+          apply ENNReal.ofReal_le_ofReal
+          have := mul_le_mul_of_nonneg_left hPc (show 0 ≤ K₁ * x by positivity)
+          linarith
+
 end LinearProcess
 
 end ExtremeValueTheory
