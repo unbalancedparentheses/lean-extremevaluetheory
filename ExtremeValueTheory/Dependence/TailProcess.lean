@@ -982,11 +982,12 @@ variable {Ω' : Type*} {mΩ' : MeasurableSpace Ω'} {Q : Measure Ω'} {Θ : ℤ 
 /-- The *candidate extremal index* of a spectral tail process ([KS20, §7.5], [Planinić–Soulier,
 *The tail process revisited*, Extremes 21 (2018)]):
 `ϑ = E[sup_{k ≥ 0} |Θ_k|^α - sup_{k ≥ 1} |Θ_k|^α]`.
-The suprema are taken in `[0, ∞]`, with the truncated subtraction of `ℝ≥0∞`; in particular the
-integrand is `0` when `sup_{k ≥ 1} |Θ_k| = ∞`. When `sup_{k ≥ 1} |Θ_k| < ∞` almost surely (for
-instance when `|Θ_t| → 0`), this is the usual real-valued expectation. -/
+The suprema are taken in `[0, ∞]` (where `sup_k |Θ_k|^α = (sup_k |Θ_k|)^α`), with the truncated
+subtraction of `ℝ≥0∞`; in particular the integrand is `0` when `sup_{k ≥ 1} |Θ_k| = ∞`. When
+`sup_{k ≥ 1} |Θ_k| < ∞` almost surely (for instance when `|Θ_t| → 0`), this is the usual
+real-valued expectation. -/
 noncomputable def candidateExtremalIndex (Q : Measure Ω') (Θ : ℤ → Ω' → ℝ) (α : ℝ) : ℝ≥0∞ :=
-  ∫⁻ ω', (⨆ k : ℕ, ENNReal.ofReal |Θ k ω'| ^ α) - ⨆ k : ℕ, ENNReal.ofReal |Θ (k + 1) ω'| ^ α ∂Q
+  ∫⁻ ω', (⨆ k : ℕ, ENNReal.ofReal |Θ k ω'|) ^ α - (⨆ k : ℕ, ENNReal.ofReal |Θ (k + 1) ω'|) ^ α ∂Q
 
 /-- Splitting off the first term of a supremum over `ℕ`. -/
 theorem iSup_nat_eq_sup_iSup_succ {L : Type*} [CompleteLattice L] (f : ℕ → L) :
@@ -996,22 +997,28 @@ theorem iSup_nat_eq_sup_iSup_succ {L : Type*} [CompleteLattice L] (f : ℕ → L
   · exact le_sup_left
   · exact le_sup_of_le_right (le_iSup (fun k => f (k + 1)) k)
 
-/-- The candidate extremal index is the expectation of `|Θ_0|^α ∧ ...`: pointwise, the
-integrand is at most `|Θ_0|^α`. -/
-theorem iSup_sub_iSup_succ_le (ω' : Ω') :
-    (⨆ k : ℕ, ENNReal.ofReal |Θ k ω'| ^ α) - ⨆ k : ℕ, ENNReal.ofReal |Θ (k + 1) ω'| ^ α ≤
+theorem ENNReal.sup_rpow_of_nonneg {a b : ℝ≥0∞} {z : ℝ} (hz : 0 ≤ z) :
+    (a ⊔ b) ^ z = a ^ z ⊔ b ^ z := by
+  rcases le_total a b with h | h
+  · rw [sup_eq_right.2 h, sup_eq_right.2 (ENNReal.rpow_le_rpow h hz)]
+  · rw [sup_eq_left.2 h, sup_eq_left.2 (ENNReal.rpow_le_rpow h hz)]
+
+/-- Pointwise, the integrand of `ϑ` is at most `|Θ_0|^α`. -/
+theorem iSup_rpow_sub_iSup_succ_rpow_le (hα : 0 ≤ α) (ω' : Ω') :
+    (⨆ k : ℕ, ENNReal.ofReal |Θ k ω'|) ^ α - (⨆ k : ℕ, ENNReal.ofReal |Θ (k + 1) ω'|) ^ α ≤
       ENNReal.ofReal |Θ 0 ω'| ^ α := by
-  rw [iSup_nat_eq_sup_iSup_succ (fun k : ℕ => ENNReal.ofReal |Θ k ω'| ^ α), tsub_le_iff_right]
+  rw [iSup_nat_eq_sup_iSup_succ (fun k : ℕ => ENNReal.ofReal |Θ k ω'|),
+    ENNReal.sup_rpow_of_nonneg hα, tsub_le_iff_right]
   exact sup_le le_self_add le_add_self
 
 /-- `ϑ ≤ 1` for a spectral tail process, using only `|Θ_0| = 1` almost surely
 ([KS20, §7.5]). -/
-theorem candidateExtremalIndex_le_one [IsProbabilityMeasure Q]
+theorem candidateExtremalIndex_le_one [IsProbabilityMeasure Q] (hα : 0 ≤ α)
     (h0 : ∀ᵐ ω' ∂Q, |Θ 0 ω'| = 1) : candidateExtremalIndex Q Θ α ≤ 1 := by
   calc candidateExtremalIndex Q Θ α ≤ ∫⁻ _, 1 ∂Q := by
         refine lintegral_mono_ae ?_
         filter_upwards [h0] with ω' hω'
-        refine (iSup_sub_iSup_succ_le ω').trans ?_
+        refine (iSup_rpow_sub_iSup_succ_rpow_le hα ω').trans ?_
         simp [hω']
     _ = 1 := by simp
 
@@ -1025,9 +1032,91 @@ theorem candidateExtremalIndex_eq_one [IsProbabilityMeasure Q] (hα : 0 < α)
   calc candidateExtremalIndex Q Θ α = ∫⁻ _, 1 ∂Q := by
         refine lintegral_congr_ae ?_
         filter_upwards [h0, hk'] with ω' h0' hk''
-        rw [iSup_nat_eq_sup_iSup_succ (fun k : ℕ => ENNReal.ofReal |Θ k ω'| ^ α)]
+        rw [iSup_nat_eq_sup_iSup_succ (fun k : ℕ => ENNReal.ofReal |Θ k ω'|)]
         simp [hk'', h0', ENNReal.zero_rpow_of_pos hα]
     _ = 1 := by simp
+
+/-- The Pareto probability of `{r : r b ≤ 1}`, `b ∈ [0, ∞]`, is `1 - min(1, b^α)`. -/
+theorem paretoMeasure_setOf_mul_le (hα : 0 < α) (b : ℝ≥0∞) :
+    paretoMeasure 1 α {r | ENNReal.ofReal r * b ≤ 1} = (1 ⊔ b ^ α) - b ^ α := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have hIoi : paretoMeasure 1 α (Ioi 1)ᶜ = 0 := by rw [compl_Ioi]; exact paretoMeasure_one_Iic_one
+  rw [← measure_inter_conull hIoi]
+  rcases eq_or_ne b ⊤ with rfl | hb
+  · have : {r : ℝ | ENNReal.ofReal r * ⊤ ≤ 1} ∩ Ioi 1 = ∅ := by
+      refine Set.eq_empty_iff_forall_notMem.2 fun r ⟨h1, h2⟩ => ?_
+      have h2 : (1 : ℝ) < r := h2
+      rw [mem_setOf_eq, ENNReal.mul_top (ENNReal.ofReal_pos.2 (by linarith)).ne'] at h1
+      exact absurd h1 (by simp)
+    rw [this, measure_empty, ENNReal.top_rpow_of_pos hα]
+    simp
+  · set β := b.toReal
+    have hβ : 0 ≤ β := ENNReal.toReal_nonneg
+    have hbβ : b = ENNReal.ofReal β := (ENNReal.ofReal_toReal hb).symm
+    have hset : {r : ℝ | ENNReal.ofReal r * b ≤ 1} ∩ Ioi 1 = {r | r * β ≤ 1} ∩ Ioi 1 := by
+      ext r
+      simp only [mem_inter_iff, mem_setOf_eq, mem_Ioi, and_congr_left_iff]
+      intro hr
+      rw [hbβ, ← ENNReal.ofReal_mul (by linarith), ENNReal.ofReal_le_one]
+    rw [hset, hbβ, ENNReal.ofReal_rpow_of_nonneg hβ hα.le]
+    rcases hβ.eq_or_lt with h0 | hpos
+    · rw [← h0]
+      have : {r : ℝ | r * 0 ≤ 1} ∩ Ioi 1 = Ioi 1 := by ext r; simp
+      rw [this, paretoMeasure_one_Ioi hα le_rfl, Real.zero_rpow hα.ne']
+      simp
+    · rcases le_or_gt β 1 with hβ1 | hβ1
+      · have hc : 1 ≤ β⁻¹ := one_le_inv₀ hpos |>.2 hβ1
+        have : {r : ℝ | r * β ≤ 1} ∩ Ioi 1 = Ioi 1 \ Ioi β⁻¹ := by
+          ext r
+          simp only [mem_inter_iff, mem_setOf_eq, mem_Ioi, mem_diff, not_lt]
+          rw [← le_div_iff₀ hpos, one_div, and_comm]
+        rw [this, measure_diff (Ioi_subset_Ioi hc) measurableSet_Ioi.nullMeasurableSet
+          (measure_ne_top _ _), paretoMeasure_one_Ioi hα le_rfl, paretoMeasure_one_Ioi hα hc,
+          Real.inv_rpow hpos.le, Real.rpow_neg hpos.le, inv_inv, Real.one_rpow, ENNReal.ofReal_one,
+          sup_eq_left.2 (ENNReal.ofReal_le_one.2 (Real.rpow_le_one hpos.le hβ1 hα.le))]
+      · have : {r : ℝ | r * β ≤ 1} ∩ Ioi 1 = ∅ := by
+          ext r
+          simp only [mem_inter_iff, mem_setOf_eq, mem_Ioi, mem_empty_iff_false, iff_false,
+            not_and, not_le]
+          intro hr; nlinarith
+        rw [this, measure_empty, sup_eq_right.2 (ENNReal.one_le_ofReal.2
+          (Real.one_le_rpow hβ1.le hα.le)), tsub_self]
+
+/-- **The candidate extremal index as a probability** ([Planinić–Soulier 2018,
+Lemma 4.1], [KS20, §7.5]). Let `Y_t = R Θ_t` with `R` Pareto(`α`) independent of `(Θ_t)` (the
+tail process, see `HasSpectralTailProcess.hasTailProcess`). Then
+`ϑ = P(sup_{k ≥ 1} |Y_k| ≤ 1)`.
+Only `α > 0`, measurability, and `|Θ_0| = 1` almost surely are used; thanks to the convention
+`∞ - ∞ = 0` in the definition of `ϑ`, no condition such as `|Y_t| → 0` is needed. (Under
+`|Y_t| → 0`, `sup_{k ≥ 1} |Θ_k|` is finite and `ϑ` is the usual real expectation.) -/
+theorem candidateExtremalIndex_eq_measure [IsProbabilityMeasure Q] (hα : 0 < α)
+    (hΘm : ∀ t, Measurable (Θ t)) (h0 : ∀ᵐ ω' ∂Q, |Θ 0 ω'| = 1) :
+    candidateExtremalIndex Q Θ α =
+      ((paretoMeasure 1 α).prod Q) {p | ∀ k : ℕ, p.1 * |Θ (k + 1) p.2| ≤ 1} := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have hmeas : MeasurableSet {p : ℝ × Ω' | ∀ k : ℕ, p.1 * |Θ (k + 1) p.2| ≤ 1} := by
+    simp only [setOf_forall]
+    exact MeasurableSet.iInter fun k => measurableSet_le
+      (measurable_fst.mul (continuous_abs.measurable.comp ((hΘm _).comp measurable_snd)))
+      measurable_const
+  rw [Measure.prod_apply_symm hmeas, candidateExtremalIndex]
+  refine lintegral_congr_ae ?_
+  filter_upwards [h0] with ω' hω'
+  set b := ⨆ k : ℕ, ENNReal.ofReal |Θ (k + 1) ω'|
+  have hset : (fun r : ℝ => (r, ω')) ⁻¹' {p : ℝ × Ω' | ∀ k : ℕ, p.1 * |Θ (k + 1) p.2| ≤ 1} =
+      {r | ENNReal.ofReal r * b ≤ 1} := by
+    ext r
+    simp only [mem_preimage, mem_setOf_eq, b, ENNReal.mul_iSup, iSup_le_iff]
+    refine forall_congr' fun k => ?_
+    rcases le_or_gt r 0 with hr | hr
+    · rw [ENNReal.ofReal_of_nonpos hr, zero_mul]
+      simp only [zero_le, iff_true]
+      nlinarith [abs_nonneg (Θ (k + 1) ω')]
+    · rw [← ENNReal.ofReal_mul hr.le, ENNReal.ofReal_le_one]
+  rw [hset, paretoMeasure_setOf_mul_le hα,
+    iSup_nat_eq_sup_iSup_succ (fun k : ℕ => ENNReal.ofReal |Θ k ω'|),
+    ENNReal.sup_rpow_of_nonneg hα.le]
+  simp [hω', b]
 
 end CandidateExtremalIndex
 
