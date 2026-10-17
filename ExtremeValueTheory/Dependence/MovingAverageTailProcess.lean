@@ -297,6 +297,143 @@ theorem measureReal_two_gt_le (hind : iIndepFun Z P)
 
 end Probabilistic
 
+/-! ### Single big jump events -/
+
+section Events
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
+
+/-- The noise indices `t - i`, `t ∈ S ∪ {0}`, `i ≤ m`, entering `X_t` for `t` in the window. -/
+def window (m : ℕ) (S : Finset ℤ) : Finset ℤ :=
+  (insert 0 S).biUnion fun t => (range (m + 1)).image fun i : ℕ => t - i
+
+theorem sub_mem_window {S : Finset ℤ} {t : ℤ} (ht : t ∈ insert 0 S) {i : ℕ}
+    (hi : i ∈ range (m + 1)) : t - i ∈ window m S :=
+  Finset.mem_biUnion.2 ⟨t, ht, Finset.mem_image.2 ⟨i, hi, rfl⟩⟩
+
+theorem neg_mem_window (S : Finset ℤ) {j : ℕ} (hj : j ∈ range (m + 1)) :
+    -(j : ℤ) ∈ window m S := by
+  simpa using sub_mem_window (S := S) (Finset.mem_insert_self 0 S) hj
+
+/-- `Z_{-j} > a` while all other noise variables of the window are `≤ b`. -/
+def bigJump (I : Finset ℤ) (Z : ℤ → Ω → ℝ) (j : ℕ) (a b : ℝ) : Set Ω :=
+  {ω | a < Z (-(j : ℤ)) ω ∧ ∀ i ∈ I, i ≠ -(j : ℤ) → Z i ω ≤ b}
+
+/-- Two noise variables of the window exceed `b`. -/
+def twoBig (I : Finset ℤ) (Z : ℤ → Ω → ℝ) (b : ℝ) : Set Ω :=
+  {ω | ∃ i ∈ I, ∃ i' ∈ I, i ≠ i' ∧ b < Z i ω ∧ b < Z i' ω}
+
+variable {Z : ℤ → Ω → ℝ}
+
+theorem measurableSet_bigJump (hZ : ∀ i, Measurable (Z i)) (I : Finset ℤ) (j : ℕ) (a b : ℝ) :
+    MeasurableSet (bigJump I Z j a b) := by
+  have h1 : MeasurableSet {ω | a < Z (-(j : ℤ)) ω} := measurableSet_lt measurable_const (hZ _)
+  have h2 : MeasurableSet {ω | ∀ i ∈ I, i ≠ -(j : ℤ) → Z i ω ≤ b} := by
+    have : {ω | ∀ i ∈ I, i ≠ -(j : ℤ) → Z i ω ≤ b} =
+        ⋂ i ∈ (I.filter fun i => i ≠ -(j : ℤ)), {ω | Z i ω ≤ b} := by
+      ext ω; simp
+    rw [this]
+    exact Finset.measurableSet_biInter _ fun i _ => measurableSet_le (hZ i) measurable_const
+  exact h1.inter h2
+
+theorem bigJump_disjoint {I : Finset ℤ} {j j' : ℕ} (hj : -(j : ℤ) ∈ I) (hjj' : j ≠ j') (b : ℝ) :
+    Disjoint (bigJump I Z j b b) (bigJump I Z j' b b) := by
+  rw [Set.disjoint_left]
+  rintro ω ⟨h1, -⟩ ⟨-, h2⟩
+  exact absurd (h2 _ hj (by omega)) (not_le.2 h1)
+
+variable [IsProbabilityMeasure P]
+
+theorem measureReal_bigJump (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+    (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) {I : Finset ℤ} {j : ℕ} (hj : -(j : ℤ) ∈ I)
+    (a b : ℝ) :
+    P.real (bigJump I Z j a b) =
+      P.real {ω | a < Z 0 ω} * (1 - P.real {ω | b < Z 0 ω}) ^ (I.card - 1) :=
+  measureReal_gt_and_forall_le hZ hind hident hj a b
+
+end Events
+
+section Inclusions
+
+variable {Ω : Type*} {Z : ℤ → Ω → ℝ} {S : Finset ℤ}
+variable (hψ0 : ∀ j, 0 ≤ ψ j) (hψm : ∀ j, m < j → ψ j = 0) (hZ0 : ∀ i ω, 0 ≤ Z i ω)
+include hψ0 hψm hZ0
+
+omit hψm in
+/-- `Z_{-j} > x / ψ_j` (and the rest small) forces `X_0 > x` and the big jump event. -/
+theorem bigJump_subset {j : ℕ} (hjm : j ∈ range (m + 1)) (hj : 0 < ψ j) {η x : ℝ}
+    (hη : η * ψ j ≤ 1) (hx : 0 < x) :
+    bigJump (window m S) Z j ((ψ j)⁻¹ * x) (η * x) ⊆
+      {ω | x < |process m ψ Z 0 ω|} ∩ bigJump (window m S) Z j (η * x) (η * x) := by
+  rintro ω ⟨h1, h2⟩
+  refine ⟨?_, ?_, h2⟩
+  · rw [mem_ofPred_eq, abs_of_nonneg (process_nonneg hψ0 hZ0 0 ω)]
+    have hle : ψ j * Z (0 - j) ω ≤ process m ψ Z 0 ω :=
+      Finset.single_le_sum (f := fun i => ψ i * Z (0 - i) ω)
+        (fun i _ => mul_nonneg (hψ0 i) (hZ0 _ ω)) hjm
+    rw [zero_sub] at hle
+    have : x < ψ j * Z (-(j : ℤ)) ω := by
+      rw [inv_mul_lt_iff₀ hj] at h1; exact h1
+    linarith
+  · have : η * x ≤ (ψ j)⁻¹ * x := by
+      rw [← div_eq_inv_mul, le_div_iff₀ hj]
+      nlinarith
+    exact this.trans_lt h1
+
+/-- On `X_0 > x` and the big jump event, `Z_{-j} > (1 - η∑ψ) x / ψ_j`. -/
+theorem inter_bigJump_subset {j : ℕ} (hj : 0 < ψ j) {η x : ℝ}
+    (hη : 0 ≤ η) (hx : 0 < x) :
+    {ω | x < |process m ψ Z 0 ω|} ∩ bigJump (window m S) Z j (η * x) (η * x) ⊆
+      bigJump (window m S) Z j
+        (((ψ j)⁻¹ * (1 - η * ∑ i ∈ range (m + 1), ψ i)) * x) (η * x) := by
+  rintro ω ⟨hX, -, h2⟩
+  refine ⟨?_, h2⟩
+  rw [mem_ofPred_eq, abs_of_nonneg (process_nonneg hψ0 hZ0 0 ω)] at hX
+  have hdec := sum_eq_coef_mul_add hψm (fun i => Z i ω) j 0
+  rw [add_zero, coef_natCast] at hdec
+  have hR := rem_le hψ0 (z := fun i => Z i ω) (by positivity : 0 ≤ η * x) j 0
+    fun i hi h => h2 _ (sub_mem_window (Finset.mem_insert_self 0 S) hi) h
+  change x < ∑ i ∈ range (m + 1), ψ i * Z (0 - i) ω at hX
+  rw [mul_assoc, inv_mul_lt_iff₀ hj]
+  nlinarith
+
+/-- On `X_0 > x` and the big jump event, `X_t / X_0` is close to `ψ_{j+t} / ψ_j`. -/
+theorem abs_ratio_sub_le {j : ℕ} (hj : 0 < ψ j) {η x : ℝ} (hη : 0 ≤ η) (hx : 0 < x)
+    {ω : Ω} (hω : ω ∈ {ω | x < |process m ψ Z 0 ω|} ∩ bigJump (window m S) Z j (η * x) (η * x))
+    {t : ℤ} (ht : t ∈ S) :
+    |process m ψ Z t ω / |process m ψ Z 0 ω| - coef ψ (j + t) / ψ j| ≤
+      η * (∑ i ∈ range (m + 1), ψ i) * (ψ j + coef ψ (j + t)) / ψ j := by
+  obtain ⟨hX, -, h2⟩ := hω
+  change x < |process m ψ Z 0 ω| at hX
+  rw [abs_of_nonneg (process_nonneg hψ0 hZ0 0 ω)] at hX ⊢
+  have h := abs_div_sub_le hψ0 hψm (z := fun i => Z i ω) (by positivity : 0 ≤ η * x) hx hj t
+    (fun s hs i hi hne => ⟨hZ0 _ ω, h2 _ (sub_mem_window (by
+      rcases Finset.mem_insert.1 hs with h | h
+      · rw [h]; exact Finset.mem_insert_self 0 S
+      · rw [Finset.mem_singleton.1 h]; exact Finset.mem_insert_of_mem ht) hi) hne⟩) hX
+  refine h.trans (le_of_eq ?_)
+  field_simp
+
+omit hψm in
+/-- **Coverage**: `{X_0 > x}` is covered by the big jump events and the double exceedances. -/
+theorem subset_iUnion_bigJump_union {η x : ℝ}
+    (hη : η * ∑ i ∈ range (m + 1), ψ i ≤ 1) (hx : 0 < x) :
+    {ω | x < |process m ψ Z 0 ω|} ⊆
+      (⋃ j ∈ (range (m + 1)).filter (fun j => 0 < ψ j),
+        bigJump (window m S) Z j (η * x) (η * x)) ∪ twoBig (window m S) Z (η * x) := by
+  intro ω hω
+  rw [mem_ofPred_eq, abs_of_nonneg (process_nonneg hψ0 hZ0 0 ω)] at hω
+  change x < ∑ i ∈ range (m + 1), ψ i * Z (0 - i) ω at hω
+  simp only [zero_sub] at hω
+  rcases coverage hψ0 (I := window m S) (z := fun i => Z i ω) (fun j hj => neg_mem_window S hj)
+    (b := η * x) (by nlinarith) hω with ⟨j, hj, hpos, h1, h2⟩ | h
+  · left
+    simp only [mem_iUnion, Finset.mem_filter]
+    exact ⟨j, ⟨hj, hpos⟩, h1, h2⟩
+  · exact Or.inr h
+
+end Inclusions
+
 end MovingAverage
 
 end ExtremeValueTheory
