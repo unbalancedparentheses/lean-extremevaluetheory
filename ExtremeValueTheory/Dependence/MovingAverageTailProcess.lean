@@ -17,11 +17,12 @@ zero. The moving average `X_t = ∑_{i=0}^m ψ_i Z_{t-i}` has spectral tail proc
 
 ## Main results
 
+* `MovingAverage.process m ψ Z t = ∑_{i ≤ m} ψ_i Z_{t-i}`.
 * `MovingAverage.tendsto_measureReal_process_div`: `P(X_0 > x) / P(Z_0 > x) → ∑_j ψ_j^α`.
 * `MovingAverage.hasSpectralTailProcess`: `HasSpectralTailProcess P X α (indexLaw m ψ α)
   (spectral m ψ)`.
-* `MovingAverage.candidateExtremalIndex_eq`: hence the candidate extremal index of the moving
-  average is `max_j ψ_j^α / ∑_j ψ_j^α`.
+* `MovingAverage.exists_hasSpectralTailProcess_candidateExtremalIndex_eq`: hence the candidate
+  extremal index of the moving average is `max_j ψ_j^α / ∑_j ψ_j^α`.
 
 ## Proof
 
@@ -742,6 +743,39 @@ theorem tendstoLawCond_window (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z
       ≤ |(A - Gs) / P.real (B x)| + |∑ j ∈ J, f (θ j) * (a j - q j)| := abs_add_le _ _
     _ < ε / 4 + ε / 4 + ε / 4 := by linarith
     _ < ε := by linarith
+
+/-- **The spectral tail process of a finite moving average** ([DR85], [KS20, §15.3],
+[Meinguet–Segers 2010]). Let `(Z_i)_{i ∈ ℤ}` be iid nonnegative random variables with
+`P(Z_0 > x)` regularly varying with index `-α`, `α > 0` (e.g. Pareto), and let
+`ψ_0, …, ψ_m ≥ 0`, not all zero. Then `X_t = ∑_{i=0}^m ψ_i Z_{t-i}` is jointly regularly varying
+with spectral tail process `Θ_t = ψ_{J+t} / ψ_J`, `P(J = j) = ψ_j^α / ∑_i ψ_i^α`. -/
+theorem hasSpectralTailProcess (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+    (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hα : 0 < α)
+    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hψm : ∀ j, m < j → ψ j = 0) (hW : 0 < weightSum m ψ α) :
+    HasSpectralTailProcess P (process m ψ Z) α (indexLaw m ψ α) (spectral m ψ) := by
+  refine ⟨?_, tendstoLawCond_window hZ hind hident hZ0 hα hL hψ0 hψm hW⟩
+  have hBset : ∀ x, {ω | x < |process m ψ Z 0 ω|} = {ω | x < process m ψ Z 0 ω} := fun x => by
+    ext ω; simp [abs_of_nonneg (process_nonneg hψ0 hZ0 0 ω)]
+  simp only [hBset]
+  exact isRegularlyVarying_of_tendsto_div hL hW
+    (tendsto_measureReal_process_div hZ hind hident hZ0 hα hL hψ0)
+
+/-- **Candidate extremal index of a finite moving average** ([EKM, §8.1], [DR85]): the moving
+average `X_t = ∑_{i=0}^m ψ_i Z_{t-i}` with nonnegative coefficients and iid nonnegative regularly
+varying noise has a spectral tail process whose candidate extremal index is
+`ϑ = max_j ψ_j^α / ∑_j ψ_j^α`. -/
+theorem exists_hasSpectralTailProcess_candidateExtremalIndex_eq (hZ : ∀ i, Measurable (Z i))
+    (hind : iIndepFun Z P) (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P)
+    (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hα : 0 < α)
+    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hψm : ∀ j, m < j → ψ j = 0) (hW : 0 < weightSum m ψ α) :
+    HasSpectralTailProcess P (process m ψ Z) α (indexLaw m ψ α) (spectral m ψ) ∧
+      candidateExtremalIndex (indexLaw m ψ α) (spectral m ψ) α =
+        ENNReal.ofReal ((range (m + 1)).sup' nonempty_range_add_one ψ ^ α /
+          ∑ j ∈ range (m + 1), ψ j ^ α) :=
+  ⟨hasSpectralTailProcess hZ hind hident hZ0 hα hL hψ0 hψm hW,
+    candidateExtremalIndex_spectral hα hψ0 hψm hW⟩
 
 end Main
 

@@ -24,7 +24,8 @@ Here we define this candidate spectral tail process and compute its candidate ex
 
 the classical extremal index of the moving average ([EKM, §8.1], [DR85], [Leadbetter, Lindgren,
 Rootzén, §3.8]). The identification of `Θ` as the spectral tail process of `X`, i.e.
-`HasSpectralTailProcess P X α Q Θ`, is not proved here.
+`HasSpectralTailProcess P X α Q Θ`, is `MovingAverage.hasSpectralTailProcess` in
+`Dependence/MovingAverageTailProcess.lean`.
 
 ## Main definitions
 
