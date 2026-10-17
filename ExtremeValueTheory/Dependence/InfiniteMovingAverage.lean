@@ -10,12 +10,12 @@ import ExtremeValueTheory.HeavyTails.LinearProcessSeries
 # The extremal index of an infinite moving average
 
 Let `(Z_i)_{i ∈ ℤ}` be iid nonnegative random variables with `P(Z_0 > x)` regularly varying with
-index `-α`, and let `ψ_j ≥ 0`, `j ∈ ℕ`, be coefficients, not all zero, with `∑ ψ_j^δ < ∞` for
-some `0 < δ < α < 1`. The infinite moving average
+index `-α`, any `α > 0`, and let `ψ_j ≥ 0`, `j ∈ ℕ`, be coefficients, not all zero, with
+`∑ ψ_j^δ < ∞` for some `0 < δ < min(α, 1)`. The infinite moving average
 
   `X_t = ∑_{j ≥ 0} ψ_j Z_{t-j}`
 
-converges almost surely (`LinearProcess.ae_summable_mul`), and has extremal index
+converges almost surely (`LinearProcess.ae_summable_mul_of_lt_one`), and has extremal index
 
   `θ = sup_j ψ_j^α / ∑_j ψ_j^α`
 
@@ -26,23 +26,28 @@ main theorem `θ = ϑ`).
 
 ## Main results
 
-* `InfiniteMovingAverage.tendsto_measureReal_process_div`:
+* `InfiniteMovingAverage.tendsto_measureReal_process_div_of_lt_one`:
   `P(X_0 > x) / P(Z_0 > x) → ∑_j ψ_j^α`.
-* `InfiniteMovingAverage.exists_measureReal_abs_sub_gt_le`: the remainder bound
+* `InfiniteMovingAverage.exists_measureReal_abs_sub_gt_le_of_lt_one`: the remainder bound
   `P(|X_t - X^{(m)}_t| > y) ≤ K (∑_{j > m} ψ_j^δ) P(Z_0 > y)`, uniformly in `t`, `m ≥ m₀` and
   `y ≥ x₀`.
-* `InfiniteMovingAverage.hasExtremalIndex`: the extremal index of `X` is
+* `InfiniteMovingAverage.hasExtremalIndex_of_lt_one`: the extremal index of `X` is
   `(sup_j ψ_j)^α / ∑_j ψ_j^α`.
+* The versions without `_of_lt_one` are the special case `δ < α < 1` (hypothesis `α < 1`).
 * The AR(1) process `X_t = φ X_{t-1} + Z_t`, `0 < φ < 1`, i.e. `ψ_j = φ^j`, has extremal
-  index `1 - φ^α`: `AR1.hasExtremalIndex` in `Dependence/AR1.lean`.
+  index `1 - φ^α`: `AR1.hasExtremalIndex_of_pos` in `Dependence/AR1.lean`.
 * The spectral tail process `Θ_t = ψ_{J+t} / ψ_J` and `θ = ϑ`:
   `Dependence/InfiniteMovingAverageTailProcess.lean`.
 
 ## Hypotheses
 
-The restriction `α < 1` is inherited from `LinearProcess.exists_measure_tsum_gt_le` (the uniform
-remainder bound uses Karamata's theorem for the truncated first moment). The noise is nonnegative
-and the coefficients are nonnegative, as for `MovingAverage.hasExtremalIndex`.
+The condition `δ < min(α, 1)` comes from the uniform remainder bound
+`LinearProcess.exists_measure_tsum_gt_le_of_lt_one` (Karamata's theorem for the truncated first
+moment when `α < 1`, and a weighted Hölder reduction to that case otherwise; no moment or
+centering assumption). It is slightly stronger than the optimal `∑ ψ_j < ∞` of [EKM, Lemma
+A3.26] for `α > 1`, but holds for all geometrically decaying coefficients (AR(1), causal ARMA)
+and for `ψ_j = O(j^{-r})`, `r > 1`. The noise is nonnegative and the coefficients are
+nonnegative, as for `MovingAverage.hasExtremalIndex`.
 
 ## Proof
 
@@ -93,11 +98,12 @@ theorem summable_rpow (hψ0 : ∀ j, 0 ≤ ψ j) (hδ : 0 < δ) (hδα : δ ≤ 
   · rw [← h0, LinearProcess.tailWeight_zero, Real.zero_rpow (hδ.trans_le hδα).ne']
   · rw [LinearProcess.tailWeight_of_pos hpos, mul_one]
 
-/-- **Tail of the infinite moving average**: `P(X_0 > x) / P(Z_0 > x) → ∑_j ψ_j^α`
-(`0 < δ < α < 1`, `∑ ψ_j^δ < ∞`). -/
-theorem tendsto_measureReal_process_div (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+/-- **Tail of the infinite moving average, all `α > 0`**:
+`P(X_0 > x) / P(Z_0 > x) → ∑_j ψ_j^α` (`0 < δ < α`, `δ < 1`, `∑ ψ_j^δ < ∞`). -/
+theorem tendsto_measureReal_process_div_of_lt_one (hZ : ∀ i, Measurable (Z i))
+    (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
-    (hδα : δ < α) (hα1 : α < 1)
+    (hδα : δ < α) (hδ1 : δ < 1)
     (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) :
     Tendsto (fun x => P.real {ω | x < process ψ Z 0 ω} / P.real {ω | x < Z 0 ω}) atTop
@@ -111,8 +117,9 @@ theorem tendsto_measureReal_process_div (hZ : ∀ i, Measurable (Z i)) (hind : i
     rw [setOf_lt_abs_eq hZ0, div_self hx.ne']
   have hinj : Function.Injective fun i : ℕ => (0 : ℤ) - i := fun a b h => by
     simpa using h
-  have h := LinearProcess.tendsto_measureReal_tsum_mul_div (Z := fun i : ℕ => Z (0 - i))
-    (fun i => hZ _) (hZ 0) (hind.precomp hinj) (fun i => hident _) hδ hδα hα1 hL' hp
+  have h := LinearProcess.tendsto_measureReal_tsum_mul_div_of_lt_one
+    (Z := fun i : ℕ => Z (0 - i)) (fun i => hZ _) (hZ 0) (hind.precomp hinj) (fun i => hident _)
+    hδ hδα hδ1 hL' hp
     (summable_abs_rpow hψ0 hψ)
   simp only [setOf_lt_abs_eq hZ0] at h
   have hW : ∑' j, ψ j ^ α = ∑' j, LinearProcess.tailWeight α 1 (ψ j) := by
@@ -123,12 +130,13 @@ theorem tendsto_measureReal_process_div (hZ : ∀ i, Measurable (Z i)) (hind : i
   rw [hW]
   exact h
 
-/-- **Uniform remainder bound** (`0 < δ < α < 1`): there are `K, x₀ > 0` and `m₀` such that for
-all `m ≥ m₀`, `t ∈ ℤ` and `y ≥ x₀`,
-`P(|X_t - X^{(m)}_t| > y) ≤ K (∑_{j > m} ψ_j^δ) P(Z_0 > y)`. Independence is not needed. -/
-theorem exists_measureReal_abs_sub_gt_le (hZ : ∀ i, Measurable (Z i))
+/-- **Uniform remainder bound, all `α > 0`** (`0 < δ < α`, `δ < 1`): there are `K, x₀ > 0` and
+`m₀` such that for all `m ≥ m₀`, `t ∈ ℤ` and `y ≥ x₀`,
+`P(|X_t - X^{(m)}_t| > y) ≤ K (∑_{j > m} ψ_j^δ) P(Z_0 > y)`. Independence and moments are not
+needed. -/
+theorem exists_measureReal_abs_sub_gt_le_of_lt_one (hZ : ∀ i, Measurable (Z i))
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
-    (hδα : δ < α) (hα1 : α < 1)
+    (hδα : δ < α) (hδ1 : δ < 1)
     (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) :
     ∃ K x₀ : ℝ, ∃ m₀ : ℕ, 0 < K ∧ 0 < x₀ ∧ ∀ m ≥ m₀, ∀ t : ℤ, ∀ y ≥ x₀,
@@ -136,13 +144,14 @@ theorem exists_measureReal_abs_sub_gt_le (hZ : ∀ i, Measurable (Z i))
         K * (∑' j, ψ (j + (m + 1)) ^ δ) * P.real {ω | y < Z 0 ω} := by
   have hL' : IsRegularlyVarying (fun x => P.real {ω | x < |Z 0 ω|}) (-α) := by
     simpa only [setOf_lt_abs_eq hZ0] using hL
-  obtain ⟨K, x₀, hK, hx₀, hR⟩ := LinearProcess.exists_measure_tsum_gt_le (hZ 0) hδα hα1 hL'
-  obtain ⟨m₀, hm₀⟩ := LinearProcess.exists_abs_le_one hδ (summable_abs_rpow hψ0 hψ)
+  obtain ⟨K, x₀, hK, hx₀, hR⟩ :=
+    LinearProcess.exists_measure_tsum_gt_le_of_lt_one (hZ 0) hδ hδα hδ1 hL'
+  obtain ⟨m₀, hm₀⟩ := LinearProcess.exists_tsum_add_le_one ψ δ
   refine ⟨K, x₀, m₀, hK, hx₀, fun m hm t y hy => ?_⟩
   have hy0 : 0 ≤ y := hx₀.le.trans hy
   have h := hR (fun j => Z (t - ((j + (m + 1) : ℕ) : ℤ))) (fun j => hZ _) (fun j => hident _)
-    (fun j => ψ (j + (m + 1))) (fun j => hm₀ _ (by omega))
-    ((summable_nat_add_iff (m + 1)).2 (summable_abs_rpow hψ0 hψ)) y hy
+    (fun j => ψ (j + (m + 1)))
+    ((summable_nat_add_iff (m + 1)).2 (summable_abs_rpow hψ0 hψ)) (hm₀ (m + 1) (by omega)) y hy
   simp only [abs_of_nonneg (hψ0 _), setOf_lt_abs_eq hZ0] at h
   have hsub : {ω | y < |process ψ Z t ω - MovingAverage.process m ψ Z t ω|} ⊆
       {ω | ENNReal.ofReal y <
@@ -157,6 +166,32 @@ theorem exists_measureReal_abs_sub_gt_le (hZ : ∀ i, Measurable (Z i))
   have hT0 : 0 ≤ ∑' j, ψ (j + (m + 1)) ^ δ := tsum_nonneg fun j => Real.rpow_nonneg (hψ0 _) _
   exact (measureReal_mono hsub (measure_ne_top _ _)).trans
     (ENNReal.toReal_le_of_le_ofReal (by positivity) h)
+
+/-- **Tail of the infinite moving average**: `P(X_0 > x) / P(Z_0 > x) → ∑_j ψ_j^α`
+(`0 < δ < α < 1`, `∑ ψ_j^δ < ∞`). The case `α < 1` of
+`tendsto_measureReal_process_div_of_lt_one`. -/
+theorem tendsto_measureReal_process_div (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+    (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
+    (hδα : δ < α) (hα1 : α < 1)
+    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hψ : Summable fun j => ψ j ^ δ) :
+    Tendsto (fun x => P.real {ω | x < process ψ Z 0 ω} / P.real {ω | x < Z 0 ω}) atTop
+      (𝓝 (∑' j, ψ j ^ α)) :=
+  tendsto_measureReal_process_div_of_lt_one hZ hind hident hZ0 hδ hδα (hδα.trans hα1) hL hψ0 hψ
+
+/-- **Uniform remainder bound** (`0 < δ < α < 1`): there are `K, x₀ > 0` and `m₀` such that for
+all `m ≥ m₀`, `t ∈ ℤ` and `y ≥ x₀`,
+`P(|X_t - X^{(m)}_t| > y) ≤ K (∑_{j > m} ψ_j^δ) P(Z_0 > y)`. Independence is not needed. The
+case `α < 1` of `exists_measureReal_abs_sub_gt_le_of_lt_one`. -/
+theorem exists_measureReal_abs_sub_gt_le (hZ : ∀ i, Measurable (Z i))
+    (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
+    (hδα : δ < α) (hα1 : α < 1)
+    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hψ : Summable fun j => ψ j ^ δ) :
+    ∃ K x₀ : ℝ, ∃ m₀ : ℕ, 0 < K ∧ 0 < x₀ ∧ ∀ m ≥ m₀, ∀ t : ℤ, ∀ y ≥ x₀,
+      P.real {ω | y < |process ψ Z t ω - MovingAverage.process m ψ Z t ω|} ≤
+        K * (∑' j, ψ (j + (m + 1)) ^ δ) * P.real {ω | y < Z 0 ω} :=
+  exists_measureReal_abs_sub_gt_le_of_lt_one hZ hident hZ0 hδ hδα (hδα.trans hα1) hL hψ0 hψ
 
 /-! ### Levels -/
 
@@ -227,17 +262,18 @@ theorem exists_forall_le (hψ0 : ∀ j, 0 ≤ ψ j) (hδ : 0 < δ) (hψ : Summab
     rw [Real.rpow_lt_rpow_iff (hψ0 j) hj₀.le hδ] at this
     exact this.le.trans hj₀k
 
-/-- **The extremal index of an infinite moving average** ([DR85], [EKM, §8.1], [KS20, Chapter
-15]). Let `(Z_i)_{i ∈ ℤ}` be iid nonnegative with `P(Z_0 > x)` regularly varying with index `-α`,
-`0 < δ < α < 1`, and let `ψ_j ≥ 0`, not all zero, with `∑ ψ_j^δ < ∞`. Then
+/-- **The extremal index of an infinite moving average, all `α > 0`** ([DR85], [EKM, §8.1],
+[KS20, Chapter 15]). Let `(Z_i)_{i ∈ ℤ}` be iid nonnegative with `P(Z_0 > x)` regularly varying
+with index `-α`, `α > 0`, let `0 < δ < α` with `δ < 1`, and let `ψ_j ≥ 0`, not all zero, with
+`∑ ψ_j^δ < ∞`. Then
 `X_t = ∑_{j ≥ 0} ψ_j Z_{t-j}` has extremal index `θ = (sup_j ψ_j)^α / ∑_j ψ_j^α`.
 
 Proof by approximation with the `m`-dependent finite moving averages
 (`MovingAverage.hasExtremalIndex`, derived through the main theorem `θ = ϑ`), using the uniform
-remainder bound `exists_measureReal_abs_sub_gt_le`. -/
-theorem hasExtremalIndex (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+remainder bound `exists_measureReal_abs_sub_gt_le_of_lt_one`. -/
+theorem hasExtremalIndex_of_lt_one (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
-    (hδα : δ < α) (hα1 : α < 1)
+    (hδα : δ < α) (hδ1 : δ < 1)
     (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
     HasExtremalIndex (fun n : ℕ => process ψ Z n) P ((⨆ j, ψ j) ^ α / ∑' j, ψ j ^ α) := by
@@ -290,7 +326,7 @@ theorem hasExtremalIndex (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
   have hFXa : Antitone fun x => P.real {ω | x < process ψ Z 0 ω} := fun a b hab =>
     measureReal_mono (fun ω (h : b < _) => (show a < _ from lt_of_le_of_lt hab h))
   obtain ⟨hut, hs⟩ := tendsto_atTop_of_tendsto_natCast_mul hFXa (fun _ => measureReal_nonneg)
-    hL.1 hW (tendsto_measureReal_process_div hZ hind hident hZ0 hδ hδα hα1 hL hψ0 hψ) hu
+    hL.1 hW (tendsto_measureReal_process_div_of_lt_one hZ hind hident hZ0 hδ hδα hδ1 hL hψ0 hψ) hu
   -- the finite moving averages at the levels `c u_n`
   have hfin : ∀ m ≥ k, ∀ c : ℝ, 0 < c →
       Tendsto (fun n => P.real {ω | partialMax (fun n : ℕ => MovingAverage.process m ψ Z n) n ω ≤
@@ -311,7 +347,7 @@ theorem hasExtremalIndex (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     field_simp
   -- the remainder
   obtain ⟨K, x₀, m₀, hK, hx₀, hR⟩ :=
-    exists_measureReal_abs_sub_gt_le hZ hident hZ0 hδ hδα hα1 hL hψ0 hψ
+    exists_measureReal_abs_sub_gt_le_of_lt_one hZ hident hZ0 hδ hδα hδ1 hL hψ0 hψ
   set T : ℕ → ℝ := fun m => ∑' j, ψ (j + (m + 1)) ^ δ with hT_def
   have hT : Tendsto T atTop (𝓝 0) :=
     (tendsto_sum_nat_add fun j => ψ j ^ δ).comp (tendsto_add_atTop_nat 1)
@@ -412,6 +448,19 @@ theorem hasExtremalIndex (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
       (hbadlim m ε hε0).eventually (gt_mem_nhds hmD), hbad m (le_of_max_le_right hm) ε hε0,
       hup m ε hε0] with n h1 h2 h3 h4
     linarith
+
+/-- **The extremal index of an infinite moving average** ([DR85], [EKM, §8.1], [KS20, Chapter
+15]). Let `(Z_i)_{i ∈ ℤ}` be iid nonnegative with `P(Z_0 > x)` regularly varying with index `-α`,
+`0 < δ < α < 1`, and let `ψ_j ≥ 0`, not all zero, with `∑ ψ_j^δ < ∞`. Then
+`X_t = ∑_{j ≥ 0} ψ_j Z_{t-j}` has extremal index `θ = (sup_j ψ_j)^α / ∑_j ψ_j^α`. The case
+`α < 1` of `hasExtremalIndex_of_lt_one`. -/
+theorem hasExtremalIndex (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+    (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
+    (hδα : δ < α) (hα1 : α < 1)
+    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
+    HasExtremalIndex (fun n : ℕ => process ψ Z n) P ((⨆ j, ψ j) ^ α / ∑' j, ψ j ^ α) :=
+  hasExtremalIndex_of_lt_one hZ hind hident hZ0 hδ hδα (hδα.trans hα1) hL hψ0 hψ hpos
 
 end InfiniteMovingAverage
 

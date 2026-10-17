@@ -473,9 +473,9 @@ variable [IsProbabilityMeasure P]
 /-- **Approximation of the windows**: for `ε, η > 0`, for large `m` and then large `x`, the
 windows `(X_t / x)_{t ∈ S}` and `(X^{(m)}_t / x)_{t ∈ S}` are `ε`-close off an event `D` with
 `P(B_x Δ B^m_x) + P(B_x ∩ D) ≤ η P(B_x)`, `B_x = {X_0 > x}`, `B^m_x = {X^{(m)}_0 > x}`. -/
-theorem eventually_approx (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+theorem eventually_approx_of_lt_one (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
-    (hδα : δ < α) (hα1 : α < 1)
+    (hδα : δ < α) (hδ1 : δ < 1)
     (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) (S : Finset ℤ) {ε η : ℝ}
     (hε : 0 < ε) (hη : 0 < η) :
@@ -494,7 +494,7 @@ theorem eventually_approx (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hS.le_tsum k fun j _ => Real.rpow_nonneg (hψ0 j) _)
   set L : ℝ → ℝ := fun x => P.real {ω | x < Z 0 ω} with hL_def
   obtain ⟨K, x₀, m₀, hK, hx₀, hR⟩ :=
-    exists_measureReal_abs_sub_gt_le hZ hident hZ0 hδ hδα hα1 hL hψ0 hψ
+    exists_measureReal_abs_sub_gt_le_of_lt_one hZ hident hZ0 hδ hδα hδ1 hL hψ0 hψ
   set S' := insert (0 : ℤ) S with hS'
   set n : ℝ := (S'.card : ℝ) with hn
   have hn0 : 0 ≤ n := Nat.cast_nonneg _
@@ -535,7 +535,7 @@ theorem eventually_approx (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     · calc Wm * c ε' ≤ W * c ε' := mul_le_mul_of_nonneg_right hWmW h.le
         _ < W * (η / 4) := mul_lt_mul_of_pos_left hcε hW
         _ = η * W / 4 := by ring
-  have hX := tendsto_measureReal_process_div hZ hind hident hZ0 hδ hδα hα1 hL hψ0 hψ
+  have hX := tendsto_measureReal_process_div_of_lt_one hZ hind hident hZ0 hδ hδα hδ1 hL hψ0 hψ
   have hDlim : Tendsto (fun x => 3 * n * K * T m * (L (ε' * x) / L x)) atTop
       (𝓝 (3 * n * K * T m * ε' ^ (-α))) := tendsto_const_nhds.mul (hL.2 ε' hε'0)
   filter_upwards [hdiff.eventually (gt_mem_nhds (show Wm * c ε' < Wm * c ε' + η * W / 8 by
@@ -620,12 +620,13 @@ theorem eventually_approx (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
 
 /-! ### The tail process and the spectral tail process -/
 
-/-- **The tail process of an infinite moving average** ([DR85], [KS20, §15.3]): under the
-hypotheses of `hasExtremalIndex`, `X_t = ∑_j ψ_j Z_{t-j}` has tail process `Y_t = R Θ_t`, with
-`R` Pareto(`α`) independent of `J`, `Θ_t = ψ_{J+t} / ψ_J`, `P(J = j) = ψ_j^α / ∑_i ψ_i^α`. -/
-theorem hasTailProcess (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+/-- **The tail process of an infinite moving average, all `α > 0`** ([DR85], [KS20, §15.3]):
+under the hypotheses of `hasExtremalIndex_of_lt_one`, `X_t = ∑_j ψ_j Z_{t-j}` has tail process
+`Y_t = R Θ_t`, with `R` Pareto(`α`) independent of `J`, `Θ_t = ψ_{J+t} / ψ_J`,
+`P(J = j) = ψ_j^α / ∑_i ψ_i^α`. -/
+theorem hasTailProcess_of_lt_one (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
-    (hδα : δ < α) (hα1 : α < 1)
+    (hδα : δ < α) (hδ1 : δ < 1)
     (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
     HasTailProcess P (process ψ Z) α ((paretoMeasure 1 α).prod (indexLaw ψ α))
@@ -662,7 +663,7 @@ theorem hasTailProcess (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
       (MovingAverage.measurable_process hZ) (fun t => measurable_from_top)
     rwa [process_trunc] at h
   -- positivity of `P(X_0 > x)`
-  have hX := tendsto_measureReal_process_div hZ hind hident hZ0 hδ hδα hα1 hL hψ0 hψ
+  have hX := tendsto_measureReal_process_div_of_lt_one hZ hind hident hZ0 hδ hδα hδ1 hL hψ0 hψ
   have hBpos : ∀ᶠ x in atTop, 0 < P.real {ω | x < |process ψ Z 0 ω|} := by
     filter_upwards [hX.eventually (lt_mem_nhds hW), hL.1] with x hx hLx
     have : {ω | x < |process ψ Z 0 ω|} = {ω | x < process ψ Z 0 ω} := by
@@ -678,18 +679,18 @@ theorem hasTailProcess (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (fun x => measurable_pi_iff.2 fun t => (measurable_process hZ t).div_const x)
     (fun m x => measurable_pi_iff.2 fun t => (MovingAverage.measurable_process hZ t).div_const x)
     hBpos ?_ (tendsto_integral_window hα hψ0 hS hk S) fun ε hε η hη =>
-      eventually_approx hZ hind hident hZ0 hδ hδα hα1 hL hψ0 hψ ⟨k, hk⟩ S hε hη
+      eventually_approx_of_lt_one hZ hind hident hZ0 hδ hδα hδ1 hL hψ0 hψ ⟨k, hk⟩ S hε hη
   filter_upwards [eventually_ge_atTop k] with m hm
   exact (hfinTP m hm).2 S
 
-/-- **The spectral tail process of an infinite moving average** ([DR85], [KS20, §15.3],
-[Meinguet–Segers 2010]). Let `(Z_i)_{i ∈ ℤ}` be iid nonnegative with `P(Z_0 > x)` regularly
-varying with index `-α`, `0 < δ < α < 1`, and let `ψ_j ≥ 0`, not all zero, with
-`∑ ψ_j^δ < ∞`. Then `X_t = ∑_{j ≥ 0} ψ_j Z_{t-j}` has spectral tail process
-`Θ_t = ψ_{J+t} / ψ_J`, `P(J = j) = ψ_j^α / ∑_i ψ_i^α`, `J ∈ ℕ`. -/
-theorem hasSpectralTailProcess (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+/-- **The spectral tail process of an infinite moving average, all `α > 0`** ([DR85],
+[KS20, §15.3], [Meinguet–Segers 2010]). Let `(Z_i)_{i ∈ ℤ}` be iid nonnegative with
+`P(Z_0 > x)` regularly varying with index `-α`, `α > 0`, let `0 < δ < α` with `δ < 1`, and let
+`ψ_j ≥ 0`, not all zero, with `∑ ψ_j^δ < ∞`. Then `X_t = ∑_{j ≥ 0} ψ_j Z_{t-j}` has spectral
+tail process `Θ_t = ψ_{J+t} / ψ_J`, `P(J = j) = ψ_j^α / ∑_i ψ_i^α`, `J ∈ ℕ`. -/
+theorem hasSpectralTailProcess_of_lt_one (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
-    (hδα : δ < α) (hα1 : α < 1)
+    (hδα : δ < α) (hδ1 : δ < 1)
     (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
     HasSpectralTailProcess P (process ψ Z) α (indexLaw ψ α) (spectral ψ) := by
@@ -700,8 +701,8 @@ theorem hasSpectralTailProcess (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun 
     (hS.le_tsum k fun j _ => Real.rpow_nonneg (hψ0 j) _)
   have hP := isProbabilityMeasure_paretoMeasure one_pos hα
   have hQ := indexLaw_isProbabilityMeasure hψ0 hS hW
-  have h := (hasTailProcess hZ hind hident hZ0 hδ hδα hα1 hL hψ0 hψ ⟨k, hk⟩).hasSpectralTailProcess
-    hα (measurable_process hZ) (fun t => measurable_fst.mul
+  have h := (hasTailProcess_of_lt_one hZ hind hident hZ0 hδ hδα hδ1 hL hψ0 hψ
+    ⟨k, hk⟩).hasSpectralTailProcess hα (measurable_process hZ) (fun t => measurable_fst.mul
       ((measurable_from_top (f := fun j : ℕ => spectral ψ t j)).comp measurable_snd))
   refine ⟨h.1, fun S => ?_⟩
   have hae : ∀ᵐ p ∂((paretoMeasure 1 α).prod (indexLaw ψ α)),
@@ -722,6 +723,52 @@ theorem hasSpectralTailProcess (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun 
       one_smul]
   convert h.2 S using 1
   exact e.symm
+
+/-! #### The case `α < 1` -/
+
+/-- **Approximation of the windows** (`0 < δ < α < 1`): the case `α < 1` of
+`eventually_approx_of_lt_one`. -/
+theorem eventually_approx (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+    (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
+    (hδα : δ < α) (hα1 : α < 1)
+    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) (S : Finset ℤ) {ε η : ℝ}
+    (hε : 0 < ε) (hη : 0 < η) :
+    ∀ᶠ m in atTop, ∀ᶠ x in atTop, ∃ D : Set Ω, MeasurableSet D ∧
+      (∀ ω ∉ D, dist (fun t : S => process ψ Z t ω / x)
+        (fun t : S => MovingAverage.process m ψ Z t ω / x) ≤ ε) ∧
+      P.real ({ω | x < |process ψ Z 0 ω|} \ {ω | x < |MovingAverage.process m ψ Z 0 ω|}) +
+        P.real ({ω | x < |MovingAverage.process m ψ Z 0 ω|} \ {ω | x < |process ψ Z 0 ω|}) +
+        P.real ({ω | x < |process ψ Z 0 ω|} ∩ D) ≤
+        η * P.real {ω | x < |process ψ Z 0 ω|} :=
+  eventually_approx_of_lt_one hZ hind hident hZ0 hδ hδα (hδα.trans hα1) hL hψ0 hψ hpos S hε hη
+
+/-- **The tail process of an infinite moving average** ([DR85], [KS20, §15.3]): under the
+hypotheses of `hasExtremalIndex`, `X_t = ∑_j ψ_j Z_{t-j}` has tail process `Y_t = R Θ_t`, with
+`R` Pareto(`α`) independent of `J`, `Θ_t = ψ_{J+t} / ψ_J`, `P(J = j) = ψ_j^α / ∑_i ψ_i^α`. The
+case `α < 1` of `hasTailProcess_of_lt_one`. -/
+theorem hasTailProcess (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+    (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
+    (hδα : δ < α) (hα1 : α < 1)
+    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
+    HasTailProcess P (process ψ Z) α ((paretoMeasure 1 α).prod (indexLaw ψ α))
+      (fun t p => p.1 * spectral ψ t p.2) :=
+  hasTailProcess_of_lt_one hZ hind hident hZ0 hδ hδα (hδα.trans hα1) hL hψ0 hψ hpos
+
+/-- **The spectral tail process of an infinite moving average** ([DR85], [KS20, §15.3],
+[Meinguet–Segers 2010]). Let `(Z_i)_{i ∈ ℤ}` be iid nonnegative with `P(Z_0 > x)` regularly
+varying with index `-α`, `0 < δ < α < 1`, and let `ψ_j ≥ 0`, not all zero, with
+`∑ ψ_j^δ < ∞`. Then `X_t = ∑_{j ≥ 0} ψ_j Z_{t-j}` has spectral tail process
+`Θ_t = ψ_{J+t} / ψ_J`, `P(J = j) = ψ_j^α / ∑_i ψ_i^α`, `J ∈ ℕ`. The case `α < 1` of
+`hasSpectralTailProcess_of_lt_one`. -/
+theorem hasSpectralTailProcess (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+    (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
+    (hδα : δ < α) (hα1 : α < 1)
+    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
+    HasSpectralTailProcess P (process ψ Z) α (indexLaw ψ α) (spectral ψ) :=
+  hasSpectralTailProcess_of_lt_one hZ hind hident hZ0 hδ hδα (hδα.trans hα1) hL hψ0 hψ hpos
 
 end Approx
 
@@ -847,9 +894,33 @@ theorem candidateExtremalIndex_spectral (hδα : δ ≤ α) (hpos : ∃ j, 0 < �
 
 end Candidate
 
+/-- **`θ = ϑ` for infinite moving averages, all `α > 0`** ([DR85], [KS20, Chapter 15]): under
+the hypotheses of `hasExtremalIndex_of_lt_one`, `X` has spectral tail process
+`Θ_t = ψ_{J+t} / ψ_J`, and its extremal index is the candidate extremal index `ϑ` of `Θ`, namely
+`sup_j ψ_j^α / ∑_j ψ_j^α`. -/
+theorem hasSpectralTailProcess_and_hasExtremalIndex_of_lt_one [IsProbabilityMeasure P]
+    (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
+    (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
+    (hδα : δ < α) (hδ1 : δ < 1)
+    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
+    HasSpectralTailProcess P (process ψ Z) α (indexLaw ψ α) (spectral ψ) ∧
+      HasExtremalIndex (fun n : ℕ => process ψ Z n) P
+        (candidateExtremalIndex (indexLaw ψ α) (spectral ψ) α).toReal := by
+  refine ⟨hasSpectralTailProcess_of_lt_one hZ hind hident hZ0 hδ hδα hδ1 hL hψ0 hψ hpos, ?_⟩
+  rw [candidateExtremalIndex_spectral hψ0 hδ hψ hδα.le hpos, ENNReal.toReal_ofReal]
+  · exact hasExtremalIndex_of_lt_one hZ hind hident hZ0 hδ hδα hδ1 hL hψ0 hψ hpos
+  · obtain ⟨k, hk⟩ := hpos
+    exact div_nonneg (Real.rpow_nonneg ((hψ0 k).trans (le_ciSup (f := ψ)
+      ⟨ψ (Classical.choose (exists_forall_le hψ0 hδ hψ ⟨k, hk⟩)), by
+        rintro _ ⟨j, rfl⟩
+        exact (Classical.choose_spec (exists_forall_le hψ0 hδ hψ ⟨k, hk⟩)).2 j⟩ k)) _)
+      (tsum_nonneg fun j => Real.rpow_nonneg (hψ0 j) _)
+
 /-- **`θ = ϑ` for infinite moving averages** ([DR85], [KS20, Chapter 15]): under the hypotheses
 of `hasExtremalIndex`, `X` has spectral tail process `Θ_t = ψ_{J+t} / ψ_J`, and its extremal index
-is the candidate extremal index `ϑ` of `Θ`, namely `sup_j ψ_j^α / ∑_j ψ_j^α`. -/
+is the candidate extremal index `ϑ` of `Θ`, namely `sup_j ψ_j^α / ∑_j ψ_j^α`. The case `α < 1`
+of `hasSpectralTailProcess_and_hasExtremalIndex_of_lt_one`. -/
 theorem hasSpectralTailProcess_and_hasExtremalIndex [IsProbabilityMeasure P]
     (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
@@ -858,16 +929,9 @@ theorem hasSpectralTailProcess_and_hasExtremalIndex [IsProbabilityMeasure P]
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
     HasSpectralTailProcess P (process ψ Z) α (indexLaw ψ α) (spectral ψ) ∧
       HasExtremalIndex (fun n : ℕ => process ψ Z n) P
-        (candidateExtremalIndex (indexLaw ψ α) (spectral ψ) α).toReal := by
-  refine ⟨hasSpectralTailProcess hZ hind hident hZ0 hδ hδα hα1 hL hψ0 hψ hpos, ?_⟩
-  rw [candidateExtremalIndex_spectral hψ0 hδ hψ hδα.le hpos, ENNReal.toReal_ofReal]
-  · exact hasExtremalIndex hZ hind hident hZ0 hδ hδα hα1 hL hψ0 hψ hpos
-  · obtain ⟨k, hk⟩ := hpos
-    exact div_nonneg (Real.rpow_nonneg ((hψ0 k).trans (le_ciSup (f := ψ)
-      ⟨ψ (Classical.choose (exists_forall_le hψ0 hδ hψ ⟨k, hk⟩)), by
-        rintro _ ⟨j, rfl⟩
-        exact (Classical.choose_spec (exists_forall_le hψ0 hδ hψ ⟨k, hk⟩)).2 j⟩ k)) _)
-      (tsum_nonneg fun j => Real.rpow_nonneg (hψ0 j) _)
+        (candidateExtremalIndex (indexLaw ψ α) (spectral ψ) α).toReal :=
+  hasSpectralTailProcess_and_hasExtremalIndex_of_lt_one hZ hind hident hZ0 hδ hδα
+    (hδα.trans hα1) hL hψ0 hψ hpos
 
 end InfiniteMovingAverage
 
