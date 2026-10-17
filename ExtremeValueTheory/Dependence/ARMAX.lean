@@ -310,8 +310,9 @@ theorem survival_rec (hφ0 : 0 < φ) (hα : 0 < α) (hX₀ : Measurable X₀)
       paretoMeasure_Iic_of_lt hx]
     simp
 
+omit [IsProbabilityMeasure P] in
 /-- The probability of `max(X_0, …, X_{n-1}) ≤ u` is `P(X_0 ≤ u) P(Z ≤ u)^(n-1)` for `u ≥ 0`. -/
-theorem measureReal_partialMax_le (hφ0 : 0 ≤ φ) (hφ1 : φ ≤ 1) (hX₀ : Measurable X₀)
+theorem measureReal_partialMax_le (hφ0 : 0 ≤ φ) (hφ1 : φ ≤ 1)
     (hV : ∀ n, Measurable (V n)) (hind : IndepFun X₀ (fun ω n => V n ω) P)
     (hiid : iIndepFun V P) {ν : Measure ℝ} (hlaw : ∀ n, P.map (V n) = ν) {n : ℕ} (hn : 0 < n)
     {u : ℝ} (hu : 0 ≤ u) :
@@ -325,7 +326,7 @@ theorem measureReal_partialMax_le (hφ0 : 0 ≤ φ) (hφ1 : φ ≤ 1) (hX₀ : M
     rw [← forall_iter_le_iff hφ0 hφ1 hu (X₀ ω) (fun k => V k ω) (n - 1)]
     exact ⟨fun h t ht => h t (by omega), fun h t ht => h t (by omega)⟩
   have hB : MeasurableSet {v : ℕ → ℝ | ∀ k ∈ range (n - 1), v k ≤ u} := by
-    simp only [setOf_forall]
+    simp only [ofPred_forall]
     exact MeasurableSet.iInter fun k => MeasurableSet.iInter fun _ =>
       measurableSet_le (measurable_pi_apply k) measurable_const
   rw [hset, measureReal_def, hind.measure_inter_preimage_eq_mul _ _ measurableSet_Iic hB,
@@ -347,7 +348,7 @@ variable (hφ0 : 0 < φ) (hφ1 : φ < 1) (hα : 0 < α) (hX₀ : Measurable X₀
   (hinv : ((P.map X₀).prod (paretoMeasure 1 α)).map (Function.uncurry (step φ)) = P.map X₀)
 include hφ0 hφ1 hα hX₀ hV hind hiid hlaw hinv
 
-omit hφ1 hα in
+omit hφ0 hφ1 hα in
 /-- **The ARMAX chain started from an invariant law is stationary.** -/
 theorem isStationary : IsStationary (RandomIteration.chain (step φ) X₀ V) P :=
   RandomIteration.isStationary_chain measurable_step hX₀ hV hind hiid
@@ -381,7 +382,7 @@ theorem hasExtremalIndex :
   rw [sub_zero, one_mul] at hlim
   refine hlim.congr' ?_
   filter_upwards [hu1, eventually_ge_atTop 1] with n hn1 hn
-  rw [measureReal_partialMax_le hφ0.le hφ1.le hX₀ hV hind hiid hlaw (by omega)
+  rw [measureReal_partialMax_le hφ0.le hφ1.le hV hind hiid hlaw (by omega)
     (by linarith : (0 : ℝ) ≤ u n), paretoMeasure_real_Iic hα hn1, survival]
   congr 1
   rw [← probReal_compl_eq_one_sub (measurableSet_lt measurable_const hX₀)]
