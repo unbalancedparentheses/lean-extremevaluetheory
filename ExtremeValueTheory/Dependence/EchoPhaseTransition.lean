@@ -563,6 +563,98 @@ theorem logEchoProcess_short_blocks {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
     hasEscapeMass_echoProcess_short hα hZ hind hlaw hpos measurable_logLag one_le_logLag
       tendsto_logLag hu hr hrb hshort⟩
 
+include hα hZ hind hlaw hpos in
+/-- **The critical regime `rₙ ≍ log n`.** For the logarithmic echo process with
+`n P(X_0 > uₙ) → τ > 0` and `rₙ / log n → c > 0`, the cluster ratio tends to
+`(1 + min(1 / (c α), 1)) / 2` and the escape mass is `(1 - min(1 / (c α), 1)) / 2`.
+
+The echo lag of an exceedance is `≈ (1 / α) log n ≈ rₙ / (c α)`, so the echo of an exceedance at
+a uniformly placed time in the block stays in the block with probability `(1 - 1 / (c α))⁺`. The
+limit is `1` for `c ≤ 1 / α` and decreases continuously to `1/2` as `c → ∞`. -/
+theorem logEchoProcess_critical_blocks {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
+    (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess logLag Z 0 ω}) atTop (𝓝 τ))
+    {r : ℕ → ℕ} {c : ℝ} (hc : 0 < c)
+    (hrlog : Tendsto (fun n : ℕ => (r n : ℝ) / Real.log n) atTop (𝓝 c)) :
+    Tendsto (clusterRatio P (echoProcess logLag Z) u r) atTop
+        (𝓝 ((1 + min (1 / (c * α)) 1) / 2)) ∧
+      HasEscapeMass P (echoProcess logLag Z) u r ((1 - min (1 / (c * α)) 1) / 2) := by
+  obtain ⟨hu, hnb, hlu⟩ := logEchoProcess_levels hα hZ hind hlaw hpos hτ0 hτ
+  have hrb := tendsto_mul_rpow_of_tendsto_div_log hnb hrlog
+  have hL : Tendsto (fun n : ℕ => Real.log n) atTop atTop :=
+    Real.tendsto_log_atTop.comp tendsto_natCast_atTop_atTop
+  -- `rₙ → ∞`
+  have hrR : Tendsto (fun n => (r n : ℝ)) atTop atTop := by
+    refine (hrlog.pos_mul_atTop hc hL).congr' ?_
+    filter_upwards [hL.eventually_gt_atTop 0] with n hn
+    field_simp
+  have hr : Tendsto r atTop atTop := tendsto_natCast_atTop_iff.1 hrR
+  have hrinv : Tendsto (fun n => (1 : ℝ) / r n) atTop (𝓝 0) :=
+    tendsto_const_nhds.div_atTop hrR
+  -- `log uₙ / rₙ → 1 / (c α)`
+  have hlr : Tendsto (fun n => Real.log (u n) / r n) atTop (𝓝 (1 / (c * α))) := by
+    have := hlu.div hrlog hc.ne'
+    rw [div_div, mul_comm α c] at this
+    refine this.congr' ?_
+    filter_upwards [hL.eventually_gt_atTop 0, hr.eventually_gt_atTop 0] with n hn hrn
+    have hR : (0 : ℝ) < r n := by exact_mod_cast hrn
+    simp only [Pi.div_apply]
+    field_simp
+  -- `L(uₙ) / rₙ → 1 / (c α)`
+  have hℓ : Tendsto (fun n => (logLag (u n) : ℝ) / r n) atTop (𝓝 (1 / (c * α))) := by
+    have hup := hlr.add hrinv
+    rw [add_zero] at hup
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' hlr hup ?_ ?_
+    all_goals
+      filter_upwards [hu.eventually_ge_atTop 1, hr.eventually_gt_atTop 0] with n hn hrn
+      have hR : (0 : ℝ) < r n := by exact_mod_cast hrn
+      have hl0 : 0 ≤ Real.log (u n) := Real.log_nonneg hn
+      have h1 : Real.log (u n) < logLag (u n) := by
+        simp only [logLag, Nat.cast_add, Nat.cast_one]
+        exact Nat.lt_floor_add_one _
+      have h2 : (logLag (u n) : ℝ) ≤ Real.log (u n) + 1 := by
+        simp only [logLag, Nat.cast_add, Nat.cast_one]
+        linarith [Nat.floor_le hl0]
+    · exact div_le_div_of_nonneg_right h1.le hR.le
+    · rw [← add_div]; exact div_le_div_of_nonneg_right h2 hR.le
+  set C := 2 ^ α / (1 - Real.exp (-α))
+  have hmin : Tendsto (fun n => min ((logLag (u n) : ℝ) / r n) 1) atTop
+      (𝓝 (min (1 / (c * α)) 1)) := hℓ.min tendsto_const_nhds
+  have hmin' : Tendsto (fun n => min ((logLag (u n) : ℝ) / r n) 1 + C * (1 / r n)) atTop
+      (𝓝 (min (1 / (c * α)) 1)) := by
+    have := hmin.add (hrinv.const_mul C)
+    rwa [mul_zero, add_zero] at this
+  have hM : Tendsto (fun n => echoBlockMass α logLag (u n) (r n) / (r n * u n ^ (-α))) atTop
+      (𝓝 (min (1 / (c * α)) 1)) := by
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' hmin hmin' ?_ ?_
+    all_goals
+      filter_upwards [hu.eventually_ge_atTop 1, hr.eventually_gt_atTop 0] with n hn hrn
+      have hR : (0 : ℝ) < r n := by exact_mod_cast hrn
+      have hb : 0 < u n ^ (-α) := Real.rpow_pos_of_pos (by linarith) _
+      obtain ⟨hlow, hup⟩ := echoBlockMass_logLag_bounds hα hn (r n)
+      have key : (((min (logLag (u n)) (r n) : ℕ) : ℝ)) / r n =
+          min ((logLag (u n) : ℝ) / r n) 1 := by
+        rw [Nat.cast_min, ← min_div_div_right hR.le, div_self hR.ne']
+    · rw [← key, div_le_div_iff₀ hR (mul_pos hR hb)]
+      nlinarith
+    · rw [← key, div_le_iff₀ (mul_pos hR hb)]
+      have e : (((min (logLag (u n)) (r n) : ℕ) : ℝ) / r n + C * (1 / r n)) * (r n * u n ^ (-α))
+          = (((min (logLag (u n)) (r n) : ℕ) : ℝ) + C) * u n ^ (-α) := by
+        field_simp
+      rw [e]
+      exact hup
+  have hlim := tendsto_clusterRatio_echoProcess_of_tendsto hα hZ hind hlaw hpos measurable_logLag
+    one_le_logLag hu (hr.eventually_gt_atTop 0) hrb hM
+  refine ⟨hlim, ?_⟩
+  have h := (hasSpectralTailProcess_echoProcess hα hZ hind hlaw hpos measurable_logLag
+    one_le_logLag tendsto_logLag).tendsto_clusterRatio_iff hα
+    (measurable_echoProcess hZ measurable_logLag) measurable_unitSpectral
+    (hasShiftInvariantWindows_echoProcess hZ hind hlaw measurable_logLag) hu hr
+      ((1 + min (1 / (c * α)) 1) / 2)
+  rw [candidateExtremalIndex_unitSpectral hα] at h
+  convert h.1 hlim using 1
+  norm_num
+  ring
+
 end LogEcho
 
 end ExtremeValueTheory
