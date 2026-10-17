@@ -9,7 +9,10 @@ search on 2026-10-17. "Open" means a source explicitly states the question as op
 **Candidate extremal index.** For a stationary regularly varying sequence with spectral tail process
 `Θ`, let `ϑ = E[sup_{k≥0} |Θ_k|^α − sup_{k≥1} |Θ_k|^α]`. Then `θ ≤ ϑ` (Kulik–Soulier 2020,
 Lemma 7.5.4, exact hypotheses *unverified*), with equality under anticlustering. Planinić–Soulier
-(2018, Lemma 4.1) need only `|Y_t| → 0` instead of anticlustering. The model of Bai–Wang
+(2018, Lemma 4.1) is cited for ϑ under `|Y_t| → 0`. **Correction:** an earlier version of this file
+read it as saying `|Y_t| → 0` can replace anticlustering in `θ = ϑ`; that is false — the echo process
+(`Dependence/EchoProcess.lean`) has `|Y_t| → 0` and `θ = 1/2 < ϑ = 1`. PS18's lemma concerns `ϑ > 0` /
+equivalent formulas for `ϑ`, not `θ = ϑ` (to be checked against the paper). The model of Bai–Wang
 ([arXiv:2110.07499](https://arxiv.org/abs/2110.07499)) has `θ < ϑ`, and no characterization of
 `θ = ϑ` is known.
 
@@ -48,6 +51,20 @@ Also done: infinite-order moving averages (`α < 1`) and AR(1), `θ = 1 − φ^�
 Open next steps (updated): infinite-order linear processes for `α ≥ 1`; Markov chains (geometric β-mixing);
 the backward limit
 `Θ_{−t} → 0`; then the Bai–Wang-type `θ < ϑ` question (P1).
+
+Progress on P1 (the gap θ < ϑ), 2026-10-17:
+- **Gap formula** (`Dependence/ThetaGap.lean`): with the *escape mass* `η` (conditional mass of returns
+  inside the block at lags growing with the level), the cluster ratio tends to `L` iff `η = ϑ − L`, with
+  no anticlustering or mixing; under condition `𝒜`, `θ = ϑ − η`, so `θ < ϑ` iff `η > 0`.
+- **Echo process** (`Dependence/EchoProcess.lean`): iid Pareto shocks, each reappearing once after a lag
+  `⌊log z⌋ + 1` growing with its size. Stationary, regularly varying, spectral tail process
+  `Θ_t = 1{t = 0}` (so `ϑ = 1`, `|Y_t| → 0`), extremal index `θ = 1/2`, escape mass `1/2`. This is a much
+  simpler mechanism for `θ < ϑ` than the Bai–Wang stable-regenerative model (novelty not checked
+  against the literature).
+- Not formalized: a mixture (constant w.p. `p`, iid otherwise) with `η = 0` but no extremal index and
+  failing anticlustering (so `η = 0` is strictly weaker than AC); the short-block side of the echo
+  process (blocks shorter than the echo lag should give ratio → `ϑ = 1`), i.e. a block-length phase
+  transition of the kind asked about in P1; condition `𝒜` for the echo process.
 
 ## Open problems
 

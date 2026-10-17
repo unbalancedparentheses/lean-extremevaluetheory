@@ -523,3 +523,61 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
   \leanok
   Iterate: $X_t = \sum_{j < m} \varphi^j Z_{t-j} + \varphi^m X_{t-m}$ and $\varphi^m X_{t-m} \to 0$ in probability.
 \end{proof}
+
+\section{The gap between $\theta$ and $\vartheta$}
+
+\begin{definition}[Escape mass]
+  \label{def:escape-mass}
+  \uses{thm:theta-eq-vartheta}
+  \lean{ExtremeValueTheory.escapeSet, ExtremeValueTheory.noReturnSet, ExtremeValueTheory.HasEscapeMass, ExtremeValueTheory.HasEscapeMass.unique, ExtremeValueTheory.HasEscapeMass.nonneg}
+  \leanok
+  Given an exceedance at time $0$, let $T_n$ be the first later time at which $|X|$ exceeds $u_n$. The escape at
+  lag $m$ is $\varepsilon_n(m) = \E[(1 - T_n/r_n)^+;\, T_n > m \mid |X_0| > u_n]$, and the escape mass is
+  $\eta = \lim_m \lim_n \varepsilon_n(m)$: the conditional mass of returns inside the block that happen only after
+  a quiet stretch growing with the level, invisible to the tail process.
+\end{definition}
+
+\begin{theorem}[Gap formula]
+  \label{thm:gap-formula}
+  \uses{def:escape-mass}
+  \lean{ExtremeValueTheory.HasShiftInvariantWindows.clusterRatio_sub_le, ExtremeValueTheory.HasSpectralTailProcess.tendsto_clusterRatio_add_clusterEscape,
+    ExtremeValueTheory.HasSpectralTailProcess.tendsto_clusterRatio_iff, ExtremeValueTheory.HasSpectralTailProcess.hasEscapeMass_le, ExtremeValueTheory.ForwardAntiClusteringAt.hasEscapeMass_zero,
+    ExtremeValueTheory.HasShiftInvariantWindows.tendsto_partialMax_iff_tendsto_clusterRatio,
+    ExtremeValueTheory.HasSpectralTailProcess.tendsto_partialMax_iff_hasEscapeMass, ExtremeValueTheory.HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex,
+    ExtremeValueTheory.HasSpectralTailProcess.eq_candidateExtremalIndex_iff_hasEscapeMass_zero, ExtremeValueTheory.HasSpectralTailProcess.lt_candidateExtremalIndex_iff}
+  \leanok
+  For a stationary sequence with spectral tail process, $u_n \to \infty$ and $r_n \to \infty$, the cluster ratio
+  $\PR[M_{r_n} > u_n]/(r_n \PR[|X_0| > u_n])$ tends to $L$ if and only if the escape mass is $\vartheta - L$; no
+  anticlustering or mixing is assumed. Forward anticlustering forces $\eta = 0$. Under condition $\mathcal A$,
+  $\theta = \vartheta - \eta$; in particular $\theta = \vartheta$ iff $\eta = 0$, and $\theta < \vartheta$ iff $\eta > 0$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  An exact identity $0 \le \text{ratio} - (q_n(m) - \varepsilon_n(m)) \le m/r_n$, where $q_n(m)$ is the
+  first-exceedance probability that the tail process controls.
+\end{proof}
+
+\begin{theorem}[The echo process: $\theta = 1/2 < \vartheta = 1$]
+  \label{thm:echo-process}
+  \uses{thm:gap-formula}
+  \lean{ExtremeValueTheory.unitSpectral, ExtremeValueTheory.hasSpectralTailProcess_of_asymptoticIndependence,
+    ExtremeValueTheory.hasShiftInvariantWindows_of_shift, ExtremeValueTheory.echoSource, ExtremeValueTheory.isRegularlyVarying_echoProcess,
+    ExtremeValueTheory.hasSpectralTailProcess_echoProcess, ExtremeValueTheory.candidateExtremalIndex_unitSpectral,
+    ExtremeValueTheory.hasShiftInvariantWindows_echoProcess, ExtremeValueTheory.echoProcess_theta_lt_vartheta,
+    ExtremeValueTheory.tendsto_clusterRatio_echoProcess, ExtremeValueTheory.hasEscapeMass_echoProcess,
+    ExtremeValueTheory.not_forwardAntiClusteringAt_echoProcess, ExtremeValueTheory.logEchoProcess_theta_lt_vartheta,
+    ExtremeValueTheory.logEchoProcess_hasEscapeMass, ExtremeValueTheory.logEchoProcess_hasEscapeMass_of_tendsto}
+  \leanok
+  Let $Z_t$ be iid Pareto($\alpha$) and $L(z) = \lfloor \log z \rfloor + 1$. The echo process
+  $X_t = \max(Z_t, \max\{Z_s : s < t,\ s + L(Z_s) = t\})$, in which each shock reappears once after a lag that grows
+  with its size, is stationary and regularly varying, its spectral tail process is $\Theta_t = \mathbf 1\{t = 0\}$ (so
+  $\vartheta = 1$ and $|Y_t| \to 0$), and its extremal index is $\theta = 1/2$. The cluster ratio tends to $1/2$, the
+  escape mass is $1/2 = \vartheta - \theta$, and anticlustering fails. In particular $|Y_t| \to 0$ does not imply
+  $\theta = \vartheta$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  At fixed lags the echo is invisible ($L \to \infty$), giving the iid spectral tail process. Every large shock
+  produces exactly two exceedances within a block ($\E L(Z) < \infty$), so maxima behave as for iid
+  sequences with half the exceedance rate.
+\end{proof}
