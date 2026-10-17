@@ -67,3 +67,22 @@ We follow de Haan, \emph{A spectral representation for max-stable processes}, An
   \leanok
   Apply Theorem~\ref{thm:max-stable-spectral} to the finitely many functions $W(t_i)$.
 \end{proof}
+
+\begin{theorem}[Every simple max-stable law has a spectral measure]
+  \label{thm:max-stable-converse}
+  \uses{thm:max-stable-spectral, thm:max-stable-exponent}
+  \lean{ExtremeValueTheory.IsSimpleMaxStable.exists_hasSpectralMeasure, ExtremeValueTheory.HasSpectralMeasure.measure_univ_toReal,
+    ExtremeValueTheory.IsSimpleMaxStable.ae_forall_pos, ExtremeValueTheory.IsSimpleMaxStable.convexOn_pickandsDependence,
+    ExtremeValueTheory.IsSimpleMaxStable.exists_pickandsDependence_eq_pickandsSpectral}
+  \leanok
+  For every finite dimension, a simple max-stable law has a finite spectral measure $H$ on the unit sphere of the sup
+  norm with $\int w_i \ud H = 1$ and $\PR[Y \le y] = \exp(-\int \max_i w_i/y_i \ud H)$ [dHF, Theorem~6.1.9],
+  [Resnick, Proposition~5.11]; its total mass is the extremal coefficient. Consequently the Pickands dependence
+  function of every bivariate simple max-stable law is convex.
+\end{theorem}
+\begin{proof}
+  \leanok
+  With $R = \max_i Y_i$ and $\Theta = Y/R$, homogeneity gives $\PR[\max_i Y_i/y_i > r] = 1 - e^{-V(y)/r}$. The finite measures
+  $\Lambda_M = \E[\min(R, M);\, \Theta \in \cdot]/\log M$ on the compact cube satisfy $\int \max_i \theta_i/y_i \ud\Lambda_M \to V(y)$; a weak
+  cluster point (Prokhorov) is the spectral measure.
+\end{proof}

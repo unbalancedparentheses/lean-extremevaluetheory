@@ -154,7 +154,9 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
 - **Max-stable vectors and processes** (`MaxStable/`): simple max-stable laws and their exponent
   function; de Haan's spectral construction from Poisson random measures for vectors and processes
   (`exists_isSimpleMaxStable_of_spectralMeasure`, `IsPoissonRandomMeasure.isSimpleMaxStable_map_process`),
-  with the Smith model, independence and complete dependence.
+  with the Smith model, independence and complete dependence. Conversely, every simple max-stable law (any finite
+  dimension) has a spectral measure (`IsSimpleMaxStable.exists_hasSpectralMeasure`), so the Pickands function of every
+  bivariate max-stable law is convex.
 - **Vague convergence and Poisson random measures** (`ForMathlib/`, Mathlib-only imports, intended
   for upstreaming): vague convergence with its portmanteau properties, Poisson random measures with
   existence for every s-finite intensity (`exists_isPoissonRandomMeasure`), Laplace functionals,
