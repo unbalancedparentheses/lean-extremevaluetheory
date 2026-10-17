@@ -122,6 +122,7 @@ Processes*.
 | ‡ `tendsto_measureReal_orderStat_zero_le_and_orderStat_one_le` | EKM §4.2 | joint limit of the two largest | Same, two levels only; `k > 2` levels not covered. | FAITHFUL (two levels) |
 | ‡ `measureReal_isRecord`, `tendstoInMeasure_recordCount_div_log` | EKM §5.4, Rényi | iid, continuous `F`: `P(I_k = 1) = 1/k`, `N_n/log n →_P 1` | "Continuous" is stated as atomless (`P(X₀ = x) = 0`). Indices start at `0`, so the probability for index `k` is `1/(k+1)`. Only pairwise independence of record indicators is proved, which is enough for the law of large numbers. | FAITHFUL |
 | ‡ `weissman`, `tendstoInMeasure_weissman_div*` | dHF Thm 4.3.1, Weissman (1978) | `x̂_p / x_p →_P 1` | `tailQuantile` is `inf{x : F̄(x) ≤ p}`. Intermediate levels (`d_n ∈ [a,b]`): unconditional. Far tail: assumes `√k(γ̂ − γ) = O_P(1)`, `log d_n/√k → 0`, and the bias condition `x_{pₙ}/(x_{k/n} d_n^{1/α}) → 1` as hypotheses (dHF derive the bias condition from second-order RV; here it is proved only for exact Pareto tails). | DIFFERS (bias and rate assumed in the far-tail case); correct |
+| ‡ `tendstoInMeasure_weissman_div_of_secondOrder`, `tendstoInDistribution_weissman` | dHF §4.3 | second order, `√k A(n/k) → λ`, `log d_n/√k → 0` ⇒ `x̂/x_p →_P 1`; `(√k/log d_n)(x̂/x_p − 1) ⇒ N(λ/(1−ρ), γ²)` | Requires `ρ < 0` (the uniform remainder bound used is only valid then); `ρ = 0` is not covered. `d_n ≥ 1` (weaker than `n pₙ = o(k)`) for consistency, `d_n → ∞` for normality. Normality of the tail-probability estimator not done. | DIFFERS (`ρ < 0`); correct |
 | ‡ `tailProbEstimator`, `tendstoInMeasure_tailProbEstimator_div*` | dHF §4.4 | `p̂(yₙ)/F̄(yₙ) →_P 1` | Same structure as the Weissman row. | DIFFERS (same caveat); correct |
 | ‡ `returnLevel`, `gevFun_returnLevel` | Coles §3.1.3 | `H_ξ(z_m) = 1 − 1/m` | Same, for `m > 1`. | FAITHFUL |
 | † `IsStable`, `IsStrictlyStable` (defs) | Feller VI.1 Def 1; ST Def 1.1.4 | non-degenerate, `μ^{*n} = law(a_n X + b_n)` (`b_n = 0` for strictly stable), `a_n > 0` | Same, for all `n ≥ 1`; non-degeneracy is `μ ≠ δ_x` for all `x`. Inhabited by Gaussian, Cauchy, and `IsSymmStable` with `0<α≤2`, `c>0`. | FAITHFUL |
@@ -184,9 +185,9 @@ vacuity checks) found no critical problems. Findings and status:
    row); downstream theorems only use levels that exist. Optional fix: require existence of levels.
 3. **Minor:** `Measure.TendstoVaguely` does not require a locally finite limit, so limits are not
    unique without `[ν.Regular]` (all theorems assume it).
-4. **Minor:** the far-tail Weissman theorems assume the Hill rate rather than deriving it; a
-   corollary combining them with `tendstoInDistribution_hill` is in progress. The citation
-   "dHF Thm 4.3.1" is to be checked.
+4. **RESOLVED (for `ρ < 0`):** the far-tail Weissman theorems now have second-order versions that
+   derive the Hill rate and the bias condition. The unverified "dHF Thm 4.3.1" citations were
+   replaced by "dHF §4.3".
 5. **Minor:** the ruin corollaries do not assume nonnegative claims (row updated).
 6. **Minor:** `HasStableCharFun` has no parameter restrictions (row updated).
 7. **Minor:** the GCLT is sufficiency only, and no skewed instance is exhibited (row updated).

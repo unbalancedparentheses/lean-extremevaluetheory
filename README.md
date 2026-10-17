@@ -82,7 +82,9 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
 - **Extreme quantiles** (`Statistics/ExtremeQuantile.lean`): ratio consistency of the Weissman
   estimator `X₍ₖ₊₁₎ (k/(n pₙ))^γ̂` and of the tail-probability estimator, for intermediate levels
   unconditionally and beyond the sample range given a `√k` rate for the Hill estimator and a bias
-  condition (automatic for Pareto tails). GEV return levels.
+  condition (automatic for Pareto tails). Under second-order regular variation with `ρ < 0`, both
+  hypotheses are discharged (`tendstoInMeasure_weissman_div_of_secondOrder`) and the Weissman
+  estimator is asymptotically normal (`tendstoInDistribution_weissman`). GEV return levels.
 - **Upper order statistics and records**: the Poisson limit law of the `k`-th largest
   (`tendsto_measureReal_orderStat_le`), the joint law of the two largest, and records: `P(record at
   k) = 1/k`, `E N_n = H_n`, `N_n / log n → 1` in probability (`tendstoInMeasure_recordCount_div_log`).

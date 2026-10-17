@@ -523,3 +523,32 @@ follow de Haan and Ferreira, \emph{Extreme Value Theory: An Introduction}, Sprin
   threshold $U(n/k)$ via the layer-cake formula and Potter bounds, then sandwiching the random
   threshold $X_{(k+1)}$ with exceedance counts.
 \end{proof}
+
+\begin{theorem}[Weissman estimator under second-order regular variation]
+  \label{thm:weissman-second-order}
+  \uses{thm:weissman, thm:hill-normality, thm:second-order-bound}
+  \lean{MeasureTheory.TendstoInDistribution.exists_measure_le_abs_le,
+    ExtremeValueTheory.isBoundedInProbability_of_tendstoInDistribution, ExtremeValueTheory.isBoundedInProbability_hill,
+    ExtremeValueTheory.IsSecondOrderRegularlyVarying.exists_bound_of_neg,
+    ExtremeValueTheory.survivalQuantile_survival_eq_tailQuantile, ExtremeValueTheory.tailQuantile_eq_survivalQuantile,
+    ExtremeValueTheory.IsSecondOrderRegularlyVarying.tendsto_div_mul_rpow, ExtremeValueTheory.tendsto_tailQuantile_div_of_secondOrder,
+    ExtremeValueTheory.tendstoInMeasure_weissman_div_of_secondOrder,
+    ExtremeValueTheory.tendstoInMeasure_tailProbEstimator_div_of_secondOrder, ExtremeValueTheory.tendstoInDistribution_weissman}
+  \leanok
+  Assume the tail quantile function is second-order regularly varying with $\gamma > 0$ and
+  $\rho < 0$, $k \to \infty$, $k/n \to 0$ and $\sqrt k A(n/k) \to \lambda$. If $d_n = k/(n p_n) \ge 1$ and
+  $\log d_n / \sqrt k \to 0$, then $\hat x_{p_n}/x_{p_n} \to 1$ in probability, and similarly for the
+  tail-probability estimator. If moreover $d_n \to \infty$,
+  \begin{align*}
+    \frac{\sqrt k}{\log d_n} \Big( \frac{\hat x_{p_n}}{x_{p_n}} - 1 \Big)
+      \; \Rightarrow \; N\big(\lambda/(1-\rho), \gamma^2\big)
+  \end{align*}
+  [dHF, \S4.3]. The case $\rho = 0$ is not covered.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Convergence in distribution implies tightness, so the Hill CLT gives the rate. For $\rho < 0$ the
+  uniform bound $|\log U(xt) - \log U(t) - \gamma \log x| \le C|A(t)|$ for all $x \ge 1$ makes the bias
+  ratio tend to $1$. For normality, $\log(\hat x/x) = (\hat\gamma - \gamma)\log d_n + O_P(k^{-1/2})$ and the
+  delta method for $\exp$.
+\end{proof}
