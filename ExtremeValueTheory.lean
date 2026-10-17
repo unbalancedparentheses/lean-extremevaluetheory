@@ -126,3 +126,5 @@ import ExtremeValueTheory.Multivariate.PickandsEstimator
 import ExtremeValueTheory.Dependence.EchoPhaseTransition
 import ExtremeValueTheory.Dependence.EchoConditionA
 import ExtremeValueTheory.Dependence.MixtureProcess
+import ExtremeValueTheory.Statistics.Density
+import ExtremeValueTheory.Statistics.GPDLikelihood
