@@ -617,4 +617,215 @@ theorem HasSpectralTailProcess.tendsto_blockRatio (hα : 0 < α) (hX : ∀ t, Me
 
 end Ratio
 
+/-! ### The extremal index equals `ϑ` -/
+
+/-- If `bₙ → 0` and `kₙ bₙ → c` then `(1 - bₙ) ^ kₙ → exp (-c)`. -/
+theorem tendsto_one_sub_pow_exp_of_tendsto_mul {k : ℕ → ℕ} {b : ℕ → ℝ} {c : ℝ}
+    (hb : Tendsto b atTop (𝓝 0)) (hkb : Tendsto (fun n => (k n : ℝ) * b n) atTop (𝓝 c)) :
+    Tendsto (fun n => (1 - b n) ^ k n) atTop (𝓝 (Real.exp (-c))) := by
+  have hlow : Tendsto (fun n => -((k n : ℝ) * b n) / (1 - b n)) atTop (𝓝 (-c)) := by
+    have := hkb.neg.div (hb.const_sub 1) (by norm_num)
+    rw [sub_zero, div_one] at this
+    exact this
+  have hlog : Tendsto (fun n => (k n : ℝ) * Real.log (1 - b n)) atTop (𝓝 (-c)) := by
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' hlow hkb.neg ?_ ?_
+    · filter_upwards [hb.eventually (gt_mem_nhds one_pos)] with n hn
+      have hpos : 0 < 1 - b n := by linarith
+      have := Real.one_sub_inv_le_log_of_pos hpos
+      calc -((k n : ℝ) * b n) / (1 - b n) = (k n : ℝ) * (1 - (1 - b n)⁻¹) := by
+            field_simp; ring
+        _ ≤ _ := mul_le_mul_of_nonneg_left this (Nat.cast_nonneg _)
+    · filter_upwards [hb.eventually (gt_mem_nhds one_pos)] with n hn
+      have hpos : 0 < 1 - b n := by linarith
+      have := Real.log_le_sub_one_of_pos hpos
+      calc (k n : ℝ) * Real.log (1 - b n) ≤ (k n : ℝ) * (1 - b n - 1) :=
+            mul_le_mul_of_nonneg_left this (Nat.cast_nonneg _)
+        _ = -((k n : ℝ) * b n) := by ring
+  refine ((Real.continuous_exp.tendsto _).comp hlog).congr' ?_
+  filter_upwards [hb.eventually (gt_mem_nhds one_pos)] with n hn
+  simp only [Function.comp_apply]
+  rw [Real.exp_nat_mul, Real.exp_log (by linarith)]
+
+/-- If `rₙ / n → 0` and `rₙ > 0` eventually, then `⌊n / rₙ⌋ rₙ / n → 1`. -/
+theorem tendsto_div_mul_div_self {r : ℕ → ℕ} (hr0 : ∀ᶠ n in atTop, 0 < r n)
+    (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0)) :
+    Tendsto (fun n : ℕ => ((n / r n : ℕ) : ℝ) * r n / n) atTop (𝓝 1) := by
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' (by simpa using hrn.const_sub 1)
+    tendsto_const_nhds ?_ ?_
+  · filter_upwards [hr0, eventually_gt_atTop 0] with n hr hn
+    have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+    have h : n < n / r n * r n + r n := Nat.lt_div_mul_add hr
+    have h' : (n : ℝ) < ((n / r n : ℕ) : ℝ) * r n + r n := by exact_mod_cast h
+    rw [sub_le_iff_le_add, ← add_div, le_div_iff₀ hn']
+    linarith
+  · filter_upwards [eventually_gt_atTop 0] with n hn
+    have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+    rw [div_le_one hn']
+    exact_mod_cast Nat.div_mul_le_self n (r n)
+
+section ExtremalIndex
+
+variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {P : Measure Ω} [IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ}
+  {Q : Measure Ω'} [IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ}
+
+/-- **Block condition** `A(uₙ)` (of Leadbetter / Davis–Hsing type, [BS09, §4], [KS20, §7.5]):
+the maximum over `n` observations behaves like the maximum over `⌊n / rₙ⌋` independent blocks of
+length `rₙ`: `P(M n ≤ uₙ) - P(M rₙ ≤ uₙ) ^ ⌊n / rₙ⌋ → 0`. It follows from strong mixing
+conditions with suitable rates; here it is a hypothesis. -/
+def ConditionA (X : ℕ → Ω → ℝ) (P : Measure Ω) (u : ℕ → ℝ) (r : ℕ → ℕ) : Prop :=
+  Tendsto (fun n => P.real {ω | partialMax X n ω ≤ u n} -
+    P.real {ω | partialMax X (r n) ω ≤ u n} ^ (n / r n)) atTop (𝓝 0)
+
+omit [IsProbabilityMeasure Q] in
+/-- Regular variation makes `P(|X_0| > C)` positive for every level `C`. -/
+theorem HasSpectralTailProcess.measureReal_lt_abs_pos (h : HasSpectralTailProcess P X α Q Θ)
+    (C : ℝ) : 0 < P.real {ω | C < |X 0 ω|} := by
+  obtain ⟨x, hxC, hx⟩ := ((eventually_ge_atTop C).and h.1.eventually_pos).exists
+  exact hx.trans_le (measureReal_mono fun ω (hω : x < |X 0 ω|) => hxC.trans_lt hω)
+
+/-- **Maxima under anticlustering** ([BS09, Proposition 4.2 and §4], [KS20, §7.5]): let
+`(X_t)` be stationary with spectral tail process `Θ`, `n P(|X_0| > uₙ) → τ`, `rₙ → ∞`,
+`rₙ / n → 0`, and assume the forward anticlustering bound and the block condition `A(uₙ)` for
+`|X|`. Then `P(max_{0 ≤ t < n} |X_t| ≤ uₙ) → exp (-ϑ τ)`.
+
+Hypotheses actually used: stationarity, the spectral tail process, `n P(|X_0| > uₙ) → τ`
+(which forces `uₙ → ∞`), `rₙ → ∞`, `rₙ / n → 0`, forward anticlustering at the level sequence
+`uₙ`, and `A(uₙ)`. -/
+theorem HasSpectralTailProcess.tendsto_partialMax_abs (hα : 0 < α) (hX : ∀ t, Measurable (X t))
+    (hΘm : ∀ t, Measurable (Θ t)) (hstat : HasShiftInvariantWindows P X)
+    (h : HasSpectralTailProcess P X α Q Θ) {u : ℕ → ℝ} {τ : ℝ}
+    (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < |X 0 ω|}) atTop (𝓝 τ))
+    {r : ℕ → ℕ} (hr : Tendsto r atTop atTop) (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hAC : ForwardAntiClusteringAt P X u r) (hA : ConditionA (fun k : ℕ => |X k|) P u r) :
+    Tendsto (fun n => P.real {ω | partialMax (fun k : ℕ => |X k|) n ω ≤ u n}) atTop
+      (𝓝 (Real.exp (-((candidateExtremalIndex Q Θ α).toReal * τ)))) := by
+  set ϑ := (candidateExtremalIndex Q Θ α).toReal
+  have hu := h.tendsto_atTop_of_tendsto_mul hτ
+  have hratio := h.tendsto_blockRatio hα hX hΘm hstat hu hr hAC
+  set p : ℕ → ℝ := fun n => P.real {ω | u n < |X 0 ω|}
+  set b : ℕ → ℝ := fun n => P.real {ω | ∃ t ∈ Finset.Ico (0 : ℤ) (r n), u n < |X t ω|}
+  have hp0 : ∀ n, 0 < p n := fun n => h.measureReal_lt_abs_pos _
+  have hr0 : ∀ᶠ n in atTop, 0 < r n := hr.eventually_gt_atTop 0
+  -- the block maximum
+  have hpart : ∀ n, 0 < r n →
+      P.real {ω | partialMax (fun k : ℕ => |X k|) (r n) ω ≤ u n} = 1 - b n := by
+    intro n hn
+    have hmeas : MeasurableSet {ω | ∃ t ∈ Finset.Ico (0 : ℤ) (r n), u n < |X t ω|} := by
+      simp only [ofPred_exists, ofPred_and]
+      exact MeasurableSet.iUnion fun t => (MeasurableSet.const _).inter
+        (measurableSet_lt measurable_const (continuous_abs.measurable.comp (hX t)))
+    rw [← probReal_compl_eq_one_sub hmeas]
+    congr 1
+    ext ω
+    rw [mem_ofPred_eq, partialMax_le_iff hn, mem_compl_iff, mem_ofPred_eq]
+    constructor
+    · rintro hle ⟨t, ht, hlt⟩
+      rw [Finset.mem_Ico] at ht
+      obtain ⟨k, rfl⟩ : ∃ k : ℕ, t = k := ⟨t.toNat, by omega⟩
+      exact absurd (hle k (by exact_mod_cast ht.2)) (not_le.2 hlt)
+    · intro hne k hk
+      by_contra hcon
+      exact hne ⟨k, Finset.mem_Ico.2 ⟨by positivity, by exact_mod_cast hk⟩, not_le.1 hcon⟩
+  -- `kₙ bₙ → ϑ τ` and `bₙ → 0`
+  have hkr := tendsto_div_mul_div_self hr0 hrn
+  have hrp : Tendsto (fun n => (r n : ℝ) / n * (n * p n)) atTop (𝓝 0) := by
+    simpa using hrn.mul hτ
+  have hb : Tendsto b atTop (𝓝 0) := by
+    have := hratio.mul hrp
+    rw [mul_zero] at this
+    refine this.congr' ?_
+    filter_upwards [hr0, eventually_gt_atTop 0] with n hrpos hn
+    have : (r n : ℝ) ≠ 0 := by exact_mod_cast hrpos.ne'
+    have : (n : ℝ) ≠ 0 := by exact_mod_cast hn.ne'
+    have : P.real {ω | u n < |X 0 ω|} ≠ 0 := (hp0 n).ne'
+    dsimp only [b, p]
+    field_simp
+  have hkb : Tendsto (fun n => ((n / r n : ℕ) : ℝ) * b n) atTop (𝓝 (ϑ * τ)) := by
+    have := (hkr.mul hτ).mul hratio
+    rw [one_mul, mul_comm τ] at this
+    refine this.congr' ?_
+    filter_upwards [hr0, eventually_gt_atTop 0] with n hrpos hn
+    have : (r n : ℝ) ≠ 0 := by exact_mod_cast hrpos.ne'
+    have : (n : ℝ) ≠ 0 := by exact_mod_cast hn.ne'
+    have : P.real {ω | u n < |X 0 ω|} ≠ 0 := (hp0 n).ne'
+    dsimp only [b, p]
+    field_simp
+  have hpow := tendsto_one_sub_pow_exp_of_tendsto_mul hb hkb
+  have := hA.add hpow
+  rw [zero_add] at this
+  refine this.congr' ?_
+  filter_upwards [hr0] with n hn
+  rw [hpart n hn]
+  ring
+
+/-- **The extremal index equals the candidate extremal index under anticlustering**
+([BS09, Proposition 4.2 and §4], [KS20, §7.5]): if `(X_t)` is stationary with spectral tail
+process `Θ`, `rₙ → ∞`, `rₙ / n → 0`, and for every level sequence with `n P(|X_0| > uₙ) → τ > 0`
+the forward anticlustering bound and the block condition `A(uₙ)` hold, then `(|X_n|)_{n ∈ ℕ}`
+has extremal index `ϑ`. -/
+theorem HasSpectralTailProcess.hasExtremalIndex_abs (hα : 0 < α) (hX : ∀ t, Measurable (X t))
+    (hΘm : ∀ t, Measurable (Θ t)) (hstat : HasShiftInvariantWindows P X)
+    (h : HasSpectralTailProcess P X α Q Θ) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hcond : ∀ τ > 0, ∀ u : ℕ → ℝ,
+      Tendsto (fun n : ℕ => n * P.real {ω | u n < |X 0 ω|}) atTop (𝓝 τ) →
+        ForwardAntiClusteringAt P X u r ∧ ConditionA (fun k : ℕ => |X k|) P u r) :
+    HasExtremalIndex (fun k : ℕ => |X k|) P (candidateExtremalIndex Q Θ α).toReal := by
+  have h0 := h.ae_abs_eq_one hΘm (hX 0)
+  refine ⟨⟨ENNReal.toReal_nonneg, ?_⟩, fun τ hτ u hu => ?_⟩
+  · simpa using ENNReal.toReal_mono ENNReal.one_ne_top (candidateExtremalIndex_le_one hα.le h0)
+  · have hu' : Tendsto (fun n : ℕ => n * P.real {ω | u n < |X 0 ω|}) atTop (𝓝 τ) := by
+      simpa using hu
+    obtain ⟨hAC, hA⟩ := hcond τ hτ u hu'
+    exact h.tendsto_partialMax_abs hα hX hΘm hstat hu' hr hrn hAC hA
+
+/-- **Nonnegative series** ([BS09, §4], [KS20, §7.5]): the version of
+`HasSpectralTailProcess.hasExtremalIndex_abs` for `X ≥ 0`, where `|X| = X`, directly in terms of
+the block extremal index `HasExtremalIndex` of `(X_n)_{n ∈ ℕ}`. -/
+theorem HasSpectralTailProcess.hasExtremalIndex_of_nonneg (hα : 0 < α)
+    (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
+    (hstat : HasShiftInvariantWindows P X) (h : HasSpectralTailProcess P X α Q Θ)
+    (hnn : ∀ t ω, 0 ≤ X t ω) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hcond : ∀ τ > 0, ∀ u : ℕ → ℝ,
+      Tendsto (fun n : ℕ => n * P.real {ω | u n < X 0 ω}) atTop (𝓝 τ) →
+        ForwardAntiClusteringAt P X u r ∧ ConditionA (fun k : ℕ => X k) P u r) :
+    HasExtremalIndex (fun k : ℕ => X k) P (candidateExtremalIndex Q Θ α).toReal := by
+  have habs : (fun k : ℕ => |X k|) = fun k : ℕ => X k :=
+    funext fun k => abs_of_nonneg (show 0 ≤ X k from fun ω => hnn _ ω)
+  have := h.hasExtremalIndex_abs hα hX hΘm hstat hr hrn fun τ hτ u hu => by
+    have hu' : Tendsto (fun n : ℕ => n * P.real {ω | u n < X 0 ω}) atTop (𝓝 τ) := by
+      simpa [abs_of_nonneg (hnn _ _)] using hu
+    obtain ⟨h1, h2⟩ := hcond τ hτ u hu'
+    exact ⟨h1, by rwa [ConditionA, habs]⟩
+  rwa [habs] at this
+
+/-- **The extremal index in the normalization of `AC(rₙ)`** ([BS09, §4], [KS20, §7.5]): if
+`n P(|X_0| > aₙ) → 1`, `rₙ → ∞`, `rₙ / n → 0`, `AC(rₙ)` holds and the block condition
+`A(aₙ x)` holds for every `x > 0`, then `P(max_{0 ≤ t < n} |X_t| ≤ aₙ x) → exp (-ϑ x^(-α))` for
+every `x > 0`. Only the forward half of `AC(rₙ)` at the level `x` is used for the limit at `x`. -/
+theorem HasSpectralTailProcess.tendsto_partialMax_abs_of_antiClustering (hα : 0 < α)
+    (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
+    (hstat : HasShiftInvariantWindows P X) (h : HasSpectralTailProcess P X α Q Θ)
+    {a : ℕ → ℝ} (ha : Tendsto (fun n : ℕ => n * P.real {ω | a n < |X 0 ω|}) atTop (𝓝 1))
+    {r : ℕ → ℕ} (hr : Tendsto r atTop atTop) (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hAC : AntiClustering P X a r)
+    (hA : ∀ x : ℝ, 0 < x → ConditionA (fun k : ℕ => |X k|) P (fun n => a n * x) r)
+    {x : ℝ} (hx : 0 < x) :
+    Tendsto (fun n => P.real {ω | partialMax (fun k : ℕ => |X k|) n ω ≤ a n * x}) atTop
+      (𝓝 (Real.exp (-((candidateExtremalIndex Q Θ α).toReal * x ^ (-α))))) := by
+  have hainf := h.tendsto_atTop_of_tendsto_mul ha
+  have hRV := (h.1.2 x hx).comp hainf
+  have hτ : Tendsto (fun n : ℕ => n * P.real {ω | a n * x < |X 0 ω|}) atTop (𝓝 (x ^ (-α))) := by
+    have := ha.mul hRV
+    rw [one_mul] at this
+    refine this.congr fun n => ?_
+    simp only [Function.comp_apply, mul_comm x (a n)]
+    have := h.measureReal_lt_abs_pos (a n)
+    field_simp
+  exact h.tendsto_partialMax_abs hα hX hΘm hstat hτ hr hrn (hAC x hx).forward (hA x hx)
+
+end ExtremalIndex
+
 end ExtremeValueTheory
