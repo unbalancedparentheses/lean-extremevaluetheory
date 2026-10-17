@@ -10,6 +10,7 @@ public import Mathlib.Topology.Order.T5
 public import Mathlib.Topology.Order.IntermediateValue
 public import Mathlib.Topology.EMetricSpace.Basic
 public import Mathlib.Order.Interval.Set.OrdConnectedComponent
+public import Mathlib.MeasureTheory.Constructions.BorelSpace.Metrizable
 
 /-!
 # Càdlàg functions on a compact interval
@@ -29,6 +30,7 @@ cell when no cut point lies in `(t, u]`.
 * `IsCadlag.exists_finset_edist_lt`: Billingsley's Lemma 12.1.
 * `IsCadlag.exists_finite_range_edist_lt`: a càdlàg function is a uniform limit of functions
   with finitely many values (step functions).
+* `IsCadlag.measurable`: a càdlàg function is Borel measurable.
 * `IsCadlag.finite_setOf_lt_edist_leftLim`: a càdlàg function has only finitely many jumps of
   size larger than `ε`.
 * `IsCadlag.countable_setOf_edist_leftLim_ne_zero`, `IsCadlag.countable_setOf_leftLim_ne`:
@@ -131,16 +133,17 @@ theorem IsCadlag.exists_finset_edist_lt (hf : IsCadlag f) {ε : ℝ≥0∞} (hε
     exact (hleft c₁ t u (hVU _ htc₁) (hVU _ hu) (htu.trans_lt hc₁) hc₁).trans_le
       ENNReal.half_le_self
 
-/-- A càdlàg function on a compact interval is a uniform limit of functions with finitely many
-values: for every `ε > 0` there is a step function `g` with `edist (f t) (g t) < ε` for all
-`t` ([Billingsley, §12][billingsley1999]). -/
-theorem IsCadlag.exists_finite_range_edist_lt (hf : IsCadlag f) {ε : ℝ≥0∞} (hε : 0 < ε) :
-    ∃ g : X → E, (range g).Finite ∧ ∀ t, edist (f t) (g t) < ε := by
+/-- A càdlàg function on a compact interval is uniformly close to a function of the form `f ∘ p`
+with `p : X → X` monotone with finite range: `p t` is the last cut point of Lemma 12.1 before `t`.
+-/
+theorem IsCadlag.exists_monotone_finite_range_edist_lt (hf : IsCadlag f) {ε : ℝ≥0∞}
+    (hε : 0 < ε) : ∃ p : X → X, Monotone p ∧ (range p).Finite ∧ ∀ t, edist (f t) (f (p t)) < ε := by
   classical
   obtain ⟨s, hs⟩ := hf.exists_finset_edist_lt hε
   -- `p t` is the last cut point before `t`, or the minimum of `X` if there is none.
   let p : X → X := fun t ↦
     if h : (s.filter (· ≤ t)).Nonempty then (s.filter (· ≤ t)).max' h else sInf univ
+  have hbot (t : X) : sInf univ ≤ t := csInf_le isCompact_univ.bddBelow (mem_univ t)
   have hp (t : X) : p t ≤ t ∧ ∀ r ∈ s, r ≤ p t ∨ t < r := by
     simp only [p]
     split_ifs with h
@@ -148,19 +151,53 @@ theorem IsCadlag.exists_finite_range_edist_lt (hf : IsCadlag f) {ε : ℝ≥0∞
       by_cases hrt : r ≤ t
       · exact Or.inl (Finset.le_max' _ r (Finset.mem_filter.2 ⟨hr, hrt⟩))
       · exact Or.inr (not_le.1 hrt)
-    · refine ⟨csInf_le isCompact_univ.bddBelow (mem_univ t), fun r hr ↦ Or.inr (not_le.1 ?_)⟩
+    · refine ⟨hbot t, fun r hr ↦ Or.inr (not_le.1 ?_)⟩
       exact fun hrt ↦ h ⟨r, Finset.mem_filter.2 ⟨hr, hrt⟩⟩
+  have hmono : Monotone p := by
+    intro t t' htt'
+    have hsub : s.filter (· ≤ t) ⊆ s.filter (· ≤ t') := fun r hr ↦ by
+      rw [Finset.mem_filter] at hr ⊢
+      exact ⟨hr.1, hr.2.trans htt'⟩
+    simp only [p]
+    split_ifs with h h'
+    · exact Finset.max'_subset h hsub
+    · exact absurd (h.mono hsub) h'
+    · exact hbot _
+    · exact le_rfl
   have hrange : range p ⊆ insert (sInf univ) (s : Set X) := by
     rintro _ ⟨t, rfl⟩
     simp only [p]
     split_ifs with h
     · exact Or.inr (Finset.mem_filter.1 (Finset.max'_mem _ h)).1
     · exact Or.inl rfl
-  refine ⟨f ∘ p, ?_, fun t ↦ ?_⟩
-  · rw [range_comp]
-    exact ((s.finite_toSet.insert _).subset hrange).image f
-  · rw [edist_comm]
-    exact hs _ _ (hp t).1 (hp t).2
+  refine ⟨p, hmono, (s.finite_toSet.insert _).subset hrange, fun t ↦ ?_⟩
+  rw [edist_comm]
+  exact hs _ _ (hp t).1 (hp t).2
+
+/-- A càdlàg function on a compact interval is a uniform limit of functions with finitely many
+values: for every `ε > 0` there is a step function `g` with `edist (f t) (g t) < ε` for all
+`t` ([Billingsley, §12][billingsley1999]). -/
+theorem IsCadlag.exists_finite_range_edist_lt (hf : IsCadlag f) {ε : ℝ≥0∞} (hε : 0 < ε) :
+    ∃ g : X → E, (range g).Finite ∧ ∀ t, edist (f t) (g t) < ε := by
+  obtain ⟨p, -, hp, hfp⟩ := hf.exists_monotone_finite_range_edist_lt hε
+  exact ⟨f ∘ p, by rw [range_comp]; exact hp.image f, hfp⟩
+
+/-- A càdlàg function on a compact second countable interval is Borel measurable. -/
+theorem IsCadlag.measurable [SecondCountableTopology X] [MeasurableSpace X] [BorelSpace X]
+    [MeasurableSpace E] [BorelSpace E] (hf : IsCadlag f) : Measurable f := by
+  have hε (n : ℕ) : (0 : ℝ≥0∞) < (n + 1 : ℝ≥0∞)⁻¹ := ENNReal.inv_pos.2 (by simp)
+  choose p hpm hpr hfp using fun n : ℕ ↦ hf.exists_monotone_finite_range_edist_lt (hε n)
+  refine measurable_of_tendsto_metrizable (f := fun n ↦ f ∘ p n) (fun n B _ ↦ ?_)
+    (tendsto_pi_nhds.2 fun t ↦ ?_)
+  · rw [preimage_comp, ← preimage_inter_range]
+    exact (hpm n).measurable (((hpr n).subset inter_subset_right).measurableSet)
+  · refine EMetric.tendsto_atTop.2 fun ε hε' ↦ ?_
+    obtain ⟨N, hN⟩ := ENNReal.exists_inv_nat_lt hε'.ne'
+    refine ⟨N, fun n hn ↦ ?_⟩
+    rw [edist_comm]
+    refine (hfp n t).trans (lt_of_le_of_lt ?_ hN)
+    gcongr
+    exact le_add_right (by exact_mod_cast hn)
 
 /-- A càdlàg function on a compact interval has only finitely many jumps of size larger than
 `ε` ([Billingsley, §12][billingsley1999]). -/
