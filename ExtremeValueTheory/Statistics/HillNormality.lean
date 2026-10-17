@@ -15,8 +15,63 @@ import Mathlib.Analysis.SpecialFunctions.Gamma.BohrMollerup
 /-!
 # Asymptotic normality of the Hill estimator
 
-TODO
+Let `X_0, X_1, …` be iid with tail quantile function `U(t) = F̄^←(1/t)` and let
+`H_{k,n} = (1/k) ∑_{i<k} (log X_{(i+1)} - log X_{(k+1)})` be the Hill estimator
+(`ExtremeValueTheory.hill`). We prove its asymptotic normality ([dHF, Theorem 3.2.5]; Hall 1982;
+Haeusler and Teugels 1985): if `U` is of second-order regular variation with indices `γ > 0`,
+`ρ ≤ 0` and auxiliary function `A` (`ExtremeValueTheory.IsSecondOrderRegularlyVarying`), and
+`k → ∞`, `k / n → 0`, `√k A(n/k) → λ`, then
+
+  `√k (H_{k,n} - γ) ⇒ N(λ / (1 - ρ), γ²)`.
+
+Convergence in distribution is Mathlib's `TendstoInDistribution`, towards any random variable
+with law `gaussianReal (λ / (1 - ρ)) γ²`.
+
+## Main results
+
+* `ExtremeValueTheory.tendstoInDistribution_hill_pareto`: the exact Pareto case,
+  `√k (H_{k,n} - 1/α) ⇒ N(0, 1/α²)`, only assuming `k → ∞` and `k < n`.
+* `ExtremeValueTheory.tendstoInDistribution_hill_of_tendsto_zero`: the general case with
+  `√k A(n/k) → 0`, `√k (H_{k,n} - γ) ⇒ N(0, γ²)`.
+* `ExtremeValueTheory.tendstoInDistribution_hill`: the general case with asymptotic bias
+  `λ / (1 - ρ)`.
+* `ExtremeValueTheory.tendstoInDistribution_meanExcess`: the central limit theorem
+  `√k ((1/k) ∑_{i<k} (E_{(i+1)} - E_{(k+1)}) - 1) ⇒ N(0, 1)` for iid standard exponentials.
+* `ExtremeValueTheory.tendstoInMeasure_meanExcess_fun`: a conditional law of large numbers for
+  functions of the top exponential excesses and of `E_{(k+1)}`.
+* `ExtremeValueTheory.tailQuantile`, `map_eq_expMeasure_map_tailQuantile`: the tail quantile
+  function and the quantile transform `X =ᵈ U(e^E)`, `E` standard exponential.
+
+## Proof
+
+1. *Quantile transform.* The sample `(X_i)` has the law of `(U(e^{E_i}))` with `E_i` iid standard
+   exponential, so it suffices to work with the latter (`TendstoInDistribution.of_map_eq`).
+2. *Rényi representation.* By `ExtremeValueTheory.lintegral_orderStat_excess`, conditionally on
+   `E_{(k+1)}` the top excesses `E_{(i+1)} - E_{(k+1)}` are iid standard exponential. Hence
+   `√k ((1/k) ∑ (E_{(i+1)} - E_{(k+1)}) - 1)` has the law of `(√k)⁻¹ (E_0 + ⋯ + E_{k-1} - k)`,
+   and Mathlib's central limit theorem applies. This gives the exact Pareto case.
+3. *Decomposition.* Since `U ∘ exp` is monotone, with `R(u, s) = log U(e^{u+s}) - log U(e^s) - γu`,
+   `√k (H_{k,n} - γ) = γ √k (M_k - 1) + √k (1/k) ∑_{i<k} R(E_{(i+1)} - E_{(k+1)}, E_{(k+1)})`,
+   where `M_k` is the mean top excess (`hill_comp_exp_eq`).
+4. *Bias.* `E_{(k+1)} - log(n/k) → 0` in probability (`tendstoInMeasure_orderStat_sub_log`), so
+   `A(e^{E_{(k+1)}}) / A(n/k) → 1` by the uniform convergence theorem for `|A|`. By the uniform
+   second-order bound (`IsSecondOrderRegularlyVarying.exists_bound`), `R(u, s) / A(e^s)` is
+   dominated by `C e^{u/4}` and tends to `h_ρ(e^u)`; the conditional law of large numbers gives
+   `(1/k) ∑ R(…) / A(e^{E_{(k+1)}}) → ∫ h_ρ(e^u) e^{-u} du = 1 / (1 - ρ)`. Hence the second term
+   tends to `λ / (1 - ρ)` in probability.
+5. *Slutsky.* Mathlib's `TendstoInDistribution.add_of_tendstoInMeasure_const` concludes.
+
+## References
+
+* [dHF] L. de Haan, A. Ferreira, *Extreme Value Theory: An Introduction*, Springer, 2006.
+* [EKM] P. Embrechts, C. Klüppelberg, T. Mikosch, *Modelling Extremal Events*, Springer, 1997,
+  §6.4.2.
+* P. Hall, *On some simple estimates of an exponent of regular variation*, J. Roy. Statist.
+  Soc. B 44 (1982).
+* E. Haeusler, J. L. Teugels, *On asymptotic normality of Hill's estimator for the exponent of
+  regular variation*, Ann. Statist. 13 (1985).
 -/
+
 
 open Filter Topology Set Real MeasureTheory ProbabilityTheory
 open scoped ENNReal NNReal
@@ -33,8 +88,8 @@ variable {ι Ω Ω₀ Ω' Ω'' : Type*} {mΩ : MeasurableSpace Ω} {mΩ₀ : Mea
   {P' : Measure Ω'} [IsProbabilityMeasure P'] {P'' : Measure Ω''} [IsProbabilityMeasure P'']
 
 /-- Convergence in distribution only depends on the laws of the random variables. -/
-theorem _root_.MeasureTheory.TendstoInDistribution.of_map_eq {l : Filter ι} {X : ι → Ω → ℝ} {X₀ : ι → Ω₀ → ℝ}
-    {Z : Ω' → ℝ} (h : TendstoInDistribution X₀ l Z (fun _ => P₀) P')
+theorem _root_.MeasureTheory.TendstoInDistribution.of_map_eq {l : Filter ι} {X : ι → Ω → ℝ}
+    {X₀ : ι → Ω₀ → ℝ} {Z : Ω' → ℝ} (h : TendstoInDistribution X₀ l Z (fun _ => P₀) P')
     (hX : ∀ i, AEMeasurable (X i) P) (hlaw : ∀ᶠ i in l, P.map (X i) = P₀.map (X₀ i)) :
     TendstoInDistribution X l Z (fun _ => P) P' := by
   refine ⟨hX, h.aemeasurable_limit, h.tendsto.congr' ?_⟩
@@ -42,8 +97,8 @@ theorem _root_.MeasureTheory.TendstoInDistribution.of_map_eq {l : Filter ι} {X 
   exact Subtype.ext hi.symm
 
 /-- Convergence in distribution only depends on the law of the limit. -/
-theorem _root_.MeasureTheory.TendstoInDistribution.congr_limit {l : Filter ι} {X : ι → Ω → ℝ} {Z : Ω' → ℝ}
-    {Z' : Ω'' → ℝ} (h : TendstoInDistribution X l Z (fun _ => P) P')
+theorem _root_.MeasureTheory.TendstoInDistribution.congr_limit {l : Filter ι} {X : ι → Ω → ℝ}
+    {Z : Ω' → ℝ} {Z' : Ω'' → ℝ} (h : TendstoInDistribution X l Z (fun _ => P) P')
     (hZ' : AEMeasurable Z' P'') (hlaw : P'.map Z = P''.map Z') :
     TendstoInDistribution X l Z' (fun _ => P) P'' := by
   refine ⟨h.forall_aemeasurable, hZ', ?_⟩
@@ -475,7 +530,8 @@ theorem tendstoInMeasure_ratio_of_isRegularlyVarying {f : ℝ → ℝ} {ρ : ℝ
   have hd1 : |D n ω| < η₀ := hcon.trans_le (min_le_left _ _)
   have hd2 : |D n ω| < 1 := hcon.trans_le (min_le_right _ _)
   have hcK : exp (D n ω) ∈ Icc (exp (-1)) (exp 1) :=
-    ⟨exp_le_exp.2 (by linarith [neg_abs_le (D n ω)]), exp_le_exp.2 (by linarith [le_abs_self (D n ω)])⟩
+    ⟨exp_le_exp.2 (by linarith [neg_abs_le (D n ω)]),
+      exp_le_exp.2 (by linarith [le_abs_self (D n ω)])⟩
   have h1 := hn (exp (D n ω)) hcK
   simp only [Function.comp_apply, id, Real.dist_eq] at h1
   have h2 := hη₀' (x := D n ω) (by simpa [Real.dist_eq] using hd1)
@@ -1011,7 +1067,8 @@ theorem tendstoInDistribution_hill_comp_exp {E : ℕ → Ω → ℝ} (hEm : ∀ 
     (Eventually.of_forall fun _ => bot_le) ?_
   filter_upwards [hnk.eventually_ge_atTop (max T 1), hkn'] with n hn hkn
   refine (measure_mono fun ω hω => ?_).trans ((measure_union_le
-    {ω | ∃ i : Fin n, E i ω ≤ 0} {ω | orderStat (fun i : Fin n => E i ω) (k n) < log (max T 1)}).trans
+    {ω | ∃ i : Fin n, E i ω ≤ 0}
+    {ω | orderStat (fun i : Fin n => E i ω) (k n) < log (max T 1)}).trans
     (by rw [hnull n, zero_add]))
   simp only [mem_ofPred_eq, mem_union] at hω ⊢
   by_contra hcon
@@ -1201,7 +1258,8 @@ theorem tendstoInDistribution_hill {X : ℕ → Ω → ℝ} (hX : ∀ i, Measura
       (Measure.pi fun _ : Fin n => (expMeasure 1).map fun e => U (exp e)).map
         (fun y : Fin n → ℝ => √(k n : ℝ) * (hill y (k n) - γ)) :=
     ((hasLaw_map hS.aemeasurable).comp hlawX).map_eq
-  have hT : Measurable fun y : Fin n → ℝ => √(k n : ℝ) * (hill (fun i => U (exp (y i))) (k n) - γ) :=
+  have hT : Measurable fun y : Fin n → ℝ =>
+      √(k n : ℝ) * (hill (fun i => U (exp (y i))) (k n) - γ) :=
     hS.comp (measurable_pi_iff.2 fun i => hV.comp (measurable_pi_apply i))
   have e2 : P₀.map (fun ω => √(k n : ℝ) * (hill (fun i : Fin n => U (exp (E i ω))) (k n) - γ)) =
       (Measure.pi fun _ : Fin n => expMeasure 1).map

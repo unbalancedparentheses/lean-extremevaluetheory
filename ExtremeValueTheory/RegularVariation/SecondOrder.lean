@@ -11,8 +11,50 @@ import Mathlib.Algebra.Field.GeomSum
 /-!
 # Second-order regular variation
 
-TODO
+Following de Haan and Ferreira, *Extreme Value Theory: An Introduction* (Springer, 2006),
+henceforth [dHF], §2.3, a function `U` is of *second-order regular variation* with first-order
+index `γ`, second-order index `ρ ≤ 0` and auxiliary function `A` if `A` has eventually constant
+sign, `A(t) → 0`, `|A|` is regularly varying with index `ρ`, and
+
+  `(U(xt) / U(t) - x^γ) / A(t) → x^γ h_ρ(x)`, `h_ρ(x) = (x^ρ - 1) / ρ` (`= log x` for `ρ = 0`).
+
+This is the condition that controls the bias of tail estimators such as the Hill estimator
+([dHF, Theorem 3.2.5]).
+
+## Main definitions
+
+* `ExtremeValueTheory.boxCox ρ x`: the limit function `h_ρ(x)`.
+* `ExtremeValueTheory.IsSecondOrderRegularlyVarying U γ ρ A`: second-order regular variation.
+
+## Main results
+
+* `IsSecondOrderRegularlyVarying.tendsto_log`: the logarithmic form
+  `(log U(xt) - log U(t) - γ log x) / A(t) → h_ρ(x)`.
+* `IsSecondOrderRegularlyVarying.of_tendsto_div`: the auxiliary function may be replaced by an
+  asymptotically equivalent one.
+* `IsSecondOrderRegularlyVarying.exists_measurable`: for measurable `U` there is a measurable
+  auxiliary function, `A'(t) = (log U(2t) - log U(t) - γ log 2) / h_ρ(2)`.
+* `IsSecondOrderRegularlyVarying.exists_bound`: the **uniform bound**
+  `|log U(xt) - log U(t) - γ log x| ≤ C |A(t)| x^δ` for `t ≥ t₀`, `x ≥ 1` (a one-sided form of
+  [dHF, Theorem 2.3.9]), for measurable `U` and `A`.
+
+## Proof of the uniform bound
+
+Working additively (`s = log t`, `u = log x`), we first show that
+`|G(s + ξ) - G(s)| ≤ M |a(s)|` for `ξ ∈ [0, 1]` and `s` large, by the measure-theoretic
+(Steinhaus-type) argument of the uniform convergence theorem
+(`exists_abs_sub_le_of_tendsto`, compare `ExtremeValueTheory.RegularVariation.UniformConvergence`
+and [BGT, §3.1]). Iterating over unit steps and using the Potter bounds for `|A|` gives the
+exponential bound `C |a(s)| e^{δ u}` (`abs_sub_le_sum_of_le`).
+
+## References
+
+* [dHF] L. de Haan, A. Ferreira, *Extreme Value Theory: An Introduction*, Springer, 2006.
+* [BGT] N. H. Bingham, C. M. Goldie, J. L. Teugels, *Regular Variation*, Cambridge University
+  Press, 1987.
 -/
+
+
 
 open Filter Topology Set Real MeasureTheory
 
@@ -307,7 +349,8 @@ theorem exists_bound (h : IsSecondOrderRegularlyVarying U γ ρ A) (hU : Measura
   set G : ℝ → ℝ := fun s => log (U (exp s)) - γ * s with hG
   set a : ℝ → ℝ := fun s => A (exp s) with ha
   have hGm : Measurable G := (hU.comp measurable_exp).log.sub (measurable_id.const_mul γ)
-  have hGa : ∀ s u, G (s + u) - G s = log (U (exp u * exp s)) - log (U (exp s)) - γ * log (exp u) := by
+  have hGa : ∀ s u,
+      G (s + u) - G s = log (U (exp u * exp s)) - log (U (exp s)) - γ * log (exp u) := by
     intro s u
     simp only [hG, log_exp, ← exp_add, add_comm u s]
     ring

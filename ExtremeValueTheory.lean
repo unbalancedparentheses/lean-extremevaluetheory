@@ -68,5 +68,6 @@ import ExtremeValueTheory.GEV.Family
 import ExtremeValueTheory.GEV.Moments
 import ExtremeValueTheory.GEV.GumbelVariance
 import ExtremeValueTheory.Statistics.BlockMaxima
+import ExtremeValueTheory.RegularVariation.SecondOrder
 import ExtremeValueTheory.Statistics.Renyi
 import ExtremeValueTheory.Statistics.HillNormality

@@ -146,7 +146,8 @@ theorem lintegral_pi_succ (H : (Fin (m + 1) → ℝ) → ℝ≥0∞) (hH : Measu
   have hmp := (measurePreserving_piFinSuccAbove (fun _ : Fin (m + 1) => expMeasure 1) 0).symm
   rw [← hmp.lintegral_comp_emb (MeasurableEquiv.measurableEmbedding _)]
   refine (lintegral_prod (μ := expMeasure 1) (ν := Measure.pi fun _ : Fin m => expMeasure 1)
-    (fun p : ℝ × (Fin m → ℝ) => H ((MeasurableEquiv.piFinSuccAbove (fun _ : Fin (m + 1) => ℝ) 0).symm p))
+    (fun p : ℝ × (Fin m → ℝ) =>
+      H ((MeasurableEquiv.piFinSuccAbove (fun _ : Fin (m + 1) => ℝ) 0).symm p))
     (hH.comp (MeasurableEquiv.measurable _)).aemeasurable).trans ?_
   congr 1 with z
   congr 1 with w
