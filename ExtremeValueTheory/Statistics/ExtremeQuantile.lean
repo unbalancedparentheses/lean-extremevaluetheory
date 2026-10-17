@@ -439,7 +439,7 @@ noncomputable def weissman {n : ℕ} (x : Fin n → ℝ) (k : ℕ) (p : ℝ) : �
 
 variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
 
-/-- **Ratio consistency of the Weissman estimator, reduction form** ([dHF, Theorem 4.3.1]).
+/-- **Ratio consistency of the Weissman estimator, reduction form** ([dHF, §4.3]).
 Let the iid `X_i` have survival function regularly varying with index `-α`, `α > 0`, let
 `k → ∞`, `k / n → 0`, and let `p_n > 0` with extrapolation factor `d_n = k / (n p_n)`. If
 
@@ -539,7 +539,7 @@ theorem tendstoInMeasure_weissman_div {X : ℕ → Ω → ℝ} (hX : ∀ i, Meas
   exact tendstoInMeasure_weissman_div_of_bias hX hindep hident hα hRV hk hkn hp0 hlog hbias
 
 /-- **Ratio consistency of the Weissman estimator for extreme quantiles, given a rate for the
-Hill estimator** ([dHF, Theorem 4.3.1]; Weissman 1978). If, besides regular variation of the
+Hill estimator** ([dHF, §4.3]; Weissman 1978). If, besides regular variation of the
 tail and `k → ∞`, `k / n → 0`,
 
 * `√k (γ̂ - 1/α)` is bounded in probability (as follows from the asymptotic normality of the

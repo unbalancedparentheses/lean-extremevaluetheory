@@ -173,7 +173,7 @@ end Inversion
 
 section Bias
 
-/-- **Second-order quantile extrapolation** ([dHF, proof of Theorem 4.3.1]): if `U` is of
+/-- **Second-order quantile extrapolation** ([dHF, §4.3]): if `U` is of
 second-order regular variation with `ρ < 0`, `t → ∞` and `d ≥ 1`, then
 `U(d t) / (U(t) d^γ) → 1`, uniformly in the extrapolation factor `d`, which may tend to
 infinity at any rate. -/
@@ -254,7 +254,7 @@ theorem isBoundedInProbability_hill {X : ℕ → Ω → ℝ} (hX : ∀ i, Measur
     (tendstoInDistribution_hill hX hindep hident hγ h2 hk hkn hlam HasLaw.id)
 
 /-- **The extrapolation bias of the Weissman estimator vanishes** under second-order regular
-variation with `ρ < 0` ([dHF, proof of Theorem 4.3.1]): if `k → ∞`, `k / n → 0` and the
+variation with `ρ < 0` ([dHF, §4.3]): if `k → ∞`, `k / n → 0` and the
 extrapolation factor `d_n = k / (n p_n)` is eventually `≥ 1`, then
 `x_{p_n} / (x_{k/n} d_n^γ) → 1`. -/
 theorem tendsto_tailQuantile_div_of_secondOrder {Y : Ω → ℝ} (hY : Measurable Y) {γ ρ : ℝ}
@@ -284,7 +284,7 @@ theorem tendsto_tailQuantile_div_of_secondOrder {Y : Ω → ℝ} (hY : Measurabl
   · field_simp
   · rw [inv_div]
 
-/-- **Consistency of the Weissman estimator for extreme quantiles** ([dHF, Theorem 4.3.1],
+/-- **Consistency of the Weissman estimator for extreme quantiles** ([dHF, §4.3],
 consistency part; Weissman 1978). Let `X_0, X_1, …` be iid with tail quantile function
 `U(t) = F̄^←(1/t)` of second-order regular variation with `γ > 0`, `ρ < 0` and auxiliary function
 `A`. If `k → ∞`, `k / n → 0`, `√k A(n/k) → λ` (finite), and the extrapolation factor
@@ -322,7 +322,7 @@ section TailProbability
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
 
 /-- **The extrapolation bias of the tail probability estimator vanishes** under second-order
-regular variation with `γ > 0`, `ρ < 0` ([dHF, proof of Theorem 4.4.7]): if `k → ∞`,
+regular variation with `γ > 0`, `ρ < 0` ([dHF, §4.4]): if `k → ∞`,
 `k / n → 0` and the levels `y_n` are eventually beyond the intermediate quantile,
 `x_{k/n} ≤ y_n`, then `(k / n) (y_n / x_{k/n})^{-1/γ} / F̄(y_n) → 1`. -/
 theorem tendsto_tailProb_div_of_secondOrder {Y : Ω → ℝ} (hY : Measurable Y) {γ ρ : ℝ}
@@ -427,7 +427,7 @@ theorem tendsto_tailProb_div_of_secondOrder {Y : Ω → ℝ} (hY : Measurable Y)
     ← rpow_neg (div_pos hyn hUs).le, show (s n)⁻¹ * (y n / U (s n)) ^ (-(1 / γ)) / (τ n)⁻¹ =
       τ n / s n * (y n / U (s n)) ^ (-(1 / γ)) by field_simp]
 
-/-- **Consistency of the tail probability estimator far in the tail** ([dHF, Theorem 4.4.7],
+/-- **Consistency of the tail probability estimator far in the tail** ([dHF, §4.4],
 consistency part). Let `X_0, X_1, …` be iid with tail quantile function of second-order regular
 variation with `γ > 0`, `ρ < 0` and auxiliary function `A`. If `k → ∞`, `k / n → 0`,
 `√k A(n/k) → λ`, and the levels `y_n` satisfy `x_{k/n} ≤ y_n` eventually and
