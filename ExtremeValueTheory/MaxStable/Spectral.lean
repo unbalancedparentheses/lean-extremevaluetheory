@@ -488,9 +488,9 @@ theorem _root_.ProbabilityTheory.IsPoissonRandomMeasure.measure_spectralVector_l
     ENNReal.ofReal_prod_of_nonneg fun i _ ↦ (Real.exp_pos _).le]
   simp [ENNReal.toReal_inv, ENNReal.toReal_ofReal (hy _).le]
 
+omit [DecidableEq ι] in
 /-- **Complete dependence**: for the spectral measure `δ_(1, …, 1)`,
 `P(Y ≤ y) = min_i exp (-1 / y i) = min_i P(Y i ≤ y i)`. -/
-omit [DecidableEq ι] in
 theorem _root_.ProbabilityTheory.IsPoissonRandomMeasure.measure_spectralVector_le_comonotone
     [Nonempty ι]
     (hN : IsPoissonRandomMeasure N ((radialMeasure 1).prod comonotoneSpectralMeasure) P)
