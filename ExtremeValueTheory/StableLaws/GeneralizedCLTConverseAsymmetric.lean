@@ -3,7 +3,7 @@ Copyright (c) 2026 Federico Carrone.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import ExtremeValueTheory.StableLaws.GeneralizedCLTConverse
+import ExtremeValueTheory.StableLaws.LevyMeasureLimit
 
 /-!
 # The converse of the generalized central limit theorem (general case)
@@ -12,7 +12,7 @@ WIP
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set Real
-open scoped NNReal ENNReal
+open scoped NNReal ENNReal BoundedContinuousFunction
 
 namespace ExtremeValueTheory
 
@@ -602,6 +602,165 @@ theorem exists_isRegularlyVarying_of_tendsto_sub (ha : ∀ n, 0 < a n)
       (isRegularlyVarying_minSqMoment_of_symmLaw hZs)
 
 end Converse
+
+section Bracket
+
+variable {F G : ℝ → ℝ} {a : ℕ → ℝ}
+
+/-- `n F(aₙ u) → A u ^ ρ` when `F ∈ RV(ρ)`, `n F(aₙ) → A` and `aₙ → ∞`. -/
+theorem tendsto_mul_comp_mul_of_tendsto {ρ A : ℝ} (hRV : IsRegularlyVarying F ρ)
+    (hpos : ∀ x, 0 < F x) (ha : Tendsto a atTop atTop)
+    (hA : Tendsto (fun n : ℕ => (n : ℝ) * F (a n)) atTop (𝓝 A)) {u : ℝ} (hu : 0 < u) :
+    Tendsto (fun n : ℕ => (n : ℝ) * F (a n * u)) atTop (𝓝 (A * u ^ ρ)) := by
+  refine (hA.mul ((hRV.2 u hu).comp ha)).congr fun n => ?_
+  have := (hpos (a n)).ne'
+  simp only [Function.comp, mul_comm u (a n)]
+  field_simp
+
+/-- **Bracketing for two functions.** If `F ≥ 0` and `G > 0` are nonincreasing on `(0, ∞)`,
+`aₙ > 0`, `aₙ → ∞`, `n F(aₙ) → A` and `n G(aₙ) → B > 0`, then `F(x) / G(x) → A / B`. -/
+theorem tendsto_div_of_tendsto_mul (hF : AntitoneOn F (Ioi 0)) (hF0 : ∀ x, 0 < x → 0 ≤ F x)
+    (hG : AntitoneOn G (Ioi 0)) (hGpos : ∀ x, 0 < x → 0 < G x) (ha : ∀ n, 0 < a n)
+    (hatop : Tendsto a atTop atTop) {A B : ℝ}
+    (hA : Tendsto (fun n : ℕ => (n : ℝ) * F (a n)) atTop (𝓝 A))
+    (hB : Tendsto (fun n : ℕ => (n : ℝ) * G (a n)) atTop (𝓝 B)) (hB0 : 0 < B) :
+    Tendsto (fun x => F x / G x) atTop (𝓝 (A / B)) := by
+  have hsucc : ∀ {H : ℝ → ℝ} {C : ℝ}, Tendsto (fun n : ℕ => (n : ℝ) * H (a n)) atTop (𝓝 C) →
+      Tendsto (fun n : ℕ => (n : ℝ) * H (a (n + 1))) atTop (𝓝 C) := by
+    intro H C h
+    have h1 := h.comp (tendsto_add_atTop_nat 1)
+    have h2 : Tendsto (fun n : ℕ => (n : ℝ) / ((n + 1 : ℕ) : ℝ)) atTop (𝓝 1) := by
+      have := tendsto_natCast_div_add_atTop (1 : ℝ)
+      refine this.congr fun n => ?_
+      push_cast; ring
+    refine (by simpa using h2.mul h1 : Tendsto (fun n : ℕ => (n : ℝ) / ((n + 1 : ℕ) : ℝ) *
+      (((n + 1 : ℕ) : ℝ) * H (a (n + 1)))) atTop (𝓝 C)).congr' ?_
+    filter_upwards with n
+    have : ((n + 1 : ℕ) : ℝ) ≠ 0 := by positivity
+    field_simp
+  have hup : Tendsto (fun n : ℕ => F (a n) / G (a (n + 1))) atTop (𝓝 (A / B)) := by
+    refine (hA.div (hsucc hB) hB0.ne').congr' ?_
+    filter_upwards [eventually_ge_atTop 1] with n hn
+    have : (n : ℝ) ≠ 0 := by positivity
+    simp only [Pi.div_apply]
+    field_simp
+  have hlo : Tendsto (fun n : ℕ => F (a (n + 1)) / G (a n)) atTop (𝓝 (A / B)) := by
+    refine ((hsucc hA).div hB hB0.ne').congr' ?_
+    filter_upwards [eventually_ge_atTop 1] with n hn
+    have : (n : ℝ) ≠ 0 := by positivity
+    simp only [Pi.div_apply]
+    field_simp
+  refine tendsto_order.2 ⟨fun b hb => ?_, fun b hb => ?_⟩
+  · obtain ⟨K, hK⟩ := eventually_atTop.1 ((tendsto_order.1 hlo).1 b hb)
+    filter_upwards [eventually_ge_atTop (a K)] with x hx
+    obtain ⟨N, hKN, h1, h2⟩ := exists_bracket hatop hx
+    have hx0 : 0 < x := (ha K).trans_le hx
+    refine (hK N hKN).trans_le ?_
+    exact div_le_div₀ (hF0 _ hx0) (hF hx0 (ha _) h2.le) (hGpos _ hx0) (hG (ha N) hx0 h1)
+  · obtain ⟨K, hK⟩ := eventually_atTop.1 ((tendsto_order.1 hup).2 b hb)
+    filter_upwards [eventually_ge_atTop (a K)] with x hx
+    obtain ⟨N, hKN, h1, h2⟩ := exists_bracket hatop hx
+    have hx0 : 0 < x := (ha K).trans_le hx
+    refine lt_of_le_of_lt ?_ (hK N hKN)
+    exact div_le_div₀ (hF0 _ (ha N)) (hF (ha N) hx0 h1) (hGpos _ (ha _)) (hG hx0 (ha _) h2.le)
+
+end Bracket
+
+section Ramp
+
+/-- The ramp `fε(z) = max 0 (min 1 ((z - 1) / ε))`, a continuous version of `1{z > 1}`. -/
+noncomputable def ramp (ε z : ℝ) : ℝ := max 0 (min 1 ((z - 1) / ε))
+
+variable {ε : ℝ}
+
+theorem ramp_nonneg (z : ℝ) : 0 ≤ ramp ε z := le_max_left _ _
+
+theorem ramp_le_one (z : ℝ) : ramp ε z ≤ 1 := max_le zero_le_one (min_le_left _ _)
+
+theorem ramp_eq_zero (hε : 0 < ε) {z : ℝ} (hz : z ≤ 1) : ramp ε z = 0 :=
+  max_eq_left (min_le_of_right_le (div_nonpos_of_nonpos_of_nonneg (by linarith) hε.le))
+
+theorem ramp_eq_one (hε : 0 < ε) {z : ℝ} (hz : 1 + ε ≤ z) : ramp ε z = 1 := by
+  have : 1 ≤ (z - 1) / ε := by rw [le_div_iff₀ hε]; linarith
+  rw [ramp, min_eq_left this, max_eq_right zero_le_one]
+
+theorem ramp_mono (hε : 0 < ε) : Monotone (ramp ε) := fun z z' h =>
+  max_le_max le_rfl (min_le_min le_rfl (div_le_div_of_nonneg_right (by linarith) hε.le))
+
+theorem ramp_anti {ε ε' : ℝ} (hε' : 0 < ε') (h : ε' ≤ ε) (z : ℝ) : ramp ε z ≤ ramp ε' z := by
+  rcases le_total z 1 with hz | hz
+  · rw [ramp_eq_zero (hε'.trans_le h) hz]; exact ramp_nonneg _
+  · exact max_le_max le_rfl (min_le_min le_rfl
+      (div_le_div_of_nonneg_left (by linarith) hε' h))
+
+theorem continuous_ramp : Continuous (ramp ε) := by unfold ramp; fun_prop
+
+theorem lipschitzWith_ramp (hε : 0 < ε) : LipschitzWith (Real.toNNReal ε⁻¹) (ramp ε) := by
+  have h : LipschitzWith (Real.toNNReal ε⁻¹) fun z : ℝ => (z - 1) / ε := by
+    refine LipschitzWith.of_dist_le_mul fun u v => ?_
+    rw [Real.dist_eq, Real.dist_eq, Real.coe_toNNReal _ (inv_nonneg.2 hε.le), ← sub_div,
+      show u - 1 - (v - 1) = u - v by ring, abs_div, abs_of_pos hε, div_eq_inv_mul]
+  exact (h.const_min 1).const_max 0
+
+/-- The ramp as a bounded continuous function. -/
+noncomputable def rampBCF (ε : ℝ) : ℝ →ᵇ ℝ :=
+  BoundedContinuousFunction.ofNormedAddCommGroup (ramp ε) continuous_ramp 1 fun z => by
+    rw [Real.norm_eq_abs, abs_of_nonneg (ramp_nonneg z)]; exact ramp_le_one z
+
+theorem rampBCF_apply (z : ℝ) : rampBCF ε z = ramp ε z := rfl
+
+/-- `Tε(x) = E[fε(X / x)]`, a smoothed right tail. -/
+noncomputable def rampTail (μ : Measure ℝ) (ε x : ℝ) : ℝ := ∫ y, ramp ε (x⁻¹ * y) ∂μ
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ]
+
+theorem integrable_ramp (x : ℝ) : Integrable (fun y => ramp ε (x⁻¹ * y)) μ :=
+  Integrable.of_bound (continuous_ramp.comp (by fun_prop)).aestronglyMeasurable 1
+    (ae_of_all _ fun y => by
+      rw [Real.norm_eq_abs, abs_of_nonneg (ramp_nonneg _)]; exact ramp_le_one _)
+
+omit [IsProbabilityMeasure μ] in
+theorem rampTail_nonneg (x : ℝ) : 0 ≤ rampTail μ ε x :=
+  integral_nonneg fun _ => ramp_nonneg _
+
+theorem rampTail_antitoneOn (hε : 0 < ε) : AntitoneOn (rampTail μ ε) (Ioi 0) := by
+  intro x hx x' hx' hxx'
+  refine integral_mono (integrable_ramp _) (integrable_ramp _) fun y => ?_
+  have hx0 : (0 : ℝ) < x := hx
+  rcases le_total y 0 with hy | hy
+  · rw [ramp_eq_zero hε (by nlinarith [inv_pos.2 hx0, inv_pos.2 (hx0.trans_le hxx')]),
+      ramp_eq_zero hε (by nlinarith [inv_pos.2 hx0])]
+  · exact ramp_mono hε (mul_le_mul_of_nonneg_right ((inv_le_inv₀ (hx0.trans_le hxx') hx0).2
+      hxx') hy)
+
+theorem rampTail_le (hε : 0 < ε) {x : ℝ} (hx : 0 < x) : rampTail μ ε x ≤ μ.real (Ioi x) := by
+  calc rampTail μ ε x ≤ ∫ y, (Ioi x).indicator (fun _ => (1 : ℝ)) y ∂μ := by
+        refine integral_mono (integrable_ramp _) ((integrable_const 1).indicator measurableSet_Ioi)
+          fun y => ?_
+        by_cases hy : x < y
+        · rw [Set.indicator_of_mem (show y ∈ Ioi x from hy)]; exact ramp_le_one _
+        · rw [Set.indicator_of_notMem (show y ∉ Ioi x from hy),
+            ramp_eq_zero hε (by rw [inv_mul_le_iff₀ hx]; linarith [not_lt.1 hy])]
+    _ = μ.real (Ioi x) := by rw [integral_indicator_const _ measurableSet_Ioi]; simp
+
+theorem le_rampTail (hε : 0 < ε) {x : ℝ} (hx : 0 < x) :
+    μ.real (Ioi ((1 + ε) * x)) ≤ rampTail μ ε x := by
+  calc μ.real (Ioi ((1 + ε) * x)) = ∫ y, (Ioi ((1 + ε) * x)).indicator (fun _ => (1 : ℝ)) y ∂μ := by
+        rw [integral_indicator_const _ measurableSet_Ioi]; simp
+    _ ≤ rampTail μ ε x := by
+        refine integral_mono ((integrable_const 1).indicator measurableSet_Ioi) (integrable_ramp _)
+          fun y => ?_
+        by_cases hy : (1 + ε) * x < y
+        · rw [Set.indicator_of_mem (show y ∈ Ioi ((1 + ε) * x) from hy),
+            ramp_eq_one hε (by rw [le_inv_mul_iff₀ hx]; linarith)]
+        · rw [Set.indicator_of_notMem (show y ∉ Ioi ((1 + ε) * x) from hy)]
+          exact ramp_nonneg _
+
+theorem rampTail_anti {ε ε' : ℝ} (hε' : 0 < ε') (h : ε' ≤ ε) (x : ℝ) :
+    rampTail μ ε x ≤ rampTail μ ε' x :=
+  integral_mono (integrable_ramp _) (integrable_ramp _) fun _ => ramp_anti hε' h _
+
+end Ramp
 
 end GCLTConverse
 
