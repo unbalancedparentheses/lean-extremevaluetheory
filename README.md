@@ -48,6 +48,13 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   regularly varying with index `-α`, and `k → ∞`, `k/n → 0`, the Hill estimator
   `(1/k) Σ_{i<k} (log X₍ᵢ₊₁₎ - log X₍ₖ₊₁₎)` converges to `1/α` in probability. With order
   statistics and their binomial distribution.
+- **Stable laws and the generalized central limit theorem, symmetric case**
+  (`tendsto_map_convPow_of_isRegularlyVarying`): for iid symmetric `X` with `P(|X| > x)`
+  regularly varying of index `-α`, `0 < α < 2`, and `n P(|X| > aₙ) → 1`, the law of
+  `(X₁+…+Xₙ)/aₙ` converges weakly to the symmetric α-stable law with characteristic function
+  `exp(-C_α|t|^α)`. Symmetric α-stable laws exist for every `0 < α ≤ 2` (`exists_isSymmStable`);
+  Gaussian and Cauchy laws are stable, with the Cauchy characteristic function computed. Includes
+  the Lévy continuity theorem with existence of the limit (`exists_tendsto_of_tendsto_charFun`).
 - **Uniform convergence theorem and Karamata's representation theorem** for measurable slowly
   and regularly varying functions (no monotonicity), with two-sided Potter bounds
   (`isSlowlyVarying_iff_exists_representation`, `potter_bounds_of_measurable`).
