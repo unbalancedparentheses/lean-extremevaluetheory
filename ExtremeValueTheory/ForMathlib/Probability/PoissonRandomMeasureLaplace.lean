@@ -10,6 +10,21 @@ import Mathlib.Topology.Instances.EReal.Lemmas
 /-!
 # The Laplace functional of a Poisson random measure
 
+If `N` is a Poisson random measure with σ-finite intensity `ν`, then for every measurable
+`f : E → [0, ∞]`,
+
+`E exp (-∫ f dN) = exp (-∫ (1 - exp (-f)) dν)`.
+
+To allow arbitrary `f` (for which `∫ f dN` may be infinite), the statement is in `[0, ∞]`, with
+`exp (-a)` written `EReal.exp (-(a : EReal))`, so that `exp (-∞) = 0`.
+
+## Main statements
+
+* `ProbabilityTheory.IsPoissonRandomMeasure.lintegral_exp_neg_lintegral_simpleFunc`: the
+  Laplace functional on simple functions whose nonzero level sets have finite intensity.
+* `ProbabilityTheory.IsPoissonRandomMeasure.lintegral_exp_neg_lintegral`: the Laplace
+  functional for all measurable `f ≥ 0`, by approximation from below by simple functions
+  supported on sets of finite intensity and monotone convergence.
 -/
 
 open MeasureTheory Filter Finset Topology
@@ -68,7 +83,8 @@ lemma ae_apply_ne_top (hN : IsPoissonRandomMeasure N ν P) {A : Set E} (hA : Mea
 form: for a simple function `s ≥ 0` with finite values whose nonzero level sets have finite
 intensity, `E exp (-∫ s dN) = exp (-∫ (1 - exp (-s)) dν)`. -/
 lemma lintegral_exp_neg_lintegral_simpleFunc (hN : IsPoissonRandomMeasure N ν P)
-    (s : SimpleFunc E ℝ≥0∞) (hs_top : ∀ x, s x ≠ ∞) (hs_fin : ∀ c ∈ s.range, c ≠ 0 → ν (s ⁻¹' {c}) ≠ ∞) :
+    (s : SimpleFunc E ℝ≥0∞) (hs_top : ∀ x, s x ≠ ∞)
+    (hs_fin : ∀ c ∈ s.range, c ≠ 0 → ν (s ⁻¹' {c}) ≠ ∞) :
     ∫⁻ ω, EReal.exp (-(∫⁻ x, s x ∂(N ω) : EReal)) ∂P =
       EReal.exp (-(∫⁻ x, (1 - EReal.exp (-(s x : EReal))) ∂ν : EReal)) := by
   classical

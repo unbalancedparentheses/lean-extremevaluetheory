@@ -10,6 +10,33 @@ import Mathlib.Probability.Independence.InfinitePi
 /-!
 # Convergence in law of point processes towards Poisson random measures
 
+We define convergence in law of random measures through their finite-dimensional count
+distributions (`ProbabilityTheory.TendstoInLawVaguely`), and prove that binomial point processes
+`∑_{k < n} δ_{Z k}`, with `Z` i.i.d. of law `μ n` and `n • μ n → ν` vaguely, converge in this sense
+to the Poisson random measure with intensity `ν` (Resnick, *Extreme values, regular variation and
+point processes*, Proposition 3.21).
+
+## Main definitions
+
+* `ProbabilityTheory.TendstoInLawVaguely N P l N' P' ν`: for all pairwise disjoint relatively
+  compact measurable sets `B 0, …, B (k-1)` with `ν (∂ B j) = 0`, the joint laws of the counts
+  `(N i (B j))_j` converge to that of `(N' (B j))_j` (pointwise convergence of the probability
+  mass functions on `ℕ ^ k`).
+
+## Main statements
+
+* `ProbabilityTheory.IsPoissonRandomMeasure.measureReal_forall_apply_eq`: the joint probability
+  mass function of the counts of a Poisson random measure on disjoint sets.
+* `ProbabilityTheory.tendstoInLawVaguely_sumDiracRange`: binomial point processes converge in law
+  to Poisson random measures.
+
+## Implementation notes
+
+The definition of `TendstoInLawVaguely` only involves disjoint sets. For a Poisson limit this is
+no loss of generality: the counts on finitely many relatively compact `ν`-continuity sets are
+sums of counts on the atoms of the generated Boolean algebra, which are again disjoint relatively
+compact `ν`-continuity sets. Since the counts take values in `ℕ ^ k`, pointwise convergence of the
+probability mass functions is equivalent to weak convergence of the laws.
 -/
 
 open MeasureTheory Filter Finset Topology

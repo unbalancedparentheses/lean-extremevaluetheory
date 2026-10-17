@@ -12,6 +12,32 @@ import Mathlib.MeasureTheory.Integral.Pi
 /-!
 # Poisson limits of counts of triangular arrays of independent points
 
+For each `n`, let `Z n 0, Z n 1, …` be independent random elements of a measurable space `E`
+and let `B 0, …, B (k-1)` be disjoint measurable sets. If the expected counts
+`∑_{i < n} P(Z n i ∈ B j)` converge to `r j` and the individual probabilities are uniformly
+small, then the counts `#{i < n | Z n i ∈ B j}` converge jointly in law to independent Poisson
+random variables with means `r j`. This is the multivariate (multinomial) Poisson limit theorem
+for triangular arrays, and contains the convergence of binomial point processes to Poisson random
+measures and of the point process of exceedances in extreme value theory.
+
+The proof goes through characteristic functions: the joint characteristic function of the counts
+is the product `∏_{i < n} (1 + ∑ j, P(Z n i ∈ B j) (exp (i t j) - 1))`, which converges to the
+characteristic function of the Poisson vector; for random vectors with values in `ℕ ^ k`, the
+point probabilities are recovered from the characteristic function by integration over the torus
+(`integral_torusMeasure_charFun_mul`), so convergence of characteristic functions implies
+convergence of the point probabilities by dominated convergence.
+
+## Main statements
+
+* `ProbabilityTheory.integral_torusMeasure_charFun_mul`: inversion formula
+  `(2π) ^ k P(Y = m) = ∫_{(0, 2π] ^ k} φ_Y(t) exp (-i ⟨t, m⟩) dt` for `Y` with values in `ℕ ^ k`.
+* `ProbabilityTheory.tendsto_measureReal_eq_of_tendsto_integral_cexp`: pointwise convergence of
+  the characteristic functions of random vectors with values in `ℕ ^ k` implies convergence of
+  their point probabilities.
+* `ProbabilityTheory.tendsto_prod_range_one_add`: `∏_{i < n} (1 + w n i) → exp s` when
+  `∑_{i < n} w n i → s`, `∑_{i < n} ‖w n i‖` is bounded and `max_{i < n} ‖w n i‖ → 0`.
+* `ProbabilityTheory.tendsto_measureReal_card_filter_range_eq`: the Poisson limit theorem for
+  counts of triangular arrays of independent points in disjoint sets.
 -/
 
 open MeasureTheory Filter Finset Topology Complex

@@ -9,6 +9,43 @@ import ExtremeValueTheory.ForMathlib.Probability.PointProcessConvergence
 /-!
 # The point process of exceedances
 
+Let `X_0, X_1, …` be iid with c.d.f. `F` in the maximum domain of attraction of `G` with
+normalizations `A_n`: `((A_n • F) x) ^ n → G x` for every `x`. The point process of normalized
+observations `N_n = ∑_{i < n} δ_{A_n (X_i)}` converges to a Poisson random measure whose intensity
+`μ_G` is the exponent measure `μ_G (x, ∞) = -log G(x)`, and the time-space point process
+`∑_{i < n} δ_{((i + 1)/n, A_n (X_i))}` converges to a Poisson random measure with intensity
+`Leb × μ_G` ([Resnick, Corollary 4.19], [EKM, Theorem 5.3.2]).
+
+Convergence is in the sense of finite-dimensional distributions of counts, on disjoint sets of
+the form `(a, b]` and `(a, ∞)` above a threshold `u` with `G u > 0` (and rectangles
+`(s, t] × C` with such `C` for the time-space process). The intensity is the restriction
+`exceedanceMeasure G hu` of `μ_G` to `(u, ∞)`, which is a finite measure.
+
+As consistency checks, the limit laws of the `k`-th largest observation and of the two largest
+observations (`ExtremeValueTheory.Statistics.UpperOrderStatistics`) are rederived from the
+Poisson limit of the counts of exceedances.
+
+## Main statements
+
+* `tendsto_nat_mul_measureReal_lt_affine`, `tendsto_nat_mul_measureReal_affine_mem_Ioc`:
+  exceedance rates `n P(A_n (X_i) > x) → -log G(x)`.
+* `tendsto_measureReal_card_affine_mem_eq`: Poisson limit of the joint counts of normalized
+  observations in disjoint sets.
+* `exceedanceMeasure`: the exponent measure of `G` above a threshold.
+* `tendsto_measureReal_sumDiracRange_affine_eq`: **convergence of the point process of
+  exceedances** to a Poisson random measure with intensity `μ_G`.
+* `tendsto_measureReal_sumDiracRange_timeSpace_eq`: **convergence of the time-space point process
+  of exceedances** to a Poisson random measure with intensity `Leb × μ_G`.
+* `tendsto_measureReal_affine_orderStat_le_of_pointProcess`,
+  `tendsto_measureReal_affine_orderStat_zero_one_of_pointProcess`: the limit laws of the `k`-th
+  largest and of the two largest, from the point process.
+
+## References
+
+* S. I. Resnick, *Extreme Values, Regular Variation, and Point Processes*, Springer (1987),
+  §4.2.
+* P. Embrechts, C. Klüppelberg and T. Mikosch, *Modelling Extremal Events*, Springer (1997),
+  §5.3 [EKM].
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Finset
