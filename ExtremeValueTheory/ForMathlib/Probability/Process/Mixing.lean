@@ -31,12 +31,14 @@ the past `σ(X t : t ≤ s)` and the future `σ(X t : t ≥ s + h)`.
 
 ## Main results
 
-* `ProbabilityTheory.strongMixingCoeff_eq_zero_of_indep`, `ProbabilityTheory.betaMixingCoeff_eq_zero_of_indep`:
+* `ProbabilityTheory.strongMixingCoeff_eq_zero_of_indep`,
+  `ProbabilityTheory.betaMixingCoeff_eq_zero_of_indep`:
   independent σ-algebras have vanishing coefficients.
 * `ProbabilityTheory.strongMixingCoeff_le_betaMixingCoeff`: `α ≤ β`.
 * `ProbabilityTheory.IsMDependent.alphaMixing_eq_zero`: for an `m`-dependent process, `α(h) = 0`
   for `h > m`; hence `m`-dependent processes are strongly mixing (`IsMDependent.isStrongMixing`).
-* `ProbabilityTheory.IsMDependent.betaMixing_eq_zero`, `ProbabilityTheory.IsMDependent.isBetaMixing`.
+* `ProbabilityTheory.IsMDependent.betaMixing_eq_zero`,
+  `ProbabilityTheory.IsMDependent.isBetaMixing`.
 * `ProbabilityTheory.IsMDependent.indepFun`: `X s` and `X t` are independent for `t > s + m`.
 * `ProbabilityTheory.IsMDependent.comp`: `m`-dependence is preserved by measurable maps applied
   coordinatewise.

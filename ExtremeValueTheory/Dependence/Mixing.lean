@@ -119,8 +119,9 @@ theorem conditionA_of_forall_abs_le [IsProbabilityMeasure P] (hs : IsStationary 
     intro t ht; rw [mem_range] at ht; rw [mem_union, mem_range, mem_Ico]; omega
   have hdiff := hs.abs_measureReal_maxLE_sub_le hX (range_subset_range.2 hkr) hcov (u n)
   rw [Nat.card_Ico] at hdiff
-  have hpow : |P.real (maxLE X (range (n / k)) (u n)) ^ k - P.real (maxLE X (range (r n)) (u n)) ^ k|
-      ≤ k * (((n / k - r n : ℕ) : ℝ) * p n) :=
+  have hpow :
+      |P.real (maxLE X (range (n / k)) (u n)) ^ k - P.real (maxLE X (range (r n)) (u n)) ^ k| ≤
+        k * (((n / k - r n : ℕ) : ℝ) * p n) :=
     (abs_pow_sub_pow_le_of_mem_Icc (measureReal_maxLE_mem_Icc _ _)
       (measureReal_maxLE_mem_Icc _ _) k).trans (mul_le_mul_of_nonneg_left hdiff k.cast_nonneg)
   -- `k (⌊n / k⌋ - rₙ) ≤ rₙ`

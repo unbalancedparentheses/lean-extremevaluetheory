@@ -22,21 +22,15 @@ applies, and the extremal index equals the candidate extremal index: `θ = ϑ`.
   `rₙ P(|X_0| > uₙ) → 0`.
 * `ExtremeValueTheory.antiClusteringAt_of_tendsto_mul`: the same with `n P(|X_0| > uₙ) → τ` and
   `rₙ / n → 0` in place of the last two hypotheses.
-* `ExtremeValueTheory.antiClustering_of_indepFun`: the condition `AC(rₙ)` of [BS09, (4.1)] under
-  `n P(|X_0| > aₙ x) → x^(-α)`-type hypotheses, namely `n P(|X_0| > aₙ x)` convergent for every
-  `x > 0` and `rₙ / n → 0`.
+* `ExtremeValueTheory.antiClustering_of_indepFun`: the condition `AC(rₙ)` of [BS09, (4.1)] when
+  `n P(|X_0| > aₙ x)` converges for every `x > 0` and `rₙ / n → 0`.
 * `ExtremeValueTheory.HasSpectralTailProcess.hasExtremalIndex_of_isMDependent`: an `m`-dependent
   stationary series with a spectral tail process has extremal index `ϑ` (`θ = ϑ`), for `|X|`.
-* `ExtremeValueTheory.hasShiftInvariantWindows_slidingWindow`,
-  `ExtremeValueTheory.isMDependent_slidingWindow`: sliding window functionals
-  `X_t = F(Z_{t + d_1}, …, Z_{t + d_K})` of iid `ℤ`-indexed noise are stationary and
-  `m`-dependent when the offsets lie in an interval of length `m`.
-* `ExtremeValueTheory.hasExtremalIndex_movingMax_of_antiClustering`: the moving maximum
-  `max(Z_t, Z_{t+1})` of iid Pareto noise has extremal index `1/2`, now derived through the main
-  theorem (an independent second proof of `hasExtremalIndex_movingMax`).
-* `ExtremeValueTheory.MovingAverage.hasExtremalIndex`: the finite moving average
-  `∑_{i ≤ m} ψ_i Z_{t-i}` (nonnegative coefficients and iid nonnegative regularly varying noise)
-  has extremal index `max_j ψ_j^α / ∑_j ψ_j^α` ([EKM, §8.1], [DR85]).
+  Hypotheses: stationarity of the `ℤ`-indexed series, the spectral tail process, and
+  `m`-dependence of the `ℕ`-restriction; no rate or mixing assumption beyond that.
+
+Applications (sliding windows of iid noise, the moving maximum with `θ = ϑ = 1/2`, finite moving
+averages with `θ = max_j ψ_j^α / ∑_j ψ_j^α`) are in `Dependence/MDependentExamples.lean`.
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Finset
