@@ -169,4 +169,150 @@ theorem isRegularlyVarying_of_isRegularlyVarying_survivalQuantile (hF : Antitone
 
 end Inversion
 
+/-! ### Quantile extrapolation under second-order regular variation -/
+
+section Bias
+
+/-- **Second-order quantile extrapolation** ([dHF, proof of Theorem 4.3.1]): if `U` is of
+second-order regular variation with `ρ < 0`, `t → ∞` and `d ≥ 1`, then
+`U(d t) / (U(t) d^γ) → 1`, uniformly in the extrapolation factor `d`, which may tend to
+infinity at any rate. -/
+theorem IsSecondOrderRegularlyVarying.tendsto_div_mul_rpow {U A : ℝ → ℝ} {γ ρ : ℝ}
+    (h : IsSecondOrderRegularlyVarying U γ ρ A) (hU : Measurable U) (hρ : ρ < 0)
+    {ι : Type*} {l : Filter ι} {t d : ι → ℝ} (ht : Tendsto t l atTop)
+    (hd : ∀ᶠ i in l, 1 ≤ d i) :
+    Tendsto (fun i => U (d i * t i) / (U (t i) * d i ^ γ)) l (𝓝 1) := by
+  obtain ⟨A', hA'm, h', -⟩ := h.exists_measurable hU
+  obtain ⟨C, t₀, -, hC⟩ := h'.exists_bound_of_neg hU hA'm hρ
+  set r : ι → ℝ := fun i => log (U (d i * t i)) - log (U (t i)) - γ * log (d i) with hr
+  have hr0 : Tendsto r l (𝓝 0) := by
+    have hb : Tendsto (fun i => C * |A' (t i)|) l (𝓝 0) := by
+      have := ((h'.tendsto_zero.comp ht).abs).const_mul C
+      simpa using this
+    refine squeeze_zero_norm' ?_ hb
+    filter_upwards [ht.eventually_ge_atTop t₀, hd] with i h1 h2
+    exact hC (t i) h1 (d i) h2
+  have hdt : Tendsto (fun i => d i * t i) l atTop := by
+    refine tendsto_atTop_mono' l ?_ ht
+    filter_upwards [hd, ht.eventually_ge_atTop 0] with i h1 h2
+    exact le_mul_of_one_le_left h2 h1
+  have := (continuous_exp.tendsto 0).comp hr0
+  rw [exp_zero] at this
+  refine this.congr' ?_
+  filter_upwards [ht.eventually h.eventually_pos, hdt.eventually h.eventually_pos, hd]
+    with i h1 h2 h3
+  have h3' : 0 < d i := one_pos.trans_le h3
+  simp only [Function.comp_apply, hr]
+  rw [exp_sub, exp_sub, exp_log h1, exp_log h2, rpow_def_of_pos h3', mul_comm (log (d i)),
+    div_div]
+
+end Bias
+
+section Quantile
+
+variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} {Y : Ω → ℝ}
+
+/-- The two tail quantile functions agree: `U(t) = x_{1/t}` for `t > 1`. -/
+theorem survivalQuantile_survival_eq_tailQuantile {t : ℝ} (ht : 1 < t) :
+    survivalQuantile (survival P Y) t = tailQuantile P Y t⁻¹ := by
+  simp [survivalQuantile, ht, tailQuantile]
+
+/-- The two tail quantile functions agree: `x_p = U(1/p)` for `0 < p < 1`. -/
+theorem tailQuantile_eq_survivalQuantile {p : ℝ} (hp0 : 0 < p) (hp1 : p < 1) :
+    tailQuantile P Y p = survivalQuantile (survival P Y) p⁻¹ := by
+  rw [survivalQuantile_survival_eq_tailQuantile ((one_lt_inv₀ hp0).2 hp1), inv_inv]
+
+end Quantile
+
+/-! ### Consistency of the Weissman estimator -/
+
+section Weissman
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+
+/-- Under second-order regular variation of the tail quantile function with `γ > 0`, the
+survival function is regularly varying with index `-1/γ`. -/
+theorem IsSecondOrderRegularlyVarying.isRegularlyVarying_survival {Y : Ω → ℝ}
+    (hY : Measurable Y) {γ ρ : ℝ} {A : ℝ → ℝ} (hγ : 0 < γ)
+    (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P Y)) γ ρ A) :
+    IsRegularlyVarying (survival P Y) (-(1 / γ)) :=
+  isRegularlyVarying_of_isRegularlyVarying_survivalQuantile (survival_anti (P := P) Y)
+    (continuousWithinAt_survival (P := P) hY) (tendsto_survival_atTop (P := P) hY)
+    (tendsto_survival_atBot (P := P) hY) hγ h2.isRegularlyVarying
+
+/-- **The Hill estimator is `√k`-tight** under the conditions of its central limit theorem:
+`√k (H_{k,n} - γ) = O_P(1)`. -/
+theorem isBoundedInProbability_hill {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
+    (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ}
+    {A : ℝ → ℝ} (hγ : 0 < γ)
+    (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) :
+    IsBoundedInProbability P
+      (fun n ω => √(k n : ℝ) * (hill (fun i : Fin n => X i ω) (k n) - γ)) :=
+  isBoundedInProbability_of_tendstoInDistribution
+    (tendstoInDistribution_hill hX hindep hident hγ h2 hk hkn hlam HasLaw.id)
+
+/-- **The extrapolation bias of the Weissman estimator vanishes** under second-order regular
+variation with `ρ < 0` ([dHF, proof of Theorem 4.3.1]): if `k → ∞`, `k / n → 0` and the
+extrapolation factor `d_n = k / (n p_n)` is eventually `≥ 1`, then
+`x_{p_n} / (x_{k/n} d_n^γ) → 1`. -/
+theorem tendsto_tailQuantile_div_of_secondOrder {Y : Ω → ℝ} (hY : Measurable Y) {γ ρ : ℝ}
+    {A : ℝ → ℝ} (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P Y)) γ ρ A)
+    (hρ : ρ < 0) {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
+    (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0)) {p : ℕ → ℝ}
+    (hp0 : ∀ᶠ n in atTop, 0 < p n) (hd : ∀ᶠ n in atTop, 1 ≤ (k n : ℝ) / (n * p n)) :
+    Tendsto (fun n => tailQuantile P Y (p n) /
+      (tailQuantile P Y ((k n : ℝ) / n) * ((k n : ℝ) / (n * p n)) ^ γ)) atTop (𝓝 1) := by
+  have hUm := measurable_tailQuantile (survival_anti (P := P) Y)
+    (continuousWithinAt_survival (P := P) hY) (tendsto_survival_atTop (P := P) hY)
+    (tendsto_survival_atBot (P := P) hY)
+  have h := h2.tendsto_div_mul_rpow hUm hρ (tendsto_div_atTop_of_tendsto hk hkn) hd
+  refine h.congr' ?_
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  filter_upwards [hkR.eventually_gt_atTop 0,
+    (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0,
+    hkn.eventually (gt_mem_nhds one_pos), hp0, hd] with n hk0 hn0 hkn1 hpn hdn
+  have hr0 : 0 < (k n : ℝ) / n := div_pos hk0 hn0
+  have hpk : p n ≤ (k n : ℝ) / n := by
+    rw [le_div_iff₀ (mul_pos hn0 hpn)] at hdn
+    rw [le_div_iff₀ hn0]
+    linarith
+  have hp1 : p n < 1 := hpk.trans_lt hkn1
+  rw [tailQuantile_eq_survivalQuantile hpn hp1, tailQuantile_eq_survivalQuantile hr0 hkn1]
+  congr 3
+  · field_simp
+  · rw [inv_div]
+
+/-- **Consistency of the Weissman estimator for extreme quantiles** ([dHF, Theorem 4.3.1],
+consistency part; Weissman 1978). Let `X_0, X_1, …` be iid with tail quantile function
+`U(t) = F̄^←(1/t)` of second-order regular variation with `γ > 0`, `ρ < 0` and auxiliary function
+`A`. If `k → ∞`, `k / n → 0`, `√k A(n/k) → λ` (finite), and the extrapolation factor
+`d_n = k / (n p_n)` satisfies `d_n ≥ 1` eventually and `log d_n / √k → 0`, then
+
+  `x̂_{p_n} / x_{p_n} → 1` in probability,
+
+where `x̂_p = X_{(k+1)} d_n^{γ̂}` is the Weissman estimator. This covers quantiles far beyond the
+sample range, e.g. `n p_n → c ∈ [0, ∞)` with `log n = o(√k)`. -/
+theorem tendstoInMeasure_weissman_div_of_secondOrder {X : ℕ → Ω → ℝ}
+    (hX : ∀ i, Measurable (X i)) (hindep : iIndepFun X P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ} {A : ℝ → ℝ} (hγ : 0 < γ)
+    (hρ : ρ < 0)
+    (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {p : ℕ → ℝ}
+    (hp0 : ∀ᶠ n in atTop, 0 < p n) (hd1 : ∀ᶠ n in atTop, 1 ≤ (k n : ℝ) / (n * p n))
+    (hd : Tendsto (fun n => Real.log ((k n : ℝ) / (n * p n)) / √(k n : ℝ)) atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n ω => weissman (fun i : Fin n => X i ω) (k n) (p n) /
+      tailQuantile P (X 0) (p n)) atTop (fun _ => 1) := by
+  have hα : 0 < 1 / γ := one_div_pos.2 hγ
+  have hRV := h2.isRegularlyVarying_survival (hX 0) hγ
+  have hrate := isBoundedInProbability_hill hX hindep hident hγ h2 hk hkn hlam
+  have hbias := tendsto_tailQuantile_div_of_secondOrder (hX 0) h2 hρ hk hkn hp0 hd1
+  rw [← one_div_one_div γ] at hrate hbias
+  exact tendstoInMeasure_weissman_div_of_isBoundedInProbability hX hindep hident hα hRV hk hkn
+    hp0 hrate hd hbias
+
+end Weissman
+
 end ExtremeValueTheory

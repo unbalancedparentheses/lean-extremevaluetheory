@@ -84,3 +84,4 @@ import ExtremeValueTheory.Dependence.StationaryWindows
 import ExtremeValueTheory.Dependence.Anticlustering
 import ExtremeValueTheory.Dependence.MovingMaxTailProcess
 import ExtremeValueTheory.ForMathlib.MeasureTheory.Function.ConvergenceInDistribution
+import ExtremeValueTheory.Statistics.ExtremeQuantileSecondOrder
