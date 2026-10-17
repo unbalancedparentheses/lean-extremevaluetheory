@@ -761,6 +761,171 @@ theorem echoProcess_theta_lt_vartheta (hLinf : Tendsto L atTop atTop)
     by rw [candidateExtremalIndex_unitSpectral hα]; rfl,
     hasExtremalIndex_echoProcess hα hZ hind hlaw hpos hLm hL1 hLinf hLsum⟩
 
+/-! #### The cluster ratio and the escaping mass -/
+
+include hα hZ hind hlaw in
+omit [IsProbabilityMeasure P] in
+/-- `P(max_{0 ≤ k < r} Z_k > u) ≥ r u^(-α) - (r u^(-α))²` (Bonferroni). -/
+theorem le_measureReal_exists_lt_innovation [IsProbabilityMeasure P] (r : ℕ) {u : ℝ}
+    (hu : 1 ≤ u) :
+    r * u ^ (-α) - (r * u ^ (-α)) ^ 2 ≤ P.real {ω | ∃ k < r, u < Z k ω} := by
+  set A : ℕ → Set Ω := fun j => {ω | j < r ∧ u < Z j ω}
+  have hA : ∀ j, MeasurableSet (A j) := fun j =>
+    (MeasurableSet.const _).inter (measurableSet_lt measurable_const (hZ _))
+  have hPA : ∀ j, P.real (A j) = if j < r then u ^ (-α) else 0 := by
+    intro j
+    split_ifs with hj
+    · rw [← measureReal_lt_of_map_eq hZ hlaw hα j hu]
+      congr 1
+      ext ω
+      simp [A, hj]
+    · have : A j = ∅ := by ext ω; simp [A, hj]
+      rw [this, measureReal_empty]
+  have hsum : HasSum (fun j => P.real (A j)) (r * u ^ (-α)) := by
+    have : HasSum (fun j => P.real (A j)) (∑ j ∈ Finset.range r, P.real (A j)) :=
+      hasSum_sum_of_ne_finset_zero fun j hj => by
+        rw [hPA, ite_eq_right_iff]
+        exact fun h => absurd (Finset.mem_range.2 h) hj
+    convert this using 1
+    rw [Finset.sum_congr rfl fun j hj => by rw [hPA, ite_eq_left_iff.2 fun h => absurd (Finset.mem_range.1 hj) h]]
+    simp
+  have hpair : ∀ i j, i ≠ j → P.real (A i ∩ A j) = P.real (A i) * P.real (A j) := by
+    intro i j hij
+    by_cases hi : i < r
+    · by_cases hj : j < r
+      · have e : A i ∩ A j = Z i ⁻¹' Ioi u ∩ Z j ⁻¹' Ioi u := by
+          ext ω; simp [A, hi, hj]
+        have ei : A i = Z i ⁻¹' Ioi u := by ext ω; simp [A, hi]
+        have ej : A j = Z j ⁻¹' Ioi u := by ext ω; simp [A, hj]
+        rw [e, ei, ej, measureReal_def, (hind.indepFun (by exact_mod_cast hij)
+          ).measure_inter_preimage_eq_mul _ _ measurableSet_Ioi measurableSet_Ioi,
+          ENNReal.toReal_mul]
+        rfl
+      · have : A j = ∅ := by ext ω; simp [A, hj]
+        simp [this]
+    · have : A i = ∅ := by ext ω; simp [A, hi]
+      simp [this]
+  have key := le_measureReal_iUnion_of_pairwise hA hpair hsum.summable
+  rw [hsum.tsum_eq] at key
+  refine key.trans (le_of_eq (congrArg P.real ?_))
+  ext ω
+  simp only [A, mem_iUnion, mem_ofPred_eq]
+
+include hα hZ hind hlaw hpos hLm hL1 in
+/-- **The cluster ratio of the echo process tends to `1/2`** when the block length `rₙ` is
+negligible against `1 / P(Z > uₙ)` but large against the typical echo lag of an exceedance:
+`rₙ uₙ^(-α) → 0` and `E[L(Z); Z > uₙ] = o(rₙ uₙ^(-α))`. Each cluster contributes its innovation
+and its echo, both inside the block, but the tail process only sees one of them. -/
+theorem tendsto_clusterRatio_echoProcess {u : ℕ → ℝ} (hu : Tendsto u atTop atTop) {r : ℕ → ℕ}
+    (hr : Tendsto r atTop atTop)
+    (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0))
+    (hLsum : Summable fun j : ℕ => (paretoMeasure 1 α).real {z | j + 1 ≤ L z})
+    (hR : Tendsto (fun n => (∑' j : ℕ, (paretoMeasure 1 α).real {z | u n < z ∧ j + 1 ≤ L z}) /
+      (r n * u n ^ (-α))) atTop (𝓝 0)) :
+    Tendsto (clusterRatio P (echoProcess L Z) u r) atTop (𝓝 (1 / 2)) := by
+  set b : ℕ → ℝ := fun n => u n ^ (-α)
+  set R : ℕ → ℝ := fun n => ∑' j : ℕ, (paretoMeasure 1 α).real {z | u n < z ∧ j + 1 ≤ L z}
+  set ρ : ℕ → ℝ := fun n => P.real {ω | u n < echoProcess L Z 0 ω} / b n
+  have hρ : Tendsto ρ atTop (𝓝 2) :=
+    (tendsto_measureReal_lt_echoProcess_div hα hZ hind hlaw hLm hL1 0).comp hu
+  have hlow : Tendsto (fun n => (1 - r n * b n) / ρ n) atTop (𝓝 (1 / 2)) := by
+    have := (hrb.const_sub 1).div hρ two_ne_zero
+    rw [sub_zero] at this
+    exact this
+  have hup : Tendsto (fun n => (1 + R n / (r n * b n)) / ρ n) atTop (𝓝 (1 / 2)) := by
+    have := (hR.const_add 1).div hρ two_ne_zero
+    rw [add_zero] at this
+    exact this
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' hlow hup ?_ ?_
+  all_goals
+    filter_upwards [hu.eventually_ge_atTop 1, hr.eventually_gt_atTop 0] with n hn hrn
+    have hb : 0 < b n := Real.rpow_pos_of_pos (by linarith) _
+    have hR0 : (0 : ℝ) < r n := by exact_mod_cast hrn
+    have hP0 : 0 < P.real {ω | u n < echoProcess L Z 0 ω} := by
+      refine hb.trans_le ?_
+      show u n ^ (-α) ≤ _
+      rw [← measureReal_lt_of_map_eq hZ hlaw hα 0 hn]
+      exact measureReal_mono fun ω hω => lt_of_lt_of_le hω (le_echoProcess 0 ω)
+    have hρe : r n * P.real {ω | u n < |echoProcess L Z 0 ω|} = r n * b n * ρ n := by
+      simp only [ρ, abs_of_nonneg (echoProcess_nonneg hpos _ _)]
+      field_simp
+    have hρpos : 0 < ρ n := div_pos hP0 hb
+    rw [clusterRatio, hρe]
+  · -- lower bound
+    rw [div_le_div_iff₀ hρpos (by positivity)]
+    have hB := le_measureReal_exists_lt_innovation hα hZ hind hlaw (P := P) (r n) hn
+    have hsub : {ω | ∃ k < r n, u n < Z k ω} ⊆
+        {ω | ∃ t ∈ Finset.Ico (0 : ℤ) (r n), u n < |echoProcess L Z t ω|} := by
+      rintro ω ⟨k, hk, hlt⟩
+      refine ⟨k, Finset.mem_Ico.2 ⟨by positivity, by exact_mod_cast hk⟩, ?_⟩
+      exact hlt.trans_le ((le_echoProcess (L := L) k ω).trans (le_abs_self _))
+    have h2 := measureReal_mono (μ := P) hsub
+    have : (1 - r n * b n) * (r n * b n * ρ n) = (r n * b n - (r n * b n) ^ 2) * ρ n := by ring
+    rw [this]
+    exact mul_le_mul_of_nonneg_right (by linarith) hρpos.le
+  · -- upper bound
+    rw [div_le_div_iff₀ (by positivity) hρpos]
+    have hsub : {ω | ∃ t ∈ Finset.Ico (0 : ℤ) (r n), u n < |echoProcess L Z t ω|} ⊆
+        (⋃ k ∈ Finset.range (r n), {ω | u n < Z k ω}) ∪ echoIntoFuture L Z (u n) := by
+      intro ω hω
+      by_contra hcon
+      simp only [mem_union, mem_iUnion, Finset.mem_range, not_or, not_exists] at hcon
+      obtain ⟨t, ht, hlt⟩ := hω
+      rw [Finset.mem_Ico] at ht
+      obtain ⟨k, rfl⟩ : ∃ k : ℕ, t = k := ⟨t.toNat, by omega⟩
+      have hle := partialMax_echoProcess_le (L := L) hrn (by linarith : (0 : ℝ) ≤ u n)
+        (fun k hk => not_lt.1 (hcon.1 k hk)) hcon.2
+      rw [partialMax_le_iff hrn] at hle
+      have := hle k (by exact_mod_cast ht.2)
+      rw [abs_of_nonneg (echoProcess_nonneg hpos _ _)] at hlt
+      linarith
+    have h1 := measureReal_mono (μ := P) hsub
+    have h2 := measureReal_union_le (μ := P) (⋃ k ∈ Finset.range (r n), {ω | u n < Z k ω})
+      (echoIntoFuture L Z (u n))
+    have h3 : P.real (⋃ k ∈ Finset.range (r n), {ω | u n < Z k ω}) ≤ r n * b n := by
+      refine (measureReal_biUnion_finset_le _ _).trans (le_of_eq ?_)
+      have hk : ∀ k ∈ Finset.range (r n), P.real {ω | u n < Z (k : ℤ) ω} = b n := fun k _ =>
+        measureReal_lt_of_map_eq hZ hlaw hα _ hn
+      rw [Finset.sum_congr rfl hk]
+      simp
+    have h4 := measureReal_echoIntoFuture_le hα hZ hlaw hLm hLsum (P := P) (u n)
+    have e : (1 + R n / (r n * b n)) * (r n * b n * ρ n) = (r n * b n + R n) * ρ n := by
+      field_simp
+    rw [e]
+    exact mul_le_mul_of_nonneg_right (by linarith) hρpos.le
+
+include hα hZ hind hlaw hpos hLm hL1 in
+/-- **The escaping mass of the echo process is `1/2 = ϑ - θ`**, as predicted by the gap formula
+`HasSpectralTailProcess.tendsto_clusterRatio_iff`: one of the two exceedances of each cluster
+sits at lag `L(Z) → ∞`, invisible to the tail process. -/
+theorem hasEscapeMass_echoProcess (hLinf : Tendsto L atTop atTop) {u : ℕ → ℝ}
+    (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0))
+    (hLsum : Summable fun j : ℕ => (paretoMeasure 1 α).real {z | j + 1 ≤ L z})
+    (hR : Tendsto (fun n => (∑' j : ℕ, (paretoMeasure 1 α).real {z | u n < z ∧ j + 1 ≤ L z}) /
+      (r n * u n ^ (-α))) atTop (𝓝 0)) :
+    HasEscapeMass P (echoProcess L Z) u r (1 / 2) := by
+  have h := (hasSpectralTailProcess_echoProcess hα hZ hind hlaw hpos hLm hL1 hLinf
+    ).tendsto_clusterRatio_iff hα (measurable_echoProcess hZ hLm) measurable_unitSpectral
+    (hasShiftInvariantWindows_echoProcess hZ hind hlaw hLm) hu hr (1 / 2)
+  rw [candidateExtremalIndex_unitSpectral hα] at h
+  have := h.1 (tendsto_clusterRatio_echoProcess hα hZ hind hlaw hpos hLm hL1 hu hr hrb hLsum hR)
+  convert this using 1
+  norm_num
+
+include hα hZ hind hlaw hpos hLm hL1 in
+/-- **The echo process violates (forward) anticlustering** along every such pair `uₙ`, `rₙ`. -/
+theorem not_forwardAntiClusteringAt_echoProcess (hLinf : Tendsto L atTop atTop) {u : ℕ → ℝ}
+    (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0))
+    (hLsum : Summable fun j : ℕ => (paretoMeasure 1 α).real {z | j + 1 ≤ L z})
+    (hR : Tendsto (fun n => (∑' j : ℕ, (paretoMeasure 1 α).real {z | u n < z ∧ j + 1 ≤ L z}) /
+      (r n * u n ^ (-α))) atTop (𝓝 0)) :
+    ¬ ForwardAntiClusteringAt P (echoProcess L Z) u r := fun hAC => by
+  have h1 := hasEscapeMass_echoProcess hα hZ hind hlaw hpos hLm hL1 hLinf hu hr hrb hLsum hR
+  have := h1.unique (hAC.hasEscapeMass_zero hr)
+  norm_num at this
+
 end Echo
 
 /-! ### A concrete echo lag: `L(z) = ⌊log z⌋ + 1` -/
