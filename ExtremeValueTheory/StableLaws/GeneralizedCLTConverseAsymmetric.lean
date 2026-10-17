@@ -8,7 +8,51 @@ import ExtremeValueTheory.StableLaws.LevyMeasureLimit
 /-!
 # The converse of the generalized central limit theorem (general case)
 
-WIP
+Let `X₁, X₂, …` be i.i.d. with law `μ` (no symmetry assumed), `aₙ > 0`, `bₙ ∈ ℝ`, and suppose
+the laws of `(Sₙ - bₙ) / aₙ` converge weakly to a law `ν` which is not a Dirac mass. We prove
+the necessity half of Feller's criterion ([Feller, Vol. II, §XVII.5, Theorem 2],
+[GK, §35, Theorem 2]): `U(x) = E[X² 1{|X| ≤ x}]` is regularly varying with index `2 - α` for
+some `0 < α ≤ 2`, and for `α < 2` the tail `P(|X| > x)` is regularly varying with index `-α`,
+`n P(|X| > aₙ)` converges to a positive limit, and the tails are balanced,
+`P(X > x) / P(|X| > x) → p ∈ [0, 1]`. We also construct the canonical normalizing sequence
+`aₙ = inf {x : P(|X| > x) ≤ 1 / n}` and restate the symmetric Feller criterion as an iff.
+
+## Main definitions
+
+* `GCLTConverse.normSeq μ n = inf {x : P(|X| > x) ≤ 1 / n}`.
+* `GCLTConverse.symmLaw μ`, the law of `X - X'` for independent copies.
+* `GCLTConverse.ramp ε`, `GCLTConverse.rampTail μ ε x = E[fε(X / x)]`: a smoothed right tail.
+
+## Main results
+
+* `GCLTConverse.tendsto_mul_absTail_normSeq`: if `P(|X| > ·) ∈ RV(-α)` then
+  `n P(|X| > aₙ) → 1` for `aₙ = normSeq μ n`.
+* `GCLTConverse.tendsto_map_convPow_normSeq`, `GCLTConverse.domainOfAttraction_isSymmStable_iff`:
+  for symmetric `μ` and `0 < α < 2`, `Sₙ / aₙ` converges to a symmetric `α`-stable law for some
+  `aₙ > 0` iff `P(|X| > ·) ∈ RV(-α)`, and then `aₙ = normSeq μ n` works.
+* `GCLTConverse.exists_isRegularlyVarying_of_tendsto_sub`: the regular-variation part of the
+  converse without symmetry.
+* `GCLTConverse.exists_isRegularlyVarying_tailBalance_of_tendsto`: **the converse GCLT with tail
+  balance**.
+* `GCLTConverse.exists_tendsto_mul_tails_of_tendsto`: the Lévy measure of the limit,
+  `n P(X > aₙ u) → c₊ u^(-α)`, `n P(X < -aₙ u) → c₋ u^(-α)`.
+
+## Proof outline
+
+1. *Symmetrization* (`tendsto_map_convPow_symmLaw`, `symmLaw_ne_dirac`): `(Sₙ - S'ₙ) / aₙ`
+   converges to `ν ∗ ν̃ ≠ δ₀` (characteristic functions `|φ|²`), so the symmetric converse
+   (`exists_tendsto_mul_sqRatio_of_tendsto`) gives `α` and the scaling of the symmetrized law.
+2. *Weak symmetrization inequalities* (`two_mul_absTail_mul_le_absTail_symmLaw`,
+   `absTail_symmLaw_le`): `2 P(|X| > s + u) P(|X| ≤ u) ≤ P(|X - X'| > s)` and
+   `P(|X - X'| > s + u) ≤ 2 P(|X| > s) + P(|X| > u)²`; with regular variation they give
+   `P(|X| > x) / P(|X - X'| > x) → 1 / 2` (`tendsto_absTail_div_absTail_symmLaw`). For `α = 2`,
+   `E[min (x², (X - X')²)] ≤ 4 E[min (x², X²)]` transfers slow variation.
+3. *Tail balance* (`exists_tendsto_mul_integral_comp` in
+   `ExtremeValueTheory.StableLaws.LevyMeasureLimit`): `n E[fε(X / aₙ)]` converges for every
+   ramp `fε`; the bracketing lemma `tendsto_div_of_tendsto_mul` turns this into
+   `E[fε(X / x)] / P(|X| > x) → pε`, and `P(X > (1 + ε) x) ≤ E[fε(X / x)] ≤ P(X > x)` with
+   `ε → 0` gives `P(X > x) / P(|X| > x) → p`
+   (`exists_tendsto_measureReal_Ioi_div_absTail`).
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set Real

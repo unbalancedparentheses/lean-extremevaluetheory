@@ -9,7 +9,35 @@ import Mathlib.Analysis.Real.Pi.Bounds
 /-!
 # Convergence of the Lévy measures of normalized sums
 
-WIP
+Let `X₁, X₂, …` be i.i.d. with law `μ`, `aₙ > 0`, and suppose the laws of `(Sₙ - bₙ) / aₙ`
+converge weakly to `ν` whose characteristic function `φ` does not vanish. Under the a priori
+bounds that `n E[min (1, (X / aₙ)²)]` is bounded, `n E[min (1, (s X / aₙ)²)]` is uniformly small
+for small `s`, and `n P(|X| > 2 aₙ)` is bounded below, we show that `n P(X / aₙ ∈ ·)` converges
+vaguely away from `0`: `n E[f(X / aₙ)]` converges for every bounded Lipschitz `f` vanishing near
+`0` ([GK, §25], [Feller, Vol. II, §XVII.2]). This is the step of the converse of the
+generalized CLT that sees the asymmetry of the law; no uniqueness of the Lévy–Khintchine
+representation is needed.
+
+## Main definitions
+
+* `GCLTConverse.ctr μ a n = E[clip (X / aₙ)]` (truncated mean) and `GCLTConverse.cLaw μ a n`,
+  the law of `X / aₙ - τₙ`; `GCLTConverse.wfun μ a n t = φ_{cLaw}(t) - 1`.
+* `GCLTConverse.dfun μ a n t s = n (wₙ(t + s) + wₙ(t - s) - 2 wₙ(t))`, the second differences.
+* `GCLTConverse.kern s₀ z = ∫₀^{s₀} (1 - cos (s z)) ds` and the canonical measures
+  `GCLTConverse.kernMeasure s₀ (cLaw μ a n)`, normalized as `GCLTConverse.kernNorm`.
+
+## Main results
+
+* `GCLTConverse.norm_wfun_le`: `|wₙ(t)| ≤ (12 t² + 2 |t| + 2) E[min (1, (X / aₙ)²)]`.
+* `GCLTConverse.tendsto_one_add_pow_sub_exp`: `(1 + wₙ)ⁿ - e^{n wₙ} → 0` when `n wₙ` is bounded.
+* `GCLTConverse.tendsto_exp_dfun`, `GCLTConverse.tendsto_dfun_log`: the centering cancels in
+  second differences, `e^{Dₙ(t, s)} → φ(t + s) φ(t - s) / φ(t)²`, and for `|Dₙ| ≤ 1` (small `s`,
+  `exists_forall_norm_dfun_le`) `Dₙ(t, s) → log (φ(t + s) φ(t - s) / φ(t)²)`.
+* `GCLTConverse.charFun_kernMeasure`: `φ_{k ρₙ}(t) = -∫₀^{s₀} Dₙ(t, s) ds / (2n)`.
+* `GCLTConverse.exists_tendsto_mul_integral_kern`: Lévy's continuity theorem makes the
+  normalized canonical measures converge: `n ∫ k g dρₙ → L₀ ∫ g dP`.
+* `GCLTConverse.exists_tendsto_mul_integral_comp`: **vague convergence** of `n P(X / aₙ ∈ ·)`
+  on test functions vanishing near `0` (removing the shift by `τₙ → 0`).
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set Real
