@@ -13,7 +13,7 @@ For a stationary jointly regularly varying time series with spectral tail proces
 every finite window `S ⊆ ℤ` and every measurable `h ≥ 0`,
 `E[h((Θ_{t-i})_{t ∈ S}) 1{Θ_{-i} ≠ 0}] = E[h((Θ_t / |Θ_i|)_{t ∈ S}) |Θ_i|^α]`.
 
-We first prove the tail-process form ([BS09, Theorem 3.1 (ii)]): with `Y_t = R Θ_t`, `R` Pareto(`α`)
+We first prove the tail-process form ([BS09, Theorem 3.1]): with `Y_t = R Θ_t`, `R` Pareto(`α`)
 independent of `(Θ_t)`, for every `ε > 0` and bounded continuous `H`,
 `E[H((Y_{t-i})_{t ∈ S}) 1{|Y_{-i}| > ε}] = ε^(-α) E[H((ε Y_t)_{t ∈ S}) 1{|Y_i| > 1/ε}]`.
 It follows from stationarity, shifting the window by `i`, and from regular variation of
@@ -110,7 +110,7 @@ theorem HasShiftInvariantWindows.integral_comp (hstat : HasShiftInvariantWindows
   rw [← integral_map h1.aemeasurable hG.aestronglyMeasurable,
     ← integral_map h2.aemeasurable hG.aestronglyMeasurable, hstat h W]
 
-/-- **Time change, tail-process form, bounded continuous version** ([BS09, Theorem 3.1 (ii)]).
+/-- **Time change, tail-process form, bounded continuous version** ([BS09, Theorem 3.1]).
 For a stationary series with spectral tail process `Θ`, writing `Y_t = R Θ_t` with `R`
 Pareto(`α`) independent of `Θ`: for every `i`, every window `S`, every `ε > 0` and every bounded
 continuous `H`,
@@ -267,7 +267,7 @@ theorem HasSpectralTailProcess.integral_tailProcess_shift (hα : 0 < α)
     simp only [Set.indicator_apply, mem_ofPred_eq, B, BoundedContinuousFunction.compContinuous_apply,
       ContinuousMap.coe_mk, e3, e4]
 
-/-- **Time change, tail-process form, measure version** ([BS09, Theorem 3.1 (ii)]): the law of
+/-- **Time change, tail-process form, measure version** ([BS09, Theorem 3.1]): the law of
 `(Y_{t-i})_{t ∈ S}` on `{|Y_{-i}| > ε}` equals `ε^(-α)` times the law of `(ε Y_t)_{t ∈ S}` on
 `{|Y_i| > 1/ε}`. -/
 theorem HasSpectralTailProcess.map_restrict_tailProcess_shift (hα : 0 < α)

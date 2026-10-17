@@ -9,7 +9,7 @@ import ExtremeValueTheory.Dependence.Examples
 # The block maxima method
 
 Split an iid sample `X_0, X_1, …` into consecutive blocks of size `n` and record the block
-maxima `M_{n,j} = max_{jn ≤ i < (j+1)n} X_i`, `j = 0, 1, …` ([EKM, §6.4.1]; [Coles, §3.3];
+maxima `M_{n,j} = max_{jn ≤ i < (j+1)n} X_i`, `j = 0, 1, …` ([EKM, §6.3]; [Coles, §3.3];
 [dHF, §1.1.3]). The block maxima are iid with distribution function `F ^ n`, so when `F` is in
 the domain of attraction of an extreme value law `H` with norming constants `a_n > 0`, `b_n`,
 
@@ -211,7 +211,7 @@ theorem measureReal_abs_blockMaxEmpCDF_sub_ge_le (hX : ∀ t, Measurable (X t))
     _ ≤ 1 / (4 * m) / ε ^ 2 := div_le_div_of_nonneg_right hGvar (by positivity)
     _ = 1 / (4 * m * ε ^ 2) := by rw [div_div]
 
-/-- **Consistency of the block maxima method** ([EKM, §6.4.1]; [Coles, §3.3]): if
+/-- **Consistency of the block maxima method** ([EKM, §6.3]; [Coles, §3.3]): if
 `F ^ n (a_n x + b_n) → H(x)` (e.g. `x` a continuity point of the extreme value law `H` of the
 domain of attraction of `F`), then the empirical distribution function of `m_k` normalized
 block maxima of size `n_k` converges in probability to `H(x)` as `m_k, n_k → ∞`. -/

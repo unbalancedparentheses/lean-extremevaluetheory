@@ -250,7 +250,7 @@ theorem integrable_id_gevCDF_zero : Integrable (fun x ↦ x) (gevCDF 0).measure 
   simp [gevTransform]; ring
 
 /-- **The mean of the standard Gumbel law is the Euler–Mascheroni constant**
-([EKM, Table 3.4.4]; [Coles, §3.1]). -/
+([EKM, §3.4]; [Coles, §3.1]). -/
 theorem integral_id_gevCDF_zero :
     ∫ x, x ∂(gevCDF 0).measure = eulerMascheroniConstant := by
   rw [integral_gevCDF 0 measurable_id', eulerMascheroniConstant_eq_neg_integral_log,
@@ -287,7 +287,7 @@ theorem integrable_id_gevCDF {ξ : ℝ} (hξ : ξ < 1) : Integrable (fun x ↦ x
     (integrableOn_gamma _ (by linarith : 0 < 1 - ξ)).sub (integrableOn_gamma _ one_pos)
   exact h.congr_fun (fun t _ ↦ (gevTransform_eq h0 t).symm) measurableSet_Ioi
 
-/-- **Mean of the GEV law** ([EKM, Table 3.4.4]; [Coles, §3.1]): for `ξ < 1`, `ξ ≠ 0`,
+/-- **Mean of the GEV law** ([EKM, §3.4]; [Coles, §3.1]): for `ξ < 1`, `ξ ≠ 0`,
 `∫ x dH_ξ(x) = (Γ(1 - ξ) - 1) / ξ`. -/
 theorem integral_id_gevCDF {ξ : ℝ} (hξ : ξ < 1) (h0 : ξ ≠ 0) :
     ∫ x, x ∂(gevCDF ξ).measure = (Gamma (1 - ξ) - 1) / ξ := by
@@ -341,7 +341,7 @@ theorem integral_sq_gevCDF {ξ : ℝ} (hξ : ξ < 1 / 2) (h0 : ξ ≠ 0) :
     Gamma_one]
   field_simp
 
-/-- **Variance of the GEV law** ([Coles, §3.1]; [EKM, Table 3.4.4]): for `ξ < 1/2`, `ξ ≠ 0`,
+/-- **Variance of the GEV law** ([Coles, §3.1]; [EKM, §3.4]): for `ξ < 1/2`, `ξ ≠ 0`,
 `Var H_ξ = (Γ(1 - 2ξ) - Γ(1 - ξ)²) / ξ²`. -/
 theorem variance_id_gevCDF {ξ : ℝ} (hξ : ξ < 1 / 2) (h0 : ξ ≠ 0) :
     variance (fun x ↦ x) (gevCDF ξ).measure = (Gamma (1 - 2 * ξ) - Gamma (1 - ξ) ^ 2) / ξ ^ 2 := by

@@ -322,7 +322,7 @@ variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'
   {P : Measure Ω} [IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ}
   {Q : Measure Ω'} [IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ}
 
-/-- **Time change for the whole tail process** ([BS09, Theorem 3.1 (ii)] with `ε = 1`): for a
+/-- **Time change for the whole tail process** ([BS09, Theorem 3.1] with `ε = 1`): for a
 stationary series, writing `Y_t = R Θ_t`, the law of the shifted path `(Y_{t-i})_{t ∈ ℤ}` on
 `{|Y_{-i}| > 1}` equals the law of the path `(Y_t)_{t ∈ ℤ}` on `{|Y_i| > 1}`. Both are finite
 measures on `ℝ^ℤ` with the product σ-algebra, agreeing on cylinders by

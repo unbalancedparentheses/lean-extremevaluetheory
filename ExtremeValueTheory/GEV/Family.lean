@@ -138,7 +138,7 @@ theorem isExtremeValueDistr_gevCDF (ξ : ℝ) : (gevCDF ξ).IsExtremeValueDistr 
 theorem isMaxStable_gevCDF (ξ : ℝ) : (gevCDF ξ).IsMaxStable :=
   (isExtremeValueDistr_gevCDF ξ).isMaxStable
 
-/-- Explicit max-stability of the GEV law ([EKM, Table 3.4.2]): for `ξ ≠ 0` and `n ≥ 1`,
+/-- Explicit max-stability of the GEV law ([EKM, §3.4]): for `ξ ≠ 0` and `n ≥ 1`,
 `H_ξ(n^ξ x + (n^ξ - 1)/ξ) ^ n = H_ξ(x)`. -/
 theorem gevFun_pow_apply {ξ : ℝ} (hξ : ξ ≠ 0) {n : ℕ} (hn : 1 ≤ n) (x : ℝ) :
     gevFun ξ ((n : ℝ) ^ ξ * x + ((n : ℝ) ^ ξ - 1) / ξ) ^ n = gevFun ξ x := by

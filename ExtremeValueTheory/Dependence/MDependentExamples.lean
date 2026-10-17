@@ -28,7 +28,7 @@ and to finite moving averages.
   theorem (a second proof of `hasExtremalIndex_movingMax`, independent of the direct computation).
 * `ExtremeValueTheory.MovingAverage.hasExtremalIndex`: the finite moving average
   `X_t = ∑_{i ≤ m} ψ_i Z_{t-i}` with `ψ ≥ 0` and iid nonnegative regularly varying noise has
-  extremal index `θ = max_j ψ_j^α / ∑_j ψ_j^α` ([EKM, §8.1, Example 8.1.4 type], [DR85]).
+  extremal index `θ = max_j ψ_j^α / ∑_j ψ_j^α` ([EKM, §8.1, §8.1 type], [DR85]).
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Finset

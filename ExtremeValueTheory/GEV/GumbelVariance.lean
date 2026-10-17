@@ -12,7 +12,7 @@ import ExtremeValueTheory.ForMathlib.Analysis.SpecialFunctions.Gamma.Trigamma
 Through the exponential representation `Λ = law of -log T`, `T` standard exponential
 (`measure_gevCDF_eq_map`), the second moment of the standard Gumbel law is
 `∫_0^∞ (log t)² e^{-t} dt = Γ''(1) = γ² + π² / 6` (`Real.integral_log_sq_mul_exp_neg`), so its
-variance is `π² / 6` ([EKM, Table 3.4.4]; [Coles, §3.1]). We also compute the `ξ = 0` case of the
+variance is `π² / 6` ([EKM, §3.4]; [Coles, §3.1]). We also compute the `ξ = 0` case of the
 probability-weighted moments of Hosking, Wallis and Wood,
 `β_r = E[X Λ(X) ^ r] = (γ + log (r + 1)) / (r + 1)`.
 
@@ -62,7 +62,7 @@ theorem integrable_sq_gevCDF_zero : Integrable (fun x ↦ x ^ 2) (gevCDF 0).meas
   rw [integral_sq_gevCDF_zero]
   positivity
 
-/-- **Variance of the Gumbel law** ([EKM, Table 3.4.4]; [Coles, §3.1]): `Var Λ = π² / 6`. -/
+/-- **Variance of the Gumbel law** ([EKM, §3.4]; [Coles, §3.1]): `Var Λ = π² / 6`. -/
 theorem variance_id_gevCDF_zero : variance (fun x ↦ x) (gevCDF 0).measure = π ^ 2 / 6 := by
   have hL2 : MemLp (fun x : ℝ ↦ x) 2 (gevCDF 0).measure :=
     (memLp_two_iff_integrable_sq aestronglyMeasurable_id).2 integrable_sq_gevCDF_zero

@@ -22,7 +22,7 @@ applies, and the extremal index equals the candidate extremal index: `θ = ϑ`.
   `rₙ P(|X_0| > uₙ) → 0`.
 * `ExtremeValueTheory.antiClusteringAt_of_tendsto_mul`: the same with `n P(|X_0| > uₙ) → τ` and
   `rₙ / n → 0` in place of the last two hypotheses.
-* `ExtremeValueTheory.antiClustering_of_indepFun`: the condition `AC(rₙ)` of [BS09, (4.1)] when
+* `ExtremeValueTheory.antiClustering_of_indepFun`: the condition `AC(rₙ)` of [BS09, Condition 4.1] when
   `n P(|X_0| > aₙ x)` converges for every `x > 0` and `rₙ / n → 0`.
 * `ExtremeValueTheory.HasSpectralTailProcess.hasExtremalIndex_of_isMDependent`: an `m`-dependent
   stationary series with a spectral tail process has extremal index `ϑ` (`θ = ϑ`), for `|X|`.
@@ -154,7 +154,7 @@ theorem antiClusteringAt_of_tendsto_mul (hX : ∀ t, Measurable (X t))
   antiClusteringAt_of_indepFun hX hstat hind (tendsto_zero_of_tendsto_natCast_mul' hτ)
     (tendsto_mul_of_tendsto_natCast_mul hτ hrn)
 
-/-- **`AC(rₙ)` for sequences independent at lags `> m`** ([BS09, (4.1)]): if `X` is stationary,
+/-- **`AC(rₙ)` for sequences independent at lags `> m`** ([BS09, Condition 4.1]): if `X` is stationary,
 `X_0` and `X_t` are independent for `t > m`, `rₙ / n → 0` and for every `x > 0` the sequence
 `n P(|X_0| > aₙ x)` converges (as it does when `n P(|X_0| > aₙ) → 1` and the tail is regularly
 varying), then `AntiClustering P X a r`. -/

@@ -433,7 +433,7 @@ section Weissman
 
 /-- The **Weissman estimator** of the tail quantile `x_p = F^←(1 - p)` based on the top `k + 1`
 order statistics: `x̂_p = X_{(k+1)} (k / (n p)) ^ γ̂`, with `γ̂ = H_{k,n}` the Hill estimator
-(Weissman 1978; [dHF, §4.3]; [EKM, §6.4.1]). -/
+(Weissman 1978; [dHF, §4.3]; [EKM, §6.4.4]). -/
 noncomputable def weissman {n : ℕ} (x : Fin n → ℝ) (k : ℕ) (p : ℝ) : ℝ :=
   orderStat x k * ((k : ℝ) / (n * p)) ^ hill x k
 
@@ -493,7 +493,7 @@ theorem tendstoInMeasure_weissman_div_of_bias {X : ℕ → Ω → ℝ} (hX : ∀
   field_simp
 
 /-- **Ratio consistency of the Weissman estimator at intermediate levels** ([dHF, §4.3];
-[EKM, §6.4.1]): under regular variation of the tail with index `-α`, `α > 0`, with `k → ∞`,
+[EKM, §6.4.4]): under regular variation of the tail with index `-α`, `α > 0`, with `k → ∞`,
 `k / n → 0` and `p_n` comparable to `k / n` (the extrapolation factor `d_n = k / (n p_n)` stays
 in a compact subset `[a, b]` of `(0, ∞)`), `x̂_{p_n} / x_{p_n} → 1` in probability. -/
 theorem tendstoInMeasure_weissman_div {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
@@ -581,7 +581,7 @@ section TailProbability
 
 /-- The **tail probability estimator** of `P(X > y)` based on the top `k + 1` order statistics:
 `p̂(y) = (k / n) (y / X_{(k+1)}) ^ (-1/γ̂)`, with `γ̂ = H_{k,n}` the Hill estimator ([dHF, §4.4];
-[EKM, §6.4.1]). -/
+[EKM, §6.4.4]). -/
 noncomputable def tailProbEstimator {n : ℕ} (x : Fin n → ℝ) (k : ℕ) (y : ℝ) : ℝ :=
   (k : ℝ) / n * (y / orderStat x k) ^ (-(hill x k)⁻¹)
 
@@ -681,7 +681,7 @@ theorem tendstoInMeasure_tailProbEstimator_div_of_bias {X : ℕ → Ω → ℝ}
     ring
 
 /-- **Ratio consistency of the tail probability estimator at intermediate levels**
-([dHF, §4.4]; [EKM, §6.4.1]): under regular variation of the tail with index `-α`, `α > 0`, with
+([dHF, §4.4]; [EKM, §6.4.4]): under regular variation of the tail with index `-α`, `α > 0`, with
 `k → ∞`, `k / n → 0`, and levels `y_n` comparable to the intermediate quantile (`y_n / x_{k/n}`
 stays in a compact subset `[a, b]` of `(0, ∞)`), `p̂(y_n) / P(X > y_n) → 1` in probability. -/
 theorem tendstoInMeasure_tailProbEstimator_div {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
@@ -858,7 +858,7 @@ noncomputable def gevFun (ξ x : ℝ) : ℝ :=
 /-- The **`m`-block return level** of the standard GEV distribution `H_ξ`: the level exceeded
 by the block maximum on average once every `m` blocks, i.e. the `(1 - 1/m)` quantile
 `z_m = ((-log(1 - 1/m)) ^ (-ξ) - 1) / ξ` (`z_m = -log(-log(1 - 1/m))` for `ξ = 0`)
-([EKM, §6.4.1]; Coles, *An Introduction to Statistical Modeling of Extreme Values*, §3.1.3).
+([EKM, §6.2.4, §6.3.3]; Coles, *An Introduction to Statistical Modeling of Extreme Values*, §3.1.3).
 For the location-scale family `H_ξ((x - μ)/σ)` the return level is `μ + σ z_m`. -/
 noncomputable def returnLevel (ξ m : ℝ) : ℝ :=
   if ξ = 0 then -Real.log (-Real.log (1 - 1 / m))

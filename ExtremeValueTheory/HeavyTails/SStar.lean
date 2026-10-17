@@ -29,7 +29,7 @@ varying tails with index `-α`, `α > 1`, are in `𝒮*`.
 ## Main results
 
 * `IsSStar.tendsto_tail_sub_div`: `𝒮*` laws are long-tailed.
-* `IsSStar.isSubexponential`: `𝒮* ⊆ 𝒮` ([Klüppelberg 1988, Theorem 3.2]; [FKZ, Ch. 3]).
+* `IsSStar.isSubexponential`: `𝒮* ⊆ 𝒮` ([Klüppelberg 1988]; [FKZ, Ch. 3]).
 * `IsSStar.isSubexponential_integratedTail`: `F ∈ 𝒮* ⇒ F_I ∈ 𝒮` ([Klüppelberg 1988,
   Theorem 3.2]; [FKZ, Ch. 3]).
 * `IsSStar.tendsto_pkRuin_div`: Embrechts–Veraverbeke for `𝒮*` claims.
@@ -268,7 +268,7 @@ theorem tendsto_tail_sub_div (h : IsSStar μ) (y : ℝ) :
     simp only [Function.comp_apply, id, inv_div, sub_neg_eq_add]
     ring_nf
 
-/-- **`𝒮* ⊆ 𝒮`** ([Klüppelberg 1988, Theorem 3.2]; [FKZ, Ch. 3]): a law in the class
+/-- **`𝒮* ⊆ 𝒮`** ([Klüppelberg 1988]; [FKZ, Ch. 3]): a law in the class
 `𝒮*` is subexponential. -/
 theorem isSubexponential (h : IsSStar μ) : IsSubexponential μ := by
   have hF := h.tail_pos
@@ -460,7 +460,7 @@ theorem integral_tail_pos (h : IsSStar μ) : 0 < ∫ t in Ioi 0, tail μ t := by
       Ioc_subset_Ioi_self.eventuallyLE
   linarith [h.tail_pos 1]
 
-/-- **Integrated tails of `𝒮*` laws are subexponential** ([Klüppelberg 1988, Theorem 3.2];
+/-- **Integrated tails of `𝒮*` laws are subexponential** ([Klüppelberg 1988];
 [FKZ, Ch. 3]): if `F ∈ 𝒮*` then `F_I ∈ 𝒮`, where `F_I` has density `F̄ / m` on
 `(0, ∞)`. -/
 theorem isSubexponential_integratedTail (h : IsSStar μ) :

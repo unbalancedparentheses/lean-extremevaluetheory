@@ -33,11 +33,11 @@ Moreover `ν` is then the law of `(R, R • Θ)` with `R` Pareto and independent
 * `ExtremeValueTheory.TendstoLawCond P s Y l ν`: the laws of `Y i` under the conditional
   probabilities `P[|s i]` converge weakly to `ν` along `l`.
 * `ExtremeValueTheory.HasSpectralTailProcess`: a time series `(X_t)_{t ∈ ℤ}` is jointly regularly
-  varying with index `α`, with spectral tail process `(Θ_t)` ([BS09, Theorem 2.1 (iii)],
+  varying with index `α`, with spectral tail process `(Θ_t)` ([BS09, Theorem 2.1 and §3],
   [KS20, Chapter 5]).
-* `ExtremeValueTheory.HasTailProcess`: the tail process `(Y_t)` ([BS09, Theorem 2.1 (ii)]).
+* `ExtremeValueTheory.HasTailProcess`: the tail process `(Y_t)` ([BS09, Theorem 2.1 and §3]).
 * `ExtremeValueTheory.candidateExtremalIndex`: `ϑ = E[sup_{k ≥ 0} |Θ_k|^α - sup_{k ≥ 1} |Θ_k|^α]`
-  ([KS20, §7.5]).
+  ([KS20, §5.6]).
 
 ## Main results
 
@@ -499,7 +499,7 @@ private lemma polarGood_lipschitz (hα : 0 < α) (hZ : Measurable Z) (hT : Measu
       Pi.one_apply]
     linarith
 
-/-- **Polar decomposition, direct part** ([BS09, Theorem 2.1, (iii) ⇒ (ii)], [KS20,
+/-- **Polar decomposition, direct part** ([BS09, Theorem 2.1 and §3], [KS20,
 Chapter 5]).  Let `Z` be a random variable whose tail `P(Z > x)` is regularly varying with
 index `-α`, `α > 0`, and let `T` be a random vector such that the law of `T` given `Z > x`
 converges weakly to `μ`. Then the law of `(Z / x) • T` given `Z > x` converges weakly to the law of
@@ -549,7 +549,7 @@ private lemma map_prod_map_smul {G F : Type*} {_ : MeasurableSpace G} [NormedAdd
   rw [h, Measure.map_map continuous_smul.measurable (measurable_id.prodMap hg)]
   rfl
 
-/-- **Polar decomposition, joint form** ([BS09, Theorem 2.1, (iii) ⇒ (ii)]). If `P(Z > x)` is
+/-- **Polar decomposition, joint form** ([BS09, Theorem 2.1 and §3]). If `P(Z > x)` is
 regularly varying with index `-α`, `α > 0`, and the law of `V / Z` given `Z > x` converges weakly
 to `μ`, then the law of `(Z / x, V / x)` given `Z > x` converges weakly to the law of `(R, R • Θ)`,
 with `R` Pareto(`α`) independent of `Θ ∼ μ`. -/
@@ -593,7 +593,7 @@ theorem ae_one_lt_fst_of_map_fst (hν : ν.map Prod.fst = paretoMeasure 1 α) :
     ∀ᵐ p ∂ν, 1 < p.1 :=
   ae_of_ae_map measurable_fst.aemeasurable (hν ▸ ae_one_lt_paretoMeasure)
 
-/-- **Polar decomposition, converse: regular variation** ([BS09, Theorem 2.1, (ii) ⇒ (i)]). If
+/-- **Polar decomposition, converse: regular variation** ([BS09, Theorem 2.1]). If
 the law of `(Z / x, V / x)` given `Z > x` converges weakly to `ν` whose first marginal is
 Pareto(`α`), then `P(Z > x)` is regularly varying with index `-α`. -/
 theorem isRegularlyVarying_of_tendstoLawCond (hα : 0 < α) (hZ : Measurable Z)
@@ -653,7 +653,7 @@ theorem isRegularlyVarying_of_tendstoLawCond (hα : 0 < α) (hZ : Measurable Z)
     simp only [Function.comp_apply, id, inv_div, ← mul_assoc, inv_mul_cancel₀ hc.ne', one_mul]
 
 omit [IsProbabilityMeasure P] [IsProbabilityMeasure ν] in
-/-- **Polar decomposition, converse: spectral convergence** ([BS09, Theorem 2.1, (ii) ⇒ (iii)]).
+/-- **Polar decomposition, converse: spectral convergence** ([BS09, Theorem 2.1 and §3]).
 If the law of `(Z / x, V / x)` given `Z > x` converges weakly to `ν` whose first marginal is
 Pareto(`α`), then the law of `V / Z` given `Z > x` converges weakly to the law of `Y / R` under
 `(R, Y) ∼ ν`. -/
@@ -741,7 +741,7 @@ variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'
 /-- A time series `(X_t)_{t ∈ ℤ}` is *jointly regularly varying with index `α`* and *spectral tail
 process* `(Θ_t)_{t ∈ ℤ}` (defined on `(Ω', Q)`) if `P(|X_0| > x)` is regularly varying with index
 `-α` and, for every finite window `S ⊆ ℤ`, the law of `(X_t / |X_0|)_{t ∈ S}` given `|X_0| > x`
-converges weakly to the law of `(Θ_t)_{t ∈ S}` ([BS09, Theorem 2.1 (iii)], [KS20,
+converges weakly to the law of `(Θ_t)_{t ∈ S}` ([BS09, Theorem 2.1 and §3], [KS20,
 Chapter 5]). Windows are arbitrary finite sets, which covers the windows
 `{s, …, t}` of [KS20] and `{-n, …, n}` of [BS09]. -/
 def HasSpectralTailProcess (P : Measure Ω) (X : ℤ → Ω → ℝ) (α : ℝ) (Q : Measure Ω')
@@ -753,7 +753,7 @@ def HasSpectralTailProcess (P : Measure Ω) (X : ℤ → Ω → ℝ) (α : ℝ) 
 /-- A time series `(X_t)_{t ∈ ℤ}` has *tail process* `(Y_t)_{t ∈ ℤ}` (defined on `(Ω', Q)`) with
 index `α` if `|Y_0|` is Pareto(`α`), `P(|Y_0| > y) = y^(-α)` for `y ≥ 1`, and, for every finite
 window `S ⊆ ℤ`, the law of `(X_t / x)_{t ∈ S}` given `|X_0| > x` converges weakly to the law of
-`(Y_t)_{t ∈ S}` ([BS09, Theorem 2.1 (ii)], [KS20, Chapter 5]). -/
+`(Y_t)_{t ∈ S}` ([BS09, Theorem 2.1 and §3], [KS20, Chapter 5]). -/
 def HasTailProcess (P : Measure Ω) (X : ℤ → Ω → ℝ) (α : ℝ) (Q : Measure Ω')
     (Y : ℤ → Ω' → ℝ) : Prop :=
   Q.map (fun ω' => |Y 0 ω'|) = paretoMeasure 1 α ∧
@@ -806,7 +806,7 @@ private lemma window_div (X : ℤ → Ω → ℝ) (S : Finset ℤ) :
     (fun (x : ℝ) ω (t : S) => X t ω / x) = fun x ω => x⁻¹ • fun t : S => X t ω := by
   funext x ω t; simp [div_eq_inv_mul]
 
-/-- **From the spectral tail process to the tail process** ([BS09, Theorem 2.1, (iii) ⇒ (ii)],
+/-- **From the spectral tail process to the tail process** ([BS09, Theorem 2.1 and §3],
 [KS20, Chapter 5]): if `(X_t)` has spectral tail process `(Θ_t)`, then it has tail process
 `Y_t = R Θ_t`, with `R` Pareto(`α`) independent of `(Θ_t)`, realized on the product space. -/
 theorem HasSpectralTailProcess.hasTailProcess {Θ : ℤ → Ω' → ℝ} (hα : 0 < α)
@@ -857,7 +857,7 @@ private lemma HasTailProcess.joint {Y : ℤ → Ω' → ℝ} (hYm : ∀ t, Measu
   funext t
   simp [div_eq_inv_mul]
 
-/-- **From the tail process to the spectral tail process** ([BS09, Theorem 2.1, (ii) ⇒ (iii)]):
+/-- **From the tail process to the spectral tail process** ([BS09, Theorem 2.1 and §3]):
 if `(X_t)` has tail process `(Y_t)`, then `P(|X_0| > x)` is regularly varying with index `-α` and
 `Θ_t = Y_t / |Y_0|` is a spectral tail process. -/
 theorem HasTailProcess.hasSpectralTailProcess {Y : ℤ → Ω' → ℝ} (hα : 0 < α)
@@ -1004,7 +1004,7 @@ section CandidateExtremalIndex
 
 variable {Ω' : Type*} {mΩ' : MeasurableSpace Ω'} {Q : Measure Ω'} {Θ : ℤ → Ω' → ℝ} {α : ℝ}
 
-/-- The *candidate extremal index* of a spectral tail process ([KS20, §7.5], [Planinić–Soulier,
+/-- The *candidate extremal index* of a spectral tail process ([KS20, §5.6, (5.6.5)], [Planinić–Soulier,
 *The tail process revisited*, Extremes 21 (2018)]):
 `ϑ = E[sup_{k ≥ 0} |Θ_k|^α - sup_{k ≥ 1} |Θ_k|^α]`.
 The suprema are taken in `[0, ∞]` (where `sup_k |Θ_k|^α = (sup_k |Θ_k|)^α`), with the truncated
@@ -1037,7 +1037,7 @@ theorem iSup_rpow_sub_iSup_succ_rpow_le (hα : 0 ≤ α) (ω' : Ω') :
   exact sup_le le_self_add le_add_self
 
 /-- `ϑ ≤ 1` for a spectral tail process, using only `|Θ_0| = 1` almost surely
-([KS20, §7.5]). -/
+([KS20, §5.6]). -/
 theorem candidateExtremalIndex_le_one [IsProbabilityMeasure Q] (hα : 0 ≤ α)
     (h0 : ∀ᵐ ω' ∂Q, |Θ 0 ω'| = 1) : candidateExtremalIndex Q Θ α ≤ 1 := by
   calc candidateExtremalIndex Q Θ α ≤ ∫⁻ _, 1 ∂Q := by
@@ -1108,7 +1108,7 @@ theorem paretoMeasure_setOf_mul_le (hα : 0 < α) (b : ℝ≥0∞) :
           (Real.one_le_rpow hβ1.le hα.le)), tsub_self]
 
 /-- **The candidate extremal index as a probability** ([Planinić–Soulier 2018,
-Lemma 4.1], [KS20, §7.5]). Let `Y_t = R Θ_t` with `R` Pareto(`α`) independent of `(Θ_t)` (the
+Lemma 4.1], [KS20, §5.6]). Let `Y_t = R Θ_t` with `R` Pareto(`α`) independent of `(Θ_t)` (the
 tail process, see `HasSpectralTailProcess.hasTailProcess`). Then
 `ϑ = P(sup_{k ≥ 1} |Y_k| ≤ 1)`.
 Only `α > 0`, measurability, and `|Θ_0| = 1` almost surely are used; thanks to the convention
@@ -1143,7 +1143,7 @@ theorem candidateExtremalIndex_eq_measure [IsProbabilityMeasure Q] (hα : 0 < α
     ENNReal.sup_rpow_of_nonneg hα.le]
   simp [hω', b]
 
-/-- **The iid case** ([KS20, §7.5]): if `X_t` is independent of `X_0` for every `t ≠ 0` (for
+/-- **The iid case** ([KS20, §5.6]): if `X_t` is independent of `X_0` for every `t ≠ 0` (for
 instance for an iid sequence), then every spectral tail process has candidate extremal index
 `ϑ = 1`. Only pairwise independence of each `X_t` with `X_0` is used. -/
 theorem HasSpectralTailProcess.candidateExtremalIndex_eq_one_of_indepFun {Ω : Type*}
@@ -1156,7 +1156,7 @@ theorem HasSpectralTailProcess.candidateExtremalIndex_eq_one_of_indepFun {Ω : T
     h.ae_eq_zero_of_indepFun hX hΘm (hind _ (by omega))
 
 /-- **The candidate extremal index in terms of the tail process** ([Planinić–Soulier 2018,
-Lemma 4.1], [KS20, §7.5]): if `(X_t)` has tail process `(Y_t)`, then the candidate extremal index
+Lemma 4.1], [KS20, §5.6]): if `(X_t)` has tail process `(Y_t)`, then the candidate extremal index
 of the spectral tail process `Θ_t = Y_t / |Y_0|` is `ϑ = P(|Y_k| ≤ 1 for all k ≥ 1)`. The event
 involves infinitely many coordinates; it is reached from the finite windows by continuity from
 above, using the structure `Y = R Θ` of the finite-dimensional laws

@@ -20,7 +20,7 @@ Throughout, `|X|` is used: `M_r = max_{0 ≤ t < r} |X_t|`. For `X ≥ 0` this i
 * `AntiClusteringAt P X u r`: anticlustering along a level sequence `uₙ` with block lengths `rₙ`,
   `lim_m limsup_n P(max_{m ≤ |t| ≤ rₙ} |X_t| > uₙ | |X_0| > uₙ) = 0`, in `ε`–`m` form.
 * `ForwardAntiClusteringAt P X u r`: its forward half (`m ≤ t ≤ rₙ`); all results use only this.
-* `AntiClustering P X a r`: the condition `AC(rₙ)` of [BS09, (4.1)], [KS20, Definition 6.1.3]
+* `AntiClustering P X a r`: the condition `AC(rₙ)` of [BS09, Condition 4.1], [KS20, §6.1]
   (`AntiClusteringAt` at every level `aₙ x`, `x > 0`).
 * `ConditionA X P u r`: the block condition `P(M n ≤ uₙ) - P(M rₙ ≤ uₙ) ^ ⌊n / rₙ⌋ → 0`.
 
@@ -76,7 +76,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} {X : ℤ → �
 probability, given `|X_0| > uₙ`, of an exceedance of `uₙ` at some time `t` with `m ≤ |t| ≤ rₙ`
 is eventually at most `ε`, for `m` large. In conditional form this is
 `lim_{m → ∞} limsup_{n → ∞} P(max_{m ≤ |t| ≤ rₙ} |X_t| > uₙ | |X_0| > uₙ) = 0`
-([BS09, (4.1)], [KS20, Definition 6.1.3] with `uₙ = aₙ x`). We state it without conditional
+([BS09, Condition 4.1], [KS20, §6.1] with `uₙ = aₙ x`). We state it without conditional
 probabilities or `limsup`, as an `ε`–`m` bound on `P(|X_0| > uₙ, max_{m ≤ |t| ≤ rₙ} |X_t| > uₙ)`;
 the two forms are equivalent since the bound is required for every `ε > 0`. -/
 def AntiClusteringAt (P : Measure Ω) (X : ℤ → Ω → ℝ) (u : ℕ → ℝ) (r : ℕ → ℕ) : Prop :=
@@ -91,7 +91,7 @@ def ForwardAntiClusteringAt (P : Measure Ω) (X : ℤ → Ω → ℝ) (u : ℕ �
     P.real {ω | u n < |X 0 ω| ∧ ∃ t : ℤ, (m : ℤ) ≤ t ∧ t ≤ r n ∧ u n < |X t ω|} ≤
       ε * P.real {ω | u n < |X 0 ω|}
 
-/-- **The anticlustering condition `AC(rₙ)`** ([BS09, (4.1)], [KS20, Definition 6.1.3]): for every
+/-- **The anticlustering condition `AC(rₙ)`** ([BS09, Condition 4.1], [KS20, §6.1]): for every
 `x > 0`, `lim_{m → ∞} limsup_{n → ∞} P(max_{m ≤ |t| ≤ rₙ} |X_t| > aₙ x | |X_0| > aₙ x) = 0`.
 In the literature `aₙ` satisfies `n P(|X_0| > aₙ) → 1` and `rₙ → ∞`, `rₙ / n → 0`; these are
 separate hypotheses of the theorems below, assumed only where used. -/
@@ -397,7 +397,7 @@ theorem HasSpectralTailProcess.candidateExtremalIndex_pos_of_forwardAntiClusteri
     (h.tendsto_zero_of_forwardAntiClusteringAt hα hX hΘm hu hr hAC)
 
 /-- **`AC(rₙ)` implies `Θ_t → 0` and `ϑ > 0`** in the normalization of [BS09, §4] and
-[KS20, Definition 6.1.3]: `n P(|X_0| > aₙ) → 1`, `rₙ → ∞`, and `AC(rₙ)`. Only the level `x = 1`
+[KS20, §6.1]: `n P(|X_0| > aₙ) → 1`, `rₙ → ∞`, and `AC(rₙ)`. Only the level `x = 1`
 of `AC(rₙ)` and only its forward half are used, and `rₙ / n → 0` is not needed. -/
 theorem HasSpectralTailProcess.candidateExtremalIndex_pos_of_antiClustering
     (hα : 0 < α) (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
