@@ -653,4 +653,163 @@ theorem isBoundedInProbability_orderStat_sub_log {E : ℕ → Ω → ℝ} (hEm :
 
 end ExpOrderStat
 
+/-! ### The `√k`-rate of the intermediate order statistic -/
+
+/-- **Two-sided uniform bound for second-order regular variation with `ρ < 0`**: there are `C`
+and `t₀ > 0` with `|log U(xt) - log U(t) - γ log x| ≤ C |A(t)|` for `t ≥ t₀`, `x ≥ e⁻¹`. -/
+theorem IsSecondOrderRegularlyVarying.exists_bound_of_neg' {U A : ℝ → ℝ} {γ ρ : ℝ}
+    (h : IsSecondOrderRegularlyVarying U γ ρ A) (hU : Measurable U) (hA : Measurable A)
+    (hρ : ρ < 0) :
+    ∃ C t₀ : ℝ, 0 < t₀ ∧ ∀ t ≥ t₀, ∀ x ≥ exp (-1),
+      |log (U (x * t)) - log (U t) - γ * log x| ≤ C * |A t| := by
+  obtain ⟨C₁, t₁, ht₁, hC₁⟩ := h.exists_bound_of_neg hU hA hρ
+  obtain ⟨x₀, hx₀, hApos, hP⟩ :=
+    h.isRegularlyVarying_abs.potter_bound_of_measurable (continuous_abs.measurable.comp hA)
+      one_pos one_lt_two
+  set K : ℝ := 2 * exp (|ρ| + 1) with hK
+  refine ⟨|C₁| * (1 + K), exp 1 * max t₁ x₀, by positivity, fun t ht x hx => ?_⟩
+  have hm0 : 0 < max t₁ x₀ := lt_max_of_lt_left ht₁
+  have ht0 : 0 < t := (by positivity : (0 : ℝ) < exp 1 * max t₁ x₀).trans_le ht
+  have htm : max t₁ x₀ ≤ t := le_trans (le_mul_of_one_le_left hm0.le (one_le_exp one_pos.le)) ht
+  have hK1 : 0 ≤ K := by positivity
+  rcases le_or_gt 1 x with hx1 | hx1
+  · refine (hC₁ t ((le_max_left _ _).trans htm) x hx1).trans ?_
+    have : C₁ ≤ |C₁| * (1 + K) := (le_abs_self C₁).trans (le_mul_of_one_le_right (abs_nonneg _)
+      (by linarith))
+    exact mul_le_mul_of_nonneg_right this (abs_nonneg _)
+  · have hx0 : 0 < x := (exp_pos _).trans_le hx
+    have hxt : max t₁ x₀ ≤ x * t := by
+      have : exp (-1) * (exp 1 * max t₁ x₀) ≤ x * t :=
+        mul_le_mul hx ht (by positivity) hx0.le
+      rwa [← mul_assoc, ← exp_add, neg_add_cancel, exp_zero, one_mul] at this
+    have h1 := hC₁ (x * t) ((le_max_left _ _).trans hxt) x⁻¹ (one_le_inv₀ hx0 |>.2 hx1.le)
+    rw [← mul_assoc, inv_mul_cancel₀ hx0.ne', one_mul, log_inv] at h1
+    -- Potter: `|A(xt)| ≤ K |A(t)|`
+    have hpot := hP t ((le_max_right _ _).trans htm) (x * t) ((le_max_right _ _).trans hxt)
+    rw [mul_div_cancel_right₀ _ ht0.ne', div_le_iff₀ (hApos t ((le_max_right _ _).trans htm))]
+      at hpot
+    have hlogx1 : -1 ≤ log x := by
+      rw [← log_exp (-1)]; exact log_le_log (exp_pos _) hx
+    have hlogx : -1 ≤ log x ∧ log x ≤ 0 := ⟨hlogx1, log_nonpos hx0.le hx1.le⟩
+    have hb : ∀ r : ℝ, |r| ≤ |ρ| + 1 → x ^ r ≤ exp (|ρ| + 1) := by
+      intro r hr'
+      rw [rpow_def_of_pos hx0]
+      refine exp_le_exp.2 ?_
+      have : |log x * r| ≤ |ρ| + 1 := by
+        rw [abs_mul]
+        have : |log x| ≤ 1 := abs_le.2 ⟨hlogx.1, by linarith [hlogx.2]⟩
+        calc |log x| * |r| ≤ 1 * (|ρ| + 1) := mul_le_mul this hr' (abs_nonneg _) zero_le_one
+          _ = |ρ| + 1 := one_mul _
+      exact (le_abs_self _).trans this
+    have hmax : max (x ^ (ρ + 1)) (x ^ (ρ - 1)) ≤ exp (|ρ| + 1) :=
+      max_le (hb _ ((abs_add_le _ _).trans (by simp))) (hb _ ((abs_sub _ _).trans (by simp)))
+    have hAxt : |A (x * t)| ≤ K * |A t| := by
+      calc |A (x * t)| ≤ 2 * max (x ^ (ρ + 1)) (x ^ (ρ - 1)) * |A t| := hpot
+        _ ≤ 2 * exp (|ρ| + 1) * |A t| := by gcongr
+    have e : log (U (x * t)) - log (U t) - γ * log x =
+        -(log (U t) - log (U (x * t)) - γ * -log x) := by ring
+    rw [e, abs_neg]
+    calc _ ≤ C₁ * |A (x * t)| := h1
+      _ ≤ |C₁| * |A (x * t)| := mul_le_mul_of_nonneg_right (le_abs_self _) (abs_nonneg _)
+      _ ≤ |C₁| * (K * |A t|) := mul_le_mul_of_nonneg_left hAxt (abs_nonneg _)
+      _ = |C₁| * K * |A t| := by ring
+      _ ≤ |C₁| * (1 + K) * |A t| := by gcongr; linarith
+
+section IntermediateOrderStat
+
+variable {Ω Ω₀ : Type*} {mΩ : MeasurableSpace Ω} {mΩ₀ : MeasurableSpace Ω₀}
+  {P : Measure Ω} [IsProbabilityMeasure P] {P₀ : Measure Ω₀} [IsProbabilityMeasure P₀]
+
+/-- **The intermediate order statistic at rate `√k`, on the exponential scale**: if the `E_i`
+are iid standard exponential and `U` is monotone on `(1, ∞)` and of second-order regular
+variation with `ρ < 0`, `k → ∞`, `k / n → 0` and `√k A(n/k) → λ`, then
+`√k (log U(e^{E})_{(k+1)} - log U(n/k))` is bounded in probability. -/
+theorem isBoundedInProbability_log_orderStat_comp_exp {E : ℕ → Ω₀ → ℝ}
+    (hEm : ∀ i, Measurable (E i)) (hE : ∀ i, HasLaw (E i) (expMeasure 1) P₀)
+    (hind : iIndepFun E P₀) {U A : ℝ → ℝ} {γ ρ lam : ℝ} (hU : Measurable U)
+    (hUm : MonotoneOn U (Ioi 1)) (h2 : IsSecondOrderRegularlyVarying U γ ρ A) (hρ : ρ < 0)
+    {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
+    (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) :
+    IsBoundedInProbability P₀ (fun n ω => √(k n : ℝ) *
+      (log (orderStat (fun i : Fin n => U (exp (E i ω))) (k n)) - log (U (n / k n)))) := by
+  obtain ⟨B, hBm, h2B, hBA⟩ := h2.exists_measurable hU
+  have hnk := tendsto_div_atTop_of_tendsto hk hkn
+  have hlamB : Tendsto (fun n => √(k n : ℝ) * B (n / k n)) atTop (𝓝 lam) := by
+    have := hlam.mul (hBA.comp hnk)
+    rw [mul_one] at this
+    refine this.congr' ?_
+    filter_upwards [hnk.eventually h2.eventually_ne_zero] with n hn
+    simp only [Function.comp_apply]
+    field_simp
+  obtain ⟨C, t₀, ht₀, hC⟩ := h2B.exists_bound_of_neg' hU hBm hρ
+  have hT := isBoundedInProbability_orderStat_sub_log hEm hE hind hk hkn
+  have hnull : P₀ (⋃ i, {ω | E i ω ≤ 0}) = 0 := by
+    refine measure_iUnion_null fun i => ?_
+    have : {ω | E i ω ≤ 0} = E i ⁻¹' Iic 0 := rfl
+    rw [this, ← Measure.map_apply (hEm i) measurableSet_Iic, (hE i).map_eq, expMeasure_Iic le_rfl]
+    simp
+  intro ε hε
+  obtain ⟨M', hM'⟩ := hT ε hε
+  set M₁ := max M' 0 with hM₁
+  refine ⟨|γ| * M₁ + |C| * (|lam| + 1), ?_⟩
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  filter_upwards [hM', hnk.eventually_ge_atTop t₀, eventually_lt_of_tendsto_div hkn,
+    hkR.eventually_ge_atTop (M₁ ^ 2), hkR.eventually_gt_atTop 0,
+    hlamB.abs.eventually (gt_mem_nhds (lt_add_one |lam|))] with n hn hnt hkn' hkM hk0 hlamn
+  refine le_trans (measure_mono_ae ?_) hn
+  filter_upwards [measure_eq_zero_iff_ae_notMem.1 hnull] with ω hω
+  intro hω'
+  simp only [mem_iUnion, mem_ofPred_eq, not_exists, not_le] at hω
+  change |γ| * M₁ + |C| * (|lam| + 1) < _ at hω'
+  by_contra hcon
+  rw [not_lt] at hcon
+  set e := orderStat (fun i : Fin n => E i ω) (k n) with he
+  set s₀ := log (n / k n) with hs₀
+  have hn0 : (0 : ℝ) < n / k n := ht₀.trans_le hnt
+  have hsk : 0 < √(k n : ℝ) := sqrt_pos.2 hk0
+  -- `|e - s₀| ≤ M₁ / √k ≤ 1`
+  have hes : |e - s₀| ≤ M₁ / √(k n : ℝ) := by
+    rw [le_div_iff₀ hsk, mul_comm]
+    rw [abs_mul, abs_of_pos hsk] at hcon
+    exact hcon.trans (le_max_left _ _)
+  have hM1k : M₁ / √(k n : ℝ) ≤ 1 := by
+    rw [div_le_one hsk]
+    calc M₁ = √(M₁ ^ 2) := (sqrt_sq (le_max_right _ _)).symm
+      _ ≤ √(k n : ℝ) := sqrt_le_sqrt hkM
+  -- order statistics commute with `U ∘ exp`
+  have hmono : MonotoneOn (fun x => U (exp x)) (Ioi 0) := fun a ha b hb hab =>
+    hUm (one_lt_exp_iff.2 ha) (one_lt_exp_iff.2 hb) (exp_le_exp.2 hab)
+  have hcomm := orderStat_comp_monotoneOn hmono (y := fun i : Fin n => E i ω)
+    (fun i => hω i) hkn'
+  simp only [Function.comp_def] at hcomm
+  rw [hcomm] at hω'
+  set x := exp (e - s₀) with hx
+  have hx1 : exp (-1) ≤ x := exp_le_exp.2 (by linarith [(abs_le.1 (hes.trans hM1k)).1])
+  have hxt : exp e = x * (n / k n) := by
+    rw [hx, exp_sub, hs₀, exp_log hn0, div_mul_cancel₀ _ hn0.ne']
+  have hbd := hC (n / k n) hnt x hx1
+  rw [← hxt, hx, log_exp] at hbd
+  have key : |log (U (exp e)) - log (U (n / k n))| ≤
+      |γ| * (M₁ / √(k n : ℝ)) + |C| * |B (n / k n)| := by
+    have h1 : |log (U (exp e)) - log (U (n / k n))| ≤
+        |γ * (e - s₀)| + |log (U (exp e)) - log (U (n / k n)) - γ * (e - s₀)| := by
+      have := abs_add_le (γ * (e - s₀)) (log (U (exp e)) - log (U (n / k n)) - γ * (e - s₀))
+      rwa [add_sub_cancel] at this
+    refine h1.trans (add_le_add ?_ (hbd.trans (mul_le_mul_of_nonneg_right (le_abs_self _)
+      (abs_nonneg _))))
+    rw [abs_mul]
+    exact mul_le_mul_of_nonneg_left hes (abs_nonneg _)
+  rw [abs_mul, abs_of_pos hsk] at hω'
+  have h3 := mul_le_mul_of_nonneg_left key hsk.le
+  have h4 : √(k n : ℝ) * (|γ| * (M₁ / √(k n : ℝ)) + |C| * |B (n / k n)|) =
+      |γ| * M₁ + |C| * |√(k n : ℝ) * B (n / k n)| := by
+    rw [abs_mul, abs_of_pos hsk]; field_simp
+  rw [h4] at h3
+  have h5 : |C| * |√(k n : ℝ) * B (n / k n)| ≤ |C| * (|lam| + 1) :=
+    mul_le_mul_of_nonneg_left hlamn.le (abs_nonneg _)
+  linarith
+
+end IntermediateOrderStat
+
 end ExtremeValueTheory
