@@ -6,9 +6,54 @@ Authors: Federico Carrone
 import ExtremeValueTheory.Statistics.ExtremeQuantileSecondOrder
 
 /-!
-# Extreme quantile estimation with second-order index `ρ = 0`
+# Extreme quantile and tail probability estimation for second-order index `ρ ≤ 0`
 
-WIP
+`ExtremeValueTheory.Statistics.ExtremeQuantileSecondOrder` treats the Weissman estimator
+`x̂_p = X_{(k+1)} d_n^{γ̂}` (`d_n = k / (n p_n)`) and the tail probability estimator
+`p̂(y) = (k / n) (y / X_{(k+1)})^{-1/γ̂}` under second-order regular variation with `ρ < 0`, where
+the extrapolation remainder `r(t, x) = log U(xt) - log U(t) - γ log x` is `O(A(t))` uniformly in
+`x ≥ 1`. Here we extend consistency and asymptotic normality to `ρ ≤ 0`, in particular `ρ = 0`.
+
+For `ρ = 0` the limit `h_0(x) = log x` is unbounded and `|A|` is only slowly varying, so the
+remainder over `[t, d t]` is of order `A · log d`, and `|A|` on `[t, d t]` is not controlled by
+`|A(t)|` alone (for slowly varying `|A|` the ratio `|A(y)| / |A(t)|`, `y ∈ [t, t²]`, may be
+unbounded; the Potter bounds only give `(y / t)^δ`). Accordingly the hypotheses are phrased with a majorant of `|A|` on the extrapolation
+range, or with `|A|` monotone, or with `A` asymptotically constant there.
+
+## Main results
+
+* `IsSecondOrderRegularlyVarying.exists_bound_of_le`: for any `ρ ≤ 0`,
+  `|log U(xt) - log U(t) - γ log x| ≤ C (1 + log x) a` for `t ≥ t₀`, `x ≥ 1`, whenever `|A| ≤ a`
+  on `[t, xt]`.
+* `IsSecondOrderRegularlyVarying.tendsto_logRem_div_of_rho_eq_zero`: for `ρ = 0`,
+  `r(t, d) / (A(t) log d) → 1` as `t, d → ∞`, if `A(y) / A(t) → 1` uniformly on `[t, d t]`.
+* `tendstoInMeasure_weissman_div_of_le`, `tendstoInMeasure_weissman_div_of_antitoneOn`:
+  consistency `x̂_{p_n} / x_{p_n} →_P 1` for `ρ ≤ 0`; with `|A|` eventually monotone the
+  hypotheses are exactly those of the case `ρ < 0` (`√k A(n/k) → λ`, `log d_n / √k → 0`).
+* `tendstoInMeasure_tailProbEstimator_div_of_le`: consistency `p̂(y_n) / F̄(y_n) →_P 1`,
+  `ρ ≤ 0`.
+* `tendstoInDistribution_weissman_of_tendsto_bias`: for `ρ ≤ 0`, if
+  `√k r(n/k, d_n) / log d_n → μ`, then
+  `(√k / log d_n) (x̂_{p_n} / x_{p_n} - 1) ⇒ N(λ / (1 - ρ) - μ, γ²)`.
+* `tendstoInDistribution_weissman_of_rho_eq_zero`: for `ρ = 0` (with `A` asymptotically
+  constant on `[n/k, 1/p_n]`), `μ = λ` and the limit is `N(0, γ²)`: **the Hill bias `λ` and the
+  extrapolation bias `-λ` cancel**, so the centering differs from the `ρ < 0` formula
+  `λ / (1 - ρ)` evaluated at `ρ = 0`.
+* `tendstoInDistribution_tailProbEstimator_of_tendsto_bias`: the delta method for `p̂`: if
+  `√k log β_n / log e_n → ν` for the deterministic bias `β_n = (k/n) e_n^{-1/γ} / F̄(y_n)`,
+  `e_n = y_n / x_{k/n}`, then `(√k / log e_n) (p̂(y_n) / F̄(y_n) - 1) ⇒ Z / γ² + ν` with
+  `Z ~ N(λ / (1 - ρ), γ²)`.
+* `tendstoInDistribution_tailProbEstimator` (`ρ < 0`, `ν = 0`): the limit is
+  `N(λ / ((1 - ρ) γ²), γ⁻²)` ([dHF, Theorem 4.4.1] for `γ > 0`).
+* `tendstoInDistribution_tailProbEstimator_of_rho_eq_zero` (`ρ = 0`, `ν = -λ / γ²`): the limit
+  is `N(0, γ⁻²)`, again by cancellation of the two biases.
+
+## References
+
+* [dHF] L. de Haan, A. Ferreira, *Extreme Value Theory: An Introduction*, Springer, 2006,
+  §2.3, §4.3, §4.4.
+* [BGT] N. H. Bingham, C. M. Goldie, J. L. Teugels, *Regular Variation*, Cambridge University
+  Press, 1987, §3.1.
 -/
 
 open Filter Topology Set Real MeasureTheory ProbabilityTheory
