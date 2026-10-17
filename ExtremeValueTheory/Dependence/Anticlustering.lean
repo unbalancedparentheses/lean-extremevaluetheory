@@ -186,4 +186,184 @@ theorem HasSpectralTailProcess.tendsto_cond_exists_lt (hα : 0 < α) (hX : ∀ t
 
 end Windows
 
+/-! ### Anticlustering forces the spectral tail process to vanish -/
+
+section Vanishing
+
+variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {P : Measure Ω} [IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ}
+  {Q : Measure Ω'} [IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ}
+
+omit [IsProbabilityMeasure P] [IsProbabilityMeasure Q] in
+/-- A bound `P(s ∩ A) ≤ ε P(s)` is a bound `P(A | s) ≤ ε`. -/
+theorem cond_le_ofReal_of_measureReal_le [IsFiniteMeasure P] {s A : Set Ω} (hs : MeasurableSet s)
+    {ε : ℝ} (hε : 0 ≤ ε) (h : P.real (s ∩ A) ≤ ε * P.real s) : P[|s] A ≤ ENNReal.ofReal ε := by
+  rw [cond_apply hs]
+  rcases eq_or_ne (P s) 0 with h0 | h0
+  · simp [measure_mono_null inter_subset_left h0]
+  · have h1 : P (s ∩ A) ≤ ENNReal.ofReal ε * P s := by
+      have := ENNReal.ofReal_le_ofReal h
+      rwa [ENNReal.ofReal_mul hε, measureReal_def, measureReal_def,
+        ENNReal.ofReal_toReal (measure_ne_top _ _),
+        ENNReal.ofReal_toReal (measure_ne_top _ _)] at this
+    calc (P s)⁻¹ * P (s ∩ A) ≤ (P s)⁻¹ * (ENNReal.ofReal ε * P s) := by gcongr
+      _ = ENNReal.ofReal ε := by
+        rw [mul_comm, mul_assoc, ENNReal.mul_inv_cancel h0 (measure_ne_top _ _), mul_one]
+
+omit [IsProbabilityMeasure Q] in
+/-- If `n P(|X_0| > uₙ)` converges, then `uₙ → ∞`: regular variation makes `P(|X_0| > x)`
+positive for every `x`, while `P(|X_0| > uₙ) → 0`. -/
+theorem HasSpectralTailProcess.tendsto_atTop_of_tendsto_mul (h : HasSpectralTailProcess P X α Q Θ)
+    {u : ℕ → ℝ} {τ : ℝ}
+    (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < |X 0 ω|}) atTop (𝓝 τ)) :
+    Tendsto u atTop atTop := by
+  have hp := tendsto_zero_of_tendsto_natCast_mul' hτ
+  rw [tendsto_atTop]
+  intro C
+  obtain ⟨x, hxC, hx⟩ := ((eventually_ge_atTop C).and h.1.eventually_pos).exists
+  have hC : 0 < P.real {ω | C < |X 0 ω|} :=
+    hx.trans_le (measureReal_mono fun ω (hω : x < |X 0 ω|) => hxC.trans_lt hω)
+  filter_upwards [hp.eventually (gt_mem_nhds hC)] with n hn
+  by_contra hcon
+  rw [not_le] at hcon
+  exact absurd (measureReal_mono (μ := P) fun ω (hω : C < |X 0 ω|) => hcon.trans hω)
+    (not_le.2 hn)
+
+/-- **Anticlustering implies `Θ_t → 0`** ([BS09, Proposition 4.2], [KS20, Lemma 6.1.?]).
+Let `(X_t)` have spectral tail process `(Θ_t)` with index `α > 0`, let `uₙ → ∞` and `rₙ → ∞`, and
+assume the forward anticlustering bound `ForwardAntiClusteringAt P X u r`. Then
+`Θ_t → 0` almost surely as `t → +∞`.
+
+Hypotheses actually used: only the spectral tail process (window convergence and regular
+variation), `uₙ → ∞`, `rₙ → ∞` and the forward anticlustering bound at the single level sequence
+`uₙ`. No stationarity, no `rₙ / n → 0`, and no anticlustering at other levels `aₙ x` are needed:
+the passage from the level `1` of the tail process to all levels uses the independent Pareto
+radius `R` of `Y = R Θ`. -/
+theorem HasSpectralTailProcess.tendsto_zero_of_forwardAntiClusteringAt (hα : 0 < α)
+    (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
+    (h : HasSpectralTailProcess P X α Q Θ) {u : ℕ → ℝ} (hu : Tendsto u atTop atTop)
+    {r : ℕ → ℕ} (hr : Tendsto r atTop atTop) (hAC : ForwardAntiClusteringAt P X u r) :
+    ∀ᵐ ω' ∂Q, Tendsto (fun k : ℕ => Θ k ω') atTop (𝓝 0) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  set π := (paretoMeasure 1 α).prod Q with hπ
+  have hs : ∀ x : ℝ, MeasurableSet {ω | x < |X 0 ω|} := fun x =>
+    measurableSet_lt measurable_const (continuous_abs.measurable.comp (hX 0))
+  -- the tail process exceeds `1` after time `m` with small probability
+  have step1 : ∀ ε : ℝ, 0 < ε → ∃ m : ℕ,
+      π {p | ∃ k : ℕ, m ≤ k ∧ 1 < |p.1 * Θ k p.2|} ≤ ENNReal.ofReal ε := by
+    intro ε hε
+    obtain ⟨m, hm⟩ := hAC ε hε
+    refine ⟨m, ?_⟩
+    have hW : ∀ s : ℕ, π {p | ∃ t ∈ Finset.Icc (m : ℤ) s, 1 < |p.1 * Θ t p.2|} ≤
+        ENNReal.ofReal ε := by
+      intro s
+      have key := (h.tendsto_cond_exists_lt hα hX hΘm (Finset.Icc (m : ℤ) s)).comp hu
+      refine le_of_tendsto key ?_
+      filter_upwards [hm, hr.eventually_ge_atTop s] with n hn hrn
+      refine (measure_mono ?_).trans (cond_le_ofReal_of_measureReal_le (hs _) hε.le
+        (A := {ω | ∃ t : ℤ, (m : ℤ) ≤ t ∧ t ≤ r n ∧ u n < |X t ω|}) hn)
+      rintro ω ⟨t, ht, hlt⟩
+      rw [Finset.mem_Icc] at ht
+      exact ⟨t, ht.1, ht.2.trans (by exact_mod_cast hrn), hlt⟩
+    have hmono : Monotone fun s : ℕ =>
+        {p : ℝ × Ω' | ∃ t ∈ Finset.Icc (m : ℤ) s, 1 < |p.1 * Θ t p.2|} := by
+      intro a b hab p ⟨t, ht, h1⟩
+      exact ⟨t, Finset.Icc_subset_Icc le_rfl (by exact_mod_cast hab) ht, h1⟩
+    have hU : (⋃ s : ℕ, {p : ℝ × Ω' | ∃ t ∈ Finset.Icc (m : ℤ) s, 1 < |p.1 * Θ t p.2|}) =
+        {p | ∃ k : ℕ, m ≤ k ∧ 1 < |p.1 * Θ k p.2|} := by
+      ext p
+      simp only [mem_iUnion, mem_ofPred_eq, Finset.mem_Icc]
+      constructor
+      · rintro ⟨s, t, ⟨h1, h2⟩, h3⟩
+        obtain ⟨k, rfl⟩ : ∃ k : ℕ, t = k := ⟨t.toNat, by omega⟩
+        exact ⟨k, by exact_mod_cast h1, h3⟩
+      · rintro ⟨k, hk, h3⟩
+        exact ⟨k, k, ⟨by exact_mod_cast hk, le_rfl⟩, h3⟩
+    rw [← hU]
+    exact le_of_tendsto' (tendsto_measure_iUnion_atTop hmono) hW
+  -- scaling by the independent Pareto radius: `Θ` exceeds every level `v` rarely
+  have step2 : ∀ v : ℝ, 0 < v → v ≤ 1 →
+      Q (⋂ m : ℕ, {ω' | ∃ k : ℕ, m ≤ k ∧ v < |Θ k ω'|}) = 0 := by
+    intro v hv hv1
+    have hc : paretoMeasure 1 α (Ioi (1 / v)) = ENNReal.ofReal (v ^ α) := by
+      rw [paretoMeasure_one_Ioi hα (by rw [le_div_iff₀ hv]; linarith), one_div,
+        Real.inv_rpow hv.le, Real.rpow_neg (by positivity), inv_inv]
+    have hc0 : ENNReal.ofReal (v ^ α) ≠ 0 :=
+      (ENNReal.ofReal_pos.2 (Real.rpow_pos_of_pos hv α)).ne'
+    have hbound : ∀ ε : ℝ, 0 < ε → Q (⋂ m : ℕ, {ω' | ∃ k : ℕ, m ≤ k ∧ v < |Θ k ω'|}) *
+        ENNReal.ofReal (v ^ α) ≤ ENNReal.ofReal ε := by
+      intro ε hε
+      obtain ⟨m, hm⟩ := step1 ε hε
+      calc Q (⋂ m : ℕ, {ω' | ∃ k : ℕ, m ≤ k ∧ v < |Θ k ω'|}) * ENNReal.ofReal (v ^ α)
+          ≤ Q {ω' | ∃ k : ℕ, m ≤ k ∧ v < |Θ k ω'|} * ENNReal.ofReal (v ^ α) := by
+            gcongr; exact iInter_subset _ m
+        _ = π (Ioi (1 / v) ×ˢ {ω' | ∃ k : ℕ, m ≤ k ∧ v < |Θ k ω'|}) := by
+            rw [hπ, Measure.prod_prod, hc, mul_comm]
+        _ ≤ π {p | ∃ k : ℕ, m ≤ k ∧ 1 < |p.1 * Θ k p.2|} := by
+            refine measure_mono ?_
+            rintro ⟨r', ω'⟩ ⟨hr', k, hk, hθ⟩
+            refine ⟨k, hk, ?_⟩
+            have hr' : 1 / v < r' := hr'
+            have hr0 : 0 < r' := lt_trans (by positivity) hr'
+            rw [abs_mul, abs_of_pos hr0]
+            calc (1 : ℝ) = (1 / v) * v := by field_simp
+              _ < r' * |Θ k ω'| := mul_lt_mul hr' hθ.le hv hr0.le
+        _ ≤ ENNReal.ofReal ε := hm
+    have h0 : Q (⋂ m : ℕ, {ω' | ∃ k : ℕ, m ≤ k ∧ v < |Θ k ω'|}) *
+        ENNReal.ofReal (v ^ α) = 0 := by
+      refine le_antisymm (ENNReal.le_of_forall_pos_le_add fun ε hε _ => ?_) zero_le
+      rw [zero_add]
+      simpa using hbound ε (by exact_mod_cast hε)
+    rcases mul_eq_zero.1 h0 with h0 | h0
+    · exact h0
+    · exact absurd h0 hc0
+  have hae : ∀ᵐ ω' ∂Q, ∀ j : ℕ,
+      ω' ∉ ⋂ m : ℕ, {ω' | ∃ k : ℕ, m ≤ k ∧ 1 / ((j : ℝ) + 1) < |Θ k ω'|} := by
+    rw [ae_all_iff]
+    intro j
+    refine measure_eq_zero_iff_ae_notMem.1 (step2 _ (by positivity) ?_)
+    rw [div_le_one (by positivity)]
+    linarith [j.cast_nonneg (α := ℝ)]
+  filter_upwards [hae] with ω' hω'
+  rw [Metric.tendsto_atTop]
+  intro δ hδ
+  obtain ⟨j, hj⟩ := exists_nat_one_div_lt hδ
+  have := hω' j
+  simp only [mem_iInter, mem_ofPred_eq, not_forall, not_exists, not_and, not_lt] at this
+  obtain ⟨m, hm⟩ := this
+  refine ⟨m, fun k hk => ?_⟩
+  rw [Real.dist_eq, sub_zero]
+  exact (hm k hk).trans_lt hj
+
+/-- **Anticlustering implies `ϑ > 0`** ([BS09, Proposition 4.2], [KS20, §7.5]): for a stationary
+series with spectral tail process `Θ` satisfying the forward anticlustering bound along some
+`uₙ → ∞`, `rₙ → ∞`, the candidate extremal index is positive. Combines
+`tendsto_zero_of_forwardAntiClusteringAt` with `candidateExtremalIndex_pos`; stationarity enters
+only through the latter (the time-change formula). -/
+theorem HasSpectralTailProcess.candidateExtremalIndex_pos_of_forwardAntiClusteringAt
+    (hα : 0 < α) (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
+    (hstat : HasShiftInvariantWindows P X) (h : HasSpectralTailProcess P X α Q Θ)
+    {u : ℕ → ℝ} (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hAC : ForwardAntiClusteringAt P X u r) : 0 < candidateExtremalIndex Q Θ α :=
+  h.candidateExtremalIndex_pos hα hX hΘm hstat
+    (h.tendsto_zero_of_forwardAntiClusteringAt hα hX hΘm hu hr hAC)
+
+/-- **`AC(rₙ)` implies `Θ_t → 0` and `ϑ > 0`** in the normalization of [BS09, §4] and
+[KS20, Definition 6.1.3]: `n P(|X_0| > aₙ) → 1`, `rₙ → ∞`, and `AC(rₙ)`. Only the level `x = 1`
+of `AC(rₙ)` and only its forward half are used, and `rₙ / n → 0` is not needed. -/
+theorem HasSpectralTailProcess.candidateExtremalIndex_pos_of_antiClustering
+    (hα : 0 < α) (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
+    (hstat : HasShiftInvariantWindows P X) (h : HasSpectralTailProcess P X α Q Θ)
+    {a : ℕ → ℝ} (ha : Tendsto (fun n : ℕ => n * P.real {ω | a n < |X 0 ω|}) atTop (𝓝 1))
+    {r : ℕ → ℕ} (hr : Tendsto r atTop atTop) (hAC : AntiClustering P X a r) :
+    (∀ᵐ ω' ∂Q, Tendsto (fun k : ℕ => Θ k ω') atTop (𝓝 0)) ∧
+      0 < candidateExtremalIndex Q Θ α := by
+  have hu : Tendsto (fun n => a n * 1) atTop atTop := by
+    simpa using h.tendsto_atTop_of_tendsto_mul ha
+  have hAC1 := (hAC 1 one_pos).forward
+  exact ⟨h.tendsto_zero_of_forwardAntiClusteringAt hα hX hΘm hu hr hAC1,
+    h.candidateExtremalIndex_pos_of_forwardAntiClusteringAt hα hX hΘm hstat hu hr hAC1⟩
+
+end Vanishing
+
 end ExtremeValueTheory
