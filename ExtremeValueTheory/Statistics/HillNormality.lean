@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.Statistics.Renyi
-import ExtremeValueTheory.Statistics.Hill
+import ExtremeValueTheory.Statistics.Moment
+import ExtremeValueTheory.RegularVariation.SecondOrder
 import Mathlib.Probability.CentralLimitTheorem
 import Mathlib.Probability.HasLawExists
 
@@ -364,5 +365,79 @@ theorem tendstoInDistribution_hill_pareto {X : ℕ → Ω → ℝ} (hX : ∀ i, 
 
 
 end Pareto
+
+/-! ### Localization of the intermediate exponential order statistic -/
+
+section Localization
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+
+omit [IsProbabilityMeasure P] in
+theorem measure_lt_expMeasure_of_hasLaw {E : Ω → ℝ} (hE : HasLaw E (expMeasure 1) P) {v : ℝ}
+    (hv : 0 ≤ v) : P {ω | v < E ω} = ENNReal.ofReal (exp (-v)) := by
+  rw [← expMeasure_Ioi hv, ← hE.map_eq, Measure.map_apply_of_aemeasurable hE.aemeasurable
+    measurableSet_Ioi]
+  rfl
+
+/-- If `k(n) → ∞` and `k(n) / n → 0`, then `n / k(n) → ∞`. -/
+theorem tendsto_div_atTop_of_tendsto {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
+    (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0)) :
+    Tendsto (fun n : ℕ => (n : ℝ) / k n) atTop atTop := by
+  have hpos : ∀ᶠ n : ℕ in atTop, 0 < (k n : ℝ) / n := by
+    filter_upwards [((tendsto_natCast_atTop_atTop (R := ℝ)).comp hk).eventually_gt_atTop 0,
+      (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0] with n h1 h2
+    exact div_pos h1 h2
+  have := (tendsto_inv_nhdsGT_zero (𝕜 := ℝ)).comp (tendsto_nhdsWithin_iff.2 ⟨hkn, hpos⟩)
+  refine this.congr fun n => ?_
+  simp [inv_div]
+
+/-- **Localization of the exponential order statistic**: if the `E_i` are iid standard
+exponential, `k(n) → ∞` and `k(n) / n → 0`, then `E_{(k+1)} - log(n / k) → 0` in probability. -/
+theorem tendstoInMeasure_orderStat_sub_log {E : ℕ → Ω → ℝ} (hEm : ∀ i, Measurable (E i))
+    (hE : ∀ i, HasLaw (E i) (expMeasure 1) P) (hind : iIndepFun E P) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n ω => orderStat (fun i : Fin n => E i ω) (k n) - log (n / k n))
+      atTop (fun _ => 0) := by
+  have hident : ∀ i, IdentDistrib (E i) (E 0) P P := fun i =>
+    ⟨(hE i).aemeasurable, (hE 0).aemeasurable, by rw [(hE i).map_eq, (hE 0).map_eq]⟩
+  have hnk := tendsto_div_atTop_of_tendsto hk hkn
+  have hkpos : ∀ᶠ n in atTop, (0 : ℝ) < k n :=
+    (tendsto_natCast_atTop_atTop.comp hk).eventually_gt_atTop 0
+  have hmk : ∀ᶠ n in atTop, 1 * k n < n := by
+    filter_upwards [hkn.eventually (gt_mem_nhds one_pos),
+      (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0] with n h1 h2
+    rw [div_lt_one h2] at h1
+    rw [one_mul]; exact_mod_cast h1
+  rw [tendstoInMeasure_iff_dist]
+  intro ε hε
+  set η := ε / 2 with hη
+  have hη0 : 0 < η := by positivity
+  have hlim : ∀ x, 0 ≤ x → Tendsto (fun n : ℕ =>
+      n * (P {ω | (log (n / k n) - η) + 1 * x < E 0 ω}).toReal / k n) atTop
+      (𝓝 (exp (η - x))) := by
+    intro x hx
+    refine tendsto_const_nhds.congr' ?_
+    filter_upwards [hnk.eventually_ge_atTop (exp η), hkpos] with n hn hkn'
+    have hn0 : 0 < (n : ℝ) / k n := (exp_pos η).trans_le hn
+    have hlog : η ≤ log (n / k n) := by rwa [le_log_iff_exp_le hn0]
+    have hn' : (0 : ℝ) < n := (div_pos_iff_of_pos_right hkn').1 hn0
+    rw [measure_lt_expMeasure_of_hasLaw (hE 0) (by linarith), ENNReal.toReal_ofReal
+      (exp_pos _).le, one_mul, show -(log (n / k n) - η + x) = (η - x) + -log (n / k n) by ring,
+      exp_add, exp_neg, exp_log hn0]
+    field_simp
+  have h := tendsto_measure_not_mem_orderStat hEm hind hident hk hmk (Eventually.of_forall
+    fun _ => one_pos) hlim le_rfl (by rw [sub_zero]; exact_mod_cast one_lt_exp_iff.2 hη0)
+    (y := 2 * η) (by positivity)
+    (by rw [show η - 2 * η = -η by ring]; exact_mod_cast exp_lt_one_iff.2 (by linarith))
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds h
+    (fun _ => bot_le) fun n => measure_mono fun ω hω => ?_
+  simp only [mem_ofPred_eq, Real.dist_eq, sub_zero, one_mul, div_one] at hω ⊢
+  intro hcon
+  have : |orderStat (fun i : Fin n => E i ω) (k n) - log (n / k n)| ≤ η :=
+    abs_le.2 ⟨by linarith [hcon.1], by linarith [hcon.2]⟩
+  linarith
+
+end Localization
+
 
 end ExtremeValueTheory
