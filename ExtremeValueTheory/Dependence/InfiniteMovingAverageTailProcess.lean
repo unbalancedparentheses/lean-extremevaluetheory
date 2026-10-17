@@ -725,6 +725,128 @@ theorem hasSpectralTailProcess (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun 
 
 end Approx
 
+/-! ### The candidate extremal index -/
+
+section Candidate
+
+/-- The running supremum `R_n = sup_{i ≥ 0} ψ_{n+i}`. -/
+noncomputable def runSup (ψ : ℕ → ℝ) (n : ℕ) : ℝ := ⨆ i, ψ (n + i)
+
+variable (hψ0 : ∀ j, 0 ≤ ψ j) (hδ : 0 < δ) (hψ : Summable fun j => ψ j ^ δ)
+include hψ0 hδ hψ
+
+/-- The running supremum is attained. -/
+theorem exists_runSup_eq (n : ℕ) : ∃ k, runSup ψ n = ψ (n + k) ∧ ∀ i, ψ (n + i) ≤ ψ (n + k) := by
+  have hmax : ∃ k, ∀ i, ψ (n + i) ≤ ψ (n + k) := by
+    by_cases h : ∃ i, 0 < ψ (n + i)
+    · obtain ⟨k, -, hk⟩ := exists_forall_le (ψ := fun i => ψ (n + i)) (fun i => hψ0 _) hδ
+        ((summable_nat_add_iff n).2 hψ |>.congr fun i => by rw [add_comm]) h
+      exact ⟨k, hk⟩
+    · push Not at h
+      exact ⟨0, fun i => (h i).trans (hψ0 _)⟩
+  obtain ⟨k, hk⟩ := hmax
+  refine ⟨k, le_antisymm (ciSup_le hk) (le_ciSup (f := fun i => ψ (n + i))
+    ⟨ψ (n + k), by rintro _ ⟨i, rfl⟩; exact hk i⟩ k), hk⟩
+
+theorem le_runSup (n i : ℕ) : ψ (n + i) ≤ runSup ψ n := by
+  obtain ⟨k, hk, hmax⟩ := exists_runSup_eq hψ0 hδ hψ n
+  rw [hk]; exact hmax i
+
+theorem runSup_nonneg (n : ℕ) : 0 ≤ runSup ψ n :=
+  (hψ0 (n + 0)).trans (le_runSup hψ0 hδ hψ n 0)
+
+theorem runSup_succ_le (n : ℕ) : runSup ψ (n + 1) ≤ runSup ψ n := by
+  obtain ⟨k, hk, -⟩ := exists_runSup_eq hψ0 hδ hψ (n + 1)
+  rw [hk, show n + 1 + k = n + (k + 1) by ring]
+  exact le_runSup hψ0 hδ hψ n _
+
+theorem runSup_eq_of_eq_zero {n : ℕ} (hn : ψ n = 0) : runSup ψ n = runSup ψ (n + 1) := by
+  refine le_antisymm ?_ (runSup_succ_le hψ0 hδ hψ n)
+  obtain ⟨k, hk, -⟩ := exists_runSup_eq hψ0 hδ hψ n
+  rw [hk]
+  rcases k with _ | k
+  · rw [add_zero, hn]; exact runSup_nonneg hψ0 hδ hψ _
+  · rw [show n + (k + 1) = n + 1 + k by ring]; exact le_runSup hψ0 hδ hψ _ _
+
+theorem tendsto_runSup : Tendsto (runSup ψ) atTop (𝓝 0) := by
+  rw [Metric.tendsto_atTop]
+  intro ε hε
+  obtain ⟨N, hN⟩ := eventually_atTop.1 ((hψ.tendsto_atTop_zero).eventually
+    (gt_mem_nhds (Real.rpow_pos_of_pos hε δ)))
+  refine ⟨N, fun n hn => ?_⟩
+  obtain ⟨k, hk, -⟩ := exists_runSup_eq hψ0 hδ hψ n
+  rw [Real.dist_eq, sub_zero, abs_of_nonneg (runSup_nonneg hψ0 hδ hψ n), hk]
+  have := hN (n + k) (by omega)
+  rwa [Real.rpow_lt_rpow_iff (hψ0 _) hε.le hδ] at this
+
+theorem iSup_ofReal_div (n : ℕ) {c : ℝ} (hc : 0 < c) :
+    ⨆ i : ℕ, ENNReal.ofReal (ψ (n + i) / c) = ENNReal.ofReal (runSup ψ n / c) := by
+  refine le_antisymm (iSup_le fun i => ENNReal.ofReal_le_ofReal
+    (div_le_div_of_nonneg_right (le_runSup hψ0 hδ hψ n i) hc.le)) ?_
+  obtain ⟨k, hk, -⟩ := exists_runSup_eq hψ0 hδ hψ n
+  rw [hk]
+  exact le_iSup (fun i => ENNReal.ofReal (ψ (n + i) / c)) k
+
+/-- **Candidate extremal index of an infinite moving average** ([DR85], [KS20, §15.3]): the
+spectral tail process `Θ_t = ψ_{J+t} / ψ_J` has candidate extremal index
+`ϑ = sup_j ψ_j^α / ∑_j ψ_j^α`. -/
+theorem candidateExtremalIndex_spectral (hδα : δ ≤ α) (hpos : ∃ j, 0 < ψ j) :
+    candidateExtremalIndex (indexLaw ψ α) (spectral ψ) α =
+      ENNReal.ofReal ((⨆ j, ψ j) ^ α / ∑' j, ψ j ^ α) := by
+  have hα : 0 < α := hδ.trans_le hδα
+  have hS := summable_rpow hψ0 hδ hδα hψ
+  obtain ⟨k, hk⟩ := hpos
+  set W := ∑' j, ψ j ^ α with hW_def
+  have hW : 0 < W := (Real.rpow_pos_of_pos hk _).trans_le
+    (hS.le_tsum k fun j _ => Real.rpow_nonneg (hψ0 j) _)
+  set R := runSup ψ with hR_def
+  have hR0 : ∀ n, 0 ≤ R n := runSup_nonneg hψ0 hδ hψ
+  have hRs : ∀ n, R (n + 1) ≤ R n := runSup_succ_le hψ0 hδ hψ
+  have hterm : ∀ j : ℕ, ENNReal.ofReal (ψ j ^ α / W) *
+      ((⨆ k : ℕ, ENNReal.ofReal |spectral ψ k j|) ^ α -
+        (⨆ k : ℕ, ENNReal.ofReal |spectral ψ (k + 1) j|) ^ α) =
+      ENNReal.ofReal ((R j ^ α - R (j + 1) ^ α) / W) := by
+    intro j
+    rcases (hψ0 j).eq_or_lt with h0 | hpos
+    · rw [← h0, Real.zero_rpow hα.ne', zero_div, ENNReal.ofReal_zero, zero_mul,
+        hR_def, runSup_eq_of_eq_zero hψ0 hδ hψ h0.symm, sub_self, zero_div, ENNReal.ofReal_zero]
+    have h1 : ∀ k : ℕ, |spectral ψ k j| = ψ (j + k) / ψ j := fun k => by
+      rw [spectral, show (j : ℤ) + (k : ℤ) = ((j + k : ℕ) : ℤ) by push_cast; ring,
+        MovingAverage.coef_natCast, abs_of_nonneg (div_nonneg (hψ0 _) hpos.le)]
+    have h2 : ∀ k : ℕ, |spectral ψ ((k : ℤ) + 1) j| = ψ (j + 1 + k) / ψ j := fun k => by
+      rw [spectral, show (j : ℤ) + ((k : ℤ) + 1) = ((j + 1 + k : ℕ) : ℤ) by push_cast; ring,
+        MovingAverage.coef_natCast, abs_of_nonneg (div_nonneg (hψ0 _) hpos.le)]
+    simp only [h1, h2]
+    rw [iSup_ofReal_div hψ0 hδ hψ _ hpos, iSup_ofReal_div hψ0 hδ hψ _ hpos,
+      ENNReal.ofReal_rpow_of_nonneg (div_nonneg (hR0 _) hpos.le) hα.le,
+      ENNReal.ofReal_rpow_of_nonneg (div_nonneg (hR0 _) hpos.le) hα.le,
+      ← ENNReal.ofReal_sub _ (Real.rpow_nonneg (div_nonneg (hR0 _) hpos.le) _),
+      ← ENNReal.ofReal_mul (div_nonneg (Real.rpow_nonneg (hψ0 _) _) hW.le)]
+    congr 1
+    rw [Real.div_rpow (hR0 _) hpos.le, Real.div_rpow (hR0 _) hpos.le]
+    have : 0 < ψ j ^ α := Real.rpow_pos_of_pos hpos _
+    field_simp
+  have hnn : ∀ j, 0 ≤ R j ^ α - R (j + 1) ^ α := fun j =>
+    sub_nonneg.2 (Real.rpow_le_rpow (hR0 _) (hRs _) hα.le)
+  -- telescoping
+  have hsum : HasSum (fun j => R j ^ α - R (j + 1) ^ α) (R 0 ^ α) := by
+    rw [hasSum_iff_tendsto_nat_of_nonneg hnn]
+    have hlim : Tendsto (fun n => R 0 ^ α - R n ^ α) atTop (𝓝 (R 0 ^ α - 0 ^ α)) :=
+      tendsto_const_nhds.sub ((Real.continuousAt_rpow_const 0 α (Or.inr hα.le)).tendsto.comp
+        (tendsto_runSup hψ0 hδ hψ))
+    rw [Real.zero_rpow hα.ne', sub_zero] at hlim
+    refine hlim.congr fun n => ?_
+    rw [Finset.sum_range_sub']
+  rw [candidateExtremalIndex, indexLaw, lintegral_sum_measure]
+  simp only [lintegral_smul_measure, lintegral_dirac]
+  refine (tsum_congr hterm).trans ?_
+  rw [← ENNReal.ofReal_tsum_of_nonneg (fun j => div_nonneg (hnn j) hW.le)
+      (hsum.summable.div_const _), tsum_div_const, hsum.tsum_eq]
+  congr 3
+  simp [hR_def, runSup]
+
+end Candidate
+
 end InfiniteMovingAverage
 
 end ExtremeValueTheory
