@@ -441,6 +441,26 @@ theorem hasSpectralTailProcess_movingMax :
   ⟨isRegularlyVarying_movingMax hα hZ hind hlaw hpos,
     tendstoLawCond_movingMax hα hZ hind hlaw hpos⟩
 
+omit hpos in
+/-- **Consistency check: `θ = ϑ = 1/2` for the moving maximum.** The block extremal index of the
+moving maximum, computed directly in `hasExtremalIndex_movingMax` (`θ = 1/2`), equals the
+candidate extremal index `ϑ` of its spectral tail process (`candidateExtremalIndex_movingMax`).
+-/
+theorem hasExtremalIndex_movingMax_candidateExtremalIndex :
+    HasExtremalIndex (fun n : ℕ => movingMax Z n) P
+      (candidateExtremalIndex fairCoin movingMaxSpectral α).toReal := by
+  rw [candidateExtremalIndex_movingMax hα]
+  have hZ' : ∀ n : ℕ, Measurable (Z n) := fun n => hZ n
+  have hind' : iIndepFun (fun n : ℕ => Z n) P := hind.precomp Nat.cast_injective
+  have hid' : ∀ n : ℕ, IdentDistrib (Z n) (Z ((0 : ℕ) : ℤ)) P P := fun n =>
+    ⟨(hZ _).aemeasurable, (hZ _).aemeasurable, by rw [hlaw, hlaw]⟩
+  have key := hasExtremalIndex_movingMax (Z := fun n : ℕ => Z n) hZ' hind' hid'
+  have e : (fun t ω => max (Z ((t : ℕ) : ℤ) ω) (Z ((t + 1 : ℕ) : ℤ) ω)) =
+      fun n : ℕ => movingMax Z n := by
+    funext n ω; simp [movingMax]
+  rw [e] at key
+  simpa using key
+
 end MovingMax
 
 end ExtremeValueTheory
