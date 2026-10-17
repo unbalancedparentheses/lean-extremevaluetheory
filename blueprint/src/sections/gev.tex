@@ -1,0 +1,95 @@
+\chapter{Max-stability, the GEV family and block maxima}
+\label{chap:gev}
+
+\begin{definition}[Max-stable distribution]
+  \label{def:max-stable}
+  \lean{CumulativeDistributionFunction.IsMaxStable}
+  \leanok
+  A non-degenerate c.d.f.\ $G$ is max-stable if for every $n \ge 1$ there are $a_n > 0$, $b_n$ with
+  $G^n(a_n x + b_n) = G(x)$ [EKM, Definition~3.2.1].
+\end{definition}
+
+\begin{theorem}[Max-stable laws are the extreme value laws]
+  \label{thm:max-stable-iff-evd}
+  \uses{def:max-stable, thm:three-types-of-extr-val-distr}
+  \lean{CumulativeDistributionFunction.isMaxStable_iff_isExtremeValueDistr, CumulativeDistributionFunction.isMaxStable_iff_exists_affine,
+    CumulativeDistributionFunction.IsMaxStable.affineTransform, CumulativeDistributionFunction.IsMaxStable.classification,
+    CumulativeDistributionFunction.isMaxStable_standardGumbelCDF, CumulativeDistributionFunction.isMaxStable_standardFrechetCDF,
+    CumulativeDistributionFunction.isMaxStable_standardWeibullCDF, CumulativeDistributionFunction.isMaxStable_of_classification}
+  \leanok
+  $G$ is max-stable if and only if it is an extreme value distribution [EKM, Theorem~3.2.2].
+  Explicitly, $\Lambda^n(x + \log n) = \Lambda(x)$, $\Phi_\alpha^n(n^{1/\alpha} x) = \Phi_\alpha(x)$ and
+  $\Psi_\alpha^n(n^{-1/\alpha} x) = \Psi_\alpha(x)$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  A max-stable $G$ is the limit of its own normalized maxima. Conversely an extreme value
+  distribution satisfies $G^t = A_t \cdot G$ for all $t > 0$; take $t = 1/n$.
+\end{proof}
+
+\begin{definition}[The generalized extreme value family]
+  \label{def:gev}
+  \lean{ExtremeValueTheory.gevCDF, ExtremeValueTheory.gevCDF_apply, ExtremeValueTheory.gevLocScaleCDF, ExtremeValueTheory.gevLocScaleCDF_apply,
+    ExtremeValueTheory.gevLocScaleCDF_returnLevel}
+  \leanok
+  $H_\xi(x) = \exp(-(1 + \xi x)^{-1/\xi})$ for $1 + \xi x > 0$ ($\xi \ne 0$), and
+  $H_0(x) = \exp(-e^{-x})$, with location-scale versions $H_\xi((x - \mu)/\sigma)$
+  [EKM, Definition~3.4.1], [Coles, \S3.1.3].
+\end{definition}
+
+\begin{theorem}[The GEV family is the extreme value family]
+  \label{thm:gev-family}
+  \uses{def:gev, thm:max-stable-iff-evd}
+  \lean{ExtremeValueTheory.mkOfCoefs_smul_gevCDF_of_pos, ExtremeValueTheory.mkOfCoefs_smul_gevCDF_of_neg, ExtremeValueTheory.gevCDF_zero,
+    ExtremeValueTheory.isExtremeValueDistr_gevCDF, ExtremeValueTheory.isMaxStable_gevCDF, ExtremeValueTheory.gevFun_pow_apply,
+    CumulativeDistributionFunction.IsExtremeValueDistr.exists_smul_eq_gevCDF, ExtremeValueTheory.tendsto_gevFun_nhds_zero,
+    ExtremeValueTheory.tendsto_gevCDF_nhds_zero}
+  \leanok
+  $H_\xi$ is of Fr\'echet type $\Phi_{1/\xi}$ for $\xi > 0$, Weibull type $\Psi_{-1/\xi}$ for
+  $\xi < 0$, and Gumbel for $\xi = 0$. Every extreme value distribution is of type $H_\xi$ for some
+  $\xi$ (Jenkinson--von Mises form of Fisher--Tippett--Gnedenko), and $H_\xi \to H_0$ pointwise as
+  $\xi \to 0$ [EKM, Theorem~3.4.5].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Explicit affine maps; continuity at $\xi = 0$ from $(1 + \xi x)^{-1/\xi} \to e^{-x}$.
+\end{proof}
+
+\begin{theorem}[Moments of the GEV]
+  \label{thm:gev-moments}
+  \uses{thm:gev-family}
+  \lean{ExtremeValueTheory.measure_gevCDF_eq_map, ExtremeValueTheory.integral_id_gevCDF_zero, ExtremeValueTheory.integral_id_standardGumbelCDF,
+    ExtremeValueTheory.integral_id_gevCDF, ExtremeValueTheory.integral_sq_gevCDF, ExtremeValueTheory.variance_id_gevCDF,
+    ExtremeValueTheory.integral_id_standardFrechetCDF, ExtremeValueTheory.integral_id_standardWeibullCDF,
+    ExtremeValueTheory.integral_id_gevLocScaleCDF, ExtremeValueTheory.integral_mul_gevFun_pow_gevCDF}
+  \leanok
+  $H_\xi$ is the law of $(T^{-\xi} - 1)/\xi$ ($-\log T$ for $\xi = 0$) with $T$ standard
+  exponential. The Gumbel mean is Euler's constant $\gamma$; for $\xi < 1$, $\xi \ne 0$ the mean is
+  $(\Gamma(1 - \xi) - 1)/\xi$; for $\xi < 1/2$ the variance is
+  $(\Gamma(1 - 2\xi) - \Gamma(1 - \xi)^2)/\xi^2$; the Fr\'echet mean is $\Gamma(1 - 1/\alpha)$ for
+  $\alpha > 1$. The probability-weighted moments are
+  $\E[X H_\xi(X)^r] = ((r+1)^\xi \Gamma(1 - \xi) - 1)/(\xi(r+1))$
+  [Hosking, Wallis and Wood 1985]. The Gumbel variance $\pi^2/6$ is not formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Substitute $x = (t^{-\xi} - 1)/\xi$ and use $\int_0^\infty t^{s-1} e^{-t} \ud t = \Gamma(s)$; the
+  Gumbel mean is $-\Gamma'(1) = \gamma$.
+\end{proof}
+
+\begin{theorem}[Block maxima]
+  \label{thm:block-maxima}
+  \uses{def:gev}
+  \lean{ExtremeValueTheory.blockMax, ExtremeValueTheory.blockMaxEmpCDF, ExtremeValueTheory.measureReal_blockMax_le,
+    ExtremeValueTheory.tendsto_measureReal_normalized_blockMax_le, ExtremeValueTheory.measureReal_abs_blockMaxEmpCDF_sub_ge_le,
+    ExtremeValueTheory.tendstoInMeasure_blockMaxEmpCDF}
+  \leanok
+  Split an iid sample into $m$ blocks of size $n$. If $F^n(a_n x + b_n) \to H(x)$, the normalized
+  block maxima converge in law to $H$, and their empirical c.d.f.\ converges to $H(x)$ in probability
+  as $m, n \to \infty$ (with known normalizing constants) [Coles, \S3.3].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Block maxima of disjoint blocks are independent with c.d.f.\ $F^n$; Chebyshev's inequality gives
+  $\PR[|\hat H_m(x) - F^n(a_n x + b_n)| \ge \varepsilon] \le 1/(4 m \varepsilon^2)$.
+\end{proof}

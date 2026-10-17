@@ -17,6 +17,12 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
 
 - **Fisher–Tippett–Gnedenko** (`CumulativeDistributionFunction.IsExtremeValueDistr.classification`):
   proved, depending only on the standard axioms `propext`, `Classical.choice`, `Quot.sound`.
+- **Max-stability and the GEV family** (`GEV/`): max-stable laws are exactly the extreme value
+  laws (`isMaxStable_iff_isExtremeValueDistr`); the unified family `H_ξ` (`gevCDF`) with explicit
+  affine links to the three types, the Jenkinson–von Mises form of Fisher–Tippett–Gnedenko
+  (`IsExtremeValueDistr.exists_smul_eq_gevCDF`), and moments: the Gumbel mean is Euler's `γ`, GEV
+  means and variances via `Γ`, probability-weighted moments. Block maxima: normalized block maxima
+  and their empirical c.d.f. converge to `H` (`tendstoInMeasure_blockMaxEmpCDF`).
 - **Karamata's tail-integral theorem** (`IsRegularlyVarying.tendsto_integral_Ioi_div`): for an
   antitone survival function regularly varying with index `-α`, `α > 1`,
   `∫ₓ^∞ F̄(t) dt / (x F̄(x)) → 1/(α-1)`. Proved, standard axioms only.
