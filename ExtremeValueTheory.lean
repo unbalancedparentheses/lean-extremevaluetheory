@@ -98,6 +98,7 @@ import ExtremeValueTheory.ForMathlib.MeasureTheory.Function.ConvergenceInDistrib
 import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.Cadlag
 import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.Metric
 import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.Measurable
+import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.Separable
 import ExtremeValueTheory.Statistics.ExtremeQuantileSecondOrder
 import ExtremeValueTheory.Statistics.ExtremeQuantileRhoZero
 import ExtremeValueTheory.HeavyTails.LinearProcess
