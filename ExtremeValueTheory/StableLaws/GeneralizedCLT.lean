@@ -23,7 +23,8 @@ and in both cases the limit is the `α`-stable law with characteristic function
 `stableSkewConst α`. Classically `C_α = Γ(1 - α) cos (π α / 2)` and
 `E_α = Γ(1 - α) sin (π α / 2) = C_α tan (π α / 2)`, so the limit is
 `exp (-C_α |t|^α (1 - i β sign(t) tan (π α / 2)))` with `β = p - q` ([ST, (1.1.6)]); we keep the
-constants as the explicit integrals and do not prove these Gamma-function closed forms.
+constants as the explicit integrals here, and prove these Gamma-function closed forms (and the
+textbook restatements of the theorems) in `StableLaws/Constants.lean`.
 
 The case `α = 1` (centering `n E[X 1{|X| ≤ aₙ}]`, logarithmic term in the exponent) is not
 treated here.

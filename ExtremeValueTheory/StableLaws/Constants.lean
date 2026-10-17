@@ -9,6 +9,37 @@ import Mathlib.MeasureTheory.Integral.Gamma
 
 /-!
 # Closed forms of the stable constants
+
+The generalized central limit theorem (`GeneralizedCLT.lean`) produces the stable exponent
+`-C_α |t|^α + i β E_α sign(t) |t|^α` with the constants given as integrals,
+`C_α = stableConst α = α ∫₀^∞ (1 - cos u) u^(-α-1) du` and
+`E_α = stableSkewConst α` (`α ∫₀^∞ sin u · u^(-α-1) du` for `α < 1`,
+`-∫₀^∞ (1 - cos u) u^(-α) du` for `α > 1`). Here we evaluate them
+([Feller, Vol. II, §XVII.4], [ST, (1.1.6)]):
+
+* `stableConst_eq_pi_div`: `C_α = π / (2 sin (π α / 2) Γ(α))` for `0 < α < 2`;
+* `stableConst_one`: `C_1 = π / 2`;
+* `stableConst_eq_Gamma_mul_cos`: `C_α = Γ(1 - α) cos (π α / 2)` for `α ≠ 1`;
+* `stableSkewConst_eq_pi_div`, `stableSkewConst_eq_Gamma_mul_sin`:
+  `E_α = π / (2 cos (π α / 2) Γ(α)) = Γ(1 - α) sin (π α / 2)` for `α ≠ 1`;
+* `stableSkewConst_eq_mul_tan`: `E_α = C_α tan (π α / 2)`.
+
+As a consequence the GCLT limits have the textbook characteristic function
+`exp (-C_α |t|^α (1 - i β sign(t) tan (π α / 2)))`, `β = p - q`
+(`tendsto_map_convPow_of_isRegularlyVarying_of_lt_one'`,
+`tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt'`). Sanity check: for `α < 1`, `β = 1`
+this is `exp (-Γ(1 - α) (-i t)^α)`, the Laplace transform `E e^{-λX} = exp (-Γ(1 - α) λ^α)` of the
+positive stable law at `λ = -i t`.
+
+## Proof outline
+
+Write `u^(-α-1) = Γ(α + 1)⁻¹ ∫₀^∞ x^α e^{-u x} dx` and apply Fubini
+(`Gamma_mul_integral_mul_rpow`); the Laplace transforms
+`∫₀^∞ (1 - cos u) e^{-x u} du = 1 / (x (1 + x²))` and `∫₀^∞ sin u e^{-x u} du = 1 / (1 + x²)`
+reduce everything to `∫₀^∞ x^(s-1) / (1 + x²) dx = π / (2 sin (π s / 2))`, `0 < s < 2`
+(`integral_rpow_div_one_add_sq`), which follows in the same way from
+`1 / (1 + x²) = ∫₀^∞ e^{-(1 + x²) y} dy`, the Gamma integral and the reflection formula
+`Γ(s) Γ(1 - s) = π / sin (π s)`. The case `α > 1` of `E_α` is `-C_{α-1} / (α - 1)`.
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set Real
@@ -101,8 +132,8 @@ theorem integral_rpow_div_one_add_sq {s : ℝ} (hs0 : 0 < s) (hs2 : s < 2) :
       ⟨?_, ?_⟩
     · rw [ae_restrict_iff' measurableSet_Ioi]
       refine Eventually.of_forall fun y hy => ?_
-      refine IntegrableOn.congr_fun ((integrableOn_rpow_mul_exp_neg_mul_rpow hq two_pos hy).const_mul
-        (Real.exp (-y))) (fun x _ => ?_) measurableSet_Ioi
+      refine IntegrableOn.congr_fun
+        ((integrableOn_rpow_mul_exp_neg_mul_rpow hq two_pos hy).const_mul (Real.exp (-y))) (fun x _ => ?_) measurableSet_Ioi
       simp only [Function.uncurry_apply_pair, hf]; ring_nf
     · refine IntegrableOn.congr_fun ((Real.GammaIntegral_convergent
         (by linarith : 0 < 1 - s / 2)).mul_const ((1 / 2) * Gamma (s / 2)))
@@ -110,7 +141,8 @@ theorem integral_rpow_div_one_add_sq {s : ℝ} (hs0 : 0 < s) (hs2 : s < 2) :
       simp only [Function.uncurry_apply_pair]
       rw [setIntegral_congr_fun measurableSet_Ioi (g := fun x => f x y) fun x hx => ?_]
       · rw [hin y hy, show 1 - s / 2 - 1 = -s / 2 by ring]; ring
-      · exact Real.norm_of_nonneg (by simp only [hf]; have := rpow_pos_of_pos hx (s - 1); positivity)
+      · have := rpow_pos_of_pos hx (s - 1)
+        exact Real.norm_of_nonneg (by simp only [hf]; positivity)
   calc ∫ x in Ioi (0 : ℝ), x ^ (s - 1) / (1 + x ^ 2)
       = ∫ x in Ioi (0 : ℝ), ∫ y in Ioi (0 : ℝ), f x y :=
         setIntegral_congr_fun measurableSet_Ioi fun x hx => (hout x hx).symm
@@ -301,5 +333,65 @@ theorem stableSkewConst_eq_mul_tan (hα0 : 0 < α) (hα2 : α < 2) (hα1 : α �
   field_simp
 
 end StableIntegral
+
+/-- The textbook form of the stable exponent: with `e = β c tan (π α / 2)`,
+`ψ(t) = -c |t|^α (1 - i β sign(t) tan (π α / 2))` ([ST, Definition 1.1.6]). -/
+theorem stableExponent_mul_tan (α c β t : ℝ) :
+    stableExponent α c (β * (c * tan (π * α / 2))) t =
+      -((c * |t| ^ α : ℝ) : ℂ) *
+        (1 - ((β * Real.sign t * tan (π * α / 2) : ℝ) : ℂ) * Complex.I) := by
+  simp only [stableExponent]
+  push_cast
+  ring
+
+open GCLT StableIntegral Subexp
+
+/-- **Generalized central limit theorem, `0 < α < 1`, textbook form** ([Feller, Vol. II, §XVII.5,
+Theorem 2], [ST, (1.1.6)]). Under the hypotheses of
+`tendsto_map_convPow_of_isRegularlyVarying_of_lt_one`, the laws of `(X₁ + ⋯ + Xₙ) / aₙ` converge
+weakly to the `α`-stable law with characteristic function
+`exp (-C_α |t|^α (1 - i β sign(t) tan (π α / 2)))`, `C_α = Γ(1 - α) cos (π α / 2)`,
+`β = p - q = 2 p - 1`. -/
+theorem tendsto_map_convPow_of_isRegularlyVarying_of_lt_one' {μ : Measure ℝ}
+    [IsProbabilityMeasure μ] {α p : ℝ} (hα0 : 0 < α) (hα1 : α < 1)
+    (hRV : IsRegularlyVarying (absTail μ) (-α))
+    (hp : Tendsto (fun x => μ.real (Ioi x) / absTail μ x) atTop (𝓝 p))
+    {a : ℕ → ℝ} (ha : ∀ n, 0 < a n)
+    (hna : Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n)) atTop (𝓝 1)) :
+    ∃ ν : ProbabilityMeasure ℝ,
+      (∀ t, charFun (ν : Measure ℝ) t =
+        Complex.exp (-((Gamma (1 - α) * cos (π * α / 2) * |t| ^ α : ℝ) : ℂ) *
+          (1 - (((2 * p - 1) * Real.sign t * tan (π * α / 2) : ℝ) : ℂ) * Complex.I))) ∧
+      Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+        ⟨(convPow μ n).map ((a n)⁻¹ * ·), inferInstance⟩) atTop (𝓝 ν) := by
+  obtain ⟨ν, hν, hlim⟩ := tendsto_map_convPow_of_isRegularlyVarying_of_lt_one hα0 hα1 hRV hp ha hna
+  refine ⟨ν, fun t => ?_, hlim⟩
+  rw [hν.2 t, stableSkewConst_eq_mul_tan hα0 (by linarith) hα1.ne,
+    stableConst_eq_Gamma_mul_cos hα0 (by linarith) hα1.ne, stableExponent_mul_tan]
+
+/-- **Generalized central limit theorem, `1 < α < 2`, textbook form** ([Feller, Vol. II, §XVII.5,
+Theorem 2], [ST, (1.1.6)]). Under the hypotheses of
+`tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt`, the laws of
+`(X₁ + ⋯ + Xₙ - n E X) / aₙ` converge weakly to the `α`-stable law with characteristic function
+`exp (-C_α |t|^α (1 - i β sign(t) tan (π α / 2)))`, `C_α = Γ(1 - α) cos (π α / 2)
+= Γ(2 - α) cos (π α / 2) / (1 - α) > 0`, `β = p - q = 2 p - 1`. -/
+theorem tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt' {μ : Measure ℝ}
+    [IsProbabilityMeasure μ] {α p : ℝ} (hα1 : 1 < α) (hα2 : α < 2)
+    (hRV : IsRegularlyVarying (absTail μ) (-α))
+    (hp : Tendsto (fun x => μ.real (Ioi x) / absTail μ x) atTop (𝓝 p))
+    {a : ℕ → ℝ} (ha : ∀ n, 0 < a n)
+    (hna : Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n)) atTop (𝓝 1)) :
+    ∃ ν : ProbabilityMeasure ℝ,
+      (∀ t, charFun (ν : Measure ℝ) t =
+        Complex.exp (-((Gamma (1 - α) * cos (π * α / 2) * |t| ^ α : ℝ) : ℂ) *
+          (1 - (((2 * p - 1) * Real.sign t * tan (π * α / 2) : ℝ) : ℂ) * Complex.I))) ∧
+      Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+        ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - n * ∫ y, y ∂μ)), inferInstance⟩) atTop
+        (𝓝 ν) := by
+  obtain ⟨ν, hν, hlim⟩ :=
+    tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt hα1 hα2 hRV hp ha hna
+  refine ⟨ν, fun t => ?_, hlim⟩
+  rw [hν.2 t, stableSkewConst_eq_mul_tan (by linarith) hα2 hα1.ne',
+    stableConst_eq_Gamma_mul_cos (by linarith) hα2 hα1.ne', stableExponent_mul_tan]
 
 end ExtremeValueTheory
