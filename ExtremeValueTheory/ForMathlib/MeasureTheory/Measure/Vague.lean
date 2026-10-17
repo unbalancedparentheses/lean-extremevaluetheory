@@ -46,6 +46,11 @@ into the definition would not by itself give uniqueness of limits (on locally co
 spaces that are not second countable a locally finite measure need not be regular), so the
 assumptions are left to the individual statements, in the style of Mathlib's type-class-based
 hypotheses.
+
+## References
+
+* [O. Kallenberg, *Random Measures, Theory and Applications*][kallenberg2017]
+* [S. I. Resnick, *Extreme Values, Regular Variation, and Point Processes*][resnick1987]
 -/
 
 open Filter Set Topology ENNReal
@@ -103,21 +108,6 @@ lemma ofReal_integral_le_measure {f : X → ℝ} {U : Set X} (hU : MeasurableSet
 
 end Auxiliary
 
-omit [MeasurableSpace X] in
-/-- Urysohn-type function: for a compact set `K` contained in an open set `U`, there is a
-continuous compactly supported function with values in `[0, 1]`, equal to `1` on `K` and
-vanishing outside `U`. -/
-lemma exists_continuous_hasCompactSupport_one_on_zero_off [TopologicalSpace X]
-    [LocallyCompactSpace X] [RegularSpace X] {K U : Set X} (hK : IsCompact K)
-    (hU : IsOpen U) (hKU : K ⊆ U) :
-    ∃ f : X → ℝ, Continuous f ∧ HasCompactSupport f ∧ 0 ≤ f ∧ (∀ x, f x ≤ 1) ∧
-      (∀ x ∈ K, f x = 1) ∧ ∀ x ∉ U, f x = 0 := by
-  obtain ⟨f, hfK, hfU, hfc, hf01⟩ :=
-    exists_continuous_one_zero_of_isCompact hK hU.isClosed_compl
-      (disjoint_compl_right_iff_subset.2 hKU)
-  exact ⟨f, f.continuous, hfc, fun x ↦ (hf01 x).1, fun x ↦ (hf01 x).2, fun x hx ↦ hfK hx,
-    fun x hx ↦ hfU hx⟩
-
 variable [TopologicalSpace X] [LocallyCompactSpace X] [RegularSpace X] [OpensMeasurableSpace X]
 
 /-- If two measures have the same integrals against a continuous compactly supported function
@@ -127,8 +117,14 @@ lemma measure_isCompact_le_of_forall_integral_eq [T2Space X] {μ ν : Measure X}
     [IsFiniteMeasureOnCompacts μ] [IsFiniteMeasureOnCompacts ν]
     (h : ∀ f : X → ℝ, Continuous f → HasCompactSupport f → ∫ x, f x ∂μ = ∫ x, f x ∂ν)
     {K U : Set X} (hK : IsCompact K) (hU : IsOpen U) (hKU : K ⊆ U) : μ K ≤ ν U := by
-  obtain ⟨f, hfc, hfs, hf0, hf1, hfK, hfU⟩ :=
-    exists_continuous_hasCompactSupport_one_on_zero_off hK hU hKU
+  obtain ⟨f, hfK, hfU, hfs, hf01⟩ :=
+    exists_continuous_one_zero_of_isCompact hK hU.isClosed_compl
+      (disjoint_compl_right_iff_subset.2 hKU)
+  have hfc := f.continuous
+  have hf0 : 0 ≤ ⇑f := fun x ↦ (hf01 x).1
+  have hf1 : ∀ x, f x ≤ 1 := fun x ↦ (hf01 x).2
+  replace hfK : ∀ x ∈ K, f x = 1 := fun x hx ↦ hfK hx
+  replace hfU : ∀ x ∉ U, f x = 0 := fun x hx ↦ hfU hx
   calc μ K ≤ ENNReal.ofReal (∫ x, f x ∂μ) :=
         measure_le_ofReal_integral hK.measurableSet (hfc.integrable_of_hasCompactSupport hfs) hf0
           fun x hx ↦ (hfK x hx).ge
@@ -138,7 +134,7 @@ lemma measure_isCompact_le_of_forall_integral_eq [T2Space X] {μ ν : Measure X}
 
 /-- Two regular measures on a locally compact Hausdorff space which have the same integrals
 against all continuous compactly supported real functions are equal. -/
-theorem ext_of_forall_integral_eq_of_hasCompactSupport [T2Space X] [BorelSpace X]
+theorem ext_of_forall_integral_eq_of_hasCompactSupport [T2Space X]
     {μ ν : Measure X} [μ.Regular] [ν.Regular]
     (h : ∀ f : X → ℝ, Continuous f → HasCompactSupport f → ∫ x, f x ∂μ = ∫ x, f x ∂ν) :
     μ = ν := by
@@ -167,7 +163,7 @@ namespace TendstoVaguely
 variable {ι : Type*} {μs : ι → Measure X} {l : Filter ι} {μ : Measure X}
 
 /-- Vague limits of regular measures are unique. -/
-theorem unique [T2Space X] [BorelSpace X] [l.NeBot] {ν : Measure X} [μ.Regular] [ν.Regular]
+theorem unique [T2Space X] [l.NeBot] {ν : Measure X} [μ.Regular] [ν.Regular]
     (hμ : TendstoVaguely μs l μ) (hν : TendstoVaguely μs l ν) : μ = ν :=
   ext_of_forall_integral_eq_of_hasCompactSupport fun f hf hfs ↦
     tendsto_nhds_unique (hμ f hf hfs) (hν f hf hfs)
@@ -179,8 +175,14 @@ theorem limsup_measure_le_of_isCompact [T2Space X] [∀ i, IsFiniteMeasureOnComp
     (hK : IsCompact K) : limsup (fun i ↦ μs i K) l ≤ μ K := by
   refine le_of_forall_gt_imp_ge_of_dense fun r hr ↦ ?_
   obtain ⟨U, hKU, hU, hUr⟩ := Set.exists_isOpen_lt_of_lt K r hr
-  obtain ⟨f, hfc, hfs, hf0, hf1, hfK, hfU⟩ :=
-    exists_continuous_hasCompactSupport_one_on_zero_off hK hU hKU
+  obtain ⟨f, hfK, hfU, hfs, hf01⟩ :=
+    exists_continuous_one_zero_of_isCompact hK hU.isClosed_compl
+      (disjoint_compl_right_iff_subset.2 hKU)
+  have hfc := f.continuous
+  have hf0 : 0 ≤ ⇑f := fun x ↦ (hf01 x).1
+  have hf1 : ∀ x, f x ≤ 1 := fun x ↦ (hf01 x).2
+  replace hfK : ∀ x ∈ K, f x = 1 := fun x hx ↦ hfK hx
+  replace hfU : ∀ x ∉ U, f x = 0 := fun x hx ↦ hfU hx
   have hlim : Tendsto (fun i ↦ ENNReal.ofReal (∫ x, f x ∂μs i)) l
       (𝓝 (ENNReal.ofReal (∫ x, f x ∂μ))) :=
     (ENNReal.continuous_ofReal.tendsto _).comp (h f hfc hfs)
@@ -199,8 +201,14 @@ theorem le_liminf_measure_of_isOpen [T2Space X] [∀ i, IsFiniteMeasureOnCompact
     μ U ≤ liminf (fun i ↦ μs i U) l := by
   refine le_of_forall_lt_imp_le_of_dense fun r hr ↦ ?_
   obtain ⟨K, hKU, hK, hrK⟩ := hU.exists_lt_isCompact hr
-  obtain ⟨f, hfc, hfs, hf0, hf1, hfK, hfU⟩ :=
-    exists_continuous_hasCompactSupport_one_on_zero_off hK hU hKU
+  obtain ⟨f, hfK, hfU, hfs, hf01⟩ :=
+    exists_continuous_one_zero_of_isCompact hK hU.isClosed_compl
+      (disjoint_compl_right_iff_subset.2 hKU)
+  have hfc := f.continuous
+  have hf0 : 0 ≤ ⇑f := fun x ↦ (hf01 x).1
+  have hf1 : ∀ x, f x ≤ 1 := fun x ↦ (hf01 x).2
+  replace hfK : ∀ x ∈ K, f x = 1 := fun x hx ↦ hfK hx
+  replace hfU : ∀ x ∉ U, f x = 0 := fun x hx ↦ hfU hx
   have hlim : Tendsto (fun i ↦ ENNReal.ofReal (∫ x, f x ∂μs i)) l
       (𝓝 (ENNReal.ofReal (∫ x, f x ∂μ))) :=
     (ENNReal.continuous_ofReal.tendsto _).comp (h f hfc hfs)

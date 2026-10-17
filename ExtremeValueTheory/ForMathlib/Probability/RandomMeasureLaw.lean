@@ -28,6 +28,11 @@ Stone–Weierstrass theorem); hence so is the law of `(N (A i))_i`, and the cyli
   determined by its Laplace functional.
 * `ProbabilityTheory.IsPoissonRandomMeasure.map_eq`: uniqueness in law of Poisson random measures
   with a given σ-finite intensity.
+
+## References
+
+* [O. Kallenberg, *Random Measures, Theory and Applications*][kallenberg2017]
+* [S. I. Resnick, *Extreme Values, Regular Variation, and Point Processes*][resnick1987]
 -/
 
 open MeasureTheory Filter Finset Topology
@@ -133,7 +138,7 @@ lemma ereal_exp_neg_coe_sum {ι : Type*} (s : Finset ι) (f : ι → ℝ≥0∞)
   | insert i s hi ih =>
     rw [Finset.sum_insert hi, Finset.prod_insert hi, ereal_exp_neg_coe_add, ih]
 
-lemma ereal_exp_neg_coe_nat_mul (n : ℕ) (a : ℝ≥0∞) :
+lemma ereal_exp_neg_coe_natCast_mul (n : ℕ) (a : ℝ≥0∞) :
     EReal.exp (-((n * a : ℝ≥0∞) : EReal)) = EReal.exp (-(a : EReal)) ^ n := by
   induction n with
   | zero => simp
@@ -173,7 +178,7 @@ lemma measurable_logCube {k : ℕ} : Measurable (logCube (k := k)) := by
 lemma logCube_expNegCube {k : ℕ} (v : Fin k → ℝ≥0∞) : logCube (expNegCube v) = v := by
   ext1 i
   have hval : ((expNegCube v i : I) : ℝ) = (EReal.exp (-(v i : EReal))).toReal := rfl
-  show (if ((expNegCube v i : I) : ℝ) = 0 then ∞
+  change (if ((expNegCube v i : I) : ℝ) = 0 then ∞
     else ENNReal.ofReal (-Real.log (expNegCube v i))) = v i
   rcases eq_or_ne (v i) ∞ with h | h
   · have h0 : ((expNegCube v i : I) : ℝ) = 0 := by rw [hval, h]; simp
@@ -189,7 +194,7 @@ lemma logCube_expNegCube {k : ℕ} (v : Fin k → ℝ≥0∞) : logCube (expNegC
 /-- The moments of the law of `(exp (-M (A i)))_i` are values of the Laplace functional of the
 random measure `M`. -/
 lemma integral_prod_pow_map_expNegCube {Ω₀ : Type*} {mΩ₀ : MeasurableSpace Ω₀} (Q : Measure Ω₀)
-    [IsProbabilityMeasure Q] {M : Ω₀ → Measure E} (hM : Measurable M) {k : ℕ}
+    {M : Ω₀ → Measure E} (hM : Measurable M) {k : ℕ}
     {A : Fin k → Set E} (hA : ∀ i, MeasurableSet (A i)) (a : Fin k → ℕ) :
     ∫ y, ∏ i, (y i : ℝ) ^ a i ∂(Q.map (expNegCube ∘ fun ω i ↦ M ω (A i))) =
       (∫⁻ ω, EReal.exp (-((∑ i, a i * M ω (A i) : ℝ≥0∞) : EReal)) ∂Q).toReal := by
@@ -204,7 +209,7 @@ lemma integral_prod_pow_map_expNegCube {Ω₀ : Type*} {mΩ₀ : MeasurableSpace
     ext ω
     rw [ereal_exp_neg_coe_sum, ENNReal.toReal_prod]
     refine Finset.prod_congr rfl fun i _ ↦ ?_
-    rw [ereal_exp_neg_coe_nat_mul, ENNReal.toReal_pow]
+    rw [ereal_exp_neg_coe_natCast_mul, ENNReal.toReal_pow]
     rfl
   · exact (continuous_ereal_exp_neg_coe.measurable.comp (Finset.measurable_sum _ fun i _ ↦
       ((measurable_pi_apply i).comp hW).const_mul _)).aemeasurable

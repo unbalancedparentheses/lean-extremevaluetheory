@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Federico Carrone.
+Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
@@ -13,9 +13,12 @@ A process `X : ℕ → Ω → E` is (strictly) stationary for a measure `μ` if 
 `ω ↦ (X n ω)ₙ` on `ℕ → E` is invariant under the shift `(xₙ)ₙ ↦ (xₙ₊₁)ₙ`. Equivalently, all
 finite dimensional distributions are invariant under time shifts.
 
-## Main definitions and results
+## Main definitions
 
 * `ProbabilityTheory.IsStationary X μ`: the law of the path of `X` is shift invariant.
+
+## Main statements
+
 * `ProbabilityTheory.IsStationary.map_shift`: the law of `(X (n + s))ₙ` is the law of `(X n)ₙ`
   for every `s`.
 * `ProbabilityTheory.IsStationary.measure_preimage_shift`: the same statement for measurable
@@ -25,6 +28,12 @@ finite dimensional distributions are invariant under time shifts.
 * `ProbabilityTheory.isStationary_of_iIndepFun`: iid sequences are stationary.
 * `ProbabilityTheory.IsStationary.factor`: a sliding window functional
   `Y t = f (X t, X (t + 1), …)` of a stationary process is stationary.
+
+## References
+
+* [O. Kallenberg, *Foundations of Modern Probability*][kallenberg2021]
+* [M. R. Leadbetter, G. Lindgren, H. Rootzén, *Extremes and Related Properties of Random
+  Sequences and Processes*][leadbetter1983]
 -/
 
 open MeasureTheory Set
@@ -108,7 +117,7 @@ lemma factor (h : IsStationary X μ) (hX : ∀ n, Measurable (X n)) {f : (ℕ �
 end IsStationary
 
 /-- **iid sequences are stationary.** -/
-lemma isStationary_of_iIndepFun [IsProbabilityMeasure μ] (hX : ∀ n, Measurable (X n))
+lemma isStationary_of_iIndepFun (hX : ∀ n, Measurable (X n))
     (hind : iIndepFun X μ) (hid : ∀ n, IdentDistrib (X n) (X 0) μ μ) : IsStationary X μ := by
   have h1 : iIndepFun (fun n ↦ X (n + 1)) μ := hind.precomp (add_left_injective 1)
   unfold IsStationary

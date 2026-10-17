@@ -38,6 +38,11 @@ convergence of the point probabilities by dominated convergence.
   `∑_{i < n} w n i → s`, `∑_{i < n} ‖w n i‖` is bounded and `max_{i < n} ‖w n i‖ → 0`.
 * `ProbabilityTheory.tendsto_measureReal_card_filter_range_eq`: the Poisson limit theorem for
   counts of triangular arrays of independent points in disjoint sets.
+
+## References
+
+* [O. Kallenberg, *Foundations of Modern Probability*][kallenberg2021]
+* [S. I. Resnick, *Extreme Values, Regular Variation, and Point Processes*][resnick1987]
 -/
 
 open MeasureTheory Filter Finset Topology Complex
@@ -275,8 +280,7 @@ lemma measureReal_pi_poissonMeasure_singleton {k : ℕ} (r : Fin k → ℝ≥0) 
 
 variable {Ω E : Type*} {mΩ : MeasurableSpace Ω} [MeasurableSpace E]
 
-open scoped Classical
-
+open scoped Classical in
 /-- The number of points among `Z 0, …, Z (n - 1)` in a set is measurable. -/
 lemma measurable_card_filter_range {Z : ℕ → Ω → E} (hZ : ∀ i, Measurable (Z i)) {B : Set E}
     (hB : MeasurableSet B) (n : ℕ) :
@@ -285,6 +289,7 @@ lemma measurable_card_filter_range {Z : ℕ → Ω → E} (hZ : ∀ i, Measurabl
   exact Finset.measurable_sum _ fun i _ ↦
     Measurable.ite (hZ i hB) measurable_const measurable_const
 
+open scoped Classical in
 /-- The joint characteristic function of the counts of independent points in disjoint sets:
 `E exp (i ∑ j, t j #{i < n | Z i ∈ B j}) = ∏_{i < n} (1 + ∑ j, P(Z i ∈ B j) (exp (i t j) - 1))`. -/
 lemma integral_cexp_card_filter_range {P : Measure Ω} [IsProbabilityMeasure P] {Z : ℕ → Ω → E}
@@ -331,6 +336,7 @@ lemma integral_cexp_card_filter_range {P : Measure Ω} [IsProbabilityMeasure P] 
   · exact integrable_finsetSum _ fun j _ ↦
       ((integrable_const _).indicator (hB j)).comp_measurable (hZ i)
 
+open scoped Classical in
 /-- **Poisson limit theorem for counts of triangular arrays of independent points.** For each
 `n`, let `Z n 0, Z n 1, …` be independent random elements under `P n`, and let `B 0, …, B (k-1)`
 be disjoint measurable sets. If `∑_{i < n} P(Z n i ∈ B j) → r j` for every `j` and

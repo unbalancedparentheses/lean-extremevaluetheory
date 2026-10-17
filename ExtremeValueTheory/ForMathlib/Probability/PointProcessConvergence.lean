@@ -37,6 +37,11 @@ no loss of generality: the counts on finitely many relatively compact `ν`-conti
 sums of counts on the atoms of the generated Boolean algebra, which are again disjoint relatively
 compact `ν`-continuity sets. Since the counts take values in `ℕ ^ k`, pointwise convergence of the
 probability mass functions is equivalent to weak convergence of the laws.
+
+## References
+
+* [O. Kallenberg, *Random Measures, Theory and Applications*][kallenberg2017]
+* [S. I. Resnick, *Extreme Values, Regular Variation, and Point Processes*][resnick1987]
 -/
 
 open MeasureTheory Filter Finset Topology

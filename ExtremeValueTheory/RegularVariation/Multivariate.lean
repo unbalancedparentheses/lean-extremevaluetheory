@@ -107,9 +107,9 @@ theorem coe_normCutoff_le_indicator (hr : 0 < r) (y : E) :
 
 /-- The cutoff as a bounded continuous function. -/
 noncomputable def normCutoffBCF (r : ℝ) : E →ᵇ ℝ :=
-  BoundedContinuousFunction.ofAbsLe (fun y => (normCutoff r y : ℝ))
+  BoundedContinuousFunction.ofNormedAddCommGroup (fun y => (normCutoff r y : ℝ))
     (NNReal.continuous_coe.comp (continuous_normCutoff r)) 1 fun y => by
-      rw [NNReal.abs_eq]; exact_mod_cast normCutoff_le_one r y
+      rw [Real.norm_eq_abs, NNReal.abs_eq]; exact_mod_cast normCutoff_le_one r y
 
 @[simp] theorem normCutoffBCF_apply (r : ℝ) (y : E) :
     normCutoffBCF r y = (normCutoff r y : ℝ) := rfl
@@ -720,12 +720,13 @@ omit [IsProbabilityMeasure P] [SecondCountableTopology E] in
 theorem ae_norm_eq_one_of_tendstoLawCond (hX : Measurable X) {S : Measure E} [IsFiniteMeasure S]
     (hS : TendstoLawCond P (fun x => {ω | x < ‖X ω‖}) (fun _ ω => ‖X ω‖⁻¹ • X ω) atTop S) :
     ∀ᵐ θ ∂S, ‖θ‖ = 1 := by
-  let g : E →ᵇ ℝ := BoundedContinuousFunction.ofAbsLe (fun θ => min 1 |‖θ‖ - 1|)
+  let g : E →ᵇ ℝ := BoundedContinuousFunction.ofNormedAddCommGroup (fun θ => min 1 |‖θ‖ - 1|)
     (continuous_const.min ((continuous_norm.sub continuous_const).abs)) 1 fun θ => by
-      rw [abs_of_nonneg (le_min zero_le_one (abs_nonneg _))]; exact min_le_left _ _
+      rw [Real.norm_eq_abs, abs_of_nonneg (le_min zero_le_one (abs_nonneg _))]
+      exact min_le_left _ _
   have key := hS.ae_eq_zero g (fun θ => le_min zero_le_one (abs_nonneg _)) ?_
   · filter_upwards [key] with θ hθ
-    simp only [g, BoundedContinuousFunction.ofAbsLe_apply] at hθ
+    simp only [g, BoundedContinuousFunction.coe_ofNormedAddCommGroup] at hθ
     rcases min_eq_iff.1 hθ with h' | h'
     · exact absurd h'.1 one_ne_zero
     · exact sub_eq_zero.1 (abs_eq_zero.1 h'.1)
@@ -938,9 +939,11 @@ theorem IsRegVarVector.measure_compl_eq_zero (h : IsRegVarVector P X α μ) {C :
     exact ⟨X ω, hω⟩
   have hpiece : ∀ r > 0, μ {y | y ∉ C ∧ r ≤ ‖y‖} = 0 := by
     intro r hr
-    let d : E →ᵇ ℝ := BoundedContinuousFunction.ofAbsLe (fun y => min 1 (Metric.infDist y C))
+    let d : E →ᵇ ℝ := BoundedContinuousFunction.ofNormedAddCommGroup
+      (fun y => min 1 (Metric.infDist y C))
       (continuous_const.min (Metric.continuous_infDist_pt C)) 1 fun y => by
-        rw [abs_of_nonneg (le_min zero_le_one Metric.infDist_nonneg)]; exact min_le_left _ _
+        rw [Real.norm_eq_abs, abs_of_nonneg (le_min zero_le_one Metric.infDist_nonneg)]
+        exact min_le_left _ _
     let g : E →ᵇ ℝ := d * normCutoffBCF r
     have hg : ∀ y, g y = min 1 (Metric.infDist y C) * normCutoff r y := fun y => rfl
     have hg0 : ∀ y, 0 ≤ g y := fun y => by

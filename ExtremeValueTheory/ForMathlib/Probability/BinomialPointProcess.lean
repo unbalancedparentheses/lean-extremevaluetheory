@@ -27,6 +27,10 @@ processes*, Proposition 3.21).
 * `ProbabilityTheory.tendsto_laplace_sumDiracRange_poissonSampleMeasure`: the same limit, written
   as the Laplace functional of the Poisson random measure `∑_{k < K} δ_{Z k}` when the intensity
   is finite.
+
+## References
+
+* [S. I. Resnick, *Extreme Values, Regular Variation, and Point Processes*][resnick1987]
 -/
 
 open MeasureTheory Filter Finset Topology

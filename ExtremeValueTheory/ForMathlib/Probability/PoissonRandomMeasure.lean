@@ -52,9 +52,15 @@ independence of counts on disjoint sets into the single statement that the joint
 counts is a product of Poisson distributions. The extra field `IsPoissonRandomMeasure.ae_eq_top`
 asks that sets of infinite intensity have almost surely infinite count; it is needed for intensities
 that are s-finite but not σ-finite, and is proved for the superposition construction by comparing
-with the partial superpositions, whose Laplace transforms tend to `0`. The joint laws are identified through
-characteristic functions (`charFun_eq_pi_iff`), and the countable superposition by dominated
+with the partial superpositions, whose Laplace transforms tend to `0`. The joint laws are identified
+through characteristic functions (`charFun_eq_pi_iff`), and the countable superposition by dominated
 convergence of the characteristic functions of the partial sums.
+
+## References
+
+* [O. Kallenberg, *Random Measures, Theory and Applications*][kallenberg2017]
+* [G. Last, M. Penrose, *Lectures on the Poisson Process*][lastpenrose2017]
+* [S. I. Resnick, *Extreme Values, Regular Variation, and Point Processes*][resnick1987]
 -/
 
 universe u
@@ -333,7 +339,7 @@ lemma sumDiracRange_apply_eq_ofReal (n : ℕ) (z : ℕ → E) {A : Set E} (hA : 
 
 /-- The law of a pair `(K, Z)` where `K` is Poisson distributed with mean `c` and
 `Z` is an independent sequence of i.i.d. random variables with law `μ`. -/
-noncomputable def poissonSampleMeasure (c : ℝ≥0) (μ : Measure E) [IsProbabilityMeasure μ] :
+noncomputable def poissonSampleMeasure (c : ℝ≥0) (μ : Measure E) :
     Measure (ℕ × (ℕ → E)) :=
   (poissonMeasure c).prod (Measure.infinitePi fun _ : ℕ ↦ μ)
 
@@ -342,8 +348,9 @@ variable {c : ℝ≥0} {μ : Measure E} [IsProbabilityMeasure μ]
 instance : IsProbabilityMeasure (poissonSampleMeasure c μ) := by
   unfold poissonSampleMeasure; infer_instance
 
-/-- A function `ω ↦ F ω.1 ω.2` on `ℕ × (ℕ → E)` is measurable as soon as each `F n` is. -/
-lemma measurable_of_measurable_nat_prod {β : Type*} {mβ : MeasurableSpace β}
+/-- A function `ω ↦ F ω.1 ω.2` on `ℕ × (ℕ → E)` is measurable as soon as each `F n` is.
+(A specialization of `measurable_from_prod_countable_right` which elaborates better.) -/
+private lemma measurable_of_measurable_nat_prod {β : Type*} {mβ : MeasurableSpace β}
     {F : ℕ → (ℕ → E) → β} (hF : ∀ n, Measurable (F n)) :
     Measurable fun ω : ℕ × (ℕ → E) ↦ F ω.1 ω.2 :=
   measurable_from_prod_countable_right hF
@@ -620,8 +627,8 @@ section Superposition
 
 /-- The law of a sequence of independent pairs `(K n, Z n)`, where `K n` is Poisson distributed
 with mean `c n` and `Z n` is an independent i.i.d. sequence with law `μ n`. -/
-noncomputable def poissonSampleSeqMeasure (c : ℕ → ℝ≥0) (μ : ℕ → Measure E)
-    [∀ n, IsProbabilityMeasure (μ n)] : Measure (ℕ → ℕ × (ℕ → E)) :=
+noncomputable def poissonSampleSeqMeasure (c : ℕ → ℝ≥0) (μ : ℕ → Measure E) :
+    Measure (ℕ → ℕ × (ℕ → E)) :=
   Measure.infinitePi fun n ↦ poissonSampleMeasure (c n) (μ n)
 
 variable {c : ℕ → ℝ≥0} {μ : ℕ → Measure E} [∀ n, IsProbabilityMeasure (μ n)]

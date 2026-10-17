@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Federico Carrone.
+Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
@@ -21,6 +21,10 @@ measures, with weak convergence phrased through integrals of bounded continuous 
   Lipschitz functions implies convergence for all bounded continuous functions.
 * `MeasureTheory.tendsto_measure_of_null_frontier_of_forall_integral_tendsto`: the portmanteau
   implication for sets with null frontier.
+
+## References
+
+* [P. Billingsley, *Convergence of Probability Measures*][billingsley1999]
 -/
 
 open Filter Topology Set BoundedContinuousFunction
@@ -35,7 +39,7 @@ theorem exists_probabilityMeasure_eventuallyEq {F : Filter γ} {μs : γ → Mea
     (hμs : ∀ᶠ i in F, IsProbabilityMeasure (μs i)) (μ : ProbabilityMeasure Ω) :
     ∃ νs : γ → ProbabilityMeasure Ω, ∀ᶠ i in F, (νs i : Measure Ω) = μs i := by
   classical
-  refine ⟨fun i => if h : IsProbabilityMeasure (μs i) then ⟨μs i, h⟩ else μ, ?_⟩
+  refine ⟨fun i ↦ if h : IsProbabilityMeasure (μs i) then ⟨μs i, h⟩ else μ, ?_⟩
   filter_upwards [hμs] with i hi
   simp [hi]
 
@@ -45,11 +49,11 @@ replacing it by a family of probability measures. -/
 theorem exists_tendsto_probabilityMeasure [TopologicalSpace Ω] [OpensMeasurableSpace Ω]
     {F : Filter γ} {μs : γ → Measure Ω} (hμs : ∀ᶠ i in F, IsProbabilityMeasure (μs i))
     {μ : Measure Ω} [IsProbabilityMeasure μ]
-    (h : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i => ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ))) :
+    (h : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i ↦ ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ))) :
     ∃ νs : γ → ProbabilityMeasure Ω, (∀ᶠ i in F, (νs i : Measure Ω) = μs i) ∧
       Tendsto νs F (𝓝 ⟨μ, inferInstance⟩) := by
   obtain ⟨νs, hνs⟩ := exists_probabilityMeasure_eventuallyEq hμs ⟨μ, inferInstance⟩
-  refine ⟨νs, hνs, ProbabilityMeasure.tendsto_iff_forall_integral_tendsto.2 fun f => ?_⟩
+  refine ⟨νs, hνs, ProbabilityMeasure.tendsto_iff_forall_integral_tendsto.2 fun f ↦ ?_⟩
   refine (h f).congr' ?_
   filter_upwards [hνs] with i hi
   rw [hi]
@@ -60,11 +64,11 @@ theorem tendsto_integral_of_forall_lipschitz [PseudoEMetricSpace Ω] [OpensMeasu
     {F : Filter γ} [F.IsCountablyGenerated] {μs : γ → Measure Ω}
     (hμs : ∀ᶠ i in F, IsProbabilityMeasure (μs i)) {μ : Measure Ω} [IsProbabilityMeasure μ]
     (h : ∀ f : Ω → ℝ, (∃ C : ℝ, ∀ x y, dist (f x) (f y) ≤ C) → (∃ L, LipschitzWith L f) →
-      Tendsto (fun i => ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)))
-    (f : Ω →ᵇ ℝ) : Tendsto (fun i => ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)) := by
+      Tendsto (fun i ↦ ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)))
+    (f : Ω →ᵇ ℝ) : Tendsto (fun i ↦ ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)) := by
   obtain ⟨νs, hνs⟩ := exists_probabilityMeasure_eventuallyEq hμs ⟨μ, inferInstance⟩
   have key : Tendsto νs F (𝓝 ⟨μ, inferInstance⟩) := by
-    refine tendsto_iff_forall_lipschitz_integral_tendsto.2 fun g hgb hgL => ?_
+    refine tendsto_iff_forall_lipschitz_integral_tendsto.2 fun g hgb hgL ↦ ?_
     refine (h g hgb hgL).congr' ?_
     filter_upwards [hνs] with i hi
     rw [hi]
@@ -78,52 +82,40 @@ functions. -/
 theorem tendsto_measure_of_null_frontier_of_forall_integral_tendsto [TopologicalSpace Ω]
     [OpensMeasurableSpace Ω] [HasOuterApproxClosed Ω] {F : Filter γ} {μs : γ → Measure Ω}
     (hμs : ∀ᶠ i in F, IsProbabilityMeasure (μs i)) {μ : Measure Ω} [IsProbabilityMeasure μ]
-    (h : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i => ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)))
-    {E : Set Ω} (hE : μ (frontier E) = 0) : Tendsto (fun i => μs i E) F (𝓝 (μ E)) := by
+    (h : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i ↦ ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)))
+    {E : Set Ω} (hE : μ (frontier E) = 0) : Tendsto (fun i ↦ μs i E) F (𝓝 (μ E)) := by
   obtain ⟨νs, hνs, key⟩ := exists_tendsto_probabilityMeasure hμs h
   refine (ProbabilityMeasure.tendsto_measure_of_null_frontier_of_tendsto' key hE).congr' ?_
   filter_upwards [hνs] with i hi
   rw [hi]
-
-/-- A continuous real function with `|f| ≤ C`, as a bounded continuous function. -/
-noncomputable def _root_.BoundedContinuousFunction.ofAbsLe [TopologicalSpace Ω] (f : Ω → ℝ)
-    (hf : Continuous f) (C : ℝ) (hC : ∀ x, |f x| ≤ C) : Ω →ᵇ ℝ :=
-  BoundedContinuousFunction.mkOfBound ⟨f, hf⟩ (2 * C) fun x y => by
-    simp only [ContinuousMap.coe_mk, Real.dist_eq]
-    linarith [abs_sub (f x) (f y), hC x, hC y]
-
-@[simp]
-theorem _root_.BoundedContinuousFunction.ofAbsLe_apply [TopologicalSpace Ω] (f : Ω → ℝ)
-    (hf : Continuous f) (C : ℝ) (hC : ∀ x, |f x| ≤ C) (x : Ω) :
-    BoundedContinuousFunction.ofAbsLe f hf C hC x = f x := rfl
 
 /-- Weak convergence, tested on bounded continuous functions, extends to `H · 1{c < ψ}` for
 `H` bounded continuous and `ψ` continuous, provided the limit gives no mass to `{ψ = c}`. -/
 theorem tendsto_integral_indicator_of_forall_integral_tendsto [TopologicalSpace Ω]
     [OpensMeasurableSpace Ω] {F : Filter γ} {μs : γ → Measure Ω}
     (hμs : ∀ᶠ i in F, IsProbabilityMeasure (μs i)) {μ : Measure Ω} [IsProbabilityMeasure μ]
-    (h : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i => ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)))
+    (h : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i ↦ ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)))
     (H : Ω →ᵇ ℝ) {ψ : Ω → ℝ} (hψ : Continuous ψ) {c : ℝ} (hc : μ {y | ψ y = c} = 0) :
-    Tendsto (fun i => ∫ y, {y | c < ψ y}.indicator H y ∂μs i) F
+    Tendsto (fun i ↦ ∫ y, {y | c < ψ y}.indicator H y ∂μs i) F
       (𝓝 (∫ y, {y | c < ψ y}.indicator H y ∂μ)) := by
   set M := ‖H‖
-  have hM : ∀ y, |H y| ≤ M := fun y => by simpa [Real.norm_eq_abs] using H.norm_coe_le_norm y
+  have hM : ∀ y, |H y| ≤ M := fun y ↦ by simpa [Real.norm_eq_abs] using H.norm_coe_le_norm y
   have hM0 : 0 ≤ M := norm_nonneg _
   have hmeasS : MeasurableSet {y | c < ψ y} := measurableSet_lt measurable_const hψ.measurable
   -- the approximations
-  let φ : ℝ → Ω → ℝ := fun η y => min 1 (max 0 ((ψ y - c) / η))
-  let χ : ℝ → Ω → ℝ := fun η y => min 1 (max 0 (2 - |ψ y - c| / η))
-  have hφc : ∀ η, Continuous (φ η) := fun η =>
+  let φ : ℝ → Ω → ℝ := fun η y ↦ min 1 (max 0 ((ψ y - c) / η))
+  let χ : ℝ → Ω → ℝ := fun η y ↦ min 1 (max 0 (2 - |ψ y - c| / η))
+  have hφc : ∀ η, Continuous (φ η) := fun η ↦
     continuous_const.min (continuous_const.max ((hψ.sub continuous_const).div_const η))
-  have hχc : ∀ η, Continuous (χ η) := fun η =>
+  have hχc : ∀ η, Continuous (χ η) := fun η ↦
     continuous_const.min (continuous_const.max
       (continuous_const.sub ((hψ.sub continuous_const).abs.div_const η)))
-  have hφb : ∀ η y, |φ η y| ≤ 1 := fun η y => by
+  have hφb : ∀ η y, |φ η y| ≤ 1 := fun η y ↦ by
     rw [abs_le]; constructor
     · exact (by norm_num : (-1 : ℝ) ≤ 0).trans (le_min zero_le_one (le_max_left _ _))
     · exact min_le_left _ _
-  have hχ0 : ∀ η y, 0 ≤ χ η y := fun η y => le_min zero_le_one (le_max_left _ _)
-  have hχb : ∀ η y, |χ η y| ≤ 1 := fun η y => by
+  have hχ0 : ∀ η y, 0 ≤ χ η y := fun η y ↦ le_min zero_le_one (le_max_left _ _)
+  have hχb : ∀ η y, |χ η y| ≤ 1 := fun η y ↦ by
     rw [abs_of_nonneg (hχ0 η y)]; exact min_le_left _ _
   have hkey : ∀ η, 0 < η → ∀ y,
       |{y | c < ψ y}.indicator H y - H y * φ η y| ≤ M * χ η y := by
@@ -154,28 +146,28 @@ theorem tendsto_integral_indicator_of_forall_integral_tendsto [TopologicalSpace 
         abs_zero]
       exact mul_nonneg hM0 (hχ0 η y)
   -- `∫ χ_η dμ → 0`
-  have hχlim : Tendsto (fun n : ℕ => ∫ y, χ (1 / ((n : ℝ) + 1)) y ∂μ) atTop (𝓝 0) := by
-    have hlim : ∀ y, Tendsto (fun n : ℕ => χ (1 / ((n : ℝ) + 1)) y) atTop
+  have hχlim : Tendsto (fun n : ℕ ↦ ∫ y, χ (1 / ((n : ℝ) + 1)) y ∂μ) atTop (𝓝 0) := by
+    have hlim : ∀ y, Tendsto (fun n : ℕ ↦ χ (1 / ((n : ℝ) + 1)) y) atTop
         (𝓝 ({y | ψ y = c}.indicator 1 y)) := by
       intro y
       by_cases hy : ψ y = c
       · rw [indicator_of_mem (show y ∈ {y | ψ y = c} from hy)]
-        refine tendsto_const_nhds.congr fun n => ?_
+        refine tendsto_const_nhds.congr fun n ↦ ?_
         simp [χ, hy]
       · rw [indicator_of_notMem (show y ∉ {y | ψ y = c} from hy)]
         have hpos : 0 < |ψ y - c| := abs_pos.2 (sub_ne_zero.2 hy)
-        have : Tendsto (fun n : ℕ => 2 - |ψ y - c| / (1 / ((n : ℝ) + 1))) atTop atBot := by
+        have : Tendsto (fun n : ℕ ↦ 2 - |ψ y - c| / (1 / ((n : ℝ) + 1))) atTop atBot := by
           simp only [div_div_eq_mul_div, div_one]
           exact tendsto_atBot_add_const_left _ 2 (tendsto_neg_atTop_atBot.comp
             (Tendsto.const_mul_atTop hpos (tendsto_atTop_add_const_right _ 1
-              tendsto_natCast_atTop_atTop)) |>.congr fun n => by simp)
+              tendsto_natCast_atTop_atTop)) |>.congr fun n ↦ by simp)
         refine tendsto_const_nhds.congr' ?_
         filter_upwards [this.eventually (eventually_le_atBot 0)] with n hn
-        show 0 = min 1 (max 0 (2 - |ψ y - c| / (1 / ((n : ℝ) + 1))))
+        change 0 = min 1 (max 0 (2 - |ψ y - c| / (1 / ((n : ℝ) + 1))))
         rw [max_eq_left hn, min_eq_right zero_le_one]
-    have := tendsto_integral_of_dominated_convergence (μ := μ) (fun _ => (1 : ℝ))
-      (fun n => (hχc _).aestronglyMeasurable) (integrable_const _)
-      (fun n => ae_of_all _ fun y => by simpa [Real.norm_eq_abs] using hχb _ y)
+    have := tendsto_integral_of_dominated_convergence (μ := μ) (fun _ ↦ (1 : ℝ))
+      (fun n ↦ (hχc _).aestronglyMeasurable) (integrable_const _)
+      (fun n ↦ ae_of_all _ fun y ↦ by simpa [Real.norm_eq_abs] using hχb _ y)
       (ae_of_all _ hlim)
     rwa [integral_indicator_one (measurableSet_eq_fun hψ.measurable measurable_const),
       measureReal_def, hc, ENNReal.toReal_zero] at this
@@ -185,10 +177,11 @@ theorem tendsto_integral_indicator_of_forall_integral_tendsto [TopologicalSpace 
     positivity))).exists
   set η : ℝ := 1 / ((n : ℝ) + 1)
   have hη : 0 < η := by positivity
-  let χb := BoundedContinuousFunction.ofAbsLe (χ η) (hχc η) 1 (hχb η)
-  let Hφ := BoundedContinuousFunction.ofAbsLe (fun y => H y * φ η y)
-    (H.continuous.mul (hφc η)) M fun y => by
-      rw [abs_mul]; nlinarith [hM y, hφb η y, abs_nonneg (H y), abs_nonneg (φ η y)]
+  let χb := BoundedContinuousFunction.ofNormedAddCommGroup (χ η) (hχc η) 1 (hχb η)
+  let Hφ := BoundedContinuousFunction.ofNormedAddCommGroup (fun y ↦ H y * φ η y)
+    (H.continuous.mul (hφc η)) M fun y ↦ by
+      rw [Real.norm_eq_abs, abs_mul]
+      nlinarith [hM y, hφb η y, abs_nonneg (H y), abs_nonneg (φ η y)]
   have h1 := (h χb).eventually (gt_mem_nhds hn)
   have h2 := Metric.tendsto_nhds.1 (h Hφ) (ε / 4) (by positivity)
   have hint : ∀ ν : Measure Ω, IsProbabilityMeasure ν →
@@ -196,12 +189,12 @@ theorem tendsto_integral_indicator_of_forall_integral_tendsto [TopologicalSpace 
     intro ν hν
     have hi1 : Integrable ({y | c < ψ y}.indicator H) ν :=
       (H.integrable ν).indicator hmeasS
-    have hi2 : Integrable (fun y => H y * φ η y) ν := Hφ.integrable ν
+    have hi2 : Integrable (fun y ↦ H y * φ η y) ν := Hφ.integrable ν
     rw [← integral_sub hi1 hi2, ← integral_const_mul]
     refine (abs_integral_le_integral_abs).trans (integral_mono (hi1.sub hi2).abs
-      ((χb.integrable ν).const_mul M) fun y => hkey η hη y)
+      ((χb.integrable ν).const_mul M) fun y ↦ hkey η hη y)
   filter_upwards [h1, h2, hμs] with i hi1 hi2 hi3
-  simp only [χb, Hφ, BoundedContinuousFunction.ofAbsLe_apply] at hi1 hi2
+  simp only [χb, Hφ, BoundedContinuousFunction.coe_ofNormedAddCommGroup] at hi1 hi2
   rw [Real.dist_eq] at hi2 ⊢
   have e1 := hint (μs i) hi3
   have e2 := hint μ inferInstance
@@ -225,9 +218,9 @@ theorem tendsto_integral_indicator_of_forall_integral_tendsto [TopologicalSpace 
 theorem eq_of_forall_integral_tendsto [TopologicalSpace Ω] [HasOuterApproxClosed Ω]
     [BorelSpace Ω] {F : Filter γ} [F.NeBot] {μs : γ → Measure Ω} {μ ν : Measure Ω}
     [IsFiniteMeasure μ] [IsFiniteMeasure ν]
-    (hμ : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i => ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)))
-    (hν : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i => ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂ν))) : μ = ν :=
-  ext_of_forall_integral_eq_of_IsFiniteMeasure fun f => tendsto_nhds_unique (hμ f) (hν f)
+    (hμ : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i ↦ ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)))
+    (hν : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i ↦ ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂ν))) : μ = ν :=
+  ext_of_forall_integral_eq_of_IsFiniteMeasure fun f ↦ tendsto_nhds_unique (hμ f) (hν f)
 
 /-! ### Finite measures -/
 
@@ -235,16 +228,16 @@ theorem eq_of_forall_integral_tendsto [TopologicalSpace Ω] [HasOuterApproxClose
 measures `μs i` converge to those against a finite nonzero `μ`, the total masses converge, and the
 normalized measures are eventually probability measures converging weakly to the normalized
 `μ`. -/
-theorem tendsto_integral_normalize [TopologicalSpace Ω] [OpensMeasurableSpace Ω] {F : Filter γ}
+theorem tendsto_integral_normalize [TopologicalSpace Ω] {F : Filter γ}
     {μs : γ → Measure Ω} (hμs : ∀ i, IsFiniteMeasure (μs i)) {μ : Measure Ω} [IsFiniteMeasure μ]
-    (h : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i => ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)))
+    (h : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i ↦ ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)))
     (hμ : μ.real univ ≠ 0) :
-    Tendsto (fun i => (μs i).real univ) F (𝓝 (μ.real univ)) ∧
+    Tendsto (fun i ↦ (μs i).real univ) F (𝓝 (μ.real univ)) ∧
     (∀ᶠ i in F, IsProbabilityMeasure (ENNReal.ofReal ((μs i).real univ)⁻¹ • μs i)) ∧
     IsProbabilityMeasure (ENNReal.ofReal (μ.real univ)⁻¹ • μ) ∧
-    ∀ f : Ω →ᵇ ℝ, Tendsto (fun i => ∫ ω, f ω ∂(ENNReal.ofReal ((μs i).real univ)⁻¹ • μs i)) F
+    ∀ f : Ω →ᵇ ℝ, Tendsto (fun i ↦ ∫ ω, f ω ∂(ENNReal.ofReal ((μs i).real univ)⁻¹ • μs i)) F
       (𝓝 (∫ ω, f ω ∂(ENNReal.ofReal (μ.real univ)⁻¹ • μ))) := by
-  have hmass : Tendsto (fun i => (μs i).real univ) F (𝓝 (μ.real univ)) := by
+  have hmass : Tendsto (fun i ↦ (μs i).real univ) F (𝓝 (μ.real univ)) := by
     simpa using h (BoundedContinuousFunction.const Ω 1)
   have hprob : ∀ (ν : Measure Ω), IsFiniteMeasure ν → ν.real univ ≠ 0 →
       IsProbabilityMeasure (ENNReal.ofReal (ν.real univ)⁻¹ • ν) := by
@@ -253,7 +246,7 @@ theorem tendsto_integral_normalize [TopologicalSpace Ω] [OpensMeasurableSpace �
     rw [Measure.smul_apply, smul_eq_mul, ← ofReal_measureReal (μ := ν) (s := univ),
       ← ENNReal.ofReal_mul (inv_nonneg.2 measureReal_nonneg), inv_mul_cancel₀ hν,
       ENNReal.ofReal_one]
-  refine ⟨hmass, ?_, hprob μ inferInstance hμ, fun f => ?_⟩
+  refine ⟨hmass, ?_, hprob μ inferInstance hμ, fun f ↦ ?_⟩
   · filter_upwards [hmass.eventually_ne hμ] with i hi
     exact hprob _ (hμs i) hi
   · simp only [integral_smul_measure, smul_eq_mul,
@@ -264,10 +257,10 @@ theorem tendsto_integral_normalize [TopologicalSpace Ω] [OpensMeasurableSpace �
 theorem tendsto_measureReal_of_null_frontier_of_forall_integral_tendsto [TopologicalSpace Ω]
     [OpensMeasurableSpace Ω] [HasOuterApproxClosed Ω] {F : Filter γ} {μs : γ → Measure Ω}
     (hμs : ∀ i, IsFiniteMeasure (μs i)) {μ : Measure Ω} [IsFiniteMeasure μ]
-    (h : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i => ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)))
+    (h : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i ↦ ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)))
     {E : Set Ω} (hE : μ (frontier E) = 0) :
-    Tendsto (fun i => (μs i).real E) F (𝓝 (μ.real E)) := by
-  have hmass : Tendsto (fun i => (μs i).real univ) F (𝓝 (μ.real univ)) := by
+    Tendsto (fun i ↦ (μs i).real E) F (𝓝 (μ.real E)) := by
+  have hmass : Tendsto (fun i ↦ (μs i).real univ) F (𝓝 (μ.real univ)) := by
     simpa using h (BoundedContinuousFunction.const Ω 1)
   by_cases hμ : μ.real univ = 0
   · have hE0 : μ.real E = 0 :=
@@ -275,7 +268,7 @@ theorem tendsto_measureReal_of_null_frontier_of_forall_integral_tendsto [Topolog
     rw [hE0]
     rw [hμ] at hmass
     exact tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hmass
-      (fun i => measureReal_nonneg) (fun i => measureReal_mono (μ := μs i) (subset_univ E))
+      (fun i ↦ measureReal_nonneg) (fun i ↦ measureReal_mono (μ := μs i) (subset_univ E))
   obtain ⟨-, hprob, hprobμ, hconv⟩ := tendsto_integral_normalize hμs h hμ
   have key := tendsto_measure_of_null_frontier_of_forall_integral_tendsto hprob hconv
     (E := E) (by rw [Measure.smul_apply, hE, smul_zero])
@@ -297,15 +290,15 @@ theorem tendsto_measureReal_of_null_frontier_of_forall_integral_tendsto [Topolog
 theorem tendsto_integral_indicator_of_forall_integral_tendsto_of_isFiniteMeasure
     [TopologicalSpace Ω] [OpensMeasurableSpace Ω] {F : Filter γ} {μs : γ → Measure Ω}
     (hμs : ∀ i, IsFiniteMeasure (μs i)) {μ : Measure Ω} [IsFiniteMeasure μ]
-    (h : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i => ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)))
+    (h : ∀ f : Ω →ᵇ ℝ, Tendsto (fun i ↦ ∫ ω, f ω ∂μs i) F (𝓝 (∫ ω, f ω ∂μ)))
     (H : Ω →ᵇ ℝ) {ψ : Ω → ℝ} (hψ : Continuous ψ) {c : ℝ} (hc : μ {y | ψ y = c} = 0) :
-    Tendsto (fun i => ∫ y, {y | c < ψ y}.indicator H y ∂μs i) F
+    Tendsto (fun i ↦ ∫ y, {y | c < ψ y}.indicator H y ∂μs i) F
       (𝓝 (∫ y, {y | c < ψ y}.indicator H y ∂μ)) := by
-  have hmass : Tendsto (fun i => (μs i).real univ) F (𝓝 (μ.real univ)) := by
+  have hmass : Tendsto (fun i ↦ (μs i).real univ) F (𝓝 (μ.real univ)) := by
     simpa using h (BoundedContinuousFunction.const Ω 1)
   have hbound : ∀ ν : Measure Ω, IsFiniteMeasure ν →
-      ‖∫ y, {y | c < ψ y}.indicator H y ∂ν‖ ≤ ‖H‖ * ν.real univ := fun ν _ =>
-    norm_integral_le_of_norm_le_const (ae_of_all _ fun y => by
+      ‖∫ y, {y | c < ψ y}.indicator H y ∂ν‖ ≤ ‖H‖ * ν.real univ := fun ν _ ↦
+    norm_integral_le_of_norm_le_const (ae_of_all _ fun y ↦ by
       by_cases hy : y ∈ {y | c < ψ y}
       · rw [indicator_of_mem hy]; exact H.norm_coe_le_norm y
       · rw [indicator_of_notMem hy, norm_zero]; exact norm_nonneg _)
@@ -314,7 +307,7 @@ theorem tendsto_integral_indicator_of_forall_integral_tendsto_of_isFiniteMeasure
       norm_le_zero_iff.1 ((hbound μ inferInstance).trans (by rw [hμ, mul_zero]))
     rw [h0, tendsto_zero_iff_norm_tendsto_zero]
     rw [hμ] at hmass
-    exact squeeze_zero (fun i => norm_nonneg _) (fun i => hbound _ (hμs i))
+    exact squeeze_zero (fun i ↦ norm_nonneg _) (fun i ↦ hbound _ (hμs i))
       (by simpa using hmass.const_mul ‖H‖)
   obtain ⟨-, hprob, hprobμ, hconv⟩ := tendsto_integral_normalize hμs h hμ
   have key := tendsto_integral_indicator_of_forall_integral_tendsto hprob hconv H hψ

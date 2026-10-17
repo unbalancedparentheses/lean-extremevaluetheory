@@ -25,6 +25,11 @@ To allow arbitrary `f` (for which `∫ f dN` may be infinite), the statement is 
 * `ProbabilityTheory.IsPoissonRandomMeasure.lintegral_exp_neg_lintegral`: the Laplace
   functional for all measurable `f ≥ 0`, by approximation from below by simple functions
   supported on sets of finite intensity and monotone convergence.
+
+## References
+
+* [O. Kallenberg, *Random Measures, Theory and Applications*][kallenberg2017]
+* [G. Last, M. Penrose, *Lectures on the Poisson Process*][lastpenrose2017]
 -/
 
 open MeasureTheory Filter Finset Topology
@@ -50,8 +55,8 @@ variable {Ω E : Type*} {mΩ : MeasurableSpace Ω} [MeasurableSpace E]
 
 /-- The integral of `g ∘ s` for a simple function `s`, as a sum over the nonzero values of `s`
 indexed by `Fin m`. -/
-lemma SimpleFunc.lintegral_comp_eq_sum_fin (s : SimpleFunc E ℝ≥0∞) {g : ℝ≥0∞ → ℝ≥0∞} (hg : g 0 = 0)
-    (μ : Measure E) [DecidablePred (· ≠ (0 : ℝ≥0∞))] :
+lemma _root_.MeasureTheory.SimpleFunc.lintegral_comp_eq_sum_fin (s : SimpleFunc E ℝ≥0∞)
+    {g : ℝ≥0∞ → ℝ≥0∞} (hg : g 0 = 0) (μ : Measure E) [DecidablePred (· ≠ (0 : ℝ≥0∞))] :
     ∫⁻ x, g (s x) ∂μ = ∑ i, g ((s.range.filter (· ≠ 0)).equivFin.symm i) *
       μ (s ⁻¹' {((s.range.filter (· ≠ 0)).equivFin.symm i : ℝ≥0∞)}) := by
   set R := s.range.filter (· ≠ 0)

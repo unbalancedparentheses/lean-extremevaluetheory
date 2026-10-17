@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Federico Carrone.
+Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
@@ -26,6 +26,10 @@ whence `ψ'(1) = π² / 6` (equivalently `ζ(2) = π² / 6`). Since `ψ' = Γ''/
 * `Complex.deriv_deriv_Gamma_one`: `Γ''(1) = γ² + π² / 6`.
 * `Complex.hasDerivAt_deriv_Gamma_of_re_pos`: `Γ''(s) = ∫_0^∞ t^(s-1) (log t)² e^{-t} dt`.
 * `Real.integral_log_sq_mul_exp_neg`: `∫_0^∞ (log t)² e^{-t} dt = γ² + π² / 6`.
+
+## References
+
+* [M. Abramowitz, I. A. Stegun, *Handbook of Mathematical Functions*][abramowitz1964]
 -/
 
 open Filter Topology Set MeasureTheory

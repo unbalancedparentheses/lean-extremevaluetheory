@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Federico Carrone.
+Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
@@ -17,6 +17,10 @@ from the portmanteau theorem applied to the closed sets `{x | M ≤ |x|}`.
 
 * `MeasureTheory.TendstoInDistribution.exists_measure_le_abs_le`: tightness of a sequence of
   real random variables converging in distribution.
+
+## References
+
+* [P. Billingsley, *Convergence of Probability Measures*][billingsley1999]
 -/
 
 open Filter Topology Set
@@ -35,7 +39,7 @@ theorem TendstoInDistribution.exists_measure_le_abs_le (h : TendstoInDistributio
     ∃ M : ℝ, ∀ᶠ i in l, μ i {ω | M ≤ |X i ω|} ≤ ε := by
   set ν : Measure ℝ := μ'.map Z with hν
   -- the closed sets `{M ≤ |x|}` decrease to `∅`, so their `ν`-measure tends to `0`
-  have hlim : Tendsto (fun M : ℕ => ν {x : ℝ | (M : ℝ) ≤ |x|}) atTop (𝓝 0) := by
+  have hlim : Tendsto (fun M : ℕ ↦ ν {x : ℝ | (M : ℝ) ≤ |x|}) atTop (𝓝 0) := by
     have h0 : ν (⋂ M : ℕ, {x : ℝ | (M : ℝ) ≤ |x|}) = 0 := by
       have : (⋂ M : ℕ, {x : ℝ | (M : ℝ) ≤ |x|}) = ∅ := by
         ext x
@@ -45,7 +49,7 @@ theorem TendstoInDistribution.exists_measure_le_abs_le (h : TendstoInDistributio
         exact ⟨M, hM⟩
       rw [this, measure_empty]
     rw [← h0]
-    refine tendsto_measure_iInter_atTop (fun M => ?_) (fun a b hab x hx => ?_)
+    refine tendsto_measure_iInter_atTop (fun M ↦ ?_) (fun a b hab x hx ↦ ?_)
       ⟨0, measure_ne_top _ _⟩
     · exact (measurableSet_le measurable_const continuous_abs.measurable).nullMeasurableSet
     · simp only [mem_ofPred_eq] at hx ⊢
@@ -54,7 +58,7 @@ theorem TendstoInDistribution.exists_measure_le_abs_le (h : TendstoInDistributio
   refine ⟨M, ?_⟩
   have hclosed : IsClosed {x : ℝ | (M : ℝ) ≤ |x|} := isClosed_le continuous_const continuous_abs
   have hls := ProbabilityMeasure.limsup_measure_closed_le_of_tendsto h.tendsto hclosed
-  have hlt : (l.limsup fun i => (μ i).map (X i) {x : ℝ | (M : ℝ) ≤ |x|}) < ε :=
+  have hlt : (l.limsup fun i ↦ (μ i).map (X i) {x : ℝ | (M : ℝ) ≤ |x|}) < ε :=
     lt_of_le_of_lt hls hM
   filter_upwards [eventually_lt_of_limsup_lt hlt] with i hi
   rw [Measure.map_apply_of_aemeasurable (h.forall_aemeasurable i)

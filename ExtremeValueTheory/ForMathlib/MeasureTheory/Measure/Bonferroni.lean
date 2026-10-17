@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2026 Federico Carrone.
+Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
@@ -17,6 +17,10 @@ estimate of order two.
 
 * `MeasureTheory.sum_measureReal_sub_sum_inter_le_measureReal_biUnion`: the second Bonferroni
   inequality, stated with `Measure.real`.
+
+## References
+
+* [W. Feller, *An Introduction to Probability Theory and Its Applications, Vol. I*][feller1968]
 -/
 
 open Finset
