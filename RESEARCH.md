@@ -28,9 +28,11 @@ Hypothesis bookkeeping (the research value of the formal proofs):
 - The cluster ratio `P(M_{rₙ} > uₙ)/(rₙ P(|X₀| > uₙ)) → ϑ` needs only stationarity, the tail process,
   `uₙ, rₙ → ∞` and *forward* anticlustering at *one* level sequence: no mixing, no `rₙ/n → 0`.
 - `Θ_t → 0` follows from forward anticlustering at one level, without stationarity.
-- `θ ≤ ϑ` needs no anticlustering: besides stationarity, the spectral tail process and the
-  existence of `θ` (for `|X|`), it uses condition `𝒜` along one level sequence with
-  `nP(|X₀|>uₙ) → τ > 0`, `rₙ → ∞` and `rₙ/n → 0`.
+- `θ ≤ ϑ` (`le_candidateExtremalIndex'`) needs only stationarity, the spectral tail process and the
+  existence of `θ` for `|X|`: no anticlustering, no mixing, no block condition, no block lengths.
+  This matches KS20 Lemma 7.5.4 as described by Bai–Kulik–Wang (2024); an earlier version
+  (`le_candidateExtremalIndex`) also assumed condition `𝒜`. The level sequences needed are supplied by
+  regular variation (`hasExceedanceLevels_of_isRegularlyVarying'`).
 
 Also done: `𝒜` from α-mixing at a rate; for every stationary m-dependent sequence with a spectral tail
 process, `|X|` has extremal index `ϑ`; through it, the moving maximum (`θ = 1/2`) and finite moving averages

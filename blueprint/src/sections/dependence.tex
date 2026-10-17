@@ -431,3 +431,21 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
   $\sum |c_j||Z_j| \le (\sum |c_j|^\beta |Z_j|^q)^{1/q}$ when $\sum |c_j|^\delta \le 1$. Since $|Z|^q$ has tail index
   $\alpha/q < 1$, the $\alpha < 1$ remainder bound applies.
 \end{proof}
+
+\begin{theorem}[$\theta \le \vartheta$ with minimal hypotheses]
+  \label{thm:theta-le-vartheta-minimal}
+  \uses{thm:theta-le-vartheta, thm:theta-eq-vartheta}
+  \lean{ExtremeValueTheory.hasExceedanceLevels_of_isRegularlyVarying', ExtremeValueTheory.HasSpectralTailProcess.hasExceedanceLevels_abs,
+    ExtremeValueTheory.HasSpectralTailProcess.one_sub_le_mul_candidateExtremalIndex, ExtremeValueTheory.HasSpectralTailProcess.le_candidateExtremalIndex'}
+  \leanok
+  For a stationary sequence with spectral tail process, if $|X|$ has extremal index $\theta$ then
+  $\theta \le \vartheta$. No anticlustering, no mixing, no block condition and no block lengths are assumed,
+  matching [KS20, Lemma~7.5.4] (as described by Bai, Kulik and Wang, 2024).
+\end{theorem}
+\begin{proof}
+  \leanok
+  Regularly varying tails admit level sequences with $n \PR[|X_0| > u_n] \to \tau$ for every $\tau > 0$. The
+  first-exceedance decomposition gives $\PR[M_n > u] \le m \PR[|X_0| > u] + n \PR[|X_0| > u, \max_{0<t\le m}|X_t| \le u]$,
+  hence $1 - e^{-\theta\tau} \le \tau \vartheta$ after $n \to \infty$ then $m \to \infty$. With
+  $1 - e^{-x} \ge x/(1+x)$ this gives $\theta \le \vartheta + \tau$ for every $\tau > 0$.
+\end{proof}

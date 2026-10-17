@@ -126,8 +126,8 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
 - **Extremal index = candidate extremal index** (`Dependence/Anticlustering.lean`): forward
   anticlustering forces `Θ_t → 0`; the cluster ratio `P(M_{rₙ} > uₙ)/(rₙ P(|X₀| > uₙ)) → ϑ`
   (`HasSpectralTailProcess.tendsto_blockRatio`), so under anticlustering and the block condition
-  `𝒜` the extremal index is `ϑ` (`hasExtremalIndex_abs`); without anticlustering `θ ≤ ϑ`
-  (`le_candidateExtremalIndex`). Checked on the moving maximum, where `θ = ϑ = 1/2`.
+  `𝒜` the extremal index is `ϑ` (`hasExtremalIndex_abs`); and `θ ≤ ϑ` holds with no anticlustering,
+  mixing or block condition at all (`le_candidateExtremalIndex'`). Checked on the moving maximum, where `θ = ϑ = 1/2`.
 - **Mixing and m-dependence** (`ForMathlib/Probability/Process/Mixing.lean`, `Dependence/Mixing.lean`,
   `MDependent*.lean`): strong and β-mixing coefficients; α-mixing at a rate implies condition `𝒜`;
   for every stationary m-dependent sequence with a spectral tail process, `|X|` has extremal index `ϑ`
