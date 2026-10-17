@@ -241,102 +241,10 @@ No monotonicity is assumed (compare `IsRegularlyVarying.potter_bound`). -/
 theorem potter_bound_of_measurable (hf : IsRegularlyVarying f ρ) (hfm : Measurable f) {δ A : ℝ}
     (hδ : 0 < δ) (hA : 1 < A) :
     ∃ x₀ : ℝ, 0 < x₀ ∧ (∀ x ≥ x₀, 0 < f x) ∧ ∀ x ≥ x₀, ∀ y ≥ x₀,
-      f y / f x ≤ A * max ((y / x) ^ (ρ + δ)) ((y / x) ^ (ρ - δ)) := by
-  obtain ⟨η, hη, hηA, hηA'⟩ : ∃ η : ℝ, 0 < η ∧ 1 + η ≤ A ∧ A⁻¹ ≤ 1 - η := by
-    have hAinv : A⁻¹ < 1 := inv_lt_one_of_one_lt₀ hA
-    refine ⟨min (A - 1) (1 - A⁻¹), lt_min (by linarith) (by linarith), ?_, ?_⟩
-    · have := min_le_left (A - 1) (1 - A⁻¹); linarith
-    · have := min_le_right (A - 1) (1 - A⁻¹); linarith
-  have hη1 : η < 1 := by have := inv_pos.2 (zero_lt_one.trans hA); linarith
-  obtain ⟨m, hm, hmt⟩ : ∃ m : ℝ, 0 < m ∧ ∀ t ∈ Icc (1 : ℝ) 2, m ≤ t ^ ρ := by
-    refine ⟨min 1 ((2 : ℝ) ^ ρ), lt_min one_pos (rpow_pos_of_pos two_pos ρ), fun t ht => ?_⟩
-    rcases le_total 0 ρ with hρ | hρ
-    · exact (min_le_left _ _).trans (one_le_rpow ht.1 hρ)
-    · exact (min_le_right _ _).trans (rpow_le_rpow_of_nonpos (by linarith [ht.1]) ht.2 hρ)
-  have hU := Metric.tendstoUniformlyOn_iff.1
+      f y / f x ≤ A * max ((y / x) ^ (ρ + δ)) ((y / x) ^ (ρ - δ)) :=
+  hf.potter_bound_of_tendstoUniformlyOn_Icc
     (hf.tendstoUniformlyOn_of_measurable hfm (isCompact_Icc (a := 1) (b := 2))
-      fun _ hc => one_pos.trans_le hc.1) (η * m) (by positivity)
-  have hS1 : ∀ᶠ x in atTop, f (2 * x) / f x < 2 ^ (ρ + δ) :=
-    (hf.2 2 two_pos).eventually_lt_const (rpow_lt_rpow_of_exponent_lt one_lt_two (by linarith))
-  have hS2 : ∀ᶠ x in atTop, 2 ^ (ρ - δ) < f (2 * x) / f x :=
-    (hf.2 2 two_pos).eventually_const_lt (rpow_lt_rpow_of_exponent_lt one_lt_two (by linarith))
-  obtain ⟨x₁, hx₁⟩ := eventually_atTop.1
-    ((hU.and (hS1.and hS2)).and (hf.1.and (eventually_gt_atTop 0)))
-  have hpos : ∀ x ≥ x₁, 0 < f x := fun x hx => (hx₁ x hx).2.1
-  have hx₁pos : 0 < x₁ := (hx₁ x₁ le_rfl).2.2
-  -- the bounds for `t ∈ [1, 2]`, from the uniform convergence theorem
-  have hloc : ∀ x ≥ x₁, ∀ t ∈ Icc (1 : ℝ) 2,
-      f (t * x) / f x ≤ (1 + η) * t ^ (ρ + δ) ∧ (1 - η) * t ^ (ρ - δ) ≤ f (t * x) / f x := by
-    intro x hx t ht
-    have h := (hx₁ x hx).1.1 t ht
-    rw [Real.dist_eq, abs_lt] at h
-    have hmt' := mul_le_mul_of_nonneg_left (hmt t ht) hη.le
-    have e1 : t ^ ρ ≤ t ^ (ρ + δ) := rpow_le_rpow_of_exponent_le ht.1 (by linarith)
-    have e2 : t ^ (ρ - δ) ≤ t ^ ρ := rpow_le_rpow_of_exponent_le ht.1 (by linarith)
-    have e1' := mul_le_mul_of_nonneg_left e1 (by linarith : (0 : ℝ) ≤ 1 + η)
-    have e2' := mul_le_mul_of_nonneg_left e2 (by linarith : (0 : ℝ) ≤ 1 - η)
-    constructor <;> linarith
-  -- iterate using the doubling bounds
-  have hind : ∀ n : ℕ, ∀ x ≥ x₁, ∀ t : ℝ, 1 ≤ t → t ≤ 2 ^ n →
-      f (t * x) / f x ≤ (1 + η) * t ^ (ρ + δ) ∧ (1 - η) * t ^ (ρ - δ) ≤ f (t * x) / f x := by
-    intro n
-    induction n with
-    | zero =>
-      intro x hx t h1 h2
-      exact hloc x hx t ⟨h1, by simp at h2; linarith⟩
-    | succ n ih =>
-      intro x hx t h1 h2
-      rcases le_or_gt t 2 with ht2 | ht2
-      · exact hloc x hx t ⟨h1, ht2⟩
-      · have hx0 : 0 < x := hx₁pos.trans_le hx
-        have hx2 : 2 * x ≥ x₁ := by linarith
-        have h' := ih (2 * x) hx2 (t / 2) (by rw [le_div_iff₀ two_pos]; linarith)
-          (by rw [div_le_iff₀ two_pos, ← pow_succ]; exact h2)
-        have hfx := hpos x hx
-        have hf2x := hpos (2 * x) hx2
-        have htx : x₁ ≤ t / 2 * (2 * x) := by
-          have : t / 2 * (2 * x) = t * x := by ring
-          rw [this]; nlinarith
-        have hftx := hpos _ htx
-        have eq : f (t * x) / f x = f (t / 2 * (2 * x)) / f (2 * x) * (f (2 * x) / f x) := by
-          rw [show t / 2 * (2 * x) = t * x by ring, div_mul_div_cancel₀ hf2x.ne']
-        have hs := (hx₁ x hx).1.2
-        have pw : ∀ p : ℝ, t ^ p = (t / 2) ^ p * 2 ^ p := fun p => by
-          rw [← mul_rpow (by linarith) zero_le_two, div_mul_cancel₀ t two_ne_zero]
-        constructor
-        · rw [eq, pw (ρ + δ), ← mul_assoc (1 + η)]
-          exact mul_le_mul h'.1 hs.1.le (div_pos hf2x hfx).le
-            (mul_nonneg (by linarith) (rpow_nonneg (by linarith) _))
-        · rw [eq, pw (ρ - δ), ← mul_assoc (1 - η)]
-          exact mul_le_mul h'.2 hs.2.le (rpow_nonneg zero_le_two _) (div_pos hftx hf2x).le
-  refine ⟨x₁, hx₁pos, hpos, fun x hx y hy => ?_⟩
-  have hx0 : 0 < x := hx₁pos.trans_le hx
-  have hy0 : 0 < y := hx₁pos.trans_le hy
-  have hfx := hpos x hx
-  have hfy := hpos y hy
-  rcases le_total x y with hxy | hxy
-  · have ht1 : 1 ≤ y / x := by rw [le_div_iff₀ hx0]; linarith
-    obtain ⟨n, hn⟩ := pow_unbounded_of_one_lt (y / x) one_lt_two
-    have h := (hind n x hx (y / x) ht1 hn.le).1
-    rw [div_mul_cancel₀ y hx0.ne'] at h
-    calc f y / f x ≤ (1 + η) * (y / x) ^ (ρ + δ) := h
-      _ ≤ A * (y / x) ^ (ρ + δ) := mul_le_mul_of_nonneg_right hηA (rpow_nonneg (by linarith) _)
-      _ ≤ _ := mul_le_mul_of_nonneg_left (le_max_left _ _) (by linarith)
-  · have ht1 : 1 ≤ x / y := by rw [le_div_iff₀ hy0]; linarith
-    obtain ⟨n, hn⟩ := pow_unbounded_of_one_lt (x / y) one_lt_two
-    have h := (hind n y hy (x / y) ht1 hn.le).2
-    rw [div_mul_cancel₀ x hy0.ne'] at h
-    have hyx : 0 < y / x := div_pos hy0 hx0
-    have hs : 0 < (y / x) ^ (ρ - δ) := rpow_pos_of_pos hyx _
-    have htinv : (x / y) ^ (ρ - δ) = ((y / x) ^ (ρ - δ))⁻¹ := by
-      rw [← inv_rpow hyx.le, inv_div]
-    have h2 : A⁻¹ * ((y / x) ^ (ρ - δ))⁻¹ ≤ f x / f y := by
-      refine le_trans ?_ h
-      rw [htinv]
-      exact mul_le_mul_of_nonneg_right hηA' (inv_pos.2 hs).le
-    have h3 := inv_anti₀ (mul_pos (inv_pos.2 (zero_lt_one.trans hA)) (inv_pos.2 hs)) h2
-    rw [inv_div, mul_inv, inv_inv, inv_inv] at h3
-    exact h3.trans (mul_le_mul_of_nonneg_left (le_max_right _ _) (by linarith))
+      fun _ hc => one_pos.trans_le hc.1) hδ hA
 
 /-- **Potter bounds**, two-sided form ([BGT, Theorem 1.5.6 (iii)]): if `f` is measurable and
 regularly varying with index `ρ`, then for every `δ > 0` and `A > 1` there is `x₀ > 0` such

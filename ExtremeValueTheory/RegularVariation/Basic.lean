@@ -295,13 +295,15 @@ theorem tendstoUniformlyOn_Icc (hf : IsRegularlyVarying f ρ) {a : ℝ}
     TendstoUniformlyOn (fun x c => f (c * x) / f x) (fun c => c ^ ρ) atTop (Icc b₁ b₂) :=
   hf.tendstoUniformlyOn_of_isCompact hmono isCompact_Icc fun _ hc => hb₁.trans_le hc.1
 
-/-- **Potter bounds** for eventually monotone (or antitone) regularly varying functions
-([BGT, Theorem 1.5.6]): if `f` is regularly varying with index `ρ` and monotone or antitone on
-some `[a, ∞)`, then for every `δ > 0` and `A > 1` there is `x₀ > 0` such that `f > 0` on
-`[x₀, ∞)` and
-`f y / f x ≤ A * max ((y / x) ^ (ρ + δ)) ((y / x) ^ (ρ - δ))` for all `x, y ≥ x₀`. -/
-theorem potter_bound (hf : IsRegularlyVarying f ρ) {a : ℝ}
-    (hmono : MonotoneOn f (Ici a) ∨ AntitoneOn f (Ici a)) {δ A : ℝ} (hδ : 0 < δ) (hA : 1 < A) :
+/-- **Potter bounds from uniform convergence on `[1, 2]`** ([BGT, Theorem 1.5.6]): if `f` is
+regularly varying with index `ρ` and `f (c x) / f x → c ^ ρ` uniformly for `c ∈ [1, 2]`, then
+for every `δ > 0` and `A > 1` there is `x₀ > 0` such that `f > 0` on `[x₀, ∞)` and
+`f y / f x ≤ A * max ((y / x) ^ (ρ + δ)) ((y / x) ^ (ρ - δ))` for all `x, y ≥ x₀`. The uniform
+convergence holds for eventually monotone `f` (`potter_bound`) and for measurable `f`
+(`potter_bound_of_measurable`). -/
+theorem potter_bound_of_tendstoUniformlyOn_Icc (hf : IsRegularlyVarying f ρ)
+    (hunif : TendstoUniformlyOn (fun x c => f (c * x) / f x) (fun c => c ^ ρ) atTop (Icc 1 2))
+    {δ A : ℝ} (hδ : 0 < δ) (hA : 1 < A) :
     ∃ x₀ : ℝ, 0 < x₀ ∧ (∀ x ≥ x₀, 0 < f x) ∧ ∀ x ≥ x₀, ∀ y ≥ x₀,
       f y / f x ≤ A * max ((y / x) ^ (ρ + δ)) ((y / x) ^ (ρ - δ)) := by
   obtain ⟨η, hη, hηA, hηA'⟩ : ∃ η : ℝ, 0 < η ∧ 1 + η ≤ A ∧ A⁻¹ ≤ 1 - η := by
@@ -315,8 +317,7 @@ theorem potter_bound (hf : IsRegularlyVarying f ρ) {a : ℝ}
     rcases le_total 0 ρ with hρ | hρ
     · exact (min_le_left _ _).trans (one_le_rpow ht.1 hρ)
     · exact (min_le_right _ _).trans (rpow_le_rpow_of_nonpos (by linarith [ht.1]) ht.2 hρ)
-  have hU := Metric.tendstoUniformlyOn_iff.1
-    (hf.tendstoUniformlyOn_Icc hmono (b₁ := 1) (b₂ := 2) one_pos) (η * m) (by positivity)
+  have hU := Metric.tendstoUniformlyOn_iff.1 hunif (η * m) (by positivity)
   have hS1 : ∀ᶠ x in atTop, f (2 * x) / f x < 2 ^ (ρ + δ) :=
     (hf.2 2 two_pos).eventually_lt_const (rpow_lt_rpow_of_exponent_lt one_lt_two (by linarith))
   have hS2 : ∀ᶠ x in atTop, 2 ^ (ρ - δ) < f (2 * x) / f x :=
@@ -398,6 +399,18 @@ theorem potter_bound (hf : IsRegularlyVarying f ρ) {a : ℝ}
     have h3 := inv_anti₀ (mul_pos (inv_pos.2 (zero_lt_one.trans hA)) (inv_pos.2 hs)) h2
     rw [inv_div, mul_inv, inv_inv, inv_inv] at h3
     exact h3.trans (mul_le_mul_of_nonneg_left (le_max_right _ _) (by linarith))
+
+/-- **Potter bounds** for eventually monotone (or antitone) regularly varying functions
+([BGT, Theorem 1.5.6]): if `f` is regularly varying with index `ρ` and monotone or antitone on
+some `[a, ∞)`, then for every `δ > 0` and `A > 1` there is `x₀ > 0` such that `f > 0` on
+`[x₀, ∞)` and
+`f y / f x ≤ A * max ((y / x) ^ (ρ + δ)) ((y / x) ^ (ρ - δ))` for all `x, y ≥ x₀`. -/
+theorem potter_bound (hf : IsRegularlyVarying f ρ) {a : ℝ}
+    (hmono : MonotoneOn f (Ici a) ∨ AntitoneOn f (Ici a)) {δ A : ℝ} (hδ : 0 < δ) (hA : 1 < A) :
+    ∃ x₀ : ℝ, 0 < x₀ ∧ (∀ x ≥ x₀, 0 < f x) ∧ ∀ x ≥ x₀, ∀ y ≥ x₀,
+      f y / f x ≤ A * max ((y / x) ^ (ρ + δ)) ((y / x) ^ (ρ - δ)) :=
+  hf.potter_bound_of_tendstoUniformlyOn_Icc
+    (hf.tendstoUniformlyOn_Icc hmono (b₁ := 1) (b₂ := 2) one_pos) hδ hA
 
 end IsRegularlyVarying
 
