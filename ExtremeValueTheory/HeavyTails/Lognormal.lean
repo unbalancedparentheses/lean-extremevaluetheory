@@ -247,6 +247,101 @@ theorem tail_lognormal_sub_le (hv : v ≠ 0) {x t : ℝ} (hx : 2 * exp (m + 1) �
   have hQ := (gaussianTail_pos hv (m := m) b).le
   gcongr
 
+/-- `(log x - m) / x` is antitone on `[e^{m+1}, ∞)`. -/
+private theorem log_sub_div_antitone {m y x : ℝ} (hy : exp (m + 1) ≤ y) (hyx : y ≤ x) :
+    (log x - m) / x ≤ (log y - m) / y := by
+  have hy0 : 0 < y := lt_of_lt_of_le (exp_pos _) hy
+  have hx0 : 0 < x := hy0.trans_le hyx
+  have hk : 0 < exp (-m) := exp_pos _
+  have e : ∀ z, 0 < z → (log z - m) / z = exp (-m) * (log (z * exp (-m)) / (z * exp (-m))) := by
+    intro z hz
+    rw [log_mul hz.ne' hk.ne', log_exp, exp_neg]
+    field_simp
+    ring
+  have hmem : ∀ z, exp (m + 1) ≤ z → z * exp (-m) ∈ Ici (exp 1) := by
+    intro z hz
+    show exp 1 ≤ z * exp (-m)
+    calc exp 1 = exp (m + 1) * exp (-m) := by rw [← exp_add]; ring_nf
+      _ ≤ z * exp (-m) := by gcongr
+  rw [e x hx0, e y hy0]
+  exact mul_le_mul_of_nonneg_left
+    (log_div_self_antitoneOn (hmem y hy) (hmem x (hy.trans hyx)) (by gcongr)) (exp_pos (-m)).le
+
+/-- The dominating function for `F̄(x - t) / F̄(x)`, `0 ≤ t ≤ x / 2`. -/
+private noncomputable def domFun (m : ℝ) (v : ℝ≥0) (t : ℝ) : ℝ :=
+  1 / tail (lognormal m v) (2 * exp (m + 1)) +
+    2 * (1 + v) * exp ((log (max (2 * t) (exp (m + 1))) - m) / v)
+
+private theorem ratio_le_domFun (hv : v ≠ 0) {x t : ℝ} (ht : 0 ≤ t) (htx : t ≤ x / 2) :
+    tail (lognormal m v) (x - t) / tail (lognormal m v) x ≤ domFun m v t := by
+  have hv' : (0 : ℝ) < v := by positivity
+  set F := tail (lognormal m v)
+  have hF := tail_lognormal_pos (m := m) hv
+  have hsecond : 0 ≤ 2 * (1 + (v : ℝ)) * exp ((log (max (2 * t) (exp (m + 1))) - m) / v) := by
+    positivity
+  rcases lt_or_ge x (2 * exp (m + 1)) with hx | hx
+  · -- small `x`
+    have h1 : F (x - t) / F x ≤ 1 / F x :=
+      div_le_div_of_nonneg_right (tail_le_one _) (hF x).le
+    have h2 : 1 / F x ≤ 1 / F (2 * exp (m + 1)) :=
+      one_div_le_one_div_of_le (hF _) (tail_antitone hx.le)
+    unfold domFun; linarith
+  · have hx0 : 0 < x := lt_of_lt_of_le (by positivity) hx
+    have hxe : exp (m + 1) ≤ x := by linarith [exp_pos (m + 1)]
+    have hlog : m + 1 ≤ log x := (le_log_iff_exp_le hx0).2 hxe
+    have hb := tail_lognormal_sub_le hv hx ht htx
+    rw [← div_le_iff₀ (hF x)] at hb
+    refine hb.trans (le_trans ?_ (le_add_of_nonneg_left (div_nonneg zero_le_one (tail_nonneg _))))
+    set y := max (2 * t) (exp (m + 1))
+    have hy : exp (m + 1) ≤ y := le_max_right _ _
+    have hyx : y ≤ x := max_le (by linarith) hxe
+    have hy0 : 0 < y := lt_of_lt_of_le (exp_pos _) hy
+    have hlogy : m + 1 ≤ log y := (le_log_iff_exp_le hy0).2 hy
+    have h1 : 1 + 2 * t / x ≤ 2 := by
+      have : 2 * t / x ≤ 1 := by rw [div_le_one hx0]; linarith
+      linarith
+    have h2 : 1 + (v : ℝ) / (log x - m) ^ 2 ≤ 1 + v := by
+      have : (v : ℝ) / (log x - m) ^ 2 ≤ v :=
+        div_le_self hv'.le (one_le_pow₀ (by linarith))
+      linarith
+    have h3 : 2 * t * ((log x - m) / x) / v ≤ (log y - m) / v := by
+      gcongr
+      have hh := log_sub_div_antitone hy hyx
+      have hnn : 0 ≤ (log y - m) / y := div_nonneg (by linarith) hy0.le
+      calc 2 * t * ((log x - m) / x) ≤ 2 * t * ((log y - m) / y) := by gcongr
+        _ ≤ y * ((log y - m) / y) := by gcongr; exact le_max_left _ _
+        _ = log y - m := by field_simp
+    have hpos1 : 0 ≤ 1 + 2 * t / x := by positivity
+    have hpos2 : 0 ≤ 1 + (v : ℝ) / (log x - m) ^ 2 := by positivity
+    calc (1 + 2 * t / x) * (1 + v / (log x - m) ^ 2) * exp (2 * t * ((log x - m) / x) / v)
+        ≤ 2 * (1 + v) * exp ((log y - m) / v) := by
+          gcongr
+      _ = _ := rfl
+
+private theorem integrable_domFun (hv : v ≠ 0) : Integrable (domFun m v) (lognormal m v) := by
+  have hv' : (0 : ℝ) < v := by positivity
+  have hmeas : Measurable (domFun m v) := by unfold domFun; fun_prop
+  rw [lognormal, integrable_map_measure hmeas.aestronglyMeasurable measurable_exp.aemeasurable]
+  set c1 := 1 / tail (lognormal m v) (2 * exp (m + 1))
+  set C := 2 * (1 + (v : ℝ))
+  have hbound : Integrable (fun s => c1 + C * (exp ((log 2 - m) / v) * exp ((1 / v) * s) +
+      exp ((m + 1 - m) / v))) (gaussianReal m v) :=
+    (integrable_const _).add ((((integrable_exp_mul_gaussianReal (1 / v)).const_mul _).add
+      (integrable_const _)).const_mul _)
+  refine hbound.mono' (hmeas.comp measurable_exp).aestronglyMeasurable (ae_of_all _ fun s => ?_)
+  have hc1 : 0 ≤ c1 := by unfold c1; exact div_nonneg zero_le_one (tail_nonneg _)
+  have hnn : 0 ≤ domFun m v (exp s) := by unfold domFun; positivity
+  rw [Function.comp_apply, Real.norm_eq_abs, abs_of_nonneg hnn]
+  unfold domFun
+  gcongr
+  have hA : exp ((log (2 * exp s) - m) / v) = exp ((log 2 - m) / v) * exp ((1 / v) * s) := by
+    rw [log_mul two_ne_zero (exp_pos s).ne', log_exp, ← exp_add]; congr 1; field_simp; ring
+  have hB : exp ((m + 1 - m) / v) = exp ((log (exp (m + 1)) - m) / v) := by rw [log_exp]
+  rw [← hA, hB]
+  rcases le_total (2 * exp s) (exp (m + 1)) with h | h
+  · rw [max_eq_right h]; linarith [exp_pos ((log (2 * exp s) - m) / v)]
+  · rw [max_eq_left h]; linarith [exp_pos ((log (exp (m + 1)) - m) / v)]
+
 end Lognormal
 
 end ExtremeValueTheory
