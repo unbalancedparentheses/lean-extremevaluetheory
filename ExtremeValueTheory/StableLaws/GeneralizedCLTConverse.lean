@@ -9,6 +9,56 @@ import ExtremeValueTheory.StableLaws.LevyContinuity
 /-!
 # The converse of the generalized central limit theorem (symmetric case)
 
+Let `X₁, X₂, …` be i.i.d. with a *symmetric* law `μ`, let `aₙ > 0`, and suppose that the laws
+of `Sₙ / aₙ = (X₁ + ⋯ + Xₙ) / aₙ` converge weakly to a law `ν ≠ δ₀`. We prove the necessity half
+of Feller's criterion for the domain of attraction of a stable law
+([Feller, Vol. II, §XVII.5, Theorem 2], [GK, §35, Theorem 2]): the truncated second moment
+`U(x) = E[X² 1{|X| ≤ x}]` is regularly varying with index `2 - α` for some `0 < α ≤ 2`, and for
+`α < 2` the two-sided tail `P(|X| > x)` is regularly varying with index `-α`. This is the converse
+of `tendsto_map_convPow_of_isRegularlyVarying` (in
+`ExtremeValueTheory.StableLaws.DomainOfAttraction`).
+
+## Main definitions
+
+* `minSqMoment μ x = E[min (x², X²)]` and `truncSecondMoment μ x = E[X² 1{|X| ≤ x}]`.
+* `GCLTConverse.nh μ a n t = n (1 - f(t / aₙ))`, `f(s) = ∫ cos (s x) dμ`.
+* `GCLTConverse.lamMeasure μ a n`, the finite measure `y² / (1 + y²) · law(X / aₙ)(dy)`, and
+  `GCLTConverse.lamNorm` its normalization (a version of Feller's canonical measures).
+
+## Main results
+
+* `GCLTConverse.exists_isRegularlyVarying_of_tendsto`: **converse GCLT, index derived.** If
+  `Sₙ / aₙ → ν ≠ δ₀` weakly, there is `0 < α ≤ 2` with `U ∈ RV(2 - α)` and, if `α < 2`,
+  `P(|X| > ·) ∈ RV(-α)`.
+* `GCLTConverse.isRegularlyVarying_of_tendsto_isSymmStable`: **converse GCLT, index given.**
+  If `Sₙ / aₙ → SαS(c)` with `0 < α < 2`, `c > 0`, then `P(|X| > ·) ∈ RV(-α)`,
+  `U ∈ RV(2 - α)` and `n P(|X| > aₙ) → K > 0`.
+* `GCLTConverse.tendsto_sq_mul_absTail_div_minSqMoment`: the elementary Tauberian step: if
+  `Z(x) = E[min (x², X²)]` is `RV(ρ)` then `x² P(|X| > x) / Z(x) → ρ / 2`, hence the tail is
+  `RV(ρ - 2)` (`ρ > 0`) and `U ∈ RV(ρ)` (`ρ < 2`).
+* `GCLTConverse.tendsto_div_of_tendsto_mul_comp`: from sequences to functions: for monotone
+  `T`, `n T(aₙ x) → L(x) > 0` implies `T(l x) / T(x) → L(l) / L(1)`
+  ([Feller, §VIII.8, Lemma 3], [BGT, Theorem 1.9.2]).
+* `GCLTConverse.exists_rpow_of_tendsto_div`: the limit of `T(l x) / T(x)` is a power of `l`.
+
+## Proof outline
+
+1. *Tightness* (`exists_forall_norm_charFun_sub_one_le`, `exists_nh_le`): the characteristic
+   functions `f(t / aₙ)ⁿ` of `Sₙ / aₙ` are uniformly close to `1` for `|t| ≤ δ`; with
+   `f(2s) ≥ 2 f(s)² - 1` and `1 - f(k s) ≤ k² (1 - f(s))` this gives the quadratic bound
+   `hₙ(t) = n (1 - f(t / aₙ)) ≤ log 2 (|t| / δ + 1)²`.
+2. *Logarithms* (`tendsto_nh`): `ψ = Re φ_ν > 0` and `hₙ(t) → h(t) = -log ψ(t)`.
+3. *Canonical measures* (`charFun_kMeasure`, `charFun_lamMeasure`): with
+   `1 / (1 + y²) = ∫₀^∞ e^{-s} cos (s y) ds`, the measures
+   `Λₙ(dy) = n y² / (1 + y²) P(X / aₙ ∈ dy)` have characteristic functions
+   `λ_{hₙ}(t) = ∫₀^∞ e^{-s} ((hₙ(t + s) + hₙ(t - s)) / 2 - hₙ(t)) ds`, which converge to
+   `λ_h(t)` by dominated convergence (`tendsto_lap`).
+4. *Lévy* (`exists_charFun_eq_lap`, `tendsto_mul_sqRatio`): `Λₙ / Λₙ(ℝ)` converges weakly to a
+   probability `P`, so testing against the bounded continuous `(1 + y²) / max (y², x²)` gives
+   `n T(aₙ x) → L(x) > 0` with `T(x) = E[min (1, X² / x²)] = Z(x) / x²`.
+5. *Regular variation*: `T` is monotone, so `T(l x) / T(x) → L(l) / L(1) = l ^ (-α)`; then the
+   elementary Tauberian step transfers this to `U` and to the tail. With `ν = SαS(c)` the
+   scaling `aₙ ↦ r aₙ` identifies `α` (`isRegularlyVarying_of_tendsto_isSymmStable`).
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set Real
