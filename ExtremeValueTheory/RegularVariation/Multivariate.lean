@@ -9,7 +9,55 @@ import Mathlib.Topology.Algebra.Module.Cardinality
 /-!
 # Multivariate regular variation
 
-TODO docs
+We formalize regular variation of random vectors with values in a normed space `E` (for instance
+`ℝ × ℝ` or `EuclideanSpace ℝ (Fin d)`), following Resnick, *Heavy-Tail Phenomena* (Springer, 2007),
+Chapter 6 [Res07]; Basrak, Davis and Mikosch, *A characterization of multivariate regular
+variation*, Ann. Appl. Probab. 12 (2002) [BDM02]; Hult and Lindskog, *Regular variation for
+measures on metric spaces*, Publ. Inst. Math. 80 (2006) [HL06]; and Kulik and Soulier,
+*Heavy-Tailed Time Series* (Springer, 2020), Chapter 2 [KS20].
+
+## The definition
+
+`ℝ^d \ {0}` with its usual topology is not the right space for vague convergence (sets bounded
+away from the origin are not relatively compact there), so we use the `M₀`-formulation of
+[HL06], in the tail-normalized form of [KS20, §2.1]: `X` is regularly varying with index `α`
+and exponent (tail) measure `μ` (`IsRegVarVector P X α μ`) if `P(‖X‖ > x)` is regularly varying
+with index `-α`, `μ` has no atom at `0` and is finite on `{‖y‖ > r}` for every `r > 0`, and
+`E[f(X / x)] / P(‖X‖ > x) → ∫ f dμ` for every bounded continuous `f` vanishing on a neighbourhood
+of the origin. Normalizing by `P(‖X‖ > x)` instead of a sequence `aₙ` with `n P(‖X‖ > aₙ) → 1`
+is equivalent and fixes the scale `μ {‖y‖ > 1} = 1`. The portmanteau theorem
+(`IsRegVarVector.tendsto_measureReal`) recovers `P(X / x ∈ A) / P(‖X‖ > x) → μ(A)` for Borel `A`
+bounded away from the origin with `μ(∂A) = 0`.
+
+## Main results
+
+* `ext_of_forall_integral_eq_of_vanishesNearZero`, `tendsto_measureReal_of_vanishesNearZero`,
+  `tendsto_integral_indicator_of_vanishesNearZero`: uniqueness and portmanteau for convergence on
+  sets bounded away from the origin.
+* `IsRegVarVector.unique`: the exponent measure is unique.
+* `IsRegVarVector.map_smul`, `IsRegVarVector.measure_smul_set`: homogeneity
+  `μ(t • A) = t ^ (-α) μ(A)`; `IsRegVarVector.measure_lt_norm`: `μ {‖y‖ > u} = u ^ (-α)`;
+  `IsRegVarVector.measure_norm_eq_zero`: spheres are null.
+* `isRegVarVector_iff` (**polar decomposition**): `X` is regularly varying iff `P(‖X‖ > x)` is
+  regularly varying and the law of `X / ‖X‖` given `‖X‖ > x` converges weakly
+  (`IsRegVarVector.tendstoLawCond_spectralMeasure`, `isRegVarVector_polarMeasure`);
+  `IsRegVarVector.eq_polarMeasure`: `μ = (α r ^ (-α - 1) dr) ⊗ S` in polar coordinates, with `S`
+  the spectral measure on the unit sphere (`IsRegVarVector.ae_norm_spectralMeasure`).
+* `IsRegVarVector.tendsto_linear`, `IsRegVarVector.tendsto_inner`,
+  `IsRegVarVector.tendsto_linear_spectral` (**linear combinations**, the "⇒" half of the
+  Cramér–Wold device of [BDM02]): `P(L X > x) / P(‖X‖ > x) → μ {L > 1} = ∫ (L θ)₊ ^ α dS(θ)`.
+* Examples: `IsRegVarVector.measure_compl_eq_zero` (support in closed cones);
+  `isRegVarVector_diag` and `IsRegVarVector.measure_offDiag_eq_zero` (full dependence:
+  `X = (Z, Z)` has its exponent measure on the diagonal); `isRegVarVector_of_indepFun` and
+  `IsRegVarVector.measure_ne_zero_ne_zero_eq_zero` (asymptotic independence: independent
+  components give an exponent measure concentrated on the axes).
+
+The converse Cramér–Wold device (regular variation of every `L X`, with a common normalization,
+implies regular variation of `X` when `α` is not an integer [BDM02]; it fails for integer `α`) is
+not formalized.
+
+The polar decomposition reuses the single-vector Basrak–Segers machinery of
+`Dependence/TailProcess.lean` (`tendstoLawCond_smul`, `tendstoLawCond_spectral_of_tendstoLawCond`).
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set BoundedContinuousFunction
@@ -238,8 +286,8 @@ theorem tailLaw_real_apply (hX : Measurable X) (x : ℝ) {A : Set E} (hA : Measu
     measureReal_def]
   rfl
 
-/-- **Multivariate regular variation** ([KS20, Definition 2.1.?], Hult–Lindskog's
-`M₀`-convergence, [Res07, §6.1]). A random vector `X` is regularly varying with index `α` and
+/-- **Multivariate regular variation** ([KS20, §2.1], [HL06], [Res07, §6.1]), in the
+`M₀`-formulation. A random vector `X` is regularly varying with index `α` and
 (tail, or exponent) measure `μ` if the tail `P(‖X‖ > x)` of its norm is regularly varying with
 index `-α` and
 `E[f(X / x)] / P(‖X‖ > x) → ∫ f dμ` as `x → ∞`
@@ -459,7 +507,7 @@ theorem isProbabilityMeasure_spectralMeasure (h : IsRegVarVector P X α μ) (hX 
   unfold spectralMeasure; infer_instance
 
 /-- The law of `(‖X‖ / x, X / x)` given `‖X‖ > x` converges weakly to the law of `(‖Y‖, Y)` for
-`Y` distributed as `μ` restricted to `{‖y‖ > 1}` ([KS20, Proposition 2.1.?]). -/
+`Y` distributed as `μ` restricted to `{‖y‖ > 1}` ([KS20, §2.2]). -/
 theorem tendstoLawCond_norm (h : IsRegVarVector P X α μ) (hX : Measurable X) :
     TendstoLawCond P (fun x => {ω | x < ‖X ω‖}) (fun x ω => (‖X ω‖ / x, x⁻¹ • X ω)) atTop
       ((μ.restrict {y | 1 < ‖y‖}).map fun y => (‖y‖, y)) := by
@@ -1225,7 +1273,7 @@ theorem integral_axesSpectralMeasure {c : ℝ} (hc : 0 ≤ c) (f : ℝ × ℝ �
     ENNReal.toReal_ofReal hc, smul_eq_mul, smul_eq_mul]
 
 /-- **Independent components: existence and asymptotic independence** ([Res07, §6.5.1],
-[KS20, Example 2.1.?]). Let `X₁, X₂ ≥ 0` be independent, with `P(X₁ > x)` regularly varying with
+[KS20, §2.1]). Let `X₁, X₂ ≥ 0` be independent, with `P(X₁ > x)` regularly varying with
 index `-α`, `α > 0`, and tail balance `P(X₂ > x) / P(X₁ > x) → c ≥ 0`. Then `X = (X₁, X₂)` is
 regularly varying with spectral measure `(1 + c)⁻¹ (δ_(1,0) + c δ_(0,1))`: its exponent measure
 is concentrated on the axes. -/
