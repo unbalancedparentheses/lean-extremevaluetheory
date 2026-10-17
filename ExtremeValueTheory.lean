@@ -116,3 +116,4 @@ import ExtremeValueTheory.Dependence.ThetaGap
 import ExtremeValueTheory.Dependence.EchoProcess
 import ExtremeValueTheory.Multivariate.Dependence
 import ExtremeValueTheory.Multivariate.TailDependence
+import ExtremeValueTheory.Multivariate.PickandsEstimator
