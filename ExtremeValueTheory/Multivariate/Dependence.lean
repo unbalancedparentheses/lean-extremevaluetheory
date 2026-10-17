@@ -36,19 +36,21 @@ weight of the first coordinate is `t`; some references use the mirrored conventi
 
 ## Main definitions and results
 
-* `pickands μ t`: the Pickands dependence function.
+* `pickandsDependence μ t`: the Pickands dependence function.
 * `IsSimpleMaxStable.maxStableExponent_eq_pickands`: `V(x, y) = (1 / x + 1 / y) A(y / (x + y))`.
-* `IsSimpleMaxStable.max_le_pickands`, `IsSimpleMaxStable.pickands_le_one`,
+* `IsSimpleMaxStable.max_le_pickands`, `IsSimpleMaxStable.pickandsDependence_le_one`,
   `IsSimpleMaxStable.half_le_pickands`: `1 / 2 ≤ max(t, 1 - t) ≤ A(t) ≤ 1` on `[0, 1]`.
 * `HasSpectralMeasure ν H`: `ν (Iic y) = exp (-∫ max_i w i / y i dH(w))`;
   `exists_isSimpleMaxStable_hasSpectralMeasure`: every normalized `H` arises.
 * `pickandsSpectral H t = ∫ max(t w 0, (1 - t) w 1) dH`, `convexOn_pickandsSpectral`.
-* `HasSpectralMeasure.pickands_eq`, `HasSpectralMeasure.convexOn_pickands`,
+* `HasSpectralMeasure.pickandsDependence_eq`, `HasSpectralMeasure.convexOn_pickands`,
   `exists_isSimpleMaxStable_pickands`: for laws with a spectral measure,
   `A = pickandsSpectral H` on `[0, 1]`, hence `A` is convex.
-* `pickands_eq_one_of_measure_Iic_eq_mul`, `pickands_eq_max_of_measure_Iic_eq_min`: the extreme
-  cases, and their instances `pickands_map_spectralVector_independent`,
-  `pickands_map_spectralVector_comonotone` for the spectral examples of `MaxStable/Spectral.lean`.
+* `pickandsDependence_eq_one_of_measure_Iic_eq_mul`,
+  `pickandsDependence_eq_max_of_measure_Iic_eq_min`: the extreme cases, and their instances
+  `pickandsDependence_map_spectralVector_independent`,
+  `pickandsDependence_map_spectralVector_comonotone` for the spectral examples of
+  `MaxStable/Spectral.lean`.
 * `extremalCoefficient μ`, `IsSimpleMaxStable.one_le_extremalCoefficient`,
   `IsSimpleMaxStable.extremalCoefficient_le_card`,
   `IsSimpleMaxStable.measureReal_Iic_const`: `P(max_i Y_i ≤ z) = exp (-1 / z) ^ θ`;
@@ -79,22 +81,22 @@ namespace ExtremeValueTheory
 
 /-- The **Pickands dependence function** of a law `μ` on `ℝ²`:
 `A(t) = V(1 / t, 1 / (1 - t))` for `0 < t < 1`, and `A(t) = 1` otherwise. -/
-noncomputable def pickands (μ : Measure (Fin 2 → ℝ)) (t : ℝ) : ℝ :=
+noncomputable def pickandsDependence (μ : Measure (Fin 2 → ℝ)) (t : ℝ) : ℝ :=
   if t ∈ Ioo (0 : ℝ) 1 then maxStableExponent μ ![t⁻¹, (1 - t)⁻¹] else 1
 
-lemma pickands_of_mem_Ioo (μ : Measure (Fin 2 → ℝ)) {t : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1) :
-    pickands μ t = maxStableExponent μ ![t⁻¹, (1 - t)⁻¹] := by
-  simp [pickands, ht]
+lemma pickandsDependence_of_mem_Ioo (μ : Measure (Fin 2 → ℝ)) {t : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1) :
+    pickandsDependence μ t = maxStableExponent μ ![t⁻¹, (1 - t)⁻¹] := by
+  simp [pickandsDependence, ht]
 
-lemma pickands_of_notMem_Ioo (μ : Measure (Fin 2 → ℝ)) {t : ℝ} (ht : t ∉ Ioo (0 : ℝ) 1) :
-    pickands μ t = 1 := by
-  simp only [pickands, ht, ↓reduceIte]
+lemma pickandsDependence_of_notMem_Ioo (μ : Measure (Fin 2 → ℝ)) {t : ℝ} (ht : t ∉ Ioo (0 : ℝ) 1) :
+    pickandsDependence μ t = 1 := by
+  simp only [pickandsDependence, ht, ↓reduceIte]
 
-@[simp] lemma pickands_zero (μ : Measure (Fin 2 → ℝ)) : pickands μ 0 = 1 := by
-  simp [pickands]
+@[simp] lemma pickandsDependence_zero (μ : Measure (Fin 2 → ℝ)) : pickandsDependence μ 0 = 1 := by
+  simp [pickandsDependence]
 
-@[simp] lemma pickands_one (μ : Measure (Fin 2 → ℝ)) : pickands μ 1 = 1 := by
-  simp [pickands]
+@[simp] lemma pickandsDependence_one (μ : Measure (Fin 2 → ℝ)) : pickandsDependence μ 1 = 1 := by
+  simp [pickandsDependence]
 
 lemma eq_zero_or_eq_one_of_mem_Icc_of_notMem_Ioo {t : ℝ} (ht : t ∈ Icc (0 : ℝ) 1)
     (hI : t ∉ Ioo (0 : ℝ) 1) : t = 0 ∨ t = 1 := by
@@ -129,7 +131,7 @@ variable {μ : Measure (Fin 2 → ℝ)}
 `V(x, y) = (1 / x + 1 / y) A(y / (x + y))` for `x, y > 0`. -/
 theorem maxStableExponent_eq_pickands (h : IsSimpleMaxStable μ) {x y : ℝ} (hx : 0 < x)
     (hy : 0 < y) :
-    maxStableExponent μ ![x, y] = (x⁻¹ + y⁻¹) * pickands μ (y / (x + y)) := by
+    maxStableExponent μ ![x, y] = (x⁻¹ + y⁻¹) * pickandsDependence μ (y / (x + y)) := by
   have hxy : 0 < x + y := add_pos hx hy
   have ht : y / (x + y) ∈ Ioo (0 : ℝ) 1 :=
     ⟨div_pos hy hxy, (div_lt_one hxy).2 (by linarith)⟩
@@ -150,31 +152,32 @@ theorem maxStableExponent_eq_pickands (h : IsSimpleMaxStable μ) {x y : ℝ} (hx
     intro i; fin_cases i
     · simpa using hx
     · simpa using hy
-  rw [pickands_of_mem_Ioo μ ht, hv, h.maxStableExponent_smul hc hpos, ← mul_assoc,
+  rw [pickandsDependence_of_mem_Ioo μ ht, hv, h.maxStableExponent_smul hc hpos, ← mul_assoc,
     mul_inv_cancel₀ hc.ne', one_mul]
 
 /-- **Bounds on the Pickands function**: `max(t, 1 - t) ≤ A(t)` on `[0, 1]`. -/
 theorem max_le_pickands (h : IsSimpleMaxStable μ) {t : ℝ} (ht : t ∈ Icc (0 : ℝ) 1) :
-    max t (1 - t) ≤ pickands μ t := by
+    max t (1 - t) ≤ pickandsDependence μ t := by
   by_cases hI : t ∈ Ioo (0 : ℝ) 1
-  · rw [pickands_of_mem_Ioo μ hI]
+  · rw [pickandsDependence_of_mem_Ioo μ hI]
     have h0 := h.inv_le_maxStableExponent (pos_vec_inv hI) 0
     have h1 := h.inv_le_maxStableExponent (pos_vec_inv hI) 1
     simp only [Matrix.cons_val_zero, Matrix.cons_val_one, inv_inv] at h0 h1
     exact max_le h0 h1
-  · rw [pickands_of_notMem_Ioo μ hI]
+  · rw [pickandsDependence_of_notMem_Ioo μ hI]
     rcases eq_zero_or_eq_one_of_mem_Icc_of_notMem_Ioo ht hI with rfl | rfl <;> simp
 
 /-- **Bounds on the Pickands function**: `A(t) ≤ 1` (the value for independence). -/
-theorem pickands_le_one (h : IsSimpleMaxStable μ) (t : ℝ) : pickands μ t ≤ 1 := by
+theorem pickandsDependence_le_one (h : IsSimpleMaxStable μ) (t : ℝ) :
+    pickandsDependence μ t ≤ 1 := by
   by_cases hI : t ∈ Ioo (0 : ℝ) 1
-  · rw [pickands_of_mem_Ioo μ hI]
+  · rw [pickandsDependence_of_mem_Ioo μ hI]
     refine (h.maxStableExponent_le_sum_inv (pos_vec_inv hI)).trans (le_of_eq ?_)
     simp [Fin.sum_univ_two]
-  · rw [pickands_of_notMem_Ioo μ hI]
+  · rw [pickandsDependence_of_notMem_Ioo μ hI]
 
 theorem half_le_pickands (h : IsSimpleMaxStable μ) {t : ℝ} (ht : t ∈ Icc (0 : ℝ) 1) :
-    1 / 2 ≤ pickands μ t := by
+    1 / 2 ≤ pickandsDependence μ t := by
   refine le_trans ?_ (h.max_le_pickands ht)
   rcases le_total t (1 / 2) with h' | h'
   · exact le_max_of_le_right (by linarith)
@@ -275,18 +278,19 @@ variable {ν : Measure (Fin 2 → ℝ)} {H : Measure (Fin 2 → ℝ≥0∞)}
 
 /-- **Spectral form of the Pickands function**: for a law with spectral measure `H` normalized
 by `∫ w i dH = 1`, `A(t) = ∫ max(t w 0, (1 - t) w 1) dH(w)` on `[0, 1]`. -/
-theorem HasSpectralMeasure.pickands_eq (hν : HasSpectralMeasure ν H)
+theorem HasSpectralMeasure.pickandsDependence_eq (hν : HasSpectralMeasure ν H)
     (hH : ∀ i, ∫⁻ w, w i ∂H = 1) {t : ℝ} (ht : t ∈ Icc (0 : ℝ) 1) :
-    pickands ν t = pickandsSpectral H t := by
+    pickandsDependence ν t = pickandsSpectral H t := by
   by_cases hI : t ∈ Ioo (0 : ℝ) 1
-  · rw [pickands_of_mem_Ioo ν hI, hν.maxStableExponent_eq (pos_vec_inv hI), pickandsSpectral]
+  · rw [pickandsDependence_of_mem_Ioo ν hI, hν.maxStableExponent_eq (pos_vec_inv hI),
+      pickandsSpectral]
     congr 1
     refine lintegral_congr fun w ↦ ?_
     rw [iSup_fin_two]
     simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
     rw [ENNReal.ofReal_inv_of_pos hI.1, ENNReal.ofReal_inv_of_pos (by linarith [hI.2]),
       div_eq_mul_inv, div_eq_mul_inv, inv_inv, inv_inv, mul_comm (w 0), mul_comm (w 1)]
-  · rw [pickands_of_notMem_Ioo ν hI, pickandsSpectral]
+  · rw [pickandsDependence_of_notMem_Ioo ν hI, pickandsSpectral]
     rcases eq_zero_or_eq_one_of_mem_Icc_of_notMem_Ioo ht hI with rfl | rfl
     · simp [hH 1]
     · simp [hH 0]
@@ -294,17 +298,19 @@ theorem HasSpectralMeasure.pickands_eq (hν : HasSpectralMeasure ν H)
 /-- **Convexity of the Pickands function** ([Pickands 1981]; [dHF, §6.1.5]) for a law with a
 normalized spectral measure. -/
 theorem HasSpectralMeasure.convexOn_pickands (hν : HasSpectralMeasure ν H)
-    (hH : ∀ i, ∫⁻ w, w i ∂H = 1) : ConvexOn ℝ (Icc 0 1) (pickands ν) :=
-  (convexOn_pickandsSpectral fun i ↦ by simp [hH i]).congr fun _ ht ↦ (hν.pickands_eq hH ht).symm
+    (hH : ∀ i, ∫⁻ w, w i ∂H = 1) : ConvexOn ℝ (Icc 0 1) (pickandsDependence ν) :=
+  (convexOn_pickandsSpectral fun i ↦ by simp [hH i]).congr fun _ ht ↦
+    (hν.pickandsDependence_eq hH ht).symm
 
 /-- Every normalized spectral measure `H` gives a simple max-stable law whose Pickands function is
 `∫ max(t w 0, (1 - t) w 1) dH` on `[0, 1]`, and is convex there. -/
 theorem exists_isSimpleMaxStable_pickands (H : Measure (Fin 2 → ℝ≥0∞)) [SFinite H]
     (hH : ∀ i, ∫⁻ w, w i ∂H = 1) :
     ∃ ν : Measure (Fin 2 → ℝ), IsSimpleMaxStable ν ∧ HasSpectralMeasure ν H ∧
-      EqOn (pickands ν) (pickandsSpectral H) (Icc 0 1) ∧ ConvexOn ℝ (Icc 0 1) (pickands ν) := by
+      EqOn (pickandsDependence ν) (pickandsSpectral H) (Icc 0 1) ∧
+        ConvexOn ℝ (Icc 0 1) (pickandsDependence ν) := by
   obtain ⟨ν, hms, hν⟩ := exists_isSimpleMaxStable_hasSpectralMeasure H hH
-  exact ⟨ν, hms, hν, fun _ ht ↦ hν.pickands_eq hH ht, hν.convexOn_pickands hH⟩
+  exact ⟨ν, hms, hν, fun _ ht ↦ hν.pickandsDependence_eq hH ht, hν.convexOn_pickands hH⟩
 
 end Spectral
 
@@ -315,31 +321,33 @@ section Extreme
 variable {μ : Measure (Fin 2 → ℝ)}
 
 /-- **Independence**: if `P(Y ≤ y) = exp (-1 / y₀) exp (-1 / y₁)`, then `A ≡ 1`. -/
-theorem pickands_eq_one_of_measure_Iic_eq_mul
+theorem pickandsDependence_eq_one_of_measure_Iic_eq_mul
     (hind : ∀ y : Fin 2 → ℝ, (∀ i, 0 < y i) →
       μ (Iic y) = ENNReal.ofReal (Real.exp (-(y 0)⁻¹)) * ENNReal.ofReal (Real.exp (-(y 1)⁻¹)))
-    (t : ℝ) : pickands μ t = 1 := by
+    (t : ℝ) : pickandsDependence μ t = 1 := by
   by_cases hI : t ∈ Ioo (0 : ℝ) 1
-  · rw [pickands_of_mem_Ioo μ hI, maxStableExponent, measureReal_def, hind _ (pos_vec_inv hI)]
+  · rw [pickandsDependence_of_mem_Ioo μ hI, maxStableExponent, measureReal_def,
+      hind _ (pos_vec_inv hI)]
     simp only [Matrix.cons_val_zero, Matrix.cons_val_one, inv_inv]
     rw [ENNReal.toReal_mul, ENNReal.toReal_ofReal (Real.exp_pos _).le,
       ENNReal.toReal_ofReal (Real.exp_pos _).le, ← Real.exp_add, Real.log_exp]
     ring
-  · rw [pickands_of_notMem_Ioo μ hI]
+  · rw [pickandsDependence_of_notMem_Ioo μ hI]
 
 /-- **Complete dependence**: if `P(Y ≤ y) = min (exp (-1 / y₀)) (exp (-1 / y₁))`, then
 `A(t) = max(t, 1 - t)` on `[0, 1]`. -/
-theorem pickands_eq_max_of_measure_Iic_eq_min
+theorem pickandsDependence_eq_max_of_measure_Iic_eq_min
     (hcom : ∀ y : Fin 2 → ℝ, (∀ i, 0 < y i) →
       μ (Iic y) = min (ENNReal.ofReal (Real.exp (-(y 0)⁻¹)))
         (ENNReal.ofReal (Real.exp (-(y 1)⁻¹))))
-    {t : ℝ} (ht : t ∈ Icc (0 : ℝ) 1) : pickands μ t = max t (1 - t) := by
+    {t : ℝ} (ht : t ∈ Icc (0 : ℝ) 1) : pickandsDependence μ t = max t (1 - t) := by
   by_cases hI : t ∈ Ioo (0 : ℝ) 1
-  · rw [pickands_of_mem_Ioo μ hI, maxStableExponent, measureReal_def, hcom _ (pos_vec_inv hI)]
+  · rw [pickandsDependence_of_mem_Ioo μ hI, maxStableExponent, measureReal_def,
+      hcom _ (pos_vec_inv hI)]
     simp only [Matrix.cons_val_zero, Matrix.cons_val_one, inv_inv]
     rw [← ENNReal.ofReal_min, ENNReal.toReal_ofReal (le_min (Real.exp_pos _).le
       (Real.exp_pos _).le), ← Real.exp_monotone.map_min, Real.log_exp, min_neg_neg, neg_neg]
-  · rw [pickands_of_notMem_Ioo μ hI]
+  · rw [pickandsDependence_of_notMem_Ioo μ hI]
     rcases eq_zero_or_eq_one_of_mem_Icc_of_notMem_Ioo ht hI with rfl | rfl <;> simp
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
@@ -352,19 +360,19 @@ lemma measure_map_spectralVector_Iic {S : Type*} [MeasurableSpace S]
   Measure.map_apply (measurable_spectralVector hN hf) measurableSet_Iic
 
 /-- The independent spectral example (vertex masses) has `A ≡ 1`. -/
-theorem pickands_map_spectralVector_independent
+theorem pickandsDependence_map_spectralVector_independent
     (hN : IsPoissonRandomMeasure N ((radialMeasure 1).prod independentSpectralMeasure) P)
-    (t : ℝ) : pickands (P.map fun ω ↦ spectralVector (fun i w ↦ w i) (N ω)) t = 1 :=
-  pickands_eq_one_of_measure_Iic_eq_mul (fun y hy ↦ by
+    (t : ℝ) : pickandsDependence (P.map fun ω ↦ spectralVector (fun i w ↦ w i) (N ω)) t = 1 :=
+  pickandsDependence_eq_one_of_measure_Iic_eq_mul (fun y hy ↦ by
     rw [measure_map_spectralVector_Iic hN.measurable (fun i ↦ measurable_pi_apply i),
       hN.measure_spectralVector_le_independent hy, Fin.prod_univ_two]) t
 
 /-- The comonotone spectral example (a unit mass at `(1, 1)`) has `A(t) = max(t, 1 - t)`. -/
-theorem pickands_map_spectralVector_comonotone
+theorem pickandsDependence_map_spectralVector_comonotone
     (hN : IsPoissonRandomMeasure N ((radialMeasure 1).prod comonotoneSpectralMeasure) P)
     {t : ℝ} (ht : t ∈ Icc (0 : ℝ) 1) :
-    pickands (P.map fun ω ↦ spectralVector (fun i w ↦ w i) (N ω)) t = max t (1 - t) :=
-  pickands_eq_max_of_measure_Iic_eq_min (fun y hy ↦ by
+    pickandsDependence (P.map fun ω ↦ spectralVector (fun i w ↦ w i) (N ω)) t = max t (1 - t) :=
+  pickandsDependence_eq_max_of_measure_Iic_eq_min (fun y hy ↦ by
     rw [measure_map_spectralVector_Iic hN.measurable (fun i ↦ measurable_pi_apply i),
       hN.measure_spectralVector_le_comonotone hy, iInf_fin_two]) ht
 
@@ -400,18 +408,20 @@ theorem measureReal_Iic_const (h : IsSimpleMaxStable μ) {z : ℝ} (hz : 0 < z) 
 
 theorem one_le_extremalCoefficient [Nonempty ι] (h : IsSimpleMaxStable μ) :
     1 ≤ extremalCoefficient μ := by
-  simpa [extremalCoefficient] using h.inv_le_maxStableExponent (y := fun _ ↦ (1 : ℝ)) (fun _ ↦ one_pos)
+  simpa [extremalCoefficient] using
+    h.inv_le_maxStableExponent (y := fun _ ↦ (1 : ℝ)) (fun _ ↦ one_pos)
     (Classical.arbitrary ι)
 
 theorem extremalCoefficient_le_card [Fintype ι] (h : IsSimpleMaxStable μ) :
     extremalCoefficient μ ≤ Fintype.card ι := by
-  simpa [extremalCoefficient] using h.maxStableExponent_le_sum_inv (y := fun _ ↦ (1 : ℝ)) (fun _ ↦ one_pos)
+  simpa [extremalCoefficient] using
+    h.maxStableExponent_le_sum_inv (y := fun _ ↦ (1 : ℝ)) (fun _ ↦ one_pos)
 
 end IsSimpleMaxStable
 
 /-- In the bivariate case, `θ = 2 A(1 / 2)`; hence `1 ≤ θ ≤ 2`. -/
 theorem IsSimpleMaxStable.extremalCoefficient_eq_two_mul_pickands {μ : Measure (Fin 2 → ℝ)}
-    (h : IsSimpleMaxStable μ) : extremalCoefficient μ = 2 * pickands μ (1 / 2) := by
+    (h : IsSimpleMaxStable μ) : extremalCoefficient μ = 2 * pickandsDependence μ (1 / 2) := by
   have := h.maxStableExponent_eq_pickands one_pos one_pos
   rw [show (![1, 1] : Fin 2 → ℝ) = fun _ ↦ 1 by ext i; fin_cases i <;> rfl] at this
   rw [extremalCoefficient, this]

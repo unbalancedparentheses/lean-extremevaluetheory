@@ -189,10 +189,11 @@ theorem hasUpperTailDependence (h : IsSimpleMaxStable μ) :
 
 /-- **Tail dependence and the Pickands function**: `λ_U = 2 (1 - A(1 / 2))`. -/
 theorem hasUpperTailDependence_pickands (h : IsSimpleMaxStable μ) :
-    HasUpperTailDependence μ (fun z ↦ z 0) (fun z ↦ z 1) (2 * (1 - pickands μ (1 / 2))) := by
+    HasUpperTailDependence μ (fun z ↦ z 0) (fun z ↦ z 1)
+      (2 * (1 - pickandsDependence μ (1 / 2))) := by
   have := h.hasUpperTailDependence
-  rwa [h.extremalCoefficient_eq_two_mul_pickands, show 2 - 2 * pickands μ (1 / 2) =
-    2 * (1 - pickands μ (1 / 2)) by ring] at this
+  rwa [h.extremalCoefficient_eq_two_mul_pickands, show 2 - 2 * pickandsDependence μ (1 / 2) =
+    2 * (1 - pickandsDependence μ (1 / 2)) by ring] at this
 
 /-- `λ_U = 2 - θ ∈ [0, 1]`. -/
 theorem two_sub_extremalCoefficient_mem_Icc (h : IsSimpleMaxStable μ) :
@@ -208,7 +209,7 @@ theorem hasUpperTailDependence_zero_of_measure_Iic_eq_mul (h : IsSimpleMaxStable
       μ (Iic y) = ENNReal.ofReal (Real.exp (-(y 0)⁻¹)) * ENNReal.ofReal (Real.exp (-(y 1)⁻¹))) :
     HasUpperTailDependence μ (fun z ↦ z 0) (fun z ↦ z 1) 0 := by
   have := h.hasUpperTailDependence_pickands
-  rwa [pickands_eq_one_of_measure_Iic_eq_mul hind, sub_self, mul_zero] at this
+  rwa [pickandsDependence_eq_one_of_measure_Iic_eq_mul hind, sub_self, mul_zero] at this
 
 /-- **Complete dependence**: `λ_U = 1`. -/
 theorem hasUpperTailDependence_one_of_measure_Iic_eq_min (h : IsSimpleMaxStable μ)
@@ -217,7 +218,7 @@ theorem hasUpperTailDependence_one_of_measure_Iic_eq_min (h : IsSimpleMaxStable 
         (ENNReal.ofReal (Real.exp (-(y 1)⁻¹)))) :
     HasUpperTailDependence μ (fun z ↦ z 0) (fun z ↦ z 1) 1 := by
   have := h.hasUpperTailDependence_pickands
-  rw [pickands_eq_max_of_measure_Iic_eq_min hcom (by norm_num)] at this
+  rw [pickandsDependence_eq_max_of_measure_Iic_eq_min hcom (by norm_num)] at this
   convert this using 2
   norm_num
 
@@ -236,7 +237,7 @@ theorem hasUpperTailDependence_map_spectralVector_independent
   have h := hN.isSimpleMaxStable_map_spectralVector (fun i ↦ measurable_pi_apply i)
     lintegral_apply_independentSpectralMeasure
   have := h.hasUpperTailDependence_pickands
-  rwa [pickands_map_spectralVector_independent hN, sub_self, mul_zero] at this
+  rwa [pickandsDependence_map_spectralVector_independent hN, sub_self, mul_zero] at this
 
 /-- The comonotone spectral example has `λ_U = 1`. -/
 theorem hasUpperTailDependence_map_spectralVector_comonotone
@@ -246,7 +247,7 @@ theorem hasUpperTailDependence_map_spectralVector_comonotone
   have h := hN.isSimpleMaxStable_map_spectralVector (fun i ↦ measurable_pi_apply i)
     lintegral_apply_comonotoneSpectralMeasure
   have := h.hasUpperTailDependence_pickands
-  rw [pickands_map_spectralVector_comonotone hN (by norm_num)] at this
+  rw [pickandsDependence_map_spectralVector_comonotone hN (by norm_num)] at this
   convert this using 2
   norm_num
 
