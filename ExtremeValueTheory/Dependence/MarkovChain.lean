@@ -130,6 +130,18 @@ section Stationary
 variable [IsProbabilityMeasure P] {X₀ : Ω → E} {V : ℕ → Ω → F}
 
 omit [IsProbabilityMeasure P] in
+/-- In an independent sequence, `V_0` is independent of the shifted sequence `(V_{n+1})_n`. -/
+theorem indepFun_zero_shift (hV : ∀ n, Measurable (V n)) (hiid : iIndepFun V P) :
+    IndepFun (V 0) (fun ω n => V (n + 1) ω) P := by
+  have h := hiid.indepFun_set {0} {n | 1 ≤ n} (by
+    rw [Set.disjoint_left]; intro a ha hb; simp only [Set.mem_singleton_iff] at ha
+    simp [ha] at hb) hV
+  have g1 : Measurable fun y : ({0} : Set ℕ) → F => y ⟨0, rfl⟩ := measurable_pi_apply _
+  have g2 : Measurable fun (y : {n : ℕ | 1 ≤ n} → F) (n : ℕ) =>
+      y ⟨n + 1, by simp⟩ := Measurable.of_eval fun n => measurable_pi_apply _
+  exact h.comp g1 g2
+
+omit [IsProbabilityMeasure P] in
 /-- The law of an iid sequence is the infinite product of its marginal. -/
 theorem map_path_eq_infinitePi (hV : ∀ n, Measurable (V n)) (hiid : iIndepFun V P)
     {ν : Measure F} (hid : ∀ n, P.map (V n) = ν) :
@@ -160,14 +172,7 @@ theorem isStationary_chain (hf : Measurable (Function.uncurry f)) (hX₀ : Measu
     map_path_eq_infinitePi (fun n => hV (n + 1)) (hiid.precomp (add_left_injective 1))
       fun n => (hid (n + 1)).map_eq
   -- `V_0` is independent of the shifted sequence
-  have h0s : IndepFun (V 0) (fun ω n => V (n + 1) ω) P := by
-    have h := hiid.indepFun_set {0} {n | 1 ≤ n} (by
-      rw [Set.disjoint_left]; intro a ha hb; simp only [Set.mem_singleton_iff] at ha
-      simp [ha] at hb) hV
-    have g1 : Measurable fun y : ({0} : Set ℕ) → F => y ⟨0, rfl⟩ := measurable_pi_apply _
-    have g2 : Measurable fun (y : {n : ℕ | 1 ≤ n} → F) (n : ℕ) =>
-        y ⟨n + 1, by simp⟩ := Measurable.of_eval fun n => measurable_pi_apply _
-    exact h.comp g1 g2
+  have h0s : IndepFun (V 0) (fun ω n => V (n + 1) ω) P := indepFun_zero_shift hV hiid
   -- `X₀` is independent of `(V_0, shifted sequence)`
   have hsplit : Measurable fun v : ℕ → F => (v 0, fun n => v (n + 1)) :=
     (measurable_pi_apply 0).prodMk (Measurable.of_eval fun n => measurable_pi_apply _)
