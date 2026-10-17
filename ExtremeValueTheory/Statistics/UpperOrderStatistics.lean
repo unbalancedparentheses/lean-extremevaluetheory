@@ -5,6 +5,7 @@ Authors: Federico Carrone
 -/
 import ExtremeValueTheory.Statistics.OrderStatistics
 import ExtremeValueTheory.LimitRelationManipulation
+import ExtremeValueTheory.DomainOfAttraction.Gumbel
 import Mathlib.Probability.Distributions.Poisson.PoissonLimitThm
 
 /-!
@@ -48,6 +49,8 @@ Order statistics are indexed from `0` as in `ExtremeValueTheory.orderStat`: `ord
 * `tendsto_measureReal_affine_orderStat_le`: the corresponding limit law of the normalized
   `k`-th largest, `H(x) ∑_{m ≤ j} (-log H(x)) ^ m / m!`, from the max-domain-of-attraction
   limit relation.
+* `exists_tendsto_measureReal_affine_orderStat_le_of_isInMDAGumbel`: the Gumbel case,
+  `Λ(x) ∑_{m ≤ j} e^{-m x} / m!`.
 * `measureReal_orderStat_zero_le_and_orderStat_one_le`: the finite-sample joint law
   `P(X_{(1)} ≤ u, X_{(2)} ≤ v) = F(v) ^ n + n (F u - F v) F(v) ^ (n - 1)` for `v ≤ u`.
 * `tendsto_measureReal_orderStat_zero_le_and_orderStat_one_le`: its limit
@@ -299,6 +302,26 @@ theorem tendsto_measureReal_affine_orderStat_le {X : ℕ → Ω → ℝ} (hX : �
   congr 1
   ext ω
   exact (AffineIncrEquiv.apply_le_iff _ _ _).symm
+
+/-- **The `k`-th largest in the Gumbel domain of attraction** ([EKM, Theorem 4.2.3 and
+Example 4.2.4]): if `F` is in the Gumbel maximum domain of attraction, then for suitable
+normalizations `A_n`,
+`P(A_n (X_{(j+1)}) ≤ x) → Λ(x) ∑_{m ≤ j} e^{-m x} / m!`, `Λ(x) = exp (-e^{-x})`. -/
+theorem exists_tendsto_measureReal_affine_orderStat_le_of_isInMDAGumbel {X : ℕ → Ω → ℝ}
+    (hX : ∀ i, Measurable (X i)) (hind : iIndepFun X P) {F : CumulativeDistributionFunction}
+    (hF : ∀ i x, P.real {ω | X i ω ≤ x} = F x) (hFG : F.IsInMDAGumbel) :
+    ∃ As : ℕ → AffineIncrEquiv, ∀ x j, Tendsto
+      (fun n : ℕ => P.real {ω | As n (orderStat (fun i : Fin n => X i ω) j) ≤ x}) atTop
+      (𝓝 (standardGumbelCDF x * ∑ m ∈ range (j + 1), Real.exp (-x) ^ m / m.factorial)) := by
+  obtain ⟨As, h⟩ := hFG
+  refine ⟨As, fun x j => ?_⟩
+  have hG : standardGumbelCDF x ∈ Set.Ioo 0 1 := by
+    rw [standardGumbelCDF_apply_eq]
+    exact ⟨Real.exp_pos _, Real.exp_lt_one_iff.2 (by linarith [Real.exp_pos (-x)])⟩
+  have hlog : -Real.log (standardGumbelCDF x) = Real.exp (-x) := by
+    rw [standardGumbelCDF_apply_eq, Real.log_exp, neg_neg]
+  have := tendsto_measureReal_affine_orderStat_le hX hind hF hG (h x) j
+  rwa [hlog] at this
 
 /-- **Joint limit law of the two largest order statistics** ([EKM, §4.2], [LLR, Theorem 2.3.2]).
 Let `X_0, X_1, …` be iid with c.d.f. `F` and let `v_n ≤ u_n` be levels with

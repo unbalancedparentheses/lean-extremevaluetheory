@@ -332,4 +332,182 @@ theorem measureReal_isRecord_and_isRecord (hX : ∀ i, Measurable (X i))
 
 end Exchangeability
 
+section Counting
+
+variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+  {X : ℕ → Ω → ℝ}
+
+private lemma recordCount_eq_sum (x : ℕ → ℝ) (n : ℕ) :
+    (recordCount x n : ℝ) = ∑ k ∈ range n, {y : ℕ → ℝ | IsRecord y k}.indicator 1 x := by
+  rw [recordCount, Finset.natCast_card_filter]
+  refine Finset.sum_congr rfl fun k _ => ?_
+  by_cases h : IsRecord x k <;> simp [h]
+
+omit [MeasurableSpace Ω] in
+private lemma recordCount_eq_sum' (n : ℕ) (ω : Ω) :
+    (recordCount (fun i => X i ω) n : ℝ) =
+      ∑ k ∈ range n, {ω | IsRecord (fun i => X i ω) k}.indicator 1 ω := by
+  rw [recordCount_eq_sum]
+  refine Finset.sum_congr rfl fun k _ => ?_
+  by_cases h : IsRecord (fun i => X i ω) k <;> simp [h]
+
+omit [IsProbabilityMeasure P] in
+private lemma integrable_indicator_one' {A : Set Ω} (hA : MeasurableSet A) [IsFiniteMeasure P] :
+    Integrable (A.indicator (1 : Ω → ℝ)) P :=
+  (integrable_const (1 : ℝ)).indicator hA
+
+omit [MeasurableSpace Ω] in
+private lemma indicator_sub_mul_eq (A B : Set Ω) (a b : ℝ) (ω : Ω) :
+    (A.indicator (1 : Ω → ℝ) ω - a) * (B.indicator 1 ω - b) =
+      (A ∩ B).indicator 1 ω - a * B.indicator 1 ω - b * A.indicator 1 ω + a * b := by
+  by_cases ha : ω ∈ A <;> by_cases hb : ω ∈ B <;> simp [ha, hb] <;> ring
+
+private lemma integrable_indicator_sub_mul {A B : Set Ω} (hA : MeasurableSet A)
+    (hB : MeasurableSet B) (a b : ℝ) :
+    Integrable (fun ω => (A.indicator (1 : Ω → ℝ) ω - a) * (B.indicator 1 ω - b)) P := by
+  simp_rw [indicator_sub_mul_eq]
+  exact (((integrable_indicator_one' (hA.inter hB)).sub
+    ((integrable_indicator_one' hB).const_mul a)).sub
+    ((integrable_indicator_one' hA).const_mul b)).add (integrable_const _)
+
+private lemma integral_indicator_sub_mul {A B : Set Ω} (hA : MeasurableSet A)
+    (hB : MeasurableSet B) (a b : ℝ) :
+    ∫ ω, (A.indicator (1 : Ω → ℝ) ω - a) * (B.indicator 1 ω - b) ∂P =
+      P.real (A ∩ B) - a * P.real B - b * P.real A + a * b := by
+  have iA := integrable_indicator_one' hA (P := P)
+  have iB := integrable_indicator_one' hB (P := P)
+  have iAB := integrable_indicator_one' (hA.inter hB) (P := P)
+  simp_rw [indicator_sub_mul_eq]
+  rw [integral_add (f := fun ω => (A ∩ B).indicator (1 : Ω → ℝ) ω - a * B.indicator 1 ω -
+      b * A.indicator 1 ω) (g := fun _ => a * b)
+      ((iAB.sub (iB.const_mul a)).sub (iA.const_mul b)) (integrable_const _),
+    integral_sub (f := fun ω => (A ∩ B).indicator (1 : Ω → ℝ) ω - a * B.indicator 1 ω)
+      (g := fun ω => b * A.indicator 1 ω) (iAB.sub (iB.const_mul a)) (iA.const_mul b),
+    integral_sub (f := (A ∩ B).indicator (1 : Ω → ℝ)) (g := fun ω => a * B.indicator 1 ω)
+      iAB (iB.const_mul a), integral_const_mul, integral_const_mul,
+    integral_indicator_one (hA.inter hB), integral_indicator_one hA,
+    integral_indicator_one hB, integral_const]
+  simp
+
+/-- **Expected number of records** ([EKM, §5.4], [Resnick, Proposition 4.1]): for iid
+observations with a continuous distribution, `E N_n = H_n = ∑_{k ≤ n} 1 / k`. -/
+theorem integral_recordCount (hX : ∀ i, Measurable (X i)) (hind : iIndepFun X P)
+    (hident : ∀ i, P.map (X i) = P.map (X 0)) (hcont : ∀ x, P {ω | X 0 ω = x} = 0) (n : ℕ) :
+    ∫ ω, (recordCount (fun i => X i ω) n : ℝ) ∂P = harmonic n := by
+  have hR : ∀ k, MeasurableSet {ω | IsRecord (fun i => X i ω) k} := fun k =>
+    (Measurable.of_eval hX) (measurableSet_isRecord k)
+  simp_rw [recordCount_eq_sum']
+  rw [integral_finsetSum _ (fun k _ => integrable_indicator_one' (hR k))]
+  simp_rw [integral_indicator_one (hR _), measureReal_isRecord hX hind hident hcont]
+  simp [harmonic]
+
+/-- **Variance bound for the number of records**: by the pairwise independence of the record
+indicators, `E (N_n - H_n) ^ 2 = ∑_{k ≤ n} (1 / k - 1 / k ^ 2) ≤ H_n`. -/
+theorem integral_sq_recordCount_sub_le (hX : ∀ i, Measurable (X i)) (hind : iIndepFun X P)
+    (hident : ∀ i, P.map (X i) = P.map (X 0)) (hcont : ∀ x, P {ω | X 0 ω = x} = 0) (n : ℕ) :
+    Integrable (fun ω => ((recordCount (fun i => X i ω) n : ℝ) - harmonic n) ^ 2) P ∧
+    ∫ ω, ((recordCount (fun i => X i ω) n : ℝ) - harmonic n) ^ 2 ∂P ≤ harmonic n := by
+  set R : ℕ → Set Ω := fun k => {ω | IsRecord (fun i => X i ω) k} with hRdef
+  have hR : ∀ k, MeasurableSet (R k) := fun k =>
+    (Measurable.of_eval hX) (measurableSet_isRecord k)
+  set p : ℕ → ℝ := fun k => 1 / (k + 1) with hp
+  have hH : (harmonic n : ℝ) = ∑ k ∈ range n, p k := by simp [harmonic, hp]
+  have hpt : ∀ ω, ((recordCount (fun i => X i ω) n : ℝ) - harmonic n) ^ 2 =
+      ∑ j ∈ range n, ∑ k ∈ range n,
+        ((R j).indicator 1 ω - p j) * ((R k).indicator 1 ω - p k) := by
+    intro ω
+    rw [recordCount_eq_sum', hH, ← sum_sub_distrib, sq, sum_mul_sum]
+  simp_rw [hpt]
+  have hint : ∀ j k, Integrable
+      (fun ω => ((R j).indicator (1 : Ω → ℝ) ω - p j) * ((R k).indicator 1 ω - p k)) P :=
+    fun j k => integrable_indicator_sub_mul (hR j) (hR k) _ _
+  refine ⟨integrable_finsetSum _ fun j _ => integrable_finsetSum _ fun k _ => hint j k, ?_⟩
+  rw [integral_finsetSum _ fun j _ => integrable_finsetSum _ fun k _ => hint j k]
+  simp_rw [integral_finsetSum _ fun k _ => hint _ k]
+  have hPR : ∀ k, P.real (R k) = p k := fun k => measureReal_isRecord hX hind hident hcont k
+  have hterm : ∀ j k, ∫ ω, ((R j).indicator (1 : Ω → ℝ) ω - p j) *
+      ((R k).indicator 1 ω - p k) ∂P = if j = k then p k - p k ^ 2 else 0 := by
+    intro j k
+    rw [integral_indicator_sub_mul (hR j) (hR k), hPR, hPR]
+    split_ifs with h
+    · subst h
+      rw [Set.inter_self, hPR]
+      ring
+    · have : P.real (R j ∩ R k) = p j * p k :=
+        measureReal_isRecord_and_isRecord hX hind hident hcont h
+      rw [this]
+      ring
+  simp_rw [hterm, Finset.sum_ite_eq]
+  rw [hH]
+  refine Finset.sum_le_sum fun k hk => ?_
+  simp only [hk, ite_true]
+  nlinarith [sq_nonneg (p k)]
+
+/-- **Weak law of large numbers for the number of records** ([EKM, §5.4], [Resnick,
+Proposition 4.1]): for iid observations with a continuous distribution, `N_n / log n → 1` in
+probability. -/
+theorem tendstoInMeasure_recordCount_div_log (hX : ∀ i, Measurable (X i))
+    (hind : iIndepFun X P) (hident : ∀ i, P.map (X i) = P.map (X 0))
+    (hcont : ∀ x, P {ω | X 0 ω = x} = 0) :
+    TendstoInMeasure P (fun (n : ℕ) ω => (recordCount (fun i => X i ω) n : ℝ) / Real.log n)
+      atTop (fun _ => 1) := by
+  rw [tendstoInMeasure_iff_measureReal_dist]
+  intro ε hε
+  have hlog : Tendsto (fun n : ℕ => Real.log n) atTop atTop :=
+    Real.tendsto_log_atTop.comp tendsto_natCast_atTop_atTop
+  set b : ℕ → ℝ := fun n => (1 + Real.log n) / (ε / 2 * Real.log n) ^ 2 with hbdef
+  have hb : Tendsto b atTop (𝓝 0) := by
+    have hinv : Tendsto (fun n : ℕ => (Real.log n)⁻¹) atTop (𝓝 0) :=
+      tendsto_inv_atTop_zero.comp hlog
+    have := ((hinv.pow 2).add hinv).const_mul (4 / ε ^ 2)
+    rw [show (4 / ε ^ 2) * ((0 : ℝ) ^ 2 + 0) = 0 by ring] at this
+    refine this.congr' ?_
+    filter_upwards [hlog.eventually_gt_atTop 0] with n hn
+    simp only [hbdef]
+    field_simp
+    ring
+  refine squeeze_zero' (Eventually.of_forall fun n => measureReal_nonneg) ?_ hb
+  filter_upwards [hlog.eventually_ge_atTop (2 / ε)] with n hn
+  set L := Real.log n with hLdef
+  have hL : 0 < L := lt_of_lt_of_le (by positivity) hn
+  have hn1 : 1 ≤ n := by
+    by_contra h
+    push Not at h
+    interval_cases n
+    simp [hLdef] at hL
+  have hle : Real.log n ≤ Real.log ((n + 1 : ℕ) : ℝ) :=
+    Real.log_le_log (by exact_mod_cast hn1) (by push_cast; linarith)
+  have hHL1 : L ≤ harmonic n := hle.trans (log_add_one_le_harmonic n)
+  have hHL2 : (harmonic n : ℝ) ≤ 1 + L := harmonic_le_one_add_log n
+  set δ := (ε / 2 * L) ^ 2 with hδdef
+  have hδ : 0 < δ := by positivity
+  have hεL : 2 ≤ ε * L := by
+    rw [div_le_iff₀ hε] at hn; linarith
+  have hsub : {ω | ε ≤ dist ((recordCount (fun i => X i ω) n : ℝ) / L) 1} ⊆
+      {ω | δ ≤ ((recordCount (fun i => X i ω) n : ℝ) - harmonic n) ^ 2} := by
+    intro ω hω
+    simp only [Set.mem_ofPred_eq, Real.dist_eq] at hω ⊢
+    set N : ℝ := (recordCount (fun i => X i ω) n : ℝ)
+    have h1 : ε * L ≤ |N - L| := by
+      have : N / L - 1 = (N - L) / L := by field_simp
+      rw [this, abs_div, abs_of_pos hL, le_div_iff₀ hL] at hω
+      exact hω
+    have h2 : |N - L| ≤ |N - harmonic n| + |(harmonic n : ℝ) - L| := abs_sub_le _ _ _
+    have h3 : |(harmonic n : ℝ) - L| ≤ 1 := abs_le.2 ⟨by linarith, by linarith⟩
+    have h4 : ε / 2 * L ≤ |N - harmonic n| := by linarith
+    calc δ = (ε / 2 * L) ^ 2 := rfl
+      _ ≤ |N - harmonic n| ^ 2 := pow_le_pow_left₀ (by positivity) h4 2
+      _ = (N - harmonic n) ^ 2 := sq_abs _
+  obtain ⟨hint, hle⟩ := integral_sq_recordCount_sub_le hX hind hident hcont n
+  calc P.real {ω | ε ≤ dist ((recordCount (fun i => X i ω) n : ℝ) / L) 1}
+      ≤ P.real {ω | δ ≤ ((recordCount (fun i => X i ω) n : ℝ) - harmonic n) ^ 2} :=
+        measureReal_mono hsub
+    _ ≤ (∫ ω, ((recordCount (fun i => X i ω) n : ℝ) - harmonic n) ^ 2 ∂P) / δ := by
+        rw [le_div_iff₀ hδ, mul_comm]
+        exact mul_meas_ge_le_integral_of_nonneg (ae_of_all _ fun ω => sq_nonneg _) hint δ
+    _ ≤ harmonic n / δ := div_le_div_of_nonneg_right hle hδ.le
+    _ ≤ b n := div_le_div_of_nonneg_right hHL2 hδ.le
+
+end Counting
+
 end ExtremeValueTheory
