@@ -410,4 +410,118 @@ end IsRegVarVector
 
 end Definition
 
+/-! ### The polar decomposition -/
+
+/-- Two finite measures on `ℝ` with the same total mass agreeing on all half-lines `(a, ∞)` are
+equal. -/
+theorem measure_ext_of_Ioi {μ ν : Measure ℝ} [IsFiniteMeasure μ] [IsFiniteMeasure ν]
+    (huniv : μ univ = ν univ) (h : ∀ a, μ (Ioi a) = ν (Ioi a)) : μ = ν :=
+  Measure.ext_of_Iic μ ν fun a => by
+    rw [← compl_Ioi, measure_compl measurableSet_Ioi (measure_ne_top _ _),
+      measure_compl measurableSet_Ioi (measure_ne_top _ _), huniv, h]
+
+theorem paretoMeasure_one_Ioi_of_lt_one {α : ℝ} (hα : 0 < α) {a : ℝ} (ha : a < 1) :
+    paretoMeasure 1 α (Ioi a) = 1 := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  refine le_antisymm prob_le_one ?_
+  calc (1 : ℝ≥0∞) = paretoMeasure 1 α (Ioi 1) := by
+        rw [paretoMeasure_one_Ioi hα le_rfl, Real.one_rpow, ENNReal.ofReal_one]
+    _ ≤ paretoMeasure 1 α (Ioi a) := measure_mono (Ioi_subset_Ioi ha.le)
+
+section Polar
+
+variable {Ω E : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+  [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E]
+  [SecondCountableTopology E] {X : Ω → E} {α : ℝ} {μ : Measure E}
+
+/-- The *spectral measure* of an exponent measure `μ`: the law of `Y / ‖Y‖` for `Y` distributed
+as `μ` restricted to `{‖y‖ > 1}`. -/
+noncomputable def spectralMeasure (μ : Measure E) : Measure E :=
+  (μ.restrict {y | 1 < ‖y‖}).map fun y => ‖y‖⁻¹ • y
+
+namespace IsRegVarVector
+
+omit [SecondCountableTopology E] in
+theorem isProbabilityMeasure_restrict (h : IsRegVarVector P X α μ) (hX : Measurable X) :
+    IsProbabilityMeasure (μ.restrict {y | 1 < ‖y‖}) :=
+  ⟨by rw [Measure.restrict_apply_univ, h.measure_one_lt_norm hX]⟩
+
+omit [SecondCountableTopology E] in
+theorem isProbabilityMeasure_spectralMeasure (h : IsRegVarVector P X α μ) (hX : Measurable X) :
+    IsProbabilityMeasure (spectralMeasure μ) := by
+  have := h.isProbabilityMeasure_restrict hX
+  unfold spectralMeasure; infer_instance
+
+/-- The law of `(‖X‖ / x, X / x)` given `‖X‖ > x` converges weakly to the law of `(‖Y‖, Y)` for
+`Y` distributed as `μ` restricted to `{‖y‖ > 1}` ([KS20, Proposition 2.1.?]). -/
+theorem tendstoLawCond_norm (h : IsRegVarVector P X α μ) (hX : Measurable X) :
+    TendstoLawCond P (fun x => {ω | x < ‖X ω‖}) (fun x ω => (‖X ω‖ / x, x⁻¹ • X ω)) atTop
+      ((μ.restrict {y | 1 < ‖y‖}).map fun y => (‖y‖, y)) := by
+  intro F
+  have hm : MeasurableSet {y : E | 1 < ‖y‖} :=
+    measurableSet_lt measurable_const continuous_norm.measurable
+  let H : E →ᵇ ℝ := F.compContinuous ⟨fun y => (‖y‖, y), continuous_norm.prodMk continuous_id⟩
+  have key := h.tendsto_integral_indicator hX H continuous_norm one_pos (c := 1)
+    (fun y hy => hy.le) (h.measure_norm_eq_zero one_pos)
+  have hφ : Measurable fun y : E => (‖y‖, y) :=
+    (continuous_norm.prodMk continuous_id).measurable
+  rw [integral_map hφ.aemeasurable F.continuous.aestronglyMeasurable, ← integral_indicator hm]
+  refine key.congr' ?_
+  filter_upwards [eventually_gt_atTop 0] with x hx
+  rw [integral_cond_eq, smul_eq_mul,
+    ← integral_indicator (measurableSet_lt measurable_const hX.norm)]
+  congr 2
+  ext ω
+  by_cases hω : x < ‖X ω‖
+  · have h1 : 1 < ‖x⁻¹ • X ω‖ := (setOf_one_lt_norm_smul hx _).2 hω
+    rw [indicator_of_mem (show x⁻¹ • X ω ∈ {y : E | 1 < ‖y‖} from h1),
+      indicator_of_mem (show ω ∈ {ω | x < ‖X ω‖} from hω)]
+    simp only [H, compContinuous_apply, ContinuousMap.coe_mk]
+    rw [norm_smul, norm_inv, Real.norm_eq_abs, abs_of_pos hx, inv_mul_eq_div]
+  · have h1 : ¬ 1 < ‖x⁻¹ • X ω‖ := fun h' => hω ((setOf_one_lt_norm_smul hx _).1 h')
+    rw [indicator_of_notMem (show x⁻¹ • X ω ∉ {y : E | 1 < ‖y‖} from h1),
+      indicator_of_notMem (show ω ∉ {ω | x < ‖X ω‖} from hω)]
+
+/-- The radial part of the exponent measure, restricted to `{‖y‖ > 1}`, is the Pareto law. -/
+omit [SecondCountableTopology E] in
+theorem map_norm_restrict (hα : 0 < α) (h : IsRegVarVector P X α μ) (hX : Measurable X) :
+    (μ.restrict {y | 1 < ‖y‖}).map (fun y => ‖y‖) = paretoMeasure 1 α := by
+  have := h.isProbabilityMeasure_restrict hX
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  refine measure_ext_of_Ioi (by simp) fun a => ?_
+  rw [Measure.map_apply continuous_norm.measurable measurableSet_Ioi,
+    Measure.restrict_apply (continuous_norm.measurable measurableSet_Ioi)]
+  rcases le_or_gt 1 a with ha | ha
+  · rw [paretoMeasure_one_Ioi hα ha, ← h.measure_lt_norm hX (one_pos.trans_le ha)]
+    congr 1
+    ext y
+    simp only [mem_inter_iff, mem_preimage, mem_Ioi, mem_ofPred_eq]
+    exact ⟨fun hy => hy.1, fun hy => ⟨hy, lt_of_le_of_lt ha hy⟩⟩
+  · rw [paretoMeasure_one_Ioi_of_lt_one hα ha, ← h.measure_one_lt_norm hX]
+    congr 1
+    ext y
+    simp only [mem_inter_iff, mem_preimage, mem_Ioi, mem_ofPred_eq]
+    exact ⟨fun hy => hy.2, fun hy => ⟨ha.trans hy, hy⟩⟩
+
+/-- **Polar decomposition, spectral part** ([BDM02], [Res07, Theorem 6.1], [KS20, §2.2]): if `X`
+is regularly varying, the law of `X / ‖X‖` given `‖X‖ > x` converges weakly to the spectral
+measure of `μ`. -/
+theorem tendstoLawCond_spectralMeasure (hα : 0 < α) (h : IsRegVarVector P X α μ)
+    (hX : Measurable X) :
+    TendstoLawCond P (fun x => {ω | x < ‖X ω‖}) (fun _ ω => ‖X ω‖⁻¹ • X ω) atTop
+      (spectralMeasure μ) := by
+  have hφ : Measurable fun y : E => (‖y‖, y) := (continuous_norm.prodMk continuous_id).measurable
+  have hν : ((μ.restrict {y | 1 < ‖y‖}).map fun y => (‖y‖, y)).map Prod.fst =
+      paretoMeasure 1 α := by
+    rw [Measure.map_map measurable_fst hφ]
+    exact h.map_norm_restrict hα hX
+  have key := tendstoLawCond_spectral_of_tendstoLawCond (Z := fun ω => ‖X ω‖) (V := X) hX.norm hν
+    (h.tendstoLawCond_norm hX)
+  have hψ : Measurable fun p : ℝ × E => p.1⁻¹ • p.2 := (measurable_fst.inv).smul measurable_snd
+  rwa [Measure.map_map hψ hφ] at key
+
+end IsRegVarVector
+
+end Polar
+
 end ExtremeValueTheory
