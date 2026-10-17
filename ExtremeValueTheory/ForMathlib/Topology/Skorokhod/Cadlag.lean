@@ -31,7 +31,8 @@ cell when no cut point lies in `(t, u]`.
   with finitely many values (step functions).
 * `IsCadlag.finite_setOf_lt_edist_leftLim`: a càdlàg function has only finitely many jumps of
   size larger than `ε`.
-* `IsCadlag.countable_setOf_edist_leftLim_ne_zero`, `IsCadlag.countable_setOf_leftLim_ne`: a càdlàg function has at most countably many jumps.
+* `IsCadlag.countable_setOf_edist_leftLim_ne_zero`, `IsCadlag.countable_setOf_leftLim_ne`:
+  a càdlàg function has at most countably many jumps.
 
 ## References
 
