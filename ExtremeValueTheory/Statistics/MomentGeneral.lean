@@ -339,15 +339,7 @@ theorem tendsto_mul_integral_logExcess_div_rpow (hY : Measurable Y)
           simp only [hFn]; ring
       _ ≤ z ^ (p - 1) * (C * (1 + z) ^ (-(p + 1))) := mul_le_mul_of_nonneg_left h1 hzp
       _ = C * (z ^ (p - 1) * (1 + z) ^ (-(p + 1))) := by ring
-      _ ≤ C * (1 + z ^ 2)⁻¹ := by
-          by_cases hC0 : C = 0
-          · rw [hC0, zero_mul, zero_mul]
-          · exact mul_le_mul_of_nonneg_left h2 (by
-              by_contra hcon; push Not at hcon
-              have h3 : 0 ≤ t * survival P Y (U t * Real.exp (q t * z)) :=
-                mul_nonneg (by linarith) (survival_nonneg _)
-              have h4 : 0 < (1 + z) ^ (-(p + 1)) := rpow_pos_of_pos (by linarith) _
-              nlinarith)
+      _ ≤ C * (1 + z ^ 2)⁻¹ := mul_le_mul_of_nonneg_left h2 hC
   have hint : ∀ t ≥ T₀, IntegrableOn (Fn t) (Ioi 0) := by
     intro t ht
     obtain ⟨hqt, hUt, -⟩ := hb t ht
@@ -393,5 +385,139 @@ theorem tendsto_mul_integral_logExcess_div_rpow (hY : Measurable Y)
     ring
 
 end Tail
+
+/-! ### Replacing the random threshold by a deterministic one -/
+
+section Deterministic
+
+theorem logExcess_eq_max {t y : ℝ} (ht : 0 < t) (hy : 0 < y) :
+    logExcess t y = max (Real.log y - Real.log t) 0 := by
+  rcases le_total y t with h | h
+  · rw [logExcess_of_le ht h, max_eq_right]
+    linarith [Real.log_le_log hy h]
+  · rw [logExcess_of_ge ht h, max_eq_left]
+    linarith [Real.log_le_log ht h]
+
+/-- The log-excess is `1`-Lipschitz in the logarithm of the threshold, and vanishes below the
+thresholds. -/
+theorem abs_logExcess_sub_logExcess_le {S s lo y : ℝ} (hlo : 0 < lo) (hS : lo < S) (hs : lo < s) :
+    |logExcess S y - logExcess s y| ≤
+      |Real.log S - Real.log s| * (if lo < y then 1 else 0) := by
+  have hS0 : 0 < S := hlo.trans hS
+  have hs0 : 0 < s := hlo.trans hs
+  split_ifs with hy
+  · rw [mul_one, logExcess_eq_max hS0 (hlo.trans hy), logExcess_eq_max hs0 (hlo.trans hy)]
+    refine (abs_max_sub_max_le_abs _ _ _).trans_eq ?_
+    rw [show Real.log y - Real.log S - (Real.log y - Real.log s) =
+      -(Real.log S - Real.log s) by ring, abs_neg]
+  · push Not at hy
+    rw [logExcess_of_le hS0 (hy.trans hS.le), logExcess_of_le hs0 (hy.trans hs.le)]
+    simp
+
+/-- **Comparison of the log-moments with a deterministic threshold.** Let `lo = s e^{-Q η}` and
+`hi = s e^{Q η}`. If fewer than `k` sample points exceed `hi` and between `k` and `K k` exceed
+`lo`, then `X_{(k+1)} ∈ (lo, hi]`, and the normalized log-moments over `X_{(k+1)}` differ from
+those over `s` by `O(η)`. -/
+theorem abs_logMoment_div_sub_le {n : ℕ} (x : Fin n → ℝ) {k : ℕ} (hk : k < n) (hk0 : 0 < k)
+    {s Q η K : ℝ} (hs : 0 < s) (hQ : 0 < Q) (hη : 0 < η)
+    (h1 : (exceedCount x (Real.exp (Real.log s + Q * η)) : ℝ) / k < 1)
+    (h2 : 1 < (exceedCount x (Real.exp (Real.log s + Q * -η)) : ℝ) / k)
+    (h3 : (exceedCount x (Real.exp (Real.log s + Q * -η)) : ℝ) / k ≤ K) :
+    |logMoment x k 1 / Q - (∑ i, logExcess s (x i) / Q) / k| ≤ η * K ∧
+      |logMoment x k 2 / Q ^ 2 - (∑ i, (logExcess s (x i) / Q) ^ 2) / k| ≤
+        η * (2 * ((∑ i, logExcess s (x i) / Q) / k) + η * K) := by
+  set lo := Real.exp (Real.log s + Q * -η) with hlo_def
+  set hi := Real.exp (Real.log s + Q * η) with hhi_def
+  have hkR : (0 : ℝ) < k := by exact_mod_cast hk0
+  set S := orderStat x k with hS_def
+  have hShi : S ≤ hi := by
+    rw [hS_def, orderStat_le_iff x hk]
+    rw [div_lt_one hkR] at h1
+    exact_mod_cast h1.le
+  have hSlo : lo < S := by
+    rw [hS_def, lt_orderStat_iff x hk]
+    rw [one_lt_div hkR] at h2
+    exact_mod_cast h2
+  have hlo0 : 0 < lo := Real.exp_pos _
+  have hS0 : 0 < S := hlo0.trans hSlo
+  have hlos : lo < s := by
+    rw [hlo_def]
+    calc Real.exp (Real.log s + Q * -η) < Real.exp (Real.log s) :=
+          Real.exp_lt_exp.2 (by nlinarith)
+      _ = s := Real.exp_log hs
+  have hlog : |Real.log S - Real.log s| ≤ Q * η := by
+    have e1 : Real.log lo = Real.log s + Q * -η := Real.log_exp _
+    have e2 : Real.log hi = Real.log s + Q * η := Real.log_exp _
+    have l1 := Real.log_lt_log hlo0 hSlo
+    have l2 := Real.log_le_log hS0 hShi
+    rw [abs_le]
+    constructor <;> linarith
+  set A : Fin n → ℝ := fun i => logExcess S (x i) / Q with hA
+  set B : Fin n → ℝ := fun i => logExcess s (x i) / Q with hB
+  set I : Fin n → ℝ := fun i => if lo < x i then 1 else 0 with hI
+  have hI01 : ∀ i, 0 ≤ I i ∧ I i ≤ 1 := by
+    intro i; simp only [hI]; split_ifs <;> norm_num
+  have hA0 : ∀ i, 0 ≤ A i := fun i => div_nonneg (logExcess_nonneg hS0 _) hQ.le
+  have hB0 : ∀ i, 0 ≤ B i := fun i => div_nonneg (logExcess_nonneg hs _) hQ.le
+  have hAB : ∀ i, |A i - B i| ≤ η * I i := by
+    intro i
+    have := abs_logExcess_sub_logExcess_le (y := x i) hlo0 hSlo hlos
+    simp only [hA, hB, hI]
+    rw [← sub_div, abs_div, abs_of_pos hQ, div_le_iff₀ hQ]
+    calc |logExcess S (x i) - logExcess s (x i)|
+        ≤ |Real.log S - Real.log s| * (if lo < x i then 1 else 0) := this
+      _ ≤ Q * η * (if lo < x i then 1 else 0) := by
+          gcongr
+      _ = η * (if lo < x i then 1 else 0) * Q := by ring
+  have hAB2 : ∀ i, |A i ^ 2 - B i ^ 2| ≤ η * (2 * B i + η) * I i := by
+    intro i
+    have h := hAB i
+    rcases (hI01 i).1.lt_or_eq with hpos | hzero
+    · have hI1 : I i = 1 := by
+        by_cases hh : lo < x i
+        · simp [hI, hh]
+        · simp [hI, hh] at hpos
+      rw [hI1, mul_one] at h ⊢
+      rw [show A i ^ 2 - B i ^ 2 = (A i - B i) * (A i + B i) by ring, abs_mul,
+        abs_of_nonneg (add_nonneg (hA0 i) (hB0 i))]
+      have hAle : A i ≤ B i + η := by linarith [(abs_le.1 h).2]
+      calc |A i - B i| * (A i + B i) ≤ η * (A i + B i) :=
+            mul_le_mul_of_nonneg_right h (add_nonneg (hA0 i) (hB0 i))
+        _ ≤ η * (2 * B i + η) := by nlinarith
+    · rw [← hzero, mul_zero] at h ⊢
+      have : A i = B i := by
+        have := abs_nonneg (A i - B i)
+        have h0 : |A i - B i| = 0 := le_antisymm h this
+        linarith [abs_eq_zero.1 h0]
+      rw [this, sub_self, abs_zero]
+  have hcnt : (exceedCount x lo : ℝ) = ∑ i, I i := exceedCount_eq_sum x lo
+  have hM1 : logMoment x k 1 / Q = (∑ i, A i) / k := by
+    rw [logMoment_eq_sum_logExcess x one_ne_zero hk hS0, ← hS_def]
+    simp only [pow_one, hA, ← Finset.sum_div]
+    field_simp
+  have hM2 : logMoment x k 2 / Q ^ 2 = (∑ i, A i ^ 2) / k := by
+    rw [logMoment_eq_sum_logExcess x two_ne_zero hk hS0, ← hS_def]
+    simp only [hA, div_pow, ← Finset.sum_div]
+    field_simp
+  have hsumI : (∑ i, I i) / k ≤ K := by rw [← hcnt]; exact h3
+  constructor
+  · rw [hM1, ← sub_div, ← Finset.sum_sub_distrib, abs_div, abs_of_pos hkR, div_le_iff₀ hkR]
+    calc |∑ i, (A i - B i)| ≤ ∑ i, |A i - B i| := Finset.abs_sum_le_sum_abs _ _
+      _ ≤ ∑ i, η * I i := Finset.sum_le_sum fun i _ => hAB i
+      _ = η * ((∑ i, I i) / k) * k := by rw [← Finset.mul_sum]; field_simp
+      _ ≤ η * K * k := by gcongr
+  · rw [hM2, ← sub_div, ← Finset.sum_sub_distrib, abs_div, abs_of_pos hkR, div_le_iff₀ hkR]
+    calc |∑ i, (A i ^ 2 - B i ^ 2)| ≤ ∑ i, |A i ^ 2 - B i ^ 2| := Finset.abs_sum_le_sum_abs _ _
+      _ ≤ ∑ i, η * (2 * B i + η) * I i := Finset.sum_le_sum fun i _ => hAB2 i
+      _ ≤ ∑ i, (η * 2 * B i + η * η * I i) := by
+          refine Finset.sum_le_sum fun i _ => ?_
+          have := mul_nonneg (mul_nonneg hη.le (hB0 i)) (sub_nonneg.2 (hI01 i).2)
+          nlinarith
+      _ = η * (2 * ((∑ i, B i) / k) + η * ((∑ i, I i) / k)) * k := by
+          rw [Finset.sum_add_distrib, ← Finset.mul_sum, ← Finset.mul_sum]
+          field_simp
+      _ ≤ η * (2 * ((∑ i, B i) / k) + η * K) * k := by gcongr
+
+end Deterministic
 
 end ExtremeValueTheory
