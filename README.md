@@ -30,8 +30,10 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   regularly varying with index `-α`, the scaled excess distribution `F̄(u + (u/α)x)/F̄(u)`
   converges to the generalized Pareto survival function `(1 + x/α)^(-α)` uniformly in `x ≥ 0`
   (Pickands–Balkema–de Haan); the mean excess satisfies `e(u)/u → 1/(α-1)` for `α > 1`.
-- Regular variation API: closure properties, uniform convergence theorem and Potter bounds for
-  monotone functions.
+- **Uniform convergence theorem and Karamata's representation theorem** for measurable slowly
+  and regularly varying functions (no monotonicity), with two-sided Potter bounds
+  (`isSlowlyVarying_iff_exists_representation`, `potter_bounds_of_measurable`).
+- Regular variation API: closure properties and the elementary monotone versions of the above.
 
 The library contains no `sorry`.
 
