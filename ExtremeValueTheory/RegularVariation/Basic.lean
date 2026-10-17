@@ -401,4 +401,19 @@ theorem potter_bound (hf : IsRegularlyVarying f ρ) {a : ℝ}
 
 end IsRegularlyVarying
 
+/-- If `f / g → L > 0` and `g` is regularly varying with index `ρ`, then so is `f`. -/
+theorem IsRegularlyVarying.of_tendsto_div {f g : ℝ → ℝ} {ρ L : ℝ} (hg : IsRegularlyVarying g ρ)
+    (hfg : Tendsto (fun x => f x / g x) atTop (𝓝 L)) (hL : 0 < L) : IsRegularlyVarying f ρ := by
+  have hpos : ∀ᶠ x in atTop, 0 < f x := by
+    filter_upwards [(tendsto_order.1 hfg).1 0 hL, hg.1] with x h1 h2
+    exact (div_pos_iff_of_pos_right h2).1 h1
+  refine ⟨hpos, fun c hc => ?_⟩
+  have hcx : Tendsto (fun x => c * x) atTop atTop := tendsto_id.const_mul_atTop hc
+  have h := ((hfg.comp hcx).mul (hg.2 c hc)).div hfg hL.ne'
+  rw [mul_div_cancel_left₀ _ hL.ne'] at h
+  refine h.congr' ?_
+  filter_upwards [hg.1, hcx.eventually hg.1, hpos] with x h1 h2 h3
+  simp only [Function.comp_apply, Pi.div_apply]
+  field_simp
+
 end ExtremeValueTheory

@@ -197,7 +197,7 @@ theorem exists_isRegularlyVarying_tailQuantile_of_neg {γ : ℝ} (hF : F.IsInMDA
     filter_upwards [he] with t ht
     rw [ht]
   refine ⟨a, ℓ, ha, h1.congr' he, ?_, h3'⟩
-  exact ha.isRegularlyVarying.of_tendsto_div (neg_pos.2 (inv_lt_zero.2 hγ)) h3'
+  exact ha.isRegularlyVarying.of_tendsto_div h3' (neg_pos.2 (inv_lt_zero.2 hγ))
 
 /-! ### The tail quantile function on the logarithmic scale -/
 

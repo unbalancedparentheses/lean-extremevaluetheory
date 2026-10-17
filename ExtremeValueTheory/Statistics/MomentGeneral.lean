@@ -763,8 +763,9 @@ theorem tendstoInMeasure_logMoment_div_of_log_tailQuantile {X : ℕ → Ω → �
     intro ε hε
     simpa only [Real.dist_eq] using (main ε hε).2
 
-/-- Convergence in probability to a constant is unaffected by changing the random variables on
-finitely many indices. -/
+omit [IsProbabilityMeasure P] in
+/-- Convergence in probability to a constant only depends on the random variables for large
+indices. -/
 theorem tendstoInMeasure_congr_eventually {ι : Type*} {l : Filter ι} {f g : ι → Ω → ℝ} {a : ℝ}
     (hg : TendstoInMeasure P g l (fun _ => a)) (h : ∀ᶠ n in l, ∀ ω, f n ω = g n ω) :
     TendstoInMeasure P f l (fun _ => a) := by
@@ -774,6 +775,7 @@ theorem tendstoInMeasure_congr_eventually {ι : Type*} {l : Filter ι} {f g : ι
   filter_upwards [h] with n hn
   simp only [hn]
 
+omit [IsProbabilityMeasure P] in
 /-- If `f_n → a` in probability and the deterministic `c_n → c`, then `c_n f_n → c a` in
 probability. -/
 theorem tendstoInMeasure_const_mul_of_tendsto {ι : Type*} {l : Filter ι} {f : ι → Ω → ℝ}

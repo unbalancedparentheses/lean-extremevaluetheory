@@ -207,23 +207,6 @@ theorem monotone_comp_max {c : ℝ} (hmono : MonotoneOn f (Ici c)) :
 
 end IsExtendedRegularlyVarying
 
-/-- If `g / a → c > 0` and `a` is regularly varying with index `ρ`, so is `g`. -/
-theorem IsRegularlyVarying.of_tendsto_div {g : ℝ → ℝ} {ρ c : ℝ} (hc : 0 < c)
-    (ha : IsRegularlyVarying a ρ) (h : Tendsto (fun t => g t / a t) atTop (𝓝 c)) :
-    IsRegularlyVarying g ρ := by
-  have hg : ∀ᶠ t in atTop, 0 < g t := by
-    filter_upwards [ha.1, h.eventually (lt_mem_nhds hc)] with t h1 h2
-    have := mul_pos h2 h1
-    rwa [div_mul_cancel₀ _ h1.ne'] at this
-  refine ⟨hg, fun x hx => ?_⟩
-  have hs := tendsto_id.const_mul_atTop hx
-  have hlim := ((h.comp hs).mul (ha.2 x hx)).div h hc.ne'
-  rw [mul_div_right_comm, div_self hc.ne', one_mul] at hlim
-  refine hlim.congr' ?_
-  filter_upwards [ha.1, hs.eventually ha.1, hg] with t h1 h2 h3
-  simp only [Function.comp_apply, id, Pi.div_apply] at h2 ⊢
-  field_simp
-
 /-! ### Positive index -/
 
 /-- An iteration lemma: if `h (x t) = ρ t h t + ε t` with `ρ t → r ∈ [0, 1)` and `ε t → 0`, and
@@ -433,7 +416,7 @@ regularly varying with index `γ`. -/
 theorem IsExtendedRegularlyVarying.isRegularlyVarying_of_pos
     (hf : IsExtendedRegularlyVarying f γ a) (hmono : Monotone f) (hγ : 0 < γ) :
     IsRegularlyVarying f γ :=
-  hf.isRegularlyVarying.of_tendsto_div (inv_pos.2 hγ) (hf.tendsto_div_of_pos hmono hγ)
+  hf.isRegularlyVarying.of_tendsto_div (hf.tendsto_div_of_pos hmono hγ) (inv_pos.2 hγ)
 
 /-- **Positive index**: `a t / f t → γ`, i.e. `a t ~ γ f t`. -/
 theorem IsExtendedRegularlyVarying.tendsto_aux_div_of_pos
@@ -621,7 +604,7 @@ theorem IsExtendedRegularlyVarying.isRegularlyVarying_sub_of_neg
     (hf : IsExtendedRegularlyVarying f γ a) (hmono : Monotone f) (hγ : γ < 0) :
     ∃ ℓ, Tendsto f atTop (𝓝 ℓ) ∧ IsRegularlyVarying (fun t => ℓ - f t) γ := by
   obtain ⟨ℓ, h1, -, h3⟩ := hf.exists_tendsto_of_neg hmono hγ
-  exact ⟨ℓ, h1, hf.isRegularlyVarying.of_tendsto_div (neg_pos.2 (inv_lt_zero.2 hγ)) h3⟩
+  exact ⟨ℓ, h1, hf.isRegularlyVarying.of_tendsto_div h3 (neg_pos.2 (inv_lt_zero.2 hγ))⟩
 
 /-! ### Non-positive index -/
 
