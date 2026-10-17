@@ -39,7 +39,9 @@ exceedance counts; m-dependent and α-mixing versions (`Statistics/HillDependent
 log-excess functional needed no separate variance treatment: it is squeezed deterministically between
 exceedance counts.
 
-Open next steps (updated): infinite-order linear processes and Markov chains (geometric β-mixing);
+Also done: infinite-order moving averages (`α < 1`) and AR(1), `θ = 1 − φ^α`, by m-dependent truncation.
+
+Open next steps (updated): infinite-order linear processes for `α ≥ 1`; Markov chains (geometric β-mixing);
 the backward limit
 `Θ_{−t} → 0`; then the Bai–Wang-type `θ < ϑ` question (P1).
 

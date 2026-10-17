@@ -371,3 +371,42 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
   processes computed in Proposition~\ref{prop:moving-max-vartheta} and
   Theorem~\ref{thm:moving-average-tail-process}.
 \end{proof}
+
+\section{Infinite moving averages and AR(1)}
+
+\begin{theorem}[Extremal index of infinite moving averages]
+  \label{thm:infinite-ma}
+  \uses{cor:moving-average-theta, thm:linear-tails-infinite, thm:theta-eq-vartheta}
+  \lean{ExtremeValueTheory.InfiniteMovingAverage.process, ExtremeValueTheory.InfiniteMovingAverage.tendsto_measureReal_process_div, ExtremeValueTheory.InfiniteMovingAverage.exists_measureReal_abs_sub_gt_le,
+    ExtremeValueTheory.InfiniteMovingAverage.hasExtremalIndex, ExtremeValueTheory.InfiniteMovingAverage.indexLaw, ExtremeValueTheory.InfiniteMovingAverage.spectral, ExtremeValueTheory.tendstoLawCond_of_approx,
+    ExtremeValueTheory.InfiniteMovingAverage.hasTailProcess, ExtremeValueTheory.InfiniteMovingAverage.hasSpectralTailProcess, ExtremeValueTheory.InfiniteMovingAverage.candidateExtremalIndex_spectral,
+    ExtremeValueTheory.InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex}
+  \leanok
+  Let $X_t = \sum_{j \ge 0} \psi_j Z_{t-j}$ with $\psi_j \ge 0$, iid nonnegative noise with
+  $\PR[Z > x] \in RV_{-\alpha}$, $0 < \delta < \alpha < 1$ and $\sum_j \psi_j^\delta < \infty$. Then $X$ has spectral
+  tail process $\Theta_t = \psi_{J+t}/\psi_J$ with $\PR[J = j] \propto \psi_j^\alpha$, and its extremal index is
+  $\theta = \vartheta = \sup_j \psi_j^\alpha / \sum_j \psi_j^\alpha$ [Davis--Resnick 1985], [KS20, Ch.~15].
+  The case $\alpha \ge 1$ is not formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Truncate to the $m$-dependent finite moving average $X^{(m)}$, for which the result holds
+  (Corollary~\ref{cor:moving-average-theta}). A uniform bound
+  $\PR[|X_t - X^{(m)}_t| > y] \le K (\sum_{j > m} \psi_j^\delta) \PR[Z > y]$ makes the maxima and the
+  conditional laws of $X$ and $X^{(m)}$ close as $m \to \infty$.
+\end{proof}
+
+\begin{corollary}[Extremal index of AR(1)]
+  \label{cor:ar1}
+  \uses{thm:infinite-ma}
+  \lean{ExtremeValueTheory.AR1.process, ExtremeValueTheory.AR1.ae_process_eq, ExtremeValueTheory.AR1.hasExtremalIndex}
+  \leanok
+  The stationary solution $X_t = \sum_j \varphi^j Z_{t-j}$ of $X_t = \varphi X_{t-1} + Z_t$, $0 < \varphi < 1$, with
+  noise as above and $\alpha < 1$, has extremal index $1 - \varphi^\alpha$ [EKM, \S8.1]. The restriction
+  $\alpha < 1$ is inherited from Theorem~\ref{thm:infinite-ma}; uniqueness of the stationary solution is
+  not formalized.
+\end{corollary}
+\begin{proof}
+  \leanok
+  $\sup_j \varphi^{j\alpha} / \sum_j \varphi^{j\alpha} = 1 - \varphi^\alpha$.
+\end{proof}
