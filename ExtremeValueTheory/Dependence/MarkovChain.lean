@@ -6,6 +6,8 @@ Authors: Federico Carrone
 import ExtremeValueTheory.ForMathlib.Probability.Process.Stationary
 import Mathlib.Probability.Kernel.Composition.MeasureComp
 import Mathlib.Probability.ProductMeasure
+import Mathlib.Probability.Kernel.Representation
+import Mathlib.Probability.Kernel.Composition.MeasureCompProd
 
 /-!
 # Markov chains as random iterations
@@ -42,6 +44,17 @@ we do not need this.)
   on the canonical space `E × (ℕ → F)` with the product measure `π ⊗ ν^⊗ℕ` (Mathlib's
   `Measure.infinitePi`, i.e. the Ionescu-Tulcea construction for a product kernel) satisfies all
   hypotheses, hence is a stationary Markov chain with marginal `π`.
+* `ExtremeValueTheory.RandomIteration.map_history_succ`: **the Markov property**: the joint law of
+  `(X_0, …, X_n)` and `X_{n+1}` is `law(X_0, …, X_n) ⊗ₘ K(X_n, ·)`.
+* `ExtremeValueTheory.RandomIteration.exists_isStationary_of_kernel`: for **any** Markov kernel
+  `K` on a standard Borel space with an invariant law `π`, `K` is the kernel of a random iteration
+  with uniform innovations (Mathlib's `Kernel.exists_measurable_map_eq_unitInterval`), so there is
+  a stationary Markov chain with kernel `K` and marginal `π`.
+
+The construction uses the infinite product measure `Measure.infinitePi` rather than the trajectory
+kernel `Kernel.traj` of a general (inhomogeneous) family of kernels; the two agree for chains
+driven by iid innovations, and the random-iteration form is the one used in the extremal theory
+(tail chains, `Dependence/MarkovTailChain.lean`). Only the `ℕ`-indexed chain is constructed.
 -/
 
 open MeasureTheory ProbabilityTheory
@@ -278,6 +291,135 @@ theorem isStationary_canonicalChain (hf : Measurable (Function.uncurry f))
   · rw [map_fst_canonicalMeasure, map_coord_canonicalMeasure, hinv]
 
 end Canonical
+
+/-! ### The Markov property -/
+
+section Markov
+
+omit [MeasurableSpace E] [MeasurableSpace F] in
+/-- The iteration up to time `i` only depends on the inputs before `i`. -/
+theorem iter_congr {x : E} {v w : ℕ → F} {i : ℕ} (h : ∀ k < i, v k = w k) :
+    iter f x v i = iter f x w i := by
+  induction i with
+  | zero => rfl
+  | succ i ih =>
+    rw [iter_succ, iter_succ, ih fun k hk => h k (by omega), h i (by omega)]
+
+/-- If `X ⊥ (Y, Z)` and `Y ⊥ Z` then `(X, Y) ⊥ Z`. -/
+theorem indepFun_prodMk_of_indepFun {G H J : Type*} [MeasurableSpace G] [MeasurableSpace H]
+    [MeasurableSpace J] {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
+    [IsProbabilityMeasure P] {X : Ω → G} {Y : Ω → H} {Z : Ω → J} (hX : Measurable X)
+    (hY : Measurable Y) (hZ : Measurable Z) (h1 : IndepFun X (fun ω => (Y ω, Z ω)) P)
+    (h2 : IndepFun Y Z P) : IndepFun (fun ω => (X ω, Y ω)) Z P := by
+  have h3 : IndepFun X Y P := h1.comp measurable_id measurable_fst
+  rw [indepFun_iff_map_prod_eq_prod_map_map (hX.prodMk hY).aemeasurable hZ.aemeasurable,
+    (indepFun_iff_map_prod_eq_prod_map_map hX.aemeasurable hY.aemeasurable).1 h3]
+  have e : (fun ω => ((X ω, Y ω), Z ω)) =
+      MeasurableEquiv.prodAssoc.symm ∘ fun ω => (X ω, (Y ω, Z ω)) := rfl
+  rw [e, ← Measure.map_map MeasurableEquiv.prodAssoc.symm.measurable (hX.prodMk (hY.prodMk hZ)),
+    (indepFun_iff_map_prod_eq_prod_map_map hX.aemeasurable (hY.prodMk hZ).aemeasurable).1 h1,
+    (indepFun_iff_map_prod_eq_prod_map_map hY.aemeasurable hZ.aemeasurable).1 h2,
+    ← Measure.prodAssoc_prod, Measure.map_map MeasurableEquiv.prodAssoc.symm.measurable
+      MeasurableEquiv.prodAssoc.measurable]
+  simp
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+  {X₀ : Ω → E} {V : ℕ → Ω → F}
+
+/-- **The Markov property of the random iteration.** The joint law of the history
+`(X_0, …, X_n)` and of `X_{n+1}` is the law of the history composed with the transition kernel
+`K = noiseKernel f (law V_n)` evaluated at the current state `X_n`; i.e. a regular conditional
+law of `X_{n+1}` given `(X_0, …, X_n)` is `K(X_n, ·)`. -/
+theorem map_history_succ [Nonempty F] (hf : Measurable (Function.uncurry f)) (hX₀ : Measurable X₀)
+    (hV : ∀ n, Measurable (V n)) (hind : IndepFun X₀ (fun ω n => V n ω) P)
+    (hiid : iIndepFun V P) (n : ℕ) :
+    P.map (fun ω => ((fun i : Fin (n + 1) => chain f X₀ V i ω), chain f X₀ V (n + 1) ω)) =
+      (P.map fun ω (i : Fin (n + 1)) => chain f X₀ V i ω) ⊗ₘ
+        (Kernel.comap (noiseKernel f (P.map (V n))) (fun h => h (Fin.last n))
+          (measurable_pi_apply _)) := by
+  set ν := P.map (V n)
+  have := isMarkovKernel_noiseKernel hf ν
+  -- the past innovations and their truncation to a sequence
+  set c : F := Classical.arbitrary F
+  set tr : (Fin n → F) → ℕ → F := fun g k => if h : k < n then g ⟨k, h⟩ else c
+  have htr : Measurable tr := Measurable.of_eval fun k => by
+    by_cases h : k < n
+    · simp only [tr, h, ↓reduceDIte]; exact measurable_pi_apply _
+    · simp only [tr, h, ↓reduceDIte]; exact measurable_const
+  set Y : Ω → Fin n → F := fun ω k => V k ω
+  have hY : Measurable Y := Measurable.of_eval fun k => hV k
+  set Ψ : E × (Fin n → F) → Fin (n + 1) → E := fun p i => iter f p.1 (tr p.2) i
+  have hΨ : Measurable Ψ := Measurable.of_eval fun i =>
+    (measurable_iter hf i).comp (measurable_fst.prodMk (htr.comp measurable_snd))
+  set H : Ω → Fin (n + 1) → E := fun ω i => chain f X₀ V i ω
+  have hH : H = Ψ ∘ fun ω => (X₀ ω, Y ω) := by
+    funext ω i
+    simp only [H, Ψ, chain, Function.comp_apply]
+    refine iter_congr fun k hk => ?_
+    have hkn : k < n := by have := i.2; omega
+    simp [tr, Y, hkn]
+  have hHm : Measurable H := by rw [hH]; exact hΨ.comp (hX₀.prodMk hY)
+  -- `(X₀, V_{<n})` is independent of `V_n`
+  have hYZ : IndepFun Y (V n) P := by
+    have h := hiid.indepFun_finset (Finset.range n) {n} (by simp) hV
+    refine (h.comp (φ := fun g (k : Fin n) => g ⟨k, Finset.mem_range.2 k.2⟩)
+      (ψ := fun g => g ⟨n, Finset.mem_singleton_self n⟩) (Measurable.of_eval fun k =>
+        measurable_pi_apply _)
+      (@measurable_pi_apply ({n} : Finset ℕ) (fun _ => F) _ ⟨n, Finset.mem_singleton_self n⟩))
+  have hXYZ : IndepFun X₀ (fun ω => (Y ω, V n ω)) P := by
+    have := hind.comp (φ := id) (ψ := fun v : ℕ → F => ((fun k : Fin n => v k), v n))
+      measurable_id (((Measurable.of_eval fun k : Fin n => measurable_pi_apply (k : ℕ) :
+        Measurable fun v : ℕ → F => fun k : Fin n => v k)).prodMk
+          (@measurable_pi_apply ℕ (fun _ => F) _ n))
+    exact this
+  have hGV : IndepFun (fun ω => (X₀ ω, Y ω)) (V n) P :=
+    indepFun_prodMk_of_indepFun hX₀ hY (hV n) hXYZ hYZ
+  have hHV : IndepFun H (V n) P := by rw [hH]; exact hGV.comp hΨ measurable_id
+  have hlaw : P.map (fun ω => (H ω, V n ω)) = (P.map H).prod ν :=
+    (indepFun_iff_map_prod_eq_prod_map_map hHm.aemeasurable (hV n).aemeasurable).1 hHV
+  -- the new state is a function of the history and the new innovation
+  set g : (Fin (n + 1) → E) × F → (Fin (n + 1) → E) × E := fun p => (p.1, f (p.1 (Fin.last n)) p.2)
+  have hg : Measurable g :=
+    measurable_fst.prodMk (hf.comp ((((measurable_pi_apply (Fin.last n)).comp
+      measurable_fst).prodMk measurable_snd : Measurable fun p : (Fin (n + 1) → E) × F =>
+        (p.1 (Fin.last n), p.2))))
+  have e : (fun ω => ((fun i : Fin (n + 1) => chain f X₀ V i ω), chain f X₀ V (n + 1) ω)) =
+      g ∘ fun ω => (H ω, V n ω) := by
+    funext ω
+    simp only [g, H, Function.comp_apply, chain_succ]
+    rfl
+  rw [e, ← Measure.map_map hg (hHm.prodMk (hV n)), hlaw]
+  ext s hs
+  rw [Measure.map_apply hg hs, Measure.prod_apply (hg hs), Measure.compProd_apply hs]
+  refine lintegral_congr fun h => ?_
+  have hfm : Measurable (f (h (Fin.last n))) := hf.comp measurable_prodMk_left
+  rw [Kernel.comap_apply, noiseKernel_apply hf, Measure.map_apply hfm (measurable_prodMk_left hs)]
+  rfl
+
+end Markov
+
+/-! ### Stationary Markov chains with a given kernel -/
+
+/-- **Existence of a stationary Markov chain with a prescribed kernel.** Let `K` be a Markov
+kernel on a standard Borel space `E` with an invariant law `π` (`K ∘ₘ π = π`). Then `K` is the
+kernel `noiseKernel f λ` of a random iteration driven by uniform innovations on `[0, 1]`
+([Kallenberg, Lemma 4.22], `Kernel.exists_measurable_map_eq_unitInterval`), and the canonical
+chain on `(E × (ℕ → [0, 1]), π ⊗ λ^⊗ℕ)` is stationary with marginal `π`; by
+`map_history_succ` its transition kernel is `K`. -/
+theorem exists_isStationary_of_kernel [StandardBorelSpace E] [Nonempty E] (K : Kernel E E)
+    [IsMarkovKernel K] (π : Measure E) [IsProbabilityMeasure π] (hπ : K ∘ₘ π = π) :
+    ∃ g : E → unitInterval → E, Measurable (Function.uncurry g) ∧
+      noiseKernel g volume = K ∧
+      IsStationary (chain g Prod.fst fun n (p : E × (ℕ → unitInterval)) => p.2 n)
+        (canonicalMeasure π volume) ∧
+      (canonicalMeasure π (volume : Measure unitInterval)).map Prod.fst = π := by
+  obtain ⟨g, hg, hgK⟩ := Kernel.exists_measurable_map_eq_unitInterval K
+  have hK : noiseKernel g volume = K := by
+    ext x : 1
+    rw [noiseKernel_apply hg, hgK]
+  refine ⟨g, hg, hK, isStationary_canonicalChain π volume hg ?_,
+    map_fst_canonicalMeasure π volume⟩
+  rw [← noiseKernel_comp_eq hg, hK, hπ]
 
 end RandomIteration
 
