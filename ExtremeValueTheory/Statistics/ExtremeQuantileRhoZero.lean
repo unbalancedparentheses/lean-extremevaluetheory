@@ -754,4 +754,234 @@ theorem tendstoInDistribution_weissman_of_rho_eq_zero {X : ℕ → Ω → ℝ}
 
 end Normality
 
+/-! ### Asymptotic normality of the tail probability estimator -/
+
+section TailProbNormality
+
+variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'} [IsProbabilityMeasure P']
+
+/-- **Asymptotic normality of the tail probability estimator with an explicit bias**
+(any `ρ ≤ 0`; [dHF, §4.4]). Let `X_0, X_1, …` be iid with tail quantile function of
+second-order regular variation with `γ > 0`, `ρ ≤ 0` and auxiliary function `A`, let `k → ∞`,
+`k / n → 0`, `√k A(n/k) → λ`, and let `e_n = y_n / x_{k/n} → ∞` with `log e_n / √k → 0`. If the
+deterministic bias `β_n = (k / n) e_n^{-1/γ} / F̄(y_n)` satisfies `√k log β_n / log e_n → ν`, then,
+for `Z ~ N(λ / (1 - ρ), γ²)`,
+
+  `(√k / log e_n) (p̂(y_n) / F̄(y_n) - 1) ⇒ Z / γ² + ν ~ N(λ / ((1 - ρ) γ²) + ν, γ⁻²)`.
+
+The proof is the delta method: `log (p̂ / F̄) = log β_n + log e_n (1/γ - 1/γ̂)
++ (log X_{(k+1)} - log x_{k/n}) / γ̂`, and `√k (1/γ - 1/γ̂) ⇒ Z / γ²`. -/
+theorem tendstoInDistribution_tailProbEstimator_of_tendsto_bias {X : ℕ → Ω → ℝ}
+    (hX : ∀ i, Measurable (X i)) (hindep : iIndepFun X P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ} {A : ℝ → ℝ} (hγ : 0 < γ)
+    (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {y : ℕ → ℝ}
+    (he : Tendsto (fun n => y n / tailQuantile P (X 0) ((k n : ℝ) / n)) atTop atTop)
+    (hek : Tendsto (fun n => Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) /
+      √(k n : ℝ)) atTop (𝓝 0))
+    {ν : ℝ} (hν : Tendsto (fun n => √(k n : ℝ) * Real.log ((k n : ℝ) / n *
+      (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) ^ (-(1 / γ)) /
+        (P {ω | y n < X 0 ω}).toReal) /
+      Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n))) atTop (𝓝 ν))
+    {Z : Ω' → ℝ} (hZ : HasLaw Z (gaussianReal (lam / (1 - ρ)) (γ ^ 2).toNNReal) P') :
+    TendstoInDistribution (fun n ω => √(k n : ℝ) /
+      Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) *
+      (tailProbEstimator (fun i : Fin n => X i ω) (k n) (y n) /
+        (P {ω | y n < X 0 ω}).toReal - 1))
+      atTop (fun ω => Z ω / γ ^ 2 + ν) (fun _ => P) P' := by
+  set U := survivalQuantile (survival P (X 0)) with hUdef
+  set x0 : ℕ → ℝ := fun n => tailQuantile P (X 0) ((k n : ℝ) / n) with hx0_def
+  set ℓ : ℕ → ℝ := fun n => Real.log (y n / x0 n) with hℓ_def
+  set h : ℕ → ℝ := fun n => ℓ n / √(k n : ℝ) with hh_def
+  set pF : ℕ → ℝ := fun n => (P {ω | y n < X 0 ω}).toReal with hpF_def
+  set β : ℕ → ℝ := fun n => (k n : ℝ) / n * (y n / x0 n) ^ (-(1 / γ)) / pF n with hβ_def
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hkpos : ∀ᶠ n in atTop, (0 : ℝ) < k n := hkR.eventually_gt_atTop 0
+  have hnpos : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < n :=
+    (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0
+  have hr0 : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < k n / n := by
+    filter_upwards [hkpos, hnpos] with n h1 h2; positivity
+  have hRV := h2.isRegularlyVarying_survival (hX 0) hγ
+  obtain ⟨hs, -⟩ := tendsto_tailQuantile (hX 0) hRV hr0 hkn
+  have hx0U : ∀ᶠ n in atTop, x0 n = U (n / k n) := by
+    filter_upwards [hr0, hkn.eventually (gt_mem_nhds one_pos)] with n h1 h3
+    simp only [hx0_def]
+    rw [tailQuantile_eq_survivalQuantile h1 h3, inv_div]
+  have hℓ : Tendsto ℓ atTop atTop := tendsto_log_atTop.comp he
+  have hℓinv : Tendsto (fun n => (ℓ n)⁻¹) atTop (𝓝 0) := tendsto_inv_atTop_zero.comp hℓ
+  -- the random terms
+  have hW := tendstoInDistribution_hill hX hindep hident hγ h2 hk hkn hlam hZ
+  have hWt := isBoundedInProbability_of_tendstoInDistribution hW
+  have hV0 := isBoundedInProbability_log_orderStat hX hindep hident h2 hk hkn hlam
+  have hOS : ∀ n, Measurable fun ω => orderStat (fun i : Fin n => X i ω) (k n) := fun n =>
+    measurable_orderStat (fun i => hX i) _
+  have hH : ∀ n, Measurable fun ω => hill (fun i : Fin n => X i ω) (k n) := fun n =>
+    (measurable_hill_pi n (k n)).comp (measurable_pi_iff.2 fun i => hX i)
+  set W : ℕ → Ω → ℝ := fun n ω => √(k n : ℝ) * (hill (fun i : Fin n => X i ω) (k n) - γ)
+    with hW_def
+  set V : ℕ → Ω → ℝ := fun n ω => √(k n : ℝ) *
+    (log (orderStat (fun i : Fin n => X i ω) (k n)) - log (x0 n)) with hV_def
+  have hV : IsBoundedInProbability P V := by
+    intro ε hε
+    obtain ⟨M, hM⟩ := hV0 ε hε
+    refine ⟨M, ?_⟩
+    filter_upwards [hM, hx0U] with n hn hxn
+    simp only [hV_def, hxn]
+    exact hn
+  have hhill : TendstoInMeasure P (fun n ω => hill (fun i : Fin n => X i ω) (k n)) atTop
+      (fun _ => γ) := by
+    have := tendstoInMeasure_hill hX hindep hident (one_div_pos.2 hγ) hRV hk hkn
+    rwa [one_div_one_div] at this
+  have hinv := tendstoInMeasure_comp hhill (φ := fun g => g⁻¹) (continuousAt_inv₀ hγ.ne')
+  -- the delta method for `γ̂ ↦ 1 / γ̂`
+  set φ : ℝ → ℝ := fun g => (γ * g)⁻¹ - (γ ^ 2)⁻¹ with hφ
+  have hφc : ContinuousAt φ γ :=
+    ((continuousAt_const.mul continuousAt_id).inv₀ (mul_pos hγ hγ).ne').sub continuousAt_const
+  have hφγ := tendstoInMeasure_comp hhill hφc
+  have hφ0 : φ γ = 0 := by simp only [hφ]; rw [sq, sub_self]
+  rw [hφ0] at hφγ
+  have hY1' := tendstoInMeasure_mul_zero_of_isBoundedInProbability' hWt hφγ
+  set Y1 : ℕ → Ω → ℝ := fun n ω => √(k n : ℝ) * (γ⁻¹ - (hill (fun i : Fin n => X i ω) (k n))⁻¹)
+    - W n ω / γ ^ 2 with hY1_def
+  have hbadH : Tendsto (fun n => P {ω | hill (fun i : Fin n => X i ω) (k n) = 0}) atTop
+      (𝓝 0) := by
+    rw [tendstoInMeasure_iff_dist] at hhill
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds (hhill γ hγ)
+      (Eventually.of_forall fun _ => bot_le) (Eventually.of_forall fun n => measure_mono
+        fun ω hω => ?_)
+    simp only [mem_ofPred_eq] at hω ⊢
+    rw [hω, Real.dist_eq, zero_sub, abs_neg, abs_of_pos hγ]
+  have hY1 : TendstoInMeasure P Y1 atTop (fun _ => 0) := by
+    refine tendstoInMeasure_of_eqOn hY1'
+      (A := fun n => {ω | hill (fun i : Fin n => X i ω) (k n) ≠ 0}) ?_
+      (Eventually.of_forall fun n ω hω => ?_)
+    · simpa only [compl_ofPred, not_not] using hbadH
+    · simp only [mem_ofPred_eq] at hω
+      simp only [hY1_def, hφ, hW_def]
+      field_simp
+  have hY2a := tendstoInMeasure_mul_zero_of_isBoundedInProbability hV hℓinv
+  have hY2 := tendstoInMeasure_mul hinv hY2a
+  have hY3 := tendstoInMeasure_const_of_tendsto (P := P) hν
+  set Y : ℕ → Ω → ℝ := fun n ω => Y1 n ω +
+    (hill (fun i : Fin n => X i ω) (k n))⁻¹ * ((ℓ n)⁻¹ * V n ω) +
+      √(k n : ℝ) * log (β n) / ℓ n with hY_def
+  have hY : TendstoInMeasure P Y atTop (fun _ => ν) := by
+    have h12 := tendstoInMeasure_comp₂ hY1 hY2 (φ := fun q => q.1 + q.2) (by fun_prop)
+    have := tendstoInMeasure_comp₂ h12 hY3 (φ := fun q => q.1 + q.2) (by fun_prop)
+    simp only [mul_zero, add_zero, zero_add] at this
+    exact this
+  have hYm : ∀ n, Measurable (Y n) := fun n =>
+    (((measurable_const.mul (measurable_const.sub (hH n).inv)).sub
+      ((measurable_const.mul ((hH n).sub measurable_const)).div_const _)).add
+      ((hH n).inv.mul (measurable_const.mul (measurable_const.mul
+        ((hOS n).log.sub measurable_const))))).add measurable_const
+  have hWγ : TendstoInDistribution (fun n ω => W n ω / γ ^ 2) atTop (fun ω => Z ω / γ ^ 2)
+      (fun _ => P) P' := hW.continuous_comp (g := fun x => x / γ ^ 2) (by fun_prop)
+  set G : ℕ → Ω → ℝ := fun n => (fun ω => W n ω / γ ^ 2) + Y n with hG_def
+  have hG : TendstoInDistribution G atTop (fun ω => Z ω / γ ^ 2 + ν) (fun _ => P) P' :=
+    hWγ.add_of_tendstoInMeasure_const hY fun n => (hYm n).aemeasurable
+  have hGm : ∀ n, Measurable (G n) := fun n =>
+    ((measurable_const.mul ((hH n).sub measurable_const)).div_const _).add (hYm n)
+  have hGt := isBoundedInProbability_of_tendstoInDistribution hG
+  have hhG : TendstoInMeasure P (fun n ω => h n * G n ω) atTop (fun _ => 0) :=
+    tendstoInMeasure_mul_zero_of_isBoundedInProbability hGt hek
+  have hφ' := tendstoInMeasure_comp hhG (φ := fun y => expSlope y - 1)
+    (continuousAt_expSlope.sub continuousAt_const)
+  simp only [expSlope_zero, sub_self] at hφ'
+  have hY4 := tendstoInMeasure_mul_zero_of_isBoundedInProbability' hGt hφ'
+  have hY4m : ∀ n, Measurable fun ω => (expSlope (h n * G n ω) - 1) * G n ω := fun n =>
+    ((measurable_expSlope.comp (measurable_const.mul (hGm n))).sub_const 1).mul (hGm n)
+  set T' : ℕ → Ω → ℝ := fun n => G n + fun ω => (expSlope (h n * G n ω) - 1) * G n ω
+    with hT'_def
+  have hZ0 : (fun ω => Z ω / γ ^ 2 + ν + 0) = fun ω => Z ω / γ ^ 2 + ν := by
+    funext ω; simp
+  have hT' : TendstoInDistribution T' atTop (fun ω => Z ω / γ ^ 2 + ν) (fun _ => P) P' := by
+    have := hG.add_of_tendstoInMeasure_const hY4 fun n => (hY4m n).aemeasurable
+    rwa [hZ0] at this
+  have hT'm : ∀ n, Measurable (T' n) := fun n => (hGm n).add (hY4m n)
+  set T : ℕ → Ω → ℝ := fun n ω => √(k n : ℝ) / Real.log (y n / x0 n) *
+    (tailProbEstimator (fun i : Fin n => X i ω) (k n) (y n) / pF n - 1) with hT_def
+  have hTm : ∀ n, Measurable (T n) := by
+    intro n
+    have h1 := hOS n
+    have h3 := hH n
+    simp only [hT_def, tailProbEstimator]
+    fun_prop
+  -- the event `X_{(k+1)} ≤ 0` is asymptotically negligible
+  have hbad : Tendsto (fun n => P {ω | orderStat (fun i : Fin n => X i ω) (k n) ≤ 0}) atTop
+      (𝓝 0) := by
+    have hloc := tendstoInMeasure_orderStat_div_tailQuantile hX hindep hident
+      (one_div_pos.2 hγ) hRV hk hkn
+    rw [tendstoInMeasure_iff_dist] at hloc
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds (hloc 1 one_pos)
+      (Eventually.of_forall fun _ => bot_le) ?_
+    filter_upwards [hs.eventually_gt_atTop 0] with n hsn
+    refine measure_mono fun ω hω => ?_
+    simp only [mem_ofPred_eq, Real.dist_eq] at hω ⊢
+    have : orderStat (fun i : Fin n => X i ω) (k n) / tailQuantile P (X 0) ((k n : ℝ) / n) ≤ 0 :=
+      div_nonpos_of_nonpos_of_nonneg hω hsn.le
+    rw [abs_sub_comm]
+    exact (le_abs_self _).trans' (by linarith)
+  have hD : TendstoInMeasure P (fun n ω => T n ω - T' n ω) atTop (fun _ => 0) := by
+    refine TendstoInMeasure.congr_of_measure_ne (g := fun _ _ => 0)
+      (tendstoInMeasure_const_of_tendsto tendsto_const_nhds) ?_
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hbad
+      (Eventually.of_forall fun _ => bot_le) ?_
+    filter_upwards [hkpos, hnpos, hs.eventually_gt_atTop 0, he.eventually_gt_atTop 1,
+      hℓ.eventually_gt_atTop 0] with n hk0 hn0 hx0 he1 hℓ0
+    refine measure_mono fun ω hω => ?_
+    simp only [mem_ofPred_eq] at hω ⊢
+    by_contra ho
+    rw [not_le] at ho
+    apply hω
+    set o := orderStat (fun i : Fin n => X i ω) (k n) with ho_def
+    set g := hill (fun i : Fin n => X i ω) (k n) with hg_def
+    have hsk : 0 < √(k n : ℝ) := sqrt_pos.2 hk0
+    have hh0 : h n ≠ 0 := (div_pos hℓ0 hsk).ne'
+    have hx0' : 0 < x0 n := hx0
+    have he0 : 0 < y n / x0 n := one_pos.trans he1
+    have hy0 : 0 < y n := by
+      have := mul_pos he0 hx0'
+      rwa [div_mul_cancel₀ _ hx0'.ne'] at this
+    have hpF : 0 < pF n := survival_pos hRV (y n)
+    have hkn0 : 0 < (k n : ℝ) / n := div_pos hk0 hn0
+    have hlogβ : log (β n) = log ((k n : ℝ) / n) + -(1 / γ) * ℓ n - log (pF n) := by
+      simp only [hβ_def, hℓ_def]
+      rw [log_div (mul_pos hkn0 (rpow_pos_of_pos he0 _)).ne' hpF.ne',
+        log_mul hkn0.ne' (rpow_pos_of_pos he0 _).ne', log_rpow he0]
+    have hℓe : ℓ n = log (y n) - log (x0 n) := log_div hy0.ne' hx0'.ne'
+    have key : h n * G n ω = log ((k n : ℝ) / n) - log (pF n) + log (y n / o) * -g⁻¹ := by
+      have hℓ0' : ℓ n ≠ 0 := hℓ0.ne'
+      simp only [hG_def, hY_def, hY1_def, hV_def, hh_def, Pi.add_apply]
+      rw [hlogβ, log_div hy0.ne' ho.ne']
+      field_simp
+      rw [hℓe]
+      ring
+    have hw : tailProbEstimator (fun i : Fin n => X i ω) (k n) (y n) / pF n =
+        exp (h n * G n ω) := by
+      rw [key, exp_add, exp_sub, exp_log hkn0, exp_log hpF, tailProbEstimator,
+        rpow_def_of_pos (div_pos hy0 ho)]
+      ring
+    have hT'e : T' n ω = (exp (h n * G n ω) - 1) / h n := by
+      rw [← mul_expSlope_mul hh0]
+      simp only [hT'_def, Pi.add_apply]
+      ring
+    simp only [hT_def]
+    rw [hw, hT'e, sub_eq_zero]
+    simp only [hh_def, hℓ_def]
+    field_simp
+  have hfinal := hT'.add_of_tendstoInMeasure_const hD fun n => ((hTm n).sub (hT'm n)).aemeasurable
+  have e1 : (fun ω => Z ω / γ ^ 2 + ν + 0) = fun ω => Z ω / γ ^ 2 + ν := by
+    funext ω; simp
+  rw [e1] at hfinal
+  have e : (fun n => T' n + fun ω => T n ω - T' n ω) = T := by
+    funext n ω
+    simp
+  rw [e] at hfinal
+  exact hfinal
+
+end TailProbNormality
+
 end ExtremeValueTheory
