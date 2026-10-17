@@ -120,6 +120,7 @@ import ExtremeValueTheory.MaxStable.Spectral
 import ExtremeValueTheory.Dependence.StrictExtremalIndex
 import ExtremeValueTheory.Dependence.ThetaGap
 import ExtremeValueTheory.Dependence.EchoProcess
+import ExtremeValueTheory.Dependence.StrictExtremalIndexAll
 import ExtremeValueTheory.Multivariate.Dependence
 import ExtremeValueTheory.Multivariate.TailDependence
 import ExtremeValueTheory.Multivariate.PickandsEstimator

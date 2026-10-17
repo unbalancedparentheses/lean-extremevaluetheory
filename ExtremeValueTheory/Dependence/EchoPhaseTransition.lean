@@ -50,8 +50,10 @@ Standing hypotheses: `α > 0`, iid Pareto(`α`) innovations (`hZ`, `hind`, `hlaw
     escape mass `1/2`);
   - `logEchoProcess_not_conditionA`: for `rₙ → ∞`, `rₙ / log n → c ∈ [0, ∞)` the block condition
     `A(uₙ)` fails. With `conditionA_logEchoProcess` (`Dependence/EchoConditionA.lean`, for
-    `log n = o(rₙ)`, `rₙ = o(n)`): along block lengths with `rₙ / log n → c ∈ [0, ∞]`,
-    `A(uₙ)` holds iff `c = ∞`, iff the cluster ratio tends to `θ`.
+    `log n = o(rₙ)`, `rₙ = o(n)`): along block lengths with `rₙ = o(n)` and
+    `rₙ / log n → c ∈ [0, ∞]`, `A(uₙ)` holds iff `c = ∞`, iff the cluster ratio tends to `θ`.
+    The hypothesis `rₙ = o(n)` is needed: for e.g. `rₙ = 2n` the number of blocks is the
+    natural-number quotient `n / rₙ = 0`, and `ConditionA` degenerates to `P(Mₙ ≤ uₙ) → 1`.
 * `echoBlockMass_logLag_bounds`: `min(L(u), r) u^(-α) ≤ E[min(L(Z), r); Z > u] ≤
   (min(L(u), r) + 2^α / (1 - e^(-α))) u^(-α)`.
 
@@ -70,7 +72,8 @@ Standing hypotheses: `α > 0`, iid Pareto(`α`) innovations (`hZ`, `hind`, `hlaw
   `HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex` the block condition `A(uₙ)` fails
   along those block lengths (`logEchoProcess_not_conditionA`). In this example, among block
   lengths with `rₙ / log n → c ∈ [0, ∞]` (and `rₙ = o(n)`), the relation `θ = ϑ - η` holds
-  exactly where `A(uₙ)` holds, namely for `c = ∞`.
+  exactly where `A(uₙ)` holds, namely for `c = ∞`. (Without `rₙ = o(n)` this fails: for
+  `rₙ = 2n`, `n / rₙ = 0` in `ℕ`, so `ConditionA` asserts `P(Mₙ ≤ uₙ) → 1`.)
 * `rₙ uₙ^(-α) → 0` (equivalently `rₙ = o(n)`) is automatic in the short and critical regimes.
 -/
 
@@ -745,7 +748,10 @@ process with `n P(X_0 > uₙ) → τ > 0`, `rₙ → ∞` and `rₙ / log n → 
 `ϑ - θ = 1/2` (`HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex`), while it is
 `(1 - min(1 / (c α), 1)) / 2 < 1/2` (or `0` for `c = 0`). Together with
 `conditionA_logEchoProcess` (`Dependence/EchoConditionA.lean`), for block lengths with
-`rₙ / log n → c ∈ [0, ∞]`, `A(uₙ)` holds iff `c = ∞`. -/
+`rₙ = o(n)` and `rₙ / log n → c ∈ [0, ∞]`, `A(uₙ)` holds iff `c = ∞`. (The restriction
+`rₙ = o(n)` matters only for `c = ∞`, and cannot be dropped there: for `rₙ = 2n` the number of
+blocks is the natural-number quotient `n / rₙ = 0`, so `ConditionA` would assert
+`P(Mₙ ≤ uₙ) → 1`.) -/
 theorem logEchoProcess_not_conditionA {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
     (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess logLag Z 0 ω}) atTop (𝓝 τ))
     {r : ℕ → ℕ} (hr : Tendsto r atTop atTop) {c : ℝ} (hc : 0 ≤ c)

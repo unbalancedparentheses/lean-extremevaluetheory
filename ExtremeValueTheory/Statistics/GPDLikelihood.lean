@@ -351,8 +351,15 @@ section LogLik
 
 variable {ξ σ x : ℝ} {n : ℕ}
 
-/-- The **GPD log-likelihood** `ℓ(ξ, σ; x) = ∑ᵢ log g_{ξ,σ}(xᵢ)` of a sample `x`. (Lean's
-convention `log 0 = 0` only matters outside the support, where the likelihood vanishes.) -/
+/-- The **GPD log-likelihood** `ℓ(ξ, σ; x) = ∑ᵢ log g_{ξ,σ}(xᵢ)` of a sample `x`.
+
+This is the log-likelihood only for *admissible* parameters, i.e. when every `xᵢ` lies in the
+support of `GPD(ξ, σ)` (and `σ > 0`). Off the support Lean's convention `log 0 = 0` turns each
+offending term into the junk value `0` rather than `-∞`, and this junk can exceed the
+log-likelihood at admissible parameters, so `gpdLogLik` must not be maximized over all
+parameters. The maximum-likelihood results maximize within the admissible domain: the scale
+MLE over `gpdScaleDomain ξ x`, and the joint MLE (`ae_tendsto_gpdMLE`) over compact sets of
+parameters with `ξ > 0`, `σ > 0`, where every nonnegative observation is in the support. -/
 noncomputable def gpdLogLik (ξ σ : ℝ) (x : Fin n → ℝ) : ℝ := ∑ i, log (gpdDensity ξ σ (x i))
 
 /-- The log-density of the exponential law `GPD(0, σ)`: `-log σ - x / σ` for `x ≥ 0`. -/

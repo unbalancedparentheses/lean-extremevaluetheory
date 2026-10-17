@@ -151,7 +151,13 @@ theorem integral_gevDensity (ξ : ℝ) : ∫ x, gevDensity ξ x = 1 :=
 noncomputable def gevLocScaleDensity (ξ μ σ x : ℝ) : ℝ := σ⁻¹ * gevDensity ξ ((x - μ) / σ)
 
 /-- The **GEV log-likelihood** `ℓ(ξ, μ, σ; x) = ∑ᵢ log(σ⁻¹ h_ξ((xᵢ - μ)/σ))` of block maxima
-`x₁, …, xₙ` ([Coles, §3.3.2]). -/
+`x₁, …, xₙ` ([Coles, §3.3.2]).
+
+This is the log-likelihood only for *admissible* parameters, i.e. `σ > 0` and every
+`1 + ξ (xᵢ - μ)/σ > 0` (all data in the support). Off the support Lean's convention `log 0 = 0`
+turns each offending term into the junk value `0` rather than `-∞`, and this junk can exceed the
+log-likelihood at admissible parameters, so `gevLogLik` must not be maximized over all
+parameters; maximum-likelihood statements must restrict to the admissible domain. -/
 noncomputable def gevLogLik {n : ℕ} (ξ μ σ : ℝ) (x : Fin n → ℝ) : ℝ :=
   ∑ i, log (gevLocScaleDensity ξ μ σ (x i))
 
