@@ -335,6 +335,92 @@ theorem ae_pos : ∀ᵐ ω ∂P, 0 < X₀ ω := by
   rw [ae_iff]
   exact (measureReal_eq_zero_iff (measure_ne_top _ _)).1 hc
 
+/-- The conditional law of `X_0 / x` given `X_0 > x` converges to Pareto(`α`). -/
+theorem tendstoLawCond_div :
+    TendstoLawCond P (fun x => X₀ ⁻¹' Ioi x) (fun x ω => X₀ ω / x) atTop (paretoMeasure 1 α) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have hRV : IsRegularlyVarying (fun x => P.real {ω | x < X₀ ω}) (-α) :=
+    isRegularlyVarying_tail hφ0 hφ1 hα hX₀ hinv
+  have hconv : TendstoLawCond P (fun x => {ω | x < X₀ ω}) (fun _ (_ : Ω) => (1 : ℝ)) atTop
+      (Measure.dirac 1) := by
+    intro g
+    rw [integral_dirac]
+    refine tendsto_const_nhds.congr' ?_
+    filter_upwards [hRV.1] with x hx
+    have h0 : P {ω | x < X₀ ω} ≠ 0 := fun h => by simp [measureReal_def, h] at hx
+    have := cond_isProbabilityMeasure (μ := P) h0
+    simp
+  have h := tendstoLawCond_smul hα hX₀ measurable_const hRV hconv
+  have hlim : ((paretoMeasure 1 α).prod (Measure.dirac (1 : ℝ))).map (fun p => p.1 • p.2) =
+      paretoMeasure 1 α := by
+    rw [Measure.prod_dirac, Measure.map_map (by fun_prop) (by fun_prop)]
+    simp [Function.comp_def]
+  rw [hlim] at h
+  refine h.congr (Eventually.of_forall fun x => Eventually.of_forall fun ω => ?_)
+  simp
+
+include hV hind hiid hlaw in
+/-- **The tail chain of ARMAX is `Y_t = Y_0 φ^t`** (`A ≡ φ`): for every horizon `k`, the law of
+`(X_t / x)_{t ≤ k}` given `X_0 > x` converges to the law of `(Y_0 φ^t)_{t ≤ k}` with `Y_0`
+Pareto(`α`). -/
+theorem tendstoLawCond_tailChain (k : ℕ) :
+    TendstoLawCond P (fun x => X₀ ⁻¹' Ioi x)
+      (fun x ω (t : Fin (k + 1)) => RandomIteration.chain (step φ) X₀ V t ω / x) atTop
+      ((paretoMeasure 1 α).map fun y (t : Fin (k + 1)) => y * φ ^ (t : ℕ)) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have h := RandomIteration.tendstoLawCond_tailChain_iid (a := fun _ => φ) (b := fun v => |v|)
+    measurable_step measurable_const continuous_abs.measurable measurableSet_Ici
+    (fun x hx v => step_nonneg hφ0.le hx v) (fun x hx v => abs_step_sub_le hφ0.le hx v) hX₀
+    ((ae_pos hφ0 hα hX₀ hinv).mono fun ω h => le_of_lt h) hV hind hiid hlaw
+    (fun x => measurableSet_Ioi) (tendstoLawCond_div hφ0 hφ1 hα hX₀ hinv) k
+  have e : (fun p : ℝ × (ℕ → ℝ) => fun t : Fin (k + 1) =>
+      RandomIteration.tailWalk (fun _ => φ) p.1 p.2 t) =
+      (fun y (t : Fin (k + 1)) => y * φ ^ (t : ℕ)) ∘ Prod.fst := by
+    funext p t
+    simp [RandomIteration.tailWalk]
+  rw [e, ← Measure.map_map (by fun_prop) measurable_fst, Measure.map_fst_prod] at h
+  simpa using h
+
+omit mΩ [IsProbabilityMeasure P] hX₀ hinv in
+/-- **The candidate extremal index of the ARMAX tail chain**: `Θ_t = φ^t` (`t ≥ 0`), so
+`ϑ = E[sup_{t ≥ 0} Θ_t^α - sup_{t ≥ 1} Θ_t^α] = 1 - φ^α = P(φ Y_0 ≤ 1)`. -/
+theorem candidateExtremalIndex_tailChain (Q : Measure (ℕ → ℝ)) [IsProbabilityMeasure Q] :
+    candidateExtremalIndex Q (RandomIteration.spectralWalk fun _ : ℝ => φ) α =
+      ENNReal.ofReal (1 - φ ^ α) := by
+  have hpow : ∀ k : ℕ, RandomIteration.spectralWalk (fun _ : ℝ => φ) (k : ℤ) =
+      fun _ => φ ^ k := fun k => by
+    funext v
+    simp [RandomIteration.spectralWalk]
+  have h0 : (⨆ k : ℕ, ENNReal.ofReal |φ ^ k|) = 1 := by
+    refine le_antisymm (iSup_le fun k => ?_) (le_iSup_of_le 0 (by simp))
+    rw [abs_of_nonneg (pow_nonneg hφ0.le k), ENNReal.ofReal_le_one]
+    exact pow_le_one₀ hφ0.le hφ1.le
+  have h1 : (⨆ k : ℕ, ENNReal.ofReal |φ ^ (k + 1)|) = ENNReal.ofReal φ := by
+    refine le_antisymm (iSup_le fun k => ?_) (le_iSup_of_le 0 (by simp [abs_of_pos hφ0]))
+    rw [abs_of_nonneg (pow_nonneg hφ0.le _)]
+    exact ENNReal.ofReal_le_ofReal (pow_le_of_le_one hφ0.le hφ1.le (by omega))
+  have hcast : ∀ k : ℕ, ((k + 1 : ℕ) : ℤ) = (k : ℤ) + 1 := fun k => by push_cast; ring
+  simp only [candidateExtremalIndex]
+  have : ∀ v : ℕ → ℝ, (⨆ k : ℕ, ENNReal.ofReal |RandomIteration.spectralWalk
+      (fun _ : ℝ => φ) (k : ℤ) v|) ^ α - (⨆ k : ℕ, ENNReal.ofReal |RandomIteration.spectralWalk
+      (fun _ : ℝ => φ) ((k : ℤ) + 1) v|) ^ α = ENNReal.ofReal (1 - φ ^ α) := by
+    intro v
+    simp_rw [← hcast, hpow, h0, h1]
+    rw [ENNReal.one_rpow, ENNReal.ofReal_rpow_of_nonneg hφ0.le hα.le, ENNReal.ofReal_sub _
+      (Real.rpow_nonneg hφ0.le _), ENNReal.ofReal_one]
+  simp_rw [this]
+  simp
+
+include hV hind hiid hlaw in
+/-- **`θ = ϑ` for ARMAX**: the block extremal index of the stationary ARMAX chain equals the
+candidate extremal index `ϑ = 1 - φ^α` of its tail chain `Y_t = Y_0 φ^t`. -/
+theorem hasExtremalIndex_candidate (Q : Measure (ℕ → ℝ)) [IsProbabilityMeasure Q] :
+    HasExtremalIndex (RandomIteration.chain (step φ) X₀ V) P
+      (candidateExtremalIndex Q (RandomIteration.spectralWalk fun _ : ℝ => φ) α).toReal := by
+  rw [candidateExtremalIndex_tailChain hφ0 hφ1 hα Q, ENNReal.toReal_ofReal
+    (by linarith [Real.rpow_lt_one hφ0.le hφ1 hα])]
+  exact hasExtremalIndex hφ0 hφ1 hα hX₀ hV hind hiid hlaw hinv
+
 end ARMAX
 
 end ExtremeValueTheory
