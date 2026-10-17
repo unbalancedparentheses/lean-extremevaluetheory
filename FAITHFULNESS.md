@@ -10,7 +10,8 @@ converse (`PeaksOverThreshold/Converse.lean`), the asymmetric GCLT
 (`StableLaws/GeneralizedCLT.lean`, `Constants.lean`), and random sums / ruin
 (`HeavyTails/RandomSums.lean`, `Ruin.lean`, `StretchedExponential.lean`), Karamata's converse
 and the Fréchet/Weibull von Mises conditions, the Pickands and moment estimators
-(`Statistics/Pickands.lean`, `Moment.lean`), extreme quantiles (`Statistics/ExtremeQuantile.lean`), and stationary sequences and the extremal index
+(`Statistics/Pickands.lean`, `Moment.lean`), extreme quantiles (`Statistics/ExtremeQuantile.lean`), upper order statistics and records
+(`Statistics/UpperOrderStatistics.lean`, `Records.lean`), and stationary sequences and the extremal index
 (`Dependence/`, `ForMathlib/Probability/Process/Stationary.lean`). No `sorry`/`axiom`/`admit` found in
 `ExtremeValueTheory/`.
 
@@ -112,6 +113,9 @@ Processes*.
 | † `tendstoInMeasure_hill` | dHF Thm 3.2.2; Mason (1982) | iid, `F̄ ∈ RV_{−α}`, `α > 0`, `k → ∞`, `k/n → 0` ⇒ `γ̂ →_P 1/α` | Hypotheses: `iIndepFun X P`, `IdentDistrib (X i) (X 0)`, measurability, RV of `x ↦ P(X₀ > x).toReal` (finite measure, so `toReal` is safe), `k → ∞`, `k/n → 0`. The conclusion is `TendstoInMeasure` to the constant `1/α`. Not vacuous: `tendstoInMeasure_hill_pareto` instantiates RV. No positivity assumption on `X`, which matches dHF (junk logs occur only on an event of vanishing probability). Only the consistency direction; Mason's converse is not claimed. | FAITHFUL |
 | ‡ `pickands` (def), `tendstoInMeasure_pickands` | EKM Thm 6.4.1, dHF §3.3 | `F ∈ MDA(H_ξ)`, `k → ∞`, `k/n → 0` ⇒ `ξ̂ →_P ξ` | `pickands x k` uses `orderStat x k, 2k, 4k`, which are `X_{n−k,n}, X_{n−2k,n}, X_{n−4k,n}`. The hypotheses are iid (`iIndepFun`, `IdentDistrib`) with `F` the c.d.f. of `X 0` and `IsInMDAGEV ξ`. All `ξ ∈ ℝ`. Instantiated on the exponential law (`ξ = 0`). Junk values (`log` of a nonpositive ratio, order statistics with `4k ≥ n`) occur only on events of vanishing probability. | FAITHFUL |
 | ‡ `momentEstimator`, `tendstoInMeasure_momentEstimator_of_isInMDAGEV` | dHF §3.5 (Dekkers–Einmahl–de Haan) | `γ̂ = M₁ + 1 − ½(1 − M₁²/M₂)⁻¹ →_P ξ` for all `ξ` | Same formula. Only `ξ > 0` (regularly varying tails) is proved; `ξ ≤ 0` needs extended regular variation of `log U`. | DIFFERS (`ξ > 0` only); correct |
+| ‡ `tendsto_measureReal_orderStat_le`, `tendsto_measureReal_affine_orderStat_le` | EKM Thm 4.2.3, LLR Thm 2.2.2 | `n F̄(uₙ) → τ` ⇒ `P(X_{(k)} ≤ uₙ) → e^{−τ} Σ_{j<k} τ^j/j!` | Same (`orderStat x j` is `X_{(j+1)}`). The affine version needs `H(x) ∈ (0,1)`, i.e. points inside the support. | FAITHFUL |
+| ‡ `tendsto_measureReal_orderStat_zero_le_and_orderStat_one_le` | EKM §4.2 | joint limit of the two largest | Same, two levels only; `k > 2` levels not covered. | FAITHFUL (two levels) |
+| ‡ `measureReal_isRecord`, `tendstoInMeasure_recordCount_div_log` | EKM §5.4, Rényi | iid, continuous `F`: `P(I_k = 1) = 1/k`, `N_n/log n →_P 1` | "Continuous" is stated as atomless (`P(X₀ = x) = 0`). Indices start at `0`, so the probability for index `k` is `1/(k+1)`. Only pairwise independence of record indicators is proved, which is enough for the law of large numbers. | FAITHFUL |
 | ‡ `weissman`, `tendstoInMeasure_weissman_div*` | dHF Thm 4.3.1, Weissman (1978) | `x̂_p / x_p →_P 1` | `tailQuantile` is `inf{x : F̄(x) ≤ p}`. Intermediate levels (`d_n ∈ [a,b]`): unconditional. Far tail: assumes `√k(γ̂ − γ) = O_P(1)`, `log d_n/√k → 0`, and the bias condition `x_{pₙ}/(x_{k/n} d_n^{1/α}) → 1` as hypotheses (dHF derive the bias condition from second-order RV; here it is proved only for exact Pareto tails). | DIFFERS (bias and rate assumed in the far-tail case); correct |
 | ‡ `tailProbEstimator`, `tendstoInMeasure_tailProbEstimator_div*` | dHF §4.4 | `p̂(yₙ)/F̄(yₙ) →_P 1` | Same structure as the Weissman row. | DIFFERS (same caveat); correct |
 | ‡ `returnLevel`, `gevFun_returnLevel` | Coles §3.1.3 | `H_ξ(z_m) = 1 − 1/m` | Same, for `m > 1`. | FAITHFUL |

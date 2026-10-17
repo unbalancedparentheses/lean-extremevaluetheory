@@ -409,3 +409,58 @@ follow de Haan and Ferreira, \emph{Extreme Value Theory: An Introduction}, Sprin
   The $m$-block return level of $H_\xi$ is $z_m = ((-\log(1 - 1/m))^{-\xi} - 1)/\xi$
   ($-\log(-\log(1 - 1/m))$ for $\xi = 0$), the level with $H_\xi(z_m) = 1 - 1/m$ [Coles, \S3.1.3].
 \end{definition}
+
+\section{Upper order statistics and records}
+
+\begin{theorem}[Limit law of the $k$-th largest]
+  \label{thm:kth-largest}
+  \uses{def:order-stat}
+  \lean{ExtremeValueTheory.measureReal_orderStat_le_eq_sum, ExtremeValueTheory.tendsto_measureReal_orderStat_le,
+    ExtremeValueTheory.tendsto_measureReal_affine_orderStat_le,
+    ExtremeValueTheory.exists_tendsto_measureReal_affine_orderStat_le_of_isInMDAGumbel}
+  \leanok
+  For iid samples with $n(1 - F(u_n)) \to \tau \in [0, \infty)$,
+  $\PR[X_{(k)} \le u_n] \to e^{-\tau} \sum_{j < k} \tau^j/j!$. Consequently, if
+  $F^n(a_n x + b_n) \to H(x) \in (0, 1)$, then
+  $\PR[(X_{(k)} - b_n)/a_n \le x] \to H(x) \sum_{j<k} (-\log H(x))^j/j!$
+  [EKM, Theorem~4.2.3], [LLR, Theorem~2.2.2].
+\end{theorem}
+\begin{proof}
+  \leanok
+  $\{X_{(k)} \le u_n\}$ is the event that fewer than $k$ observations exceed $u_n$; the
+  exceedance count is binomial with mean $\to \tau$, hence asymptotically Poisson.
+\end{proof}
+
+\begin{theorem}[Joint law of the two largest]
+  \label{thm:two-largest}
+  \uses{thm:kth-largest}
+  \lean{ExtremeValueTheory.measureReal_orderStat_zero_le_and_orderStat_one_le,
+    ExtremeValueTheory.tendsto_measureReal_orderStat_zero_le_and_orderStat_one_le,
+    ExtremeValueTheory.tendsto_measureReal_affine_orderStat_zero_one}
+  \leanok
+  If $v_n \le u_n$, $n(1 - F(u_n)) \to \tau_1$ and $n(1 - F(v_n)) \to \tau_2$, then
+  $\PR[X_{(1)} \le u_n, X_{(2)} \le v_n] \to e^{-\tau_2}(1 + \tau_2 - \tau_1)$ [EKM, \S4.2].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Exactly: $\PR[X_{(1)} \le u, X_{(2)} \le v] = F(v)^n + n (F(u) - F(v)) F(v)^{n-1}$.
+\end{proof}
+
+\begin{theorem}[Records]
+  \label{thm:records}
+  \lean{ExtremeValueTheory.IsRecord, ExtremeValueTheory.recordCount, ExtremeValueTheory.measureReal_isRecord, ExtremeValueTheory.measureReal_isRecord_and_isRecord,
+    ExtremeValueTheory.integral_recordCount, ExtremeValueTheory.integral_sq_recordCount_sub_le,
+    ExtremeValueTheory.tendstoInMeasure_recordCount_div_log}
+  \leanok
+  For an iid sequence with atomless marginal, the $k$-th observation (counting from $1$) is a record
+  with probability $1/k$, record indicators are pairwise independent, the number of records
+  $N_n$ among the first $n$ observations satisfies $\E N_n = H_n = \sum_{k \le n} 1/k$ and
+  $\Var N_n \le H_n$, and $N_n / \log n \to 1$ in probability [EKM, \S5.4], [Resnick, \S4.1].
+  Full mutual independence of the indicators (R\'enyi) is not formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  By exchangeability, the maximum of the first $k$ observations is equally likely to be any of
+  them, and there are no ties. A second exchangeability argument gives pairwise independence;
+  Chebyshev's inequality concludes.
+\end{proof}
