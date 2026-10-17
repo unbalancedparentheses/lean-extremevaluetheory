@@ -263,6 +263,44 @@ lemma map_count_poissonSampleMeasure {n : ℕ} {A : Fin n → Set E} (hA : ∀ i
   push_cast
   ring
 
+/-- **Existence of Poisson random measures with finite intensity.** If `K` is Poisson
+distributed with mean `c` and `Z` is an independent i.i.d. sequence with law `μ`, then
+`∑_{k < K} δ_{Z k}` is a Poisson random measure with intensity `c • μ`. -/
+theorem isPoissonRandomMeasure_sumDiracRange (c : ℝ≥0) (μ : Measure E) [IsProbabilityMeasure μ] :
+    IsPoissonRandomMeasure (fun ω : ℕ × (ℕ → E) ↦ sumDiracRange ω.1 ω.2) (c • μ)
+      (poissonSampleMeasure c μ) where
+  measurable := measurable_sumDiracRange
+  map_eq_pi := by
+    intro n A hA _ hd
+    have hY : Measurable fun (ω : ℕ × (ℕ → E)) (i : Fin n) ↦
+        ∑ k ∈ range ω.1, (A i).indicator (1 : E → ℝ) (ω.2 k) := by
+      refine Measurable.of_eval fun i ↦ ?_
+      exact measurable_of_measurable_nat_prod
+        (F := fun n z ↦ ∑ k ∈ range n, (A i).indicator (1 : E → ℝ) (z k)) fun m ↦
+          Finset.measurable_sum _ fun k _ ↦
+            (measurable_one.indicator (hA i)).comp (measurable_pi_apply k)
+    have hcount : (fun (ω : ℕ × (ℕ → E)) (i : Fin n) ↦ sumDiracRange ω.1 ω.2 (A i)) =
+        (fun (y : Fin n → ℝ) i ↦ ENNReal.ofReal (y i)) ∘
+          fun ω i ↦ ∑ k ∈ range ω.1, (A i).indicator (1 : E → ℝ) (ω.2 k) := by
+      ext ω i
+      simp only [Function.comp_apply, sumDiracRange_apply _ _ (hA i)]
+      rw [ENNReal.ofReal_sum_of_nonneg (f := fun k ↦ (A i).indicator (1 : E → ℝ) (ω.2 k))
+        fun k _ ↦ Set.indicator_nonneg (fun _ _ ↦ zero_le_one) _]
+      refine Finset.sum_congr rfl fun k _ ↦ ?_
+      by_cases hk : ω.2 k ∈ A i <;> simp [hk]
+    rw [hcount, ← Measure.map_map (by fun_prop) hY, map_count_poissonSampleMeasure hA hd,
+      Measure.pi_map_pi (fun i ↦ by fun_prop)]
+    congr with i : 1
+    rw [Measure.map_map (by fun_prop) (by fun_prop)]
+    have : ((c • μ) (A i)).toNNReal = (c * μ.real (A i)).toNNReal := by
+      rw [Measure.smul_apply, ENNReal.smul_def, smul_eq_mul, ENNReal.toNNReal_mul,
+        Real.toNNReal_mul c.coe_nonneg]
+      simp [Measure.real]
+    rw [this]
+    congr 1
+    funext m
+    simp
+
 end Construction
 
 end ProbabilityTheory
