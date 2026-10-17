@@ -683,6 +683,150 @@ theorem tendsto_nh (hsymm : μ.map (fun x => -x) = μ) {ν : ProbabilityMeasure 
 
 end FromWeakConvergence
 
+section Kernel
+
+/-- `∫₀^∞ e^{-s} cos (s y) ds = 1 / (1 + y²)`. -/
+theorem integral_exp_neg_mul_cos (y : ℝ) :
+    ∫ s in Ioi (0 : ℝ), Real.exp (-s) * cos (s * y) = 1 / (1 + y ^ 2) := by
+  have ha : (-1 + y * Complex.I : ℂ).re < 0 := by simp
+  have h := integral_exp_mul_complex_Ioi ha 0
+  have h2 := integral_re (integrableOn_exp_mul_complex_Ioi ha 0)
+  simp only [RCLike.re_to_complex] at h2
+  have hval : (-Complex.exp ((-1 + y * Complex.I) * (0 : ℝ)) / (-1 + y * Complex.I)).re =
+      1 / (1 + y ^ 2) := by
+    have hne : (-1 + y * Complex.I : ℂ) ≠ 0 := by
+      intro h; have := congrArg Complex.re h; simp at this
+    have h1 : (1 + y ^ 2 : ℝ) ≠ 0 := by positivity
+    have e : -Complex.exp ((-1 + y * Complex.I) * (0 : ℝ)) / (-1 + y * Complex.I) =
+        ((1 / (1 + y ^ 2) : ℝ) : ℂ) + ((y / (1 + y ^ 2) : ℝ) : ℂ) * Complex.I := by
+      rw [Complex.ofReal_zero, mul_zero, Complex.exp_zero, div_eq_iff hne]
+      have h1' : (1 + (y : ℂ) ^ 2) ≠ 0 := by exact_mod_cast h1
+      push_cast
+      field_simp
+      linear_combination (-(y : ℂ) ^ 2) * Complex.I_sq
+    rw [e]
+    simp only [Complex.add_re, Complex.ofReal_re, Complex.mul_re, Complex.I_re, Complex.I_im,
+      Complex.ofReal_im, mul_zero, zero_mul, sub_zero, add_zero]
+  rw [← hval, ← h, ← h2]
+  refine setIntegral_congr_fun measurableSet_Ioi fun s _ => ?_
+  simp only [Complex.exp_re, Complex.mul_re, Complex.add_re, Complex.neg_re, Complex.one_re,
+    Complex.ofReal_re, Complex.mul_im, Complex.I_re, Complex.I_im, Complex.ofReal_im,
+    Complex.add_im, Complex.neg_im, Complex.one_im]
+  ring_nf
+
+theorem integrableOn_exp_neg : IntegrableOn (fun s : ℝ => Real.exp (-s)) (Ioi 0) := by
+  simpa using integrableOn_exp_mul_Ioi (a := -1) (by norm_num) 0
+
+theorem integral_exp_neg : ∫ s in Ioi (0 : ℝ), Real.exp (-s) = 1 := by
+  simpa using integral_exp_mul_Ioi (a := -1) (by norm_num) 0
+
+theorem integrableOn_exp_neg_mul_sq : IntegrableOn (fun s : ℝ => Real.exp (-s) * s ^ 2) (Ioi 0) := by
+  refine (Real.GammaIntegral_convergent (s := 3) (by norm_num)).congr_fun (fun s hs => ?_)
+    measurableSet_Ioi
+  simp only
+  rw [show (3 : ℝ) - 1 = (2 : ℕ) by norm_num, Real.rpow_natCast]
+
+theorem integrableOn_exp_neg_mul_add (A D : ℝ) :
+    IntegrableOn (fun s : ℝ => Real.exp (-s) * (A + D * s ^ 2)) (Ioi 0) := by
+  have := (integrableOn_exp_neg.const_mul A).add (integrableOn_exp_neg_mul_sq.const_mul D)
+  refine IntegrableOn.congr_fun this (fun s _ => ?_) measurableSet_Ioi
+  simp only [Pi.add_apply]; ring
+
+/-- The density `y² / (1 + y²)` of the measures `Λₙ`. -/
+noncomputable def kDensity (y : ℝ) : ℝ≥0 := ⟨y ^ 2 / (1 + y ^ 2), by positivity⟩
+
+theorem kDensity_coe (y : ℝ) : (kDensity y : ℝ) = y ^ 2 / (1 + y ^ 2) := rfl
+
+theorem measurable_kDensity : Measurable kDensity := by
+  refine Measurable.subtype_mk ?_
+  fun_prop
+
+theorem kDensity_le_one (y : ℝ) : (kDensity y : ℝ) ≤ 1 := by
+  rw [kDensity_coe, div_le_one (by positivity)]; linarith
+
+/-- `Λ = (y² / (1 + y²)) ρ(dy)`. -/
+noncomputable def kMeasure (ρ : Measure ℝ) : Measure ℝ :=
+  ρ.withDensity fun y => (kDensity y : ℝ≥0∞)
+
+instance (ρ : Measure ℝ) [IsFiniteMeasure ρ] : IsFiniteMeasure (kMeasure ρ) := by
+  refine isFiniteMeasure_withDensity ?_
+  refine ne_top_of_le_ne_top (measure_ne_top ρ univ) ?_
+  calc ∫⁻ y, (kDensity y : ℝ≥0∞) ∂ρ ≤ ∫⁻ _y, 1 ∂ρ := lintegral_mono fun y =>
+        ENNReal.coe_le_one_iff.2 (by exact_mod_cast kDensity_le_one y)
+    _ = ρ univ := by simp
+
+theorem integral_kMeasure {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] (ρ : Measure ℝ)
+    (g : ℝ → E) : ∫ y, g y ∂(kMeasure ρ) = ∫ y, (y ^ 2 / (1 + y ^ 2)) • g y ∂ρ := by
+  rw [kMeasure, integral_withDensity_eq_integral_smul measurable_kDensity]
+  rfl
+
+theorem cos_mul_exp_eq (s t y : ℝ) :
+    (cos (s * y) : ℂ) * Complex.exp (t * y * Complex.I) =
+      (Complex.exp ((t + s) * y * Complex.I) + Complex.exp ((t - s) * y * Complex.I)) / 2 := by
+  rw [Complex.ofReal_cos, Complex.cos, add_div, add_div, add_mul, div_mul_eq_mul_div,
+    div_mul_eq_mul_div, ← Complex.exp_add, ← Complex.exp_add]
+  congr 3 <;> push_cast <;> ring
+
+/-- **Characteristic function of `Λ`.** For a finite measure `ρ`,
+`φ_Λ(t) = φ_ρ(t) - ∫₀^∞ e^{-s} (φ_ρ(t + s) + φ_ρ(t - s)) / 2 ds`. -/
+theorem charFun_kMeasure (ρ : Measure ℝ) [IsFiniteMeasure ρ] (t : ℝ) :
+    charFun (kMeasure ρ) t = charFun ρ t -
+      ∫ s in Ioi (0 : ℝ), (Real.exp (-s) : ℂ) * ((charFun ρ (t + s) + charFun ρ (t - s)) / 2) := by
+  have hexp : ∀ u : ℝ, Integrable (fun y : ℝ => Complex.exp (u * y * Complex.I)) ρ := fun u =>
+    Integrable.of_bound (by fun_prop) 1 (ae_of_all _ fun y => by
+      rw [← Complex.ofReal_mul, Complex.norm_exp_ofReal_mul_I])
+  -- the kernel identity
+  have hk : ∀ y : ℝ, ((y ^ 2 / (1 + y ^ 2) : ℝ) : ℂ) =
+      1 - ∫ s in Ioi (0 : ℝ), ((Real.exp (-s) * cos (s * y) : ℝ) : ℂ) := by
+    intro y
+    rw [integral_complex_ofReal, integral_exp_neg_mul_cos]
+    have : (1 + y ^ 2 : ℝ) ≠ 0 := by positivity
+    have h' : (1 + (y : ℂ) ^ 2) ≠ 0 := by exact_mod_cast this
+    push_cast
+    field_simp
+    ring
+  -- Fubini
+  have hint : Integrable (Function.uncurry fun (s y : ℝ) =>
+      ((Real.exp (-s) * cos (s * y) : ℝ) : ℂ) * Complex.exp (t * y * Complex.I))
+      ((volume.restrict (Ioi (0 : ℝ))).prod ρ) := by
+    have hb : Integrable (fun p : ℝ × ℝ => Real.exp (-p.1) * (1 : ℝ))
+        ((volume.restrict (Ioi (0 : ℝ))).prod ρ) :=
+      integrableOn_exp_neg.mul_prod (integrable_const 1)
+    refine hb.mono' (Continuous.aestronglyMeasurable (by fun_prop)) (ae_of_all _ fun p => ?_)
+    obtain ⟨s, y⟩ := p
+    simp only [Function.uncurry_apply_pair, norm_mul, ← Complex.ofReal_mul,
+      Complex.norm_exp_ofReal_mul_I, mul_one, Complex.norm_real, Real.norm_eq_abs]
+    rw [abs_of_pos (Real.exp_pos _)]
+    exact mul_le_of_le_one_right (Real.exp_pos _).le (abs_cos_le_one _)
+  have hswap := integral_integral_swap hint
+  have e1 : ∀ y : ℝ, (y ^ 2 / (1 + y ^ 2)) • Complex.exp (t * y * Complex.I) =
+      Complex.exp (t * y * Complex.I) - ∫ s in Ioi (0 : ℝ),
+        ((Real.exp (-s) * cos (s * y) : ℝ) : ℂ) * Complex.exp (t * y * Complex.I) := by
+    intro y
+    rw [Complex.real_smul, hk, sub_mul, one_mul, integral_mul_const]
+  rw [charFun_apply_real, integral_kMeasure]
+  simp_rw [e1]
+  rw [integral_sub (hexp t) ?_, ← hswap]
+  swap
+  · exact hint.integral_prod_right
+  congr 1
+  · rw [charFun_apply_real]
+  refine setIntegral_congr_fun (measurableSet_Ioi (a := (0 : ℝ))) fun s _ => ?_
+  have e2 : ∀ y : ℝ, ((Real.exp (-s) * cos (s * y) : ℝ) : ℂ) * Complex.exp (t * y * Complex.I) =
+      (Real.exp (-s) : ℂ) * ((Complex.exp ((t + s) * y * Complex.I) +
+        Complex.exp ((t - s) * y * Complex.I)) / 2) := fun y => by
+    rw [Complex.ofReal_mul, mul_assoc, cos_mul_exp_eq]
+  simp only [e2]
+  have h1 := hexp (t + s)
+  have h2 := hexp (t - s)
+  push_cast at h1 h2
+  rw [integral_const_mul, integral_div, integral_add h1 h2, charFun_apply_real,
+    charFun_apply_real]
+  push_cast
+  rfl
+
+end Kernel
+
 end GCLTConverse
 
 end ExtremeValueTheory
