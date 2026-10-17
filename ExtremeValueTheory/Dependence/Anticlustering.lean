@@ -828,4 +828,214 @@ theorem HasSpectralTailProcess.tendsto_partialMax_abs_of_antiClustering (hα : 0
 
 end ExtremalIndex
 
+/-! ### `θ ≤ ϑ` without anticlustering -/
+
+section Inequality
+
+variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {P : Measure Ω} [IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ}
+  {Q : Measure Ω'} [IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ}
+
+/-- **Upper bound for the cluster ratio without anticlustering**: for a stationary series with
+spectral tail process `Θ`, `uₙ → ∞` and `rₙ → ∞`, every limit `L` of
+`P(max_{0 ≤ t < rₙ} |X_t| > uₙ) / (rₙ P(|X_0| > uₙ))` satisfies `L ≤ ϑ`.
+
+The proof is the upper half of the squeeze in `tendsto_blockRatio`: the conditional
+probabilities `q_k = P(max_{0 < t ≤ k} |X_t| ≤ uₙ | |X_0| > uₙ)` decrease in `k`, so the average
+of `q_0, …, q_{rₙ - 1}` is at most `m / rₙ + q_m`, whose limit is `ϑ_m ↓ ϑ`. Anticlustering is
+only needed for the matching lower bound. -/
+theorem HasSpectralTailProcess.le_candidateExtremalIndex_of_tendsto_blockRatio (hα : 0 < α)
+    (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
+    (hstat : HasShiftInvariantWindows P X) (h : HasSpectralTailProcess P X α Q Θ)
+    {u : ℕ → ℝ} (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop) {L : ℝ}
+    (hL : Tendsto (fun n => P.real {ω | ∃ t ∈ Finset.Ico (0 : ℤ) (r n), u n < |X t ω|} /
+        (r n * P.real {ω | u n < |X 0 ω|})) atTop (𝓝 L)) :
+    L ≤ (candidateExtremalIndex Q Θ α).toReal := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  set π := (paretoMeasure 1 α).prod Q
+  have hs : ∀ x : ℝ, MeasurableSet {ω | x < |X 0 ω|} := fun x =>
+    measurableSet_lt measurable_const (continuous_abs.measurable.comp (hX 0))
+  set S : ℕ → Set Ω := fun n => {ω | u n < |X 0 ω|}
+  set D : ℕ → ℕ → Set Ω := fun n k =>
+    {ω | u n < |X 0 ω| ∧ ∀ t ∈ Finset.Ioc (0 : ℤ) k, |X t ω| ≤ u n}
+  set q : ℕ → ℕ → ℝ := fun n k => P.real (D n k) / P.real (S n)
+  set θk : ℕ → ℝ := fun k => π.real {p | ∀ t ∈ Finset.Ioc (0 : ℤ) k, |p.1 * Θ t p.2| ≤ 1}
+  have hq1 : ∀ n k, q n k ≤ 1 := fun n k =>
+    div_le_one_of_le₀ (measureReal_mono fun ω hω => hω.1) measureReal_nonneg
+  have hqanti : ∀ n m k, m ≤ k → q n k ≤ q n m := fun n m k hmk =>
+    div_le_div_of_nonneg_right (measureReal_mono fun ω hω =>
+      ⟨hω.1, fun t ht => hω.2 t (Finset.Ioc_subset_Ioc le_rfl (by exact_mod_cast hmk) ht)⟩)
+      measureReal_nonneg
+  have hratio : ∀ n, P.real {ω | ∃ t ∈ Finset.Ico (0 : ℤ) (r n), u n < |X t ω|} /
+      (r n * P.real {ω | u n < |X 0 ω|}) = (∑ k ∈ Finset.range (r n), q n k) / r n := by
+    intro n
+    rw [hstat.measureReal_exists_lt_eq_sum hX, div_mul_eq_div_div_swap, Finset.sum_div]
+  have hqlim : ∀ k, Tendsto (fun n => q n k) atTop (𝓝 (θk k)) := by
+    intro k
+    have key := (h.tendsto_cond_forall_le hα hX hΘm (Finset.Ioc (0 : ℤ) k)).comp hu
+    have key' := (ENNReal.tendsto_toReal (measure_ne_top π _)).comp key
+    refine key'.congr fun n => ?_
+    simp only [Function.comp_apply]
+    rw [cond_toReal_eq (hs _)]
+    rfl
+  have hθlim := tendsto_measureReal_forall_le_candidateExtremalIndex hα hΘm
+    (h.ae_abs_eq_one hΘm (hX 0))
+  have hm : ∀ m : ℕ, L ≤ θk m := by
+    intro m
+    have hmr : Tendsto (fun n => (m : ℝ) / r n) atTop (𝓝 0) :=
+      tendsto_const_nhds.div_atTop (tendsto_natCast_atTop_atTop.comp hr)
+    have := hmr.add (hqlim m)
+    rw [zero_add] at this
+    refine le_of_tendsto_of_tendsto hL this ?_
+    filter_upwards [hr.eventually_ge_atTop (m + 1)] with n hn
+    have hr0 : (0 : ℝ) < r n := by exact_mod_cast (show 0 < r n by omega)
+    rw [hratio, div_le_iff₀ hr0]
+    rw [← Finset.sum_range_add_sum_Ico _ (show m ≤ r n by omega)]
+    have h1 : ∑ k ∈ Finset.range m, q n k ≤ m := by
+      calc _ ≤ ∑ _k ∈ Finset.range m, (1 : ℝ) := Finset.sum_le_sum fun k _ => hq1 n k
+        _ = m := by simp
+    have h2 : ∑ k ∈ Finset.Ico m (r n), q n k ≤ r n * q n m := by
+      calc _ ≤ ∑ _k ∈ Finset.Ico m (r n), q n m := Finset.sum_le_sum fun k hk =>
+            hqanti n m k (Finset.mem_Ico.1 hk).1
+        _ = (r n - m : ℕ) * q n m := by simp
+        _ ≤ r n * q n m := by
+            gcongr
+            exact_mod_cast Nat.sub_le _ _
+    calc _ ≤ (m : ℝ) + r n * q n m := add_le_add h1 h2
+      _ = (m / r n + q n m) * r n := by field_simp
+  exact ge_of_tendsto hθlim (Eventually.of_forall hm)
+
+/-- **The extremal index is at most the candidate extremal index** (`θ ≤ ϑ`, cf. [KS20, §7.5]).
+Let `(X_t)` be stationary with spectral tail process `Θ`, `n P(|X_0| > uₙ) → τ > 0`, `rₙ → ∞`,
+`rₙ / n → 0`, and assume the block condition `A(uₙ)` for `|X|`. If
+`P(max_{0 ≤ t < n} |X_t| ≤ uₙ) → exp (-θ τ)`, then `θ ≤ ϑ`.
+
+Hypotheses actually used: stationarity, the spectral tail process, `A(uₙ)` along a *single*
+level sequence with `τ > 0`, `rₙ → ∞`, `rₙ / n → 0`. No anticlustering. (The hypotheses of
+[KS20, Lemma 7.5.4] could not be checked against the text; this is the version proved here.) -/
+theorem HasSpectralTailProcess.le_candidateExtremalIndex_of_tendsto (hα : 0 < α)
+    (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
+    (hstat : HasShiftInvariantWindows P X) (h : HasSpectralTailProcess P X α Q Θ)
+    {u : ℕ → ℝ} {τ : ℝ} (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < |X 0 ω|}) atTop (𝓝 τ))
+    (hτ0 : 0 < τ) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hA : ConditionA (fun k : ℕ => |X k|) P u r) {θ : ℝ}
+    (hθ : Tendsto (fun n => P.real {ω | partialMax (fun k : ℕ => |X k|) n ω ≤ u n}) atTop
+      (𝓝 (Real.exp (-(θ * τ))))) :
+    θ ≤ (candidateExtremalIndex Q Θ α).toReal := by
+  have hu := h.tendsto_atTop_of_tendsto_mul hτ
+  set p : ℕ → ℝ := fun n => P.real {ω | u n < |X 0 ω|}
+  set b : ℕ → ℝ := fun n => P.real {ω | ∃ t ∈ Finset.Ico (0 : ℤ) (r n), u n < |X t ω|}
+  set k : ℕ → ℕ := fun n => n / r n
+  have hp0 : ∀ n, 0 < p n := fun n => h.measureReal_lt_abs_pos _
+  have hr0 : ∀ᶠ n in atTop, 0 < r n := hr.eventually_gt_atTop 0
+  -- `bₙ ≤ rₙ pₙ → 0`
+  have hbr : ∀ n, b n ≤ r n * p n := by
+    intro n
+    simp only [b, hstat.measureReal_exists_lt_eq_sum hX]
+    calc _ ≤ ∑ _k ∈ Finset.range (r n), p n :=
+          Finset.sum_le_sum fun k _ => measureReal_mono fun ω hω => hω.1
+      _ = r n * p n := by simp
+  have hrp : Tendsto (fun n => (r n : ℝ) * p n) atTop (𝓝 0) := by
+    have := hrn.mul hτ
+    rw [zero_mul] at this
+    refine this.congr' ?_
+    filter_upwards [eventually_gt_atTop 0] with n hn
+    have : (n : ℝ) ≠ 0 := by exact_mod_cast hn.ne'
+    dsimp only [p]
+    field_simp
+  have hb : Tendsto b atTop (𝓝 0) :=
+    squeeze_zero (fun n => measureReal_nonneg) hbr hrp
+  -- the block maximum
+  have hpart : ∀ n, 0 < r n →
+      P.real {ω | partialMax (fun k : ℕ => |X k|) (r n) ω ≤ u n} = 1 - b n := by
+    intro n hn
+    have hmeas : MeasurableSet {ω | ∃ t ∈ Finset.Ico (0 : ℤ) (r n), u n < |X t ω|} := by
+      simp only [ofPred_exists, ofPred_and]
+      exact MeasurableSet.iUnion fun t => (MeasurableSet.const _).inter
+        (measurableSet_lt measurable_const (continuous_abs.measurable.comp (hX t)))
+    rw [← probReal_compl_eq_one_sub hmeas]
+    congr 1
+    ext ω
+    rw [mem_ofPred_eq, partialMax_le_iff hn, mem_compl_iff, mem_ofPred_eq]
+    constructor
+    · rintro hle ⟨t, ht, hlt⟩
+      rw [Finset.mem_Ico] at ht
+      obtain ⟨k, rfl⟩ : ∃ k : ℕ, t = k := ⟨t.toNat, by omega⟩
+      exact absurd (hle k (by exact_mod_cast ht.2)) (not_le.2 hlt)
+    · intro hne k hk
+      by_contra hcon
+      exact hne ⟨k, Finset.mem_Ico.2 ⟨by positivity, by exact_mod_cast hk⟩, not_le.1 hcon⟩
+  -- `(1 - bₙ) ^ kₙ → exp (-θ τ)`, hence `kₙ bₙ → θ τ`
+  have hpow : Tendsto (fun n => (1 - b n) ^ k n) atTop (𝓝 (Real.exp (-(θ * τ)))) := by
+    have := hθ.sub hA
+    rw [sub_zero] at this
+    refine this.congr' ?_
+    filter_upwards [hr0] with n hn
+    rw [hpart n hn]
+    ring
+  have hlog : Tendsto (fun n => (k n : ℝ) * Real.log (1 - b n)) atTop (𝓝 (-(θ * τ))) := by
+    have := ((Real.continuousAt_log (Real.exp_pos _).ne').tendsto.comp hpow)
+    rw [Real.log_exp] at this
+    refine this.congr' ?_
+    filter_upwards [hb.eventually (gt_mem_nhds one_pos)] with n hn
+    simp only [Function.comp_apply, Real.log_pow]
+  have hkb : Tendsto (fun n => (k n : ℝ) * b n) atTop (𝓝 (θ * τ)) := by
+    have hlow : Tendsto (fun n => -((1 - b n) * ((k n : ℝ) * Real.log (1 - b n)))) atTop
+        (𝓝 (θ * τ)) := by
+      have := ((hb.const_sub 1).mul hlog).neg
+      rwa [sub_zero, one_mul, neg_neg] at this
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' hlow (by simpa using hlog.neg) ?_ ?_
+    · filter_upwards [hb.eventually (gt_mem_nhds one_pos)] with n hn
+      have hpos : 0 < 1 - b n := by linarith
+      have h1 := Real.one_sub_inv_le_log_of_pos hpos
+      have h2 : -b n ≤ (1 - b n) * Real.log (1 - b n) := by
+        have := mul_le_mul_of_nonneg_left h1 hpos.le
+        rwa [mul_sub, mul_one, mul_inv_cancel₀ hpos.ne', sub_sub_cancel_left] at this
+      have h3 := mul_le_mul_of_nonneg_left h2 (Nat.cast_nonneg (α := ℝ) (k n))
+      linarith
+    · filter_upwards [hb.eventually (gt_mem_nhds one_pos)] with n hn
+      have hpos : 0 < 1 - b n := by linarith
+      have h1 := Real.log_le_sub_one_of_pos hpos
+      have h3 := mul_le_mul_of_nonneg_left h1 (Nat.cast_nonneg (α := ℝ) (k n))
+      linarith
+  -- the cluster ratio converges to `θ`
+  have hkr := tendsto_div_mul_div_self hr0 hrn
+  have hratio : Tendsto (fun n => b n / (r n * p n)) atTop (𝓝 θ) := by
+    have := hkb.div (hkr.mul hτ) (by rw [one_mul]; exact hτ0.ne')
+    rw [one_mul, mul_div_cancel_right₀ _ hτ0.ne'] at this
+    refine this.congr' ?_
+    filter_upwards [hr0, eventually_gt_atTop 0,
+      hrn.eventually (gt_mem_nhds one_pos)] with n hrpos hn hrn1
+    have hrn' : r n ≤ n := by
+      have : (r n : ℝ) < n := by
+        rwa [div_lt_one (by exact_mod_cast hn)] at hrn1
+      exact_mod_cast this.le
+    have hk : (0 : ℝ) < k n := by exact_mod_cast Nat.div_pos hrn' hrpos
+    have : (r n : ℝ) ≠ 0 := by exact_mod_cast hrpos.ne'
+    have : (n : ℝ) ≠ 0 := by exact_mod_cast hn.ne'
+    have : P.real {ω | u n < |X 0 ω|} ≠ 0 := (hp0 n).ne'
+    have hk' : ((n / r n : ℕ) : ℝ) ≠ 0 := hk.ne'
+    simp only [Pi.div_apply]
+    dsimp only [b, p, k]
+    field_simp
+  exact h.le_candidateExtremalIndex_of_tendsto_blockRatio hα hX hΘm hstat hu hr hratio
+
+/-- **`θ ≤ ϑ` for the block extremal index**: if `(|X_n|)` has extremal index `θ` and the block
+condition `A(uₙ)` holds along one level sequence with `n P(|X_0| > uₙ) → τ > 0` (and `rₙ → ∞`,
+`rₙ / n → 0`), then `θ ≤ ϑ`. No anticlustering is assumed. -/
+theorem HasSpectralTailProcess.le_candidateExtremalIndex (hα : 0 < α)
+    (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
+    (hstat : HasShiftInvariantWindows P X) (h : HasSpectralTailProcess P X α Q Θ) {θ : ℝ}
+    (hθ : HasExtremalIndex (fun k : ℕ => |X k|) P θ)
+    {u : ℕ → ℝ} {τ : ℝ} (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < |X 0 ω|}) atTop (𝓝 τ))
+    (hτ0 : 0 < τ) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hA : ConditionA (fun k : ℕ => |X k|) P u r) :
+    θ ≤ (candidateExtremalIndex Q Θ α).toReal :=
+  h.le_candidateExtremalIndex_of_tendsto hα hX hΘm hstat hτ hτ0 hr hrn hA
+    (hθ.2 τ hτ0 u (by simpa using hτ))
+
+end Inequality
+
 end ExtremeValueTheory
