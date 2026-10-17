@@ -12,7 +12,7 @@ import ExtremeValueTheory.StableLaws.LevyContinuity
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set Real
-open scoped NNReal ENNReal
+open scoped NNReal ENNReal BoundedContinuousFunction
 
 namespace ExtremeValueTheory
 
@@ -1019,6 +1019,149 @@ theorem measureReal_univ_lamMeasure (hsymm : μ.map (fun x => -x) = μ) {n : ℕ
   exact_mod_cast h
 
 end Symmetric
+
+section Pipeline
+
+/-- `T(x) = E[X² / max (X², x²)] = E[min (1, X² / x²)]`. -/
+noncomputable def sqRatio (μ : Measure ℝ) (x : ℝ) : ℝ := ∫ y, y ^ 2 / max (y ^ 2) (x ^ 2) ∂μ
+
+/-- The bounded continuous test function `(1 + y²) / max (y², x²)`. -/
+noncomputable def gfun {x : ℝ} (hx : 0 < x) : ℝ →ᵇ ℝ :=
+  BoundedContinuousFunction.ofNormedAddCommGroup (fun y => (1 + y ^ 2) / max (y ^ 2) (x ^ 2))
+    (by
+      refine Continuous.div (by fun_prop) (by fun_prop) fun y => ?_
+      exact ne_of_gt (lt_of_lt_of_le (by positivity) (le_max_right _ _)))
+    (1 / x ^ 2 + 1) (fun y => by
+      have hM : 0 < max (y ^ 2) (x ^ 2) := lt_of_lt_of_le (by positivity) (le_max_right _ _)
+      rw [Real.norm_eq_abs, abs_of_nonneg (by positivity), add_div]
+      gcongr
+      · exact le_max_right _ _
+      · rw [div_le_one hM]; exact le_max_left _ _)
+
+theorem gfun_apply {x : ℝ} (hx : 0 < x) (y : ℝ) :
+    gfun hx y = (1 + y ^ 2) / max (y ^ 2) (x ^ 2) := rfl
+
+theorem kernel_mul_gfun {a x : ℝ} (ha : 0 < a) (hx : 0 < x) (y : ℝ) :
+    ((a⁻¹ * y) ^ 2 / (1 + (a⁻¹ * y) ^ 2)) * gfun hx (a⁻¹ * y) =
+      y ^ 2 / max (y ^ 2) ((a * x) ^ 2) := by
+  rw [gfun_apply]
+  have h1 : (1 + (a⁻¹ * y) ^ 2) ≠ 0 := by positivity
+  have hM : 0 < max ((a⁻¹ * y) ^ 2) (x ^ 2) := lt_of_lt_of_le (by positivity) (le_max_right _ _)
+  have e1 : (a⁻¹ * y) ^ 2 / (1 + (a⁻¹ * y) ^ 2) * ((1 + (a⁻¹ * y) ^ 2) /
+      max ((a⁻¹ * y) ^ 2) (x ^ 2)) = (a⁻¹ * y) ^ 2 / max ((a⁻¹ * y) ^ 2) (x ^ 2) := by
+    field_simp
+  rw [e1]
+  have ha2 : (0 : ℝ) ≤ a ^ 2 := by positivity
+  have e2 : max ((a⁻¹ * y) ^ 2) (x ^ 2) = max (y ^ 2) ((a * x) ^ 2) / a ^ 2 := by
+    rw [← max_div_div_right ha2]
+    congr 1 <;> field_simp
+  rw [e2]
+  field_simp
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a : ℕ → ℝ}
+
+omit [IsProbabilityMeasure μ] in
+theorem integral_gfun_lamMeasure (ha : ∀ n, 0 < a n) (n : ℕ) {x : ℝ} (hx : 0 < x) :
+    ∫ y, gfun hx y ∂(lamMeasure μ a n) = sqRatio μ (a n * x) := by
+  show ∫ y, gfun hx y ∂(kMeasure (μ.map ((a n)⁻¹ * ·))) = _
+  rw [integral_kMeasure, integral_map (by fun_prop)
+    (Continuous.aestronglyMeasurable (by
+      have := (gfun hx).continuous
+      exact ((continuous_pow 2).div (by fun_prop) fun y => by positivity).smul this))]
+  simp_rw [smul_eq_mul, kernel_mul_gfun (ha n) hx]
+  rfl
+
+/-- The normalized measures `Λₙ / Λₙ(ℝ)`. -/
+noncomputable def lamNorm (μ : Measure ℝ) [IsProbabilityMeasure μ] (a : ℕ → ℝ) (n : ℕ) :
+    ProbabilityMeasure ℝ :=
+  FiniteMeasure.normalize ⟨lamMeasure μ a n, inferInstance⟩
+
+theorem lamNorm_eq (hsymm : μ.map (fun x => -x) = μ) {n : ℕ} (hn : n ≠ 0)
+    (h0 : 0 < lap (nh μ a n) 0) :
+    (lamNorm μ a n : Measure ℝ) = ((lap (nh μ a n) 0 / n : ℝ).toNNReal)⁻¹ • lamMeasure μ a n := by
+  set Λ : FiniteMeasure ℝ := ⟨lamMeasure μ a n, inferInstance⟩
+  have hmass : (Λ.mass : ℝ) = (lamMeasure μ a n).real univ := by
+    rw [measureReal_def, ← ENNReal.coe_toReal, FiniteMeasure.ennreal_mass]
+    rfl
+  have hn' : (0 : ℝ) < n := by exact_mod_cast Nat.pos_of_ne_zero hn
+  have hne : Λ ≠ 0 := by
+    refine (FiniteMeasure.mass_nonzero_iff _).1 fun hz => ?_
+    rw [hz, measureReal_univ_lamMeasure hsymm hn] at hmass
+    exact absurd hmass.symm (by simpa using (div_pos h0 hn').ne')
+  rw [lamNorm, FiniteMeasure.toMeasure_normalize_eq_of_nonzero _ hne]
+  congr 2
+  rw [← measureReal_univ_lamMeasure hsymm hn, ← hmass, Real.toNNReal_coe]
+
+theorem charFun_lamNorm (hsymm : μ.map (fun x => -x) = μ) {n : ℕ} (hn : n ≠ 0)
+    (h0 : 0 < lap (nh μ a n) 0) (t : ℝ) :
+    charFun (lamNorm μ a n : Measure ℝ) t = ((lap (nh μ a n) t / lap (nh μ a n) 0 : ℝ) : ℂ) := by
+  have hn' : (0 : ℝ) < n := by exact_mod_cast Nat.pos_of_ne_zero hn
+  rw [lamNorm_eq hsymm hn h0, charFun_apply_real, integral_smul_nnreal_measure,
+    ← charFun_apply_real, charFun_lamMeasure hsymm hn, NNReal.smul_def, Complex.real_smul,
+    ← Complex.ofReal_mul]
+  simp only [NNReal.coe_inv, Real.coe_toNNReal _ (div_pos h0 hn').le]
+  congr 1
+  field_simp
+
+theorem mul_sqRatio_eq (hsymm : μ.map (fun x => -x) = μ) (ha : ∀ n, 0 < a n) {n : ℕ}
+    (hn : n ≠ 0) (h0 : 0 < lap (nh μ a n) 0) {x : ℝ} (hx : 0 < x) :
+    (n : ℝ) * sqRatio μ (a n * x) =
+      lap (nh μ a n) 0 * ∫ y, gfun hx y ∂(lamNorm μ a n : Measure ℝ) := by
+  have hn' : (0 : ℝ) < n := by exact_mod_cast Nat.pos_of_ne_zero hn
+  rw [lamNorm_eq hsymm hn h0, integral_smul_nnreal_measure, integral_gfun_lamMeasure ha,
+    NNReal.smul_def, smul_eq_mul]
+  simp only [NNReal.coe_inv, Real.coe_toNNReal _ (div_pos h0 hn').le]
+  field_simp
+
+variable {h : ℝ → ℝ} {B δ : ℝ}
+
+/-- The characteristic functions of `Λₙ / Λₙ(ℝ)` converge to `λ_h / λ_h(0)`. -/
+theorem tendsto_charFun_lamNorm (hsymm : μ.map (fun x => -x) = μ) (hB0 : 0 ≤ B) (hδ : 0 < δ)
+    (hB : ∀ᶠ n in atTop, ∀ u, |nh μ a n u| ≤ B * (|u| / δ + 1) ^ 2)
+    (hlim : ∀ u, Tendsto (fun n => nh μ a n u) atTop (𝓝 (h u))) (hpos : 0 < lap h 0) (t : ℝ) :
+    Tendsto (fun n => charFun (lamNorm μ a n : Measure ℝ) t) atTop
+      (𝓝 ((lap h t / lap h 0 : ℝ) : ℂ)) := by
+  have hLam : ∀ t, Tendsto (fun n => lap (nh μ a n) t) atTop (𝓝 (lap h t)) :=
+    tendsto_lap hB0 hδ continuous_nh hB hlim
+  refine (Complex.continuous_ofReal.tendsto _ |>.comp ((hLam t).div (hLam 0) hpos.ne')).congr' ?_
+  filter_upwards [eventually_ne_atTop 0, (tendsto_order.1 (hLam 0)).1 0 hpos] with n hn h0
+  rw [Function.comp_apply, charFun_lamNorm hsymm hn h0]
+  rfl
+
+/-- **The pipeline.** If `hₙ → h` with quadratic bounds and `λ_h(0) > 0`, and `P` is a
+probability measure with characteristic function `λ_h / λ_h(0)`, then
+`n T(aₙ x) → λ_h(0) ∫ (1 + y²) / max (y², x²) dP(y)` for every `x > 0`. -/
+theorem tendsto_mul_sqRatio (hsymm : μ.map (fun x => -x) = μ) (ha : ∀ n, 0 < a n)
+    (hB0 : 0 ≤ B) (hδ : 0 < δ)
+    (hB : ∀ᶠ n in atTop, ∀ u, |nh μ a n u| ≤ B * (|u| / δ + 1) ^ 2)
+    (hlim : ∀ u, Tendsto (fun n => nh μ a n u) atTop (𝓝 (h u))) (hpos : 0 < lap h 0)
+    (P : ProbabilityMeasure ℝ) (hP : ∀ t, charFun (P : Measure ℝ) t = ((lap h t / lap h 0 : ℝ) : ℂ))
+    {x : ℝ} (hx : 0 < x) :
+    Tendsto (fun n : ℕ => (n : ℝ) * sqRatio μ (a n * x)) atTop
+      (𝓝 (lap h 0 * ∫ y, gfun hx y ∂(P : Measure ℝ))) := by
+  have hLam0 : Tendsto (fun n => lap (nh μ a n) 0) atTop (𝓝 (lap h 0)) :=
+    tendsto_lap hB0 hδ continuous_nh hB hlim 0
+  have hconv := ProbabilityMeasure.tendsto_iff_tendsto_charFun.2 fun t => by
+    rw [hP]; exact tendsto_charFun_lamNorm hsymm hB0 hδ hB hlim hpos t
+  have hint := (ProbabilityMeasure.tendsto_iff_forall_integral_tendsto.1 hconv) (gfun hx)
+  refine (hLam0.mul hint).congr' ?_
+  filter_upwards [eventually_ne_atTop 0, (tendsto_order.1 hLam0).1 0 hpos] with n hn h0
+  exact (mul_sqRatio_eq hsymm ha hn h0 hx).symm
+
+/-- Existence of the limit `P` of `Λₙ / Λₙ(ℝ)` (Lévy's continuity theorem). -/
+theorem exists_charFun_eq_lap (hsymm : μ.map (fun x => -x) = μ) (hB0 : 0 ≤ B) (hδ : 0 < δ)
+    (hB : ∀ᶠ n in atTop, ∀ u, |nh μ a n u| ≤ B * (|u| / δ + 1) ^ 2)
+    (hlim : ∀ u, Tendsto (fun n => nh μ a n u) atTop (𝓝 (h u))) (hpos : 0 < lap h 0)
+    (hc : Continuous h) (hh : ∀ u, |h u| ≤ B * (|u| / δ + 1) ^ 2) :
+    ∃ P : ProbabilityMeasure ℝ, ∀ t, charFun (P : Measure ℝ) t = ((lap h t / lap h 0 : ℝ) : ℂ) := by
+  have hf : ContinuousAt (fun t => ((lap h t / lap h 0 : ℝ) : ℂ)) 0 :=
+    Complex.continuous_ofReal.continuousAt.comp
+      ((continuousAt_lap hB0 hδ hc hh 0).div_const _)
+  obtain ⟨P, hP, -⟩ := exists_tendsto_of_tendsto_charFun (μ := lamNorm μ a) hf
+    (tendsto_charFun_lamNorm hsymm hB0 hδ hB hlim hpos)
+  exact ⟨P, fun t => congrFun hP t⟩
+
+end Pipeline
 
 end GCLTConverse
 
