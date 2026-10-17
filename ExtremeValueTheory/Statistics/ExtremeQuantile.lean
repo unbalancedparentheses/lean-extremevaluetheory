@@ -228,6 +228,152 @@ theorem tendsto_div_mul_rpow_of_mem_Icc {F : ℝ → ℝ} (hF : Antitone F) {ρ 
   calc |F (c n * s n) / F (s n) - c n ^ ρ| < ε * m := h3
     _ ≤ ε * c n ^ ρ := by gcongr; exact hlow _ h2
 
+/-- **Quantiles at comparable levels** ([dHF, Theorem 1.1.6 and §4.3]): if `F̄ = P(Y > ·)` is
+regularly varying with index `-α`, `α > 0`, and `p_n, r_n ↓ 0` with `d_n = r_n / p_n` bounded
+and bounded away from `0`, then `x_{p_n} / (x_{r_n} d_n ^ (1/α)) → 1`. In other words the tail
+quantile function is regularly varying with index `γ = 1/α`, locally uniformly. -/
+theorem tendsto_tailQuantile_div_tailQuantile (hY : Measurable Y) {α : ℝ} (hα : 0 < α)
+    (hRV : IsRegularlyVarying (survival P Y) (-α)) {p r : ℕ → ℝ}
+    (hp0 : ∀ᶠ n in atTop, 0 < p n) (hp : Tendsto p atTop (𝓝 0))
+    (hr0 : ∀ᶠ n in atTop, 0 < r n) (hr : Tendsto r atTop (𝓝 0)) {a b : ℝ} (ha : 0 < a)
+    (hd : ∀ᶠ n in atTop, r n / p n ∈ Icc a b) :
+    Tendsto (fun n => tailQuantile P Y (p n) / (tailQuantile P Y (r n) * (r n / p n) ^ (1 / α)))
+      atTop (𝓝 1) := by
+  set F := survival P Y with hF_def
+  have hFpos : ∀ x, 0 < F x := survival_pos hRV
+  obtain ⟨hs, hFs⟩ := tendsto_tailQuantile hY hRV hr0 hr
+  set s := fun n => tailQuantile P Y (r n) with hs_def
+  have hT : Tendsto (fun n => F (s n) / r n) atTop (𝓝 1) := by
+    simpa using hFs 1 one_pos
+  have key : ∀ κ : ℝ, 0 < κ → Tendsto (fun n => F (κ * (r n / p n) ^ (1 / α) * s n) / p n)
+      atTop (𝓝 (κ ^ (-α))) := by
+    intro κ hκ
+    have hc : ∀ᶠ n in atTop, κ * (r n / p n) ^ (1 / α) ∈
+        Icc (κ * a ^ (1 / α)) (κ * b ^ (1 / α)) := by
+      filter_upwards [hd] with n hn
+      have hdn : 0 < r n / p n := ha.trans_le hn.1
+      exact ⟨by gcongr; exact hn.1, by gcongr; exact hn.2⟩
+    have hU := tendsto_div_mul_rpow_of_mem_Icc (survival_anti Y) hRV hs (by positivity) hc
+    have h := (hU.mul hT).const_mul (κ ^ (-α))
+    rw [mul_one, mul_one] at h
+    refine h.congr' ?_
+    filter_upwards [hd, hp0, hr0] with n hn hpn hrn
+    have hdn : 0 < r n / p n := ha.trans_le hn.1
+    have hid : (κ * (r n / p n) ^ (1 / α)) ^ (-α) = κ ^ (-α) * (p n / r n) := by
+      rw [Real.mul_rpow hκ.le (rpow_nonneg hdn.le _), ← Real.rpow_mul hdn.le,
+        show 1 / α * -α = -1 by field_simp, Real.rpow_neg_one, inv_div]
+    rw [hid]
+    have h1 := hFpos (s n)
+    have h2 := rpow_pos_of_pos hκ (-α)
+    simp only [hF_def] at h1 ⊢
+    field_simp
+  rw [Metric.tendsto_nhds]
+  intro ε hε
+  set η := min (ε / 2) (1 / 2) with hη_def
+  have hη0 : 0 < η := by positivity
+  have hηε : η < ε := (min_le_left _ _).trans_lt (half_lt_self hε)
+  have hη1 : η < 1 := (min_le_right _ _).trans_lt (by norm_num)
+  have hup : (1 + η) ^ (-α) < 1 :=
+    Real.rpow_lt_one_of_one_lt_of_neg (by linarith) (by linarith)
+  have hlo : 1 < (1 - η) ^ (-α) :=
+    Real.one_lt_rpow_of_pos_of_lt_one_of_neg (by linarith) (by linarith) (by linarith)
+  filter_upwards [(key (1 + η) (by linarith)).eventually (gt_mem_nhds hup),
+    (key (1 - η) (by linarith)).eventually (lt_mem_nhds hlo), hd, hp0,
+    hp.eventually (gt_mem_nhds (hFpos 0)), hs.eventually_gt_atTop 0] with n h1 h2 hn hpn hpF hsn
+  have hdn : 0 < r n / p n := ha.trans_le hn.1
+  have hD : 0 < s n * (r n / p n) ^ (1 / α) := mul_pos hsn (rpow_pos_of_pos hdn _)
+  have hU : tailQuantile P Y (p n) ≤ (1 + η) * (r n / p n) ^ (1 / α) * s n :=
+    tailQuantile_le_of_survival_le hpF ((div_le_one hpn).1 h1.le)
+  have hL : (1 - η) * (r n / p n) ^ (1 / α) * s n ≤ tailQuantile P Y (p n) :=
+    le_tailQuantile_of_lt_survival hY hpn ((one_lt_div hpn).1 h2)
+  have e1 : tailQuantile P Y (p n) / (s n * (r n / p n) ^ (1 / α)) ≤ 1 + η := by
+    rw [div_le_iff₀ hD]; linarith
+  have e2 : 1 - η ≤ tailQuantile P Y (p n) / (s n * (r n / p n) ^ (1 / α)) := by
+    rw [le_div_iff₀ hD]; linarith
+  rw [Real.dist_eq, abs_lt]
+  constructor <;> linarith
+
 end Quantile
+
+/-! ### Localization of the intermediate order statistic -/
+
+section Localization
+
+variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+
+/-- **The intermediate order statistic estimates the intermediate quantile** ([dHF, Corollary
+2.2.2]): if the iid `X_i` have survival function regularly varying with index `-α`, `α > 0`,
+and `k → ∞`, `k / n → 0`, then `X_{(k+1)} / x_{k/n} → 1` in probability. -/
+theorem tendstoInMeasure_orderStat_div_tailQuantile {X : ℕ → Ω → ℝ}
+    (hX : ∀ i, Measurable (X i)) (hindep : iIndepFun X P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {α : ℝ} (hα : 0 < α)
+    (hRV : IsRegularlyVarying (fun x => (P {ω | x < X 0 ω}).toReal) (-α)) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n ω => orderStat (fun i : Fin n => X i ω) (k n) /
+      tailQuantile P (X 0) ((k n : ℝ) / n)) atTop (fun _ => 1) := by
+  change IsRegularlyVarying (survival P (X 0)) (-α) at hRV
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hkpos : ∀ᶠ n in atTop, (0 : ℝ) < k n := hkR.eventually_gt_atTop 0
+  have hnpos : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < n :=
+    (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0
+  have hr0 : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < k n / n := by
+    filter_upwards [hkpos, hnpos] with n h1 h2; positivity
+  obtain ⟨hs, hFc⟩ := tendsto_tailQuantile (hX 0) hRV hr0 hkn
+  set s := fun n : ℕ => tailQuantile P (X 0) ((k n : ℝ) / n) with hs_def
+  have hcnt : ∀ c : ℝ, 0 < c → ∀ δ : ℝ, 0 < δ → Tendsto (fun n => P {ω | δ ≤
+      |(exceedCount (fun i : Fin n => X i ω) (c * s n) : ℝ) / k n - c ^ (-α)|}) atTop
+      (𝓝 0) := by
+    intro c hc δ hδ
+    refine tendsto_measure_abs_exceedCount_div_sub hX hindep hident hk ?_ hδ
+    refine (hFc c hc).congr fun n => ?_
+    simp only [survival]
+    rw [div_div_eq_mul_div, mul_comm]
+  have hkn' : ∀ᶠ n : ℕ in atTop, k n < n := by
+    filter_upwards [hkn.eventually (gt_mem_nhds one_pos), hnpos] with n h1 h2
+    rw [div_lt_one h2] at h1
+    exact_mod_cast h1
+  rw [tendstoInMeasure_iff_dist]
+  intro ε hε
+  set c₂ := 1 + ε / 2 with hc₂
+  set c₁ := max (1 / 2) (1 - ε / 2) with hc₁
+  have hc₂1 : 1 < c₂ := by linarith
+  have hc₁0 : 0 < c₁ := lt_of_lt_of_le (by norm_num) (le_max_left _ _)
+  have hc₁1 : c₁ < 1 := max_lt (by norm_num) (by linarith)
+  have hc₁ε : 1 - ε / 2 ≤ c₁ := le_max_right _ _
+  have hδ₂ : 0 < 1 - c₂ ^ (-α) := by
+    have := Real.rpow_lt_one_of_one_lt_of_neg hc₂1 (neg_lt_zero.2 hα); linarith
+  have hδ₁ : 0 < c₁ ^ (-α) - 1 := by
+    have := Real.one_lt_rpow_of_pos_of_lt_one_of_neg hc₁0 hc₁1 (neg_lt_zero.2 hα); linarith
+  have h := (hcnt c₂ (by linarith) _ hδ₂).add (hcnt c₁ hc₁0 _ hδ₁)
+  rw [add_zero] at h
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds h
+    (Eventually.of_forall fun _ => bot_le) ?_
+  filter_upwards [hkn', hkpos, hs.eventually_gt_atTop 0] with n hkn hkpos' hsn
+  refine (measure_mono ?_).trans (measure_union_le _ _)
+  intro ω hω
+  simp only [Set.mem_ofPred_eq, Real.dist_eq] at hω
+  by_contra hcon
+  simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_le] at hcon
+  obtain ⟨h1, h2⟩ := hcon
+  set x : Fin n → ℝ := fun i => X i ω with hx
+  have hT2 : orderStat x (k n) ≤ c₂ * s n := by
+    rw [orderStat_le_iff x hkn]
+    have := (abs_lt.1 h1).2
+    have h' : (exceedCount x (c₂ * s n) : ℝ) / k n < 1 := by linarith
+    rw [div_lt_one hkpos'] at h'
+    exact_mod_cast h'.le
+  have hT1 : c₁ * s n < orderStat x (k n) := by
+    rw [lt_orderStat_iff x hkn]
+    have := (abs_lt.1 h2).1
+    have h' : 1 < (exceedCount x (c₁ * s n) : ℝ) / k n := by linarith
+    rw [one_lt_div hkpos'] at h'
+    exact_mod_cast h'
+  have e2 : orderStat x (k n) / s n ≤ c₂ := by rwa [div_le_iff₀ hsn]
+  have e1 : c₁ < orderStat x (k n) / s n := by rwa [lt_div_iff₀ hsn]
+  have : |orderStat x (k n) / s n - 1| < ε := by
+    rw [abs_lt]; constructor <;> linarith
+  linarith
+
+end Localization
 
 end ExtremeValueTheory
