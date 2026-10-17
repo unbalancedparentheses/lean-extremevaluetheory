@@ -1150,4 +1150,80 @@ theorem map_eq_expMeasure_map_tailQuantile {Y : Ω → ℝ} (hY : Measurable Y) 
 
 end TailQuantile
 
+/-! ### Asymptotic normality of the Hill estimator -/
+
+section Normality
+
+variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'} [IsProbabilityMeasure P']
+
+/-- **Asymptotic normality of the Hill estimator** ([dHF, Theorem 3.2.5]; Hall 1982;
+Haeusler and Teugels 1985). Let `X_0, X_1, …` be iid real random variables whose tail quantile
+function `U(t) = F̄^←(1/t)` is of second-order regular variation with first-order index `γ > 0`,
+second-order index `ρ ≤ 0` and auxiliary function `A`. If `k = k(n) → ∞`, `k / n → 0` and
+`√k A(n / k) → λ`, then
+
+  `√k (H_{k,n} - γ) ⇒ N(λ / (1 - ρ), γ²)`.
+
+The limit is expressed as convergence in distribution to any random variable `Z` with law
+`N(λ / (1 - ρ), γ²)`. -/
+theorem tendstoInDistribution_hill {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
+    (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ}
+    {A : ℝ → ℝ} (hγ : 0 < γ)
+    (h2 : IsSecondOrderRegularlyVarying (tailQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {Z : Ω' → ℝ}
+    (hZ : HasLaw Z (gaussianReal (lam / (1 - ρ)) (γ ^ 2).toNNReal) P') :
+    TendstoInDistribution (fun n ω => √(k n : ℝ) * (hill (fun i : Fin n => X i ω) (k n) - γ))
+      atTop Z (fun _ => P) P' := by
+  obtain ⟨Ω₀, _, P₀, E, hEm, hE, hind, hP₀⟩ := exists_iid ℕ (expMeasure 1)
+  set U := tailQuantile (survival P (X 0)) with hUdef
+  have hF := survival_anti (P := P) (X 0)
+  have hrc := continuousWithinAt_survival (P := P) (hX 0)
+  have h0 := tendsto_survival_atTop (P := P) (hX 0)
+  have h1 := tendsto_survival_atBot (P := P) (hX 0)
+  have hUm := measurable_tailQuantile hF hrc h0 h1
+  have hUmono := monotoneOn_tailQuantile hF hrc h0 h1
+  have hB := tendstoInDistribution_hill_comp_exp hEm hE hind hγ hUm hUmono h2 hk hkn hlam hZ
+  have hV : Measurable fun e => U (exp e) := hUm.comp measurable_exp
+  refine hB.of_map_eq (fun n => ?_) (Eventually.of_forall fun n => ?_)
+  · exact (measurable_const.mul (((measurable_hill_pi n (k n)).comp
+      (measurable_pi_iff.2 fun i => hX i)).sub_const _)).aemeasurable
+  have hS : Measurable fun y : Fin n → ℝ => √(k n : ℝ) * (hill y (k n) - γ) :=
+    measurable_const.mul ((measurable_hill_pi n (k n)).sub measurable_const)
+  have hlawX : HasLaw (fun ω (i : Fin n) => X i ω)
+      (Measure.pi fun _ : Fin n => (expMeasure 1).map fun e => U (exp e)) P := by
+    refine (hindep.precomp (g := (Fin.val : Fin n → ℕ)) Fin.val_injective).hasLaw_pi
+      (fun i => ⟨(hX i).aemeasurable, ?_⟩)
+    rw [(hident i).map_eq]
+    exact map_eq_expMeasure_map_tailQuantile (hX 0)
+  have e1 : P.map (fun ω => √(k n : ℝ) * (hill (fun i : Fin n => X i ω) (k n) - γ)) =
+      (Measure.pi fun _ : Fin n => (expMeasure 1).map fun e => U (exp e)).map
+        (fun y : Fin n → ℝ => √(k n : ℝ) * (hill y (k n) - γ)) :=
+    ((hasLaw_map hS.aemeasurable).comp hlawX).map_eq
+  have hT : Measurable fun y : Fin n → ℝ => √(k n : ℝ) * (hill (fun i => U (exp (y i))) (k n) - γ) :=
+    hS.comp (measurable_pi_iff.2 fun i => hV.comp (measurable_pi_apply i))
+  have e2 : P₀.map (fun ω => √(k n : ℝ) * (hill (fun i : Fin n => U (exp (E i ω))) (k n) - γ)) =
+      (Measure.pi fun _ : Fin n => expMeasure 1).map
+        (fun y : Fin n → ℝ => √(k n : ℝ) * (hill (fun i => U (exp (y i))) (k n) - γ)) :=
+    map_comp_vec_of_iid hE hind hT
+  rw [e1, e2, ← Measure.pi_map_pi (fun _ => hV.aemeasurable), Measure.map_map hS (by fun_prop)]
+  rfl
+
+/-- **Asymptotic normality of the Hill estimator without bias** ([dHF, Theorem 3.2.5] with
+`λ = 0`). Under second-order regular variation of the tail quantile function, if `k → ∞`,
+`k / n → 0` and `√k A(n / k) → 0`, then `√k (H_{k,n} - γ) ⇒ N(0, γ²)`. -/
+theorem tendstoInDistribution_hill_of_tendsto_zero {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
+    (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ : ℝ}
+    {A : ℝ → ℝ} (hγ : 0 < γ)
+    (h2 : IsSecondOrderRegularlyVarying (tailQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hA : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 0)) {Z : Ω' → ℝ}
+    (hZ : HasLaw Z (gaussianReal 0 (γ ^ 2).toNNReal) P') :
+    TendstoInDistribution (fun n ω => √(k n : ℝ) * (hill (fun i : Fin n => X i ω) (k n) - γ))
+      atTop Z (fun _ => P) P' :=
+  tendstoInDistribution_hill hX hindep hident hγ h2 hk hkn hA (by rwa [zero_div])
+
+end Normality
+
 end ExtremeValueTheory
