@@ -106,6 +106,7 @@ import ExtremeValueTheory.Statistics.HillCluster
 import ExtremeValueTheory.Dependence.InfiniteMovingAverage
 import ExtremeValueTheory.Dependence.AR1
 import ExtremeValueTheory.Dependence.AR1Uniqueness
+import ExtremeValueTheory.Dependence.MarkovChain
 import ExtremeValueTheory.Dependence.InfiniteMovingAverageTailProcess
 import ExtremeValueTheory.MaxStable.Basic
 import ExtremeValueTheory.MaxStable.Spectral
