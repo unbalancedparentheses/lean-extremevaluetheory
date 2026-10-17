@@ -1096,4 +1096,278 @@ theorem isRegVarVector_diag (hα : 0 < α) {Z : Ω → ℝ} (hZ : Measurable Z) 
 
 end ExamplesPolar
 
+section Independent
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P] {α : ℝ}
+
+omit [IsProbabilityMeasure P] in
+theorem measureReal_lt_inter_lt_eq_mul {U V : Ω → ℝ} (hind : IndepFun U V P) (a b : ℝ) :
+    P.real ({ω | a < U ω} ∩ {ω | b < V ω}) = P.real {ω | a < U ω} * P.real {ω | b < V ω} := by
+  have := hind.measure_inter_preimage_eq_mul (Ioi a) (Ioi b) measurableSet_Ioi measurableSet_Ioi
+  simp only [measureReal_def]
+  change (P (U ⁻¹' Ioi a ∩ V ⁻¹' Ioi b)).toReal =
+    (P (U ⁻¹' Ioi a)).toReal * (P (V ⁻¹' Ioi b)).toReal
+  rw [this, ENNReal.toReal_mul]
+
+/-- The direction of a large value of the first of two independent nonnegative variables is
+close to the first axis: a quantitative estimate. -/
+theorem abs_setIntegral_dir_sub_le {U V : Ω → ℝ} (hU : Measurable U) (hV : Measurable V)
+    (hV0 : ∀ ω, 0 ≤ V ω) (hind : IndepFun U V P) (f : ℝ × ℝ →ᵇ ℝ) {ε : ℝ} (hε : 0 < ε) :
+    ∃ δ > 0, ∀ x > 0,
+      |∫ ω in {ω | x < U ω}, f ((max (U ω) (V ω))⁻¹ • (U ω, V ω)) ∂P -
+          P.real {ω | x < U ω} * f (1, 0)| ≤
+        P.real {ω | x < U ω} * (ε + 2 * ‖f‖ * P.real {ω | δ * x < V ω}) := by
+  obtain ⟨δ0, hδ0, hcont⟩ := Metric.continuous_iff.1 f.continuous ((1 : ℝ), (0 : ℝ)) ε hε
+  refine ⟨min (δ0 / 2) (1 / 2), by positivity, fun x hx => ?_⟩
+  set δ := min (δ0 / 2) (1 / 2) with hδdef
+  set s := {ω | x < U ω} with hsdef
+  have hs : MeasurableSet s := measurableSet_lt measurable_const hU
+  set t := {ω | δ * x < V ω} with htdef
+  have ht : MeasurableSet t := measurableSet_lt measurable_const hV
+  set D : Ω → ℝ := fun ω => f ((max (U ω) (V ω))⁻¹ • (U ω, V ω)) with hDdef
+  have hDm : Measurable D :=
+    f.continuous.measurable.comp (((hU.max hV).inv).smul (hU.prodMk hV))
+  have hpt : ∀ ω ∈ s, |D ω - f (1, 0)| ≤ ε + 2 * ‖f‖ * t.indicator 1 ω := by
+    intro ω hω
+    by_cases hωt : ω ∈ t
+    · rw [indicator_of_mem hωt, Pi.one_apply, mul_one]
+      have h2 := f.dist_le_two_norm ((max (U ω) (V ω))⁻¹ • (U ω, V ω)) (1, 0)
+      rw [Real.dist_eq] at h2
+      linarith
+    · rw [indicator_of_notMem hωt, mul_zero, add_zero]
+      have hUx : x < U ω := hω
+      have hVle : V ω ≤ δ * x := not_lt.1 hωt
+      have hδ1 : δ ≤ 1 / 2 := min_le_right _ _
+      have hδ2 : δ ≤ δ0 / 2 := min_le_left _ _
+      have hU0' : 0 < U ω := hx.trans hUx
+      have hVU : V ω ≤ U ω := by nlinarith
+      have hdist : dist ((U ω)⁻¹ • (U ω, V ω)) ((1 : ℝ), (0 : ℝ)) < δ0 := by
+        rw [Prod.smul_mk, smul_eq_mul, smul_eq_mul, inv_mul_cancel₀ hU0'.ne', Prod.dist_eq,
+          dist_self, Real.dist_eq, sub_zero, max_lt_iff]
+        refine ⟨hδ0, ?_⟩
+        rw [abs_of_nonneg (mul_nonneg (inv_nonneg.2 hU0'.le) (hV0 ω)), inv_mul_lt_iff₀ hU0']
+        nlinarith
+      have := hcont _ hdist
+      rw [Real.dist_eq] at this
+      simp only [hDdef, max_eq_left hVU]
+      exact this.le
+  have hDint : Integrable D P := Integrable.of_bound hDm.aestronglyMeasurable ‖f‖
+    (ae_of_all _ fun ω => f.norm_coe_le_norm _)
+  have hRint : Integrable (fun ω => ε + 2 * ‖f‖ * t.indicator 1 ω) P :=
+    (integrable_const ε).add (by exact ((integrable_const (1 : ℝ)).indicator ht).const_mul _)
+  calc |∫ ω in s, D ω ∂P - P.real s * f (1, 0)|
+      = |∫ ω in s, (D ω - f (1, 0)) ∂P| := by
+        rw [integral_sub hDint.integrableOn (integrable_const _), setIntegral_const, smul_eq_mul]
+    _ ≤ ∫ ω in s, |D ω - f (1, 0)| ∂P := abs_integral_le_integral_abs
+    _ ≤ ∫ ω in s, (ε + 2 * ‖f‖ * t.indicator 1 ω) ∂P :=
+        setIntegral_mono_on (hDint.sub (integrable_const _)).abs.integrableOn
+          hRint.integrableOn hs hpt
+    _ = P.real s * ε + 2 * ‖f‖ * P.real (t ∩ s) := by
+        rw [integral_add (integrable_const _)
+          (by exact ((integrable_const (1 : ℝ)).indicator ht).const_mul _), setIntegral_const,
+          integral_const_mul, integral_indicator_one ht, measureReal_restrict_apply ht,
+          smul_eq_mul]
+    _ = P.real s * (ε + 2 * ‖f‖ * P.real t) := by
+        rw [inter_comm, hsdef, htdef, measureReal_lt_inter_lt_eq_mul hind]
+        ring
+
+/-- The normalized error in `abs_setIntegral_dir_sub_le` tends to `0`. -/
+theorem tendsto_setIntegral_dir_sub_div {U V : Ω → ℝ} (hU : Measurable U) (hV : Measurable V)
+    (hV0 : ∀ ω, 0 ≤ V ω) (hind : IndepFun U V P) (f : ℝ × ℝ →ᵇ ℝ) {G : ℝ → ℝ} {M : ℝ}
+    (hG : ∀ᶠ x in atTop, 0 < G x ∧ P.real {ω | x < U ω} ≤ M * G x) :
+    Tendsto (fun x => (∫ ω in {ω | x < U ω}, f ((max (U ω) (V ω))⁻¹ • (U ω, V ω)) ∂P -
+      P.real {ω | x < U ω} * f (1, 0)) / G x) atTop (𝓝 0) := by
+  rw [Metric.tendsto_nhds]
+  intro ε' hε'
+  set M' := max M 1 with hM'
+  have hM'pos : 0 < M' := lt_of_lt_of_le one_pos (le_max_right _ _)
+  have hε : 0 < ε' / (4 * M') := by positivity
+  obtain ⟨δ, hδ, hb⟩ := abs_setIntegral_dir_sub_le hU hV hV0 hind f hε
+  have hlim : Tendsto (fun x => 2 * ‖f‖ * P.real {ω | δ * x < V ω}) atTop (𝓝 0) := by
+    have := ((tendsto_measureReal_lt_atTop (P := P) hV).comp
+      (tendsto_id.const_mul_atTop hδ)).const_mul (2 * ‖f‖)
+    simpa using this
+  filter_upwards [hG, hlim.eventually (gt_mem_nhds hε), eventually_gt_atTop 0] with x hGx hsmall
+    hx
+  obtain ⟨hG0, hGM⟩ := hGx
+  rw [Real.dist_eq, sub_zero, abs_div, abs_of_pos hG0, div_lt_iff₀ hG0]
+  have hP0 : 0 ≤ P.real {ω | x < U ω} := measureReal_nonneg
+  have hGM' : P.real {ω | x < U ω} ≤ M' * G x :=
+    hGM.trans (mul_le_mul_of_nonneg_right (le_max_left _ _) hG0.le)
+  calc _ ≤ P.real {ω | x < U ω} * (ε' / (4 * M') + 2 * ‖f‖ * P.real {ω | δ * x < V ω}) :=
+        hb x hx
+    _ ≤ (M' * G x) * (ε' / (4 * M') + ε' / (4 * M')) := by
+        apply mul_le_mul hGM' (by linarith) (by positivity) (by positivity)
+    _ = ε' / 2 * G x := by field_simp; ring
+    _ < ε' * G x := by nlinarith
+
+/-- The spectral measure of a vector with independent components and balanced tails:
+`((1 + c)⁻¹ (δ_(1,0) + c δ_(0,1)))`, concentrated on the axes. -/
+noncomputable def axesSpectralMeasure (c : ℝ) : Measure (ℝ × ℝ) :=
+  ENNReal.ofReal (1 + c)⁻¹ •
+    (Measure.dirac ((1 : ℝ), (0 : ℝ)) + ENNReal.ofReal c • Measure.dirac ((0 : ℝ), (1 : ℝ)))
+
+theorem isProbabilityMeasure_axesSpectralMeasure {c : ℝ} (hc : 0 ≤ c) :
+    IsProbabilityMeasure (axesSpectralMeasure c) := by
+  constructor
+  rw [axesSpectralMeasure, Measure.smul_apply, Measure.add_apply, Measure.smul_apply,
+    measure_univ, measure_univ, smul_eq_mul, smul_eq_mul, mul_one, ← ENNReal.ofReal_one,
+    ← ENNReal.ofReal_add zero_le_one hc, ← ENNReal.ofReal_mul (by positivity),
+    inv_mul_cancel₀ (by positivity)]
+
+theorem integral_axesSpectralMeasure {c : ℝ} (hc : 0 ≤ c) (f : ℝ × ℝ →ᵇ ℝ) :
+    ∫ y, f y ∂axesSpectralMeasure c = (1 + c)⁻¹ * (f (1, 0) + c * f (0, 1)) := by
+  have : IsFiniteMeasure (ENNReal.ofReal c • Measure.dirac ((0 : ℝ), (1 : ℝ))) :=
+    ⟨by rw [Measure.smul_apply, measure_univ, smul_eq_mul, mul_one]; exact ENNReal.ofReal_lt_top⟩
+  rw [axesSpectralMeasure, integral_smul_measure,
+    integral_add_measure (f.integrable _) (f.integrable _), integral_smul_measure,
+    integral_dirac, integral_dirac, ENNReal.toReal_ofReal (by positivity),
+    ENNReal.toReal_ofReal hc, smul_eq_mul, smul_eq_mul]
+
+/-- **Independent components: existence and asymptotic independence** ([Res07, §6.5.1],
+[KS20, Example 2.1.?]). Let `X₁, X₂ ≥ 0` be independent, with `P(X₁ > x)` regularly varying with
+index `-α`, `α > 0`, and tail balance `P(X₂ > x) / P(X₁ > x) → c ≥ 0`. Then `X = (X₁, X₂)` is
+regularly varying with spectral measure `(1 + c)⁻¹ (δ_(1,0) + c δ_(0,1))`: its exponent measure
+is concentrated on the axes. -/
+theorem isRegVarVector_of_indepFun (hα : 0 < α)
+    {X₁ X₂ : Ω → ℝ} (h₁ : Measurable X₁) (h₂ : Measurable X₂)
+    (h₁0 : ∀ ω, 0 ≤ X₁ ω) (h₂0 : ∀ ω, 0 ≤ X₂ ω) (hind : IndepFun X₁ X₂ P)
+    (hRV : IsRegularlyVarying (fun x => P.real {ω | x < X₁ ω}) (-α)) {c : ℝ} (hc : 0 ≤ c)
+    (hbal : Tendsto (fun x => P.real {ω | x < X₂ ω} / P.real {ω | x < X₁ ω}) atTop (𝓝 c)) :
+    IsRegVarVector P (fun ω => (X₁ ω, X₂ ω)) α (polarMeasure α (axesSpectralMeasure c)) := by
+  have := isProbabilityMeasure_axesSpectralMeasure hc
+  set F₁ : ℝ → ℝ := fun x => P.real {ω | x < X₁ ω} with hF₁
+  set F₂ : ℝ → ℝ := fun x => P.real {ω | x < X₂ ω} with hF₂
+  have hnorm : ∀ ω, ‖(X₁ ω, X₂ ω)‖ = max (X₁ ω) (X₂ ω) := fun ω => by
+    rw [Prod.norm_def, Real.norm_of_nonneg (h₁0 ω), Real.norm_of_nonneg (h₂0 ω)]
+  have hset : ∀ x, {ω | x < ‖(X₁ ω, X₂ ω)‖} = {ω | x < X₁ ω} ∪ {ω | x < X₂ ω} := fun x => by
+    ext ω; simp [hnorm, lt_max_iff]
+  have hN : ∀ x, P.real {ω | x < ‖(X₁ ω, X₂ ω)‖} = F₁ x + F₂ x - F₁ x * F₂ x := fun x => by
+    rw [hset, hF₁, hF₂, ← measureReal_lt_inter_lt_eq_mul hind]
+    have := measureReal_union_add_inter (μ := P) (s := {ω | x < X₁ ω})
+      (measurableSet_lt measurable_const h₂ : MeasurableSet {ω | x < X₂ ω})
+    linarith
+  have hF₂lim : Tendsto F₂ atTop (𝓝 0) := tendsto_measureReal_lt_atTop h₂
+  have hpos := hRV.eventually_pos
+  -- `N / F₁ → 1 + c`
+  have hNF : Tendsto (fun x => P.real {ω | x < ‖(X₁ ω, X₂ ω)‖} / F₁ x) atTop (𝓝 (1 + c)) := by
+    have := (tendsto_const_nhds (x := (1 : ℝ))).add (hbal.sub hF₂lim)
+    rw [sub_zero] at this
+    refine this.congr' ?_
+    filter_upwards [hpos] with x hx
+    rw [hN]
+    simp only [hF₁, hF₂] at hx ⊢
+    field_simp
+    ring
+  have h1c : (1 + c) ≠ 0 := by positivity
+  -- regular variation of the norm
+  have hRVN : IsRegularlyVarying (fun x => P.real {ω | x < ‖(X₁ ω, X₂ ω)‖}) (-α) := by
+    refine ⟨?_, fun t ht => ?_⟩
+    · filter_upwards [hpos] with x hx
+      rw [hset]
+      exact hx.trans_le (measureReal_mono subset_union_left)
+    · have hlim := ((hNF.comp (tendsto_id.const_mul_atTop ht)).mul (hRV.tendsto ht)).mul
+        (hNF.inv₀ h1c)
+      rw [show (1 + c) * t ^ (-α) * (1 + c)⁻¹ = t ^ (-α) by field_simp] at hlim
+      refine hlim.congr' ?_
+      filter_upwards [hpos, (tendsto_id.const_mul_atTop ht).eventually hpos] with x hx htx
+      simp only [Function.comp_apply, id] at htx ⊢
+      have hNx : 0 < P.real {ω | x < ‖(X₁ ω, X₂ ω)‖} := by
+        rw [hset]; exact hx.trans_le (measureReal_mono subset_union_left)
+      field_simp
+  refine isRegVarVector_polarMeasure hα (h₁.prodMk h₂) hRVN ?_
+  intro f
+  rw [integral_axesSpectralMeasure hc]
+  -- the three pieces
+  set T : Ω → ℝ × ℝ := fun ω => (max (X₁ ω) (X₂ ω))⁻¹ • (X₁ ω, X₂ ω) with hT
+  have hTm : Measurable T := ((h₁.max h₂).inv).smul (h₁.prodMk h₂)
+  have hfT : Integrable (fun ω => f (T ω)) P := Integrable.of_bound
+    (f.continuous.measurable.comp hTm).aestronglyMeasurable ‖f‖
+    (ae_of_all _ fun ω => f.norm_coe_le_norm _)
+  set J₁ : ℝ → ℝ := fun x => ∫ ω in {ω | x < X₁ ω}, f (T ω) ∂P
+  set J₂ : ℝ → ℝ := fun x => ∫ ω in {ω | x < X₂ ω}, f (T ω) ∂P
+  set J₁₂ : ℝ → ℝ := fun x => ∫ ω in {ω | x < X₁ ω} ∩ {ω | x < X₂ ω}, f (T ω) ∂P
+  have hJ : ∀ x, ∫ ω in {ω | x < X₁ ω} ∪ {ω | x < X₂ ω}, f (T ω) ∂P = J₁ x + J₂ x - J₁₂ x := by
+    intro x
+    have hA : MeasurableSet {ω | x < X₁ ω} := measurableSet_lt measurable_const h₁
+    have hB : MeasurableSet {ω | x < X₂ ω} := measurableSet_lt measurable_const h₂
+    simp only [J₁, J₂, J₁₂]
+    have hpt : ({ω | x < X₁ ω} ∪ {ω | x < X₂ ω}).indicator (fun ω => f (T ω)) =
+        fun ω => {ω | x < X₁ ω}.indicator (fun ω => f (T ω)) ω +
+          {ω | x < X₂ ω}.indicator (fun ω => f (T ω)) ω -
+          ({ω | x < X₁ ω} ∩ {ω | x < X₂ ω}).indicator (fun ω => f (T ω)) ω := by
+      ext ω
+      by_cases ha : ω ∈ {ω | x < X₁ ω} <;> by_cases hb : ω ∈ {ω | x < X₂ ω} <;>
+        simp [Set.indicator, ha, hb]
+    rw [← integral_indicator (hA.union hB)]
+    simp only [hpt]
+    have hi : Integrable (fun ω => {ω | x < X₁ ω}.indicator (fun ω => f (T ω)) ω +
+        {ω | x < X₂ ω}.indicator (fun ω => f (T ω)) ω) P :=
+      (hfT.indicator hA).add (hfT.indicator hB)
+    rw [integral_sub hi (hfT.indicator (hA.inter hB)),
+      integral_add (hfT.indicator hA) (hfT.indicator hB), integral_indicator hA,
+      integral_indicator hB, integral_indicator (hA.inter hB)]
+  -- `J₁ / F₁ → f (1, 0)`
+  have hJ₁ : Tendsto (fun x => J₁ x / F₁ x) atTop (𝓝 (f (1, 0))) := by
+    have key := tendsto_setIntegral_dir_sub_div h₁ h₂ h₂0 hind f (G := F₁) (M := 1)
+      (by filter_upwards [hpos] with x hx using ⟨hx, by rw [one_mul]⟩)
+    have := key.add (tendsto_const_nhds (x := f (1, 0)))
+    rw [zero_add] at this
+    refine this.congr' ?_
+    filter_upwards [hpos] with x hx
+    simp only [J₁, T]
+    field_simp
+    ring
+  -- `J₂ / F₁ → c f (0, 1)`
+  have hJ₂ : Tendsto (fun x => J₂ x / F₁ x) atTop (𝓝 (c * f (0, 1))) := by
+    let f' : ℝ × ℝ →ᵇ ℝ := f.compContinuous ⟨Prod.swap, continuous_swap⟩
+    have hbd : ∀ᶠ x in atTop, 0 < F₁ x ∧ F₂ x ≤ (c + 1) * F₁ x := by
+      filter_upwards [hpos, hbal.eventually (gt_mem_nhds (lt_add_one c))] with x hx hx'
+      exact ⟨hx, by rw [div_lt_iff₀ hx] at hx'; linarith⟩
+    have key := tendsto_setIntegral_dir_sub_div h₂ h₁ h₁0 hind.symm f' hbd
+    have := key.add (hbal.mul_const (f (0, 1)))
+    rw [zero_add] at this
+    refine this.congr' ?_
+    filter_upwards [hpos] with x hx
+    have hsw : ∀ ω, f' ((max (X₂ ω) (X₁ ω))⁻¹ • (X₂ ω, X₁ ω)) = f (T ω) := fun ω => by
+      simp [f', T, max_comm]
+    simp only [hsw, J₂]
+    have hf' : f' (1, 0) = f (0, 1) := rfl
+    rw [hf']
+    simp only [hF₁] at hx ⊢
+    field_simp
+    ring
+  -- `J₁₂ / F₁ → 0`
+  have hJ₁₂ : Tendsto (fun x => J₁₂ x / F₁ x) atTop (𝓝 0) := by
+    have hlim : Tendsto (fun x => ‖f‖ * F₂ x) atTop (𝓝 0) := by
+      simpa using hF₂lim.const_mul ‖f‖
+    refine squeeze_zero_norm' ?_ hlim
+    filter_upwards [hpos] with x hx
+    rw [norm_div, Real.norm_of_nonneg hx.le, div_le_iff₀ hx]
+    have := norm_setIntegral_le_of_norm_le_const (μ := P) (f := fun ω => f (T ω))
+      (s := {ω | x < X₁ ω} ∩ {ω | x < X₂ ω}) (measure_lt_top _ _)
+      (fun ω _ => f.norm_coe_le_norm _)
+    rw [measureReal_lt_inter_lt_eq_mul hind] at this
+    calc ‖J₁₂ x‖ ≤ ‖f‖ * (F₁ x * F₂ x) := this
+      _ = ‖f‖ * F₂ x * F₁ x := by ring
+  have hI := (hJ₁.add hJ₂).sub hJ₁₂
+  rw [sub_zero] at hI
+  have hfin := hI.div hNF h1c
+  rw [show (f (1, 0) + c * f (0, 1)) / (1 + c) = (1 + c)⁻¹ * (f (1, 0) + c * f (0, 1)) by
+    field_simp] at hfin
+  refine hfin.congr' ?_
+  filter_upwards [hpos] with x hx
+  have hNx : 0 < P.real {ω | x < ‖(X₁ ω, X₂ ω)‖} := by
+    rw [hset]; exact hx.trans_le (measureReal_mono subset_union_left)
+  show (J₁ x / F₁ x + J₂ x / F₁ x - J₁₂ x / F₁ x) /
+    (P.real {ω | x < ‖(X₁ ω, X₂ ω)‖} / F₁ x) = _
+  rw [integral_cond_eq, smul_eq_mul]
+  have hfun : ∀ ω, ‖(X₁ ω, X₂ ω)‖⁻¹ • (X₁ ω, X₂ ω) = T ω := fun ω => by simp only [T, hnorm]
+  simp only [hfun]
+  rw [hset x] at hNx ⊢
+  rw [hJ x]
+  field_simp
+
+end Independent
+
 end ExtremeValueTheory
