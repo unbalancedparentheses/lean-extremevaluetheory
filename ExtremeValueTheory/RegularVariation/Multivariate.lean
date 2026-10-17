@@ -1370,4 +1370,65 @@ theorem isRegVarVector_of_indepFun (hα : 0 < α)
 
 end Independent
 
+section LinearSpectral
+
+variable {Ω E : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+  [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E]
+  [SecondCountableTopology E] {X : Ω → E} {α : ℝ} {μ : Measure E}
+
+omit [IsProbabilityMeasure P] in
+/-- Half-spaces under the polar measure: `μ {L > 1} = ∫ (L θ)₊ ^ α dS(θ)`. -/
+theorem polarMeasure_one_lt_linear (hα : 0 < α) {S : Measure E} [IsProbabilityMeasure S]
+    (L : E →L[ℝ] ℝ) :
+    polarMeasure α S {y | 1 < L y} = ∫⁻ θ, ENNReal.ofReal (max (L θ) 0 ^ α) ∂S := by
+  have hsm : Measurable fun p : ℝ × E => p.1 • p.2 := measurable_fst.smul measurable_snd
+  have hm : MeasurableSet {y : E | 1 < L y} := measurableSet_lt measurable_const L.measurable
+  rw [polarMeasure, Measure.map_apply hsm hm, Measure.prod_apply_symm (hsm hm)]
+  refine lintegral_congr fun θ => ?_
+  have hpre : (fun r : ℝ => (r, θ)) ⁻¹' ((fun p : ℝ × E => p.1 • p.2) ⁻¹' {y | 1 < L y}) =
+      {r : ℝ | 1 < r * L θ} := by
+    ext r; simp [L.map_smul]
+  rw [hpre]
+  rcases lt_or_ge 0 (L θ) with hL | hL
+  · have : {r : ℝ | 1 < r * L θ} = Ioi (L θ)⁻¹ := by
+      ext r
+      simp only [mem_ofPred_eq, mem_Ioi, inv_eq_one_div, div_lt_iff₀ hL]
+    rw [this, radialMeasure_Ioi hα (inv_pos.2 hL), max_eq_left hL.le,
+      Real.rpow_neg (inv_nonneg.2 hL.le), Real.inv_rpow hL.le, inv_inv]
+  · have hsub : {r : ℝ | 1 < r * L θ} ⊆ Iic 0 := fun r (hr : 1 < r * L θ) => by
+      by_contra h'
+      simp only [mem_Iic, not_le] at h'
+      nlinarith
+    rw [measure_mono_null hsub radialMeasure_Iic_zero, max_eq_right hL,
+      Real.zero_rpow hα.ne', ENNReal.ofReal_zero]
+
+/-- **Tails of linear combinations through the spectral measure** ([BDM02, (1.3)]): if `X` is
+regularly varying with spectral measure `S`, then
+`P(L X > x) / P(‖X‖ > x) → ∫ (L θ)₊ ^ α dS(θ)`. -/
+theorem IsRegVarVector.tendsto_linear_spectral (hα : 0 < α) (h : IsRegVarVector P X α μ)
+    (hX : Measurable X) (L : E →L[ℝ] ℝ) :
+    Tendsto (fun x => P.real {ω | x < L (X ω)} / P.real {ω | x < ‖X ω‖}) atTop
+      (𝓝 (∫ θ, max (L θ) 0 ^ α ∂spectralMeasure μ)) := by
+  have := h.isProbabilityMeasure_spectralMeasure hX
+  have key := h.tendsto_linear hX L
+  have hg : Continuous fun θ : E => max (L θ) 0 ^ α :=
+    (L.continuous.max continuous_const).rpow_const fun _ => Or.inr hα.le
+  have hint : Integrable (fun θ => max (L θ) 0 ^ α) (spectralMeasure μ) := by
+    refine Integrable.of_bound hg.aestronglyMeasurable (‖L‖ ^ α) ?_
+    filter_upwards [h.ae_norm_spectralMeasure hα hX] with θ hθ
+    rw [Real.norm_eq_abs, abs_of_nonneg (Real.rpow_nonneg (le_max_right _ _) _)]
+    refine Real.rpow_le_rpow (le_max_right _ _) (max_le ?_ (norm_nonneg _)) hα.le
+    have := L.le_opNorm θ
+    rw [hθ, mul_one, Real.norm_eq_abs] at this
+    exact (le_abs_self _).trans this
+  have hval : μ.real {y | 1 < L y} = ∫ θ, max (L θ) 0 ^ α ∂spectralMeasure μ := by
+    rw [measureReal_def, h.eq_polarMeasure hα hX, polarMeasure_one_lt_linear hα L,
+      ← ofReal_integral_eq_lintegral_ofReal hint
+        (ae_of_all _ fun θ => Real.rpow_nonneg (le_max_right _ _) _),
+      ENNReal.toReal_ofReal (integral_nonneg fun θ => Real.rpow_nonneg (le_max_right _ _) _)]
+    rw [← h.eq_polarMeasure hα hX]
+  rwa [hval] at key
+
+end LinearSpectral
+
 end ExtremeValueTheory
