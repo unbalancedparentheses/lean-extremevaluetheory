@@ -315,4 +315,151 @@ theorem tendstoInMeasure_weissman_div_of_secondOrder {X : ℕ → Ω → ℝ}
 
 end Weissman
 
+/-! ### Consistency of the tail probability estimator -/
+
+section TailProbability
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+
+/-- **The extrapolation bias of the tail probability estimator vanishes** under second-order
+regular variation with `γ > 0`, `ρ < 0` ([dHF, proof of Theorem 4.4.7]): if `k → ∞`,
+`k / n → 0` and the levels `y_n` are eventually beyond the intermediate quantile,
+`x_{k/n} ≤ y_n`, then `(k / n) (y_n / x_{k/n})^{-1/γ} / F̄(y_n) → 1`. -/
+theorem tendsto_tailProb_div_of_secondOrder {Y : Ω → ℝ} (hY : Measurable Y) {γ ρ : ℝ}
+    {A : ℝ → ℝ} (hγ : 0 < γ)
+    (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P Y)) γ ρ A)
+    (hρ : ρ < 0) {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
+    (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0)) {y : ℕ → ℝ}
+    (hy : ∀ᶠ n in atTop, tailQuantile P Y ((k n : ℝ) / n) ≤ y n) :
+    Tendsto (fun n => (k n : ℝ) / n * (y n / tailQuantile P Y ((k n : ℝ) / n)) ^ (-(1 / γ)) /
+      survival P Y (y n)) atTop (𝓝 1) := by
+  set F := survival P Y with hFdef
+  set U := survivalQuantile F with hUdef
+  have hF := survival_anti (P := P) Y
+  have hrc := continuousWithinAt_survival (P := P) hY
+  have hF0 := tendsto_survival_atTop (P := P) hY
+  have hF1 := tendsto_survival_atBot (P := P) hY
+  have hGal : ∀ {t : ℝ}, 1 < t → ∀ x, U t ≤ x ↔ F x ≤ t⁻¹ := fun ht x =>
+    tailQuantile_le_iff hF hrc hF0 hF1 ht x
+  have hUm := measurable_tailQuantile hF hrc hF0 hF1
+  have hRV := h2.isRegularlyVarying_survival hY hγ
+  have hFpos : ∀ z, 0 < F z := survival_pos hRV
+  have hU1 := h2.isRegularlyVarying
+  set s : ℕ → ℝ := fun n => (n : ℝ) / k n with hs
+  have hslim : Tendsto s atTop atTop := tendsto_div_atTop_of_tendsto hk hkn
+  set τ : ℕ → ℝ := fun n => (F (y n))⁻¹ with hτ
+  set D : ℕ → ℝ := fun n => τ n / s n with hD
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  -- eventually: `x_{k/n} = U(s_n)`, `s_n ≤ τ_n`, hence `D_n ≥ 1`
+  have hev : ∀ᶠ n in atTop, 1 < s n ∧ tailQuantile P Y ((k n : ℝ) / n) = U (s n) ∧
+      s n ≤ τ n ∧ 0 < U (s n) := by
+    filter_upwards [hkR.eventually_gt_atTop 0,
+      (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0,
+      hkn.eventually (gt_mem_nhds one_pos), hy, hslim.eventually_gt_atTop 1,
+      hslim.eventually h2.eventually_pos] with n hk0 hn0 hkn1 hyn hs1 hUs
+    have hq : tailQuantile P Y ((k n : ℝ) / n) = U (s n) := by
+      rw [tailQuantile_eq_survivalQuantile (div_pos hk0 hn0) hkn1, inv_div]
+    refine ⟨hs1, hq, ?_, hUs⟩
+    rw [hq] at hyn
+    have := (hGal hs1 (y n)).1 hyn
+    have hs0 : 0 < s n := one_pos.trans hs1
+    rw [hτ]
+    exact (le_inv_comm₀ (hFpos _) hs0).1 this
+  have hτlim : Tendsto τ atTop atTop := by
+    refine tendsto_atTop_mono' atTop ?_ hslim
+    filter_upwards [hev] with n hn
+    exact hn.2.2.1
+  have hD1 : ∀ᶠ n in atTop, 1 ≤ D n := by
+    filter_upwards [hev] with n hn
+    rw [hD, le_div_iff₀ (one_pos.trans hn.1), one_mul]
+    exact hn.2.2.1
+  -- the bias of the quantile extrapolation
+  have hb := h2.tendsto_div_mul_rpow hUm hρ hslim hD1
+  -- `y_n / U(τ_n) → 1`
+  have hyU : Tendsto (fun n => y n / U (τ n)) atTop (𝓝 1) := by
+    refine tendsto_order.2 ⟨fun a ha => ?_, fun b hb1 => ?_⟩
+    · filter_upwards [hτlim.eventually_gt_atTop 1, hτlim.eventually h2.eventually_pos]
+        with n h1 h3
+      refine ha.trans_le ?_
+      rw [one_le_div h3]
+      exact (hGal h1 (y n)).2 (by rw [hτ, inv_inv])
+    · set v : ℝ := b ^ (1 / (2 * γ)) with hv
+      have hv1 : 1 < v := one_lt_rpow hb1 (by positivity)
+      have hvγ : v ^ γ < b := by
+        rw [hv, ← rpow_mul (by linarith), show 1 / (2 * γ) * γ = 1 / 2 by field_simp]
+        exact rpow_lt_self_of_one_lt hb1 (by norm_num)
+      filter_upwards [hτlim.eventually_gt_atTop 1, hτlim.eventually h2.eventually_pos,
+        hτlim.eventually ((hU1.tendsto (one_pos.trans hv1)).eventually (gt_mem_nhds hvγ))]
+        with n h1 h3 h4
+      refine lt_of_le_of_lt ?_ h4
+      refine div_le_div_of_nonneg_right ?_ h3.le
+      by_contra hcon
+      have h5 := (hGal (one_lt_mul_of_lt_of_le hv1 h1.le) (y n)).1 (not_le.1 hcon).le
+      have hτ0 : 0 < τ n := one_pos.trans h1
+      rw [mul_inv] at h5
+      have : v⁻¹ * (τ n)⁻¹ < (τ n)⁻¹ :=
+        mul_lt_of_lt_one_left (inv_pos.2 hτ0) (inv_lt_one_of_one_lt₀ hv1)
+      rw [hτ, inv_inv] at this h5
+      linarith
+  have hW := ((hb.inv₀ one_ne_zero).mul (hyU.inv₀ one_ne_zero))
+  rw [inv_one, mul_one] at hW
+  have hcont : Tendsto (fun w : ℝ => w ^ (1 / γ)) (𝓝 1) (𝓝 1) := by
+    have := Real.continuousAt_rpow_const 1 (1 / γ) (Or.inl one_ne_zero)
+    simpa using this.tendsto
+  refine (hcont.comp hW).congr' ?_
+  filter_upwards [hev, hτlim.eventually h2.eventually_pos] with n ⟨hs1, hq, hsτ, hUs⟩ hUτ
+  have hs0 : 0 < s n := one_pos.trans hs1
+  have hτ0 : 0 < τ n := hs0.trans_le hsτ
+  have hD0 : 0 < D n := div_pos hτ0 hs0
+  have hDs : D n * s n = τ n := div_mul_cancel₀ _ hs0.ne'
+  have hyn : 0 < y n := by
+    have : U (τ n) ≤ y n := (hGal (hs1.trans_le hsτ) (y n)).2 (by rw [hτ, inv_inv])
+    linarith
+  have hkn' : (k n : ℝ) / n = (s n)⁻¹ := by rw [hs, inv_div]
+  have hFy : F (y n) = (τ n)⁻¹ := by rw [hτ, inv_inv]
+  simp only [Function.comp_apply]
+  rw [hq, hkn', hFy, hDs]
+  have e1 : ((U (τ n) / (U (s n) * D n ^ γ))⁻¹ * (y n / U (τ n))⁻¹) =
+      D n ^ γ * (y n / U (s n))⁻¹ := by
+    field_simp
+  rw [e1, mul_rpow (rpow_pos_of_pos hD0 _).le (inv_nonneg.2 (div_pos hyn hUs).le),
+    ← rpow_mul hD0.le, mul_one_div_cancel hγ.ne', rpow_one, inv_rpow (div_pos hyn hUs).le,
+    ← rpow_neg (div_pos hyn hUs).le, show (s n)⁻¹ * (y n / U (s n)) ^ (-(1 / γ)) / (τ n)⁻¹ =
+      τ n / s n * (y n / U (s n)) ^ (-(1 / γ)) by field_simp]
+
+/-- **Consistency of the tail probability estimator far in the tail** ([dHF, Theorem 4.4.7],
+consistency part). Let `X_0, X_1, …` be iid with tail quantile function of second-order regular
+variation with `γ > 0`, `ρ < 0` and auxiliary function `A`. If `k → ∞`, `k / n → 0`,
+`√k A(n/k) → λ`, and the levels `y_n` satisfy `x_{k/n} ≤ y_n` eventually and
+`log (y_n / x_{k/n}) / √k → 0`, then `p̂(y_n) / P(X > y_n) → 1` in probability. -/
+theorem tendstoInMeasure_tailProbEstimator_div_of_secondOrder {X : ℕ → Ω → ℝ}
+    (hX : ∀ i, Measurable (X i)) (hindep : iIndepFun X P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ} {A : ℝ → ℝ} (hγ : 0 < γ)
+    (hρ : ρ < 0)
+    (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {y : ℕ → ℝ}
+    (hy : ∀ᶠ n in atTop, tailQuantile P (X 0) ((k n : ℝ) / n) ≤ y n)
+    (he : Tendsto (fun n => Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) /
+      √(k n : ℝ)) atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n ω => tailProbEstimator (fun i : Fin n => X i ω) (k n) (y n) /
+      (P {ω | y n < X 0 ω}).toReal) atTop (fun _ => 1) := by
+  have hα : 0 < 1 / γ := one_div_pos.2 hγ
+  have hRV := h2.isRegularlyVarying_survival (hX 0) hγ
+  have hrate := isBoundedInProbability_hill hX hindep hident hγ h2 hk hkn hlam
+  have hbias := tendsto_tailProb_div_of_secondOrder (hX 0) hγ h2 hρ hk hkn hy
+  rw [← one_div_one_div γ] at hrate
+  have hy0 : ∀ᶠ n in atTop, 0 < y n := by
+    filter_upwards [hy, (tendsto_div_atTop_of_tendsto hk hkn).eventually h2.eventually_pos,
+      ((tendsto_natCast_atTop_atTop (R := ℝ)).comp hk).eventually_gt_atTop 0,
+      (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0,
+      hkn.eventually (gt_mem_nhds one_pos)] with n h1 h3 hk0 hn0 hkn1
+    have hk0' : (0 : ℝ) < k n := hk0
+    rw [tailQuantile_eq_survivalQuantile (div_pos hk0' hn0) hkn1, inv_div] at h1
+    exact h3.trans_le h1
+  exact tendstoInMeasure_tailProbEstimator_div_of_isBoundedInProbability hX hindep hident hα hRV
+    hk hkn hy0 hrate he hbias
+
+end TailProbability
+
 end ExtremeValueTheory
