@@ -51,3 +51,5 @@ import ExtremeValueTheory.Dependence.Examples
 import ExtremeValueTheory.Statistics.ExtremeQuantile
 import ExtremeValueTheory.Statistics.UpperOrderStatistics
 import ExtremeValueTheory.Statistics.Records
+
+import ExtremeValueTheory.ForMathlib.MeasureTheory.Measure.Vague
