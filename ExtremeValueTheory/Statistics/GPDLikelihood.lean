@@ -41,7 +41,10 @@ We develop the maximum likelihood theory of the scale parameter
   (`ae_tendsto_gpdScaleMLE`).
 
 The joint maximum likelihood estimator of `(ξ, σ)` on a compact parameter set is treated in
-`ExtremeValueTheory.Statistics.Wald`.
+`ExtremeValueTheory.Statistics.Wald` (shapes `ξ > 0`) and
+`ExtremeValueTheory.Statistics.GPDJointMLE` (all shapes `ξ > -1`, with the extended-real
+log-likelihood). The asymptotic normality of the
+scale MLE for a known shape `ξ > -1/2` is `ExtremeValueTheory.Statistics.GPDLikelihoodNormality`.
 
 ## Proof of consistency for a known shape
 
