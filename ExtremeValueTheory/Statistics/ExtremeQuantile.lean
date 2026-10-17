@@ -792,4 +792,52 @@ theorem tendstoInMeasure_weissman_div_pareto {X : ℕ → Ω → ℝ} (hX : ∀ 
 
 end Pareto
 
+/-! ### Return levels -/
+
+section ReturnLevel
+
+/-- The standard **generalized extreme value distribution function** in the von Mises–Jenkinson
+parametrization: `H_ξ(x) = exp(-(1 + ξ x) ^ (-1/ξ))` for `1 + ξ x > 0`, `H_0(x) = exp(-e^{-x})`;
+outside the support it is `0` (left of it, `ξ > 0`) or `1` (right of it, `ξ < 0`). -/
+noncomputable def gevFun (ξ x : ℝ) : ℝ :=
+  if ξ = 0 then Real.exp (-Real.exp (-x))
+  else if 0 < 1 + ξ * x then Real.exp (-(1 + ξ * x) ^ (-1 / ξ))
+  else if 0 < ξ then 0 else 1
+
+/-- The **`m`-block return level** of the standard GEV distribution `H_ξ`: the level exceeded
+by the block maximum on average once every `m` blocks, i.e. the `(1 - 1/m)` quantile
+`z_m = ((-log(1 - 1/m)) ^ (-ξ) - 1) / ξ` (`z_m = -log(-log(1 - 1/m))` for `ξ = 0`)
+([EKM, §6.4.1]; Coles, *An Introduction to Statistical Modeling of Extreme Values*, §3.1.3).
+For the location-scale family `H_ξ((x - μ)/σ)` the return level is `μ + σ z_m`. -/
+noncomputable def returnLevel (ξ m : ℝ) : ℝ :=
+  if ξ = 0 then -Real.log (-Real.log (1 - 1 / m))
+  else ((-Real.log (1 - 1 / m)) ^ (-ξ) - 1) / ξ
+
+/-- The return level is the `(1 - 1/m)` quantile of `H_ξ`: `H_ξ(z_m) = 1 - 1/m`. -/
+theorem gevFun_returnLevel (ξ : ℝ) {m : ℝ} (hm : 1 < m) : gevFun ξ (returnLevel ξ m) = 1 - 1 / m := by
+  have hm0 : 0 < m := one_pos.trans hm
+  have h1 : 0 < 1 - 1 / m := by
+    have : 1 / m < 1 := (div_lt_one hm0).2 hm
+    linarith
+  have h2 : 1 - 1 / m < 1 := by
+    have : 0 < 1 / m := by positivity
+    linarith
+  have hL : 0 < -Real.log (1 - 1 / m) := neg_pos.2 (Real.log_neg h1 h2)
+  have hexp : Real.exp (-(-Real.log (1 - 1 / m))) = 1 - 1 / m := by
+    rw [neg_neg, Real.exp_log h1]
+  by_cases hξ : ξ = 0
+  · simp only [gevFun, returnLevel, hξ, ite_true, neg_neg, Real.exp_log hL]
+    exact Real.exp_log h1
+  · have hpos : 1 + ξ * returnLevel ξ m = (-Real.log (1 - 1 / m)) ^ (-ξ) := by
+      simp only [returnLevel, hξ, ite_false]
+      field_simp
+      ring
+    have hpos' : 0 < 1 + ξ * returnLevel ξ m := by
+      rw [hpos]; exact rpow_pos_of_pos hL _
+    simp only [gevFun, hξ, ite_false, hpos', ite_true]
+    rw [hpos, ← Real.rpow_mul hL.le, show -ξ * (-1 / ξ) = 1 by field_simp, Real.rpow_one]
+    exact hexp
+
+end ReturnLevel
+
 end ExtremeValueTheory
