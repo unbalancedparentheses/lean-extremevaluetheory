@@ -32,3 +32,4 @@ import ExtremeValueTheory.StableLaws.Cauchy
 import ExtremeValueTheory.StableLaws.LevyContinuity
 import ExtremeValueTheory.StableLaws.TailIntegral
 import ExtremeValueTheory.StableLaws.DomainOfAttraction
+import ExtremeValueTheory.StableLaws.GeneralizedCLT
