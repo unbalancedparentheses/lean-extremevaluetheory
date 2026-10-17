@@ -304,6 +304,186 @@ theorem tendsto_setIntegral_truncSinDeriv_mul_inv (t : ℝ) :
   · rw [abs_of_pos ht]
     exact tendsto_setIntegral_truncSinDeriv_mul_inv_of_pos ht
 
+/-- `Q_t(v) = sin (t v) - t clamp(v, -1, 1)`: continuous, odd, and equal to
+`sin (t v) - t min (v, 1)` for `v ≥ 0`. -/
+noncomputable def clampSin (t v : ℝ) : ℝ := sin (t * v) - t * max (min v 1) (-1)
+
+theorem continuous_clampSin (t : ℝ) : Continuous (clampSin t) :=
+  (continuous_sin.comp (continuous_const.mul continuous_id)).sub
+    (continuous_const.mul ((continuous_id.min continuous_const).max continuous_const))
+
+theorem clampSin_neg (t v : ℝ) : clampSin t (-v) = -clampSin t v := by
+  have h : max (min (-v) 1) (-1) = -max (min v 1) (-1) := by
+    simp only [max_def, min_def]; split_ifs <;> linarith
+  rw [clampSin, clampSin, h, mul_neg, sin_neg]; ring
+
+theorem abs_clampSin_le (t v : ℝ) : |clampSin t v| ≤ 1 + |t| := by
+  have h : |max (min v 1) (-1)| ≤ 1 :=
+    abs_le.2 ⟨le_max_right _ _, max_le (min_le_right _ _) (by norm_num)⟩
+  unfold clampSin
+  calc _ ≤ |sin (t * v)| + |t * max (min v 1) (-1)| := abs_sub _ _
+    _ ≤ 1 + |t| * 1 := by
+        rw [abs_mul]
+        exact add_le_add (abs_sin_le_one _) (mul_le_mul_of_nonneg_left h (abs_nonneg _))
+    _ = _ := by ring
+
 end StableIntegral
+
+section StableExponentOne
+
+/-- The exponent `ψ(t) = -c |t| + i e (κ t - t log |t|)` of a `1`-stable characteristic function
+(the `α = 1` parametrization of [ST, Definition 1.1.6]: `c = σ`, `e = (2 / π) σ β`, up to the
+location term `κ`). -/
+noncomputable def stableExponentOne (c e κ t : ℝ) : ℂ :=
+  ((-(c * |t|) : ℝ) : ℂ) + ((e * (κ * t - t * Real.log |t|) : ℝ) : ℂ) * Complex.I
+
+/-- `HasStableOneCharFun c e κ μ`: `μ` is a probability measure with characteristic function
+`t ↦ exp (-c |t| + i e (κ t - t log |t|))`. -/
+def HasStableOneCharFun (c e κ : ℝ) (μ : Measure ℝ) : Prop :=
+  IsProbabilityMeasure μ ∧ ∀ t, charFun μ t = Complex.exp (stableExponentOne c e κ t)
+
+theorem continuous_stableExponentOne (c e κ : ℝ) : Continuous (stableExponentOne c e κ) := by
+  have h : stableExponentOne c e κ = fun t => ((-(c * |t|) : ℝ) : ℂ) +
+      ((e * (κ * t - t * Real.log t) : ℝ) : ℂ) * Complex.I := by
+    funext t; simp only [stableExponentOne, Real.log_abs]
+  rw [h]
+  have h1 : Continuous fun t : ℝ => e * (κ * t - t * Real.log t) :=
+    continuous_const.mul ((continuous_const.mul continuous_id).sub Real.continuous_mul_log)
+  exact (Complex.continuous_ofReal.comp (by fun_prop : Continuous fun t : ℝ => -(c * |t|))).add
+    ((Complex.continuous_ofReal.comp h1).mul continuous_const)
+
+end StableExponentOne
+
+namespace GCLT
+
+open StableIntegral
+
+section OneSided
+
+theorem setIntegral_truncSinDeriv (t w : ℝ) :
+    ∫ u in Ioo 0 w, truncSinDeriv t u = clampSin t (max w 0) := by
+  have h1 : IntegrableOn (fun u : ℝ => t * cos (t * u)) (Ioo 0 w) :=
+    (by fun_prop : Continuous fun u : ℝ => t * cos (t * u)).integrableOn_Icc.mono_set
+      Ioo_subset_Icc_self
+  have h2 : IntegrableOn ((Iio (1 : ℝ)).indicator fun _ => t) (Ioo 0 w) :=
+    Measure.integrableOn_of_bounded (M := |t|) measure_Ioo_lt_top.ne
+      (measurable_const.indicator measurableSet_Iio).aestronglyMeasurable
+      (ae_of_all _ fun u => (norm_indicator_le_norm_self (fun _ => t) u).trans_eq
+        (Real.norm_eq_abs t))
+  have hc : ∫ u in Ioo 0 w, t * cos (t * u) = sin (t * max w 0) := by
+    rw [setIntegral_Ioo_eq_sub (hasDerivAt_sin_mul t) (by fun_prop) w]; simp
+  have hi : ∫ u in Ioo 0 w, (Iio (1 : ℝ)).indicator (fun _ => t) u = t * max (min w 1) 0 := by
+    rw [setIntegral_indicator measurableSet_Iio, Ioo_inter_Iio, setIntegral_const,
+      Real.volume_real_Ioo, smul_eq_mul, sub_zero, mul_comm]
+  have hm : max (min w 1) 0 = max (min (max w 0) 1) (-1) := by
+    simp only [max_def, min_def]; split_ifs <;> linarith
+  unfold truncSinDeriv
+  rw [integral_sub h1 h2, hc, hi, hm, clampSin]
+
+/-- **Truncation error**: for `M ≥ 1`, replacing `max (x / a) 0` by `max (min (x / a) M) 0` in
+`Q_t` costs at most `2 ν (a M, ∞)`. -/
+theorem abs_integral_clampSin_sub_le {ν : Measure ℝ} [IsFiniteMeasure ν] (t : ℝ) {a M : ℝ}
+    (ha : 0 < a) (hM : 1 ≤ M) :
+    |∫ x, clampSin t (max (x / a) 0) ∂ν - ∫ x, clampSin t (max (min (x / a) M) 0) ∂ν| ≤
+      2 * ν.real (Ioi (a * M)) := by
+  have hi : ∀ f : ℝ → ℝ, Continuous f → Integrable (fun x => clampSin t (f x)) ν := fun f hf =>
+    Integrable.of_bound ((continuous_clampSin t).comp hf).aestronglyMeasurable (1 + |t|)
+      (ae_of_all _ fun x => (Real.norm_eq_abs _).trans_le (abs_clampSin_le t _))
+  have hs : ∀ f : ℝ → ℝ, Continuous f → Integrable (fun x => sin (t * f x)) ν := fun f hf =>
+    Integrable.of_bound (by fun_prop) 1
+      (ae_of_all _ fun x => (Real.norm_eq_abs _).trans_le (abs_sin_le_one _))
+  have hpt : ∀ x, clampSin t (max (x / a) 0) - clampSin t (max (min (x / a) M) 0) =
+      sin (t * max (x / a) 0) - sin (t * max (min (x / a) M) 0) := by
+    intro x
+    have : max (min (max (x / a) 0) 1) (-1) = max (min (max (min (x / a) M) 0) 1) (-1) := by
+      simp only [max_def, min_def]; split_ifs <;> linarith
+    rw [clampSin, clampSin, this]; ring
+  rw [← integral_sub (hi _ (by fun_prop)) (hi _ (by fun_prop))]
+  simp_rw [hpt]
+  rw [integral_sub (hs _ (by fun_prop)) (hs _ (by fun_prop))]
+  exact abs_integral_sub_min_le (F := fun v => sin (t * v)) (by fun_prop)
+    (fun v => abs_sin_le_one _) ha M
+
+/-- `tendsto_of_approx` with the truncation level restricted to `M ≥ 1`. -/
+theorem tendsto_of_approx_of_one_le {L : ℕ → ℝ} {I R : ℝ → ℕ → ℝ} {J r : ℝ → ℝ} {c : ℝ}
+    (hLI : ∀ M, 1 ≤ M → ∀ n, |L n - I M n| ≤ R M n)
+    (hI : ∀ M, 1 ≤ M → Tendsto (I M) atTop (𝓝 (J M)))
+    (hR : ∀ M, 1 ≤ M → Tendsto (R M) atTop (𝓝 (r M)))
+    (hJ : Tendsto J atTop (𝓝 c)) (hr : Tendsto r atTop (𝓝 0)) :
+    Tendsto L atTop (𝓝 c) := by
+  have htop : Tendsto (fun M : ℝ => max M 1) atTop atTop :=
+    tendsto_atTop_mono (fun M => le_max_left M 1) tendsto_id
+  exact tendsto_of_approx (I := fun M => I (max M 1)) (R := fun M => R (max M 1))
+    (J := fun M => J (max M 1)) (r := fun M => r (max M 1))
+    (fun M _ n => hLI _ (le_max_right _ _) n) (fun M _ => hI _ (le_max_right _ _))
+    (fun M _ => hR _ (le_max_right _ _)) (hJ.comp htop) (hr.comp htop)
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {c : ℝ} {a : ℕ → ℝ}
+
+/-- **The one-sided sine part, `α = 1`**: if `P(X > x) / P(|X| > x) → c`, then
+`n E Q_t(X⁺ / aₙ) → c t (cosLogConst - log |t|)`. -/
+theorem tendsto_mul_integral_clampSin_max (hRV : IsRegularlyVarying (absTail μ) (-1))
+    (ha : ∀ n, 0 < a n) (hna : Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n)) atTop (𝓝 1))
+    (hc : Tendsto (fun x => μ.real (Ioi x) / absTail μ x) atTop (𝓝 c)) (t : ℝ) :
+    Tendsto (fun n : ℕ => (n : ℝ) * ∫ x, clampSin t (max (x / a n) 0) ∂μ) atTop
+      (𝓝 (c * (t * (cosLogConst - log |t|)))) := by
+  set δ : ℝ := 1 / 2 with hδ_def
+  have hδ : 0 < δ := by norm_num [hδ_def]
+  obtain ⟨K, hK⟩ := eventually_abs_mul_measureReal_Ioi_le one_pos hRV hna hδ
+  refine tendsto_of_approx_of_one_le
+    (I := fun M n => ∫ u in Ioo 0 M, truncSinDeriv t u * ((n : ℝ) * μ.real (Ioi (a n * u))))
+    (R := fun M n => 2 * ((n : ℝ) * μ.real (Ioi (a n * M))))
+    (J := fun M => c * ∫ u in Ioo 0 M, truncSinDeriv t u * u ^ (-(1 : ℝ)))
+    (r := fun M => 2 * (c * M ^ (-(1 : ℝ)))) ?_ ?_ ?_ ?_ ?_
+  · intro M hM n
+    have e1 := integral_setIntegral_Ioo_min (ν := μ) (g := truncSinDeriv t)
+      (measurable_truncSinDeriv t) (abs_truncSinDeriv_le_two t) (ha n) M
+    simp only [setIntegral_truncSinDeriv] at e1
+    have e : ∫ u in Ioo 0 M, truncSinDeriv t u * ((n : ℝ) * μ.real (Ioi (a n * u))) =
+        (n : ℝ) * ∫ x, clampSin t (max (min (x / a n) M) 0) ∂μ := by
+      rw [e1, ← integral_const_mul]; congr 1; funext u; ring
+    rw [e, ← mul_sub, abs_mul, Nat.abs_cast]
+    have := abs_integral_clampSin_sub_le (ν := μ) t (ha n) hM
+    calc _ ≤ (n : ℝ) * (2 * μ.real (Ioi (a n * M))) :=
+          mul_le_mul_of_nonneg_left this (Nat.cast_nonneg n)
+      _ = _ := by ring
+  · intro M hM
+    have hM0 : 0 < M := one_pos.trans_le hM
+    have h1 : IntegrableOn (fun u : ℝ => u ^ (1 - δ)) (Ioo 0 M) :=
+      ((intervalIntegrable_iff_integrableOn_Ioc_of_le hM0.le).1
+        (intervalIntegral.intervalIntegrable_rpow' (by rw [hδ_def]; norm_num))).mono_set
+          Ioo_subset_Ioc_self
+    have h2 : IntegrableOn (fun u : ℝ => u ^ (1 + δ)) (Ioo 0 M) :=
+      ((intervalIntegrable_iff_integrableOn_Ioc_of_le hM0.le).1
+        (intervalIntegral.intervalIntegrable_rpow' (by rw [hδ_def]; norm_num))).mono_set
+          Ioo_subset_Ioc_self
+    refine tendsto_setIntegral_mul_of_le measurableSet_Ioo (fun u hu => hu.1)
+      (fun n => (measurable_measureReal_Ioi.comp (measurable_const.mul measurable_id)).const_mul _)
+      (measurable_truncSinDeriv t) (fun u hu => tendsto_mul_measureReal_Ioi hRV hna hc hu) hK ?_
+    refine ((h1.add h2).const_mul (|t| ^ 3 / 2 + |t|)).mono' (by fun_prop) ?_
+    rw [ae_restrict_iff' measurableSet_Ioo]
+    refine Eventually.of_forall fun u hu => ?_
+    have hu0 : 0 < u := hu.1
+    have hp : 0 ≤ u ^ (-1 - δ) + u ^ (-1 + δ) :=
+      add_nonneg (rpow_nonneg hu0.le _) (rpow_nonneg hu0.le _)
+    have e1 : u ^ 2 * u ^ (-1 - δ) = u ^ (1 - δ) := by
+      rw [← rpow_natCast, ← rpow_add hu0]; congr 1; push_cast; ring
+    have e2 : u ^ 2 * u ^ (-1 + δ) = u ^ (1 + δ) := by
+      rw [← rpow_natCast, ← rpow_add hu0]; congr 1; push_cast; ring
+    rw [Real.norm_eq_abs, abs_of_nonneg (mul_nonneg (abs_nonneg _) hp)]
+    calc |truncSinDeriv t u| * (u ^ (-1 - δ) + u ^ (-1 + δ))
+        ≤ (|t| ^ 3 / 2 + |t|) * u ^ 2 * (u ^ (-1 - δ) + u ^ (-1 + δ)) :=
+          mul_le_mul_of_nonneg_right (abs_truncSinDeriv_le t hu0) hp
+      _ = (|t| ^ 3 / 2 + |t|) * (u ^ (1 - δ) + u ^ (1 + δ)) := by rw [← e1, ← e2]; ring
+  · intro M hM
+    exact (tendsto_mul_measureReal_Ioi hRV hna hc (one_pos.trans_le hM)).const_mul 2
+  · refine ((tendsto_setIntegral_truncSinDeriv_mul_inv t).const_mul c).congr fun M => ?_
+    congr 1
+    exact setIntegral_congr_fun measurableSet_Ioo fun u _ => by rw [rpow_neg_one]
+  · simpa using ((tendsto_rpow_neg_atTop one_pos).const_mul c).const_mul 2
+
+end OneSided
+
+end GCLT
 
 end ExtremeValueTheory
