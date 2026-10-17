@@ -424,3 +424,55 @@ $X_1 \sim \mu$, $X_2 \sim \nu$.
   Compare $\overline{F^{*n}}$ with $\bar F$ through the single big jump and use
   closure under tail equivalence.
 \end{proof}
+
+\section{Linear processes}
+
+\begin{theorem}[Tails of linear combinations]
+  \label{thm:linear-tails}
+  \uses{def:regularly-varying}
+  \lean{ExtremeValueTheory.LinearProcess.tendsto_measureReal_add_div, ExtremeValueTheory.LinearProcess.tendsto_measureReal_finsetSum_div, ExtremeValueTheory.LinearProcess.tailWeight,
+    ExtremeValueTheory.LinearProcess.tendsto_measureReal_mul_div, ExtremeValueTheory.LinearProcess.tendsto_measureReal_sum_mul_div}
+  \leanok
+  For independent real $X$, $Y$ with $\PR[X > x]/L(x) \to a$, $\PR[Y > x]/L(x) \to b$ and $L \in RV_{-\alpha}$,
+  $\PR[X + Y > x]/L(x) \to a + b$. Hence for iid $Z_j$ with $\PR[|Z| > x] \in RV_{-\alpha}$ and tail balance
+  $p$, $\PR[\sum_j \psi_j Z_j > x]/\PR[|Z| > x] \to \sum_j |\psi_j|^\alpha (p \mathbf 1\{\psi_j > 0\} + q
+  \mathbf 1\{\psi_j < 0\})$ for finitely many coefficients [EKM, Lemma~A3.26].
+\end{theorem}
+\begin{proof}
+  \leanok
+  An $\varepsilon$-sandwich: $\{X + Y > x\}$ is, up to negligible events, $\{X > (1-\varepsilon)x\} \cup
+  \{Y > (1-\varepsilon)x\}$.
+\end{proof}
+
+\begin{theorem}[Infinite moving averages, $\alpha < 1$]
+  \label{thm:linear-tails-infinite}
+  \uses{thm:linear-tails, thm:karamata}
+  \lean{ExtremeValueTheory.LinearProcess.ae_summable_mul, ExtremeValueTheory.LinearProcess.exists_measure_tsum_gt_le, ExtremeValueTheory.LinearProcess.tendsto_measureReal_tsum_mul_div}
+  \leanok
+  If $0 < \delta < \alpha < 1$ and $\sum_j |\psi_j|^\delta < \infty$, then $\sum_j \psi_j Z_j$ converges
+  absolutely a.s.\ and has the same tail asymptotics with the infinite sum of weights
+  [EKM, Lemma~A3.26], [Davis--Resnick 1985]. The case $\alpha \ge 1$ is not formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  A uniform bound $\PR[\sum |c_j||Z_j| > x] \le K (\sum |c_j|^\delta) \PR[|Z| > x]$ from Karamata and Potter
+  controls the tail of the series.
+\end{proof}
+
+\begin{theorem}[Spectral tail process of a finite moving average]
+  \label{thm:moving-average-tail-process}
+  \uses{thm:linear-tails, def:candidate-extremal-index}
+  \lean{ExtremeValueTheory.MovingAverage.process, ExtremeValueTheory.MovingAverage.indexLaw, ExtremeValueTheory.MovingAverage.spectral, ExtremeValueTheory.MovingAverage.weightSum, ExtremeValueTheory.MovingAverage.tendsto_measureReal_process_div,
+    ExtremeValueTheory.MovingAverage.hasSpectralTailProcess, ExtremeValueTheory.MovingAverage.candidateExtremalIndex_spectral,
+    ExtremeValueTheory.MovingAverage.exists_hasSpectralTailProcess_candidateExtremalIndex_eq}
+  \leanok
+  Let $X_t = \sum_{i \le m} \psi_i Z_{t-i}$ with $\psi_i \ge 0$ and iid nonnegative $Z$ with
+  $\PR[Z > x] \in RV_{-\alpha}$. Then $X$ has spectral tail process $\Theta_t = \psi_{J+t}/\psi_J$, where
+  $\PR[J = j] = \psi_j^\alpha / \sum_i \psi_i^\alpha$, and the candidate extremal index is
+  $\vartheta = \max_j \psi_j^\alpha / \sum_j \psi_j^\alpha$ [KS20, Ch.~15], [EKM, Example~8.1.4].
+\end{theorem}
+\begin{proof}
+  \leanok
+  A large value of $X_0$ is caused by a single large $Z_{-J}$; the conditional law of $J$ is proportional
+  to $\psi_J^\alpha$.
+\end{proof}

@@ -65,6 +65,10 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   is subexponential (`IsSubexponential.lognormal`), the class `𝒮*` is contained in `𝒮` and gives
   subexponential integrated tails (`IsSStar.isSubexponential_integratedTail`), and `𝒮` is closed
   under convolution roots (`IsSubexponential.of_convPow`).
+- **Linear processes** (`HeavyTails/LinearProcess*.lean`, `Dependence/MovingAverage*.lean`): tails of
+  `Σ ψ_j Z_j` for regularly varying noise with tail balance (finite sums; infinite sums for
+  `α < 1`), and the spectral tail process of finite moving averages with candidate extremal index
+  `ϑ = max ψ_j^α / Σ ψ_j^α` (`MovingAverage.candidateExtremalIndex_spectral`).
 - **Hill estimator consistency** (`tendstoInMeasure_hill`): for iid samples whose tail is
   regularly varying with index `-α`, and `k → ∞`, `k/n → 0`, the Hill estimator
   `(1/k) Σ_{i<k} (log X₍ᵢ₊₁₎ - log X₍ₖ₊₁₎)` converges to `1/α` in probability. With order
