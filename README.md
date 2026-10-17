@@ -114,6 +114,11 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   (`HasSpectralTailProcess.lintegral_timeChange`), and the candidate extremal index
   `ϑ = E[sup_{k≥0}|Θ_k|^α − sup_{k≥1}|Θ_k|^α] = P(sup_{k≥1}|Y_k| ≤ 1)`, with `ϑ ≤ 1`, `ϑ = 1` for
   iid sequences, and `ϑ > 0` when `Θ_t → 0`.
+- **Extremal index = candidate extremal index** (`Dependence/Anticlustering.lean`): forward
+  anticlustering forces `Θ_t → 0`; the cluster ratio `P(M_{rₙ} > uₙ)/(rₙ P(|X₀| > uₙ)) → ϑ`
+  (`HasSpectralTailProcess.tendsto_blockRatio`), so under anticlustering and the block condition
+  `𝒜` the extremal index is `ϑ` (`hasExtremalIndex_abs`); without anticlustering `θ ≤ ϑ`
+  (`le_candidateExtremalIndex`). Checked on the moving maximum, where `θ = ϑ = 1/2`.
 - **Vague convergence and Poisson random measures** (`ForMathlib/`, Mathlib-only imports, intended
   for upstreaming): vague convergence with its portmanteau properties, Poisson random measures with
   existence for every s-finite intensity (`exists_isPoissonRandomMeasure`), Laplace functionals,

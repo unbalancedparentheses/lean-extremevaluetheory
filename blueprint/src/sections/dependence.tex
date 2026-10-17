@@ -198,3 +198,106 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
   \sup_{k\ge1}|\Theta_k|^\alpha$. Positivity: decompose according to the last time $|Y_t| > 1$, which
   exists since $\Theta_t \to 0$, and apply the time-change formula to each piece.
 \end{proof}
+
+\section{The extremal index and the tail process}
+
+\begin{lemma}[Stationarity notions agree]
+  \label{lem:stationary-windows}
+  \uses{def:stationary, def:tail-process}
+  \lean{ExtremeValueTheory.hasShiftInvariantWindows_iff_isStationary, ExtremeValueTheory.HasShiftInvariantWindows.isStationary_nat,
+    ExtremeValueTheory.HasShiftInvariantWindows.map_comp}
+  \leanok
+  For measurable $(X_t)_{t \in \bZ}$ under a finite measure, shift-invariance of all finite windows is
+  equivalent to stationarity of every shifted $\bN$-indexed sequence $(X_{n+k})_{n \in \bN}$.
+\end{lemma}
+\begin{proof}
+  \leanok
+  Finite-dimensional laws determine the law of the path.
+\end{proof}
+
+\begin{definition}[Anticlustering and condition $\mathcal A$]
+  \label{def:anticlustering}
+  \uses{def:tail-process}
+  \lean{ExtremeValueTheory.AntiClusteringAt, ExtremeValueTheory.ForwardAntiClusteringAt, ExtremeValueTheory.AntiClustering, ExtremeValueTheory.ConditionA}
+  \leanok
+  $AC(r_n)$ at levels $u_n$: $\lim_m \limsup_n \PR[\max_{m \le |t| \le r_n} |X_t| > u_n \mid |X_0| > u_n] = 0$
+  (the forward version only uses $m \le t \le r_n$). Condition $\mathcal A(u_n)$:
+  $\PR[M_n \le u_n] - \PR[M_{r_n} \le u_n]^{\lfloor n/r_n \rfloor} \to 0$ [BS09, \S4], [KS20, \S6.1].
+\end{definition}
+
+\begin{theorem}[Anticlustering forces $\Theta_t \to 0$]
+  \label{thm:ac-theta-zero}
+  \uses{def:anticlustering, thm:candidate-extremal-index}
+  \lean{ExtremeValueTheory.HasSpectralTailProcess.tendsto_zero_of_forwardAntiClusteringAt,
+    ExtremeValueTheory.HasSpectralTailProcess.candidateExtremalIndex_pos_of_forwardAntiClusteringAt,
+    ExtremeValueTheory.HasSpectralTailProcess.candidateExtremalIndex_pos_of_antiClustering}
+  \leanok
+  Forward anticlustering at a single level sequence $u_n \to \infty$ with $r_n \to \infty$ implies
+  $\Theta_t \to 0$ almost surely as $t \to \infty$; neither stationarity nor $r_n/n \to 0$ is used.
+  For stationary sequences it follows that $\vartheta > 0$ [BS09, Proposition~4.2].
+\end{theorem}
+\begin{proof}
+  \leanok
+  The tail-process limit of the anticlustering probabilities at level $1$, extended to all levels
+  through the independent Pareto radius $Y = R\Theta$.
+\end{proof}
+
+\begin{theorem}[The extremal index equals the candidate extremal index]
+  \label{thm:theta-eq-vartheta}
+  \uses{thm:ac-theta-zero, thm:time-change, def:extremal-index, lem:stationary-windows}
+  \lean{ExtremeValueTheory.HasShiftInvariantWindows.measureReal_exists_lt_eq_sum, ExtremeValueTheory.HasSpectralTailProcess.tendsto_blockRatio,
+    ExtremeValueTheory.HasSpectralTailProcess.tendsto_partialMax_abs, ExtremeValueTheory.HasSpectralTailProcess.hasExtremalIndex_abs, ExtremeValueTheory.HasSpectralTailProcess.hasExtremalIndex_of_nonneg,
+    ExtremeValueTheory.HasSpectralTailProcess.tendsto_partialMax_abs_of_antiClustering}
+  \leanok
+  For a stationary sequence with spectral tail process $\Theta$, $u_n \to \infty$, $r_n \to \infty$
+  and forward anticlustering at $u_n$,
+  \begin{align*}
+    \frac{\PR[\max_{t < r_n} |X_t| > u_n]}{r_n \PR[|X_0| > u_n]} \; \to \; \vartheta ;
+  \end{align*}
+  no mixing and no condition $r_n/n \to 0$ is needed for this. If in addition
+  $n \PR[|X_0| > u_n] \to \tau$, $r_n/n \to 0$ and $\mathcal A(u_n)$ holds, then
+  $\PR[\max_{t<n} |X_t| \le u_n] \to e^{-\vartheta\tau}$. Under $AC(r_n)$ and $\mathcal A(a_n x)$ at all
+  levels, $|X|$ (and $X$ itself if $X \ge 0$) has extremal index $\vartheta$, and
+  $\PR[M_n \le a_n x] \to \exp(-\vartheta x^{-\alpha})$ [BS09, Proposition~4.2], [KS20, \S7.5].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Exact first-exceedance decomposition
+  $\PR[M_r > x] = \sum_{k<r} \PR[|X_0| > x, \max_{0 < t \le k} |X_t| \le x]$ by stationarity; each term,
+  divided by $\PR[|X_0| > x]$, tends to $\PR[\max_{0<t\le k} |Y_t| \le 1]$, and anticlustering controls
+  the terms with $k \ge m$. The limit of the Ces`aro average is $\vartheta$. Condition $\mathcal A$
+  then gives $(1 - r_n \vartheta \tau / n)^{n/r_n} \to e^{-\vartheta\tau}$.
+\end{proof}
+
+\begin{theorem}[$\theta \le \vartheta$ without anticlustering]
+  \label{thm:theta-le-vartheta}
+  \uses{thm:theta-eq-vartheta}
+  \lean{ExtremeValueTheory.HasSpectralTailProcess.le_candidateExtremalIndex_of_tendsto_blockRatio, ExtremeValueTheory.HasSpectralTailProcess.le_candidateExtremalIndex_of_tendsto,
+    ExtremeValueTheory.HasSpectralTailProcess.le_candidateExtremalIndex, ExtremeValueTheory.tendsto_measureReal_forall_le_candidateExtremalIndex}
+  \leanok
+  Every limit point of the cluster ratio is at most $\vartheta$, using only stationarity, the tail
+  process, $u_n \to \infty$ and $r_n \to \infty$. Consequently, if $|X|$ has extremal index $\theta$ and
+  condition $\mathcal A(u_n)$ holds along one level sequence with $n \PR[|X_0| > u_n] \to \tau > 0$,
+  $r_n \to \infty$ and $r_n/n \to 0$, then $\theta \le \vartheta$. Anticlustering is not needed. (The
+  hypotheses of the literature version, [KS20, Lemma~7.5.4], were not checked against the source.)
+\end{theorem}
+\begin{proof}
+  \leanok
+  Without anticlustering, the first-exceedance terms with $k \ge m$ are bounded above by their limits
+  but may lose mass, which gives the inequality.
+\end{proof}
+
+\begin{proposition}[Moving maximum: $\theta = \vartheta = 1/2$]
+  \label{prop:moving-max-vartheta}
+  \uses{thm:candidate-extremal-index, prop:extremal-index-examples}
+  \lean{ExtremeValueTheory.movingMax, ExtremeValueTheory.isRegularlyVarying_movingMax, ExtremeValueTheory.hasSpectralTailProcess_movingMax,
+    ExtremeValueTheory.candidateExtremalIndex_movingMax, ExtremeValueTheory.hasExtremalIndex_movingMax_candidateExtremalIndex}
+  \leanok
+  For iid Pareto($\alpha$) $Z$ and $X_t = \max(Z_t, Z_{t+1})$, $\PR[X_0 > x] = 2x^{-\alpha} - x^{-2\alpha}$,
+  the spectral tail process is the indicator of $\{-1, 0\}$ or of $\{0, 1\}$ with probability $1/2$
+  each, and $\vartheta = 1/2$, matching the directly computed extremal index $\theta = 1/2$.
+\end{proposition}
+\begin{proof}
+  \leanok
+  An exceedance of $X_0$ comes from $Z_0$ or $Z_1$, each with conditional probability $1/2$ in the limit.
+\end{proof}

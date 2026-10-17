@@ -21,8 +21,18 @@ Progress (2026-10-17): the tail process, the spectral tail process, the Basrak�
 decomposition, the time-change formula, and `ϑ` with `ϑ ≤ 1`, `ϑ = P(sup_{k≥1}|Y_k| ≤ 1)`, `ϑ = 1`
 for iid sequences and `ϑ > 0` when `Θ_t → 0` are proved (`Dependence/TailProcess.lean`,
 `TimeChange.lean`). The block extremal index `θ` and Leadbetter's theorem are in
-`Dependence/ExtremalIndex.lean`. Next: `θ = ϑ` under anticlustering and `θ ≤ ϑ`, linking the two
-files.
+`Dependence/ExtremalIndex.lean`. Done since: `θ = ϑ` under forward anticlustering and condition `𝒜`, and `θ ≤ ϑ` without
+anticlustering (`Dependence/Anticlustering.lean`), checked on the moving maximum (`θ = ϑ = 1/2`).
+
+Hypothesis bookkeeping (the research value of the formal proofs):
+- The cluster ratio `P(M_{rₙ} > uₙ)/(rₙ P(|X₀| > uₙ)) → ϑ` needs only stationarity, the tail process,
+  `uₙ, rₙ → ∞` and *forward* anticlustering at *one* level sequence: no mixing, no `rₙ/n → 0`.
+- `Θ_t → 0` follows from forward anticlustering at one level, without stationarity.
+- `θ ≤ ϑ` needs no anticlustering, only condition `𝒜` along one level sequence.
+
+Open next steps: derive `𝒜` from mixing coefficients (β- or α-mixing); the backward limit
+`Θ_{−t} → 0`; prove AC and `𝒜` for the moving maximum and for linear processes so the main theorem
+(not just the direct computation) recovers `θ`; then the Bai–Wang-type `θ < ϑ` question (P1).
 
 ## Open problems
 
