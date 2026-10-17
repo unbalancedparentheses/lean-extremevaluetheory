@@ -182,7 +182,8 @@ theorem isRegularlyVarying_of_isRegularlyVarying_survivalQuantile (hF : Antitone
     have hgap : 0 < (a⁻¹) ^ γ - c * v ^ γ := by
       rw [← hqγ, ← mul_rpow hq0.le (by linarith), sub_pos, mul_comm]
       exact rpow_lt_rpow (by positivity) hvq hγ
-    have hlim := (hU.tendsto (inv_pos.2 ha0)).sub ((hU.tendsto (by linarith : (0 : ℝ) < v)).const_mul c)
+    have hlim := (hU.tendsto (inv_pos.2 ha0)).sub
+      ((hU.tendsto (by linarith : (0 : ℝ) < v)).const_mul c)
     have hev : ∀ᶠ t in atTop, c * U (v * t) < U (a⁻¹ * t) ∧ 1 < a⁻¹ * t := by
       filter_upwards [hlim.eventually (lt_mem_nhds hgap), hU.eventually_pos,
         (tendsto_id.const_mul_atTop (inv_pos.2 ha0)).eventually_gt_atTop 1] with t h1 h2 h3
