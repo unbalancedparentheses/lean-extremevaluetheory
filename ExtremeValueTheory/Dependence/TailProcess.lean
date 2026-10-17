@@ -36,14 +36,29 @@ Moreover `ν` is then the law of `(R, R • Θ)` with `R` Pareto and independent
   varying with index `α`, with spectral tail process `(Θ_t)` ([BS09, Theorem 2.1 (iii)],
   [KS20, Chapter 5]).
 * `ExtremeValueTheory.HasTailProcess`: the tail process `(Y_t)` ([BS09, Theorem 2.1 (ii)]).
+* `ExtremeValueTheory.candidateExtremalIndex`: `ϑ = E[sup_{k ≥ 0} |Θ_k|^α - sup_{k ≥ 1} |Θ_k|^α]`
+  ([KS20, §7.5]).
 
 ## Main results
 
 * `ExtremeValueTheory.tendstoLawCond_polar`: spectral convergence and regular variation imply
   convergence of `(Z / x, V / x)` to the law of `(R, R • Θ)` with `R` Pareto independent of `Θ`.
-* `ExtremeValueTheory.tendstoLawCond_spectral_of_polar`: the converse.
-* `ExtremeValueTheory.hasSpectralTailProcess_iff_hasTailProcess`: the Basrak–Segers
-  equivalence [BS09, Theorem 2.1] for windows of a time series.
+* `ExtremeValueTheory.isRegularlyVarying_of_tendstoLawCond`,
+  `ExtremeValueTheory.tendstoLawCond_spectral_of_tendstoLawCond`,
+  `ExtremeValueTheory.eq_map_prod_of_tendstoLawCond`: the converse, and independence of the
+  radial and spectral parts; `ExtremeValueTheory.polar_iff` is the equivalence.
+* `ExtremeValueTheory.HasSpectralTailProcess.hasTailProcess`,
+  `ExtremeValueTheory.HasTailProcess.hasSpectralTailProcess`,
+  `ExtremeValueTheory.HasTailProcess.map_window_eq`: the Basrak–Segers equivalence
+  [BS09, Theorem 2.1] for windows of a time series, with `Y = R Θ`.
+* `ExtremeValueTheory.HasSpectralTailProcess.ae_abs_eq_one`: `|Θ_0| = 1`.
+* `ExtremeValueTheory.HasSpectralTailProcess.ae_eq_zero_of_indepFun`: `Θ_t = 0` when `X_t` is
+  independent of `X_0` (the iid case).
+* `ExtremeValueTheory.candidateExtremalIndex_le_one`,
+  `ExtremeValueTheory.HasSpectralTailProcess.candidateExtremalIndex_eq_one_of_indepFun`,
+  `ExtremeValueTheory.candidateExtremalIndex_eq_measure`,
+  `ExtremeValueTheory.HasTailProcess.candidateExtremalIndex_eq`: `ϑ ≤ 1`, `ϑ = 1` in the iid
+  case, and `ϑ = P(|Y_k| ≤ 1 for all k ≥ 1)`.
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set BoundedContinuousFunction

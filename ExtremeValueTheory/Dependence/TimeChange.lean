@@ -30,6 +30,8 @@ by integrating out `R` and letting `ε → 0`.
 
 * `ExtremeValueTheory.HasSpectralTailProcess.integral_tailProcess_shift`: the tail-process form.
 * `ExtremeValueTheory.HasSpectralTailProcess.lintegral_timeChange`: the time-change formula.
+* `ExtremeValueTheory.HasSpectralTailProcess.candidateExtremalIndex_pos`: `ϑ > 0` when
+  `Θ_t → 0` as `t → ∞` ([KS20, §7.5], [Planinić–Soulier 2018]).
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set BoundedContinuousFunction
