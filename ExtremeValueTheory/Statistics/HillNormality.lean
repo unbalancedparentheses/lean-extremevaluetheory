@@ -440,4 +440,52 @@ theorem tendstoInMeasure_orderStat_sub_log {E : ℕ → Ω → ℝ} (hEm : ∀ i
 end Localization
 
 
+/-! ### Ratios of a regularly varying function at random arguments -/
+
+section RandomRatio
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
+
+/-- If `f` is measurable and regularly varying, `s_n → ∞` and `D_n → 0` in probability, then
+`f(e^{s_n + D_n}) / f(e^{s_n}) → 1` in probability (by the uniform convergence theorem). -/
+theorem tendstoInMeasure_ratio_of_isRegularlyVarying {f : ℝ → ℝ} {ρ : ℝ}
+    (hf : IsRegularlyVarying f ρ) (hm : Measurable f) {D : ℕ → Ω → ℝ}
+    (hD : TendstoInMeasure P D atTop (fun _ => 0)) {s : ℕ → ℝ} (hs : Tendsto s atTop atTop) :
+    TendstoInMeasure P (fun n ω => f (exp (s n + D n ω)) / f (exp (s n))) atTop
+      (fun _ => 1) := by
+  rw [tendstoInMeasure_iff_dist] at hD ⊢
+  intro ε hε
+  have hc : ContinuousAt (fun d : ℝ => exp (d * ρ)) 0 := by fun_prop
+  obtain ⟨η₀, hη₀, hη₀'⟩ := Metric.continuousAt_iff.1 hc (ε / 2) (half_pos hε)
+  set η := min η₀ 1 with hη
+  have hη0 : 0 < η := lt_min hη₀ one_pos
+  have hK : IsCompact (Icc (exp (-1)) (exp 1)) := isCompact_Icc
+  have hK0 : Icc (exp (-1)) (exp 1) ⊆ Ioi 0 := fun c hc => (exp_pos _).trans_le hc.1
+  have hU := (hf.tendstoUniformlyOn_of_measurable hm hK hK0)
+  rw [Metric.tendstoUniformlyOn_iff] at hU
+  have hev := (hs.comp tendsto_id).eventually ((tendsto_exp_atTop.eventually (hU (ε / 2)
+    (half_pos hε))))
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds (hD η hη0)
+    (Eventually.of_forall fun _ => bot_le) ?_
+  filter_upwards [hev] with n hn
+  refine measure_mono fun ω hω => ?_
+  simp only [mem_ofPred_eq, Real.dist_eq, sub_zero] at hω ⊢
+  by_contra hcon
+  rw [not_le] at hcon
+  have hd1 : |D n ω| < η₀ := hcon.trans_le (min_le_left _ _)
+  have hd2 : |D n ω| < 1 := hcon.trans_le (min_le_right _ _)
+  have hcK : exp (D n ω) ∈ Icc (exp (-1)) (exp 1) :=
+    ⟨exp_le_exp.2 (by linarith [neg_abs_le (D n ω)]), exp_le_exp.2 (by linarith [le_abs_self (D n ω)])⟩
+  have h1 := hn (exp (D n ω)) hcK
+  simp only [Function.comp_apply, id, Real.dist_eq] at h1
+  have h2 := hη₀' (x := D n ω) (by simpa [Real.dist_eq] using hd1)
+  simp only [zero_mul, exp_zero, Real.dist_eq] at h2
+  rw [← exp_mul] at h1
+  rw [exp_add, mul_comm] at hω
+  have := abs_sub_le (f (exp (D n ω) * exp (s n)) / f (exp (s n))) (exp (D n ω * ρ)) 1
+  rw [abs_sub_comm] at h1
+  linarith
+
+end RandomRatio
+
 end ExtremeValueTheory
