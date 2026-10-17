@@ -9,7 +9,62 @@ import ExtremeValueTheory.Dependence.Mixing
 /-!
 # The block condition `𝒜(uₙ)` for the echo process
 
-TODO docstring
+The echo process `X_t = max(Z_t, max {Z_s : s < t, s + L(Z_s) = t})` of
+`Dependence/EchoProcess.lean` is a function of iid noise with *unbounded* dependence range: the
+echo lag `L(Z)` is not bounded, so the process is not `m`-dependent for any `m` and
+`conditionA_of_isMDependent` does not apply. Here we prove the block condition
+`𝒜(uₙ)`: `P(M n ≤ uₙ) - P(M rₙ ≤ uₙ) ^ ⌊n / rₙ⌋ → 0` (`ConditionA`) directly, by truncating the
+echo lag at `lₙ`.
+
+For a block `A`, the *quiet event* `echoQuiet L Z A u l` (no source of an exceedance of `u` at
+times in `A` with echo index `≤ l`) depends only on `Z_s`, `s ∈ [min A - l, max A]`. For blocks at
+distance `> l` these index sets are disjoint, so the quiet events are independent. Almost surely,
+the quiet event differs from `{max_A X ≤ u}` only on the *long echo event* `echoLong L Z n u l`
+(an echo of lag `> l` lands in `{0, …, n - 1}`), of probability `≤ n P(L(Z) > l)`. This gives a
+Leadbetter-type factorization bound with rate, and `conditionA_of_forall_abs_le` gives `𝒜(uₙ)`.
+With `𝒜(uₙ)` the main theorem `θ = ϑ - η` of `Dependence/ThetaGap.lean` applies to the echo
+process.
+
+## Main definitions
+
+* `echoQuiet L Z A u l`, `echoWindow A l`, `echoLong L Z n u l`: the truncated quiet event, the
+  innovation times it depends on, and the long echo event.
+* `logTruncLag α n = ⌈(2 / α) log n⌉₊`: the truncation lag used for `L(z) = ⌊log z⌋₊ + 1`.
+
+## Main results, with the hypotheses each one uses
+
+Standing hypotheses for the echo process: `α > 0`, `Z` measurable, iid (`iIndepFun Z P`) with
+law Pareto(`α`) (`hlaw`), `Z ≥ 0` pointwise (`hpos`), `L` measurable. Neither `L ≥ 1`, nor
+`L → ∞`, nor `E[L(Z)] < ∞` is used for `𝒜`.
+
+* `measureReal_echoQuiet_union`: quiet events of blocks at distance `≥ l + 1` are independent
+  (independence and measurability only).
+* `measureReal_echoLong_le`: `P(echoLong L Z n u l) ≤ n P(L(Z) ≥ l + 1)`.
+* `abs_measureReal_maxLE_echoProcess_le`: for `A, B ⊆ {0, …, n - 1}` with `a + (l + 1) ≤ b`
+  and `u ≥ 0`, `|P(max_{A ∪ B} |X| ≤ u) - P(max_A |X| ≤ u) P(max_B |X| ≤ u)| ≤
+  2 n P(L(Z) ≥ l + 1)`.
+* `conditionA_echoProcess`: **`𝒜(uₙ)` for a general echo lag**, assuming `uₙ ≥ 0` eventually,
+  `rₙ → ∞`, `rₙ / n → 0`, `lₙ / rₙ → 0`, `(n / rₙ) · n P(L(Z) ≥ lₙ + 1) → 0` and
+  `n P(X_0 > uₙ)` eventually bounded.
+* `conditionA_logEchoProcess`: **`𝒜(uₙ)` for `L(z) = ⌊log z⌋₊ + 1`**, assuming
+  `n P(X_0 > uₙ) → τ` (any `τ`), `rₙ → ∞`, `rₙ / n → 0` and `log n / rₙ → 0`.
+* `logEchoProcess_tendsto_partialMax_of_conditionA`: with additionally `τ > 0`, the main theorem
+  (`HasSpectralTailProcess.tendsto_partialMax_iff_hasEscapeMass`) and the cluster-ratio value
+  `η = 1/2` give `P(max_{k < n} |X_k| ≤ uₙ) → exp (-τ / 2)`, i.e. `θ = ϑ - η = 1/2`,
+  independently of the direct computation `hasExtremalIndex_echoProcess`.
+* `logEchoProcess_hasEscapeMass_of_conditionA`: conversely, `θ = 1/2` and `𝒜(uₙ)` give
+  `η = ϑ - θ = 1/2` through `HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex` (same
+  hypotheses).
+
+## Remarks
+
+* The rate hypothesis in `conditionA_echoProcess` is a tail condition on the echo lag only:
+  with `lₙ ≍ log n` it holds as soon as `P(L(Z) > l)` decays exponentially, which for the
+  logarithmic lag is `P(L(Z) ≥ j + 1) ≤ 2^α e^(-α j)` (`measureReal_logLag_le`). The cost of
+  the truncation is `lₙ = o(rₙ)`, i.e. `log n = o(rₙ)`: exactly the long-block regime in which
+  the cluster ratio is `1/2`. For blocks with `rₙ = O(log n)` this proof does not give `𝒜`.
+* The factorization bound does not use stationarity; stationarity enters through
+  `conditionA_of_forall_abs_le`.
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set
@@ -267,5 +322,146 @@ theorem conditionA_echoProcess (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
     simpa [abs_of_nonneg (echoProcess_nonneg hpos _ _)] using hn
 
 end EchoConditionA
+
+/-! ### The logarithmic echo lag -/
+
+section LogLag
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+  {α : ℝ} {Z : ℤ → Ω → ℝ}
+
+/-- The truncation lag `lₙ = ⌈(2 / α) log n⌉₊` used for the logarithmic echo lag. -/
+noncomputable def logTruncLag (α : ℝ) (n : ℕ) : ℕ := ⌈2 / α * Real.log n⌉₊
+
+/-- For the logarithmic echo lag, `n² P(L(Z) > lₙ) ≤ 2^α` with `lₙ = ⌈(2 / α) log n⌉₊`. -/
+theorem mul_mul_measureReal_logLag_le (hα : 0 < α) {n : ℕ} (hn : 0 < n) :
+    (n : ℝ) * (n * (paretoMeasure 1 α).real {z | logTruncLag α n + 1 ≤ logLag z}) ≤
+      2 ^ α := by
+  set l := logTruncLag α n
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+  have h1 := measureReal_logLag_le hα l
+  have hl : 2 / α * Real.log n ≤ l := Nat.le_ceil _
+  have h2 : Real.exp (-α) ^ l ≤ Real.exp (-(2 * Real.log n)) := by
+    rw [← Real.exp_nat_mul]
+    refine Real.exp_le_exp.2 ?_
+    have : 2 * Real.log n ≤ α * l := by
+      have := mul_le_mul_of_nonneg_left hl hα.le
+      rwa [← mul_assoc, mul_div_cancel₀ _ hα.ne'] at this
+    linarith
+  have h3 : Real.exp (-(2 * Real.log n)) * ((n : ℝ) * n) = 1 := by
+    rw [Real.exp_neg, show 2 * Real.log n = Real.log n + Real.log n by ring, Real.exp_add,
+      Real.exp_log hn']
+    field_simp
+  have h4 : (0 : ℝ) ≤ 2 ^ α := by positivity
+  calc (n : ℝ) * (n * (paretoMeasure 1 α).real {z | l + 1 ≤ logLag z})
+      = ((n : ℝ) * n) * (paretoMeasure 1 α).real {z | l + 1 ≤ logLag z} := by ring
+    _ ≤ ((n : ℝ) * n) * (2 ^ α * Real.exp (-(2 * Real.log n))) := by
+        gcongr
+        exact h1.trans (mul_le_mul_of_nonneg_left h2 h4)
+    _ = 2 ^ α := by rw [mul_comm (2 ^ α), ← mul_assoc, mul_comm _ (Real.exp _), h3, one_mul]
+
+/-- **`𝒜(uₙ)` for the logarithmic echo process** `L(z) = ⌊log z⌋₊ + 1`, in the standard
+normalization: if `n P(X_0 > uₙ) → τ`, `rₙ → ∞`, `rₙ / n → 0` and `log n = o(rₙ)`, then the
+block condition holds (truncation lags `lₙ = ⌈(2 / α) log n⌉₊`). These are the block lengths of
+`logEchoProcess_hasEscapeMass_of_tendsto`. -/
+theorem conditionA_logEchoProcess (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
+    (hind : iIndepFun Z P) (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α)
+    (hpos : ∀ t ω, 0 ≤ Z t ω) {u : ℕ → ℝ} {τ : ℝ}
+    (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess logLag Z 0 ω}) atTop (𝓝 τ))
+    {r : ℕ → ℕ} (hr : Tendsto r atTop atTop) (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hlogr : Tendsto (fun n : ℕ => Real.log n / r n) atTop (𝓝 0)) :
+    ConditionA (fun k : ℕ => |echoProcess logLag Z k|) P u r := by
+  have hT := hasSpectralTailProcess_echoProcess hα hZ hind hlaw hpos measurable_logLag
+    one_le_logLag tendsto_logLag
+  have hτ' : Tendsto (fun n : ℕ => n * P.real {ω | u n < |echoProcess logLag Z 0 ω|}) atTop
+      (𝓝 τ) := by
+    simpa [abs_of_nonneg (echoProcess_nonneg hpos _ _)] using hτ
+  have hu := hT.tendsto_atTop_of_tendsto_mul hτ'
+  have hrinv : Tendsto (fun n => (1 : ℝ) / r n) atTop (𝓝 0) :=
+    tendsto_const_nhds.div_atTop (tendsto_natCast_atTop_atTop.comp hr)
+  refine conditionA_echoProcess hα hZ hind hlaw hpos measurable_logLag (l := logTruncLag α)
+    (hu.eventually_ge_atTop 0) hr hrn ?_ ?_ (C := τ + 1)
+    (hτ.eventually (gt_mem_nhds (lt_add_one τ)) |>.mono fun _ h => h.le)
+  · -- `lₙ / rₙ ≤ (2 / α) (log n / rₙ) + 1 / rₙ`
+    have hlim := (hlogr.const_mul (2 / α)).add hrinv
+    rw [mul_zero, add_zero] at hlim
+    refine squeeze_zero' (Eventually.of_forall fun n => by positivity) ?_ hlim
+    filter_upwards [hr.eventually_gt_atTop 0] with n hrn0
+    have hR : (0 : ℝ) < r n := by exact_mod_cast hrn0
+    have hc : (logTruncLag α n : ℝ) ≤ 2 / α * Real.log n + 1 :=
+      (Nat.ceil_lt_add_one (mul_nonneg (by positivity) (Real.log_natCast_nonneg n))).le
+    calc (logTruncLag α n : ℝ) / r n ≤ (2 / α * Real.log n + 1) / r n := by gcongr
+      _ = 2 / α * (Real.log n / r n) + 1 / r n := by ring
+  · -- `(n / rₙ) n P(L(Z) > lₙ) ≤ 2^α / rₙ`
+    have hlim := hrinv.const_mul (2 ^ α)
+    rw [mul_zero] at hlim
+    refine squeeze_zero' (Eventually.of_forall fun n => by positivity) ?_ hlim
+    filter_upwards [hr.eventually_gt_atTop 0, eventually_gt_atTop 0] with n hrn0 hn
+    have hR : (0 : ℝ) < r n := by exact_mod_cast hrn0
+    have := mul_mul_measureReal_logLag_le hα hn
+    calc (n : ℝ) / r n * (n * (paretoMeasure 1 α).real {z | logTruncLag α n + 1 ≤ logLag z})
+        = (n * (n * (paretoMeasure 1 α).real {z | logTruncLag α n + 1 ≤ logLag z})) / r n := by
+          ring
+      _ ≤ 2 ^ α / r n := by gcongr
+      _ = 2 ^ α * (1 / r n) := by ring
+
+/-- **`θ = ϑ - η` for the echo process through the main theorem.** Along every level sequence with
+`n P(X_0 > uₙ) → τ > 0` and block length with `rₙ → ∞`, `rₙ / n → 0`, `log n = o(rₙ)`, the
+block condition holds (`conditionA_logEchoProcess`), so the gap formula of
+`Dependence/ThetaGap.lean` applies: the escape mass computed from the cluster ratio,
+`η = 1/2` (`logEchoProcess_hasEscapeMass_of_tendsto`), gives
+`P(M n ≤ uₙ) → exp (-(ϑ - η) τ) = exp (-τ / 2)`. This rederives `θ = 1/2` without the direct
+computation of `hasExtremalIndex_echoProcess`. -/
+theorem logEchoProcess_tendsto_partialMax_of_conditionA (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
+    (hind : iIndepFun Z P) (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α)
+    (hpos : ∀ t ω, 0 ≤ Z t ω) {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
+    (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess logLag Z 0 ω}) atTop (𝓝 τ))
+    {r : ℕ → ℕ} (hr : Tendsto r atTop atTop) (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hlogr : Tendsto (fun n : ℕ => Real.log n / r n) atTop (𝓝 0)) :
+    Tendsto (fun n => P.real {ω | partialMax (fun k : ℕ => |echoProcess logLag Z k|) n ω ≤ u n})
+      atTop (𝓝 (Real.exp (-(1 / 2 * τ)))) := by
+  have hT := hasSpectralTailProcess_echoProcess hα hZ hind hlaw hpos measurable_logLag
+    one_le_logLag tendsto_logLag
+  have hτ' : Tendsto (fun n : ℕ => n * P.real {ω | u n < |echoProcess logLag Z 0 ω|}) atTop
+      (𝓝 τ) := by
+    simpa [abs_of_nonneg (echoProcess_nonneg hpos _ _)] using hτ
+  have hA := conditionA_logEchoProcess hα hZ hind hlaw hpos hτ hr hrn hlogr
+  have h := hT.tendsto_partialMax_iff_hasEscapeMass hα (measurable_echoProcess hZ measurable_logLag)
+    measurable_unitSpectral (hasShiftInvariantWindows_echoProcess hZ hind hlaw measurable_logLag)
+    hτ' hτ0 hr hrn hA (1 / 2)
+  rw [candidateExtremalIndex_unitSpectral hα] at h
+  refine h.2 ?_
+  have hη := (logEchoProcess_hasEscapeMass_of_tendsto hα hZ hind hlaw hpos hτ0 hτ hr hrn hlogr).2.1
+  convert hη using 1
+  norm_num
+
+/-- **The escape mass from the extremal index, through the main theorem**: since `θ = 1/2`
+(`logEchoProcess_theta_lt_vartheta`) and `𝒜(uₙ)` holds (`conditionA_logEchoProcess`),
+`HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex` gives `η = ϑ - θ = 1/2` along every
+level sequence with `n P(X_0 > uₙ) → τ > 0` and block length with `rₙ → ∞`, `rₙ / n → 0`,
+`log n = o(rₙ)`, consistent with the direct cluster-ratio computation. -/
+theorem logEchoProcess_hasEscapeMass_of_conditionA (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
+    (hind : iIndepFun Z P) (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α)
+    (hpos : ∀ t ω, 0 ≤ Z t ω) {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
+    (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess logLag Z 0 ω}) atTop (𝓝 τ))
+    {r : ℕ → ℕ} (hr : Tendsto r atTop atTop) (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hlogr : Tendsto (fun n : ℕ => Real.log n / r n) atTop (𝓝 0)) :
+    HasEscapeMass P (echoProcess logLag Z) u r (1 / 2) := by
+  obtain ⟨hstat, hT, -, hθ⟩ := logEchoProcess_theta_lt_vartheta hα hZ hind hlaw hpos (P := P)
+  have hτ' : Tendsto (fun n : ℕ => n * P.real {ω | u n < |echoProcess logLag Z 0 ω|}) atTop
+      (𝓝 τ) := by
+    simpa [abs_of_nonneg (echoProcess_nonneg hpos _ _)] using hτ
+  have hθ' : HasExtremalIndex (fun k : ℕ => |echoProcess logLag Z k|) P (1 / 2) := by
+    convert hθ using 3 with k
+    funext ω
+    exact abs_of_nonneg (echoProcess_nonneg hpos _ _)
+  have h := hT.hasEscapeMass_of_hasExtremalIndex hα (measurable_echoProcess hZ measurable_logLag)
+    measurable_unitSpectral hstat hθ' hτ' hτ0 hr hrn
+    (conditionA_logEchoProcess hα hZ hind hlaw hpos hτ hr hrn hlogr)
+  rw [candidateExtremalIndex_unitSpectral hα] at h
+  convert h using 1
+  norm_num
+
+end LogLag
 
 end ExtremeValueTheory
