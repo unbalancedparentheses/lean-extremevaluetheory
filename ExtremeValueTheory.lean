@@ -79,3 +79,4 @@ import ExtremeValueTheory.ForMathlib.Probability.PointProcessConvergence
 import ExtremeValueTheory.PointProcess.Exceedances
 import ExtremeValueTheory.ForMathlib.Probability.PoissonRandomMeasureLaplace
 import ExtremeValueTheory.ForMathlib.Probability.RandomMeasureLaw
+import ExtremeValueTheory.RegularVariation.Multivariate
