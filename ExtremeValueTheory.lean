@@ -47,6 +47,7 @@ import ExtremeValueTheory.StableLaws.Constants
 import ExtremeValueTheory.RegularVariation.KaramataConverse
 import ExtremeValueTheory.DomainOfAttraction.VonMises
 import ExtremeValueTheory.StableLaws.GeneralizedCLTOne
+import ExtremeValueTheory.StableLaws.EulerConstant
 import ExtremeValueTheory.ForMathlib.Probability.Process.Stationary
 import ExtremeValueTheory.ForMathlib.MeasureTheory.Measure.Bonferroni
 import ExtremeValueTheory.ForMathlib.Analysis.SpecialFunctions.Gamma.Trigamma
