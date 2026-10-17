@@ -387,6 +387,78 @@ theorem tendsto_lintegral_spectralTest (h : IsSimpleMaxStable μ) {y : ι → �
 
 end IsSimpleMaxStable
 
+/-- The truncated angular measure as a finite measure. -/
+noncomputable def truncAngularFM (μ : Measure (ι → ℝ)) [IsFiniteMeasure μ] (M : ℝ) :
+    FiniteMeasure (ι → unitInterval) :=
+  ⟨truncAngular μ M, inferInstance⟩
+
+/-- The truncated angular measures normalized by `log n`, as finite measures on `[0, 1]^ι`. -/
+noncomputable def scaledTruncAngular (μ : Measure (ι → ℝ)) [IsFiniteMeasure μ] (n : ℕ) :
+    FiniteMeasure (ι → unitInterval) :=
+  (Real.log n)⁻¹.toNNReal • truncAngularFM μ n
+
+lemma coe_scaledTruncAngular_testAgainstNN (μ : Measure (ι → ℝ)) [IsFiniteMeasure μ] (n : ℕ)
+    (f : (ι → unitInterval) →ᵇ ℝ≥0) :
+    ((scaledTruncAngular μ n).testAgainstNN f : ℝ) =
+      (∫⁻ θ, f θ ∂(truncAngular μ n)).toReal / Real.log n := by
+  rw [scaledTruncAngular, FiniteMeasure.smul_testAgainstNN_apply, smul_eq_mul, NNReal.coe_mul,
+    Real.coe_toNNReal _ (inv_nonneg.2 (Real.log_natCast_nonneg n)), FiniteMeasure.testAgainstNN,
+    truncAngularFM, FiniteMeasure.toMeasure_mk, ENNReal.coe_toNNReal_eq_toReal, div_eq_inv_mul]
+
+lemma coe_scaledTruncAngular_mass (μ : Measure (ι → ℝ)) [IsFiniteMeasure μ] (n : ℕ) :
+    ((scaledTruncAngular μ n).mass : ℝ) = (truncAngular μ n univ).toReal / Real.log n := by
+  rw [← FiniteMeasure.testAgainstNN_one, coe_scaledTruncAngular_testAgainstNN]
+  simp
+
+/-- A cluster point of a sequence of finite measures integrates a test function to the limit of
+its integrals, when this limit exists. -/
+lemma eq_of_clusterPt_testAgainstNN {K : Type*} [MeasurableSpace K] [TopologicalSpace K]
+    [OpensMeasurableSpace K] {u : ℕ → FiniteMeasure K} {P : FiniteMeasure K}
+    (hP : ClusterPt P (map u atTop)) (f : K →ᵇ ℝ≥0) {L : ℝ}
+    (hL : Tendsto (fun n ↦ ((u n).testAgainstNN f : ℝ)) atTop (𝓝 L)) :
+    (P.testAgainstNN f : ℝ) = L := by
+  have hc : Continuous fun ν : FiniteMeasure K ↦ (ν.testAgainstNN f : ℝ) :=
+    NNReal.continuous_coe.comp (FiniteMeasure.continuous_testAgainstNN_eval f)
+  have h1 : MapClusterPt (P.testAgainstNN f : ℝ) atTop fun n ↦ ((u n).testAgainstNN f : ℝ) :=
+    (show MapClusterPt P atTop u from hP).continuousAt_comp
+      (f := fun ν : FiniteMeasure K ↦ (ν.testAgainstNN f : ℝ)) hc.continuousAt
+  exact eq_of_nhds_neBot (h1.clusterPt.mono hL)
+
+namespace IsSimpleMaxStable
+
+variable {μ : Measure (ι → ℝ)}
+
+/-- **Existence of the angular measure** on `[0, 1]^ι`: a finite measure `P` with
+`∫ max_i θ i / y i dP(θ) = V(y)` for all `y` with positive coordinates. It is a cluster point of
+the measures `E[min (max_i Y i) n ; Y / max_i Y i ∈ ·] / log n`. -/
+theorem exists_angularMeasure (h : IsSimpleMaxStable μ) :
+    ∃ P : FiniteMeasure (ι → unitInterval), ∀ y : ι → ℝ, (∀ i, 0 < y i) →
+      ∫⁻ θ, spectralTest y θ ∂(P : Measure (ι → unitInterval)) =
+        ENNReal.ofReal (maxStableExponent μ y) := by
+  have := h.isProbabilityMeasure
+  have hV1 := h.maxStableExponent_pos (y := 1) fun _ ↦ one_pos
+  set C : ℝ≥0 := (maxStableExponent μ 1 + 1).toNNReal
+  have hmass : Tendsto (fun n : ℕ ↦ ((scaledTruncAngular μ n).mass : ℝ)) atTop
+      (𝓝 (maxStableExponent μ 1)) := by
+    simpa only [Function.comp_def, coe_scaledTruncAngular_mass] using
+      h.tendsto_truncAngular_univ.comp tendsto_natCast_atTop_atTop
+  have hev : ∀ᶠ n in atTop, scaledTruncAngular μ n ∈ {ν : FiniteMeasure _ | ν.mass ≤ C} := by
+    filter_upwards [hmass.eventually (gt_mem_nhds (lt_add_one (maxStableExponent μ 1)))]
+      with n hn
+    exact (Real.le_toNNReal_iff_coe_le (by linarith)).2 hn.le
+  obtain ⟨P, -, hP⟩ := (isCompact_setOfPred_finiteMeasure_le_of_compactSpace
+    (ι → unitInterval) C).exists_clusterPt (f := map (scaledTruncAngular μ) atTop)
+    (le_principal_iff.2 hev)
+  refine ⟨P, fun y hy ↦ ?_⟩
+  have hL : Tendsto (fun n : ℕ ↦ ((scaledTruncAngular μ n).testAgainstNN (spectralTest y) : ℝ))
+      atTop (𝓝 (maxStableExponent μ y)) := by
+    simpa only [Function.comp_def, coe_scaledTruncAngular_testAgainstNN] using
+      (h.tendsto_lintegral_spectralTest hy).comp tendsto_natCast_atTop_atTop
+  rw [← FiniteMeasure.testAgainstNN_coe_eq, ← eq_of_clusterPt_testAgainstNN hP _ hL,
+    ENNReal.ofReal_coe_nnreal]
+
+end IsSimpleMaxStable
+
 end MaxRatio
 
 end ExtremeValueTheory
