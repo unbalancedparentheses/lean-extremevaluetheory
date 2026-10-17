@@ -762,6 +762,79 @@ theorem rampTail_anti {ε ε' : ℝ} (hε' : 0 < ε') (h : ε' ≤ ε) (x : ℝ)
 
 end Ramp
 
+section TailBalance
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {α : ℝ} {a : ℕ → ℝ}
+
+/-- **Tail balance from the convergence of smoothed tails.** Let `P(|X| > ·)` be regularly
+varying with index `-α`, `aₙ > 0`, `aₙ → ∞`, `n P(|X| > aₙ) → B > 0`, and suppose that for
+every `ε ∈ (0, 1)` the sequence `n E[fε(X / aₙ)]` converges (`fε` the ramp from `1` to `1 + ε`).
+Then `P(X > x) / P(|X| > x) → p` for some `p ∈ [0, 1]`. -/
+theorem exists_tendsto_measureReal_Ioi_div_absTail
+    (hRV : IsRegularlyVarying (absTail μ) (-α)) (ha : ∀ n, 0 < a n)
+    (hatop : Tendsto a atTop atTop) {B : ℝ}
+    (hB : Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n)) atTop (𝓝 B)) (hB0 : 0 < B)
+    (hT : ∀ ε, 0 < ε → ε < 1 → ∃ L,
+      Tendsto (fun n : ℕ => (n : ℝ) * rampTail μ ε (a n)) atTop (𝓝 L)) :
+    ∃ p, 0 ≤ p ∧ p ≤ 1 ∧ Tendsto (fun x => μ.real (Ioi x) / absTail μ x) atTop (𝓝 p) := by
+  have hGpos := absTail_pos hRV
+  set ε : ℕ → ℝ := fun m => 1 / ((m : ℝ) + 2) with hεdef
+  have hε0 : ∀ m, 0 < ε m := fun m => by positivity
+  have hε1 : ∀ m, ε m < 1 := fun m => by
+    simp only [hεdef]; rw [div_lt_one (by positivity)]; linarith [(Nat.cast_nonneg m : (0 : ℝ) ≤ m)]
+  have hεanti : Antitone ε := fun m m' h => by
+    simp only [hεdef]
+    have : (m : ℝ) ≤ m' := by exact_mod_cast h
+    exact one_div_le_one_div_of_le (by positivity) (by linarith)
+  choose L hL using fun m => hT (ε m) (hε0 m) (hε1 m)
+  have hp : ∀ m, Tendsto (fun x => rampTail μ (ε m) x / absTail μ x) atTop (𝓝 (L m / B)) :=
+    fun m => tendsto_div_of_tendsto_mul (rampTail_antitoneOn (hε0 m))
+      (fun x _ => rampTail_nonneg x) (absTail_antitone.antitoneOn _) (fun x _ => hGpos x) ha
+      hatop (hL m) hB hB0
+  set q : ℕ → ℝ := fun m => L m / B
+  have hq0 : ∀ m, 0 ≤ q m := fun m => ge_of_tendsto (hp m) (Eventually.of_forall fun x =>
+    div_nonneg (rampTail_nonneg x) (hGpos x).le)
+  have hq1 : ∀ m, q m ≤ 1 := fun m => le_of_tendsto (hp m) (by
+    filter_upwards [eventually_gt_atTop 0] with x hx
+    rw [div_le_one (hGpos x)]
+    exact (rampTail_le (hε0 m) hx).trans (measureReal_Ioi_le_absTail x))
+  have hqmono : Monotone q := fun m m' h => le_of_tendsto_of_tendsto' (hp m) (hp m') fun x =>
+    div_le_div_of_nonneg_right (rampTail_anti (hε0 m') (hεanti h) x) (hGpos x).le
+  set p := ⨆ m, q m
+  have hbdd : BddAbove (Set.range q) := ⟨1, fun _ ⟨m, hm⟩ => hm ▸ hq1 m⟩
+  have hqp : Tendsto q atTop (𝓝 p) := tendsto_atTop_ciSup hqmono hbdd
+  have hp0 : 0 ≤ p := (hq0 0).trans (le_ciSup hbdd 0)
+  have hp1 : p ≤ 1 := ciSup_le hq1
+  have hεlim : Tendsto ε atTop (𝓝 0) := by
+    have := (tendsto_natCast_atTop_atTop (R := ℝ)).atTop_add (tendsto_const_nhds (x := (2 : ℝ)))
+    exact this.inv_tendsto_atTop.congr fun m => by simp [hεdef]
+  refine ⟨p, hp0, hp1, tendsto_order.2 ⟨fun b hb => ?_, fun b hb => ?_⟩⟩
+  · obtain ⟨m, hm⟩ := ((tendsto_order.1 hqp).1 b hb).exists
+    filter_upwards [(tendsto_order.1 (hp m)).1 b hm, eventually_gt_atTop 0] with x hx hx0
+    refine hx.trans_le (div_le_div_of_nonneg_right ?_ (hGpos x).le)
+    exact rampTail_le (hε0 m) hx0
+  · -- `R(x) ≤ Tε(x / (1 + ε))`
+    have hlim : Tendsto (fun m => q m * (1 + ε m) ^ α) atTop (𝓝 (p * (1 + 0) ^ α)) :=
+      hqp.mul (((tendsto_const_nhds.add hεlim).rpow_const (Or.inl (by norm_num))))
+    rw [add_zero, Real.one_rpow, mul_one] at hlim
+    obtain ⟨m, hm⟩ := ((tendsto_order.1 hlim).2 b hb).exists
+    set c := (1 + ε m)⁻¹ with hc
+    have hc0 : 0 < c := by have := hε0 m; positivity
+    have hcα : c ^ (-α) = (1 + ε m) ^ α := by
+      rw [hc, Real.inv_rpow (by linarith [hε0 m]), Real.rpow_neg (by linarith [hε0 m]), inv_inv]
+    have h1 : Tendsto (fun x => rampTail μ (ε m) (c * x) / absTail μ (c * x) *
+        (absTail μ (c * x) / absTail μ x)) atTop (𝓝 (q m * (1 + ε m) ^ α)) := by
+      rw [← hcα]
+      exact ((hp m).comp (tendsto_id.const_mul_atTop hc0)).mul (hRV.2 c hc0)
+    filter_upwards [(tendsto_order.1 h1).2 b hm, eventually_gt_atTop 0] with x hx hx0
+    refine lt_of_le_of_lt ?_ hx
+    rw [div_mul_div_cancel₀ (hGpos _).ne']
+    refine div_le_div_of_nonneg_right ?_ (hGpos x).le
+    have := le_rampTail (μ := μ) (hε0 m) (mul_pos hc0 hx0)
+    rwa [← mul_assoc, hc, mul_inv_cancel₀ (by linarith [hε0 m]), one_mul] at this
+
+end TailBalance
+
 end GCLTConverse
 
 end ExtremeValueTheory
