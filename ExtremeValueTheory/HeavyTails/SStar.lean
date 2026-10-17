@@ -131,6 +131,63 @@ private theorem integral_K_ge {x a b c : ℝ} (hab : a ≤ b)
     (intervalIntegrable_K x a b) fun y hy =>
       mul_le_mul_of_nonneg_right (h y hy) (tail_nonneg _)
 
+omit [IsProbabilityMeasure μ] in
+/-- Reflection `y ↦ x - y`: `∫_a^b F̄(x - y) F̄(y) dy = ∫_{x-b}^{x-a} F̄(x - y) F̄(y) dy`. -/
+private theorem integral_K_reflect (x a b : ℝ) :
+    ∫ y in a..b, tail μ (x - y) * tail μ y = ∫ y in x - b..x - a, tail μ (x - y) * tail μ y := by
+  have h := intervalIntegral.integral_comp_sub_left (a := a) (b := b)
+    (fun z => tail μ z * tail μ (x - z)) x
+  simp only [sub_sub_cancel] at h
+  rw [h]
+  exact intervalIntegral.integral_congr fun y _ => mul_comm _ _
+
+omit [IsProbabilityMeasure μ] in
+/-- **Smearing atoms over unit intervals** (Tonelli):
+`∫_{(a, b]} ∫_{(y-2, y-1]} g(s) ds dμ(y) ≤ ∫_{(a-2, b-1]} g(s) μ(s, ∞) ds`. -/
+private theorem lintegral_smear_le [SFinite μ] {g : ℝ → ℝ≥0∞} (hg : Measurable g) (a b : ℝ) :
+    ∫⁻ y in Ioc a b, (∫⁻ s in Ioc (y - 2) (y - 1), g s) ∂μ ≤
+      ∫⁻ s in Ioc (a - 2) (b - 1), g s * μ (Ioi s) := by
+  set S : Set (ℝ × ℝ) := {p | a < p.1} ∩ ({p | p.1 ≤ b} ∩ ({p | p.1 - 2 < p.2} ∩
+    {p | p.2 ≤ p.1 - 1})) with hS_def
+  have hS : MeasurableSet S :=
+    (measurableSet_lt measurable_const measurable_fst).inter
+      ((measurableSet_le measurable_fst measurable_const).inter
+        ((measurableSet_lt (measurable_fst.sub_const _) measurable_snd).inter
+          (measurableSet_le measurable_snd (measurable_fst.sub_const _))))
+  have hmem : ∀ y s, (y, s) ∈ S ↔ y ∈ Ioc a b ∧ s ∈ Ioc (y - 2) (y - 1) := by
+    intro y s; simp only [hS_def, mem_inter_iff, mem_ofPred_eq, mem_Ioc]; tauto
+  have hL : ∫⁻ y in Ioc a b, (∫⁻ s in Ioc (y - 2) (y - 1), g s) ∂μ =
+      ∫⁻ y, (∫⁻ s, S.indicator (fun p => g p.2) (y, s)) ∂μ := by
+    rw [← lintegral_indicator measurableSet_Ioc]
+    congr 1; funext y
+    by_cases hy : y ∈ Ioc a b
+    · rw [indicator_of_mem hy, ← lintegral_indicator measurableSet_Ioc]
+      congr 1; funext s
+      by_cases hs : s ∈ Ioc (y - 2) (y - 1)
+      · rw [indicator_of_mem hs, indicator_of_mem ((hmem y s).2 ⟨hy, hs⟩)]
+      · rw [indicator_of_notMem hs, indicator_of_notMem fun h => hs ((hmem y s).1 h).2]
+    · rw [indicator_of_notMem hy]
+      symm
+      refine lintegral_eq_zero_of_ae_eq_zero (ae_of_all _ fun s => ?_)
+      exact indicator_of_notMem (fun h => hy ((hmem y s).1 h).1) _
+  have hmeas : AEMeasurable (Function.uncurry fun y s => S.indicator (fun p => g p.2) (y, s))
+      (μ.prod volume) := ((hg.comp measurable_snd).indicator hS).aemeasurable
+  rw [hL, lintegral_lintegral_swap hmeas, ← lintegral_indicator measurableSet_Ioc]
+  refine lintegral_mono fun s => ?_
+  by_cases hs : s ∈ Ioc (a - 2) (b - 1)
+  · rw [indicator_of_mem hs, ← lintegral_indicator_const measurableSet_Ioi]
+    refine lintegral_mono fun y => ?_
+    by_cases hys : (y, s) ∈ S
+    · obtain ⟨-, hs2⟩ := (hmem y s).1 hys
+      rw [indicator_of_mem hys, indicator_of_mem (show y ∈ Ioi s from by
+        simp only [mem_Ioi]; linarith [hs2.2])]
+    · rw [indicator_of_notMem hys]; exact bot_le
+  · rw [indicator_of_notMem hs]
+    refine (lintegral_eq_zero_of_ae_eq_zero (ae_of_all _ fun y => ?_)).le
+    refine indicator_of_notMem (fun h => hs ?_) _
+    obtain ⟨hy, hs2⟩ := (hmem y s).1 h
+    exact ⟨by linarith [hy.1, hs2.1], by linarith [hy.2, hs2.2]⟩
+
 end Basic
 
 namespace IsSStar
@@ -209,6 +266,135 @@ theorem tendsto_tail_sub_div (h : IsSStar μ) (y : ℝ) :
     refine h1.congr fun x => ?_
     simp only [Function.comp_apply, id, inv_div, sub_neg_eq_add]
     ring_nf
+
+/-- **`𝒮* ⊆ 𝒮`** ([Klüppelberg 1988, Theorem 3.2]; [FKZ, Theorem 3.27]): a law in the class
+`𝒮*` is subexponential. -/
+theorem isSubexponential (h : IsSStar μ) : IsSubexponential μ := by
+  have hF := h.tail_pos
+  have h0 := h.nonneg
+  set m := ∫ t in Ioi 0, tail μ t with hm
+  refine ⟨h0, hF, ?_⟩
+  rw [tendsto_order]
+  constructor
+  · intro b hb
+    have hlim : Tendsto (fun x => 2 - tail μ x) atTop (𝓝 (2 - 0)) :=
+      (tendsto_tail_atTop (μ := μ)).const_sub 2
+    filter_upwards [(tendsto_order.1 hlim).1 b (by linarith)] with x hx
+    refine hx.trans_le ?_
+    have := tail_conv_self_ge h0 (le_refl x)
+    rw [le_div_iff₀ (hF x)]
+    nlinarith [tail_nonneg (μ := μ) (x - x)]
+  intro b hb
+  set ε := (b - 2) / 8 with hε
+  have hε0 : 0 < ε := by rw [hε]; linarith
+  -- `∫₀ʷ F̄ ≥ m - ε`
+  obtain ⟨w, hw, hw0⟩ := (((tendsto_order.1 (h.tendsto_intervalIntegral_tail tendsto_id)).1
+    (m - ε) (by linarith)).and (eventually_ge_atTop (0 : ℝ))).exists
+  simp only [id] at hw
+  -- long tail: `F̄(z - 2) ≤ 2 F̄(z)` for `z ≥ z₁`
+  obtain ⟨z₁, hz₁⟩ : ∃ z₁, ∀ z ≥ z₁, tail μ (z - 2) ≤ 2 * tail μ z := by
+    obtain ⟨z₁, hz⟩ := eventually_atTop.1 ((tendsto_order.1 (h.tendsto_tail_sub_div 2)).2 2
+      (by norm_num))
+    exact ⟨z₁, fun z hz' => by have := hz z hz'; rw [div_lt_iff₀ (hF z)] at this; linarith⟩
+  set v := max (w + 2) z₁ with hv
+  have hvw : w + 2 ≤ v := le_max_left _ _
+  have hvz : z₁ ≤ v := le_max_right _ _
+  have hlim : Tendsto (fun x => 2 * (tail μ (x - v) / tail μ x) +
+      2 * (tailConvInt μ x / tail μ x - 2 * (m - ε))) atTop
+      (𝓝 (2 * 1 + 2 * (2 * m - 2 * (m - ε)))) :=
+    ((h.tendsto_tail_sub_div v).const_mul 2).add
+      ((h.tendsto_tailConvInt_div.sub_const _).const_mul 2)
+  filter_upwards [(tendsto_order.1 hlim).2 b (by rw [hε]; linarith),
+    eventually_ge_atTop (2 * v + 2)] with x hx hxv
+  refine lt_of_le_of_lt ?_ hx
+  have hFx := hF x
+  rw [div_le_iff₀ hFx]
+  -- the middle part `M = ∫_w^{x-w} F̄(x - y) F̄(y) dy`
+  set M := ∫ y in w..x - w, tail μ (x - y) * tail μ y with hM
+  have hMle : M ≤ tailConvInt μ x - 2 * tail μ x * (m - ε) := by
+    have hsplit : tailConvInt μ x = (∫ y in (0 : ℝ)..w, tail μ (x - y) * tail μ y) + M +
+        ∫ y in x - w..x, tail μ (x - y) * tail μ y := by
+      rw [tailConvInt, intervalIntegral.integral_add_adjacent_intervals (intervalIntegrable_K x _ _)
+        (intervalIntegrable_K x _ _), intervalIntegral.integral_add_adjacent_intervals
+        (intervalIntegrable_K x _ _) (intervalIntegrable_K x _ _)]
+    have h1 := integral_K_ge (μ := μ) (x := x) (a := 0) (b := w) (c := tail μ x) hw0
+      fun y hy => tail_antitone (by linarith [hy.1])
+    have h2 : ∫ y in x - w..x, tail μ (x - y) * tail μ y =
+        ∫ y in (0 : ℝ)..w, tail μ (x - y) * tail μ y := by
+      rw [integral_K_reflect]; simp
+    have : tail μ x * (m - ε) ≤ tail μ x * ∫ y in (0 : ℝ)..w, tail μ y :=
+      mul_le_mul_of_nonneg_left hw.le hFx.le
+    rw [hsplit, h2]; nlinarith
+  -- the middle part of the convolution, smeared
+  have hJ2 : ∫ y in Ioc v (x - v), tail μ (x - y) ∂μ ≤ 2 * M := by
+    have hint : IntegrableOn (fun s => tail μ (x - s) * tail μ s) (Ioc (v - 2) (x - v - 1)) :=
+      (intervalIntegrable_K x _ _).1
+    have hK : ∫ s in Ioc (v - 2) (x - v - 1), tail μ (x - s) * tail μ s ≤ M := by
+      rw [hM, intervalIntegral.integral_of_le (by linarith)]
+      exact setIntegral_mono_set (intervalIntegrable_K (μ := μ) x w (x - w)).1
+        (ae_of_all _ fun s => K_nonneg x s)
+        (Ioc_subset_Ioc (by linarith) (by linarith)).eventuallyLE
+    refine le_trans ?_ (mul_le_mul_of_nonneg_left hK zero_le_two)
+    rw [← ENNReal.ofReal_le_ofReal_iff (mul_nonneg zero_le_two
+        (setIntegral_nonneg measurableSet_Ioc fun s _ => K_nonneg x s)),
+      ofReal_integral_eq_lintegral_ofReal (integrable_tail_sub x).integrableOn
+        (ae_of_all _ fun _ => tail_nonneg _),
+      ENNReal.ofReal_mul zero_le_two, ofReal_integral_eq_lintegral_ofReal hint
+        (ae_of_all _ fun s => K_nonneg x s), ENNReal.ofReal_ofNat]
+    have hgm : Measurable fun s => ENNReal.ofReal (tail μ (x - s)) :=
+      ENNReal.measurable_ofReal.comp (tail_measurable.comp (measurable_const.sub measurable_id))
+    calc ∫⁻ y in Ioc v (x - v), ENNReal.ofReal (tail μ (x - y)) ∂μ
+        ≤ ∫⁻ y in Ioc v (x - v), 2 * (∫⁻ s in Ioc (y - 2) (y - 1),
+            ENNReal.ofReal (tail μ (x - s))) ∂μ := by
+          refine setLIntegral_mono' measurableSet_Ioc fun y hy => ?_
+          have hy2 : tail μ (x - y) ≤ 2 * tail μ (x - y + 2) := by
+            have := hz₁ (x - y + 2) (by linarith [hy.2])
+            rwa [add_sub_cancel_right] at this
+          have hlow : ENNReal.ofReal (tail μ (x - y + 2)) ≤
+              ∫⁻ s in Ioc (y - 2) (y - 1), ENNReal.ofReal (tail μ (x - s)) := by
+            have := setLIntegral_mono' (μ := volume) (s := Ioc (y - 2) (y - 1))
+              (f := fun _ => ENNReal.ofReal (tail μ (x - y + 2)))
+              (g := fun s => ENNReal.ofReal (tail μ (x - s))) measurableSet_Ioc
+              fun s hs => ENNReal.ofReal_le_ofReal (tail_antitone (by linarith [hs.1]))
+            rwa [setLIntegral_const, Real.volume_Ioc, show y - 1 - (y - 2) = 1 by ring,
+              ENNReal.ofReal_one, mul_one] at this
+          calc ENNReal.ofReal (tail μ (x - y)) ≤ ENNReal.ofReal (2 * tail μ (x - y + 2)) :=
+                ENNReal.ofReal_le_ofReal hy2
+            _ = 2 * ENNReal.ofReal (tail μ (x - y + 2)) := by
+                rw [ENNReal.ofReal_mul zero_le_two, ENNReal.ofReal_ofNat]
+            _ ≤ _ := by gcongr
+      _ = 2 * ∫⁻ y in Ioc v (x - v), (∫⁻ s in Ioc (y - 2) (y - 1),
+            ENNReal.ofReal (tail μ (x - s))) ∂μ := lintegral_const_mul' _ _ (by simp)
+      _ ≤ 2 * ∫⁻ s in Ioc (v - 2) (x - v - 1), ENNReal.ofReal (tail μ (x - s)) * μ (Ioi s) :=
+          mul_le_mul_of_nonneg_left (lintegral_smear_le hgm v (x - v)) bot_le
+      _ = 2 * ∫⁻ s in Ioc (v - 2) (x - v - 1), ENNReal.ofReal (tail μ (x - s) * tail μ s) := by
+          congr 1
+          refine lintegral_congr fun s => ?_
+          rw [ENNReal.ofReal_mul (tail_nonneg _)]
+          congr 1
+          rw [tail, measureReal_def, ENNReal.ofReal_toReal (measure_ne_top _ _)]
+  -- assemble
+  have hsplit := tail_conv_split (μ := μ) (ν := μ) h0 (a := v) (x := x) (by linarith)
+  have hunion : ∫ y in Ioc v x, tail μ (x - y) ∂μ = (∫ y in Ioc v (x - v), tail μ (x - y) ∂μ) +
+      ∫ y in Ioc (x - v) x, tail μ (x - y) ∂μ := by
+    rw [← Ioc_union_Ioc_eq_Ioc (b := x - v) (by linarith) (by linarith),
+      setIntegral_union (Ioc_disjoint_Ioc_of_le le_rfl) measurableSet_Ioc
+        (integrable_tail_sub x).integrableOn (integrable_tail_sub x).integrableOn]
+  have hJ1 : ∫ y in Iic v, tail μ (x - y) ∂μ ≤ tail μ (x - v) := by
+    have := setIntegral_mono_on (μ := μ) (s := Iic v) (integrable_tail_sub x).integrableOn
+      (integrableOn_const (C := tail μ (x - v))) measurableSet_Iic
+      fun y hy => tail_antitone (by linarith [show y ≤ v from hy])
+    rw [setIntegral_const, smul_eq_mul] at this
+    have h1 : μ.real (Iic v) ≤ 1 := measureReal_le_one
+    nlinarith [tail_nonneg (μ := μ) (x - v)]
+  have hJ3 : ∫ y in Ioc (x - v) x, tail μ (x - y) ∂μ ≤ tail μ (x - v) - tail μ x := by
+    have := setIntegral_tail_sub_le (μ := μ) (ν := μ) (measurableSet_Ioc (a := x - v) (b := x)) x
+    rwa [measureReal_Ioc_eq (by linarith)] at this
+  have e : (2 * (tail μ (x - v) / tail μ x) + 2 * (tailConvInt μ x / tail μ x - 2 * (m - ε))) *
+      tail μ x = 2 * tail μ (x - v) + 2 * (tailConvInt μ x - 2 * tail μ x * (m - ε)) := by
+    field_simp
+  rw [e, hsplit, hunion]
+  linarith
 
 end IsSStar
 
