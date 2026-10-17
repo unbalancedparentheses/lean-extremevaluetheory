@@ -130,7 +130,7 @@ section TailChain
 variable [IsProbabilityMeasure P] {X₀ : Ω → ℝ} {V : ℕ → Ω → F}
 
 /-- **The forward tail chain of an asymptotically multiplicative Markov chain**
-([Janssen–Segers 2014, Theorem 2.3], [Perfekt 1994], [Segers 2007], [KS20, Chapter 14]).
+([Janssen–Segers 2014], [Perfekt 1994], [Segers 2007], [KS20, Chapter 14]).
 Let `X_{t+1} = f(X_t, V_t)` with `X₀` independent of the innovations `V`, `X₀ ∈ K` almost
 surely for an `f`-invariant measurable set `K` on which `|f(x, v) - a(v) x| ≤ b(v)`. If the law of
 `X_0 / x` given `X_0 ∈ S_x` converges weakly to `μ₀`, then for every `k` the law of

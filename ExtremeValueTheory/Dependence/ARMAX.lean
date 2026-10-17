@@ -10,7 +10,7 @@ import ExtremeValueTheory.Dependence.ThetaLeVartheta
 # The max-autoregressive (ARMAX) Markov chain
 
 For `0 < φ < 1` and iid Pareto(`α`) innovations `Z_t` (`P(Z > z) = z^(-α)`, `z ≥ 1`), the
-*max-autoregressive* chain (ARMAX, [Davis–Resnick 1989], [Alpuim 1989], [EKM, Example 8.1.10],
+*max-autoregressive* chain (ARMAX, [Davis–Resnick 1989], [Alpuim 1989], [EKM, §8.1],
 [KS20, Chapter 14])
 
   `X_{t+1} = max(φ X_t, Z_{t+1})`
@@ -356,7 +356,7 @@ theorem isStationary : IsStationary (RandomIteration.chain (step φ) X₀ V) P :
     (by rw [hlaw 0]; exact hinv)
 
 /-- **The extremal index of the ARMAX chain is `θ = 1 - φ^α`** [Davis–Resnick 1989],
-[EKM, Example 8.1.10]: if `n P(X_0 > uₙ) → τ` then `P(max(X_0, …, X_{n-1}) ≤ uₙ) →
+[EKM, §8.1]: if `n P(X_0 > uₙ) → τ` then `P(max(X_0, …, X_{n-1}) ≤ uₙ) →
 exp(-(1 - φ^α) τ)`. -/
 theorem hasExtremalIndex :
     HasExtremalIndex (RandomIteration.chain (step φ) X₀ V) P (1 - φ ^ α) := by
