@@ -68,8 +68,9 @@ Standing hypotheses: `α > 0`, iid Pareto(`α`) innovations (`hZ`, `hind`, `hlaw
   block length. Only in the long-block regime does it estimate `θ`. In the short and critical
   regimes the escape mass of `Dependence/ThetaGap.lean` differs from `ϑ - θ`, so by
   `HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex` the block condition `A(uₙ)` fails
-  along those block lengths (`logEchoProcess_not_conditionA`). The relation `θ = ϑ - η` of the
-  main theorem holds exactly at the block lengths where `A(uₙ)` holds.
+  along those block lengths (`logEchoProcess_not_conditionA`). In this example, among block
+  lengths with `rₙ / log n → c ∈ [0, ∞]` (and `rₙ = o(n)`), the relation `θ = ϑ - η` holds
+  exactly where `A(uₙ)` holds, namely for `c = ∞`.
 * `rₙ uₙ^(-α) → 0` (equivalently `rₙ = o(n)`) is automatic in the short and critical regimes.
 -/
 
