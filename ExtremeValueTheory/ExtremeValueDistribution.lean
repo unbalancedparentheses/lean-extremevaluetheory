@@ -132,31 +132,118 @@ private def limitCondition (γ : ℝ) (φs : ℕ → ℝ) : Prop :=
 
 variable (γ : ℝ) (φs : ℕ → ℝ)
 
-lemma tendsto_of_limitcondition {γ : ℝ} (hγ : γ ∈ Set.Ioo 0 1) (φs : ℕ → ℝ) :
+-- Corrected from upstream: added the hypothesis `hφ` that `φs n` is eventually nonnegative
+-- (without it the statement is false, see `not_limitCondition_iff_log` below).
+lemma limitCondition_iff_log {γ : ℝ} (hγ : γ ∈ Set.Ioo 0 1) (φs : ℕ → ℝ)
+    (hφ : ∀ᶠ n in atTop, 0 ≤ φs n) :
     limitCondition γ φs
       ↔ Tendsto (fun n ↦ n * Real.log (φs n)) atTop (𝓝 (Real.log γ)) := by
-  -- FALSE as stated (`φs n` may be negative): see `not_limitCondition_iff_log` below.
-  sorry
+  unfold limitCondition
+  constructor
+  · intro h
+    refine ((Real.continuousAt_log hγ.1.ne').tendsto.comp h).congr' ?_
+    filter_upwards [h.eventually (lt_mem_nhds hγ.1)] with n hn
+    simp [Real.log_pow]
+  · intro h
+    have hlog : Real.log γ < 0 := Real.log_neg hγ.1 hγ.2
+    have hpos : ∀ᶠ n in atTop, 0 < φs n := by
+      filter_upwards [hφ, h.eventually (gt_mem_nhds (by linarith : Real.log γ < Real.log γ / 2))]
+        with n hn hn'
+      refine lt_of_le_of_ne hn fun h0 ↦ ?_
+      rw [← h0, Real.log_zero, mul_zero] at hn'
+      linarith
+    have := (Real.continuous_exp.tendsto _).comp h
+    rw [Function.comp_def, Real.exp_log hγ.1] at this
+    refine this.congr' ?_
+    filter_upwards [hpos] with n hn
+    rw [← Real.log_pow, Real.exp_log (pow_pos hn n)]
 
-lemma limitCondition_iff_log {γ : ℝ} (hγ : γ ∈ Set.Ioo 0 1) (φs : ℕ → ℝ) :
+/-- If `φs n → 1` then `n log φs n` and `n (φs n - 1)` have the same limit. -/
+private lemma tendsto_mul_log_iff_of_tendsto_one {φs : ℕ → ℝ} (h1 : Tendsto φs atTop (𝓝 1)) (L : ℝ) :
+    Tendsto (fun n ↦ n * Real.log (φs n)) atTop (𝓝 L)
+      ↔ Tendsto (fun n ↦ n * (φs n - 1)) atTop (𝓝 L) := by
+  have hpos : ∀ᶠ n in atTop, 0 < φs n := h1.eventually (lt_mem_nhds one_pos)
+  have hle : ∀ᶠ n : ℕ in atTop, (n : ℝ) * Real.log (φs n) ≤ n * (φs n - 1) := by
+    filter_upwards [hpos] with n hn
+    exact mul_le_mul_of_nonneg_left (Real.log_le_sub_one_of_pos hn) n.cast_nonneg
+  have hge : ∀ᶠ n : ℕ in atTop, (n : ℝ) * (φs n - 1) / φs n ≤ n * Real.log (φs n) := by
+    filter_upwards [hpos] with n hn
+    rw [mul_div_assoc]
+    refine mul_le_mul_of_nonneg_left ?_ n.cast_nonneg
+    have := Real.one_sub_inv_le_log_of_pos hn
+    rwa [_root_.sub_div, div_self hn.ne', one_div]
+  constructor
+  · intro h
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' h (by simpa using h.mul h1) hle ?_
+    filter_upwards [hge, hpos] with n hn hn'
+    rwa [div_le_iff₀ hn'] at hn
+  · intro h
+    exact tendsto_of_tendsto_of_tendsto_of_le_of_le' (by have := h.div h1 one_ne_zero; rw [div_one] at this; exact this) h hge hle
+
+private lemma tendsto_zero_of_tendsto_natCast_mul {f : ℕ → ℝ} {L : ℝ}
+    (h : Tendsto (fun n ↦ n * f n) atTop (𝓝 L)) : Tendsto f atTop (𝓝 0) := by
+  have := h.mul (tendsto_inv_atTop_zero.comp tendsto_natCast_atTop_atTop)
+  rw [mul_zero] at this
+  refine this.congr' ?_
+  filter_upwards [eventually_ge_atTop 1] with n hn
+  have : (n : ℝ) ≠ 0 := by positivity
+  simp only [Function.comp_apply]
+  field_simp
+
+-- Corrected from upstream: added the hypothesis `hφ` that `φs n` is eventually nonnegative
+-- (without it the statement is false, see `not_limitCondition_iff_log` below).
+lemma tendsto_of_limitcondition {γ : ℝ} (hγ : γ ∈ Set.Ioo 0 1) (φs : ℕ → ℝ)
+    (hφ : ∀ᶠ n in atTop, 0 ≤ φs n) :
     limitCondition γ φs
-      ↔ Tendsto (fun n ↦ n * Real.log (φs n)) atTop (𝓝 (Real.log γ)) := by
-  -- FALSE as stated (`φs n` may be negative): see `not_limitCondition_iff_log` below.
-  sorry
+      ↔ Tendsto (fun n ↦ n * Real.log (φs n)) atTop (𝓝 (Real.log γ)) :=
+  limitCondition_iff_log hγ φs hφ
 
-lemma limitCondition_iff {γ : ℝ} (hγ : γ ∈ Set.Ioo 0 1) (φs : ℕ → ℝ) :
+-- Corrected from upstream: added the hypothesis `hφ` that `φs n` is eventually nonnegative
+-- (without it the statement is false, see `not_limitCondition_iff` below).
+lemma limitCondition_iff {γ : ℝ} (hγ : γ ∈ Set.Ioo 0 1) (φs : ℕ → ℝ)
+    (hφ : ∀ᶠ n in atTop, 0 ≤ φs n) :
     limitCondition γ φs
       ↔ Tendsto (fun n ↦ n * (1 - φs n)) atTop (𝓝 (-Real.log γ)) := by
-  -- FALSE as stated (`φs n` may be negative): see `not_limitCondition_iff` below.
-  sorry
+  rw [limitCondition_iff_log hγ φs hφ]
+  have e : (fun n : ℕ ↦ (n : ℝ) * (1 - φs n)) = fun n ↦ -(n * (φs n - 1)) := by
+    funext n; ring
+  rw [e]
+  constructor
+  · intro h
+    have hlog : Real.log γ < 0 := Real.log_neg hγ.1 hγ.2
+    have hpos : ∀ᶠ n in atTop, 0 < φs n := by
+      filter_upwards [hφ, h.eventually (gt_mem_nhds (by linarith : Real.log γ < Real.log γ / 2))]
+        with n hn hn'
+      refine lt_of_le_of_ne hn fun h0 ↦ ?_
+      rw [← h0, Real.log_zero, mul_zero] at hn'
+      linarith
+    have h1 : Tendsto φs atTop (𝓝 1) := by
+      have := (Real.continuous_exp.tendsto _).comp (tendsto_zero_of_tendsto_natCast_mul h)
+      rw [Real.exp_zero] at this
+      refine this.congr' ?_
+      filter_upwards [hpos] with n hn
+      exact Real.exp_log hn
+    exact ((tendsto_mul_log_iff_of_tendsto_one h1 _).1 h).neg
+  · intro h
+    have h' := h.neg
+    simp only [neg_neg] at h'
+    have h1 : Tendsto φs atTop (𝓝 1) := by
+      have := (tendsto_zero_of_tendsto_natCast_mul h').add_const 1
+      simpa using this
+    exact (tendsto_mul_log_iff_of_tendsto_one h1 _).2 h'
 
-lemma limitCondition_iff_inv {γ : ℝ} (hγ : γ ∈ Set.Ioo 0 1) (φs : ℕ → ℝ) :
+-- Corrected from upstream: added the hypothesis `hφ` that `φs n` is eventually nonnegative
+-- (without it the statement is false, see `not_limitCondition_iff_inv` below).
+lemma limitCondition_iff_inv {γ : ℝ} (hγ : γ ∈ Set.Ioo 0 1) (φs : ℕ → ℝ)
+    (hφ : ∀ᶠ n in atTop, 0 ≤ φs n) :
     limitCondition γ φs
       ↔ Tendsto (fun n ↦ (n * (1 - φs n))⁻¹) atTop (𝓝 (-Real.log γ)⁻¹) := by
-  -- FALSE as stated (`φs n` may be negative): see `not_limitCondition_iff_inv` below.
-  sorry
+  have hL : -Real.log γ ≠ 0 := (neg_pos.2 (Real.log_neg hγ.1 hγ.2)).ne'
+  rw [limitCondition_iff hγ φs hφ]
+  refine ⟨fun h ↦ h.inv₀ hL, fun h ↦ ?_⟩
+  simpa using h.inv₀ (inv_ne_zero hL)
 
-/- The four statements above are false as stated, because `φs n` is allowed to be negative
+/- The four statements above are false without the hypothesis `hφ` (as stated upstream), because `φs n` is allowed to be negative
 (and `Real.log` is even). The following lemmas give explicit counterexamples with
 `γ = exp (-1)`. -/
 

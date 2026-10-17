@@ -15,3 +15,4 @@ import ExtremeValueTheory.WeakConvergenceCDF
 
 import ExtremeValueTheory.RegularVariation.Basic
 import ExtremeValueTheory.RegularVariation.Karamata
+import ExtremeValueTheory.RegularVariation.Breiman

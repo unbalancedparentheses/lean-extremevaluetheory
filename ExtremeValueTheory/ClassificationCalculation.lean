@@ -69,17 +69,7 @@ lemma ode_of_order_two_for_Q
   rw [hDQ]
   exact contDiff_const.add (contDiff_const.mul hC1)
 
-/-- Lemma 3.2 (solve-Q) -/
-lemma solve_Q
-    {Q : ℝ → ℝ} {γ : ℝ} (Q_diffble2 : ContDiff ℝ 2 Q) (hQ0 : Q 0 = 0) (hDQ0 : deriv Q 0 = 1)
-    (hDQ_pos : ∀ s, 0 < deriv Q s)
-    (Q_de : ∀ s, deriv (deriv Q) s = (deriv Q s) * (deriv (deriv Q) 0)) :
-    Q = if γ = 0 then (fun s ↦ s) else (fun s ↦ (exp (γ * s) - 1) / γ) := by
-  -- FALSE as stated (`γ` is unconstrained): see `not_solve_Q`; corrected: `solve_Q_of_gamma_eq`.
-  sorry -- **Issue #24**
-
-/-- A corrected version of `solve_Q`, with `γ = Q''(0)` (and without needing positivity
-of `Q'`). -/
+/-- A version of `solve_Q` with `γ = Q''(0)` and without needing positivity of `Q'`. -/
 lemma solve_Q_of_gamma_eq
     {Q : ℝ → ℝ} {γ : ℝ} (Q_diffble2 : ContDiff ℝ 2 Q) (hQ0 : Q 0 = 0) (hDQ0 : deriv Q 0 = 1)
     (hγ : γ = deriv (deriv Q) 0)
@@ -126,17 +116,91 @@ lemma solve_Q_of_gamma_eq
   simp only [Pi.sub_apply, hQ0, hT0, sub_zero] at this
   linarith
 
+/-- Lemma 3.2 (solve-Q) -/
+-- Corrected from upstream: added the hypothesis `hγ : γ = deriv (deriv Q) 0` (upstream `γ` was
+-- unconstrained, making the statement false, see `not_solve_Q` below).
+lemma solve_Q
+    {Q : ℝ → ℝ} {γ : ℝ} (Q_diffble2 : ContDiff ℝ 2 Q) (hQ0 : Q 0 = 0) (hDQ0 : deriv Q 0 = 1)
+    (hγ : γ = deriv (deriv Q) 0) (_hDQ_pos : ∀ s, 0 < deriv Q s)
+    (Q_de : ∀ s, deriv (deriv Q) s = (deriv Q s) * (deriv (deriv Q) 0)) :
+    Q = if γ = 0 then (fun s ↦ s) else (fun s ↦ (exp (γ * s) - 1) / γ) :=
+  solve_Q_of_gamma_eq Q_diffble2 hQ0 hDQ0 hγ Q_de
+
 /-- Lemma 3.4 (solve-E) -/
+-- Corrected from upstream: upstream had `γ = H''(0)` with `H = E ∘ exp`, the conclusion
+-- `E = if γ = 0 then c * log else c * (rpow · γ - 1)` as functions on all of `ℝ`, and `hc` as an
+-- (unusable) implicit binder; see `not_solve_E` below. Now `γ = H''(0) / c` (as in the
+-- blueprint), the formula is `c * (σ ^ γ - 1) / γ`, and it is asserted only for `σ > 0`.
 lemma solve_E
-    {E A : ℝ → ℝ} {c γ : ℝ} {hc : c = deriv E 1} (hγ : γ = deriv (deriv (fun s ↦ E (exp s))) 0)
+    {E A : ℝ → ℝ} {c γ : ℝ} (hc : c = deriv E 1)
+    (hγ : γ = deriv (deriv (fun s ↦ E (exp s))) 0 / c)
     (A_pos : ∀ τ > 0, 0 < A τ) (E_mono : MonotoneOn E (Ioi 0))
     (E_noncst : ¬ ∃ C, ∀ σ > 0, E σ = C) (hE1 : E 1 = 0)
     (E_eqn : ∀ σ > 0, ∀ τ > 0, E (σ * τ) = E σ * A τ + E τ) :
-    E = if γ = 0 then (fun σ ↦ c * log σ) else (fun σ ↦ c * (σ.rpow γ - 1)) := by
-  -- FALSE as stated: see `not_solve_E` below.
-  sorry -- **Issue #25**
+    ∀ σ > 0, E σ = if γ = 0 then c * log σ else c * (σ ^ γ - 1) / γ := by
+  set H : ℝ → ℝ := fun s ↦ E (exp s) with hH
+  set α : ℝ → ℝ := fun s ↦ A (exp s) with hα
+  have α_pos : ∀ s, 0 < α s := fun s ↦ A_pos _ (exp_pos s)
+  have H_mono : Monotone H := fun a b hab ↦
+    E_mono (exp_pos a) (exp_pos b) (exp_le_exp.2 hab)
+  have H_eqn : ∀ h s, H (h + s) = H h * α s + H s := fun h s ↦ by
+    simp only [hH, hα, exp_add]; exact E_eqn _ (exp_pos h) _ (exp_pos s)
+  have H0 : H 0 = 0 := by simp [hH, hE1]
+  have E_eq : ∀ σ > 0, E σ = H (log σ) := fun σ hσ ↦ by simp [hH, exp_log hσ]
+  -- `H` is differentiable at some point, hence at `0`, hence everywhere.
+  obtain ⟨s₀, hs₀⟩ := H_mono.ae_differentiableAt.exists
+  have hd0 : DifferentiableAt ℝ H 0 := by
+    have e : H = fun h ↦ (H (h + s₀) - H s₀) / α s₀ := by
+      funext h; rw [H_eqn]; field_simp [(α_pos s₀).ne']; ring
+    rw [e]
+    have : DifferentiableAt ℝ (fun h ↦ H (h + s₀)) 0 :=
+      ((zero_add s₀).symm ▸ hs₀).hasDerivAt.comp_add_const 0 s₀ |>.differentiableAt
+    exact (this.sub_const _).div_const _
+  have hDH : ∀ s, HasDerivAt H (deriv H 0 * α s) s := fun s ↦ by
+    have h0' : HasDerivAt H (deriv H 0) (s - s) := by rw [sub_self]; exact hd0.hasDerivAt
+    refine ((h0'.comp_sub_const s s).mul_const (α s) |>.add_const (H s)).congr_of_eventuallyEq
+      (Filter.Eventually.of_forall fun y ↦ ?_)
+    simp only
+    rw [← H_eqn, sub_add_cancel]
+  have H_diff : Differentiable ℝ H := fun s ↦ (hDH s).differentiableAt
+  -- `c = H'(0)`.
+  have hc' : c = deriv H 0 := by
+    rw [hc]
+    have h1 : HasDerivAt (fun σ ↦ H (log σ)) (deriv H 0 * 1⁻¹) 1 := by
+      have := (H_diff (log 1)).hasDerivAt.comp 1 (Real.hasDerivAt_log one_ne_zero)
+      rw [log_one] at this
+      exact this
+    have h2 : HasDerivAt E (deriv H 0 * 1⁻¹) 1 := by
+      refine h1.congr_of_eventuallyEq ?_
+      filter_upwards [Ioi_mem_nhds one_pos] with σ hσ
+      exact E_eq σ hσ
+    simpa using h2.deriv
+  have c_ne : c ≠ 0 := by
+    intro hc0
+    apply E_noncst
+    refine ⟨0, fun σ hσ ↦ ?_⟩
+    have hz : ∀ s, deriv H s = 0 := fun s ↦ by rw [(hDH s).deriv, ← hc', hc0, zero_mul]
+    rw [E_eq σ hσ, is_const_of_deriv_eq_zero H_diff hz (log σ) 0, H0]
+  -- Normalize: `Q = H / c`.
+  set Q : ℝ → ℝ := fun s ↦ H s / c with hQ
+  have Q_diff : Differentiable ℝ Q := H_diff.div_const c
+  have hQ0 : Q 0 = 0 := by simp [hQ, H0]
+  have hDQ : deriv Q = fun s ↦ deriv H s / c := funext fun s ↦ deriv_div_const c
+  have hDQ0 : deriv Q 0 = 1 := by rw [hDQ]; show deriv H 0 / c = 1; rw [← hc', div_self c_ne]
+  have Q_eqn : ∀ h s, Q (h + s) = Q h * α s + Q s := fun h s ↦ by
+    simp only [hQ, H_eqn]; field_simp
+  obtain ⟨hQ2, Q_de⟩ := ode_of_order_two_for_Q Q_diff hQ0 hDQ0 Q_eqn
+  have hγQ : γ = deriv (deriv Q) 0 := by
+    rw [hγ, hDQ, deriv_div_const]
+  have hQsol := solve_Q_of_gamma_eq hQ2 hQ0 hDQ0 hγQ Q_de
+  intro σ hσ
+  have hHQ : H (log σ) = c * Q (log σ) := by simp only [hQ]; field_simp
+  rw [E_eq σ hσ, hHQ, hQsol]
+  split_ifs with hγ0
+  · rfl
+  · rw [rpow_def_of_pos hσ, mul_comm (log σ)]; ring
 
-/-! ### Counterexamples to `solve_Q` and `solve_E` as stated
+/-! ### Counterexamples to `solve_Q` and `solve_E` as stated upstream
 
 * In `solve_Q` the parameter `γ` is a free (implicit) variable not tied to `Q`
   (presumably `γ = deriv (deriv Q) 0` was intended), so the statement fails e.g. for

@@ -196,14 +196,32 @@ lemma Real.eq_Ioo_or_Iio_or_Ioi_or_univ_of_isOpen_of_isConnected
     rintro rfl; exact sup_notMem ha hx
   · exact Or.inr (Or.inr (Or.inr (U_conn.isPreconnected.eq_univ_of_unbounded hb ha)))
 
+-- Corrected from upstream: the conclusion had `(interior A).Nonempty` (false for a fat Cantor
+-- set `A`); the intended condition is that the interval `J` is nontrivial.
 lemma exists_interval_measure_inter_gt_mul_measure
     {A : Set ℝ} (A_mble : MeasurableSet A) (A_pos : 0 < volume A) (A_fin : volume A < ⊤)
     {r : ENNReal} (r_lt_one : r < 1) :
     ∃ (J : Set ℝ), IsConnected J ∧ (interior J).Nonempty ∧ volume (J ∩ A) > r * volume J := by
-  -- Corrected from upstream, which had `(interior A).Nonempty` (false for a fat Cantor set `A`).
   -- Not needed downstream: the Steinhaus-type results below use Mathlib's
   -- `MeasureTheory.Measure.sub_mem_nhds_zero_of_addHaar_pos`.
-  sorry
+  -- Proof: take a Lebesgue density point `x` of `A` and a small ball around it.
+  have hne : volume.restrict A ≠ 0 := by
+    rw [Ne, Measure.restrict_eq_zero]; exact A_pos.ne'
+  have := ae_neBot.2 hne
+  obtain ⟨x, hx⟩ := (Besicovitch.ae_tendsto_measure_inter_div volume A).exists
+  obtain ⟨ε, hε, hεr⟩ := ((hx.eventually (lt_mem_nhds r_lt_one)).and
+    self_mem_nhdsWithin).exists
+  have ε_pos : (0 : ℝ) < ε := hεr
+  refine ⟨Metric.closedBall x ε, ?_, ?_, ?_⟩
+  · rw [Real.closedBall_eq_Icc]
+    exact isConnected_Icc (by linarith)
+  · rw [Real.closedBall_eq_Icc, interior_Icc]
+    exact ⟨x, by linarith, by linarith⟩
+  · have h0 : volume (Metric.closedBall x ε) ≠ 0 := by
+      rw [Real.volume_closedBall]; simpa using ε_pos
+    have hT : volume (Metric.closedBall x ε) ≠ ⊤ := measure_closedBall_lt_top.ne
+    rw [inter_comm, gt_iff_lt, ← ENNReal.lt_div_iff_mul_lt (Or.inl h0) (Or.inl hT)]
+    exact hε
 
 lemma isPreconnected_of_Ioo_subset_of_subset_Icc
     {J : Set ℝ} {a b : ℝ} (J_ge : Ioo a b ⊆ J) (J_le : J ⊆ Icc a b) :

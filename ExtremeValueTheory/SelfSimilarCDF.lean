@@ -95,16 +95,29 @@ lemma CumulativeDistributionFunction.npow_apply_eq
   simp only [mulAction_apply_eq, pow_apply_eq]
 
 open Filter Topology in
+-- Corrected from upstream: the hypothesis was `((As n) • F) x → G x`, which makes the statement
+-- false (e.g. `As n = 1`, `F = G`, `G x = 1/2`, `t = 1` gives `(1/2)^n → 0 ≠ 1/2`); the intended
+-- hypothesis is `((As n • F) x) ^ n → G x`, i.e. `As n • F^n → G` at `x`.
 lemma continuous_parameter_ev_limit_relation
     {F G : CumulativeDistributionFunction} {As : ℕ → AffineIncrEquiv} {x : ℝ}
-    (hAF : Tendsto (fun n ↦ ((As n) • F) x) atTop (𝓝 (G x))) {t : ℝ} (t_pos : 0 < t) :
+    (hAF : Tendsto (fun n ↦ ((As n • F) x) ^ n) atTop (𝓝 (G x))) {t : ℝ} (t_pos : 0 < t) :
     Tendsto (fun n ↦ ((As n) • F).pow
         (t := 1 ⊔ Nat.floor (n * t)) (lt_max_of_lt_left zero_lt_one) x)
       atTop (𝓝 (G.pow t_pos x)) := by
-  -- NOTE: As stated this is false: the hypothesis should be about `((As n • F) x) ^ n → G x`.
-  -- E.g. `As n = 1`, `F = G`, `G x = 1/2`, `t = 1` gives `(1/2)^n → 0 ≠ 1/2`.
-  -- (The proof of `IsExtremeValueDistr.self_similar` below does not use this lemma.)
-  sorry -- **Issue #57** (continuous-parameter-ev-limit)
+  simp only [CumulativeDistributionFunction.pow_apply_eq]
+  have hfl : Tendsto (fun n : ℕ ↦ (Nat.floor (t * n) : ℝ) / n) atTop (𝓝 t) :=
+    (tendsto_nat_floor_mul_div_atTop t_pos.le).comp tendsto_natCast_atTop_atTop
+  refine (hAF.rpow hfl (Or.inr t_pos)).congr' ?_
+  obtain ⟨N, hN⟩ := exists_nat_ge (1 / t)
+  filter_upwards [eventually_ge_atTop (N + 1)] with n hn
+  have hn0 : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
+  have h1 : 1 ≤ Nat.floor ((n : ℝ) * t) := by
+    rw [Nat.one_le_floor_iff]
+    have : (1 / t) * t ≤ (n : ℝ) * t := by
+      gcongr; exact hN.trans (by exact_mod_cast (show N ≤ n by omega))
+    rwa [one_div_mul_cancel t_pos.ne'] at this
+  rw [max_eq_right (by exact_mod_cast h1), mul_comm t, ← Real.rpow_natCast,
+    ← Real.rpow_mul ((As n • F).apply_nonneg x), mul_div_cancel₀ _ hn0.ne']
 
 open Real
 

@@ -41,7 +41,10 @@ We denote by $\Leb$ the Lebesgue measure on $\bR$.
 \end{lemma}
 \begin{proof}
   % \uses{}
-  % \leanok
+  \leanok
+  (The Lean proof instead takes a Lebesgue density point $x$ of $A$ and a small
+  closed interval $J = [x-\eps, x+\eps]$.)
+
   Assume, without loss of generality, $0 < r < 1$.
   Since the Lebesgue measure is outer regular, we can find an open set $U \subset \bR$
   such that $A \subseteq U$ and $\Leb[U] < r^{-1} \, \Leb[A]$.

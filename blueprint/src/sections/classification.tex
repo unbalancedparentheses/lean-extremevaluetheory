@@ -101,7 +101,7 @@
   \end{lemma}
 \begin{proof}
   %\uses{}
-  % \leanok
+  \leanok
   Since $Q$ is differentiable and $Q'(s)>0$ for any $s \in \bR$,
   we can write \eqref{eq: Q eqn dd} as
   \begin{align*}
@@ -156,17 +156,17 @@
   \end{align*}
   for some $A \colon (0,\infty) \to (0,\infty)$ and all $\lambda, \sigma > 0$.
   Then, denoting $c = E'(1)$ and $\gamma = \frac{1}{E'(1)} \dder{s} E(e^s) \big|_{s=0}$,
-  for all $\lambda \in \bR$ we have
+  for all $\lambda > 0$ we have
   \begin{align*}
   E(\lambda) = \begin{cases}
-    c \big( \lambda^\gamma - 1 \big) & \;\;\text{ if $\gamma \ne 0$.} \\
+    \frac{c}{\gamma} \big( \lambda^\gamma - 1 \big) & \;\;\text{ if $\gamma \ne 0$.} \\
     c \, \log (\lambda) & \;\;\text{ if $\gamma = 0$.}
     \end{cases}
   \end{align*}
 \end{lemma}
 \begin{proof}
   \uses{lem:ode-of-order-two-for-Q, lem:solve-Q, thm:monotone-ae-differentiable}
-  % \leanok
+  \leanok
   Denote $H(s) = E(e^s)$ for $s \in \bR$. Then $H(0) = E(1) = 0$ and
   $H$ is also nondecreasing and nonconstant.
   By Theorem~\ref{thm:monotone-ae-differentiable}, there
@@ -221,8 +221,8 @@
   Now just tracing the definitions, we get the asserted formula
   \begin{align*}
   E(\lambda) = H(\log \lambda)
-    = c \, Q(\log \lambda) = c \, \big( e^{\gamma \, \log(\lambda)} - 1 \big)
-    = c \, \big( \lambda^{\gamma} - 1 \big) .
+    = c \, Q(\log \lambda) = \frac{c}{\gamma} \, \big( e^{\gamma \, \log(\lambda)} - 1 \big)
+    = \frac{c}{\gamma} \, \big( \lambda^{\gamma} - 1 \big) .
   \end{align*}
 
   If $\gamma = 0$ then the formula reads $Q(s) = s$.

@@ -621,6 +621,9 @@ $A_n(x) = a_n x + b_n$ and $A(x) = a x + b$, and $a_n \to a$ and $b_n \to b$).
   \end{align*}
   where $G$ is a c.d.f.
 
+  (In Lean the statement is pointwise: if $\big((A_n.F)(x)\big)^n \to G(x)$ at a point $x$,
+  then $\big((A_n.F)(x)\big)^{\max(1, \lfloor n t \rfloor)} \to G(x)^t$.)
+
   Then, for any $t > 0$, denoting by $G^t$ the c.d.f. given by
   $G^t(x) = \big( G(x) \big)^t$, we have
   \begin{align*}
@@ -631,7 +634,7 @@ $A_n(x) = a_n x + b_n$ and $A(x) = a x + b$, and $a_n \to a$ and $b_n \to b$).
 \end{lemma}
 \begin{proof}
   % \uses{}
-  % \leanok
+  \leanok
   Let $t > 0$ and let $x \in \bR$ be a continuity point of $G$.
   For $n \in \bN$, calculate
   \begin{align*}
@@ -705,7 +708,10 @@ $A_n(x) = a_n x + b_n$ and $A(x) = a x + b$, and $a_n \to a$ and $b_n \to b$).
 %  \end{align*}
 %  where $G_t$ is a nondegenerate c.d.f.
 %
-%  Then, for any $t > 0$, denoting by $G^t$ the c.d.f. given by
+%  (In Lean the statement is pointwise: if $\big((A_n.F)(x)\big)^n \to G(x)$ at a point $x$,
+  then $\big((A_n.F)(x)\big)^{\max(1, \lfloor n t \rfloor)} \to G(x)^t$.)
+
+  Then, for any $t > 0$, denoting by $G^t$ the c.d.f. given by
 %  $G^t(x) = \big( G(x) \big)^t$, we have
 %  \begin{align*}
 %    A_{n}.F^{\lfloor n t \rfloor} \tendsinlaw G^t .
