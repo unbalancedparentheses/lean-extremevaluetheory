@@ -1100,7 +1100,7 @@ section TailQuantile
 
 /-- The **tail quantile function** `U(t) = (1 / (1 - F))^←(t) = inf {x | F̄(x) ≤ 1/t}` of a
 survival function `F̄`, for `t > 1` ([dHF, §1.1.2]); we set `U(t) = 0` for `t ≤ 1`. -/
-noncomputable def tailQuantile (F : ℝ → ℝ) (t : ℝ) : ℝ :=
+noncomputable def survivalQuantile (F : ℝ → ℝ) (t : ℝ) : ℝ :=
   if 1 < t then sInf {x | F x ≤ t⁻¹} else 0
 
 variable {F : ℝ → ℝ}
@@ -1109,12 +1109,12 @@ variable {F : ℝ → ℝ}
 `U(t) ≤ x ↔ F̄(x) ≤ 1/t`. -/
 theorem tailQuantile_le_iff (hF : Antitone F) (hrc : ∀ x, ContinuousWithinAt F (Ici x) x)
     (h0 : Tendsto F atTop (𝓝 0)) (h1 : Tendsto F atBot (𝓝 1)) {t : ℝ} (ht : 1 < t) (x : ℝ) :
-    tailQuantile F t ≤ x ↔ F x ≤ t⁻¹ := by
+    survivalQuantile F t ≤ x ↔ F x ≤ t⁻¹ := by
   have hp : 0 < t⁻¹ := inv_pos.2 (one_pos.trans ht)
   have hp1 : t⁻¹ < 1 := inv_lt_one_of_one_lt₀ ht
   obtain ⟨M, hM⟩ := (h1.eventually (lt_mem_nhds hp1)).exists
   obtain ⟨hU1, hU2, -⟩ := threshold_spec hF hrc h0 hp hM
-  simp only [tailQuantile, ht, ↓reduceIte]
+  simp only [survivalQuantile, ht, ↓reduceIte]
   constructor
   · intro hx
     exact (hF hx).trans hU1
@@ -1124,23 +1124,23 @@ theorem tailQuantile_le_iff (hF : Antitone F) (hrc : ∀ x, ContinuousWithinAt F
 
 theorem monotoneOn_tailQuantile (hF : Antitone F) (hrc : ∀ x, ContinuousWithinAt F (Ici x) x)
     (h0 : Tendsto F atTop (𝓝 0)) (h1 : Tendsto F atBot (𝓝 1)) :
-    MonotoneOn (tailQuantile F) (Ioi 1) := by
+    MonotoneOn (survivalQuantile F) (Ioi 1) := by
   intro t ht t' ht' htt'
   rw [tailQuantile_le_iff hF hrc h0 h1 ht]
-  have := (tailQuantile_le_iff hF hrc h0 h1 ht' (tailQuantile F t')).1 le_rfl
+  have := (tailQuantile_le_iff hF hrc h0 h1 ht' (survivalQuantile F t')).1 le_rfl
   exact this.trans (inv_anti₀ (one_pos.trans ht) htt')
 
 theorem measurable_tailQuantile (hF : Antitone F) (hrc : ∀ x, ContinuousWithinAt F (Ici x) x)
     (h0 : Tendsto F atTop (𝓝 0)) (h1 : Tendsto F atBot (𝓝 1)) :
-    Measurable (tailQuantile F) := by
+    Measurable (survivalQuantile F) := by
   refine measurable_of_restrict_of_restrict_compl (s := Ioi 1) measurableSet_Ioi ?_ ?_
-  · have : Monotone ((Ioi (1 : ℝ)).domRestrict (tailQuantile F)) := fun a b hab =>
+  · have : Monotone ((Ioi (1 : ℝ)).domRestrict (survivalQuantile F)) := fun a b hab =>
       monotoneOn_tailQuantile hF hrc h0 h1 a.2 b.2 hab
     exact this.measurable
-  · have : (Ioi (1 : ℝ))ᶜ.domRestrict (tailQuantile F) = fun _ => 0 := by
+  · have : (Ioi (1 : ℝ))ᶜ.domRestrict (survivalQuantile F) = fun _ => 0 := by
       ext ⟨t, ht⟩
       have ht' : ¬ 1 < t := ht
-      simp [Set.domRestrict, tailQuantile, ht']
+      simp [Set.domRestrict, survivalQuantile, ht']
     rw [this]
     exact measurable_const
 
@@ -1155,13 +1155,13 @@ theorem tendsto_survival_atBot {Y : Ω → ℝ} (hY : Measurable Y) :
 /-- **The quantile transform**: if `E` is standard exponential, then `U(e^E)` has the law of `Y`,
 where `U` is the tail quantile function of the survival function of `Y`. -/
 theorem map_eq_expMeasure_map_tailQuantile {Y : Ω → ℝ} (hY : Measurable Y) :
-    P.map Y = (expMeasure 1).map (fun e => tailQuantile (survival P Y) (exp e)) := by
+    P.map Y = (expMeasure 1).map (fun e => survivalQuantile (survival P Y) (exp e)) := by
   set F := survival P Y with hFdef
   have hF := survival_anti (P := P) Y
   have hrc := continuousWithinAt_survival (P := P) hY
   have h0 := tendsto_survival_atTop (P := P) hY
   have h1 := tendsto_survival_atBot (P := P) hY
-  have hVm : Measurable fun e => tailQuantile F (exp e) :=
+  have hVm : Measurable fun e => survivalQuantile F (exp e) :=
     (measurable_tailQuantile hF hrc h0 h1).comp measurable_exp
   refine measure_eq_of_Ioi fun a => ?_
   rw [Measure.map_apply hY measurableSet_Ioi, Measure.map_apply hVm measurableSet_Ioi]
@@ -1172,7 +1172,7 @@ theorem map_eq_expMeasure_map_tailQuantile {Y : Ω → ℝ} (hY : Measurable Y) 
   have hnull : expMeasure 1 (Ioi 0)ᶜ = 0 := by
     rw [compl_Ioi, expMeasure_Iic le_rfl]; simp
   rw [hPa, ← measure_inter_conull hnull]
-  have hset : (fun e => tailQuantile F (exp e)) ⁻¹' Ioi a ∩ Ioi 0 =
+  have hset : (fun e => survivalQuantile F (exp e)) ⁻¹' Ioi a ∩ Ioi 0 =
       {e | exp (-e) < F a} ∩ Ioi 0 := by
     ext e
     simp only [mem_inter_iff, mem_preimage, mem_Ioi, mem_ofPred_eq]
@@ -1227,14 +1227,14 @@ The limit is expressed as convergence in distribution to any random variable `Z`
 theorem tendstoInDistribution_hill {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
     (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ}
     {A : ℝ → ℝ} (hγ : 0 < γ)
-    (h2 : IsSecondOrderRegularlyVarying (tailQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
+    (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
     (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
     (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {Z : Ω' → ℝ}
     (hZ : HasLaw Z (gaussianReal (lam / (1 - ρ)) (γ ^ 2).toNNReal) P') :
     TendstoInDistribution (fun n ω => √(k n : ℝ) * (hill (fun i : Fin n => X i ω) (k n) - γ))
       atTop Z (fun _ => P) P' := by
   obtain ⟨Ω₀, _, P₀, E, hEm, hE, hind, hP₀⟩ := exists_iid ℕ (expMeasure 1)
-  set U := tailQuantile (survival P (X 0)) with hUdef
+  set U := survivalQuantile (survival P (X 0)) with hUdef
   have hF := survival_anti (P := P) (X 0)
   have hrc := continuousWithinAt_survival (P := P) (hX 0)
   have h0 := tendsto_survival_atTop (P := P) (hX 0)
@@ -1274,7 +1274,7 @@ theorem tendstoInDistribution_hill {X : ℕ → Ω → ℝ} (hX : ∀ i, Measura
 theorem tendstoInDistribution_hill_of_tendsto_zero {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
     (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ : ℝ}
     {A : ℝ → ℝ} (hγ : 0 < γ)
-    (h2 : IsSecondOrderRegularlyVarying (tailQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
+    (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
     (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
     (hA : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 0)) {Z : Ω' → ℝ}
     (hZ : HasLaw Z (gaussianReal 0 (γ ^ 2).toNNReal) P') :
