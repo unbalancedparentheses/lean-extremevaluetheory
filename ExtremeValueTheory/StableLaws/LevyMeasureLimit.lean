@@ -545,6 +545,147 @@ theorem tendsto_dfun_log
 
 end DfunBound
 
+section Kern
+
+variable {s₀ : ℝ}
+
+/-- The kernel `k(z) = ∫₀^{s₀} (1 - cos (s z)) ds = s₀ - sin (s₀ z) / z`. -/
+noncomputable def kern (s₀ z : ℝ) : ℝ := ∫ s in (0 : ℝ)..s₀, (1 - Real.cos (s * z))
+
+theorem continuous_kern : Continuous (kern s₀) := by
+  unfold kern
+  exact intervalIntegral.continuous_parametric_intervalIntegral_of_continuous' (μ := volume)
+    (f := fun z s => 1 - Real.cos (s * z)) (by fun_prop) 0 s₀
+
+theorem kern_eq (z : ℝ) (hz : z ≠ 0) : kern s₀ z = s₀ - Real.sin (s₀ * z) / z := by
+  have hi : IntervalIntegrable (fun s : ℝ => Real.cos (s * z)) volume 0 s₀ :=
+    (by fun_prop : Continuous fun s : ℝ => Real.cos (s * z)).intervalIntegrable _ _
+  rw [kern, intervalIntegral.integral_sub intervalIntegrable_const hi, intervalIntegral.integral_const,
+    sub_zero, smul_eq_mul, mul_one]
+  have : ∫ s in (0 : ℝ)..s₀, Real.cos (s * z) = ∫ s in (0 : ℝ)..s₀, Real.cos (z * s) := by
+    congr 1; funext s; rw [mul_comm]
+  rw [this, intervalIntegral.integral_comp_mul_left (fun s => Real.cos s) hz, integral_cos,
+    mul_zero, Real.sin_zero, sub_zero, smul_eq_mul, mul_comm z s₀, inv_mul_eq_div]
+
+theorem kern_nonneg (hs₀ : 0 ≤ s₀) (z : ℝ) : 0 ≤ kern s₀ z :=
+  intervalIntegral.integral_nonneg hs₀ fun s _ => by linarith [Real.cos_le_one (s * z)]
+
+theorem kern_le (hs₀ : 0 ≤ s₀) (z : ℝ) : kern s₀ z ≤ 2 * s₀ := by
+  have h := intervalIntegral.integral_mono_on hs₀
+    ((by fun_prop : Continuous fun s : ℝ => 1 - Real.cos (s * z)).intervalIntegrable _ _)
+    (intervalIntegrable_const (μ := volume) (c := (2 : ℝ))) fun s _ => by linarith [Real.neg_one_le_cos (s * z)]
+  rw [intervalIntegral.integral_const, sub_zero, smul_eq_mul] at h
+  unfold kern; linarith
+
+theorem kern_pos (hs₀ : 0 < s₀) {z : ℝ} (hz : z ≠ 0) : 0 < kern s₀ z := by
+  rw [kern_eq z hz, sub_pos]
+  rcases lt_or_gt_of_ne hz with h | h
+  · rw [div_lt_iff_of_neg h]
+    have := Real.sin_lt (show 0 < s₀ * -z by nlinarith)
+    rw [mul_neg, Real.sin_neg] at this
+    linarith
+  · rw [div_lt_iff₀ h]
+    exact Real.sin_lt (by positivity)
+
+/-- `k` is bounded below away from `0`. -/
+theorem exists_le_kern (hs₀ : 0 < s₀) {x₀ : ℝ} (hx₀ : 0 < x₀) :
+    ∃ c > 0, ∀ z, x₀ ≤ |z| → c ≤ kern s₀ z := by
+  set R := max x₀ (2 / s₀)
+  have hK : IsCompact {z : ℝ | x₀ ≤ |z| ∧ |z| ≤ R} := by
+    refine Metric.isCompact_of_isClosed_isBounded ?_ ?_
+    · exact (isClosed_le continuous_const continuous_abs).inter
+        (isClosed_le continuous_abs continuous_const)
+    · refine (Metric.isBounded_Icc (-R) R).subset fun z hz => ?_
+      exact abs_le.1 hz.2
+  have hne : ({z : ℝ | x₀ ≤ |z| ∧ |z| ≤ R}).Nonempty :=
+    ⟨x₀, by simp [abs_of_pos hx₀, R]⟩
+  obtain ⟨z₀, hz₀, hmin⟩ := hK.exists_isMinOn hne continuous_kern.continuousOn
+  have hz₀0 : z₀ ≠ 0 := by
+    rintro rfl; simp at hz₀; linarith [hz₀.1]
+  refine ⟨min (kern s₀ z₀) (s₀ / 2), lt_min (kern_pos hs₀ hz₀0) (by positivity), fun z hz => ?_⟩
+  by_cases hzR : |z| ≤ R
+  · exact (min_le_left _ _).trans (hmin ⟨hz, hzR⟩)
+  · refine (min_le_right _ _).trans ?_
+    have hz0 : z ≠ 0 := by rintro rfl; simp at hz; linarith
+    have hzR' : 2 / s₀ < |z| := lt_of_le_of_lt (le_max_right _ _) (not_le.1 hzR)
+    rw [kern_eq z hz0]
+    have h1 : |Real.sin (s₀ * z) / z| ≤ 1 / |z| := by
+      rw [abs_div]; exact div_le_div_of_nonneg_right (Real.abs_sin_le_one _) (abs_nonneg _)
+    have h2 : 1 / |z| ≤ s₀ / 2 := by
+      rw [div_le_iff₀ (abs_pos.2 hz0)]
+      rw [div_lt_iff₀ hs₀] at hzR'
+      linarith
+    linarith [le_abs_self (Real.sin (s₀ * z) / z)]
+
+end Kern
+
+section KernMeasure
+
+variable {s₀ : ℝ}
+
+/-- `ρ` weighted by the kernel `k`. -/
+noncomputable def kernMeasure (s₀ : ℝ) (ρ : Measure ℝ) : Measure ℝ :=
+  ρ.withDensity fun z => ((kern s₀ z).toNNReal : ℝ≥0∞)
+
+theorem measurable_kern_toNNReal : Measurable fun z => (kern s₀ z).toNNReal :=
+  continuous_kern.measurable.real_toNNReal
+
+instance (ρ : Measure ℝ) [IsFiniteMeasure ρ] : IsFiniteMeasure (kernMeasure s₀ ρ) := by
+  refine isFiniteMeasure_withDensity ?_
+  refine ne_top_of_le_ne_top (ENNReal.mul_ne_top (ENNReal.coe_ne_top (r := (2 * |s₀|).toNNReal))
+    (measure_ne_top ρ univ)) ?_
+  calc ∫⁻ z, ((kern s₀ z).toNNReal : ℝ≥0∞) ∂ρ ≤ ∫⁻ _z, ((2 * |s₀|).toNNReal : ℝ≥0∞) ∂ρ :=
+        lintegral_mono fun z => by
+          refine ENNReal.coe_le_coe.2 (Real.toNNReal_le_toNNReal ?_)
+          rcases le_total 0 s₀ with h | h
+          · rw [abs_of_nonneg h]; exact kern_le h z
+          · have : kern s₀ z ≤ 0 := by
+              rw [kern, intervalIntegral.integral_symm]
+              exact neg_nonpos.2 (intervalIntegral.integral_nonneg h fun s _ => by
+                linarith [Real.cos_le_one (s * z)])
+            linarith [abs_nonneg s₀]
+    _ = _ := by rw [lintegral_const]
+
+theorem integral_kernMeasure {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    (hs₀ : 0 ≤ s₀) (ρ : Measure ℝ) (g : ℝ → E) :
+    ∫ z, g z ∂(kernMeasure s₀ ρ) = ∫ z, kern s₀ z • g z ∂ρ := by
+  rw [kernMeasure, integral_withDensity_eq_integral_smul measurable_kern_toNNReal]
+  congr 1; funext z
+  rw [NNReal.smul_def, Real.coe_toNNReal _ (kern_nonneg hs₀ z)]
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a : ℕ → ℝ}
+
+/-- **Characteristic function of the kernel measure**:
+`φ_{k ρₙ}(t) = ∫₀^{s₀} -Dₙ(t, s) / (2n) ds`. -/
+theorem charFun_kernMeasure (hs₀ : 0 ≤ s₀) {n : ℕ} (hn : n ≠ 0) (t : ℝ) :
+    charFun (kernMeasure s₀ (cLaw μ a n)) t =
+      ∫ s in (0 : ℝ)..s₀, -dfun μ a n t s / (2 * n) := by
+  set ρ := cLaw μ a n
+  set F : ℝ → ℝ → ℂ := fun z s => ((1 - Real.cos (s * z) : ℝ) : ℂ) *
+    Complex.exp (t * z * Complex.I)
+  have hF : Continuous (Function.uncurry F) := by
+    simp only [F]; fun_prop
+  have hint : Integrable (Function.uncurry F) (ρ.prod (volume.restrict (Ioc 0 s₀))) := by
+    refine Integrable.of_bound hF.aestronglyMeasurable 2 (ae_of_all _ fun p => ?_)
+    obtain ⟨z, s⟩ := p
+    simp only [Function.uncurry_apply_pair, F, norm_mul, ← Complex.ofReal_mul,
+      Complex.norm_exp_ofReal_mul_I, mul_one, Complex.norm_real, Real.norm_eq_abs]
+    rw [abs_le]; constructor <;> linarith [Real.cos_le_one (s * z), Real.neg_one_le_cos (s * z)]
+  have hk : ∀ z, kern s₀ z • Complex.exp (t * z * Complex.I) = ∫ s in Ioc 0 s₀, F z s := by
+    intro z
+    rw [kern, intervalIntegral.integral_of_le hs₀, Complex.real_smul, ← integral_complex_ofReal,
+      ← integral_mul_const]
+  rw [charFun_apply_real, integral_kernMeasure hs₀]
+  simp_rw [hk]
+  rw [integral_integral_swap hint, intervalIntegral.integral_of_le hs₀]
+  refine setIntegral_congr_fun measurableSet_Ioc fun s _ => ?_
+  have hn' : (n : ℂ) ≠ 0 := by exact_mod_cast hn
+  rw [dfun_eq]
+  field_simp
+  ring
+
+end KernMeasure
+
 end GCLTConverse
 
 end ExtremeValueTheory
