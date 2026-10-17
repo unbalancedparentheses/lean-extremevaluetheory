@@ -49,3 +49,4 @@ import ExtremeValueTheory.Dependence.Leadbetter
 import ExtremeValueTheory.Dependence.ExtremalIndex
 import ExtremeValueTheory.Dependence.Examples
 import ExtremeValueTheory.Statistics.ExtremeQuantile
+import ExtremeValueTheory.Statistics.UpperOrderStatistics
