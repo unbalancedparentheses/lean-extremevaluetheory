@@ -55,75 +55,19 @@ of `G`) of the distributions of maxima of independent random variables up to ori
 preserving affine transforms  -/
 def ExtremeValueDistr.domainOfAtraction (G : ExtremeValueDistr) :
     Set CumulativeDistributionFunction :=
+  -- Corrected from upstream, which had the roles of `F` and `G` swapped (it described the limits
+  -- of the normalized maxima of `G` itself, a set containing degenerate laws).
   {F | ∃ (As : ℕ → AffineIncrEquiv),
-       ∀ x, ContinuousAt F x → Tendsto (fun n ↦ ((As n • G.toCDF) x)^n) atTop (𝓝 (F x))}
+       ∀ x, ContinuousAt G.toCDF x → Tendsto (fun n ↦ ((As n • F) x)^n) atTop (𝓝 (G.toCDF x))}
 
 namespace ExtremeValueDistr
 
+/-- Every extreme value distribution has a nonempty domain of attraction: the c.d.f. `F` in the
+definition of `IsExtremeValueDistr` belongs to it. -/
 lemma domainOfAtraction_nonempty (G : ExtremeValueDistr) :
     G.domainOfAtraction ≠ ∅ := by
-  set H := G.toCDF
-  have ht : ∀ n : ℕ, ∃ t, 1 - 1 / ((n : ℝ) + 1) ^ 2 < H t := fun n ↦ by
-    have : (0 : ℝ) < 1 / ((n : ℝ) + 1) ^ 2 := by positivity
-    exact (H.tendsto_atTop.eventually (lt_mem_nhds (by linarith))).exists
-  choose t ht using ht
-  obtain ⟨y₀, hy₀⟩ : ∃ y, H y < 1 / 2 :=
-    (H.tendsto_atBot.eventually (gt_mem_nhds (by norm_num))).exists
-  set s : ℕ → ℝ := fun n ↦ ((n : ℝ) + 1) * (|t n| + |y₀| + 1) with hs
-  have s_pos : ∀ n, 0 < s n := fun n ↦ by positivity
-  rw [← Set.nonempty_iff_ne_empty]
-  refine ⟨(MeasureTheory.diracProba (0 : ℝ)).cdf, fun n ↦ (AffineIncrEquiv.mkOfCoefs (s_pos n) (t n))⁻¹, ?_⟩
-  intro x _
-  simp only
-  rw [CumulativeDistributionFunction.cdf_diracProba_apply]
-  by_cases hx : x < 0
-  · simp only [hx, ↓reduceIte]
-    obtain ⟨N, hN⟩ := exists_nat_gt (1 / (-x))
-    have hle : ∀ᶠ n : ℕ in atTop, H (s n * x + t n) ≤ 1 / 2 := by
-      filter_upwards [eventually_ge_atTop N] with n hn
-      have hnx : 1 ≤ ((n : ℝ) + 1) * (-x) := by
-        have h1 : 1 / (-x) < (n : ℝ) + 1 := by
-          have : (N : ℝ) ≤ n := by exact_mod_cast hn
-          linarith
-        rw [div_lt_iff₀ (by linarith)] at h1
-        linarith
-      have hpos : 0 ≤ |t n| + |y₀| + 1 := by positivity
-      have key : s n * x + t n ≤ y₀ := by
-        have e : s n * x = -((((n : ℝ) + 1) * (-x)) * (|t n| + |y₀| + 1)) := by
-          simp only [hs]; ring
-        have : 1 * (|t n| + |y₀| + 1) ≤ (((n : ℝ) + 1) * (-x)) * (|t n| + |y₀| + 1) :=
-          mul_le_mul_of_nonneg_right hnx hpos
-        have := le_abs_self (t n)
-        have := neg_abs_le y₀
-        linarith
-      exact (H.mono key).trans hy₀.le
-    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds
-      (tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num : (0 : ℝ) ≤ 1 / 2)
-        (by norm_num : (1 / 2 : ℝ) < 1)) (Eventually.of_forall fun n ↦ pow_nonneg (H.apply_nonneg _) n) ?_
-    filter_upwards [hle] with n hn
-    exact pow_le_pow_left₀ (H.apply_nonneg _) hn n
-  · simp only [hx, ↓reduceIte]
-    have hlow : Tendsto (fun n : ℕ ↦ 1 - 1 / ((n : ℝ) + 1)) atTop (𝓝 1) := by
-      simpa using (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)).const_sub 1
-    refine tendsto_of_tendsto_of_tendsto_of_le_of_le hlow tendsto_const_nhds ?_ ?_
-    · intro n
-      have hmono : H (t n) ≤ H (s n * x + t n) :=
-        H.mono (by have := mul_nonneg (s_pos n).le (not_lt.mp hx); linarith)
-      refine le_trans ?_ (pow_le_pow_left₀ (H.apply_nonneg _) hmono n)
-      have hb := one_add_mul_le_pow (a := H (t n) - 1)
-        (by have := H.apply_nonneg (t n); linarith) n
-      rw [add_sub_cancel] at hb
-      refine le_trans ?_ hb
-      have hn1 : (0 : ℝ) < (n : ℝ) + 1 := by positivity
-      have ha : -(1 / ((n : ℝ) + 1) ^ 2) ≤ H (t n) - 1 := by linarith [ht n]
-      have h2 : (n : ℝ) * -(1 / ((n : ℝ) + 1) ^ 2) ≤ n * (H (t n) - 1) :=
-        mul_le_mul_of_nonneg_left ha (Nat.cast_nonneg n)
-      have h3 : (n : ℝ) * (1 / ((n : ℝ) + 1) ^ 2) ≤ 1 / ((n : ℝ) + 1) := by
-        rw [mul_one_div, div_le_div_iff₀ (by positivity) hn1]
-        nlinarith
-      linarith
-    · intro n
-      exact pow_le_one₀ (H.apply_nonneg _) (H.apply_le_one _)
+  obtain ⟨_, F, As, hF⟩ := G.isEVD
+  exact Set.nonempty_iff_ne_empty.mp ⟨F, As, hF⟩
 
 section rewriting_the_limit_condition
 
