@@ -23,7 +23,8 @@ import Mathlib.Analysis.SpecificLimits.Normed
   `(∑ₙ pₙ F̄^{*n}(x)) / F̄(x) → ∑ₙ n pₙ`.
 * `compound μ p = ∑ₙ pₙ μ^{*n}` is the compound law (the law of `S_N = X₁ + ⋯ + X_N` with
   `N ∼ p` independent of the i.i.d. `Xᵢ ∼ μ`), and `IsSubexponential.tendsto_tail_compound_div`
-  states `P(S_N > x) / F̄(x) → E N`.
+  states `P(S_N > x) / F̄(x) → E N`; `IsSubexponential.compound`: the compound law is again
+  subexponential when `E N > 0`.
 
 Here [EKM] is Embrechts, Klüppelberg and Mikosch, *Modelling Extremal Events for Insurance and
 Finance* (Springer, 1997).
@@ -193,6 +194,99 @@ theorem convPow (h : IsSubexponential μ) {n : ℕ} (hn : 1 ≤ n) :
   h.of_tendsto_tail_div (convPow_Iio_zero h.nonneg n) (by exact_mod_cast hn)
     (h.tendsto_tail_convPow_div hn)
 
+omit [IsProbabilityMeasure μ] in
+/-- The tail of `δ₀ = μ^{*0}` vanishes on `[0, ∞)`. -/
+theorem tail_convPow_zero {x : ℝ} (hx : 0 ≤ x) : tail (Subexp.convPow μ 0) x = 0 := by
+  simp [tail, measureReal_def, Measure.dirac_apply' _ measurableSet_Ioi, not_lt.2 hx]
+
+/-- **Random sums of subexponential variables ([EKM, Theorem A3.20]).** Let `μ` be
+subexponential and let `pₙ ≥ 0` satisfy `∑ₙ pₙ (1 + ε)ⁿ < ∞` for some `ε > 0` (for a counting
+distribution `pₙ = P(N = n)` this is `E (1 + ε)^N < ∞`). Then
+`(∑ₙ pₙ F̄^{*n}(x)) / F̄(x) → ∑ₙ n pₙ` (`= E N`). -/
+theorem tendsto_tsum_tail_convPow_div (h : IsSubexponential μ) {p : ℕ → ℝ}
+    (hp : ∀ n, 0 ≤ p n) {ε : ℝ} (hε : 0 < ε) (hs : Summable fun n => p n * (1 + ε) ^ n) :
+    Tendsto (fun x => (∑' n, p n * tail (Subexp.convPow μ n) x) / tail μ x) atTop
+      (𝓝 (∑' n : ℕ, n * p n)) := by
+  obtain ⟨K, hK⟩ := h.kesten_bound hε
+  have key : Tendsto (fun x => ∑' n, p n * (tail (Subexp.convPow μ n) x / tail μ x)) atTop
+      (𝓝 (∑' n : ℕ, p n * n)) := by
+    refine tendsto_tsum_of_dominated_convergence (bound := fun n => K * (p n * (1 + ε) ^ n))
+      (hs.mul_left K) (fun n => ?_) (Eventually.of_forall fun x n => ?_)
+    · rcases Nat.eq_zero_or_pos n with rfl | hn
+      · refine tendsto_const_nhds.congr' ?_
+        filter_upwards [eventually_ge_atTop 0] with x hx
+        rw [tail_convPow_zero hx]; simp
+      · exact (h.tendsto_tail_convPow_div hn).const_mul _
+    · have hFx := h.tail_pos x
+      rw [Real.norm_eq_abs, abs_of_nonneg (mul_nonneg (hp n) (div_nonneg (tail_nonneg _)
+        hFx.le))]
+      have : tail (Subexp.convPow μ n) x / tail μ x ≤ K * (1 + ε) ^ n := by
+        rw [div_le_iff₀ hFx]; exact hK n x
+      calc p n * (tail (Subexp.convPow μ n) x / tail μ x) ≤ p n * (K * (1 + ε) ^ n) :=
+            mul_le_mul_of_nonneg_left this (hp n)
+        _ = K * (p n * (1 + ε) ^ n) := by ring
+  simp_rw [mul_comm (_ : ℝ) (p _)]
+  refine key.congr fun x => ?_
+  rw [← tsum_div_const]
+  simp_rw [mul_div_assoc]
+
 end IsSubexponential
+
+/-- The **compound law** `∑ₙ pₙ μ^{*n}`: if `N` has law `P(N = n) = pₙ` and is independent of the
+i.i.d. sequence `Xᵢ ∼ μ`, this is the law of the random sum `S_N = X₁ + ⋯ + X_N`. -/
+noncomputable def compound (μ : Measure ℝ) (p : ℕ → ℝ≥0) : Measure ℝ :=
+  Measure.sum fun n => (p n : ℝ≥0∞) • Subexp.convPow μ n
+
+section Compound
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {p : ℕ → ℝ≥0}
+
+omit [IsProbabilityMeasure μ] in
+theorem compound_apply {s : Set ℝ} (hs : MeasurableSet s) :
+    compound μ p s = ∑' n, (p n : ℝ≥0∞) * Subexp.convPow μ n s := by
+  simp [compound, Measure.sum_apply _ hs]
+
+theorem tail_compound (x : ℝ) :
+    tail (compound μ p) x = ∑' n, (p n : ℝ) * tail (Subexp.convPow μ n) x := by
+  rw [tail, measureReal_def, compound_apply measurableSet_Ioi, ENNReal.tsum_toReal_eq]
+  · simp [ENNReal.toReal_mul, tail, measureReal_def]
+  · intro n; exact ENNReal.mul_ne_top ENNReal.coe_ne_top (measure_ne_top _ _)
+
+/-- If `∑ₙ pₙ = 1`, the compound law is a probability measure. -/
+theorem isProbabilityMeasure_compound (hp : HasSum p 1) :
+    IsProbabilityMeasure (compound μ p) := by
+  constructor
+  rw [compound_apply MeasurableSet.univ]
+  simp only [measure_univ, mul_one]
+  rw [← ENNReal.coe_tsum hp.summable, hp.tsum_eq, ENNReal.coe_one]
+
+theorem compound_Iio_zero (h0 : μ (Iio 0) = 0) : compound μ p (Iio 0) = 0 := by
+  rw [compound_apply measurableSet_Iio]
+  simp [convPow_Iio_zero h0]
+
+namespace IsSubexponential
+
+/-- **Random sums of subexponential variables ([EKM, Theorem A3.20]), compound-law form.** If
+`μ` is subexponential and the counting law `p` has `E (1 + ε)^N = ∑ₙ pₙ (1 + ε)ⁿ < ∞` for some
+`ε > 0`, then `P(S_N > x) / F̄(x) → E N = ∑ₙ n pₙ`, where `S_N` has the compound law
+`compound μ p`. -/
+theorem tendsto_tail_compound_div (h : IsSubexponential μ) {ε : ℝ} (hε : 0 < ε)
+    (hs : Summable fun n => (p n : ℝ) * (1 + ε) ^ n) :
+    Tendsto (fun x => tail (compound μ p) x / tail μ x) atTop (𝓝 (∑' n : ℕ, n * (p n : ℝ))) := by
+  simp_rw [tail_compound]
+  exact h.tendsto_tsum_tail_convPow_div (fun n => (p n).2) hε hs
+
+/-- **Compound laws of subexponential laws are subexponential ([EKM, Theorem A3.20]).** If `μ`
+is subexponential, `p` is a probability on `ℕ` with `E (1 + ε)^N < ∞` for some `ε > 0` and
+`E N > 0`, then the compound law `compound μ p` is subexponential. -/
+theorem compound (h : IsSubexponential μ) (hp : HasSum p 1) {ε : ℝ} (hε : 0 < ε)
+    (hs : Summable fun n => (p n : ℝ) * (1 + ε) ^ n) (hEN : 0 < ∑' n : ℕ, n * (p n : ℝ)) :
+    IsSubexponential (ExtremeValueTheory.compound μ p) := by
+  have := isProbabilityMeasure_compound (μ := μ) hp
+  exact h.of_tendsto_tail_div (compound_Iio_zero h.nonneg) hEN (h.tendsto_tail_compound_div hε hs)
+
+end IsSubexponential
+
+end Compound
 
 end ExtremeValueTheory
