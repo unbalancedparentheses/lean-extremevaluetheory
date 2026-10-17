@@ -426,6 +426,168 @@ theorem hasExtremalIndexStrict :
 
 end Chain
 
+/-! ### Existence of the stationary law -/
+
+section Existence
+
+variable (φ α)
+
+/-- iid Pareto(`α`) innovations `(Z_0, Z_{-1}, Z_{-2}, …)` on the sequence space. -/
+noncomputable def paretoSeq : Measure (ℕ → ℝ) := Measure.infinitePi fun _ : ℕ => paretoMeasure 1 α
+
+/-- The stationary solution at time `0`, `X_0 = sup_{j ≥ 0} φ^j Z_{-j}`. -/
+noncomputable def pastSup (w : ℕ → ℝ) : ℝ := ⨆ j : ℕ, φ ^ j * w j
+
+/-- The **stationary law of the ARMAX chain**: the law of `sup_{j ≥ 0} φ^j Z_{-j}`. -/
+noncomputable def stationaryLaw : Measure ℝ := (paretoSeq α).map (pastSup φ)
+
+variable {φ α}
+
+theorem measurable_pastSup : Measurable (pastSup φ) :=
+  Measurable.iSup fun j => measurable_const.mul (measurable_pi_apply j)
+
+variable (hφ0 : 0 < φ) (hφ1 : φ < 1) (hα : 0 < α)
+include hφ0 hφ1 hα
+
+omit hφ1 hα in
+theorem pow_rpow_neg (j : ℕ) {x : ℝ} (hx : 0 ≤ x) :
+    (x / φ ^ j) ^ (-α) = (φ ^ α) ^ j * x ^ (-α) := by
+  have h : (φ ^ j) ^ α = (φ ^ α) ^ j := by
+    rw [← Real.rpow_natCast, ← Real.rpow_mul hφ0.le, mul_comm, Real.rpow_mul hφ0.le,
+      Real.rpow_natCast]
+  rw [Real.div_rpow hx (pow_nonneg hφ0.le j), Real.rpow_neg (pow_nonneg hφ0.le j), div_inv_eq_mul,
+    h, mul_comm]
+
+/-- The weighted innovations `φ^j Z_{-j}` are almost surely bounded. -/
+theorem ae_bddAbove : ∀ᵐ w ∂paretoSeq α, BddAbove (range fun j => φ ^ j * w j) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  rw [ae_iff]
+  set B := {w : ℕ → ℝ | ¬ BddAbove (range fun j => φ ^ j * w j)}
+  have hq0 : 0 ≤ φ ^ α := Real.rpow_nonneg hφ0.le _
+  have hq1 : φ ^ α < 1 := Real.rpow_lt_one hφ0.le hφ1 hα
+  have hbound : ∀ x : ℝ, 1 ≤ x → paretoSeq α B ≤
+      ENNReal.ofReal (x ^ (-α)) * (1 - ENNReal.ofReal (φ ^ α))⁻¹ := by
+    intro x hx
+    have hsub : B ⊆ ⋃ j : ℕ, (fun w : ℕ → ℝ => w j) ⁻¹' Ioi (x / φ ^ j) := by
+      intro w hw
+      by_contra h
+      simp only [mem_iUnion, Set.mem_preimage, Set.mem_Ioi, not_exists, not_lt] at h
+      refine hw ⟨x, ?_⟩
+      rintro _ ⟨j, rfl⟩
+      have := h j
+      rwa [le_div_iff₀ (pow_pos hφ0 j), mul_comm] at this
+    refine (measure_mono hsub).trans ((measure_iUnion_le _).trans ?_)
+    have hj : ∀ j : ℕ, paretoSeq α ((fun w : ℕ → ℝ => w j) ⁻¹' Ioi (x / φ ^ j)) =
+        ENNReal.ofReal (x ^ (-α)) * ENNReal.ofReal (φ ^ α) ^ j := by
+      intro j
+      have hxj : 1 ≤ x / φ ^ j := by
+        rw [le_div_iff₀ (pow_pos hφ0 j), one_mul]
+        exact (pow_le_one₀ hφ0.le hφ1.le).trans hx
+      rw [← Measure.map_apply (measurable_pi_apply j) measurableSet_Ioi, paretoSeq,
+        Measure.infinitePi_map_eval, paretoMeasure_one_Ioi hα hxj,
+        pow_rpow_neg hφ0 j (by linarith), ← ENNReal.ofReal_pow hq0,
+        ENNReal.ofReal_mul (pow_nonneg hq0 j), mul_comm]
+    simp only [hj, ENNReal.tsum_mul_left, ENNReal.tsum_geometric, le_refl]
+  have hlim : Tendsto (fun x : ℝ => ENNReal.ofReal (x ^ (-α)) * (1 - ENNReal.ofReal (φ ^ α))⁻¹)
+      atTop (𝓝 0) := by
+    have h1 : Tendsto (fun x : ℝ => ENNReal.ofReal (x ^ (-α))) atTop (𝓝 0) := by
+      simpa using ENNReal.tendsto_ofReal (tendsto_rpow_neg_atTop hα)
+    have hne : (1 - ENNReal.ofReal (φ ^ α))⁻¹ ≠ ⊤ := by
+      rw [ENNReal.inv_ne_top]
+      exact (tsub_pos_of_lt (ENNReal.ofReal_lt_one.2 hq1)).ne'
+    simpa using ENNReal.Tendsto.mul_const h1 (Or.inr hne)
+  exact le_antisymm (ge_of_tendsto hlim (eventually_ge_atTop 1 |>.mono fun x hx =>
+    hbound x hx)) zero_le
+
+/-- The c.d.f. of the stationary law: `π(-∞, x] = P(φ^j Z_{-j} ≤ x for all j)`. -/
+theorem stationaryLaw_Iic (x : ℝ) :
+    stationaryLaw φ α (Iic x) = paretoSeq α {w | ∀ j, φ ^ j * w j ≤ x} := by
+  rw [stationaryLaw, Measure.map_apply measurable_pastSup measurableSet_Iic]
+  refine measure_congr ?_
+  filter_upwards [ae_bddAbove hφ0 hφ1 hα] with w hw
+  apply propext
+  simp only [Set.mem_preimage, Set.mem_Iic, pastSup]
+  exact ciSup_le_iff hw
+
+omit hφ1 in
+/-- The fixed point equation for `H(x) = P(φ^j Z_{-j} ≤ x for all j)`:
+`H(x) = P(Z ≤ x) H(x / φ)`. -/
+theorem measure_forall_le (x : ℝ) :
+    paretoSeq α {w | ∀ j, φ ^ j * w j ≤ x} =
+      paretoMeasure 1 α (Iic x) * paretoSeq α {w | ∀ j, φ ^ j * w j ≤ x / φ} := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have : IsProbabilityMeasure (paretoSeq α) := by unfold paretoSeq; infer_instance
+  set μ := paretoSeq α
+  have hcoord : ∀ n, Measurable fun w : ℕ → ℝ => w n := measurable_pi_apply
+  have hiid : iIndepFun (fun n (w : ℕ → ℝ) => w n) μ := by
+    refine (iIndepFun_iff_map_fun_eq_infinitePi_map hcoord).2 ?_
+    simp only [μ, paretoSeq, Measure.infinitePi_map_eval]
+    exact Measure.map_id
+  have hind := RandomIteration.indepFun_zero_shift hcoord hiid
+  have hshift : μ.map (fun w (n : ℕ) => w (n + 1)) = μ :=
+    RandomIteration.map_path_eq_infinitePi (fun n => hcoord (n + 1))
+      (hiid.precomp (add_left_injective 1)) fun n => by
+        simp only [μ, paretoSeq, Measure.infinitePi_map_eval]
+  have hA : ∀ y, MeasurableSet {w : ℕ → ℝ | ∀ j, φ ^ j * w j ≤ y} := fun y => by
+    simp only [ofPred_forall]
+    exact MeasurableSet.iInter fun j => measurableSet_le (measurable_const.mul (hcoord j))
+      measurable_const
+  have hset : {w : ℕ → ℝ | ∀ j, φ ^ j * w j ≤ x} = (fun w : ℕ → ℝ => w 0) ⁻¹' Iic x ∩
+      (fun w (n : ℕ) => w (n + 1)) ⁻¹' {w | ∀ j, φ ^ j * w j ≤ x / φ} := by
+    ext w
+    simp only [Set.mem_ofPred_eq, mem_inter_iff, Set.mem_preimage, Set.mem_Iic,
+      le_div_iff₀ hφ0]
+    constructor
+    · intro h
+      refine ⟨by simpa using h 0, fun j => ?_⟩
+      have := h (j + 1)
+      rw [pow_succ] at this
+      linarith
+    · rintro ⟨h0, h⟩ j
+      cases j with
+      | zero => simpa using h0
+      | succ j =>
+        have := h j
+        rw [pow_succ]
+        linarith
+  rw [hset, hind.measure_inter_preimage_eq_mul _ _ measurableSet_Iic (hA _),
+    ← Measure.map_apply (hcoord 0) measurableSet_Iic,
+    ← Measure.map_apply (Measurable.of_eval fun n => hcoord (n + 1)) (hA _), hshift]
+  simp only [μ, paretoSeq, Measure.infinitePi_map_eval]
+
+/-- **The stationary law is invariant** for the ARMAX kernel:
+`law(max(φ X, Z)) = π` for `X ~ π` and `Z` Pareto(`α`) independent. -/
+theorem map_stationaryLaw :
+    ((stationaryLaw φ α).prod (paretoMeasure 1 α)).map (Function.uncurry (step φ)) =
+      stationaryLaw φ α := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have : IsProbabilityMeasure (paretoSeq α) := by unfold paretoSeq; infer_instance
+  have : IsProbabilityMeasure (stationaryLaw φ α) := by
+    unfold stationaryLaw; infer_instance
+  refine Measure.ext_of_Iic _ _ fun x => ?_
+  rw [map_step_Iic hφ0, stationaryLaw_Iic hφ0 hφ1 hα, stationaryLaw_Iic hφ0 hφ1 hα,
+    measure_forall_le hφ0 hα x, mul_comm]
+
+/-- **The canonical stationary ARMAX chain has extremal index `θ = 1 - φ^α`** (strict sense):
+the random iteration `X_{n+1} = max(φ X_n, Z_{n+1})` on `ℝ × (ℕ → ℝ)` with
+`X_0 ~ stationaryLaw φ α` independent of iid Pareto(`α`) innovations. -/
+theorem hasExtremalIndexStrict_canonical :
+    HasExtremalIndexStrict
+      (RandomIteration.chain (step φ) Prod.fst fun n (p : ℝ × (ℕ → ℝ)) => p.2 n)
+      (RandomIteration.canonicalMeasure (stationaryLaw φ α) (paretoMeasure 1 α)) (1 - φ ^ α) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have : IsProbabilityMeasure (paretoSeq α) := by unfold paretoSeq; infer_instance
+  have : IsProbabilityMeasure (stationaryLaw φ α) := by
+    unfold stationaryLaw; infer_instance
+  refine hasExtremalIndexStrict hφ0 hφ1 hα measurable_fst
+    (fun n => (measurable_pi_apply n).comp measurable_snd)
+    (RandomIteration.indepFun_canonical _ _) (RandomIteration.iIndepFun_canonical _ _)
+    (RandomIteration.map_coord_canonicalMeasure _ _) ?_
+  rw [RandomIteration.map_fst_canonicalMeasure]
+  exact map_stationaryLaw hφ0 hφ1 hα
+
+end Existence
+
 end ARMAX
 
 end ExtremeValueTheory
