@@ -787,7 +787,8 @@ theorem le_measureReal_exists_lt_innovation [IsProbabilityMeasure P] (r : ℕ) {
         rw [hPA, ite_eq_right_iff]
         exact fun h => absurd (Finset.mem_range.2 h) hj
     convert this using 1
-    rw [Finset.sum_congr rfl fun j hj => by rw [hPA, ite_eq_left_iff.2 fun h => absurd (Finset.mem_range.1 hj) h]]
+    rw [Finset.sum_congr rfl fun j hj => by
+      rw [hPA, ite_eq_left_iff.2 fun h => absurd (Finset.mem_range.1 hj) h]]
     simp
   have hpair : ∀ i j, i ≠ j → P.real (A i ∩ A j) = P.real (A i) * P.real (A j) := by
     intro i j hij
@@ -945,14 +946,10 @@ theorem tendsto_logLag : Tendsto logLag atTop atTop :=
   tendsto_atTop_mono (fun _ => Nat.le_succ _)
     (tendsto_nat_floor_atTop.comp Real.tendsto_log_atTop)
 
-/-- `E[L(Z)] < ∞` for the logarithmic lag: `P(L(Z) ≥ j + 1) ≤ 2^α e^(-α j)`. -/
-theorem summable_logLag {α : ℝ} (hα : 0 < α) :
-    Summable fun j : ℕ => (paretoMeasure 1 α).real {z | j + 1 ≤ logLag z} := by
+/-- The tail of the logarithmic lag: `P(L(Z) ≥ j + 1) ≤ 2^α e^(-α j)`. -/
+theorem measureReal_logLag_le {α : ℝ} (hα : 0 < α) (j : ℕ) :
+    (paretoMeasure 1 α).real {z | j + 1 ≤ logLag z} ≤ 2 ^ α * Real.exp (-α) ^ j := by
   have := isProbabilityMeasure_paretoMeasure one_pos hα
-  have hgeo : Summable fun j : ℕ => (2 : ℝ) ^ α * Real.exp (-α) ^ j :=
-    (summable_geometric_of_lt_one (Real.exp_pos _).le
-      (Real.exp_lt_one_iff.2 (by linarith))).mul_left _
-  refine hgeo.of_nonneg_of_le (fun _ => measureReal_nonneg) fun j => ?_
   rcases Nat.eq_zero_or_pos j with rfl | hj
   · simp only [pow_zero, mul_one]
     exact measureReal_le_one.trans (Real.one_le_rpow (by norm_num) hα.le)
@@ -978,6 +975,85 @@ theorem summable_logLag {α : ℝ} (hα : 0 < α) :
           rw [← Real.exp_nat_mul]
           ring_nf
 
+theorem summable_geometric_exp_neg {α : ℝ} (hα : 0 < α) :
+    Summable fun j : ℕ => (2 : ℝ) ^ α * Real.exp (-α) ^ j :=
+  (summable_geometric_of_lt_one (Real.exp_pos _).le
+    (Real.exp_lt_one_iff.2 (by linarith))).mul_left _
+
+/-- `E[L(Z)] < ∞` for the logarithmic lag. -/
+theorem summable_logLag {α : ℝ} (hα : 0 < α) :
+    Summable fun j : ℕ => (paretoMeasure 1 α).real {z | j + 1 ≤ logLag z} :=
+  (summable_geometric_exp_neg hα).of_nonneg_of_le (fun _ => measureReal_nonneg)
+    (measureReal_logLag_le hα)
+
+/-- `E[L(Z); Z > u] ≤ (⌈log u⌉ + 2^α / (1 - e^(-α))) u^(-α)` for the logarithmic lag: the echo
+lag of an exceedance of `u` is of order `log u`. -/
+theorem tsum_logLag_le {α : ℝ} (hα : 0 < α) {u : ℝ} (hu : 1 ≤ u) :
+    ∑' j : ℕ, (paretoMeasure 1 α).real {z | u < z ∧ j + 1 ≤ logLag z} ≤
+      (⌈Real.log u⌉₊ + 2 ^ α / (1 - Real.exp (-α))) * u ^ (-α) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  set ν := paretoMeasure 1 α
+  set f : ℕ → ℝ := fun j => ν.real {z | u < z ∧ j + 1 ≤ logLag z}
+  set K := ⌈Real.log u⌉₊
+  have hq0 : 0 ≤ Real.exp (-α) := (Real.exp_pos _).le
+  have hq1 : Real.exp (-α) < 1 := Real.exp_lt_one_iff.2 (by linarith)
+  have hfs : Summable f := (summable_logLag hα).of_nonneg_of_le (fun _ => measureReal_nonneg)
+    fun j => measureReal_mono fun z hz => hz.2
+  have hfu : ∀ j, f j ≤ u ^ (-α) := fun j => by
+    rw [← paretoMeasure_one_real_Ioi hα hu]
+    exact measureReal_mono fun z hz => hz.1
+  rw [← hfs.sum_add_tsum_nat_add K]
+  have h1 : ∑ j ∈ Finset.range K, f j ≤ K * u ^ (-α) := by
+    calc _ ≤ ∑ _j ∈ Finset.range K, u ^ (-α) := Finset.sum_le_sum fun j _ => hfu j
+      _ = K * u ^ (-α) := by simp
+  have hgK : Summable fun j : ℕ => (2 : ℝ) ^ α * Real.exp (-α) ^ (j + K) :=
+    (summable_geometric_exp_neg hα).comp_injective (add_left_injective K)
+  have h2 : ∑' j, f (j + K) ≤ 2 ^ α / (1 - Real.exp (-α)) * u ^ (-α) := by
+    calc ∑' j, f (j + K) ≤ ∑' j : ℕ, (2 : ℝ) ^ α * Real.exp (-α) ^ (j + K) :=
+          (hfs.comp_injective (add_left_injective K)).tsum_le_tsum
+            (fun j => (measureReal_mono fun z hz => hz.2).trans (measureReal_logLag_le hα _)) hgK
+      _ = 2 ^ α / (1 - Real.exp (-α)) * Real.exp (-α) ^ K := by
+          simp_rw [pow_add, ← mul_assoc]
+          rw [tsum_mul_right, tsum_mul_left, tsum_geometric_of_lt_one hq0 hq1]
+          ring
+      _ ≤ 2 ^ α / (1 - Real.exp (-α)) * u ^ (-α) := by
+          have hpos : 0 ≤ 2 ^ α / (1 - Real.exp (-α)) :=
+            div_nonneg (by positivity) (by linarith)
+          refine mul_le_mul_of_nonneg_left ?_ hpos
+          rw [← Real.exp_nat_mul, Real.rpow_def_of_pos (by linarith)]
+          refine Real.exp_le_exp.2 ?_
+          have := Nat.le_ceil (Real.log u)
+          nlinarith
+  linarith
+
+/-- The hypothesis `E[L(Z); Z > uₙ] = o(rₙ uₙ^(-α))` of `tendsto_clusterRatio_echoProcess` holds
+for the logarithmic lag as soon as `log uₙ = o(rₙ)`. -/
+theorem tendsto_tsum_logLag_div {α : ℝ} (hα : 0 < α) {u : ℕ → ℝ} (hu : Tendsto u atTop atTop)
+    {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hlog : Tendsto (fun n => Real.log (u n) / r n) atTop (𝓝 0)) :
+    Tendsto (fun n => (∑' j : ℕ, (paretoMeasure 1 α).real {z | u n < z ∧ j + 1 ≤ logLag z}) /
+      (r n * u n ^ (-α))) atTop (𝓝 0) := by
+  set C := 2 ^ α / (1 - Real.exp (-α))
+  have hrinv : Tendsto (fun n => (1 + C) / (r n : ℝ)) atTop (𝓝 0) :=
+    tendsto_const_nhds.div_atTop (tendsto_natCast_atTop_atTop.comp hr)
+  have hlim := hlog.add hrinv
+  rw [add_zero] at hlim
+  refine squeeze_zero' ?_ ?_ hlim
+  · filter_upwards [hu.eventually_ge_atTop 1] with n hn
+    exact div_nonneg (tsum_nonneg fun _ => measureReal_nonneg)
+      (mul_nonneg (Nat.cast_nonneg _) (Real.rpow_nonneg (by linarith) _))
+  · filter_upwards [hu.eventually_ge_atTop 1, hr.eventually_gt_atTop 0] with n hn hrn
+    have hb : 0 < u n ^ (-α) := Real.rpow_pos_of_pos (by linarith) _
+    have hR : (0 : ℝ) < r n := by exact_mod_cast hrn
+    have hceil : (⌈Real.log (u n)⌉₊ : ℝ) ≤ Real.log (u n) + 1 :=
+      (Nat.ceil_lt_add_one (Real.log_nonneg hn)).le
+    rw [div_le_iff₀ (by positivity)]
+    calc _ ≤ (⌈Real.log (u n)⌉₊ + C) * u n ^ (-α) := tsum_logLag_le hα hn
+      _ ≤ (Real.log (u n) + 1 + C) * u n ^ (-α) := by gcongr
+      _ = (Real.log (u n) / r n + (1 + C) / r n) * (r n * u n ^ (-α)) := by
+          field_simp
+          ring
+
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
   {α : ℝ} {Z : ℤ → Ω → ℝ}
 
@@ -994,6 +1070,26 @@ theorem logEchoProcess_theta_lt_vartheta (hα : 0 < α) (hZ : ∀ t, Measurable 
       HasExtremalIndex (fun k : ℕ => echoProcess logLag Z k) P (1 / 2) :=
   echoProcess_theta_lt_vartheta hα hZ hind hlaw hpos measurable_logLag one_le_logLag
     tendsto_logLag (summable_logLag hα)
+
+/-- **The gap is the escaping mass, explicitly**: for the logarithmic echo process, along any
+`uₙ → ∞`, `rₙ → ∞` with `rₙ uₙ^(-α) → 0` and `log uₙ = o(rₙ)` (e.g. `n P(X_0 > uₙ) → τ` and
+`rₙ = ⌊√n⌋`), the cluster ratio tends to `1/2 = θ`, the escape mass is `1/2 = ϑ - θ`, and
+forward anticlustering fails. -/
+theorem logEchoProcess_hasEscapeMass (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
+    (hind : iIndepFun Z P) (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α)
+    (hpos : ∀ t ω, 0 ≤ Z t ω) {u : ℕ → ℝ} (hu : Tendsto u atTop atTop) {r : ℕ → ℕ}
+    (hr : Tendsto r atTop atTop) (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0))
+    (hlog : Tendsto (fun n => Real.log (u n) / r n) atTop (𝓝 0)) :
+    Tendsto (clusterRatio P (echoProcess logLag Z) u r) atTop (𝓝 (1 / 2)) ∧
+      HasEscapeMass P (echoProcess logLag Z) u r (1 / 2) ∧
+      ¬ ForwardAntiClusteringAt P (echoProcess logLag Z) u r := by
+  have hR := tendsto_tsum_logLag_div hα hu hr hlog
+  exact ⟨tendsto_clusterRatio_echoProcess hα hZ hind hlaw hpos measurable_logLag one_le_logLag
+      hu hr hrb (summable_logLag hα) hR,
+    hasEscapeMass_echoProcess hα hZ hind hlaw hpos measurable_logLag one_le_logLag tendsto_logLag
+      hu hr hrb (summable_logLag hα) hR,
+    not_forwardAntiClusteringAt_echoProcess hα hZ hind hlaw hpos measurable_logLag one_le_logLag
+      tendsto_logLag hu hr hrb (summable_logLag hα) hR⟩
 
 end LogLag
 
