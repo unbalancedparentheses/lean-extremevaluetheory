@@ -124,6 +124,10 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   normalized exceedance point process, in space and in time-space, converges to a Poisson random
   measure (`tendsto_measureReal_sumDiracRange_timeSpace_eq`); the limit laws of upper order
   statistics follow as corollaries.
+- **Multivariate regular variation** (`RegularVariation/Multivariate.lean`): exponent measures on
+  sets bounded away from 0, homogeneity, the polar decomposition `μ = α r^{−α−1}dr ⊗ S`
+  (`isRegVarVector_iff`, `IsRegVarVector.eq_polarMeasure`), tails of linear combinations, and
+  asymptotic independence vs. full dependence examples.
 - **Uniform convergence theorem and Karamata's representation theorem** for measurable slowly
   and regularly varying functions (no monotonicity), with two-sided Potter bounds
   (`isSlowlyVarying_iff_exists_representation`, `potter_bounds_of_measurable`).

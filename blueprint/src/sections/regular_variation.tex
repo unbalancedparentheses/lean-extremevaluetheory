@@ -367,3 +367,66 @@ works additively, with $h(t) = \log f(e^t) - \rho t$.
   \leanok
   Uniform convergence on compacts plus a telescoping argument over dyadic scales.
 \end{proof}
+
+\section{Multivariate regular variation}
+
+\begin{definition}[Regularly varying random vector]
+  \label{def:rv-vector}
+  \uses{def:regularly-varying}
+  \lean{ExtremeValueTheory.VanishesNearZero, ExtremeValueTheory.IsRegVarVector, ExtremeValueTheory.IsRegVarVector.tendsto_measureReal,
+    ExtremeValueTheory.IsRegVarVector.unique}
+  \leanok
+  A random vector $X$ in a normed space is regularly varying with index $\alpha$ and exponent measure
+  $\mu$ if $\PR[\|X\| > x] \in RV_{-\alpha}$, $\mu(\{0\}) = 0$, $\mu$ is finite on
+  $\{\|y\| > r\}$ for $r > 0$, and $\E f(X/x) / \PR[\|X\| > x] \to \int f \ud\mu$ for every bounded
+  continuous $f$ vanishing near $0$ [Hult--Lindskog 2006], [KS20, \S2.1]. Equivalently,
+  $\PR[X/x \in A]/\PR[\|X\| > x] \to \mu(A)$ for $\mu$-continuity sets $A$ bounded away from $0$.
+\end{definition}
+
+\begin{theorem}[Homogeneity and polar decomposition]
+  \label{thm:rv-vector-polar}
+  \uses{def:rv-vector, thm:basrak-segers}
+  \lean{ExtremeValueTheory.IsRegVarVector.map_smul, ExtremeValueTheory.IsRegVarVector.measure_smul_set,
+    ExtremeValueTheory.IsRegVarVector.measure_lt_norm, ExtremeValueTheory.isRegVarVector_iff,
+    ExtremeValueTheory.IsRegVarVector.tendstoLawCond_spectralMeasure, ExtremeValueTheory.isRegVarVector_polarMeasure,
+    ExtremeValueTheory.IsRegVarVector.eq_polarMeasure, ExtremeValueTheory.polarMeasure, ExtremeValueTheory.radialMeasure}
+  \leanok
+  $\mu(tA) = t^{-\alpha}\mu(A)$. $X$ is regularly varying if and only if $\|X\| \in RV_{-\alpha}$ and the
+  law of $X/\|X\|$ given $\|X\| > x$ converges weakly to a spectral measure $S$ on the unit sphere;
+  then $\mu$ is the image of $\alpha r^{-\alpha-1} \ud r \otimes S$ under $(r, \theta) \mapsto r\theta$
+  [Resnick 2007, Theorem~6.1], [BDM 2002].
+\end{theorem}
+\begin{proof}
+  \leanok
+  The conditional-limit machinery of Theorem~\ref{thm:basrak-segers}, applied to $X$ itself.
+\end{proof}
+
+\begin{theorem}[Linear combinations]
+  \label{thm:rv-vector-linear}
+  \uses{thm:rv-vector-polar}
+  \lean{ExtremeValueTheory.IsRegVarVector.tendsto_linear, ExtremeValueTheory.IsRegVarVector.tendsto_inner,
+    ExtremeValueTheory.IsRegVarVector.tendsto_linear_spectral}
+  \leanok
+  For continuous linear $L$, $\PR[L X > x]/\PR[\|X\| > x] \to \mu\{L > 1\} = \int (L\theta)_+^\alpha \ud S$
+  [BDM 2002]. The converse Cram\'er--Wold direction is not formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  $\{L > 1\}$ is a $\mu$-continuity set bounded away from $0$.
+\end{proof}
+
+\begin{proposition}[Asymptotic independence and full dependence]
+  \label{prop:rv-vector-examples}
+  \uses{thm:rv-vector-polar}
+  \lean{ExtremeValueTheory.IsRegVarVector.measure_compl_eq_zero, ExtremeValueTheory.isRegVarVector_diag, ExtremeValueTheory.isRegVarVector_smul_const,
+    ExtremeValueTheory.IsRegVarVector.measure_ne_zero_ne_zero_eq_zero, ExtremeValueTheory.isRegVarVector_of_indepFun,
+    ExtremeValueTheory.axesSpectralMeasure}
+  \leanok
+  $(Z, Z)$ has spectral measure $\delta_{(1,1)}$. Independent components put no exponent mass off the
+  axes, and for independent nonnegative $X_1, X_2$ with $\PR[X_2 > x]/\PR[X_1 > x] \to c$ the spectral
+  measure is $(1+c)^{-1}(\delta_{(1,0)} + c\,\delta_{(0,1)})$ [Resnick 2007, \S6.5].
+\end{proposition}
+\begin{proof}
+  \leanok
+  Joint exceedances of independent components are of order $\PR[\|X\| > x]^2$.
+\end{proof}
