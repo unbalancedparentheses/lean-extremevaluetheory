@@ -338,6 +338,132 @@ theorem integral_indexLaw (hψ0 : ∀ j, 0 ≤ ψ j) (hS : Summable fun j => ψ 
   rw [measureReal_def, indexLaw_singleton, ENNReal.toReal_ofReal
     (div_nonneg (Real.rpow_nonneg (hψ0 j) _) hW.le), smul_eq_mul]
 
+/-! ### Convergence of the window laws of the tail processes -/
+
+theorem abs_integral_pareto_le (hα : 0 < α) {S : Finset ℤ} (g : (S → ℝ) →ᵇ ℝ) (θ : S → ℝ) :
+    |∫ r, g (fun t => r * θ t) ∂paretoMeasure 1 α| ≤ ‖g‖ := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have h := norm_integral_le_of_norm_le_const (μ := paretoMeasure 1 α)
+    (f := fun r => g (fun t => r * θ t)) (Eventually.of_forall fun r => g.norm_coe_le_norm _)
+  simpa using h
+
+theorem tendsto_weightSum (hS : Summable fun j => ψ j ^ α) :
+    Tendsto (fun m => MovingAverage.weightSum m ψ α) atTop (𝓝 (∑' j, ψ j ^ α)) :=
+  hS.hasSum.tendsto_sum_nat.comp (tendsto_add_atTop_nat 1)
+
+theorem weightSum_le_tsum (hψ0 : ∀ j, 0 ≤ ψ j) (hS : Summable fun j => ψ j ^ α) (m : ℕ) :
+    MovingAverage.weightSum m ψ α ≤ ∑' j, ψ j ^ α :=
+  hS.sum_le_tsum _ fun j _ => Real.rpow_nonneg (hψ0 j) _
+
+theorem weightSum_mono (hψ0 : ∀ j, 0 ≤ ψ j) {k m : ℕ} (h : k ≤ m) :
+    MovingAverage.weightSum k ψ α ≤ MovingAverage.weightSum m ψ α :=
+  Finset.sum_le_sum_of_subset_of_nonneg (Finset.range_subset_range.2 (by omega))
+    fun j _ _ => Real.rpow_nonneg (hψ0 j) _
+
+/-- **The window laws of the tail processes of the truncations converge**: the law of
+`(R Θ^{(m)}_t)_{t ∈ S}` converges to that of `(R Θ_t)_{t ∈ S}` as `m → ∞`. -/
+theorem tendsto_integral_window (hα : 0 < α) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hS : Summable fun j => ψ j ^ α) {k : ℕ} (hk : 0 < ψ k) (S : Finset ℤ)
+    (g : (S → ℝ) →ᵇ ℝ) :
+    Tendsto (fun m => ∫ y, g y ∂(((paretoMeasure 1 α).prod
+        (MovingAverage.indexLaw m (trunc m ψ) α)).map
+          fun p (t : S) => p.1 * MovingAverage.spectral m (trunc m ψ) t p.2)) atTop
+      (𝓝 (∫ y, g y ∂(((paretoMeasure 1 α).prod (indexLaw ψ α)).map
+          fun p (t : S) => p.1 * spectral ψ t p.2))) := by
+  have hP := isProbabilityMeasure_paretoMeasure one_pos hα
+  set W := ∑' j, ψ j ^ α with hW_def
+  have hkα : 0 < ψ k ^ α := Real.rpow_pos_of_pos hk _
+  have hW : 0 < W := hkα.trans_le (hS.le_tsum k fun j _ => Real.rpow_nonneg (hψ0 j) _)
+  have hQ := indexLaw_isProbabilityMeasure hψ0 hS hW
+  set H : (S → ℝ) → ℝ := fun θ => ∫ r, g (fun t => r * θ t) ∂paretoMeasure 1 α with hH_def
+  have hH : ∀ θ, |H θ| ≤ ‖g‖ := abs_integral_pareto_le hα g
+  have hgb : ∀ y, |g y| ≤ ‖g‖ := fun y => by
+    simpa [Real.norm_eq_abs] using g.norm_coe_le_norm y
+  -- the limit
+  have hlim : ∫ y, g y ∂(((paretoMeasure 1 α).prod (indexLaw ψ α)).map
+      fun p (t : S) => p.1 * spectral ψ t p.2) =
+      ∑' j, ψ j ^ α / W * H (fun t => spectral ψ t j) := by
+    have hmeas : Measurable fun p : ℝ × ℕ => fun t : S => p.1 * spectral ψ t p.2 :=
+      measurable_pi_iff.2 fun t => measurable_fst.mul
+        ((measurable_from_top (f := fun j : ℕ => spectral ψ t j)).comp measurable_snd)
+    rw [integral_map hmeas.aemeasurable g.continuous.aestronglyMeasurable,
+      integral_prod_symm (fun p : ℝ × ℕ => g (fun t => p.1 * spectral ψ t p.2))
+        (integrable_of_abs_le (g.continuous.measurable.comp hmeas) fun p => hgb _)]
+    show ∫ j, H (fun t => spectral ψ t j) ∂indexLaw ψ α = _
+    exact integral_indexLaw hψ0 hS hW (fun j => hH _)
+  rw [hlim]
+  -- a bound for the window
+  obtain ⟨N, hN⟩ := S.exists_le
+  -- the finite terms
+  set F : ℕ → ℕ → ℝ := fun m j => if j ≤ m then
+    ψ j ^ α / MovingAverage.weightSum m ψ α *
+      H (fun t => MovingAverage.coef (trunc m ψ) (j + t) / ψ j) else 0 with hF_def
+  have hfin : ∀ m ≥ k, ∫ y, g y ∂(((paretoMeasure 1 α).prod
+      (MovingAverage.indexLaw m (trunc m ψ) α)).map
+        fun p (t : S) => p.1 * MovingAverage.spectral m (trunc m ψ) t p.2) = ∑' j, F m j := by
+    intro m hm
+    have hWm : 0 < MovingAverage.weightSum m (trunc m ψ) α := by
+      rw [weightSum_trunc]
+      exact hkα.trans_le (Finset.single_le_sum (f := fun j => ψ j ^ α)
+        (fun j _ => Real.rpow_nonneg (hψ0 j) _) (Finset.mem_range.2 (by omega)))
+    have := MovingAverage.indexLaw_isProbabilityMeasure (trunc_nonneg hψ0 m) hWm
+    have hmeas : Measurable fun p : ℝ × Fin (m + 1) =>
+        fun t : S => p.1 * MovingAverage.spectral m (trunc m ψ) t p.2 :=
+      measurable_pi_iff.2 fun t => measurable_fst.mul ((measurable_from_top
+        (f := fun j : Fin (m + 1) => MovingAverage.spectral m (trunc m ψ) t j)).comp measurable_snd)
+    rw [integral_map hmeas.aemeasurable g.continuous.aestronglyMeasurable,
+      integral_prod_symm (fun p : ℝ × Fin (m + 1) =>
+        g (fun t => p.1 * MovingAverage.spectral m (trunc m ψ) t p.2))
+        (integrable_of_abs_le (g.continuous.measurable.comp hmeas) fun p => hgb _)]
+    show ∫ j, H (fun t => MovingAverage.spectral m (trunc m ψ) t j)
+      ∂(MovingAverage.indexLaw m (trunc m ψ) α) = _
+    rw [MovingAverage.indexLaw, integral_finsetSum_measure fun j _ =>
+          (integrable_of_abs_le measurable_from_top (fun j => hH _)).smul_measure
+            ENNReal.ofReal_ne_top]
+    simp only [integral_smul_measure, integral_dirac, smul_eq_mul, MovingAverage.spectral]
+    rw [Fin.sum_univ_eq_sum_range (fun j => (ENNReal.ofReal (trunc m ψ j ^ α /
+        MovingAverage.weightSum m (trunc m ψ) α)).toReal *
+        H (fun t => MovingAverage.coef (trunc m ψ) (j + t) / trunc m ψ j)) (m + 1),
+      tsum_eq_sum (s := Finset.range (m + 1)) fun j hj => by
+        simp only [Finset.mem_range, not_lt] at hj
+        simp [hF_def, show ¬ j ≤ m by omega]]
+    refine Finset.sum_congr rfl fun j hj => ?_
+    have hjm : j ≤ m := by simp only [Finset.mem_range] at hj; omega
+    simp only [hF_def, hjm, ↓reduceIte]
+    rw [trunc_of_le hjm, weightSum_trunc, ENNReal.toReal_ofReal (div_nonneg
+      (Real.rpow_nonneg (hψ0 j) _) (hWm.le.trans_eq (weightSum_trunc m)))]
+  refine Tendsto.congr' (EventuallyEq.symm (eventually_atTop.2 ⟨k, hfin⟩)) ?_
+  refine tendsto_tsum_of_dominated_convergence (bound := fun j => ψ j ^ α /
+    MovingAverage.weightSum k ψ α * ‖g‖) ((hS.div_const _).mul_right _) (fun j => ?_) ?_
+  · -- pointwise convergence
+    have hWk : 0 < MovingAverage.weightSum k ψ α := hkα.trans_le (Finset.single_le_sum
+      (f := fun j => ψ j ^ α) (fun j _ => Real.rpow_nonneg (hψ0 j) _)
+      (Finset.mem_range.2 (by omega)))
+    have h1 : Tendsto (fun m => ψ j ^ α / MovingAverage.weightSum m ψ α *
+        H (fun t => spectral ψ t j)) atTop (𝓝 (ψ j ^ α / W * H (fun t => spectral ψ t j))) :=
+      (tendsto_const_nhds.div (tendsto_weightSum hS) hW.ne').mul_const _
+    refine h1.congr' ?_
+    filter_upwards [eventually_ge_atTop (j + N.toNat)] with m hm
+    simp only [hF_def, show j ≤ m by omega, ↓reduceIte]
+    congr 2
+    funext t
+    rw [spectral, coef_trunc (by have := hN t t.2; have := Int.self_le_toNat N; omega)]
+  · -- domination
+    filter_upwards [eventually_ge_atTop k] with m hm j
+    have hWk : 0 < MovingAverage.weightSum k ψ α := hkα.trans_le (Finset.single_le_sum
+      (f := fun j => ψ j ^ α) (fun j _ => Real.rpow_nonneg (hψ0 j) _)
+      (Finset.mem_range.2 (by omega)))
+    have hb0 : 0 ≤ ψ j ^ α / MovingAverage.weightSum k ψ α * ‖g‖ :=
+      mul_nonneg (div_nonneg (Real.rpow_nonneg (hψ0 j) _) hWk.le) (norm_nonneg _)
+    simp only [hF_def]
+    split_ifs with hjm
+    · rw [Real.norm_eq_abs, abs_mul, abs_of_nonneg (div_nonneg (Real.rpow_nonneg (hψ0 j) _)
+        (hWk.le.trans (weightSum_mono hψ0 hm)))]
+      exact mul_le_mul (div_le_div_of_nonneg_left (Real.rpow_nonneg (hψ0 j) _) hWk
+        (weightSum_mono hψ0 hm)) (hH _) (abs_nonneg _) (div_nonneg (Real.rpow_nonneg (hψ0 j) _)
+        hWk.le)
+    · simpa using hb0
+
 end InfiniteMovingAverage
 
 end ExtremeValueTheory
