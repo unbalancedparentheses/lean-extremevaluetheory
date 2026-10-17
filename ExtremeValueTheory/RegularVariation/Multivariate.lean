@@ -482,8 +482,8 @@ theorem tendstoLawCond_norm (h : IsRegVarVector P X α μ) (hX : Measurable X) :
     rw [indicator_of_notMem (show x⁻¹ • X ω ∉ {y : E | 1 < ‖y‖} from h1),
       indicator_of_notMem (show ω ∉ {ω | x < ‖X ω‖} from hω)]
 
-/-- The radial part of the exponent measure, restricted to `{‖y‖ > 1}`, is the Pareto law. -/
 omit [SecondCountableTopology E] in
+/-- The radial part of the exponent measure, restricted to `{‖y‖ > 1}`, is the Pareto law. -/
 theorem map_norm_restrict (hα : 0 < α) (h : IsRegVarVector P X α μ) (hX : Measurable X) :
     (μ.restrict {y | 1 < ‖y‖}).map (fun y => ‖y‖) = paretoMeasure 1 α := by
   have := h.isProbabilityMeasure_restrict hX
