@@ -147,6 +147,22 @@ theorem gpdSurvivalInv_inv_add {c : ℝ} (hc : 0 < c) (x : ℝ) :
     field_simp
     ring
 
+theorem gpdSurvivalInv_one : gpdSurvivalInv ξ 1 = 0 := by
+  unfold gpdSurvivalInv
+  split_ifs <;> simp
+
+/-- `Ḡ_{ξ,1} (Λ_ξ v) = v` for `v > 0`. -/
+theorem gpdSurvival'_gpdSurvivalInv {v : ℝ} (hv : 0 < v) :
+    gpdSurvival' ξ 1 (gpdSurvivalInv ξ v) = v := by
+  by_cases hξ : ξ = 0
+  · subst hξ
+    simp [gpdSurvivalInv, Real.exp_log hv]
+  · rw [gpdSurvival'_one_of_ne hξ]
+    simp only [gpdSurvivalInv, hξ, ↓reduceIte]
+    have h : 1 + ξ * ((v ^ (-ξ) - 1) / ξ) = v ^ (-ξ) := by field_simp; ring
+    rw [h, max_eq_left (rpow_nonneg hv.le _), ← rpow_mul hv.le,
+      show -ξ * -(1 / ξ) = 1 by field_simp, rpow_one]
+
 /-- `Ḡ_{ξ,1} x < 1` for `x > 0`. -/
 theorem gpdSurvival'_lt_one {x : ℝ} (hx : 0 < x) : gpdSurvival' ξ 1 x < 1 := by
   rcases lt_trichotomy ξ 0 with hξ | hξ | hξ
