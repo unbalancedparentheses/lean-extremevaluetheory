@@ -613,7 +613,7 @@ theorem isPoissonRandomMeasure_sum_sumDiracRange (c : ℕ → ℝ≥0) (μ : ℕ
 
 end Superposition
 
-/-! ### Existence for a finite intensity -/
+/-! ### Existence -/
 
 section Existence
 
@@ -636,31 +636,39 @@ lemma isPoissonRandomMeasure_zero {P : Measure Ω} [IsProbabilityMeasure P] :
     simp_rw [Measure.map_dirac' (by fun_prop : Measurable (Nat.cast : ℕ → ℝ≥0∞)), Nat.cast_zero]
     rw [← Measure.infinitePi_eq_pi, Measure.infinitePi_dirac]
 
-/-- **Existence of Poisson random measures**: every finite measure is the intensity of a Poisson
-random measure, defined on a probability space in the same universe. -/
-theorem exists_isPoissonRandomMeasure {E : Type u} [MeasurableSpace E] (ν : Measure E)
-    [IsFiniteMeasure ν] :
-    ∃ (Ω : Type u) (_ : MeasurableSpace Ω) (P : Measure Ω) (N : Ω → Measure E),
-      IsProbabilityMeasure P ∧ IsPoissonRandomMeasure N ν P := by
+/-- A finite measure on a nonempty space is a nonnegative multiple of a probability measure. -/
+lemma exists_isProbabilityMeasure_smul_eq [Nonempty E] (ν : Measure E) [IsFiniteMeasure ν] :
+    ∃ (c : ℝ≥0) (μ : Measure E), IsProbabilityMeasure μ ∧ c • μ = ν := by
   rcases eq_or_ne ν 0 with rfl | hν
-  · exact ⟨PUnit, inferInstance, Measure.dirac PUnit.unit, fun _ ↦ 0, inferInstance,
-      isPoissonRandomMeasure_zero⟩
+  · exact ⟨0, Measure.dirac (Classical.arbitrary E), inferInstance, zero_smul _ _⟩
   have h0 : ν Set.univ ≠ 0 := Measure.measure_univ_ne_zero.2 hν
   have htop : ν Set.univ ≠ ∞ := measure_ne_top ν _
-  let μ : Measure E := (ν Set.univ)⁻¹ • ν
-  have : IsProbabilityMeasure μ :=
-    ⟨by simp [μ, ENNReal.inv_mul_cancel h0 htop]⟩
-  have hcμ : (ν Set.univ).toNNReal • μ = ν := by
-    ext A hA
-    simp only [μ, Measure.smul_apply, smul_eq_mul, ENNReal.smul_def, ENNReal.coe_toNNReal htop]
-    rw [← mul_assoc, ENNReal.mul_inv_cancel h0 htop, one_mul]
-  refine ⟨ℕ × (ℕ → E), inferInstance, poissonSampleMeasure (ν Set.univ).toNNReal μ,
-    fun ω ↦ sumDiracRange ω.1 ω.2, inferInstance, ?_⟩
-  have h := isPoissonRandomMeasure_sumDiracRange (ν Set.univ).toNNReal μ
-  rwa [hcμ] at h
+  refine ⟨(ν Set.univ).toNNReal, (ν Set.univ)⁻¹ • ν,
+    ⟨by simp [ENNReal.inv_mul_cancel h0 htop]⟩, ?_⟩
+  ext A hA
+  simp only [Measure.smul_apply, smul_eq_mul, ENNReal.smul_def, ENNReal.coe_toNNReal htop]
+  rw [← mul_assoc, ENNReal.mul_inv_cancel h0 htop, one_mul]
+
+/-- **Existence of Poisson random measures**: every s-finite (in particular every σ-finite)
+measure is the intensity of a Poisson random measure, defined on a probability space in the same
+universe. -/
+theorem exists_isPoissonRandomMeasure {E : Type u} [MeasurableSpace E] (ν : Measure E)
+    [SFinite ν] :
+    ∃ (Ω : Type u) (_ : MeasurableSpace Ω) (P : Measure Ω) (N : Ω → Measure E),
+      IsProbabilityMeasure P ∧ IsPoissonRandomMeasure N ν P := by
+  rcases isEmpty_or_nonempty E with hE | hE
+  · rw [Measure.eq_zero_of_isEmpty ν]
+    exact ⟨PUnit, inferInstance, Measure.dirac PUnit.unit, fun _ ↦ 0, inferInstance,
+      isPoissonRandomMeasure_zero⟩
+  choose c μ hμ hcμ using fun n ↦ exists_isProbabilityMeasure_smul_eq (sfiniteSeq ν n)
+  have hsum : (Measure.sum fun n ↦ c n • μ n) = ν := by
+    simp_rw [hcμ]
+    exact sum_sfiniteSeq ν
+  refine ⟨ℕ → ℕ × (ℕ → E), inferInstance, poissonSampleSeqMeasure c μ,
+    fun ω ↦ Measure.sum fun n ↦ sumDiracRange (ω n).1 (ω n).2, inferInstance, ?_⟩
+  rw [← hsum]
+  exact isPoissonRandomMeasure_sum_sumDiracRange c μ
 
 end Existence
-
-
 
 end ProbabilityTheory
