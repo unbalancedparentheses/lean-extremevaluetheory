@@ -243,4 +243,101 @@ theorem tendstoLawCond_of_approx [Nonempty E] {B : ℝ → Set Ω} {V : ℝ → 
 
 end ConvergingTogether
 
+namespace InfiniteMovingAverage
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} {Z : ℤ → Ω → ℝ} {ψ : ℕ → ℝ}
+  {α δ : ℝ}
+
+/-! ### Measurability -/
+
+theorem measurable_process (hZ : ∀ i, Measurable (Z i)) (t : ℤ) :
+    Measurable (process ψ Z t) :=
+  Measurable.tsum fun _ => (hZ _).const_mul _
+
+theorem process_nonneg (hψ0 : ∀ j, 0 ≤ ψ j) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (t : ℤ) (ω : Ω) :
+    0 ≤ process ψ Z t ω :=
+  tsum_nonneg fun j => mul_nonneg (hψ0 j) (hZ0 _ ω)
+
+/-! ### Truncation -/
+
+/-- The truncated coefficients `ψ_j 1{j ≤ m}`. -/
+noncomputable def trunc (m : ℕ) (ψ : ℕ → ℝ) (j : ℕ) : ℝ := if j ≤ m then ψ j else 0
+
+theorem trunc_of_le {m j : ℕ} (h : j ≤ m) : trunc m ψ j = ψ j := by simp [trunc, h]
+
+theorem trunc_of_lt {m j : ℕ} (h : m < j) : trunc m ψ j = 0 := by
+  simp [trunc, show ¬ j ≤ m by omega]
+
+theorem trunc_nonneg (hψ0 : ∀ j, 0 ≤ ψ j) (m j : ℕ) : 0 ≤ trunc m ψ j := by
+  unfold trunc; split_ifs
+  · exact hψ0 j
+  · exact le_rfl
+
+theorem process_trunc (m : ℕ) :
+    MovingAverage.process m (trunc m ψ) Z = MovingAverage.process m ψ Z := by
+  funext t ω
+  exact Finset.sum_congr rfl fun i hi => by
+    rw [trunc_of_le (by simp only [Finset.mem_range] at hi; omega)]
+
+theorem weightSum_trunc (m : ℕ) :
+    MovingAverage.weightSum m (trunc m ψ) α = MovingAverage.weightSum m ψ α :=
+  Finset.sum_congr rfl fun i hi => by
+    rw [trunc_of_le (by simp only [Finset.mem_range] at hi; omega)]
+
+theorem coef_trunc {m : ℕ} {k : ℤ} (hk : k ≤ m) :
+    MovingAverage.coef (trunc m ψ) k = MovingAverage.coef ψ k := by
+  unfold MovingAverage.coef
+  split_ifs with h
+  · exact trunc_of_le (by omega)
+  · rfl
+
+/-! ### The candidate spectral tail process -/
+
+/-- The law of the index `J ∈ ℕ` of the big jump: `P(J = j) = ψ_j^α / ∑_i ψ_i^α`. -/
+noncomputable def indexLaw (ψ : ℕ → ℝ) (α : ℝ) : Measure ℕ :=
+  Measure.sum fun j => ENNReal.ofReal (ψ j ^ α / ∑' i, ψ i ^ α) • Measure.dirac j
+
+/-- The spectral tail process `Θ_t = ψ_{J+t} / ψ_J`, on the index space `ℕ` of `J`. -/
+noncomputable def spectral (ψ : ℕ → ℝ) (t : ℤ) (j : ℕ) : ℝ :=
+  MovingAverage.coef ψ (j + t) / ψ j
+
+theorem indexLaw_apply (s : Set ℕ) :
+    indexLaw ψ α s = ∑' j, ENNReal.ofReal (ψ j ^ α / ∑' i, ψ i ^ α) * s.indicator 1 j := by
+  rw [indexLaw, Measure.sum_apply _ (MeasurableSet.of_discrete)]
+  simp
+
+theorem indexLaw_singleton (j : ℕ) :
+    indexLaw ψ α {j} = ENNReal.ofReal (ψ j ^ α / ∑' i, ψ i ^ α) := by
+  rw [indexLaw_apply, tsum_eq_single j fun i hi => by simp [hi]]
+  simp
+
+theorem indexLaw_isProbabilityMeasure (hψ0 : ∀ j, 0 ≤ ψ j) (hS : Summable fun j => ψ j ^ α)
+    (hW : 0 < ∑' j, ψ j ^ α) : IsProbabilityMeasure (indexLaw ψ α) := by
+  constructor
+  rw [indexLaw_apply]
+  simp only [Set.indicator_univ, Pi.one_apply, mul_one]
+  rw [← ENNReal.ofReal_tsum_of_nonneg (fun j => div_nonneg (Real.rpow_nonneg (hψ0 j) _) hW.le)
+    (hS.div_const _), tsum_div_const, div_self hW.ne', ENNReal.ofReal_one]
+
+/-- Under `indexLaw`, `ψ_J > 0` almost surely. -/
+theorem ae_indexLaw_pos (hα : 0 < α) (hψ0 : ∀ j, 0 ≤ ψ j) :
+    ∀ᵐ j ∂indexLaw ψ α, 0 < ψ j := by
+  rw [ae_iff, indexLaw_apply, ENNReal.tsum_eq_zero]
+  intro j
+  by_cases h : 0 < ψ j
+  · simp [h]
+  · have : ψ j = 0 := le_antisymm (not_lt.1 h) (hψ0 j)
+    simp [this, Real.zero_rpow hα.ne']
+
+theorem integral_indexLaw (hψ0 : ∀ j, 0 ≤ ψ j) (hS : Summable fun j => ψ j ^ α)
+    (hW : 0 < ∑' j, ψ j ^ α) {f : ℕ → ℝ} {C : ℝ} (hf : ∀ j, |f j| ≤ C) :
+    ∫ j, f j ∂indexLaw ψ α = ∑' j, ψ j ^ α / (∑' i, ψ i ^ α) * f j := by
+  have := indexLaw_isProbabilityMeasure hψ0 hS hW
+  rw [integral_countable (integrable_of_abs_le measurable_from_top hf)]
+  refine tsum_congr fun j => ?_
+  rw [measureReal_def, indexLaw_singleton, ENNReal.toReal_ofReal
+    (div_nonneg (Real.rpow_nonneg (hψ0 j) _) hW.le), smul_eq_mul]
+
+end InfiniteMovingAverage
+
 end ExtremeValueTheory
