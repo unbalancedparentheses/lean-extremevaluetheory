@@ -73,6 +73,10 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   regularly varying with index `-α`, and `k → ∞`, `k/n → 0`, the Hill estimator
   `(1/k) Σ_{i<k} (log X₍ᵢ₊₁₎ - log X₍ₖ₊₁₎)` converges to `1/α` in probability. With order
   statistics and their binomial distribution.
+- **Hill estimator for dependent data** (`Statistics/HillDependent.lean`): consistency from a variance
+  bound on exceedance counts alone (`tendstoInMeasure_hill_of_variance`), hence for m-dependent
+  sequences and for stationary α-mixing sequences with a cluster condition
+  (`tendstoInMeasure_hill_of_alphaMixing_rate`).
 - **Hill estimator asymptotic normality** (`tendstoInDistribution_hill`): under second-order
   regular variation with `√k A(n/k) → λ`, `√k(γ̂ − γ) ⇒ N(λ/(1−ρ), γ²)`; the exact Pareto case
   `tendstoInDistribution_hill_pareto`. Via the Rényi representation.

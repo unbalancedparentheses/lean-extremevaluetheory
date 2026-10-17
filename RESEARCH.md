@@ -34,6 +34,11 @@ Also done: `𝒜` from α-mixing at a rate; every stationary m-dependent sequenc
 process has `θ = ϑ`; through it, the moving maximum (`θ = 1/2`) and finite moving averages
 (`θ = max ψ^α/Σψ^α`) recover the classical values.
 
+Also done: Hill consistency under dependence (P2-adjacent), reduced to a variance bound on
+exceedance counts; m-dependent and α-mixing versions (`Statistics/HillDependent.lean`). The
+log-excess functional needed no separate variance treatment: it is squeezed deterministically between
+exceedance counts.
+
 Open next steps (updated): infinite-order linear processes and Markov chains (geometric β-mixing);
 the backward limit
 `Θ_{−t} → 0`; then the Bai–Wang-type `θ < ϑ` question (P1).

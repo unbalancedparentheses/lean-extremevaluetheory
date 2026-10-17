@@ -552,3 +552,41 @@ follow de Haan and Ferreira, \emph{Extreme Value Theory: An Introduction}, Sprin
   ratio tend to $1$. For normality, $\log(\hat x/x) = (\hat\gamma - \gamma)\log d_n + O_P(k^{-1/2})$ and the
   delta method for $\exp$.
 \end{proof}
+
+\section{The Hill estimator for dependent data}
+
+\begin{theorem}[Hill consistency from a variance bound]
+  \label{thm:hill-variance}
+  \uses{thm:hill-consistency}
+  \lean{ExtremeValueTheory.tailCount, ExtremeValueTheory.tendstoInMeasure_hill_of_variance, ExtremeValueTheory.tendsto_measure_abs_tailCount_div_sub,
+    ExtremeValueTheory.logExcess_le_sum, ExtremeValueTheory.sum_le_logExcess}
+  \leanok
+  Let $X_i$ have identical marginals with $\bar F \in RV_{-\alpha}$, $k \to \infty$, $k/n \to 0$. If
+  $\Var(\sum_{i<n} \mathbf 1\{X_i > u_n\}) / k_n^2 \to 0$ along every $u_n \to \infty$ with
+  $n \bar F(u_n)/k_n \to c > 0$, then the Hill estimator converges to $1/\alpha$ in probability. No
+  independence, stationarity or mixing is assumed.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Chebyshev for the exceedance counts. The log-excess sum is squeezed deterministically between Riemann
+  sums of exceedance counts on a geometric grid of thresholds; the remainder is controlled by Markov's
+  inequality and Potter bounds, which use only the marginal law.
+\end{proof}
+
+\begin{theorem}[Hill consistency under m-dependence and strong mixing]
+  \label{thm:hill-dependent}
+  \uses{thm:hill-variance, def:mixing}
+  \lean{ExtremeValueTheory.variance_tailCount_le_of_isMDependent, ExtremeValueTheory.tendstoInMeasure_hill_of_isMDependent,
+    ExtremeValueTheory.variance_tailCount_le_of_isStationary, ExtremeValueTheory.tendstoInMeasure_hill_of_alphaMixing,
+    ExtremeValueTheory.tendstoInMeasure_hill_of_alphaMixing_rate}
+  \leanok
+  The Hill estimator is consistent for $m$-dependent sequences with identical marginals (stationarity is
+  not needed), and for stationary $\alpha$-mixing sequences with block length $r_n$ such that
+  $\sum_{1 \le h \le r_n} \PR[X_h > u_n \mid X_0 > u_n] = o(k_n)$ and $(n/k_n)^2 \alpha(r_n + 1) \to 0$
+  [Resnick--St\u{a}ric\u{a} 1995], [Rootz\'en--Leadbetter--de Haan 1998].
+\end{theorem}
+\begin{proof}
+  \leanok
+  $\Var \le (2m+1) n \bar F(u)$ under $m$-dependence. Under stationarity,
+  $\Var \le n(\bar F(u) + 2\sum_{h \le r} \PR[X_0 > u, X_h > u] + 2 \sum_{h > r} \alpha(h))$.
+\end{proof}
