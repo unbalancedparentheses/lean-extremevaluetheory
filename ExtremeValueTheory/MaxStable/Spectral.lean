@@ -193,6 +193,133 @@ lemma lintegral_iSup_div_ne_top [Fintype ι] {f : ι → S → ℝ≥0∞} (hf :
   rw [lintegral_mul_const _ (hf i)]
   exact ENNReal.mul_ne_top (hfi i) (ENNReal.inv_ne_top.2 (hc0 i))
 
+/-- Scaling: `∫ max_i f i / (c i / n) = n ∫ max_i f i / c i`. -/
+lemma lintegral_iSup_div_inv_mul [Countable ι] {f : ι → S → ℝ≥0∞} (hf : ∀ i, Measurable (f i))
+    (c : ι → ℝ≥0∞) {n : ℕ} (hn : n ≠ 0) :
+    ∫⁻ s, ⨆ i, f i s / ((n : ℝ≥0∞)⁻¹ * c i) ∂μ = n * ∫⁻ s, ⨆ i, f i s / c i ∂μ := by
+  have h (x c : ℝ≥0∞) : x / ((n : ℝ≥0∞)⁻¹ * c) = n * (x / c) := by
+    rw [div_eq_mul_inv, ENNReal.mul_inv (a := (n : ℝ≥0∞)⁻¹) (b := c)
+      (Or.inl (ENNReal.inv_ne_zero.2 (ENNReal.natCast_ne_top n)))
+      (Or.inl (ENNReal.inv_ne_top.2 (Nat.cast_ne_zero.2 hn))), inv_inv, div_eq_mul_inv,
+      mul_left_comm]
+  simp_rw [h, ← ENNReal.mul_iSup]
+  exact lintegral_const_mul _ (Measurable.iSup fun i ↦ (hf i).div_const _)
+
+/-- **Unit Fréchet margins** (before normalization): `P(Y i ≤ c) = exp (-∫ f i dμ / c)`. -/
+theorem _root_.ProbabilityTheory.IsPoissonRandomMeasure.measure_spectralMax_le [SFinite μ]
+    (hN : IsPoissonRandomMeasure N ((radialMeasure 1).prod μ) P) {f : ι → S → ℝ≥0∞}
+    (hf : ∀ i, Measurable (f i)) (hfi : ∀ i, ∫⁻ s, f i s ∂μ ≠ ∞) (i : ι) {c : ℝ≥0∞} (hc0 : c ≠ 0)
+    (hc : c ≠ ∞) :
+    P {ω | spectralMax f (N ω) i ≤ c} =
+      ENNReal.ofReal (Real.exp (-((∫⁻ s, f i s ∂μ) / c).toReal)) := by
+  have hint : ∫⁻ s, f i s / c ∂μ = (∫⁻ s, f i s ∂μ) / c := by
+    simp_rw [div_eq_mul_inv]; exact lintegral_mul_const _ (hf i)
+  have h := hN.measure_forall_spectralMax_le (ι := Unit) (f := fun _ ↦ f i) (fun _ ↦ hf i)
+    (c := fun _ ↦ c) (fun _ ↦ hc0) (fun _ ↦ hc)
+    (by simpa [hint] using ENNReal.div_ne_top (hfi i) hc0)
+  simpa [hint, spectralMax] using h
+
+/-- The maxima of the spectral construction are a.s. finite when every `∫ f i dμ` is finite. -/
+theorem _root_.ProbabilityTheory.IsPoissonRandomMeasure.measure_spectralMax_eq_top [SFinite μ]
+    (hN : IsPoissonRandomMeasure N ((radialMeasure 1).prod μ) P) {f : ι → S → ℝ≥0∞}
+    (hf : ∀ i, Measurable (f i)) (hfi : ∀ i, ∫⁻ s, f i s ∂μ ≠ ∞) (i : ι) :
+    P {ω | spectralMax f (N ω) i = ∞} = 0 := by
+  have := hN.isProbabilityMeasure
+  have hmeas : MeasurableSet {ω | spectralMax f (N ω) i ≠ ∞} :=
+    (measurableSet_singleton ∞).compl.preimage (measurable_spectralMax hN.measurable hf i)
+  have htend : Tendsto (fun n : ℕ ↦
+      ENNReal.ofReal (Real.exp (-((∫⁻ s, f i s ∂μ) / n).toReal))) atTop (𝓝 1) := by
+    have h0 : Tendsto (fun n : ℕ ↦ (∫⁻ s, f i s ∂μ) / n) atTop (𝓝 0) := by
+      simpa [div_eq_mul_inv] using
+        ENNReal.Tendsto.const_mul ENNReal.tendsto_inv_nat_nhds_zero (Or.inr (hfi i))
+    have := ((ENNReal.continuous_ofReal.comp (Real.continuous_exp.comp continuous_neg)).tendsto
+      0).comp ((ENNReal.tendsto_toReal ENNReal.zero_ne_top).comp h0)
+    have h1 : (ENNReal.ofReal ∘ Real.exp ∘ fun a : ℝ ↦ -a) 0 = 1 := by simp
+    rw [h1] at this
+    exact this
+  have hle : 1 ≤ P {ω | spectralMax f (N ω) i ≠ ∞} := by
+    refine le_of_tendsto htend ((eventually_ge_atTop 1).mono fun n hn ↦ ?_)
+    rw [← hN.measure_spectralMax_le hf hfi i (by exact_mod_cast (by omega : n ≠ 0))
+      (ENNReal.natCast_ne_top n)]
+    exact measure_mono fun ω hω ↦ ne_top_of_le_ne_top (ENNReal.natCast_ne_top n) hω
+  have hc := prob_compl_eq_one_sub (μ := P) hmeas
+  rw [show {ω | spectralMax f (N ω) i ≠ ∞}ᶜ = {ω | spectralMax f (N ω) i = ∞} by ext; simp] at hc
+  rw [hc, tsub_eq_zero_of_le hle]
+
+/-- The real random vector `Y = (Y i)_i` of the spectral construction. -/
+noncomputable def spectralVector (f : ι → S → ℝ≥0∞) (m : Measure (ℝ × S)) : ι → ℝ :=
+  fun i ↦ (spectralMax f m i).toReal
+
+lemma measurable_spectralVector (hN : Measurable N) {f : ι → S → ℝ≥0∞}
+    (hf : ∀ i, Measurable (f i)) : Measurable fun ω ↦ spectralVector f (N ω) :=
+  Measurable.of_eval fun i ↦ (measurable_spectralMax hN hf i).ennreal_toReal
+
+/-- **de Haan's spectral representation, constructive direction, joint law.** For the real vector
+`Y i = sup_k ζ_k f i (s_k)` and `y` with positive coordinates,
+`P(Y ≤ y) = exp (-∫ max_i f i s / y i dμ(s))`. -/
+theorem _root_.ProbabilityTheory.IsPoissonRandomMeasure.measure_spectralVector_le [Fintype ι]
+    [SFinite μ] (hN : IsPoissonRandomMeasure N ((radialMeasure 1).prod μ) P)
+    {f : ι → S → ℝ≥0∞} (hf : ∀ i, Measurable (f i)) (hfi : ∀ i, ∫⁻ s, f i s ∂μ ≠ ∞)
+    {y : ι → ℝ} (hy : ∀ i, 0 < y i) :
+    P {ω | spectralVector f (N ω) ≤ y} =
+      ENNReal.ofReal (Real.exp (-(∫⁻ s, ⨆ i, f i s / ENNReal.ofReal (y i) ∂μ).toReal)) := by
+  have hc0 (i : ι) : ENNReal.ofReal (y i) ≠ 0 := (ENNReal.ofReal_pos.2 (hy i)).ne'
+  rw [← hN.measure_forall_spectralMax_le hf hc0 (fun i ↦ ENNReal.ofReal_ne_top)
+    (lintegral_iSup_div_ne_top hf hfi hc0)]
+  refine measure_congr (Filter.eventuallyEqSet_iff.2 ?_)
+  have hae : ∀ᵐ ω ∂P, ∀ i, spectralMax f (N ω) i ≠ ∞ := by
+    rw [ae_all_iff]
+    intro i
+    rw [ae_iff]
+    simpa using hN.measure_spectralMax_eq_top hf hfi i
+  filter_upwards [hae] with ω hω
+  simp only [Pi.le_def, spectralVector]
+  exact forall_congr' fun i ↦ (ENNReal.le_ofReal_iff_toReal_le (hω i) (hy i).le).symm
+
+/-- **Unit Fréchet margins.** If `∫ f i dμ = 1`, then `P(Y i ≤ y) = exp (-1 / y)`. -/
+theorem _root_.ProbabilityTheory.IsPoissonRandomMeasure.measure_spectralVector_apply_le [SFinite μ]
+    (hN : IsPoissonRandomMeasure N ((radialMeasure 1).prod μ) P) {f : ι → S → ℝ≥0∞}
+    (hf : ∀ i, Measurable (f i)) (hfi : ∀ i, ∫⁻ s, f i s ∂μ = 1) (i : ι) {y : ℝ} (hy : 0 < y) :
+    P {ω | spectralVector f (N ω) i ≤ y} = ENNReal.ofReal (Real.exp (-y⁻¹)) := by
+  have hfi' (i : ι) : ∫⁻ s, f i s ∂μ ≠ ∞ := by simp [hfi i]
+  rw [← (by simpa [hfi, ENNReal.toReal_inv, ENNReal.toReal_ofReal hy.le] using
+    hN.measure_spectralMax_le hf hfi' i (ENNReal.ofReal_pos.2 hy).ne' ENNReal.ofReal_ne_top :
+      P {ω | spectralMax f (N ω) i ≤ ENNReal.ofReal y} = ENNReal.ofReal (Real.exp (-y⁻¹)))]
+  refine measure_congr (Filter.eventuallyEqSet_iff.2 ?_)
+  have hae : ∀ᵐ ω ∂P, spectralMax f (N ω) i ≠ ∞ := by
+    rw [ae_iff]
+    simpa using hN.measure_spectralMax_eq_top hf hfi' i
+  filter_upwards [hae] with ω hω
+  exact (ENNReal.le_ofReal_iff_toReal_le hω hy.le).symm
+
+/-- **The spectral construction is simple max-stable.** If `N` is a Poisson random measure with
+intensity `ζ ^ (-2) dζ ⊗ μ` and `∫ f i dμ = 1` for every `i`, the law of
+`Y = (sup_k ζ_k f i (s_k))_i` is simple max-stable. -/
+theorem _root_.ProbabilityTheory.IsPoissonRandomMeasure.isSimpleMaxStable_map_spectralVector
+    [Fintype ι] [SFinite μ] (hN : IsPoissonRandomMeasure N ((radialMeasure 1).prod μ) P)
+    {f : ι → S → ℝ≥0∞} (hf : ∀ i, Measurable (f i)) (hfi : ∀ i, ∫⁻ s, f i s ∂μ = 1) :
+    IsSimpleMaxStable (P.map fun ω ↦ spectralVector f (N ω)) := by
+  have := hN.isProbabilityMeasure
+  have hfi' (i : ι) : ∫⁻ s, f i s ∂μ ≠ ∞ := by simp [hfi i]
+  have hY := measurable_spectralVector hN.measurable hf
+  have hIic {y : ι → ℝ} (hy : ∀ i, 0 < y i) : (P.map fun ω ↦ spectralVector f (N ω)) (Iic y) =
+      ENNReal.ofReal (Real.exp (-(∫⁻ s, ⨆ i, f i s / ENNReal.ofReal (y i) ∂μ).toReal)) := by
+    rw [Measure.map_apply hY measurableSet_Iic]
+    exact hN.measure_spectralVector_le hf hfi' hy
+  refine ⟨inferInstance, fun i y hy ↦ ?_, fun n hn y hy ↦ ?_⟩
+  · rw [Measure.map_apply hY (measurableSet_le (measurable_pi_apply i) measurable_const)]
+    exact hN.measure_spectralVector_apply_le hf hfi i hy
+  · have hy' (i : ι) : 0 < ((n : ℝ)⁻¹ • y) i := by
+      simpa using mul_pos (inv_pos.2 (by exact_mod_cast hn)) (hy i)
+    rw [hIic hy, hIic hy']
+    have hscale (i : ι) : ENNReal.ofReal (((n : ℝ)⁻¹ • y) i) =
+        (n : ℝ≥0∞)⁻¹ * ENNReal.ofReal (y i) := by
+      rw [Pi.smul_apply, smul_eq_mul, ENNReal.ofReal_mul (inv_nonneg.2 n.cast_nonneg),
+        ENNReal.ofReal_inv_of_pos (by exact_mod_cast hn), ENNReal.ofReal_natCast]
+    simp_rw [hscale]
+    rw [lintegral_iSup_div_inv_mul hf _ hn.ne', ENNReal.toReal_mul, ENNReal.toReal_natCast,
+      ← ENNReal.ofReal_pow (Real.exp_pos _).le, ← Real.exp_nat_mul, mul_neg]
+
 end Spectral
 
 
