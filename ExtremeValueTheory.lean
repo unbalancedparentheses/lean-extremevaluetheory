@@ -49,6 +49,7 @@ import ExtremeValueTheory.DomainOfAttraction.VonMises
 import ExtremeValueTheory.StableLaws.GeneralizedCLTOne
 import ExtremeValueTheory.ForMathlib.Probability.Process.Stationary
 import ExtremeValueTheory.ForMathlib.MeasureTheory.Measure.Bonferroni
+import ExtremeValueTheory.ForMathlib.Analysis.SpecialFunctions.Gamma.Trigamma
 import ExtremeValueTheory.Dependence.Leadbetter
 import ExtremeValueTheory.Dependence.ExtremalIndex
 import ExtremeValueTheory.Dependence.Examples
