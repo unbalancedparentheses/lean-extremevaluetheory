@@ -733,6 +733,103 @@ theorem hasExtremalIndex_echoProcess (hLinf : Tendsto L atTop atTop)
     have := (partialMax_le_iff hn0).1 hω t (Finset.mem_range.1 ht)
     exact (le_echoProcess (L := L) t ω).trans this
 
+include hZ hind hlaw hLm in
+/-- The echo process is stationary. -/
+theorem hasShiftInvariantWindows_echoProcess : HasShiftInvariantWindows P (echoProcess L Z) := by
+  have hid : ∀ i, IdentDistrib (Z i) (Z 0) P P := fun i =>
+    ⟨(hZ _).aemeasurable, (hZ _).aemeasurable, by rw [hlaw, hlaw]⟩
+  have hG : Measurable fun z : ℤ → ℝ =>
+      max (z 0) (⨆ j : ℕ, if L (z (-(j + 1))) = j + 1 then z (-(j + 1)) else 0) :=
+    (measurable_pi_apply 0).max (Measurable.iSup fun j =>
+      Measurable.ite ((hLm.comp (measurable_pi_apply _)) (measurableSet_singleton _))
+        (measurable_pi_apply _) measurable_const)
+  rw [echoProcess_eq_shift]
+  exact hasShiftInvariantWindows_of_shift hZ hind hid hG
+
+include hα hZ hind hlaw hpos hLm hL1 in
+/-- **The echo process has `θ = 1/2 < 1 = ϑ`.** For iid Pareto(`α`) innovations and an echo lag
+`L ≥ 1` with `L(z) → ∞` and `E[L(Z)] < ∞`, the echo process is stationary, its spectral tail
+process is `Θ_t = 1{t = 0}` (so `ϑ = 1`), and its extremal index is `1/2`. -/
+theorem echoProcess_theta_lt_vartheta (hLinf : Tendsto L atTop atTop)
+    (hLsum : Summable fun j : ℕ => (paretoMeasure 1 α).real {z | j + 1 ≤ L z}) :
+    HasShiftInvariantWindows P (echoProcess L Z) ∧
+      HasSpectralTailProcess P (echoProcess L Z) α (Measure.dirac ()) unitSpectral ∧
+      (candidateExtremalIndex (Measure.dirac ()) unitSpectral α).toReal = 1 ∧
+      HasExtremalIndex (fun k : ℕ => echoProcess L Z k) P (1 / 2) :=
+  ⟨hasShiftInvariantWindows_echoProcess hZ hind hlaw hLm,
+    hasSpectralTailProcess_echoProcess hα hZ hind hlaw hpos hLm hL1 hLinf,
+    by rw [candidateExtremalIndex_unitSpectral hα]; rfl,
+    hasExtremalIndex_echoProcess hα hZ hind hlaw hpos hLm hL1 hLinf hLsum⟩
+
 end Echo
+
+/-! ### A concrete echo lag: `L(z) = ⌊log z⌋ + 1` -/
+
+section LogLag
+
+/-- The logarithmic echo lag `L(z) = ⌊log z⌋₊ + 1`. -/
+noncomputable def logLag (z : ℝ) : ℕ := ⌊Real.log z⌋₊ + 1
+
+theorem measurable_logLag : Measurable logLag := by
+  show Measurable ((fun n : ℕ => n + 1) ∘ fun z => ⌊Real.log z⌋₊)
+  exact measurable_from_nat.comp (Nat.measurable_floor.comp Real.measurable_log)
+
+theorem one_le_logLag (z : ℝ) : 1 ≤ logLag z := Nat.le_add_left 1 _
+
+theorem tendsto_logLag : Tendsto logLag atTop atTop :=
+  tendsto_atTop_mono (fun _ => Nat.le_succ _)
+    (tendsto_nat_floor_atTop.comp Real.tendsto_log_atTop)
+
+/-- `E[L(Z)] < ∞` for the logarithmic lag: `P(L(Z) ≥ j + 1) ≤ 2^α e^(-α j)`. -/
+theorem summable_logLag {α : ℝ} (hα : 0 < α) :
+    Summable fun j : ℕ => (paretoMeasure 1 α).real {z | j + 1 ≤ logLag z} := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have hgeo : Summable fun j : ℕ => (2 : ℝ) ^ α * Real.exp (-α) ^ j :=
+    (summable_geometric_of_lt_one (Real.exp_pos _).le
+      (Real.exp_lt_one_iff.2 (by linarith))).mul_left _
+  refine hgeo.of_nonneg_of_le (fun _ => measureReal_nonneg) fun j => ?_
+  rcases Nat.eq_zero_or_pos j with rfl | hj
+  · simp only [pow_zero, mul_one]
+    exact measureReal_le_one.trans (Real.one_le_rpow (by norm_num) hα.le)
+  · have hj1 : (1 : ℝ) ≤ j := by exact_mod_cast hj
+    have he : 1 ≤ Real.exp j / 2 := by
+      have := Real.add_one_le_exp (j : ℝ)
+      linarith
+    calc (paretoMeasure 1 α).real {z | j + 1 ≤ logLag z}
+        ≤ (paretoMeasure 1 α).real (Ioi (Real.exp j / 2)) := by
+          refine ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono_ae ?_)
+          filter_upwards [ae_one_lt_paretoMeasure (α := α)] with z hz1 hz
+          have hz' : j ≤ ⌊Real.log z⌋₊ := by simpa [logLag] using hz
+          have hlog : (j : ℝ) ≤ Real.log z :=
+            (Nat.cast_le.2 hz').trans (Nat.floor_le (Real.log_pos hz1).le)
+          have := (Real.exp_le_exp.2 hlog).trans_eq (Real.exp_log (by linarith))
+          show Real.exp j / 2 < z
+          linarith [Real.exp_pos (j : ℝ)]
+      _ = (Real.exp j / 2) ^ (-α) := paretoMeasure_one_real_Ioi hα he
+      _ = Real.exp j ^ (-α) / 2 ^ (-α) := Real.div_rpow (Real.exp_pos _).le (by norm_num) _
+      _ = Real.exp (j * -α) * 2 ^ α := by
+          rw [← Real.exp_mul, Real.rpow_neg (by norm_num : (0 : ℝ) ≤ 2), div_inv_eq_mul]
+      _ = 2 ^ α * Real.exp (-α) ^ j := by
+          rw [← Real.exp_nat_mul]
+          ring_nf
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+  {α : ℝ} {Z : ℤ → Ω → ℝ}
+
+/-- **A fully explicit example of `θ < ϑ`**: with iid Pareto(`α`) innovations and the echo lag
+`L(z) = ⌊log z⌋₊ + 1`, the echo process `X_t = max(Z_t, max {Z_s : s + L(Z_s) = t})` is
+stationary with spectral tail process `Θ_t = 1{t = 0}`, so `ϑ = 1`, while its extremal index is
+`θ = 1/2`. -/
+theorem logEchoProcess_theta_lt_vartheta (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
+    (hind : iIndepFun Z P) (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α)
+    (hpos : ∀ t ω, 0 ≤ Z t ω) :
+    HasShiftInvariantWindows P (echoProcess logLag Z) ∧
+      HasSpectralTailProcess P (echoProcess logLag Z) α (Measure.dirac ()) unitSpectral ∧
+      (candidateExtremalIndex (Measure.dirac ()) unitSpectral α).toReal = 1 ∧
+      HasExtremalIndex (fun k : ℕ => echoProcess logLag Z k) P (1 / 2) :=
+  echoProcess_theta_lt_vartheta hα hZ hind hlaw hpos measurable_logLag one_le_logLag
+    tendsto_logLag (summable_logLag hα)
+
+end LogLag
 
 end ExtremeValueTheory
