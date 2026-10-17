@@ -514,6 +514,45 @@ theorem lintegral_orderStat_excess {n k : ℕ} (hk : k < n) {ψ : ℝ → ℝ �
     rw [h3, h2]
     simp [hG]
 
+theorem measurable_orderStat_pi {n : ℕ} (k : ℕ) :
+    Measurable fun y : Fin n → ℝ => orderStat y k :=
+  measurable_orderStat (X := fun i (y : Fin n → ℝ) => y i) (fun i => measurable_pi_apply i) k
+
+/-- **Rényi representation**, distributional form: the joint law of
+`(∑_{i<k} ψ(Y_{(i+1)} - Y_{(k+1)}, Y_{(k+1)}), Y_{(k+1)})`, pushed forward by `h`, is that of
+`(∑_{i<k} ψ(Z_i, Y_{(k+1)}), Y_{(k+1)})` with `Z` an independent `Exp(1)^{⊗k}` sample. -/
+theorem map_orderStat_excess {n k : ℕ} (hk : k < n) {ψ : ℝ → ℝ → ℝ}
+    (hψ : Measurable (Function.uncurry ψ)) {β : Type*} [MeasurableSpace β] {h : ℝ → ℝ → β}
+    (hh : Measurable (Function.uncurry h)) :
+    (Measure.pi fun _ : Fin n => expMeasure 1).map (fun y =>
+        h (∑ i ∈ Finset.range k, ψ (orderStat y i - orderStat y k) (orderStat y k))
+          (orderStat y k)) =
+      ((Measure.pi fun _ : Fin n => expMeasure 1).prod
+        (Measure.pi fun _ : Fin k => expMeasure 1)).map (fun p =>
+          h (∑ i, ψ (p.2 i) (orderStat p.1 k)) (orderStat p.1 k)) := by
+  have hmo := measurable_orderStat_pi (n := n) k
+  have hm1 : Measurable fun y : Fin n → ℝ =>
+      h (∑ i ∈ Finset.range k, ψ (orderStat y i - orderStat y k) (orderStat y k))
+        (orderStat y k) :=
+    measurable_uncurry_comp hh (Finset.measurable_sum _ fun i _ => measurable_uncurry_comp hψ
+      ((measurable_orderStat_pi i).sub hmo) hmo) hmo
+  have hm2 : Measurable fun p : (Fin n → ℝ) × (Fin k → ℝ) =>
+      h (∑ i, ψ (p.2 i) (orderStat p.1 k)) (orderStat p.1 k) :=
+    measurable_uncurry_comp hh (Finset.measurable_sum _ fun i _ => measurable_uncurry_comp hψ
+      ((measurable_pi_apply i).comp measurable_snd) (hmo.comp measurable_fst))
+      (hmo.comp measurable_fst)
+  ext B hB
+  rw [Measure.map_apply hm1 hB, Measure.map_apply hm2 hB, ← lintegral_indicator_one (hm1 hB),
+    ← lintegral_indicator_one (hm2 hB)]
+  have hF : Measurable (Function.uncurry fun x s => B.indicator (1 : β → ℝ≥0∞) (h x s)) :=
+    (measurable_one.indicator hB).comp hh
+  have := lintegral_orderStat_excess hk hψ hF
+  refine (Eq.trans ?_ this).trans ?_
+  · rfl
+  · rw [lintegral_prod _ ((measurable_one.indicator (hm2 hB)).aemeasurable)]
+    rfl
+
+
 end Representation
 
 end ExtremeValueTheory
