@@ -898,36 +898,23 @@ theorem charFun_ne_zero_of_tendsto {ν : ProbabilityMeasure ℝ}
   rw [h0, map_zero] at h
   exact lt_irrefl _ h
 
-/-- **Converse of the generalized central limit theorem** ([Feller, Vol. II, §XVII.5,
-Theorem 2], [GK, §35, Theorem 2]): necessity of Feller's conditions, without symmetry. Let
-`aₙ > 0`, `bₙ ∈ ℝ`, and suppose the laws of `(X₁ + ⋯ + Xₙ - bₙ) / aₙ` converge weakly to a law
-`ν` which is not a Dirac mass. Then there is `0 < α ≤ 2` such that the truncated second moment
-`U(x) = E[X² 1{|X| ≤ x}]` is regularly varying with index `2 - α`, and, if `α < 2`, the
-two-sided tail `P(|X| > x)` is regularly varying with index `-α`, `n P(|X| > aₙ)` converges to
-some `B > 0` (so `aₙ` is the right scale), and the tails are balanced:
-`P(X > x) / P(|X| > x) → p` for some `p ∈ [0, 1]`. -/
-theorem exists_isRegularlyVarying_tailBalance_of_tendsto (ha : ∀ n, 0 < a n)
-    {ν : ProbabilityMeasure ℝ} (hnd : ∀ x, (ν : Measure ℝ) ≠ Measure.dirac x)
+/-- The tail part of the converse, from the symmetrized scaling limit: if `(Sₙ - bₙ) / aₙ → ν`
+and `n E[min (1, (X - X')² / (aₙ x)²)] → K x ^ (-α)` with `K > 0`, `0 < α < 2`, then
+`P(|X| > ·) ∈ RV(-α)`, `n P(|X| > aₙ) → B > 0` and the tails are balanced. -/
+theorem tailBalance_of_tendsto_mul_sqRatio_symmLaw (ha : ∀ n, 0 < a n)
+    {ν : ProbabilityMeasure ℝ}
     (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
-      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν)) :
-    ∃ α, 0 < α ∧ α ≤ 2 ∧ IsRegularlyVarying (truncSecondMoment μ) (2 - α) ∧
-      (α < 2 → IsRegularlyVarying (absTail μ) (-α) ∧
-        (∃ B > 0, Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n)) atTop (𝓝 B)) ∧
-        ∃ p, 0 ≤ p ∧ p ≤ 1 ∧ Tendsto (fun x => μ.real (Ioi x) / absTail μ x) atTop (𝓝 p)) := by
-  obtain ⟨α, hα0, hα2, K, hK, hL⟩ := exists_tendsto_mul_sqRatio_symmLaw ha hnd hconv
-  have hZs := isRegularlyVarying_minSqMoment_of_tendsto_mul_sqRatio ha hK hL
-  rcases lt_or_eq_of_le hα2 with hlt | heq
-  swap
-  · subst heq
-    refine ⟨2, hα0, le_rfl, ?_, fun h => absurd h (lt_irrefl _)⟩
-    rw [sub_self] at hZs ⊢
-    exact isRegularlyVarying_truncSecondMoment_of_minSqMoment (by norm_num)
-      (isRegularlyVarying_minSqMoment_of_symmLaw hZs)
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν))
+    {α K : ℝ} (hα0 : 0 < α) (hlt : α < 2) (hK : 0 < K)
+    (hL : ∀ x : ℝ, 0 < x → Tendsto (fun n : ℕ => (n : ℝ) * sqRatio (symmLaw μ) (a n * x)) atTop
+      (𝓝 (K * x ^ (-α)))) :
+    IsRegularlyVarying (absTail μ) (-α) ∧
+      (∃ B > 0, Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n)) atTop (𝓝 B)) ∧
+      ∃ p, 0 ≤ p ∧ p ≤ 1 ∧ Tendsto (fun x => μ.real (Ioi x) / absTail μ x) atTop (𝓝 p) := by
   obtain ⟨hGs, -, hBs⟩ := isRegularlyVarying_of_tendsto_mul_sqRatio (μ := symmLaw μ) ha hK hα0
     hlt hL
   have hG := isRegularlyVarying_absTail_of_symmLaw hGs
-  refine ⟨α, hα0, hα2, isRegularlyVarying_truncSecondMoment_of_absTail hα0 hlt hG,
-    fun _ => ⟨hG, ?_⟩⟩
+  refine ⟨hG, ?_⟩
   have hGpos := absTail_pos hG
   have hatop : Tendsto a atTop atTop :=
     tendsto_atTop_of_tendsto_mul_comp (T := absTail (symmLaw μ)) (L := fun _ => K * ((2 - α) / 2))
@@ -985,6 +972,34 @@ theorem exists_isRegularlyVarying_tailBalance_of_tendsto (ha : ∀ n, 0 < a n)
     exact exists_tendsto_mul_integral_comp ha hconv hφ hS hsmall hlow (rampBCF ε) one_pos
       (fun z hz => ramp_eq_zero hε ((le_abs_self z).trans hz.le)) (lipschitzWith_ramp hε)
   exact ⟨⟨B, hB0, hB⟩, exists_tendsto_measureReal_Ioi_div_absTail hG ha hatop hB hB0 hT⟩
+
+/-- **Converse of the generalized central limit theorem** ([Feller, Vol. II, §XVII.5,
+Theorem 2], [GK, §35, Theorem 2]): necessity of Feller's conditions, without symmetry. Let
+`aₙ > 0`, `bₙ ∈ ℝ`, and suppose the laws of `(X₁ + ⋯ + Xₙ - bₙ) / aₙ` converge weakly to a law
+`ν` which is not a Dirac mass. Then there is `0 < α ≤ 2` such that the truncated second moment
+`U(x) = E[X² 1{|X| ≤ x}]` is regularly varying with index `2 - α`, and, if `α < 2`, the
+two-sided tail `P(|X| > x)` is regularly varying with index `-α`, `n P(|X| > aₙ)` converges to
+some `B > 0` (so `aₙ` is the right scale), and the tails are balanced:
+`P(X > x) / P(|X| > x) → p` for some `p ∈ [0, 1]`. -/
+theorem exists_isRegularlyVarying_tailBalance_of_tendsto (ha : ∀ n, 0 < a n)
+    {ν : ProbabilityMeasure ℝ} (hnd : ∀ x, (ν : Measure ℝ) ≠ Measure.dirac x)
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν)) :
+    ∃ α, 0 < α ∧ α ≤ 2 ∧ IsRegularlyVarying (truncSecondMoment μ) (2 - α) ∧
+      (α < 2 → IsRegularlyVarying (absTail μ) (-α) ∧
+        (∃ B > 0, Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n)) atTop (𝓝 B)) ∧
+        ∃ p, 0 ≤ p ∧ p ≤ 1 ∧ Tendsto (fun x => μ.real (Ioi x) / absTail μ x) atTop (𝓝 p)) := by
+  obtain ⟨α, hα0, hα2, K, hK, hL⟩ := exists_tendsto_mul_sqRatio_symmLaw ha hnd hconv
+  have hZs := isRegularlyVarying_minSqMoment_of_tendsto_mul_sqRatio ha hK hL
+  rcases lt_or_eq_of_le hα2 with hlt | heq
+  swap
+  · subst heq
+    refine ⟨2, hα0, le_rfl, ?_, fun h => absurd h (lt_irrefl _)⟩
+    rw [sub_self] at hZs ⊢
+    exact isRegularlyVarying_truncSecondMoment_of_minSqMoment (by norm_num)
+      (isRegularlyVarying_minSqMoment_of_symmLaw hZs)
+  have h := tailBalance_of_tendsto_mul_sqRatio_symmLaw ha hconv hα0 hlt hK hL
+  exact ⟨α, hα0, hα2, isRegularlyVarying_truncSecondMoment_of_absTail hα0 hlt h.1, fun _ => h⟩
 
 /-- **The Lévy measure of the limit** (asymmetric converse GCLT, [Feller, Vol. II, §XVII.5],
 [GK, §35]): under the hypotheses of `exists_isRegularlyVarying_tailBalance_of_tendsto`, with
