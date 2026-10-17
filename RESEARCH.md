@@ -30,9 +30,13 @@ Hypothesis bookkeeping (the research value of the formal proofs):
 - `Θ_t → 0` follows from forward anticlustering at one level, without stationarity.
 - `θ ≤ ϑ` needs no anticlustering, only condition `𝒜` along one level sequence.
 
-Open next steps: derive `𝒜` from mixing coefficients (β- or α-mixing); the backward limit
-`Θ_{−t} → 0`; prove AC and `𝒜` for the moving maximum and for linear processes so the main theorem
-(not just the direct computation) recovers `θ`; then the Bai–Wang-type `θ < ϑ` question (P1).
+Also done: `𝒜` from α-mixing at a rate; every stationary m-dependent sequence with a spectral tail
+process has `θ = ϑ`; through it, the moving maximum (`θ = 1/2`) and finite moving averages
+(`θ = max ψ^α/Σψ^α`) recover the classical values.
+
+Open next steps (updated): infinite-order linear processes and Markov chains (geometric β-mixing);
+the backward limit
+`Θ_{−t} → 0`; then the Bai–Wang-type `θ < ϑ` question (P1).
 
 ## Open problems
 

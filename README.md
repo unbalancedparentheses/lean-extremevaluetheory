@@ -125,6 +125,12 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   (`HasSpectralTailProcess.tendsto_blockRatio`), so under anticlustering and the block condition
   `𝒜` the extremal index is `ϑ` (`hasExtremalIndex_abs`); without anticlustering `θ ≤ ϑ`
   (`le_candidateExtremalIndex`). Checked on the moving maximum, where `θ = ϑ = 1/2`.
+- **Mixing and m-dependence** (`ForMathlib/Probability/Process/Mixing.lean`, `Dependence/Mixing.lean`,
+  `MDependent*.lean`): strong and β-mixing coefficients; α-mixing at a rate implies condition `𝒜`;
+  every stationary m-dependent sequence with a spectral tail process has extremal index `ϑ`
+  (`HasSpectralTailProcess.hasExtremalIndex_of_isMDependent`). Through this theorem: the moving
+  maximum has `θ = 1/2` (second, independent proof) and finite moving averages have
+  `θ = max ψ_j^α / Σ ψ_j^α` (`MovingAverage.hasExtremalIndex`).
 - **Vague convergence and Poisson random measures** (`ForMathlib/`, Mathlib-only imports, intended
   for upstreaming): vague convergence with its portmanteau properties, Poisson random measures with
   existence for every s-finite intensity (`exists_isPoissonRandomMeasure`), Laplace functionals,

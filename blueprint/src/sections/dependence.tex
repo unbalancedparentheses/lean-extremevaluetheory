@@ -301,3 +301,73 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
   \leanok
   An exceedance of $X_0$ comes from $Z_0$ or $Z_1$, each with conditional probability $1/2$ in the limit.
 \end{proof}
+
+\section{Mixing and m-dependence}
+
+\begin{definition}[Mixing coefficients and m-dependence]
+  \label{def:mixing}
+  \uses{def:stationary}
+  \lean{ProbabilityTheory.strongMixingCoeff, ProbabilityTheory.betaMixingCoeff, ProbabilityTheory.alphaMixing, ProbabilityTheory.betaMixing, ProbabilityTheory.IsStrongMixing,
+    ProbabilityTheory.IsBetaMixing, ProbabilityTheory.IsMDependent, ProbabilityTheory.strongMixingCoeff_le_betaMixingCoeff,
+    ProbabilityTheory.IsMDependent.alphaMixing_eq_zero, ProbabilityTheory.IsMDependent.isStrongMixing, ProbabilityTheory.IsMDependent.indepFun}
+  \leanok
+  The strong mixing coefficient of a sequence at lag $h$ is
+  $\alpha(h) = \sup_s \sup |\PR(A \cap B) - \PR(A)\PR(B)|$ over $A$ in the past $\sigma(X_t : t \le s)$ and
+  $B$ in the future $\sigma(X_t : t \ge s + h)$; the $\beta$-mixing coefficient uses finite partitions.
+  An $m$-dependent sequence has $\alpha(h) = \beta(h) = 0$ for $h > m$ [Bradley 2005].
+\end{definition}
+
+\begin{theorem}[Mixing implies condition A]
+  \label{thm:mixing-condition-a}
+  \uses{def:mixing, def:anticlustering, thm:block-approx}
+  \lean{ExtremeValueTheory.abs_measureReal_maxLE_union_sub_le_alphaMixing, ExtremeValueTheory.conditionA_of_forall_abs_le,
+    ExtremeValueTheory.conditionA_of_alphaMixing, ExtremeValueTheory.conditionA_of_isMDependent, ExtremeValueTheory.conditionD_of_isMDependent}
+  \leanok
+  For a stationary sequence with $r_n \to \infty$, $r_n/n \to 0$, gaps $l_n = o(r_n)$,
+  $(n/r_n) \alpha(l_n) \to 0$ and $n \PR[X_0 > u_n]$ bounded, condition $\mathcal A(u_n)$ holds.
+  For $m$-dependent sequences, $\mathcal A(u_n)$ and Leadbetter's $D(u_n)$ hold at every level sequence
+  with $n \PR[X_0 > u_n]$ bounded [KS20, \S7.3], [LLR, \S3.2].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Split $\{0, \dots, n-1\}$ into $k_n = \lfloor n/r_n \rfloor$ blocks separated by gaps $l_n$; the gaps cost
+  $k_n l_n \PR[X_0 > u_n] \to 0$ and each factorization costs $\alpha(l_n)$, so the total error is
+  $k_n \alpha(l_n) \to 0$.
+\end{proof}
+
+\begin{theorem}[m-dependent sequences: anticlustering and the extremal index]
+  \label{thm:m-dependent-theta}
+  \uses{thm:mixing-condition-a, thm:theta-eq-vartheta}
+  \lean{ExtremeValueTheory.antiClusteringAt_of_indepFun, ExtremeValueTheory.antiClustering_of_indepFun,
+    ExtremeValueTheory.HasSpectralTailProcess.hasExtremalIndex_of_isMDependent}
+  \leanok
+  If $X_0$ and $X_t$ are independent for $|t| > m$, a stationary sequence satisfies $AC(r_n)$ whenever
+  $r_n \PR[|X_0| > u_n] \to 0$. Consequently, every stationary $m$-dependent sequence with a spectral
+  tail process has extremal index $\vartheta$: $|X|$ has extremal index
+  $\E[\sup_{k\ge0}|\Theta_k|^\alpha - \sup_{k\ge1}|\Theta_k|^\alpha]$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  For $t > m$, $\PR[|X_t| > u \mid |X_0| > u] = \PR[|X_0| > u]$, so the anticlustering sum over
+  $m < t \le r_n$ is $r_n \PR[|X_0| > u_n] \to 0$. Take $r_n = \lfloor \sqrt n \rfloor$ and apply
+  Theorems~\ref{thm:mixing-condition-a} and~\ref{thm:theta-eq-vartheta}.
+\end{proof}
+
+\begin{corollary}[Extremal index of moving maxima and moving averages]
+  \label{cor:moving-average-theta}
+  \uses{thm:m-dependent-theta, thm:moving-average-tail-process, prop:moving-max-vartheta}
+  \lean{ExtremeValueTheory.hasShiftInvariantWindows_of_iIndepFun, ExtremeValueTheory.isMDependent_slidingWindow,
+    ExtremeValueTheory.hasExtremalIndex_movingMax_of_isMDependent, ExtremeValueTheory.MovingAverage.hasExtremalIndex}
+  \leanok
+  The moving maximum $\max(Z_t, Z_{t+1})$ has extremal index $1/2$, and the finite moving average
+  $\sum_{i \le m} \psi_i Z_{t-i}$ with $\psi_i \ge 0$ and nonnegative iid regularly varying noise has
+  extremal index $\max_j \psi_j^\alpha / \sum_j \psi_j^\alpha$ [EKM, \S8.1], both obtained through
+  Theorem~\ref{thm:m-dependent-theta}. For the moving maximum this is a second proof, independent of
+  the direct computation in Proposition~\ref{prop:extremal-index-examples}.
+\end{corollary}
+\begin{proof}
+  \leanok
+  Sliding-window functions of iid noise are stationary and $m$-dependent; combine with the spectral tail
+  processes computed in Proposition~\ref{prop:moving-max-vartheta} and
+  Theorem~\ref{thm:moving-average-tail-process}.
+\end{proof}
