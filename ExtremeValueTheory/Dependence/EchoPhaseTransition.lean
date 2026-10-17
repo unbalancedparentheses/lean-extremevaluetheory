@@ -8,7 +8,64 @@ import ExtremeValueTheory.Dependence.EchoProcess
 /-!
 # A block-length phase transition for the echo process
 
-DOCSTRING
+The echo process `X_t = max(Z_t, max {Z_s : s + L(Z_s) = t})` of `Dependence/EchoProcess.lean`
+(iid Pareto(`α`) shocks `Z`, each reappearing once after the echo lag `L(Z) ≥ 1`) has spectral
+tail process `Θ_t = 1{t = 0}` (`ϑ = 1`) and extremal index `θ = 1/2`. Here we compute its cluster
+ratio `P(M_{rₙ} > uₙ) / (rₙ P(X_0 > uₙ))` (`clusterRatio`) at *every* block length, and find a
+phase transition in `rₙ` of the kind asked about by Bai, Kulik and Wang (arXiv:2409.17966, §1,
+open problem P1 of `RESEARCH.md`).
+
+The key identity: the exceedances in the block `{0, …, r - 1}` come from the independent shocks
+`Z_s` that either sit in the block or echo into it, so with
+`S = r u^(-α) + E[min(L(Z), r); Z > u]` (the expected number of such shocks),
+`S - S² ≤ P(M_r > u) ≤ S`. Hence, when `rₙ uₙ^(-α) → 0`,
+`clusterRatio ≈ (1 + E[min(L(Z) / rₙ, 1) | Z > uₙ]) / 2`:
+a cluster (shock + echo) is counted once if the echo lands in the same block, twice otherwise.
+
+## Main definitions
+
+* `echoBlockMass α L u r = E[min(L(Z), r); Z > u]`, `Z` Pareto(`α`).
+* `echoBlockIdx`, `echoBlockEvent`: the shocks that produce an exceedance in a block.
+
+## Main results, with the hypotheses each one uses
+
+Standing hypotheses: `α > 0`, iid Pareto(`α`) innovations (`hZ`, `hind`, `hlaw`), `Z ≥ 0`
+(`hpos`), `L` measurable.
+* `hasSum_measureReal_of_count`: `∑ₖ μ(Sₖ) = ∫ #{k : z ∈ Sₖ} dμ` (general).
+* `measureReal_block_echoProcess_le`, `le_measureReal_block_echoProcess`:
+  `S - S² ≤ P(M_r > u) ≤ S` for `u ≥ 1` (no assumption on `L`).
+* `tendsto_clusterRatio_sub_echoProcess`: **the cluster ratio at every block length**,
+  `clusterRatio - (1 + E[min(L(Z), rₙ); Z > uₙ] / (rₙ uₙ^(-α))) / 2 → 0`, for `L ≥ 1`,
+  `uₙ → ∞`, `rₙ ≥ 1` eventually, `rₙ uₙ^(-α) → 0` (neither `L → ∞` nor `E L(Z) < ∞`).
+* `tendsto_clusterRatio_echoProcess_short`, `hasEscapeMass_echoProcess_short`: if eventually
+  `rₙ ≤ L(z)` for every `z > uₙ` (blocks shorter than every echo lag of an exceedance), the
+  cluster ratio tends to `1 = ϑ` and the escape mass is `0` (the latter with `L → ∞`, `rₙ → ∞`).
+* For the logarithmic lag `L(z) = ⌊log z⌋₊ + 1` and `n P(X_0 > uₙ) → τ > 0` (so that the echo
+  lag of an exceedance is `≈ log uₙ ≈ (1 / α) log n`, `logEchoProcess_levels`):
+  - `logEchoProcess_short_blocks`: `rₙ → ∞`, `rₙ = o(log n)`: ratio `→ 1`, escape mass `0`;
+  - `logEchoProcess_critical_blocks`: `rₙ / log n → c > 0`: ratio
+    `→ (1 + min(1 / (c α), 1)) / 2`, escape mass `(1 - min(1 / (c α), 1)) / 2`;
+  - `logEchoProcess_phase_transition`: the two regimes above together with the long-block regime
+    `log n = o(rₙ)`, `rₙ = o(n)` of `logEchoProcess_hasEscapeMass_of_tendsto` (ratio `→ 1/2`,
+    escape mass `1/2`).
+* `echoBlockMass_logLag_bounds`: `min(L(u), r) u^(-α) ≤ E[min(L(Z), r); Z > u] ≤
+  (min(L(u), r) + 2^α / (1 - e^(-α))) u^(-α)`.
+
+## Remarks
+
+* **Derivation of the critical value.** Given `Z > uₙ`, `log Z = log uₙ + E` with `E`
+  exponential of rate `α`, so `L(Z) / rₙ → log uₙ / rₙ → 1 / (c α)` in probability, and
+  `E[min(L(Z) / rₙ, 1) | Z > uₙ] → min(1 / (c α), 1)`. The cluster ratio is therefore `1` for
+  `c ≤ 1 / α` and `1/2 + 1 / (2 c α)` for `c > 1 / α`: the transition is continuous, with a kink
+  at `c = 1 / α`, and interpolates between `ϑ = 1` (short blocks) and `θ = 1/2` (long blocks).
+  (The guess `1 - min(1, 1 / (c α)) / 2` would have the regimes the wrong way round.)
+* The cluster ratio is the block estimator of the extremal index; the theorem shows that, without
+  anticlustering, the block estimator can converge to any value in `[θ, ϑ]` depending on the
+  block length. Only in the long-block regime does it estimate `θ`. In the short and critical
+  regimes the escape mass of `Dependence/ThetaGap.lean` differs from `ϑ - θ`; by
+  `HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex` the block condition `A(uₙ)` must
+  then fail along those block lengths.
+* `rₙ uₙ^(-α) → 0` (equivalently `rₙ = o(n)`) is automatic in the short and critical regimes.
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set
@@ -73,7 +130,8 @@ def echoBlockIdx (L : ℝ → ℕ) (r i : ℕ) : Set ℝ := {z | i < r ∨ (i + 
 
 theorem measurableSet_echoBlockIdx {L : ℝ → ℕ} (hLm : Measurable L) (r i : ℕ) :
     MeasurableSet (echoBlockIdx L r i) :=
-  (MeasurableSet.const _).union (hLm (Set.to_countable {k : ℕ | i + 1 ≤ k + r ∧ k ≤ i}).measurableSet)
+  (MeasurableSet.const _).union
+    (hLm (Set.to_countable {k : ℕ | i + 1 ≤ k + r ∧ k ≤ i}).measurableSet)
 
 /-- Each `z` is a source for `r + min (L z) r` of the indices. -/
 theorem tsum_indicator_echoBlockIdx (L : ℝ → ℕ) (r : ℕ) (z : ℝ) :
@@ -100,7 +158,8 @@ noncomputable def echoBlockMass (α : ℝ) (L : ℝ → ℕ) (u : ℝ) (r : ℕ)
   ∫ z in Ioi u, ((min (L z) r : ℕ) : ℝ) ∂(paretoMeasure 1 α)
 
 theorem integrable_min_lag {α : ℝ} (hα : 0 < α) {L : ℝ → ℕ} (hLm : Measurable L) (u : ℝ)
-    (r : ℕ) : Integrable (fun z => ((min (L z) r : ℕ) : ℝ)) ((paretoMeasure 1 α).restrict (Ioi u)) := by
+    (r : ℕ) :
+    Integrable (fun z => ((min (L z) r : ℕ) : ℝ)) ((paretoMeasure 1 α).restrict (Ioi u)) := by
   have := isProbabilityMeasure_paretoMeasure one_pos hα
   refine (integrable_const (r : ℝ)).mono' ?_ (ae_of_all _ fun z => ?_)
   · exact (measurable_from_nat.comp (hLm.min measurable_const)).aestronglyMeasurable
@@ -326,7 +385,8 @@ theorem tendsto_clusterRatio_echoProcess_of_tendsto (hL1 : ∀ z, 1 ≤ L z) {u 
 
 omit [IsProbabilityMeasure P] in
 include hα in
-/-- For blocks shorter than the echo lag of every exceedance, `E[min(L(Z), r); Z > u] = r u^(-α)`. -/
+/-- For blocks shorter than the echo lag of every exceedance,
+`E[min(L(Z), r); Z > u] = r u^(-α)`. -/
 theorem echoBlockMass_eq_of_le {u : ℝ} (hu : 1 ≤ u) {r : ℕ} (hle : ∀ z, u < z → r ≤ L z) :
     echoBlockMass α L u r = r * u ^ (-α) := by
   have := isProbabilityMeasure_paretoMeasure one_pos hα
@@ -551,7 +611,8 @@ theorem logEchoProcess_short_blocks {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
     simp only [Pi.div_apply]
     field_simp
   have hshort : ∀ᶠ n in atTop, ∀ z, u n < z → r n ≤ logLag z := by
-    filter_upwards [hq.eventually (gt_mem_nhds one_pos), hu.eventually_gt_atTop 1] with n hn hun z hz
+    filter_upwards [hq.eventually (gt_mem_nhds one_pos), hu.eventually_gt_atTop 1]
+      with n hn hun z hz
     have hl : 0 < Real.log (u n) := Real.log_pos hun
     rw [div_lt_one hl] at hn
     have h1 : r n ≤ ⌊Real.log (u n)⌋₊ := Nat.le_floor hn.le
@@ -654,6 +715,37 @@ theorem logEchoProcess_critical_blocks {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < 
   convert h.1 hlim using 1
   norm_num
   ring
+
+include hα hZ hind hlaw hpos in
+/-- **The block-length phase transition of the logarithmic echo process**, in the standard
+normalization `n P(X_0 > uₙ) → τ > 0`. The spectral tail process is `Θ_t = 1{t = 0}` (`ϑ = 1`)
+and the extremal index is `θ = 1/2` (`logEchoProcess_theta_lt_vartheta`), but the cluster ratio
+`P(M_{rₙ} > uₙ) / (rₙ P(X_0 > uₙ))` and the escape mass depend on the block length:
+* `rₙ → ∞`, `rₙ = o(log n)`: ratio `→ 1 = ϑ`, escape mass `0`;
+* `rₙ / log n → c > 0`: ratio `→ (1 + min(1 / (c α), 1)) / 2`, escape mass
+  `(1 - min(1 / (c α), 1)) / 2`;
+* `log n = o(rₙ)`, `rₙ = o(n)`: ratio `→ 1/2 = θ`, escape mass `1/2 = ϑ - θ`.
+The transition happens at the scale `rₙ ≍ log n` of the echo lag `(1 / α) log n` of an
+exceedance, and is continuous in `c`. -/
+theorem logEchoProcess_phase_transition {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
+    (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess logLag Z 0 ω}) atTop (𝓝 τ))
+    (r : ℕ → ℕ) :
+    (Tendsto r atTop atTop → Tendsto (fun n : ℕ => (r n : ℝ) / Real.log n) atTop (𝓝 0) →
+        Tendsto (clusterRatio P (echoProcess logLag Z) u r) atTop (𝓝 1) ∧
+          HasEscapeMass P (echoProcess logLag Z) u r 0) ∧
+      (∀ c : ℝ, 0 < c → Tendsto (fun n : ℕ => (r n : ℝ) / Real.log n) atTop (𝓝 c) →
+        Tendsto (clusterRatio P (echoProcess logLag Z) u r) atTop
+            (𝓝 ((1 + min (1 / (c * α)) 1) / 2)) ∧
+          HasEscapeMass P (echoProcess logLag Z) u r ((1 - min (1 / (c * α)) 1) / 2)) ∧
+      (Tendsto r atTop atTop → Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0) →
+        Tendsto (fun n : ℕ => Real.log n / r n) atTop (𝓝 0) →
+        Tendsto (clusterRatio P (echoProcess logLag Z) u r) atTop (𝓝 (1 / 2)) ∧
+          HasEscapeMass P (echoProcess logLag Z) u r (1 / 2)) :=
+  ⟨fun hr hrlog => logEchoProcess_short_blocks hα hZ hind hlaw hpos hτ0 hτ hr hrlog,
+    fun _ hc hrlog => logEchoProcess_critical_blocks hα hZ hind hlaw hpos hτ0 hτ hc hrlog,
+    fun hr hrn hlogr =>
+      let h := logEchoProcess_hasEscapeMass_of_tendsto hα hZ hind hlaw hpos hτ0 hτ hr hrn hlogr
+      ⟨h.1, h.2.1⟩⟩
 
 end LogEcho
 
