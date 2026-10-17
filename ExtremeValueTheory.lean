@@ -59,3 +59,4 @@ import ExtremeValueTheory.ForMathlib.MeasureTheory.Measure.Portmanteau
 import ExtremeValueTheory.Dependence.TailProcess
 import ExtremeValueTheory.Dependence.TimeChange
 import ExtremeValueTheory.GEV.MaxStable
+import ExtremeValueTheory.GEV.Family
