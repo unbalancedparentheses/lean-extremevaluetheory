@@ -127,6 +127,89 @@ theorem integral_rpow_div_one_add_sq {s : ℝ} (hs0 : 0 < s) (hs2 : s < 2) :
           (Gamma (s / 2) * Gamma (1 - s / 2)) / 2 by ring, h]
         field_simp
 
+/-- The Gamma-function representation `Γ(α + 1) u^(-α-1) = ∫₀^∞ x^α e^{-u x} dx` and Fubini:
+`Γ(α + 1) ∫₀^∞ g(u) u^(-α-1) du = ∫₀^∞ x^α (∫₀^∞ g(u) e^{-x u} du) dx`. -/
+theorem Gamma_mul_integral_mul_rpow {α : ℝ} (hα : -1 < α) {g : ℝ → ℝ} (hg : Measurable g)
+    (hint : IntegrableOn (fun u => g u * u ^ (-α - 1)) (Ioi 0)) :
+    Gamma (α + 1) * ∫ u in Ioi (0 : ℝ), g u * u ^ (-α - 1) =
+      ∫ x in Ioi (0 : ℝ), x ^ α * ∫ u in Ioi (0 : ℝ), g u * Real.exp (-(x * u)) := by
+  set F : ℝ → ℝ → ℝ := fun u x => g u * (x ^ α * Real.exp (-(u * x))) with hF
+  have hα1 : 0 < α + 1 := by linarith
+  have hgam : ∀ u, 0 < u → ∫ x in Ioi (0 : ℝ), x ^ α * Real.exp (-(u * x)) =
+      u ^ (-α - 1) * Gamma (α + 1) := by
+    intro u hu
+    have h := integral_rpow_mul_exp_neg_mul_Ioi hα1 hu
+    rw [show α + 1 - 1 = α by ring] at h
+    rw [h, one_div, inv_rpow hu.le, ← rpow_neg hu.le, neg_add']
+  have hsec : ∀ u, 0 < u → IntegrableOn (fun x => x ^ α * Real.exp (-(u * x))) (Ioi 0) := by
+    intro u hu
+    refine IntegrableOn.congr_fun (integrableOn_rpow_mul_exp_neg_mul_rpow hα one_pos hu)
+      (fun x _ => ?_) measurableSet_Ioi
+    simp only [rpow_one, neg_mul]
+  have hin : ∀ u, 0 < u → ∫ x in Ioi (0 : ℝ), F u x = g u * u ^ (-α - 1) * Gamma (α + 1) := by
+    intro u hu
+    simp only [hF]
+    rw [integral_const_mul, hgam u hu, mul_assoc]
+  have hint2 : Integrable (Function.uncurry F)
+      ((volume.restrict (Ioi (0 : ℝ))).prod (volume.restrict (Ioi (0 : ℝ)))) := by
+    refine (integrable_prod_iff (Measurable.aestronglyMeasurable (by simp only [hF]; fun_prop))).2
+      ⟨?_, ?_⟩
+    · rw [ae_restrict_iff' measurableSet_Ioi]
+      exact Eventually.of_forall fun u hu => (hsec u hu).const_mul (g u)
+    · refine IntegrableOn.congr_fun (hint.norm.mul_const (Gamma (α + 1)))
+        (fun u hu => ?_) measurableSet_Ioi
+      simp only [Function.uncurry_apply_pair, hF, norm_mul]
+      rw [integral_const_mul]
+      rw [setIntegral_congr_fun measurableSet_Ioi
+        (g := fun x => x ^ α * Real.exp (-(u * x))) fun x hx => ?_]
+      · rw [hgam u hu, Real.norm_of_nonneg (rpow_pos_of_pos hu _).le]; ring
+      · rw [Real.norm_of_nonneg (rpow_pos_of_pos hx _).le, Real.norm_of_nonneg (Real.exp_pos _).le]
+  calc Gamma (α + 1) * ∫ u in Ioi (0 : ℝ), g u * u ^ (-α - 1)
+      = ∫ u in Ioi (0 : ℝ), ∫ x in Ioi (0 : ℝ), F u x := by
+        rw [← integral_const_mul]
+        refine setIntegral_congr_fun measurableSet_Ioi fun u hu => ?_
+        rw [hin u hu]; ring
+    _ = ∫ x in Ioi (0 : ℝ), ∫ u in Ioi (0 : ℝ), F u x := integral_integral_swap hint2
+    _ = _ := by
+        refine setIntegral_congr_fun measurableSet_Ioi fun x _ => ?_
+        simp only [hF]
+        rw [← integral_const_mul]
+        congr 1; funext u; rw [mul_comm u x]; ring
+
+/-- `Γ(α + 1) ∫₀^∞ (1 - cos u) u^(-α-1) du = π / (2 sin (π α / 2))` for `0 < α < 2`. -/
+theorem Gamma_mul_integral_one_sub_cos_mul_rpow {α : ℝ} (hα0 : 0 < α) (hα2 : α < 2) :
+    Gamma (α + 1) * ∫ u in Ioi (0 : ℝ), (1 - cos u) * u ^ (-α - 1) =
+      π / (2 * sin (π * α / 2)) := by
+  have hint := integrableOn_one_sub_cos_mul_rpow hα0 hα2 1
+  simp only [one_mul] at hint
+  rw [Gamma_mul_integral_mul_rpow (by linarith) (by fun_prop) hint,
+    ← integral_rpow_div_one_add_sq hα0 hα2]
+  refine setIntegral_congr_fun measurableSet_Ioi fun x hx => ?_
+  have hx : (0 : ℝ) < x := hx
+  have hsub : ∫ u in Ioi (0 : ℝ), (1 - cos u) * Real.exp (-(x * u)) = 1 / x - x / (1 + x ^ 2) := by
+    rw [← integral_exp_neg_mul_Ioi hx, ← integral_cos_mul_exp_neg_mul hx, ← integral_sub
+      (integrableOn_exp_neg_mul_Ioi hx) ((integrableOn_exp_neg_mul_Ioi hx).mono' (by fun_prop)
+        (ae_of_all _ fun u => ?_))]
+    · congr 1; funext u; ring
+    · rw [norm_mul, Real.norm_of_nonneg (Real.exp_pos _).le]
+      exact mul_le_of_le_one_left (Real.exp_pos _).le (abs_cos_le_one u)
+  rw [hsub, show x ^ α = x ^ (α - 1) * x by rw [← rpow_add_one hx.ne']; ring_nf]
+  have : (1 + x ^ 2) ≠ 0 := by positivity
+  field_simp
+  ring
+
+/-- `Γ(α + 1) ∫₀^∞ sin u · u^(-α-1) du = π / (2 cos (π α / 2))` for `0 < α < 1`. -/
+theorem Gamma_mul_integral_sin_mul_rpow {α : ℝ} (hα0 : 0 < α) (hα1 : α < 1) :
+    Gamma (α + 1) * ∫ u in Ioi (0 : ℝ), sin u * u ^ (-α - 1) = π / (2 * cos (π * α / 2)) := by
+  have hint := integrableOn_sin_mul_rpow hα0 hα1 1
+  simp only [one_mul] at hint
+  rw [Gamma_mul_integral_mul_rpow (by linarith) (by fun_prop) hint,
+    show π * α / 2 = π * (α + 1) / 2 - π / 2 by ring, Real.cos_sub_pi_div_two,
+    ← integral_rpow_div_one_add_sq (by linarith : 0 < α + 1) (by linarith)]
+  refine setIntegral_congr_fun measurableSet_Ioi fun x hx => ?_
+  rw [integral_sin_mul_exp_neg_mul hx, add_sub_cancel_right]
+  ring
+
 end StableIntegral
 
 end ExtremeValueTheory
