@@ -265,6 +265,258 @@ theorem HasSpectralTailProcess.integral_tailProcess_shift (hα : 0 < α)
     simp only [Set.indicator_apply, mem_setOf_eq, B, BoundedContinuousFunction.compContinuous_apply,
       ContinuousMap.coe_mk, e3, e4]
 
+/-- **Time change, tail-process form, measure version** ([BS09, Theorem 3.1 (ii)]): the law of
+`(Y_{t-i})_{t ∈ S}` on `{|Y_{-i}| > ε}` equals `ε^(-α)` times the law of `(ε Y_t)_{t ∈ S}` on
+`{|Y_i| > 1/ε}`. -/
+theorem HasSpectralTailProcess.map_restrict_tailProcess_shift (hα : 0 < α)
+    (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
+    (hstat : HasShiftInvariantWindows P X) (h : HasSpectralTailProcess P X α Q Θ) (i : ℤ)
+    (S : Finset ℤ) {ε : ℝ} (hε : 0 < ε) :
+    (((paretoMeasure 1 α).prod Q).restrict {p | ε < |p.1 * Θ (-i) p.2|}).map
+        (fun p (t : S) => p.1 * Θ (t - i) p.2) =
+      (ε ^ (-α)).toNNReal • (((paretoMeasure 1 α).prod Q).restrict
+        {p | 1 / ε < |p.1 * Θ i p.2|}).map (fun p (t : S) => ε * (p.1 * Θ t p.2)) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have hm1 : Measurable fun p : ℝ × Ω' => fun t : S => p.1 * Θ (t - i) p.2 :=
+    measurable_pi_iff.2 fun t => measurable_fst.mul ((hΘm _).comp measurable_snd)
+  have hm2 : Measurable fun p : ℝ × Ω' => fun t : S => ε * (p.1 * Θ t p.2) :=
+    measurable_pi_iff.2 fun t => measurable_const.mul
+      (measurable_fst.mul ((hΘm _).comp measurable_snd))
+  have hA1 : MeasurableSet {p : ℝ × Ω' | ε < |p.1 * Θ (-i) p.2|} :=
+    measurableSet_lt measurable_const
+      (continuous_abs.measurable.comp (measurable_fst.mul ((hΘm _).comp measurable_snd)))
+  have hA2 : MeasurableSet {p : ℝ × Ω' | 1 / ε < |p.1 * Θ i p.2|} :=
+    measurableSet_lt measurable_const
+      (continuous_abs.measurable.comp (measurable_fst.mul ((hΘm _).comp measurable_snd)))
+  refine ext_of_forall_integral_eq_of_IsFiniteMeasure fun H => ?_
+  rw [integral_map hm1.aemeasurable H.continuous.aestronglyMeasurable,
+    integral_smul_nnreal_measure,
+    integral_map hm2.aemeasurable H.continuous.aestronglyMeasurable,
+    ← integral_indicator hA1, ← integral_indicator hA2, NNReal.smul_def, smul_eq_mul,
+    Real.coe_toNNReal _ (Real.rpow_nonneg hε.le _)]
+  exact h.integral_tailProcess_shift hα hX hΘm hstat i S H hε
+
 end TailForm
+
+/-! ### The time-change formula for the spectral tail process -/
+
+/-- `P(|R a| > c) = min(1, c^(-α) |a|^α)` for `R` Pareto(`α`) and `c > 0`. -/
+theorem paretoMeasure_lt_abs_mul {α : ℝ} (hα : 0 < α) {c : ℝ} (hc : 0 < c) (a : ℝ) :
+    paretoMeasure 1 α {r | c < |r * a|} = ENNReal.ofReal (min 1 (c ^ (-α) * |a| ^ α)) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have hIoi : paretoMeasure 1 α (Ioi 1)ᶜ = 0 := by rw [compl_Ioi]; exact paretoMeasure_one_Iic_one
+  rw [← measure_inter_conull hIoi]
+  rcases eq_or_ne a 0 with rfl | ha
+  · have : {r : ℝ | c < |r * 0|} ∩ Ioi 1 = ∅ := by ext r; simp [hc.le]
+    rw [this, measure_empty, abs_zero, Real.zero_rpow hα.ne', mul_zero, min_eq_right zero_le_one,
+      ENNReal.ofReal_zero]
+  · have ha' : 0 < |a| := abs_pos.2 ha
+    set m := max (c / |a|) 1
+    have hm : 1 ≤ m := le_max_right _ _
+    have : {r : ℝ | c < |r * a|} ∩ Ioi 1 = Ioi m := by
+      ext r
+      simp only [mem_inter_iff, mem_setOf_eq, mem_Ioi, m, max_lt_iff]
+      constructor
+      · rintro ⟨h1, h2⟩
+        rw [abs_mul, abs_of_pos (one_pos.trans h2)] at h1
+        exact ⟨(div_lt_iff₀ ha').2 h1, h2⟩
+      · rintro ⟨h1, h2⟩
+        rw [abs_mul, abs_of_pos (one_pos.trans h2)]
+        exact ⟨(div_lt_iff₀ ha').1 h1, h2⟩
+    rw [this, paretoMeasure_one_Ioi hα hm]
+    congr 1
+    have hdiv : (c / |a|) ^ (-α) = c ^ (-α) * |a| ^ α := by
+      rw [Real.div_rpow hc.le ha'.le, Real.rpow_neg ha'.le, div_inv_eq_mul]
+    rcases le_total (c / |a|) 1 with h1 | h1
+    · rw [show m = 1 from max_eq_right h1, Real.one_rpow, ← hdiv, min_eq_left]
+      exact Real.one_le_rpow_of_pos_of_le_one_of_nonpos (by positivity) h1 (by linarith)
+    · rw [show m = c / |a| from max_eq_left h1, ← hdiv, min_eq_right]
+      exact Real.rpow_le_one_of_one_le_of_nonpos h1 (by linarith)
+
+section SpectralForm
+
+variable {P : Measure Ω} [IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ}
+  {Q : Measure Ω'} [IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ}
+
+/-- The time-change identity at a fixed truncation level `ε`, after integrating out the Pareto
+variable. -/
+private lemma lintegral_timeChange_eps (hα : 0 < α) (hX : ∀ t, Measurable (X t))
+    (hΘm : ∀ t, Measurable (Θ t)) (hstat : HasShiftInvariantWindows P X)
+    (h : HasSpectralTailProcess P X α Q Θ) (i : ℤ) (S : Finset ℤ)
+    {g : (S → ℝ) → ℝ≥0∞} (hg : Measurable g) {ε : ℝ} (hε : 0 < ε) :
+    ∫⁻ ω', g (fun t : S => Θ (t - i) ω') *
+        ENNReal.ofReal (min 1 (ε ^ (-α) * |Θ (-i) ω'| ^ α)) ∂Q =
+      ∫⁻ ω', g (fun t : S => Θ t ω' / |Θ i ω'|) *
+        ENNReal.ofReal (min (ε ^ (-α)) (|Θ i ω'| ^ α)) ∂Q := by
+  classical
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  set S' := insert i S
+  have hiS' : i ∈ S' := Finset.mem_insert_self i S
+  have hSS' : ∀ t ∈ S, t ∈ S' := fun t ht => Finset.mem_insert_of_mem ht
+  have key := congrArg (fun m : Measure (S' → ℝ) =>
+    ∫⁻ y, g (fun t : S => readW y t / |readW y i|) ∂m)
+    (h.map_restrict_tailProcess_shift hα hX hΘm hstat i S' hε)
+  have hG : Measurable fun y : S' → ℝ => g (fun t : S => readW y t / |readW y i|) :=
+    hg.comp (measurable_pi_iff.2 fun t => (measurable_readW _ _).div (measurable_abs_readW _ _))
+  have hm1 : Measurable fun p : ℝ × Ω' => fun t : S' => p.1 * Θ (t - i) p.2 :=
+    measurable_pi_iff.2 fun t => measurable_fst.mul ((hΘm _).comp measurable_snd)
+  have hm2 : Measurable fun p : ℝ × Ω' => fun t : S' => ε * (p.1 * Θ t p.2) :=
+    measurable_pi_iff.2 fun t => measurable_const.mul
+      (measurable_fst.mul ((hΘm _).comp measurable_snd))
+  have hf : ∀ j : ℤ, Measurable fun p : ℝ × Ω' => |p.1 * Θ j p.2| := fun j =>
+    continuous_abs.measurable.comp (measurable_fst.mul ((hΘm _).comp measurable_snd))
+  have hA1 : MeasurableSet {p : ℝ × Ω' | ε < |p.1 * Θ (-i) p.2|} :=
+    measurableSet_lt measurable_const (hf _)
+  have hA2 : MeasurableSet {p : ℝ × Ω' | 1 / ε < |p.1 * Θ i p.2|} :=
+    measurableSet_lt measurable_const (hf _)
+  rw [lintegral_map hG hm1, lintegral_smul_measure, ENNReal.smul_def, smul_eq_mul, lintegral_map hG hm2,
+    ← lintegral_indicator hA1, ← lintegral_indicator hA2] at key
+  have h0 := h.ae_abs_eq_one hΘm (hX 0)
+  have hπ : ∀ᵐ p ∂((paretoMeasure 1 α).prod Q), 1 < p.1 ∧ |Θ 0 p.2| = 1 := by
+    filter_upwards [Measure.quasiMeasurePreserving_fst.ae ae_one_lt_paretoMeasure,
+      Measure.quasiMeasurePreserving_snd.ae h0] with p h1 h2 using ⟨h1, h2⟩
+  -- simplify the left side
+  have hL : ∫⁻ p, {p : ℝ × Ω' | ε < |p.1 * Θ (-i) p.2|}.indicator (fun p =>
+        g (fun t : S => readW (fun t : S' => p.1 * Θ (t - i) p.2) t /
+          |readW (fun t : S' => p.1 * Θ (t - i) p.2) i|)) p ∂((paretoMeasure 1 α).prod Q) =
+      ∫⁻ ω', g (fun t : S => Θ (t - i) ω') *
+        ENNReal.ofReal (min 1 (ε ^ (-α) * |Θ (-i) ω'| ^ α)) ∂Q := by
+    rw [lintegral_congr_ae (g := fun p => {p : ℝ × Ω' | ε < |p.1 * Θ (-i) p.2|}.indicator
+      (fun p => g (fun t : S => Θ (t - i) p.2)) p)]
+    · have hmL : Measurable fun p : ℝ × Ω' => {p : ℝ × Ω' | ε < |p.1 * Θ (-i) p.2|}.indicator
+          (fun p => g (fun t : S => Θ (t - i) p.2)) p :=
+        (hg.comp (measurable_pi_iff.2 fun t => (hΘm _).comp measurable_snd)).indicator hA1
+      rw [lintegral_prod_symm _ hmL.aemeasurable]
+      refine lintegral_congr fun ω' => ?_
+      have : (fun r : ℝ => {p : ℝ × Ω' | ε < |p.1 * Θ (-i) p.2|}.indicator
+          (fun p => g (fun t : S => Θ (t - i) p.2)) (r, ω')) =
+          {r : ℝ | ε < |r * Θ (-i) ω'|}.indicator (fun _ => g (fun t : S => Θ (t - i) ω')) := by
+        funext r; simp [Set.indicator_apply]
+      rw [this, lintegral_indicator_const (measurableSet_lt measurable_const
+        (show Measurable fun r : ℝ => |r * Θ (-i) ω'| from
+          continuous_abs.measurable.comp (measurable_id.mul_const _))),
+        paretoMeasure_lt_abs_mul hα hε]
+    · filter_upwards [hπ] with p hp
+      simp only [Set.indicator_apply, mem_setOf_eq]
+      split_ifs
+      · congr 1
+        funext t
+        rw [readW_mk (fun t => p.1 * Θ (t - i) p.2) (hSS' t t.2),
+          readW_mk (fun t => p.1 * Θ (t - i) p.2) hiS', sub_self, abs_mul, hp.2, mul_one,
+          abs_of_pos (one_pos.trans hp.1)]
+        field_simp [(one_pos.trans hp.1).ne']
+      · rfl
+  -- simplify the right side
+  have hR : ∫⁻ p, {p : ℝ × Ω' | 1 / ε < |p.1 * Θ i p.2|}.indicator (fun p =>
+        g (fun t : S => readW (fun t : S' => ε * (p.1 * Θ t p.2)) t /
+          |readW (fun t : S' => ε * (p.1 * Θ t p.2)) i|)) p ∂((paretoMeasure 1 α).prod Q) =
+      ∫⁻ ω', g (fun t : S => Θ t ω' / |Θ i ω'|) *
+        ENNReal.ofReal (min 1 ((1 / ε) ^ (-α) * |Θ i ω'| ^ α)) ∂Q := by
+    rw [lintegral_congr_ae (g := fun p => {p : ℝ × Ω' | 1 / ε < |p.1 * Θ i p.2|}.indicator
+      (fun p => g (fun t : S => Θ t p.2 / |Θ i p.2|)) p)]
+    · have hmR : Measurable fun p : ℝ × Ω' => {p : ℝ × Ω' | 1 / ε < |p.1 * Θ i p.2|}.indicator
+          (fun p => g (fun t : S => Θ t p.2 / |Θ i p.2|)) p :=
+        (hg.comp (measurable_pi_iff.2 fun t => ((hΘm _).comp measurable_snd).div
+          (continuous_abs.measurable.comp ((hΘm _).comp measurable_snd)))).indicator hA2
+      rw [lintegral_prod_symm _ hmR.aemeasurable]
+      refine lintegral_congr fun ω' => ?_
+      have : (fun r : ℝ => {p : ℝ × Ω' | 1 / ε < |p.1 * Θ i p.2|}.indicator
+          (fun p => g (fun t : S => Θ t p.2 / |Θ i p.2|)) (r, ω')) =
+          {r : ℝ | 1 / ε < |r * Θ i ω'|}.indicator
+            (fun _ => g (fun t : S => Θ t ω' / |Θ i ω'|)) := by
+        funext r; simp [Set.indicator_apply]
+      rw [this, lintegral_indicator_const (measurableSet_lt measurable_const
+        (show Measurable fun r : ℝ => |r * Θ i ω'| from
+          continuous_abs.measurable.comp (measurable_id.mul_const _))),
+        paretoMeasure_lt_abs_mul hα (by positivity)]
+    · filter_upwards [hπ] with p hp
+      simp only [Set.indicator_apply, mem_setOf_eq]
+      split_ifs with hpi
+      · congr 1
+        funext t
+        have hp1 : 0 < p.1 := one_pos.trans hp.1
+        have hΘi : Θ i p.2 ≠ 0 := by
+          intro h0; rw [h0, mul_zero, abs_zero] at hpi; exact absurd hpi (not_lt.2 (by positivity))
+        rw [readW_mk (fun t => ε * (p.1 * Θ t p.2)) (hSS' t t.2),
+          readW_mk (fun t => ε * (p.1 * Θ t p.2)) hiS', abs_mul, abs_mul, abs_of_pos hε,
+          abs_of_pos hp1]
+        field_simp
+      · rfl
+  rw [hL, hR] at key
+  rw [key, ← lintegral_const_mul]
+  · refine lintegral_congr fun ω' => ?_
+    rw [mul_comm, mul_assoc, ← ENNReal.ofReal_coe_nnreal, Real.coe_toNNReal _
+      (Real.rpow_nonneg hε.le _), ← ENNReal.ofReal_mul (le_min zero_le_one (by positivity))]
+    congr 2
+    have h1ε : (1 / ε) ^ (-α) = ε ^ α := by
+      rw [one_div, Real.inv_rpow hε.le, Real.rpow_neg hε.le, inv_inv]
+    rw [min_mul_of_nonneg _ _ (Real.rpow_nonneg hε.le _), one_mul, h1ε, mul_right_comm,
+      ← Real.rpow_add hε, add_neg_cancel, Real.rpow_zero, one_mul]
+  · exact (hg.comp (measurable_pi_iff.2 fun t => (hΘm _).div
+      (continuous_abs.measurable.comp (hΘm _)))).mul
+      (ENNReal.measurable_ofReal.comp (measurable_const.min
+        (measurable_const.mul ((continuous_abs.measurable.comp (hΘm _)).pow_const _))))
+
+/-- **The time-change formula** ([BS09, Theorem 3.1 (iii)], [KS20, Theorem 5.3.1]). Let `(X_t)`
+be a stationary (`HasShiftInvariantWindows`) time series with spectral tail process `(Θ_t)` and
+index `α > 0`. Then for every `i ∈ ℤ`, every finite window `S ⊆ ℤ` and every measurable
+`g ≥ 0` on `ℝ^S`,
+`E[g((Θ_{t-i})_{t ∈ S}) 1{Θ_{-i} ≠ 0}] = E[g((Θ_t / |Θ_i|)_{t ∈ S}) |Θ_i|^α]`.
+The right side vanishes on `{Θ_i = 0}` because of the factor `|Θ_i|^α`. The proof uses stationarity
+only through the window laws, regular variation of `P(|X_0| > x)` (through the spectral tail
+process), and `|Θ_0| = 1`. -/
+theorem HasSpectralTailProcess.lintegral_timeChange (hα : 0 < α) (hX : ∀ t, Measurable (X t))
+    (hΘm : ∀ t, Measurable (Θ t)) (hstat : HasShiftInvariantWindows P X)
+    (h : HasSpectralTailProcess P X α Q Θ) (i : ℤ) (S : Finset ℤ)
+    {g : (S → ℝ) → ℝ≥0∞} (hg : Measurable g) :
+    ∫⁻ ω', {ω' | Θ (-i) ω' ≠ 0}.indicator (fun ω' => g fun t : S => Θ (t - i) ω') ω' ∂Q =
+      ∫⁻ ω', g (fun t : S => Θ t ω' / |Θ i ω'|) * ENNReal.ofReal (|Θ i ω'| ^ α) ∂Q := by
+  set ε : ℕ → ℝ := fun n => 1 / ((n : ℝ) + 1)
+  have hε : ∀ n, 0 < ε n := fun n => by positivity
+  have hεα : ∀ n, ε n ^ (-α) = ((n : ℝ) + 1) ^ α := fun n => by
+    simp only [ε, one_div, Real.inv_rpow (by positivity : (0 : ℝ) ≤ (n : ℝ) + 1),
+      Real.rpow_neg (by positivity : (0 : ℝ) ≤ (n : ℝ) + 1), inv_inv]
+  have hmono : Monotone fun n : ℕ => ((n : ℝ) + 1) ^ α := fun m n hmn =>
+    Real.rpow_le_rpow (by positivity) (by exact_mod_cast Nat.add_le_add_right hmn 1) hα.le
+  have htop : Tendsto (fun n : ℕ => ((n : ℝ) + 1) ^ α) atTop atTop :=
+    (tendsto_rpow_atTop hα).comp (tendsto_atTop_add_const_right _ 1 tendsto_natCast_atTop_atTop)
+  have hLm : ∀ n, Measurable fun ω' => g (fun t : S => Θ (t - i) ω') *
+      ENNReal.ofReal (min 1 (ε n ^ (-α) * |Θ (-i) ω'| ^ α)) := fun n =>
+    (hg.comp (measurable_pi_iff.2 fun t => hΘm _)).mul (ENNReal.measurable_ofReal.comp
+      (measurable_const.min (measurable_const.mul
+        ((continuous_abs.measurable.comp (hΘm _)).pow_const _))))
+  have hRm : ∀ n, Measurable fun ω' => g (fun t : S => Θ t ω' / |Θ i ω'|) *
+      ENNReal.ofReal (min (ε n ^ (-α)) (|Θ i ω'| ^ α)) := fun n =>
+    (hg.comp (measurable_pi_iff.2 fun t => (hΘm _).div
+      (continuous_abs.measurable.comp (hΘm _)))).mul (ENNReal.measurable_ofReal.comp
+      (measurable_const.min ((continuous_abs.measurable.comp (hΘm _)).pow_const _)))
+  have hL := lintegral_tendsto_of_tendsto_of_monotone (μ := Q) (fun n => (hLm n).aemeasurable)
+    (F := fun ω' => {ω' | Θ (-i) ω' ≠ 0}.indicator (fun ω' => g fun t : S => Θ (t - i) ω') ω')
+    (ae_of_all _ fun ω' m n hmn => by
+      simp only [hεα]
+      gcongr)
+    (ae_of_all _ fun ω' => by
+      simp only [hεα]
+      by_cases h0 : Θ (-i) ω' = 0
+      · simp [h0, Real.zero_rpow hα.ne']
+      · have hpos : 0 < |Θ (-i) ω'| ^ α := Real.rpow_pos_of_pos (abs_pos.2 h0) _
+        rw [indicator_of_mem (show ω' ∈ {ω' | Θ (-i) ω' ≠ 0} from h0)]
+        refine tendsto_const_nhds.congr' ?_
+        filter_upwards [(htop.atTop_mul_const hpos).eventually_ge_atTop 1] with n hn
+        rw [min_eq_left hn, ENNReal.ofReal_one, mul_one])
+  have hR := lintegral_tendsto_of_tendsto_of_monotone (μ := Q) (fun n => (hRm n).aemeasurable)
+    (F := fun ω' => g (fun t : S => Θ t ω' / |Θ i ω'|) * ENNReal.ofReal (|Θ i ω'| ^ α))
+    (ae_of_all _ fun ω' m n hmn => by
+      simp only [hεα]
+      gcongr)
+    (ae_of_all _ fun ω' => by
+      simp only [hεα]
+      refine tendsto_const_nhds.congr' ?_
+      filter_upwards [htop.eventually_ge_atTop (|Θ i ω'| ^ α)] with n hn
+      rw [min_eq_right hn])
+  refine tendsto_nhds_unique hL (hR.congr fun n => ?_)
+  exact (lintegral_timeChange_eps hα hX hΘm hstat h i S hg (hε n)).symm
+
+end SpectralForm
 
 end ExtremeValueTheory
