@@ -484,6 +484,288 @@ theorem tendsto_mul_integral_clampSin_max (hRV : IsRegularlyVarying (absTail μ)
 
 end OneSided
 
+section TruncMean
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a : ℕ → ℝ}
+
+/-- Layer-cake: `E min (|X| / a, 1) = ∫₀¹ P(|X| > a u) du`. -/
+theorem integral_min_abs_div_one {a : ℝ} (ha : 0 < a) :
+    ∫ x, min (|x| / a) 1 ∂μ = ∫ u in Ioo 0 1, absTail μ (a * u) := by
+  have h := integral_setIntegral_Ioo_min (ν := μ.map (fun x => |x|)) (g := fun _ => (1 : ℝ))
+    measurable_const (B := 1) (fun _ => by norm_num) ha 1
+  simp only [setIntegral_const, Real.volume_real_Ioo, smul_eq_mul, mul_one, one_mul,
+    sub_zero] at h
+  rw [integral_map continuous_abs.measurable.aemeasurable (by fun_prop)] at h
+  have e1 : ∀ x : ℝ, max (min (|x| / a) 1) 0 = min (|x| / a) 1 := fun x =>
+    max_eq_left (le_min (by positivity) zero_le_one)
+  simp only [e1] at h
+  rw [h]
+  refine setIntegral_congr_fun measurableSet_Ioo fun u _ => ?_
+  rw [measureReal_def, Measure.map_apply continuous_abs.measurable measurableSet_Ioi, absTail,
+    measureReal_def]
+  rfl
+
+/-- `|E[X 1{|X| ≤ a}]| / a ≤ E min (|X| / a, 1)`. -/
+theorem abs_inv_mul_truncMean_le {a : ℝ} (ha : 0 < a) :
+    |a⁻¹ * ∫ x in Icc (-a) a, x ∂μ| ≤ ∫ x, min (|x| / a) 1 ∂μ := by
+  rw [abs_mul, abs_inv, abs_of_pos ha, ← integral_indicator measurableSet_Icc,
+    inv_mul_le_iff₀ ha, ← integral_const_mul]
+  refine (abs_integral_le_integral_abs).trans (integral_mono ?_ ?_ fun x => ?_)
+  · exact (continuous_id.integrableOn_Icc.integrable_indicator measurableSet_Icc).abs
+  · refine Integrable.of_bound (by fun_prop) a (ae_of_all _ fun x => ?_)
+    rw [Real.norm_eq_abs, abs_of_nonneg (mul_nonneg ha.le (le_min (by positivity) zero_le_one))]
+    exact mul_le_of_le_one_right ha.le (min_le_right _ _)
+  · by_cases h : x ∈ Icc (-a) a
+    · rw [indicator_of_mem h, min_eq_left ((div_le_one ha).2 (abs_le.2 ⟨h.1, h.2⟩))]
+      exact le_of_eq (by field_simp)
+    · rw [indicator_of_notMem h, abs_zero]
+      exact mul_nonneg ha.le (le_min (by positivity) zero_le_one)
+
+/-- **The centering is negligible at second order**: `n (t E[X 1{|X| ≤ aₙ}] / aₙ)² → 0` when
+`P(|X| > x)` is regularly varying with index `-1` and `n P(|X| > aₙ) → 1`. Via Potter bounds,
+`E min (|X| / aₙ, 1) = O(n^(-3/4))`. -/
+theorem tendsto_mul_sq_truncMean (hRV : IsRegularlyVarying (absTail μ) (-1))
+    (ha : ∀ n, 0 < a n) (hna : Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n)) atTop (𝓝 1))
+    (t : ℝ) :
+    Tendsto (fun n : ℕ => (n : ℝ) * ((a n)⁻¹ * t * ∫ x in Icc (-a n) (a n), x ∂μ) ^ 2) atTop
+      (𝓝 0) := by
+  have hG : Antitone (absTail μ) := absTail_antitone
+  have hpos : ∀ x, 0 < absTail μ x := IsRegularlyVarying.pos_of_antitone hG hRV.1
+  have hatop := tendsto_atTop_of_tendsto_mul hG hpos hna
+  obtain ⟨K, hK0, hK⟩ := eventually_mul_comp_mul_le one_pos hG hRV (fun _ => absTail_le_one _)
+    hpos hatop hna (δ := 1 / 4) (by norm_num)
+  set C : ℝ := ∫ u in Ioo (0 : ℝ) 1, u ^ (-(15 : ℝ) / 16) with hC
+  have hCint : IntegrableOn (fun u : ℝ => u ^ (-(15 : ℝ) / 16)) (Ioo 0 1) :=
+    ((intervalIntegrable_iff_integrableOn_Ioc_of_le zero_le_one).1
+      (intervalIntegral.intervalIntegrable_rpow' (by norm_num))).mono_set Ioo_subset_Ioc_self
+  set D : ℝ := (2 * K) ^ ((3 : ℝ) / 4) * C with hD
+  have hbound : ∀ᶠ n : ℕ in atTop,
+      ∫ u in Ioo 0 1, absTail μ (a n * u) ≤ D * (n : ℝ) ^ (-(3 : ℝ) / 4) := by
+    filter_upwards [hK, eventually_ge_atTop 1] with n hn hn1
+    have hn0 : (0 : ℝ) < n := by exact_mod_cast hn1
+    have hGint : IntegrableOn (fun u => absTail μ (a n * u)) (Ioo 0 1) :=
+      Measure.integrableOn_of_bounded (M := 1) measure_Ioo_lt_top.ne
+        ((hG.measurable.comp (measurable_const.mul measurable_id)).aestronglyMeasurable)
+        (ae_of_all _ fun u => by
+          rw [Real.norm_eq_abs, abs_of_pos (hpos _)]; exact absTail_le_one _)
+    have hpt : ∀ u ∈ Ioo (0 : ℝ) 1, absTail μ (a n * u) ≤
+        (2 * K) ^ ((3 : ℝ) / 4) * (n : ℝ) ^ (-(3 : ℝ) / 4) * u ^ (-(15 : ℝ) / 16) := by
+      intro u hu
+      have hu0 := hu.1
+      have hG' := hpos (a n * u)
+      have h1 : (n : ℝ) * absTail μ (a n * u) ≤ 2 * K * u ^ (-1 - 1 / 4 : ℝ) := by
+        have := hn u hu0
+        have hle : u ^ (-1 + 1 / 4 : ℝ) ≤ u ^ (-1 - 1 / 4 : ℝ) :=
+          rpow_le_rpow_of_exponent_ge hu0 hu.2.le (by norm_num)
+        have := mul_le_mul_of_nonneg_left hle hK0
+        linarith
+      have h2 : absTail μ (a n * u) ≤ 2 * K * u ^ (-1 - 1 / 4 : ℝ) * (n : ℝ)⁻¹ := by
+        rw [le_mul_inv_iff₀ hn0, mul_comm]; exact h1
+      have h3 : absTail μ (a n * u) ≤ absTail μ (a n * u) ^ ((3 : ℝ) / 4) := by
+        conv_lhs => rw [← rpow_one (absTail μ (a n * u))]
+        exact rpow_le_rpow_of_exponent_ge hG' (absTail_le_one _) (by norm_num)
+      have h4 := rpow_le_rpow hG'.le h2 (by norm_num : (0 : ℝ) ≤ 3 / 4)
+      have hu' : 0 ≤ u ^ (-1 - 1 / 4 : ℝ) := rpow_nonneg hu0.le _
+      have h2K : 0 ≤ 2 * K := by linarith
+      have e : (2 * K * u ^ (-1 - 1 / 4 : ℝ) * (n : ℝ)⁻¹) ^ ((3 : ℝ) / 4) =
+          (2 * K) ^ ((3 : ℝ) / 4) * (n : ℝ) ^ (-(3 : ℝ) / 4) * u ^ (-(15 : ℝ) / 16) := by
+        have ex1 : (-1 - 1 / 4 : ℝ) * (3 / 4) = -(15 : ℝ) / 16 := by norm_num
+        have ex2 : -((3 : ℝ) / 4) = -(3 : ℝ) / 4 := by ring
+        rw [mul_rpow (mul_nonneg h2K hu') (inv_nonneg.2 hn0.le), mul_rpow h2K hu',
+          ← rpow_mul hu0.le, inv_rpow hn0.le, ← rpow_neg hn0.le, ex1, ex2]
+        ring
+      rw [e] at h4
+      linarith
+    calc ∫ u in Ioo 0 1, absTail μ (a n * u)
+        ≤ ∫ u in Ioo 0 1, (2 * K) ^ ((3 : ℝ) / 4) * (n : ℝ) ^ (-(3 : ℝ) / 4) *
+            u ^ (-(15 : ℝ) / 16) :=
+          setIntegral_mono_on hGint (hCint.const_mul _) measurableSet_Ioo hpt
+      _ = D * (n : ℝ) ^ (-(3 : ℝ) / 4) := by rw [integral_const_mul, hD]; ring
+  have hlim : Tendsto (fun n : ℕ => t ^ 2 * D ^ 2 * (n : ℝ) ^ (-(1 / 2 : ℝ))) atTop (𝓝 0) := by
+    have := ((tendsto_rpow_neg_atTop (by norm_num : (0 : ℝ) < 1 / 2)).comp
+      tendsto_natCast_atTop_atTop).const_mul (t ^ 2 * D ^ 2)
+    rw [mul_zero] at this
+    exact this
+  refine squeeze_zero' (Eventually.of_forall fun n => by positivity) ?_ hlim
+  filter_upwards [hbound, eventually_ge_atTop 1] with n hn hn1
+  have hn0 : (0 : ℝ) < n := by exact_mod_cast hn1
+  set y := (a n)⁻¹ * ∫ x in Icc (-a n) (a n), x ∂μ with hy
+  have hy1 : |y| ≤ D * (n : ℝ) ^ (-(3 : ℝ) / 4) :=
+    ((abs_inv_mul_truncMean_le (ha n)).trans_eq (integral_min_abs_div_one (ha n))).trans hn
+  have hy2 : y ^ 2 ≤ (D * (n : ℝ) ^ (-(3 : ℝ) / 4)) ^ 2 := by
+    have := mul_self_le_mul_self (abs_nonneg y) hy1
+    rw [abs_mul_abs_self] at this
+    nlinarith
+  have e : (n : ℝ) * ((n : ℝ) ^ (-(3 : ℝ) / 4)) ^ 2 = (n : ℝ) ^ (-(1 / 2 : ℝ)) := by
+    rw [show (-(1 / 2 : ℝ)) = 1 + (-(3 : ℝ) / 4 + -(3 : ℝ) / 4) by norm_num, rpow_add hn0,
+      rpow_add hn0, rpow_one, sq]
+  calc (n : ℝ) * ((a n)⁻¹ * t * ∫ x in Icc (-a n) (a n), x ∂μ) ^ 2 = t ^ 2 * ((n : ℝ) * y ^ 2) := by
+        rw [hy]; ring
+    _ ≤ t ^ 2 * ((n : ℝ) * (D * (n : ℝ) ^ (-(3 : ℝ) / 4)) ^ 2) :=
+        mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left hy2 hn0.le) (sq_nonneg t)
+    _ = t ^ 2 * D ^ 2 * ((n : ℝ) * ((n : ℝ) ^ (-(3 : ℝ) / 4)) ^ 2) := by ring
+    _ = _ := by rw [e]
+
+end TruncMean
+
+section AssemblyOne
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {p : ℝ} {a : ℕ → ℝ}
+
+/-- `sin (t v) - t v 1{|v| ≤ 1} = Q_t(v) + t (1{v > 1} - 1{v < -1})`, with `v = x / a`. -/
+theorem sin_sub_indicator_eq (t : ℝ) {a : ℝ} (ha : 0 < a) (x : ℝ) :
+    sin (a⁻¹ * t * x) - (Icc (-a) a).indicator (fun x => a⁻¹ * t * x) x =
+      clampSin t (x / a) + t * ((Ioi a).indicator 1 x - (Iio (-a)).indicator 1 x) := by
+  have hxa : a⁻¹ * t * x = t * (x / a) := by rw [div_eq_inv_mul]; ring
+  unfold clampSin
+  by_cases h1 : x ∈ Icc (-a) a
+  · have hn1 : x ∉ Ioi a := fun h => not_lt.2 h1.2 h
+    have hn2 : x ∉ Iio (-a) := fun h => not_lt.2 h1.1 h
+    rw [indicator_of_mem h1, indicator_of_notMem hn1, indicator_of_notMem hn2]
+    have hc : max (min (x / a) 1) (-1) = x / a := by
+      have h3 : x / a ≤ 1 := (div_le_one ha).2 h1.2
+      have h4 : -1 ≤ x / a := by rw [le_div_iff₀ ha]; linarith [h1.1]
+      rw [min_eq_left h3, max_eq_left h4]
+    rw [hc, hxa]; ring
+  · rw [indicator_of_notMem h1]
+    simp only [mem_Icc, not_and_or, not_le] at h1
+    rcases h1 with h | h
+    · have hm : x ∈ Iio (-a) := h
+      have hn : x ∉ Ioi a := fun h' => by simp only [mem_Ioi] at h'; linarith
+      rw [indicator_of_mem hm, indicator_of_notMem hn, Pi.one_apply]
+      have hxa' : x / a < -1 := by rw [div_lt_iff₀ ha]; linarith
+      rw [min_eq_left (by linarith), max_eq_right hxa'.le, hxa]; ring
+    · have hm : x ∈ Ioi a := h
+      have hn : x ∉ Iio (-a) := fun h' => by simp only [mem_Iio] at h'; linarith
+      rw [indicator_of_mem hm, indicator_of_notMem hn, Pi.one_apply]
+      have hxa' : 1 < x / a := by rw [lt_div_iff₀ ha]; linarith
+      rw [min_eq_right hxa'.le, max_eq_left (by norm_num), hxa]; ring
+
+/-- Decomposition of the centered sine part into the two one-sided parts and the boundary
+terms `t (P(X > a) - P(X < -a))`. -/
+theorem integral_sin_sub_truncMean (t : ℝ) {a : ℝ} (ha : 0 < a) :
+    ∫ x, sin (a⁻¹ * t * x) ∂μ - a⁻¹ * t * ∫ x in Icc (-a) a, x ∂μ =
+      (∫ x, clampSin t (max (x / a) 0) ∂μ -
+        ∫ x, clampSin t (max (x / a) 0) ∂(μ.map fun x => -x)) +
+      t * (μ.real (Ioi a) - (μ.map fun x => -x).real (Ioi a)) := by
+  have hs : Integrable (fun x => sin (a⁻¹ * t * x)) μ := Integrable.of_bound (by fun_prop) 1
+    (ae_of_all _ fun x => (Real.norm_eq_abs _).trans_le (abs_sin_le_one _))
+  have hI : Integrable ((Icc (-a) a).indicator (fun x => a⁻¹ * t * x)) μ :=
+    ((by fun_prop : Continuous fun x : ℝ => a⁻¹ * t * x).integrableOn_Icc).integrable_indicator
+      measurableSet_Icc
+  have hQ : ∀ f : ℝ → ℝ, Continuous f → Integrable (fun x => clampSin t (f x)) μ := fun f hf =>
+    Integrable.of_bound ((continuous_clampSin t).comp hf).aestronglyMeasurable (1 + |t|)
+      (ae_of_all _ fun x => (Real.norm_eq_abs _).trans_le (abs_clampSin_le t _))
+  have hind : ∀ s : Set ℝ, MeasurableSet s → Integrable (s.indicator (1 : ℝ → ℝ)) μ :=
+    fun s hs => (integrable_const (1 : ℝ)).indicator hs
+  have h1 : a⁻¹ * t * ∫ x in Icc (-a) a, x ∂μ =
+      ∫ x, (Icc (-a) a).indicator (fun x => a⁻¹ * t * x) x ∂μ := by
+    rw [integral_indicator measurableSet_Icc, integral_const_mul]
+  rw [h1, ← integral_sub hs hI]
+  simp_rw [sin_sub_indicator_eq t ha]
+  have hb : Integrable (fun x => t * ((Ioi a).indicator 1 x - (Iio (-a)).indicator 1 x)) μ :=
+    ((hind _ measurableSet_Ioi).sub (hind _ measurableSet_Iio)).const_mul t
+  rw [integral_add (hQ (fun x => x / a) (by fun_prop)) hb, integral_const_mul, integral_sub (hind _ measurableSet_Ioi) (hind _ measurableSet_Iio),
+    integral_indicator_one measurableSet_Ioi, integral_indicator_one measurableSet_Iio,
+    measureReal_Ioi_map_neg,
+    integral_odd_eq_sub (continuous_clampSin t) (clampSin_neg t) a (hQ _ (by fun_prop))
+      (hQ _ (by fun_prop))]
+
+/-- `n (φ(t / aₙ) - 1 - i t mₙ / aₙ) → ψ(t)` for `α = 1`, `mₙ = E[X 1{|X| ≤ aₙ}]`. -/
+theorem tendsto_mul_charFun_sub_one_sub_truncMean (hRV : IsRegularlyVarying (absTail μ) (-1))
+    (hp : Tendsto (fun x => μ.real (Ioi x) / absTail μ x) atTop (𝓝 p)) (ha : ∀ n, 0 < a n)
+    (hna : Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n)) atTop (𝓝 1)) (t : ℝ) :
+    Tendsto (fun n : ℕ => (n : ℂ) * (charFun μ ((a n)⁻¹ * t) - 1 -
+        (((a n)⁻¹ * t * ∫ x in Icc (-a n) (a n), x ∂μ : ℝ) : ℂ) * Complex.I)) atTop
+      (𝓝 (stableExponentOne (stableConst 1) (2 * p - 1) stableLogConst t)) := by
+  have := isProbabilityMeasure_map_neg (μ := μ)
+  have hRV' : IsRegularlyVarying (absTail (μ.map fun x => -x)) (-1) := by
+    rw [absTail_map_neg]; exact hRV
+  have hna' : Tendsto (fun n : ℕ => (n : ℝ) * absTail (μ.map fun x => -x) (a n)) atTop
+      (𝓝 1) := by
+    rw [absTail_map_neg]; exact hna
+  have hp' := tendsto_measureReal_Ioi_map_neg_div hRV hp
+  have hpos := tendsto_mul_integral_clampSin_max hRV ha hna hp t
+  have hneg := tendsto_mul_integral_clampSin_max hRV' ha hna' hp' t
+  have hbpos : Tendsto (fun n : ℕ => (n : ℝ) * μ.real (Ioi (a n))) atTop (𝓝 p) := by
+    simpa using tendsto_mul_measureReal_Ioi hRV hna hp one_pos
+  have hbneg : Tendsto (fun n : ℕ => (n : ℝ) * (μ.map fun x => -x).real (Ioi (a n))) atTop
+      (𝓝 (1 - p)) := by
+    simpa using tendsto_mul_measureReal_Ioi hRV' hna' hp' one_pos
+  have hreal := (tendsto_mul_integral_one_sub_cos one_pos one_lt_two hRV ha hna t).neg
+  have key : ∀ n : ℕ, (n : ℂ) * (charFun μ ((a n)⁻¹ * t) - 1 -
+        (((a n)⁻¹ * t * ∫ x in Icc (-a n) (a n), x ∂μ : ℝ) : ℂ) * Complex.I) =
+      (((-((n : ℝ) * ∫ x, (1 - cos ((a n)⁻¹ * t * x)) ∂μ)) : ℝ) : ℂ) +
+      ((((n : ℝ) * ∫ x, clampSin t (max (x / a n) 0) ∂μ -
+          (n : ℝ) * ∫ x, clampSin t (max (x / a n) 0) ∂(μ.map fun x => -x)) +
+        t * ((n : ℝ) * μ.real (Ioi (a n)) -
+          (n : ℝ) * (μ.map fun x => -x).real (Ioi (a n))) : ℝ) : ℂ) * Complex.I := by
+    intro n
+    have h := integral_sin_sub_truncMean (μ := μ) t (ha n)
+    have e : (n : ℝ) * ∫ x, clampSin t (max (x / a n) 0) ∂μ -
+          (n : ℝ) * ∫ x, clampSin t (max (x / a n) 0) ∂(μ.map fun x => -x) +
+        t * ((n : ℝ) * μ.real (Ioi (a n)) - (n : ℝ) * (μ.map fun x => -x).real (Ioi (a n))) =
+        (n : ℝ) * (∫ x, sin ((a n)⁻¹ * t * x) ∂μ -
+          (a n)⁻¹ * t * ∫ x in Icc (-a n) (a n), x ∂μ) := by
+      rw [h]; ring
+    rw [e, integral_one_sub_cos_eq, charFun_eq_integral_cos_add_sin]
+    push_cast; ring
+  simp_rw [key]
+  have h := tendsto_ofReal_add_mul_I hreal ((hpos.sub hneg).add ((hbpos.sub hbneg).const_mul t))
+  have hval : stableExponentOne (stableConst 1) (2 * p - 1) stableLogConst t =
+      ((-(stableConst 1 * |t| ^ (1 : ℝ)) : ℝ) : ℂ) +
+      ((p * (t * (cosLogConst - log |t|)) - (1 - p) * (t * (cosLogConst - log |t|)) +
+        t * (p - (1 - p)) : ℝ) : ℂ) * Complex.I := by
+    rw [stableExponentOne, stableLogConst, rpow_one]
+    push_cast; ring
+  rw [hval]
+  exact h
+
+end AssemblyOne
+
 end GCLT
+
+open GCLT StableIntegral Subexp
+
+/-- **Generalized central limit theorem, `α = 1`** ([Feller, Vol. II, §XVII.5, Theorem 2],
+[GK, §35, Theorem 2], [EKM, Theorem 2.2.8]). Let `μ` be a probability law on `ℝ` whose two-sided
+tail `G(x) = P(|X| > x)` is regularly varying with index `-1`, with tail balance
+`P(X > x) / G(x) → p` (hence `P(X < -x) / G(x) → q = 1 - p`), and let `aₙ > 0` with
+`n G(aₙ) → 1`. Then with the truncated centering `bₙ = n E[X 1{|X| ≤ aₙ}]`, the laws of
+`(X₁ + ⋯ + Xₙ - bₙ) / aₙ` converge weakly to a `1`-stable law `ν` with characteristic function
+`exp (-C₁ |t| + i (p - q) (c t - t log |t|))`, where `C₁ = stableConst 1` (classically `π / 2`)
+and `c = stableLogConst = 1 + ∫₀¹ (cos v - 1) / v dv + ∫₁^∞ cos v / v dv` (classically
+`1 - γ`). The limit exists by Lévy's continuity theorem. -/
+theorem tendsto_map_convPow_sub_of_isRegularlyVarying_one {μ : Measure ℝ}
+    [IsProbabilityMeasure μ] {p : ℝ} (hRV : IsRegularlyVarying (absTail μ) (-1))
+    (hp : Tendsto (fun x => μ.real (Ioi x) / absTail μ x) atTop (𝓝 p))
+    {a : ℕ → ℝ} (ha : ∀ n, 0 < a n)
+    (hna : Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n)) atTop (𝓝 1)) :
+    ∃ ν : ProbabilityMeasure ℝ,
+      HasStableOneCharFun (stableConst 1) (2 * p - 1) stableLogConst (ν : Measure ℝ) ∧
+      Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+        ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - n * ∫ y in Icc (-a n) (a n), y ∂μ)),
+          inferInstance⟩) atTop (𝓝 ν) := by
+  set m : ℕ → ℝ := fun n => ∫ y in Icc (-a n) (a n), y ∂μ with hm
+  have hf : ContinuousAt (fun t => Complex.exp
+      (stableExponentOne (stableConst 1) (2 * p - 1) stableLogConst t)) 0 :=
+    (continuous_stableExponentOne _ _ _).continuousAt.cexp
+  have hchar : ∀ t, Tendsto (fun n : ℕ =>
+      charFun ((convPow μ n).map (fun x => (a n)⁻¹ * (x - n * m n))) t) atTop
+      (𝓝 (Complex.exp (stableExponentOne (stableConst 1) (2 * p - 1) stableLogConst t))) := by
+    intro t
+    have h := tendsto_mul_exp_pow (tendsto_mul_charFun_sub_one_sub_truncMean hRV hp ha hna t)
+      (tendsto_mul_sq_truncMean hRV ha hna t)
+    refine h.congr fun n => ?_
+    have e : (fun x => (a n)⁻¹ * (x - n * m n)) =
+        fun x => (a n)⁻¹ * x + (-((a n)⁻¹ * (n * m n))) := by
+      funext x; ring
+    rw [e, charFun_map_mul_add, charFun_convPow, mul_pow, ← Complex.exp_nat_mul]
+    congr 2
+    push_cast; ring
+  obtain ⟨ν, hν, hlim⟩ := exists_tendsto_of_tendsto_charFun
+    (μ := fun n => ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - n * m n)), inferInstance⟩) hf
+    (fun t => by simpa using hchar t)
+  exact ⟨ν, ⟨inferInstance, fun t => congrFun hν t⟩, hlim⟩
 
 end ExtremeValueTheory
