@@ -10,7 +10,22 @@ import Mathlib.Analysis.Complex.CauchyIntegral
 /-!
 # The trigamma function at `1` and the second derivative of `Γ`
 
-test
+We compute the values of the trigamma function `ψ' = (log Γ)''` at `1/2` and `1` without any
+series: differentiating Euler's reflection formula `ψ(1 - s) = ψ(s) + π cot(π s)` at `s = 1/2`
+gives `ψ'(1/2) = π² / 2`, and differentiating the duplication formula
+`ψ(2s) = (ψ(s) + ψ(s + 1/2)) / 2 + log 2` at `s = 1/2` gives `2 ψ'(1) = (ψ'(1/2) + ψ'(1)) / 2`,
+whence `ψ'(1) = π² / 6` (equivalently `ζ(2) = π² / 6`). Since `ψ' = Γ''/Γ - (Γ'/Γ)²` and
+`Γ'(1) = -γ`, this yields `Γ''(1) = γ² + π² / 6`. Differentiating the Mellin representation of
+`Γ'` once more under the integral sign identifies `Γ''(1)` with `∫_0^∞ (log t)² e^{-t} dt`.
+
+## Main results
+
+* `Complex.analyticAt_digamma_of_re_pos`: `ψ` is analytic on the right half-plane.
+* `Complex.deriv_digamma_one_half`: `ψ'(1/2) = π² / 2`.
+* `Complex.deriv_digamma_one`: `ψ'(1) = π² / 6`.
+* `Complex.deriv_deriv_Gamma_one`: `Γ''(1) = γ² + π² / 6`.
+* `Complex.hasDerivAt_deriv_Gamma_of_re_pos`: `Γ''(s) = ∫_0^∞ t^(s-1) (log t)² e^{-t} dt`.
+* `Real.integral_log_sq_mul_exp_neg`: `∫_0^∞ (log t)² e^{-t} dt = γ² + π² / 6`.
 -/
 
 open Filter Topology Set MeasureTheory
@@ -18,6 +33,7 @@ open scoped Real
 
 namespace Complex
 
+/-- `Γ` is complex-differentiable on the right half-plane. -/
 lemma differentiableOn_Gamma_re_pos : DifferentiableOn ℂ Gamma {s : ℂ | 0 < s.re} := by
   intro s hs
   refine (differentiableAt_Gamma s fun m h ↦ ?_).differentiableWithinAt
@@ -26,23 +42,24 @@ lemma differentiableOn_Gamma_re_pos : DifferentiableOn ℂ Gamma {s : ℂ | 0 < 
   have : (0 : ℝ) ≤ m := m.cast_nonneg
   linarith
 
+/-- `Γ` is analytic at every point of the right half-plane. -/
 lemma analyticAt_Gamma_of_re_pos {s : ℂ} (hs : 0 < s.re) : AnalyticAt ℂ Gamma s :=
   differentiableOn_Gamma_re_pos.analyticAt
     ((isOpen_lt continuous_const continuous_re).mem_nhds hs)
 
-lemma Gamma_ne_zero_of_re_pos' {s : ℂ} (hs : 0 < s.re) : Gamma s ≠ 0 :=
-  Gamma_ne_zero_of_re_pos hs
-
+/-- The digamma function is analytic at every point of the right half-plane. -/
 lemma analyticAt_digamma_of_re_pos {s : ℂ} (hs : 0 < s.re) : AnalyticAt ℂ digamma s := by
   have : digamma = fun z ↦ deriv Gamma z / Gamma z := funext fun z ↦ logDeriv_apply _ _
   rw [this]
   exact (analyticAt_Gamma_of_re_pos hs).deriv.div (analyticAt_Gamma_of_re_pos hs)
     (Gamma_ne_zero_of_re_pos hs)
 
+/-- The digamma function is differentiable on the right half-plane. -/
 lemma hasDerivAt_digamma_of_re_pos {s : ℂ} (hs : 0 < s.re) :
     HasDerivAt digamma (deriv digamma s) s :=
   (analyticAt_digamma_of_re_pos hs).differentiableAt.hasDerivAt
 
+/-- The derivative of `s ↦ π cot(π s)` at `1/2` is `-π²`. -/
 lemma hasDerivAt_pi_mul_cot_one_half :
     HasDerivAt (fun s : ℂ ↦ π * cot (π * s)) (-π ^ 2) (1 / 2) := by
   have hl : HasDerivAt (fun s : ℂ ↦ (π : ℂ) * s) π (1 / 2) := by
@@ -130,4 +147,51 @@ theorem deriv_deriv_Gamma_one :
   rw [deriv_digamma_one] at this
   linear_combination this
 
+/-- The derivative of `Γ'` on the right half-plane, as a Mellin transform:
+`Γ''(s) = ∫_0^∞ t^(s-1) (log t)² e^{-t} dt` for `0 < re s`. -/
+theorem hasDerivAt_deriv_Gamma_of_re_pos {s : ℂ} (hs : 0 < s.re) :
+    HasDerivAt (deriv Gamma)
+      (∫ t : ℝ in Ioi 0, (t : ℂ) ^ (s - 1) * ((Real.log t ^ 2 * Real.exp (-t) : ℝ) : ℂ)) s := by
+  set f : ℝ → ℂ := fun t ↦ ((Real.exp (-t) : ℝ) : ℂ) with hf
+  have hf_top : f =O[atTop] (· ^ (-(s.re + 2))) := by
+    rw [← Asymptotics.isBigO_norm_left]
+    simp_rw [hf, norm_real, Asymptotics.isBigO_norm_left]
+    simpa only [neg_one_mul] using (isLittleO_exp_neg_mul_rpow_atTop zero_lt_one _).isBigO
+  have hf_bot : f =O[𝓝[>] 0] (· ^ (-(0 : ℝ))) := by
+    simp_rw [neg_zero, Real.rpow_zero]
+    refine Asymptotics.isBigO_const_of_tendsto (?_ : Tendsto _ _ (𝓝 (1 : ℂ))) one_ne_zero
+    rw [(by simp : (1 : ℂ) = Real.exp (-0))]
+    exact (continuous_ofReal.comp (Real.continuous_exp.comp continuous_neg)).continuousWithinAt
+  set f₁ : ℝ → ℂ := fun t ↦ Real.log t • f t with hf₁
+  have hf₁c : LocallyIntegrableOn f₁ (Ioi 0) := by
+    refine ContinuousOn.locallyIntegrableOn (fun t (ht : 0 < t) ↦ ?_) measurableSet_Ioi
+    exact ((Real.continuousAt_log ht.ne').smul (by fun_prop)).continuousWithinAt
+  have hd := (mellin_hasDerivAt_of_isBigO_rpow hf₁c
+    (isBigO_rpow_top_log_smul (by linarith : s.re + 1 < s.re + 2) hf_top)
+    (by linarith : s.re < s.re + 1)
+    (isBigO_rpow_zero_log_smul (by linarith : (0 : ℝ) < s.re / 2) hf_bot)
+    (by linarith : s.re / 2 < s.re)).2
+  have heq : deriv Gamma =ᶠ[𝓝 s] mellin f₁ := by
+    filter_upwards [(isOpen_lt continuous_const continuous_re).mem_nhds hs] with z hz
+    rw [(hasDerivAt_Gamma_of_re_pos hz).deriv, mellin]
+    refine setIntegral_congr_fun measurableSet_Ioi fun t _ ↦ ?_
+    simp [hf₁, hf, real_smul]
+  refine (hd.congr_of_eventuallyEq heq).congr_deriv ?_
+  rw [mellin]
+  refine setIntegral_congr_fun measurableSet_Ioi fun t _ ↦ ?_
+  simp only [hf₁, hf, real_smul, ofReal_mul, ofReal_pow]
+  ring
+
 end Complex
+
+namespace Real
+
+/-- `Γ''(1) = ∫_0^∞ (log t)² e^{-t} dt = γ² + π² / 6`. -/
+theorem integral_log_sq_mul_exp_neg :
+    ∫ t in Ioi 0, log t ^ 2 * exp (-t) = eulerMascheroniConstant ^ 2 + π ^ 2 / 6 := by
+  have h := (Complex.hasDerivAt_deriv_Gamma_of_re_pos (s := 1) (by norm_num)).deriv
+  rw [Complex.deriv_deriv_Gamma_one] at h
+  simp only [sub_self, Complex.cpow_zero, one_mul] at h
+  exact_mod_cast h.symm
+
+end Real
