@@ -70,3 +70,37 @@ We follow Smith, \emph{Maximum likelihood estimation in a class of nonregular ca
   \leanok
   Uniform strong law over the compact set via the envelope; identifiability and the Kullback--Leibler inequality.
 \end{proof}
+
+\begin{theorem}[Extended-real Wald consistency and the joint GPD MLE for all shapes]
+  \label{thm:wald-ereal}
+  \uses{thm:wald}
+  \lean{ExtremeValueTheory.ae_tendsto_of_wald_ereal, ExtremeValueTheory.ae_tendsto_of_wald_ereal_of_continuous, ExtremeValueTheory.exists_integral_toReal_max_lt,
+    ExtremeValueTheory.gpdLogDensityE, ExtremeValueTheory.gpdLogLikE, ExtremeValueTheory.continuousOn_gpdLogDensityE, ExtremeValueTheory.gpd_params_eq_of_gpdMeasure_eq',
+    ExtremeValueTheory.integral_log_lt_of_density, ExtremeValueTheory.exists_isMaxOn_gpdLogLikE, ExtremeValueTheory.ae_tendsto_gpdMLE'}
+  \leanok
+  Wald's theorem holds for criteria with values in $[-\infty, \infty)$, upper semicontinuous in the parameter, with an
+  integrable upper envelope [Wald 1949]. With the log-likelihood set to $-\infty$ off the support, this gives strong
+  consistency of the joint MLE of $(\xi, \sigma)$ on every compact subset of $\{\xi > -1, \sigma > 0\}$, including $\xi \le 0$ where
+  the support depends on the parameters [Smith 1985].
+\end{theorem}
+\begin{proof}
+  \leanok
+  On the support, $\log g = -\log\sigma - (1+\xi)(x/\sigma)\,\lambda(\xi x/\sigma)$ with $\lambda(t) = \log(1+t)/t$ continuous on $(-1,\infty)$, which
+  gives continuity across $\xi = 0$; a Kullback--Leibler inequality allowing different supports gives identifiability.
+\end{proof}
+
+\begin{theorem}[Asymptotic normality of the scale MLE]
+  \label{thm:mle-scale-normality}
+  \uses{thm:mle-scale}
+  \lean{ExtremeValueTheory.tendstoInDistribution_gpdScaleMLE}
+  \leanok
+  For known $\xi > -1/2$, $\xi \ne 0$, a measurable sequence of likelihood roots satisfies
+  $\sqrt n(\hat\sigma_n - \sigma_0) \Rightarrow N(0, \sigma_0^2(1 + 2\xi))$, the inverse Fisher information [Smith 1985]. The joint
+  $(\xi, \sigma)$ normality and GEV likelihood theory are not formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  An exact identity $F_n(\sigma_0) = (\hat\sigma_n - \sigma_0) R_n$ for the score, the CLT for the score (variance needs
+  $\xi > -1/2$), $R_n \to 1/(\sigma_0(1+2\xi))$ in probability, and Slutsky; for $\xi < 0$ a tail estimate controls
+  $\max_i 1/(\sigma_0 + \xi X_i) = o_P(\sqrt n)$.
+\end{proof}

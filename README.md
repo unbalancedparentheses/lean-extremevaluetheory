@@ -96,8 +96,10 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   the tail-probability estimator is asymptotically normal too. GEV return levels.
 - **Likelihood inference** (`Statistics/{Density,GPDLikelihood,GEVLikelihood,Wald}.lean`): GPD and GEV densities,
   the exponential-case MLE (consistent, asymptotically normal), the known-shape scale MLE (unique,
-  strongly consistent), an abstract Wald consistency theorem, and strong consistency of the joint GPD MLE
-  on compact sets with `ξ > 0`.
+  strongly consistent), an abstract Wald consistency theorem (also in an extended-real form for
+  parameter-dependent supports), strong consistency of the joint GPD MLE on compact sets with `ξ > −1`
+  (`ae_tendsto_gpdMLE'`), and asymptotic normality of the scale MLE for `ξ > −1/2`
+  (`tendstoInDistribution_gpdScaleMLE`).
 - **Upper order statistics and records**: the Poisson limit law of the `k`-th largest
   (`tendsto_measureReal_orderStat_le`), the joint law of the two largest, and records: `P(record at
   k) = 1/k`, `E N_n = H_n`, `N_n / log n → 1` in probability (`tendstoInMeasure_recordCount_div_log`).
