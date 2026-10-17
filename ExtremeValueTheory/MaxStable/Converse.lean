@@ -49,7 +49,7 @@ and angle are needed: only the values of `∫ g_y dP` are used.
 ## Main results
 
 * `tendsto_lintegral_min_div_log`: `E[min X (a M)] / log M → v` when `P(X > r) = 1 - exp (-v / r)`.
-* `IsSimpleMaxStable.ae_pos`: a simple max-stable vector has positive coordinates a.s.
+* `IsSimpleMaxStable.ae_forall_pos`: a simple max-stable vector has positive coordinates a.s.
 * `IsSimpleMaxStable.exists_angularMeasure`: a finite measure `P` on `[0, 1]^ι`, concentrated on
   `{max_i θ i = 1}`, with `∫ max_i θ i / y i dP(θ) = V(y)`.
 * `IsSimpleMaxStable.exists_hasSpectralMeasure`: **the spectral representation** — a finite
@@ -396,7 +396,7 @@ variable {μ : Measure (ι → ℝ)}
 
 omit [Nonempty ι] in
 /-- A simple max-stable vector has positive coordinates almost surely. -/
-lemma ae_pos (h : IsSimpleMaxStable μ) : ∀ᵐ x ∂μ, ∀ i, 0 < x i := by
+lemma ae_forall_pos (h : IsSimpleMaxStable μ) : ∀ᵐ x ∂μ, ∀ i, 0 < x i := by
   refine ae_all_iff.2 fun i ↦ ?_
   have hle (n : ℕ) : μ {x | ¬ 0 < x i} ≤ ENNReal.ofReal (Real.exp (-((n : ℝ) + 1))) := by
     have hpos : (0 : ℝ) < ((n : ℝ) + 1)⁻¹ := by positivity
@@ -429,7 +429,7 @@ lemma maxStableExponent_pos (h : IsSimpleMaxStable μ) {y : ι → ℝ} (hy : �
 
 lemma maxRatio_nonneg_ae (h : IsSimpleMaxStable μ) {y : ι → ℝ} (hy : ∀ i, 0 < y i) :
     0 ≤ᵐ[μ] maxRatio y :=
-  h.ae_pos.mono fun _ hx ↦ maxRatio_nonneg hy hx
+  h.ae_forall_pos.mono fun _ hx ↦ maxRatio_nonneg hy hx
 
 /-- **The total mass of the truncated angular measure** grows like `V(1, …, 1) log M`. -/
 theorem tendsto_truncAngular_univ (h : IsSimpleMaxStable μ) :
@@ -458,7 +458,7 @@ theorem tendsto_lintegral_spectralTest (h : IsSimpleMaxStable μ) {y : ι → �
       ENNReal.ofReal (min (maxRatio y x) (a₀ * M)) ≤
         ENNReal.ofReal (min (maxRatio 1 x) M) * spectralTest y (angular x) ∧
       ENNReal.ofReal (min (maxRatio 1 x) M) * spectralTest y (angular x) ≤
-        ENNReal.ofReal (min (maxRatio y x) (a₁ * M)) := fun M hM ↦ h.ae_pos.mono fun x hx ↦ by
+        ENNReal.ofReal (min (maxRatio y x) (a₁ * M)) := fun M hM ↦ h.ae_forall_pos.mono fun x hx ↦ by
     have hR := maxRatio_one_pos hx
     have hq := maxRatio_div_mem hy hx
     have hq0 : 0 ≤ maxRatio y x / maxRatio 1 x := div_nonneg (maxRatio_nonneg hy hx) hR.le
@@ -554,7 +554,7 @@ theorem exists_angularMeasure (h : IsSimpleMaxStable μ) :
       refine tendsto_const_nhds.congr fun n ↦ ?_
       rw [coe_scaledTruncAngular_testAgainstNN, lintegral_truncAngular μ
         sphereDefect.continuous.measurable.coe_nnreal_ennreal]
-      rw [lintegral_congr_ae (g := fun _ ↦ 0) (h.ae_pos.mono fun x hx ↦ by
+      rw [lintegral_congr_ae (g := fun _ ↦ 0) (h.ae_forall_pos.mono fun x hx ↦ by
         simp [sphereDefect_angular hx]), lintegral_zero, ENNReal.toReal_zero, zero_div]
     have h0 := eq_of_clusterPt_testAgainstNN hP _ hL
     have h0' : ∫⁻ θ, (sphereDefect θ : ℝ≥0∞) ∂(P : Measure (ι → unitInterval)) = 0 := by

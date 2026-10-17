@@ -56,9 +56,9 @@ weight of the first coordinate is `t`; some references use the mirrored conventi
   `IsSimpleMaxStable.measureReal_Iic_const`: `P(max_i Y_i ≤ z) = exp (-1 / z) ^ θ`;
   `IsSimpleMaxStable.extremalCoefficient_eq_two_mul_pickands`: `θ = 2 A(1 / 2)`.
 
-The convexity of `A` for an arbitrary bivariate simple max-stable law (not given by a spectral
-measure) would follow from the converse spectral representation, which is not formalized (see
-`MaxStable/Basic.lean`).
+Every simple max-stable law has a normalized spectral measure (the converse spectral
+representation, `MaxStable/Converse.lean`), so the convexity of `A` holds for every bivariate
+simple max-stable law: `IsSimpleMaxStable.convexOn_pickandsDependence` there.
 
 ## References
 

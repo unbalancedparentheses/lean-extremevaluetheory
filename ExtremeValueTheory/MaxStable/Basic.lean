@@ -38,8 +38,8 @@ the real case by monotonicity of `F` in `t` and continuity of `t ↦ F(y) ^ (1 /
 
 The converse of the spectral representation of `MaxStable/Spectral.lean` (every simple
 max-stable law has the form `F(y) = exp (-∫ max_i w i / y i dH(w))`, [dHF, Theorem 6.1.9 "⇒"])
-is not formalized: it needs the construction of the exponent measure on `[0, ∞]^ι \ {0}` from
-`V`, by vague limits of `n P(Y / n ∈ ·)`.
+is `IsSimpleMaxStable.exists_hasSpectralMeasure` in `MaxStable/Converse.lean`; the spectral
+measure is built there as a weak cluster point of truncated angular measures.
 
 ## References
 
