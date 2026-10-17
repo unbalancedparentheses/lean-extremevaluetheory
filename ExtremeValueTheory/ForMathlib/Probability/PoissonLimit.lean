@@ -3,7 +3,7 @@ Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import Mathlib.Probability.Distributions.Poisson.Basic
+import ExtremeValueTheory.ForMathlib.Probability.PoissonRandomMeasure
 import Mathlib.Probability.Independence.Integration
 import Mathlib.Analysis.SpecialFunctions.Complex.LogBounds
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
@@ -203,5 +203,162 @@ lemma tendsto_prod_range_one_add {w : ℕ → ℕ → ℂ} {s : ℂ} {M : ℝ}
   have : ‖w n i‖ = 1 := by
     rw [show w n i = -1 by linear_combination h0, norm_neg, norm_one]
   linarith [hn i (Finset.mem_range.1 hi)]
+
+/-! ### Poisson limits of counts -/
+
+section Counts
+
+/-- A bound used for `1 + ∑ j, p j (exp (i t j) - 1)`. -/
+lemma norm_sum_mul_cexp_sub_one_le {k : ℕ} (p : Fin k → ℝ) (hp : ∀ j, 0 ≤ p j) (t : Fin k → ℝ) :
+    ‖∑ j, (p j : ℂ) * (cexp (t j * I) - 1)‖ ≤ 2 * ∑ j, p j := by
+  rw [Finset.mul_sum]
+  refine (norm_sum_le _ _).trans (Finset.sum_le_sum fun j _ ↦ ?_)
+  rw [norm_mul, Complex.norm_real, Real.norm_of_nonneg (hp j), mul_comm 2]
+  refine mul_le_mul_of_nonneg_left ?_ (hp j)
+  refine (norm_sub_le (cexp (t j * I)) 1).trans ?_
+  rw [Complex.norm_exp_ofReal_mul_I, norm_one]
+  norm_num
+
+/-- The characteristic function of the Poisson distribution, written as an integral over `ℕ`. -/
+lemma integral_cexp_poissonMeasure (r : ℝ≥0) (t : ℝ) :
+    ∫ x : ℕ, cexp (t * x * I) ∂(poissonMeasure r) = cexp (r * (cexp (t * I) - 1)) := by
+  rw [← charFun_map_cast_poissonMeasure, charFun_apply_real,
+    integral_map (by fun_prop) (by fun_prop)]
+  simp
+
+/-- The joint characteristic function of independent Poisson random variables. -/
+lemma integral_cexp_pi_poissonMeasure {k : ℕ} (r : Fin k → ℝ≥0) (t : Fin k → ℝ) :
+    ∫ y : Fin k → ℕ, cexp ((∑ j, t j * y j : ℝ) * I) ∂(Measure.pi fun j ↦ poissonMeasure (r j)) =
+      cexp (∑ j, ((r j : ℝ) : ℂ) * (cexp (t j * I) - 1)) := by
+  have h (y : Fin k → ℕ) : cexp ((∑ j, t j * y j : ℝ) * I) = ∏ j, cexp (t j * y j * I) := by
+    rw [← Complex.exp_sum]
+    congr 1
+    push_cast
+    rw [Finset.sum_mul]
+  simp_rw [h]
+  rw [integral_fintype_prod_eq_prod (f := fun j (x : ℕ) ↦ cexp (t j * x * I)), Complex.exp_sum]
+  simp_rw [integral_cexp_poissonMeasure]
+
+/-- The point probabilities of independent Poisson random variables. -/
+lemma measureReal_pi_poissonMeasure_singleton {k : ℕ} (r : Fin k → ℝ≥0) (m : Fin k → ℕ) :
+    (Measure.pi fun j ↦ poissonMeasure (r j)).real {m} =
+      ∏ j, Real.exp (-r j) * r j ^ m j / (m j).factorial := by
+  rw [← Set.univ_pi_singleton, measureReal_def, Measure.pi_pi, ENNReal.toReal_prod]
+  exact Finset.prod_congr rfl fun j _ ↦ poissonMeasure_real_singleton _ _
+
+variable {Ω E : Type*} {mΩ : MeasurableSpace Ω} [MeasurableSpace E]
+
+open scoped Classical
+
+/-- The number of points among `Z 0, …, Z (n - 1)` in a set is measurable. -/
+lemma measurable_card_filter_range {Z : ℕ → Ω → E} (hZ : ∀ i, Measurable (Z i)) {B : Set E}
+    (hB : MeasurableSet B) (n : ℕ) :
+    Measurable fun ω ↦ #{i ∈ range n | Z i ω ∈ B} := by
+  simp_rw [Finset.card_filter]
+  exact Finset.measurable_sum _ fun i _ ↦
+    Measurable.ite (hZ i hB) measurable_const measurable_const
+
+/-- The joint characteristic function of the counts of independent points in disjoint sets:
+`E exp (i ∑ j, t j #{i < n | Z i ∈ B j}) = ∏_{i < n} (1 + ∑ j, P(Z i ∈ B j) (exp (i t j) - 1))`. -/
+lemma integral_cexp_card_filter_range {P : Measure Ω} [IsProbabilityMeasure P] {Z : ℕ → Ω → E}
+    (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P) {k : ℕ} {B : Fin k → Set E}
+    (hB : ∀ j, MeasurableSet (B j)) (hd : Pairwise (Function.onFun Disjoint B)) (t : Fin k → ℝ)
+    (n : ℕ) :
+    ∫ ω, cexp ((∑ j, t j * #{i ∈ range n | Z i ω ∈ B j} : ℝ) * I) ∂P =
+      ∏ i ∈ range n, (1 + ∑ j, (P.real (Z i ⁻¹' B j) : ℂ) * (cexp (t j * I) - 1)) := by
+  set g : E → ℂ := fun z ↦ cexp ((∑ j, t j * (B j).indicator (1 : E → ℝ) z : ℝ) * I) with hg
+  have hgm : Measurable g := by
+    refine Complex.measurable_exp.comp (Measurable.mul_const ?_ _)
+    exact Complex.measurable_ofReal.comp (Finset.measurable_sum _ fun j _ ↦
+      (measurable_one.indicator (hB j)).const_mul _)
+  have key (ω : Ω) : cexp ((∑ j, t j * #{i ∈ range n | Z i ω ∈ B j} : ℝ) * I) =
+      ∏ i : Fin n, g (Z i ω) := by
+    rw [hg, ← Complex.exp_sum, ← Finset.sum_mul, Fin.sum_univ_eq_sum_range
+      (fun i ↦ ((∑ j, t j * (B j).indicator (1 : E → ℝ) (Z i ω) : ℝ) : ℂ))]
+    congr 1
+    push_cast
+    congr 1
+    rw [Finset.sum_comm]
+    refine Finset.sum_congr rfl fun j _ ↦ ?_
+    rw [Finset.card_filter, Nat.cast_sum, Finset.mul_sum]
+    refine Finset.sum_congr rfl fun i _ ↦ ?_
+    by_cases hi : Z i ω ∈ B j <;> simp [hi]
+  simp_rw [key]
+  rw [(hind.precomp Fin.val_injective).integral_fun_prod_comp (f := fun _ ↦ g)
+    (fun i ↦ (hZ i).aemeasurable) (fun i ↦ hgm.aestronglyMeasurable),
+    ← Fin.prod_univ_eq_prod_range (fun i ↦ (1 + ∑ j, (P.real (Z i ⁻¹' B j) : ℂ) *
+      (cexp (t j * I) - 1)))]
+  refine Finset.prod_congr rfl fun i _ ↦ ?_
+  simp only [hg]
+  simp_rw [cexp_sum_indicator_eq hd]
+  rw [integral_add (integrable_const _), integral_finsetSum]
+  · simp only [integral_const, probReal_univ, one_smul]
+    congr 1
+    refine Finset.sum_congr rfl fun j _ ↦ ?_
+    rw [show (fun ω ↦ (B j).indicator (fun _ ↦ cexp (t j * I) - 1) (Z i ω)) =
+      (Z i ⁻¹' B j).indicator (fun _ ↦ cexp (t j * I) - 1) from funext fun ω ↦ rfl,
+      integral_indicator_const _ (hZ i (hB j))]
+    simp [Complex.real_smul]
+  · intro j _
+    exact ((integrable_const _).indicator (hB j)).comp_measurable (hZ i)
+  · exact integrable_finsetSum _ fun j _ ↦
+      ((integrable_const _).indicator (hB j)).comp_measurable (hZ i)
+
+/-- **Poisson limit theorem for counts of triangular arrays of independent points.** For each
+`n`, let `Z n 0, Z n 1, …` be independent random elements under `P n`, and let `B 0, …, B (k-1)`
+be disjoint measurable sets. If `∑_{i < n} P(Z n i ∈ B j) → r j` for every `j` and
+`max_{i < n} P(Z n i ∈ B j) → 0`, then the counts `#{i < n | Z n i ∈ B j}` converge jointly in law
+to independent Poisson random variables with means `r j`. -/
+theorem tendsto_measureReal_card_filter_range_eq {P : ℕ → Measure Ω}
+    [∀ n, IsProbabilityMeasure (P n)] {Z : ℕ → ℕ → Ω → E} (hZ : ∀ n i, Measurable (Z n i))
+    (hind : ∀ n, iIndepFun (Z n) (P n)) {k : ℕ} {B : Fin k → Set E}
+    (hB : ∀ j, MeasurableSet (B j)) (hd : Pairwise (Function.onFun Disjoint B))
+    {r : Fin k → ℝ≥0}
+    (hsum : ∀ j, Tendsto (fun n ↦ ∑ i ∈ range n, (P n).real (Z n i ⁻¹' B j)) atTop (𝓝 (r j)))
+    (hmax : ∀ ε > 0, ∀ᶠ n in atTop, ∀ i < n, ∀ j, (P n).real (Z n i ⁻¹' B j) ≤ ε)
+    (m : Fin k → ℕ) :
+    Tendsto (fun n ↦ (P n).real {ω | ∀ j, #{i ∈ range n | Z n i ω ∈ B j} = m j}) atTop
+      (𝓝 (∏ j, Real.exp (-r j) * r j ^ m j / (m j).factorial)) := by
+  have hY (n : ℕ) : Measurable fun ω (j : Fin k) ↦ #{i ∈ range n | Z n i ω ∈ B j} :=
+    Measurable.of_eval fun j ↦ measurable_card_filter_range (hZ n) (hB j) n
+  have h := tendsto_measureReal_eq_of_tendsto_integral_cexp (l := atTop) (Q := P) (Q' :=
+    Measure.pi fun j ↦ poissonMeasure (r j)) hY measurable_id (fun t ↦ ?_) m
+  · rw [← measureReal_pi_poissonMeasure_singleton]
+    convert h using 3 with n
+    all_goals ext; simp [funext_iff]
+  -- convergence of the characteristic functions
+  simp only [id]
+  simp_rw [integral_cexp_card_filter_range (hZ _) (hind _) hB hd t,
+    integral_cexp_pi_poissonMeasure]
+  set p : ℕ → ℕ → Fin k → ℝ := fun n i j ↦ (P n).real (Z n i ⁻¹' B j) with hp
+  have hp0 (n i j) : 0 ≤ p n i j := measureReal_nonneg
+  refine tendsto_prod_range_one_add (M := 2 * ∑ j, ((r j : ℝ) + 1)) ?_ ?_ ?_
+  · simp_rw [Finset.sum_comm (s := range _), ← Finset.sum_mul]
+    refine tendsto_finsetSum _ fun j _ ↦ Tendsto.mul_const _ ?_
+    have := (Complex.continuous_ofReal.tendsto _).comp (hsum j)
+    simpa [Function.comp_def] using this
+  · have hev : ∀ᶠ n in atTop, ∀ j, ∑ i ∈ range n, p n i j ≤ r j + 1 := by
+      rw [eventually_all]
+      exact fun j ↦ (hsum j).eventually (eventually_le_nhds (by linarith))
+    filter_upwards [hev] with n hn
+    calc ∑ i ∈ range n, ‖∑ j, (p n i j : ℂ) * (cexp (t j * I) - 1)‖
+        ≤ ∑ i ∈ range n, 2 * ∑ j, p n i j :=
+          Finset.sum_le_sum fun i _ ↦ norm_sum_mul_cexp_sub_one_le _ (hp0 n i) t
+      _ = 2 * ∑ j, ∑ i ∈ range n, p n i j := by rw [← Finset.mul_sum, Finset.sum_comm]
+      _ ≤ 2 * ∑ j, ((r j : ℝ) + 1) := by gcongr with j; exact hn j
+  · intro ε hε
+    filter_upwards [hmax (ε / (2 * (k + 1))) (by positivity)] with n hn i hi
+    calc ‖∑ j, (p n i j : ℂ) * (cexp (t j * I) - 1)‖ ≤ 2 * ∑ j, p n i j :=
+          norm_sum_mul_cexp_sub_one_le _ (hp0 n i) t
+      _ ≤ 2 * ∑ _j : Fin k, ε / (2 * (k + 1)) := by gcongr with j; exact hn i hi j
+      _ = ε * (k / (k + 1)) := by
+          rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+          field_simp
+      _ ≤ ε := by
+          refine mul_le_of_le_one_right hε.le ?_
+          rw [div_le_one (by positivity)]
+          linarith
+
+end Counts
 
 end ProbabilityTheory
