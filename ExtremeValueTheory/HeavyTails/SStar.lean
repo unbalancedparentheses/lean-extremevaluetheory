@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.HeavyTails.Ruin
-import ExtremeValueTheory.HeavyTails.StretchedExponential
+import ExtremeValueTheory.HeavyTails.Examples
 import Mathlib.Analysis.LConvolution
 import Mathlib.MeasureTheory.Integral.IntegralEqImproper
 
@@ -12,8 +12,7 @@ import Mathlib.MeasureTheory.Integral.IntegralEqImproper
 # The class `𝒮*` of Klüppelberg
 
 A probability measure `μ` on `[0, ∞)` with positive tail `F̄` and finite mean
-`m = ∫₀^∞ F̄(y) dy` belongs to **`𝒮*`** ([Klüppelberg 1988]; [EKM, Definition A3.? / §1.4];
-[FKZ, §3.6]) if
+`m = ∫₀^∞ F̄(y) dy` belongs to **`𝒮*`** ([Klüppelberg 1988]; [FKZ, Ch. 3]) if
 
   `∫₀ˣ F̄(x - y) F̄(y) dy / F̄(x) → 2 m`  as `x → ∞`.
 
@@ -30,11 +29,12 @@ varying tails with index `-α`, `α > 1`, are in `𝒮*`.
 ## Main results
 
 * `IsSStar.tendsto_tail_sub_div`: `𝒮*` laws are long-tailed.
-* `IsSStar.isSubexponential`: `𝒮* ⊆ 𝒮` ([Klüppelberg 1988, Theorem 3.2(a)]; [FKZ, Theorem 3.27]).
+* `IsSStar.isSubexponential`: `𝒮* ⊆ 𝒮` ([Klüppelberg 1988, Theorem 3.2]; [FKZ, Ch. 3]).
 * `IsSStar.isSubexponential_integratedTail`: `F ∈ 𝒮* ⇒ F_I ∈ 𝒮` ([Klüppelberg 1988,
-  Theorem 3.2(b)]; [FKZ, Theorem 3.28]; [EKM, Theorem A3.? / Example 1.4.?]).
+  Theorem 3.2]; [FKZ, Ch. 3]).
 * `IsSStar.tendsto_pkRuin_div`: Embrechts–Veraverbeke for `𝒮*` claims.
 * `IsSStar.of_isRegularlyVarying`: `F̄ ∈ RV_{-α}`, `α > 1` ⇒ `F ∈ 𝒮*`.
+* `isSStar_paretoMeasure`: Pareto laws with index `r > 1` are in `𝒮*`.
 
 ## References
 
@@ -72,7 +72,7 @@ open Subexp
 noncomputable def tailConvInt (μ : Measure ℝ) (x : ℝ) : ℝ :=
   ∫ y in (0 : ℝ)..x, tail μ (x - y) * tail μ y
 
-/-- **The class `𝒮*`** ([Klüppelberg 1988]; [FKZ, §3.6]): `μ` is concentrated on `[0, ∞)`, has
+/-- **The class `𝒮*`** ([Klüppelberg 1988]; [FKZ, Ch. 3]): `μ` is concentrated on `[0, ∞)`, has
 positive tail `F̄` and finite mean `m = ∫₀^∞ F̄`, and `∫₀ˣ F̄(x - y) F̄(y) dy / F̄(x) → 2 m`. -/
 structure IsSStar (μ : Measure ℝ) : Prop where
   nonneg : μ (Iio 0) = 0
@@ -198,7 +198,7 @@ theorem tendsto_intervalIntegral_tail (h : IsSStar μ) {b : ℝ → ℝ} (hb : T
     Tendsto (fun x => ∫ y in (0 : ℝ)..b x, tail μ y) atTop (𝓝 (∫ t in Ioi 0, tail μ t)) :=
   intervalIntegral_tendsto_integral_Ioi 0 h.integrableOn_tail hb
 
-/-- **`𝒮*` laws are long-tailed** ([FKZ, Lemma 3.25]): `F̄(x - t) / F̄(x) → 1` for every `t`. -/
+/-- **`𝒮*` laws are long-tailed** ([Klüppelberg 1988]; [FKZ, Ch. 3]): `F̄(x - t) / F̄(x) → 1` for every `t`. -/
 theorem tendsto_tail_sub_div_of_nonneg (h : IsSStar μ) {t : ℝ} (ht : 0 ≤ t) :
     Tendsto (fun x => tail μ (x - t) / tail μ x) atTop (𝓝 1) := by
   set m := ∫ s in Ioi 0, tail μ s
@@ -267,7 +267,7 @@ theorem tendsto_tail_sub_div (h : IsSStar μ) (y : ℝ) :
     simp only [Function.comp_apply, id, inv_div, sub_neg_eq_add]
     ring_nf
 
-/-- **`𝒮* ⊆ 𝒮`** ([Klüppelberg 1988, Theorem 3.2]; [FKZ, Theorem 3.27]): a law in the class
+/-- **`𝒮* ⊆ 𝒮`** ([Klüppelberg 1988, Theorem 3.2]; [FKZ, Ch. 3]): a law in the class
 `𝒮*` is subexponential. -/
 theorem isSubexponential (h : IsSStar μ) : IsSubexponential μ := by
   have hF := h.tail_pos
@@ -448,18 +448,18 @@ private theorem lconvolution_itDensity {u : ℝ} (hu : 0 < u) :
 
 /-- The mean `m = ∫₀^∞ F̄` of an `𝒮*` law is positive. -/
 theorem integral_tail_pos (h : IsSStar μ) : 0 < ∫ t in Ioi 0, tail μ t := by
-    have h1 : ∫ _ in (0 : ℝ)..1, tail μ 1 ≤ ∫ y in (0 : ℝ)..1, tail μ y :=
-      intervalIntegral.integral_mono_on zero_le_one intervalIntegrable_const
-        (intervalIntegrable_tail _ _) fun y hy => tail_antitone hy.2
-    rw [intervalIntegral.integral_const, smul_eq_mul, sub_zero, one_mul,
-      intervalIntegral.integral_of_le zero_le_one] at h1
-    have h2 : ∫ y in Ioc (0 : ℝ) 1, tail μ y ≤ ∫ y in Ioi (0 : ℝ), tail μ y :=
-      setIntegral_mono_set h.integrableOn_tail (ae_of_all _ fun y => tail_nonneg y)
-        Ioc_subset_Ioi_self.eventuallyLE
-    linarith [h.tail_pos 1]
+  have h1 : ∫ _ in (0 : ℝ)..1, tail μ 1 ≤ ∫ y in (0 : ℝ)..1, tail μ y :=
+    intervalIntegral.integral_mono_on zero_le_one intervalIntegrable_const
+      (intervalIntegrable_tail _ _) fun y hy => tail_antitone hy.2
+  rw [intervalIntegral.integral_const, smul_eq_mul, sub_zero, one_mul,
+    intervalIntegral.integral_of_le zero_le_one] at h1
+  have h2 : ∫ y in Ioc (0 : ℝ) 1, tail μ y ≤ ∫ y in Ioi (0 : ℝ), tail μ y :=
+    setIntegral_mono_set h.integrableOn_tail (ae_of_all _ fun y => tail_nonneg y)
+      Ioc_subset_Ioi_self.eventuallyLE
+  linarith [h.tail_pos 1]
 
 /-- **Integrated tails of `𝒮*` laws are subexponential** ([Klüppelberg 1988, Theorem 3.2];
-[FKZ, Theorem 3.28]): if `F ∈ 𝒮*` then `F_I ∈ 𝒮`, where `F_I` has density `F̄ / m` on
+[FKZ, Ch. 3]): if `F ∈ 𝒮*` then `F_I ∈ 𝒮`, where `F_I` has density `F̄ / m` on
 `(0, ∞)`. -/
 theorem isSubexponential_integratedTail (h : IsSStar μ) :
     IsSubexponential (integratedTail μ) := by
@@ -554,6 +554,74 @@ theorem isSubexponential_integratedTail (h : IsSStar μ) :
     rw [div_lt_iff₀ (hpos x)]
     nlinarith [hx.2, hpos x]
 
+/-- **Embrechts–Veraverbeke for `𝒮*` claims** ([EKM, Theorem 1.3.6]; [Klüppelberg 1988]): if
+the claim size law is in `𝒮*` and the safety loading is `ρ > 0`, the Pollaczek–Khinchine ruin
+probability satisfies `ψ(u) / F̄_I(u) → 1 / ρ`. -/
+theorem tendsto_pkRuin_div (h : IsSStar μ) {ρ : ℝ} (hρ : 0 < ρ) :
+    Tendsto (fun u => pkRuin ρ (integratedTail μ) u / tail (integratedTail μ) u) atTop
+      (𝓝 (1 / ρ)) := by
+  haveI := isProbabilityMeasure_integratedTail h.integrableOn_tail h.integral_tail_pos
+  exact h.isSubexponential_integratedTail.tendsto_pkRuin_div hρ
+
+/-- **Regularly varying tails with index `-α`, `α > 1`, are in `𝒮*`** ([Klüppelberg 1988];
+[FKZ, Ch. 3]). -/
+theorem of_isRegularlyVarying (h0 : μ (Iio 0) = 0) {α : ℝ}
+    (hRV : IsRegularlyVarying (tail μ) (-α)) (hα : 1 < α) : IsSStar μ := by
+  have hS := IsSubexponential.of_isRegularlyVarying h0 hRV
+  have hF := hS.tail_pos
+  have hint := IsRegularlyVarying.integrableOn_Ioi tail_antitone hRV hα 0
+  refine ⟨h0, hF, hint, ?_⟩
+  -- `I(x) / F̄(x) = 2 ∫_{(0, x/2]} (F̄(x - y) / F̄(x)) F̄(y) dy`
+  have hI : ∀ x, 0 ≤ x → tailConvInt μ x / tail μ x = 2 * ∫ y in Ioi 0,
+      (Ioc 0 (x / 2)).indicator (fun y => tail μ (x - y) / tail μ x * tail μ y) y := by
+    intro x hx
+    rw [tailConvInt_eq_two_mul, intervalIntegral.integral_of_le (by linarith),
+      setIntegral_indicator measurableSet_Ioc, inter_eq_right.2 Ioc_subset_Ioi_self,
+      mul_div_assoc, ← integral_div]
+    congr 1
+    exact setIntegral_congr_fun measurableSet_Ioc fun y _ => by ring
+  -- a bound `F̄(x / 2) / F̄(x) ≤ C` for large `x`
+  set C := (1 / 2 : ℝ) ^ (-α) + 1
+  have hC : ∀ᶠ x in atTop, tail μ (x / 2) / tail μ x ≤ C := by
+    have := (tendsto_order.1 (hRV.2 (1 / 2) (by norm_num))).2 C (by simp only [C]; linarith)
+    filter_upwards [this] with x hx
+    rw [show x / 2 = 1 / 2 * x by ring]; exact hx.le
+  have hDCT : Tendsto (fun x => ∫ y in Ioi 0,
+      (Ioc 0 (x / 2)).indicator (fun y => tail μ (x - y) / tail μ x * tail μ y) y) atTop
+      (𝓝 (∫ y in Ioi 0, tail μ y)) := by
+    refine tendsto_integral_filter_of_dominated_convergence (fun y => C * tail μ y)
+      (Eventually.of_forall fun x => ?_) ?_ (hint.const_mul C) ?_
+    · exact ((((tail_measurable.comp (measurable_const.sub measurable_id)).div_const _).mul
+        tail_measurable).indicator measurableSet_Ioc).aestronglyMeasurable
+    · filter_upwards [hC] with x hx
+      refine Eventually.of_forall fun y => ?_
+      by_cases hy : y ∈ Ioc 0 (x / 2)
+      · rw [indicator_of_mem hy, Real.norm_eq_abs,
+          abs_of_nonneg (mul_nonneg (div_nonneg (tail_nonneg _) (hF x).le) (tail_nonneg _))]
+        refine mul_le_mul_of_nonneg_right ?_ (tail_nonneg _)
+        refine le_trans ?_ hx
+        exact div_le_div_of_nonneg_right (tail_antitone (by linarith [hy.2])) (hF x).le
+      · rw [indicator_of_notMem hy, norm_zero]
+        exact mul_nonneg (by simp only [C]; positivity) (tail_nonneg _)
+    · rw [ae_restrict_iff' measurableSet_Ioi]
+      refine Eventually.of_forall fun y (hy : 0 < y) => ?_
+      have := (hS.tendsto_tail_sub_div y).mul_const (tail μ y)
+      rw [one_mul] at this
+      refine this.congr' ?_
+      filter_upwards [eventually_ge_atTop (2 * y)] with x hx
+      rw [indicator_of_mem (show y ∈ Ioc 0 (x / 2) from ⟨hy, by linarith⟩)]
+  refine (hDCT.const_mul 2).congr' ?_
+  filter_upwards [eventually_ge_atTop 0] with x hx
+  exact (hI x hx).symm
+
 end IsSStar
+
+/-- **Pareto laws with index `r > 1` are in `𝒮*`**; in particular their integrated tails are
+subexponential. -/
+theorem isSStar_paretoMeasure {t r : ℝ} (ht : 0 < t) (hr : 1 < r) :
+    IsSStar (ProbabilityTheory.paretoMeasure t r) := by
+  haveI := ProbabilityTheory.isProbabilityMeasure_paretoMeasure ht (by linarith : 0 < r)
+  exact IsSStar.of_isRegularlyVarying (paretoMeasure_Iio_zero ht)
+    (isRegularlyVarying_tail_paretoMeasure ht (by linarith)) hr
 
 end ExtremeValueTheory
