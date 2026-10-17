@@ -177,21 +177,21 @@ theorem exists_term_bounds [IsProbabilityMeasure P] {Z : Ω → ℝ} (hZ : Measu
           have := mul_le_mul_of_nonneg_left hPc (show 0 ≤ K₁ * x by positivity)
           linarith
 
-/-- **Uniform bound for the remainder of a linear process** (`0 < δ < α < 1`). Let `(Z_j)` be
-identically distributed copies of `Z₀` (no independence needed) with `P(|Z₀| > x)` regularly
-varying with index `-α`. There are `K > 0`, `x₀ > 0` such that for every coefficient sequence
-`(c_j)` with `|c_j| ≤ 1` and `∑ |c_j|^δ < ∞`, and every `x ≥ x₀`,
+/-- **Uniform bound for the remainder of a linear process** (`0 < δ < α < 1`). Let `P(|Z₀| > x)` be
+regularly varying with index `-α`. There are `K > 0`, `x₀ > 0` such that for every sequence
+`(Z_j)` of identically distributed copies of `Z₀` (no independence needed), every coefficient
+sequence `(c_j)` with `|c_j| ≤ 1` and `∑ |c_j|^δ < ∞`, and every `x ≥ x₀`,
 `P(∑_j |c_j| |Z_j| > x) ≤ K (∑_j |c_j|^δ) P(|Z₀| > x)` (the series taken in `[0, ∞]`). -/
-theorem exists_measure_tsum_gt_le [IsProbabilityMeasure P] {Z : ℕ → Ω → ℝ} {Z₀ : Ω → ℝ}
-    (hZ : ∀ j, Measurable (Z j)) (hZ₀ : Measurable Z₀) (hident : ∀ j, IdentDistrib (Z j) Z₀ P P)
+theorem exists_measure_tsum_gt_le [IsProbabilityMeasure P] {Z₀ : Ω → ℝ} (hZ₀ : Measurable Z₀)
     {α δ : ℝ} (hδα : δ < α) (hα1 : α < 1)
     (hL : IsRegularlyVarying (fun x => P.real {ω | x < |Z₀ ω|}) (-α)) :
-    ∃ K x₀ : ℝ, 0 < K ∧ 0 < x₀ ∧ ∀ c : ℕ → ℝ, (∀ j, |c j| ≤ 1) →
+    ∃ K x₀ : ℝ, 0 < K ∧ 0 < x₀ ∧ ∀ Z : ℕ → Ω → ℝ, (∀ j, Measurable (Z j)) →
+      (∀ j, IdentDistrib (Z j) Z₀ P P) → ∀ c : ℕ → ℝ, (∀ j, |c j| ≤ 1) →
       Summable (fun j => |c j| ^ δ) → ∀ x ≥ x₀,
       P {ω | ENNReal.ofReal x < ∑' j, ENNReal.ofReal (|c j| * |Z j ω|)} ≤
         ENNReal.ofReal (K * (∑' j, |c j| ^ δ) * P.real {ω | x < |Z₀ ω|}) := by
   obtain ⟨K₁, x₀, hK₁, hx₀, hB⟩ := exists_term_bounds hZ₀ hδα hα1 hL
-  refine ⟨2 + K₁, x₀, by positivity, hx₀, fun c hc1 hcs x hx => ?_⟩
+  refine ⟨2 + K₁, x₀, by positivity, hx₀, fun Z hZ hident c hc1 hcs x hx => ?_⟩
   have hx0 : 0 < x := hx₀.trans_le hx
   set Lx := P.real {ω | x < |Z₀ ω|} with hLx
   have hLx0 : 0 ≤ Lx := measureReal_nonneg
@@ -265,6 +265,111 @@ theorem exists_measure_tsum_gt_le [IsProbabilityMeasure P] {Z : ℕ → Ω → �
         have hS0 : 0 ≤ S := tsum_nonneg fun j => rpow_nonneg (abs_nonneg _) _
         rw [← ENNReal.ofReal_add (by positivity) (by positivity)]
         ring_nf
+
+/-- If `∑_j ofReal(|ψ_{j+m}| |z_{j+m}|) ≤ t` in `[0, ∞]`, then `∑ ψ_j z_j` converges (absolutely)
+and differs from its partial sum `∑_{j < m} ψ_j z_j` by at most `t`. -/
+theorem abs_tsum_sub_sum_le {ψ z : ℕ → ℝ} {m : ℕ} {t : ℝ} (ht : 0 ≤ t)
+    (hR : ∑' j, ENNReal.ofReal (|ψ (j + m)| * |z (j + m)|) ≤ ENNReal.ofReal t) :
+    Summable (fun j => ψ j * z j) ∧
+      |∑' j, ψ j * z j - ∑ j ∈ Finset.range m, ψ j * z j| ≤ t := by
+  set f : ℕ → ℝ := fun j => |ψ (j + m)| * |z (j + m)| with hf
+  have hf0 : ∀ j, 0 ≤ f j := fun j => by positivity
+  have hne : ∑' j, ENNReal.ofReal (f j) ≠ ⊤ := ne_top_of_le_ne_top ENNReal.ofReal_ne_top hR
+  have hfs : Summable f := by
+    have := ENNReal.summable_toReal hne
+    simpa [ENNReal.toReal_ofReal (hf0 _)] using this
+  have hft : ∑' j, f j ≤ t := by
+    have := ENNReal.tsum_toReal_eq (f := fun j => ENNReal.ofReal (f j)) fun _ => ENNReal.ofReal_ne_top
+    simp only [ENNReal.toReal_ofReal (hf0 _)] at this
+    rw [← this]
+    exact ENNReal.toReal_le_of_le_ofReal ht hR
+  have hs' : Summable (fun j => ψ (j + m) * z (j + m)) :=
+    Summable.of_norm (by simpa [Real.norm_eq_abs, abs_mul] using hfs)
+  have hs : Summable (fun j => ψ j * z j) := (summable_nat_add_iff m).1 hs'
+  refine ⟨hs, ?_⟩
+  rw [← hs.sum_add_tsum_nat_add m, add_sub_cancel_left]
+  refine (Real.norm_eq_abs _ ▸ norm_tsum_le_tsum_norm ?_).trans ?_
+  · simpa [Real.norm_eq_abs, abs_mul] using hfs
+  · simpa [Real.norm_eq_abs, abs_mul] using hft
+
+/-- The left-over factor of the tail weight lies in `[0, 1]`. -/
+theorem tailWeight_nonneg_le {α p ψ : ℝ} (hp0 : 0 ≤ p) (hp1 : p ≤ 1) :
+    0 ≤ tailWeight α p ψ ∧ tailWeight α p ψ ≤ |ψ| ^ α := by
+  have h0 : 0 ≤ |ψ| ^ α := rpow_nonneg (abs_nonneg _) _
+  have hb : 0 ≤ (if 0 < ψ then p else 0) + (if ψ < 0 then 1 - p else 0) ∧
+      (if 0 < ψ then p else 0) + (if ψ < 0 then 1 - p else 0) ≤ 1 := by
+    rcases lt_trichotomy ψ 0 with h | h | h
+    · simp [h, h.not_gt]; constructor <;> linarith
+    · simp [h]
+    · simp [h, h.not_gt]; constructor <;> linarith
+  exact ⟨mul_nonneg h0 hb.1, mul_le_of_le_one_right h0 hb.2⟩
+
+/-- Under tail balance the limit `p` lies in `[0, 1]`. -/
+theorem tailBalance_mem_Icc [IsProbabilityMeasure P] {Z : Ω → ℝ}
+    (hpos : ∀ᶠ x in atTop, 0 < P.real {ω | x < |Z ω|}) {p : ℝ}
+    (hp : Tendsto (fun x => P.real {ω | x < Z ω} / P.real {ω | x < |Z ω|}) atTop (𝓝 p)) :
+    0 ≤ p ∧ p ≤ 1 := by
+  constructor
+  · exact ge_of_tendsto hp (Eventually.of_forall fun x => div_nonneg measureReal_nonneg
+      measureReal_nonneg)
+  · refine le_of_tendsto hp ?_
+    filter_upwards [hpos] with x hx
+    rw [div_le_one hx]
+    exact measureReal_mono fun ω (h : x < Z ω) => (show x < |Z ω| from h.trans_le (le_abs_self _))
+
+/-- The coefficients are eventually bounded by `1` in absolute value. -/
+theorem exists_abs_le_one {ψ : ℕ → ℝ} {δ : ℝ} (hδ : 0 < δ) (hψ : Summable fun j => |ψ j| ^ δ) :
+    ∃ m₀ : ℕ, ∀ j ≥ m₀, |ψ j| ≤ 1 := by
+  obtain ⟨m₀, hm₀⟩ := eventually_atTop.1
+    ((hψ.tendsto_atTop_zero).eventually (gt_mem_nhds one_pos))
+  refine ⟨m₀, fun j hj => ?_⟩
+  by_contra h
+  push Not at h
+  have := one_le_rpow h.le hδ.le
+  linarith [hm₀ j hj]
+
+/-- The series of tail weights converges. -/
+theorem summable_tailWeight {ψ : ℕ → ℝ} {α δ p : ℝ} (hδ : 0 < δ) (hδα : δ ≤ α) (hp0 : 0 ≤ p)
+    (hp1 : p ≤ 1) (hψ : Summable fun j => |ψ j| ^ δ) :
+    Summable fun j => tailWeight α p (ψ j) := by
+  obtain ⟨m₀, hm₀⟩ := exists_abs_le_one hδ hψ
+  refine (summable_nat_add_iff m₀).1 (Summable.of_nonneg_of_le
+    (fun j => (tailWeight_nonneg_le hp0 hp1).1) (fun j => ?_) ((summable_nat_add_iff m₀).2 hψ))
+  exact (tailWeight_nonneg_le hp0 hp1).2.trans (rpow_le_rpow_of_exponent_ge' (abs_nonneg _)
+    (hm₀ _ (Nat.le_add_left _ _)) hδ.le hδα)
+
+/-- **Almost sure convergence of the linear process** (`0 < δ < α < 1`): if `(Z_j)` are copies
+of `Z₀` with `P(|Z₀| > x)` regularly varying with index `-α` and `∑ |ψ_j|^δ < ∞`, then
+`∑ ψ_j Z_j` converges absolutely almost surely. -/
+theorem ae_summable_mul [IsProbabilityMeasure P] {Z : ℕ → Ω → ℝ} {Z₀ : Ω → ℝ}
+    (hZ : ∀ j, Measurable (Z j)) (hZ₀ : Measurable Z₀) (hident : ∀ j, IdentDistrib (Z j) Z₀ P P)
+    {α δ : ℝ} (hδ : 0 < δ) (hδα : δ < α) (hα1 : α < 1)
+    (hL : IsRegularlyVarying (fun x => P.real {ω | x < |Z₀ ω|}) (-α))
+    {ψ : ℕ → ℝ} (hψ : Summable fun j => |ψ j| ^ δ) :
+    ∀ᵐ ω ∂P, Summable fun j => ψ j * Z j ω := by
+  obtain ⟨K, x₀, hK, hx₀, hR⟩ := exists_measure_tsum_gt_le hZ₀ hδα hα1 hL
+  obtain ⟨m₀, hm₀⟩ := exists_abs_le_one hδ hψ
+  have hR' := hR (fun j => Z (j + m₀)) (fun j => hZ _) (fun j => hident _) (fun j => ψ (j + m₀))
+    (fun j => hm₀ _ (Nat.le_add_left _ _)) ((summable_nat_add_iff m₀).2 hψ)
+  set T := ∑' j, |ψ (j + m₀)| ^ δ
+  set R : Ω → ℝ≥0∞ := fun ω => ∑' j, ENNReal.ofReal (|ψ (j + m₀)| * |Z (j + m₀) ω|)
+  have hnull : P {ω | R ω = ⊤} = 0 := by
+    refine le_antisymm ?_ zero_le
+    have hlim : Tendsto (fun x => ENNReal.ofReal (K * T * P.real {ω | x < |Z₀ ω|})) atTop
+        (𝓝 (ENNReal.ofReal (K * T * 0))) :=
+      ENNReal.tendsto_ofReal (tendsto_const_nhds.mul
+        (tendsto_measureReal_lt (continuous_abs.measurable.comp hZ₀)))
+    rw [mul_zero, ENNReal.ofReal_zero] at hlim
+    refine ge_of_tendsto hlim ?_
+    filter_upwards [eventually_ge_atTop x₀] with x hx
+    exact (measure_mono fun ω (hω : R ω = ⊤) => (show ENNReal.ofReal x < R ω by
+      rw [hω]; exact ENNReal.ofReal_lt_top)).trans (hR' x hx)
+  rw [ae_iff]
+  refine measure_mono_null (fun ω hω => ?_) hnull
+  simp only [mem_ofPred_eq] at hω ⊢
+  by_contra hne
+  exact hω (abs_tsum_sub_sum_le (ψ := ψ) (z := fun j => Z j ω) (m := m₀) ENNReal.toReal_nonneg
+    (ENNReal.ofReal_toReal hne).ge).1
 
 end LinearProcess
 
