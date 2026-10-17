@@ -590,3 +590,26 @@ follow de Haan and Ferreira, \emph{Extreme Value Theory: An Introduction}, Sprin
   $\Var \le (2m+1) n \bar F(u)$ under $m$-dependence. Under stationarity,
   $\Var \le n(\bar F(u) + 2\sum_{h \le r} \PR[X_0 > u, X_h > u] + 2 \sum_{h > r} \alpha(h))$.
 \end{proof}
+
+\begin{theorem}[Extreme quantiles at $\rho = 0$: bias cancellation]
+  \label{thm:weissman-rho-zero}
+  \uses{thm:weissman-second-order}
+  \lean{ExtremeValueTheory.tendstoInMeasure_weissman_div_of_le, ExtremeValueTheory.tendstoInMeasure_weissman_div_of_antitoneOn,
+    ExtremeValueTheory.tendstoInMeasure_tailProbEstimator_div_of_le, ExtremeValueTheory.tendstoInDistribution_weissman_of_tendsto_bias,
+    ExtremeValueTheory.tendstoInDistribution_weissman_of_rho_eq_zero,
+    ExtremeValueTheory.tendstoInDistribution_tailProbEstimator_of_tendsto_bias, ExtremeValueTheory.tendstoInDistribution_tailProbEstimator,
+    ExtremeValueTheory.tendstoInDistribution_tailProbEstimator_of_rho_eq_zero}
+  \leanok
+  The Weissman and tail-probability results extend to $\rho \le 0$ given a majorant of $|A|$ on the
+  extrapolation range (automatic when $|A|$ is eventually monotone). At $\rho = 0$, with $A$ asymptotically
+  constant on that range, the Hill bias $+\lambda$ and the extrapolation bias $-\lambda$ cancel:
+  $\sqrt k/\log d_n\,(\hat x/x_p - 1) \Rightarrow N(0, \gamma^2)$ and
+  $\sqrt k/\log e_n\,(\hat p/p - 1) \Rightarrow N(0, \gamma^{-2})$. For $\rho < 0$ the tail-probability
+  estimator satisfies $\sqrt k/\log e_n\,(\hat p/p - 1) \Rightarrow N(\lambda/((1-\rho)\gamma^2), \gamma^{-2})$
+  [dHF, \S4.3--4.4].
+\end{theorem}
+\begin{proof}
+  \leanok
+  A uniform bound $|\log U(xt) - \log U(t) - \gamma \log x| \le C(1 + \log x)\,a$ when $|A| \le a$ on $[t, xt]$, and
+  the delta method. A bound $C|A(t)|\log x$ fails in general for slowly varying $|A|$.
+\end{proof}

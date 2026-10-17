@@ -91,7 +91,9 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   unconditionally and beyond the sample range given a `√k` rate for the Hill estimator and a bias
   condition (automatic for Pareto tails). Under second-order regular variation with `ρ < 0`, both
   hypotheses are discharged (`tendstoInMeasure_weissman_div_of_secondOrder`) and the Weissman
-  estimator is asymptotically normal (`tendstoInDistribution_weissman`). GEV return levels.
+  estimator is asymptotically normal (`tendstoInDistribution_weissman`). The results extend to `ρ ≤ 0`; at
+  `ρ = 0` the Hill and extrapolation biases cancel (`tendstoInDistribution_weissman_of_rho_eq_zero`), and
+  the tail-probability estimator is asymptotically normal too. GEV return levels.
 - **Upper order statistics and records**: the Poisson limit law of the `k`-th largest
   (`tendsto_measureReal_orderStat_le`), the joint law of the two largest, and records: `P(record at
   k) = 1/k`, `E N_n = H_n`, `N_n / log n → 1` in probability (`tendstoInMeasure_recordCount_div_log`).
@@ -111,7 +113,7 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   (`StableIntegral.stableConst_eq_Gamma_mul_cos`, `stableSkewConst_eq_mul_tan`, and the primed
   textbook-form theorems). For `α = 1`
   (`tendsto_map_convPow_sub_of_isRegularlyVarying_one'`), centering by `n E[X 1{|X| ≤ aₙ}]` gives
-  the limit `exp(−(π/2)|t| + i(2p−1)(c t − t log|t|))` with `c` an explicit integral.
+  the limit `exp(−(π/2)|t| + i(2p−1)((1−γ) t − t log|t|))`, with `γ` the Euler–Mascheroni constant.
 - **Extremes of stationary sequences** (`Dependence/`): stationarity (`IsStationary`),
   Leadbetter's conditions `D(uₙ)` and `D'(uₙ)`, Leadbetter's theorem `P(M_n ≤ uₙ) → e^{-τ}`
   (`tendsto_measureReal_partialMax_le_exp`), the extremal index `θ` (`HasExtremalIndex`), and

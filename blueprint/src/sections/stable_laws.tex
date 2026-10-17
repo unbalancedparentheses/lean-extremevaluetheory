@@ -554,3 +554,18 @@ $\mu^{*n}$ for the convolution power (Definition~\ref{def:convPow}).
   substitution $v = tu$. The centering is small: $n (t \E[X \mathbf 1\{|X|\le a_n\}]/a_n)^2 \to 0$.
   The exponent is continuous since $t \log |t| \to 0$, so L\'evy's continuity theorem applies.
 \end{proof}
+
+\begin{corollary}[The $\alpha = 1$ constant is $1 - \gamma$]
+  \label{cor:gclt-one-euler}
+  \uses{thm:gclt-one}
+  \lean{ExtremeValueTheory.StableIntegral.cosLogConst_eq, ExtremeValueTheory.StableIntegral.stableLogConst_eq,
+    ExtremeValueTheory.tendsto_map_convPow_sub_of_isRegularlyVarying_one_eulerMascheroni}
+  \leanok
+  $\int_0^1 (\cos v - 1)/v \ud v + \int_1^\infty \cos v / v \ud v = -\gamma$, so the constant $c$ in
+  Theorem~\ref{thm:gclt-one} is $1 - \gamma$, with $\gamma$ the Euler--Mascheroni constant.
+\end{corollary}
+\begin{proof}
+  \leanok
+  Compare with $\int_0^\infty (e^{-v} - \mathbf 1\{v < 1\})/v \ud v = -\gamma$ and show
+  $\int_0^\infty (\cos v - e^{-v})/v \ud v = 0$.
+\end{proof}

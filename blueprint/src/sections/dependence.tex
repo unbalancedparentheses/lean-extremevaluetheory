@@ -449,3 +449,77 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
   hence $1 - e^{-\theta\tau} \le \tau \vartheta$ after $n \to \infty$ then $m \to \infty$. With
   $1 - e^{-x} \ge x/(1+x)$ this gives $\theta \le \vartheta + \tau$ for every $\tau > 0$.
 \end{proof}
+
+\section{Further results}
+
+\begin{theorem}[Unique extremal index for regularly varying tails]
+  \label{thm:strict-extremal-index}
+  \uses{def:extremal-index, thm:theta-eq-vartheta, cor:moving-average-theta, cor:ar1}
+  \lean{ExtremeValueTheory.hasExceedanceLevels_of_isRegularlyVarying, ExtremeValueTheory.HasExtremalIndex.strict_of_isRegularlyVarying,
+    ExtremeValueTheory.HasSpectralTailProcess.hasExceedanceLevels_abs, ExtremeValueTheory.HasSpectralTailProcess.hasExceedanceLevels_of_nonneg, ExtremeValueTheory.HasSpectralTailProcess.hasExtremalIndex_abs_strict,
+    ExtremeValueTheory.HasSpectralTailProcess.hasExtremalIndex_of_isMDependent_strict, ExtremeValueTheory.hasExtremalIndex_movingMax_of_isMDependent_strict,
+    ExtremeValueTheory.MovingAverage.hasExtremalIndex_strict, ExtremeValueTheory.InfiniteMovingAverage.hasExtremalIndex_strict,
+    ExtremeValueTheory.AR1.hasExtremalIndex_strict}
+  \leanok
+  If $\PR[X_0 > x]$ is regularly varying, levels with $n\PR[X_0 > u_n] \to \tau$ exist for every $\tau > 0$
+  [LLR, Theorem~1.7.13], so the extremal index, when it exists, is unique. In particular the extremal
+  indices of the moving maximum, moving averages and AR(1) are unique.
+\end{theorem}
+\begin{proof}
+  \leanok
+  $u_n = \inf\{x \ge 0 : \bar F(x) \le \tau/n\}$; regular variation gives $\bar F(u_n/\lambda)/\bar F(u_n) \to \lambda^{\rho}$.
+\end{proof}
+
+\begin{theorem}[Backward limit and the backward formula for $\vartheta$]
+  \label{thm:backward}
+  \uses{thm:ac-theta-zero, thm:time-change}
+  \lean{ExtremeValueTheory.BackwardAntiClusteringAt, ExtremeValueTheory.AntiClusteringAt.backward,
+    ExtremeValueTheory.HasSpectralTailProcess.tendsto_zero_of_backwardAntiClusteringAt, ExtremeValueTheory.HasSpectralTailProcess.tendsto_zero_of_antiClusteringAt,
+    ExtremeValueTheory.HasSpectralTailProcess.map_restrict_path_shift, ExtremeValueTheory.HasSpectralTailProcess.measure_firstExceedance_eq_lastExceedance,
+    ExtremeValueTheory.HasSpectralTailProcess.candidateExtremalIndex_eq_measure_backward,
+    ExtremeValueTheory.HasSpectralTailProcess.candidateExtremalIndex_eq_measure_backward_of_antiClusteringAt}
+  \leanok
+  Backward anticlustering gives $\Theta_{-t} \to 0$ a.s. (no stationarity). For a stationary sequence with
+  $\Theta_t \to 0$ at both ends, $\vartheta = \PR[\sup_{k \le -1} |Y_k| \le 1]$ [BS09, \S4], [KS20, \S5.6].
+\end{theorem}
+\begin{proof}
+  \leanok
+  A path-level time-change formula equates the probabilities of "first exceedance at $0$" and
+  "last exceedance at $0$".
+\end{proof}
+
+\begin{theorem}[Hill consistency under sum-anticlustering]
+  \label{thm:hill-cluster}
+  \uses{thm:hill-dependent}
+  \lean{ExtremeValueTheory.SumAntiClusteringAt, ExtremeValueTheory.SumAntiClusteringAt.max_le, ExtremeValueTheory.SumAntiClusteringAt.bddClusterSize,
+    ExtremeValueTheory.tendsto_clusterRatio_of_bddClusterSize, ExtremeValueTheory.tendsto_clusterRatio_of_div,
+    ExtremeValueTheory.tendstoInMeasure_hill_of_alphaMixing_of_sumAntiClustering,
+    ExtremeValueTheory.tendstoInMeasure_hill_of_alphaMixing_of_div, ExtremeValueTheory.identDistrib_movingMax,
+    ExtremeValueTheory.isRegularlyVarying_survival_movingMax, ExtremeValueTheory.tendstoInMeasure_hill_movingMax,
+    ExtremeValueTheory.MovingAverage.identDistrib, ExtremeValueTheory.MovingAverage.isRegularlyVarying_survival,
+    ExtremeValueTheory.MovingAverage.tendstoInMeasure_hill}
+  \leanok
+  The cluster condition of Theorem~\ref{thm:hill-dependent} follows from the summability condition
+  $S(r_n, u_n)$ [KS20, \S9.1] (bounded expected cluster size), or from $r_n = o(k_n)$. Plain
+  anticlustering does not suffice: it bounds the probability of a late exceedance, not the expected
+  number. The Hill estimator is consistent for the moving maximum and for finite moving averages.
+\end{theorem}
+\begin{proof}
+  \leanok
+  $S(r_n, u_n)$ bounds $\sum_{h \le r_n} \PR[X_h > u_n \mid X_0 > u_n]$; the examples are $m$-dependent with
+  regularly varying identically distributed marginals.
+\end{proof}
+
+\begin{theorem}[Uniqueness of the stationary AR(1) solution]
+  \label{thm:ar1-unique}
+  \uses{cor:ar1}
+  \lean{ExtremeValueTheory.AR1.eq_partialSum_add, ExtremeValueTheory.AR1.ae_eq_process_of_tight, ExtremeValueTheory.AR1.tight_of_identDistrib,
+    ExtremeValueTheory.AR1.ae_eq_process_of_identDistrib, ExtremeValueTheory.AR1.ae_eq_process}
+  \leanok
+  For $|\varphi| < 1$, every solution of $X_t = \varphi X_{t-1} + Z_t$ that is bounded in probability (for
+  instance, stationary) equals $\sum_j \varphi^j Z_{t-j}$ almost surely.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Iterate: $X_t = \sum_{j < m} \varphi^j Z_{t-j} + \varphi^m X_{t-m}$ and $\varphi^m X_{t-m} \to 0$ in probability.
+\end{proof}
