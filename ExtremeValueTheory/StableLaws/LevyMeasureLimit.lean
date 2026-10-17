@@ -785,6 +785,140 @@ theorem continuousAt_lamK (hs₀ : 0 ≤ s₀) : ContinuousAt (lamK (ν : Measur
         (continuousAt_clog (Complex.mem_slitPlane_iff.2 (Or.inl hpos))) (hRc s).continuousAt
     exact h1.neg.div_const 2
 
+omit hconv hφ hw hD in
+omit [IsProbabilityMeasure μ] in
+theorem measureReal_univ_kernMeasure (hs₀ : 0 ≤ s₀) (n : ℕ) :
+    (kernMeasure s₀ (cLaw μ a n)).real univ = ∫ z, kern s₀ z ∂(cLaw μ a n) := by
+  have h := integral_kernMeasure hs₀ (cLaw μ a n) (fun _ => (1 : ℝ))
+  simp only [integral_const, smul_eq_mul, mul_one] at h
+  exact h
+
+omit hconv hφ hw hD in
+/-- The mass of the kernel measure is at least `c P(|X| > 2 aₙ)`. -/
+theorem le_measureReal_univ_kernMeasure (hs₀ : 0 < s₀) {c : ℝ}
+    (hc : ∀ z, 1 ≤ |z| → c ≤ kern s₀ z) {n : ℕ} (ha : 0 < a n) :
+    c * absTail μ (2 * a n) ≤ (kernMeasure s₀ (cLaw μ a n)).real univ := by
+  rw [measureReal_univ_kernMeasure hs₀.le, cLaw, integral_map (by fun_prop)
+    continuous_kern.aestronglyMeasurable]
+  have hτ := abs_ctr_le (μ := μ) (a := a) n
+  calc c * absTail μ (2 * a n) = ∫ x, {y : ℝ | 2 * a n < |y|}.indicator (fun _ => c) x ∂μ := by
+        rw [integral_indicator_const _ (measurableSet_abs_gt _), smul_eq_mul, mul_comm]; rfl
+    _ ≤ ∫ x, kern s₀ ((a n)⁻¹ * x - ctr μ a n) ∂μ := by
+        refine integral_mono ((integrable_const c).indicator (measurableSet_abs_gt _))
+          (Integrable.of_bound ((continuous_kern.comp (by fun_prop : Continuous fun x : ℝ =>
+            (a n)⁻¹ * x - ctr μ a n)).aestronglyMeasurable)
+            (2 * s₀) (ae_of_all _ fun x => by
+              rw [Real.norm_eq_abs, abs_of_nonneg (kern_nonneg hs₀.le _)]
+              exact kern_le hs₀.le _)) fun x => ?_
+        by_cases hx : 2 * a n < |x|
+        · rw [Set.indicator_of_mem (show x ∈ {y : ℝ | 2 * a n < |y|} from hx)]
+          refine hc _ ?_
+          have h1 : 2 < |(a n)⁻¹ * x| := by
+            rw [abs_mul, abs_inv, abs_of_pos ha, ← div_eq_inv_mul, lt_div_iff₀ ha]
+            linarith
+          have := abs_sub_abs_le_abs_sub ((a n)⁻¹ * x) (ctr μ a n)
+          linarith
+        · rw [Set.indicator_of_notMem (show x ∉ {y : ℝ | 2 * a n < |y|} from hx)]
+          exact kern_nonneg hs₀.le _
+
+/-- The normalized kernel measures `k ρₙ / (k ρₙ)(ℝ)`. -/
+noncomputable def kernNorm (s₀ : ℝ) (μ : Measure ℝ) [IsProbabilityMeasure μ] (a : ℕ → ℝ)
+    (n : ℕ) : ProbabilityMeasure ℝ :=
+  FiniteMeasure.normalize ⟨kernMeasure s₀ (cLaw μ a n), inferInstance⟩
+
+omit hconv hφ hw hD in
+theorem kernNorm_eq {n : ℕ} (h0 : 0 < (kernMeasure s₀ (cLaw μ a n)).real univ) :
+    (kernNorm s₀ μ a n : Measure ℝ) =
+      ((kernMeasure s₀ (cLaw μ a n)).real univ).toNNReal⁻¹ • kernMeasure s₀ (cLaw μ a n) := by
+  set Λ : FiniteMeasure ℝ := ⟨kernMeasure s₀ (cLaw μ a n), inferInstance⟩
+  have hmass : (Λ.mass : ℝ) = (kernMeasure s₀ (cLaw μ a n)).real univ := by
+    rw [measureReal_def, ← ENNReal.coe_toReal, FiniteMeasure.ennreal_mass]
+    rfl
+  have hne : Λ ≠ 0 := by
+    refine (FiniteMeasure.mass_nonzero_iff _).1 fun hz => ?_
+    rw [hz] at hmass
+    simp only [NNReal.coe_zero] at hmass
+    linarith
+  rw [kernNorm, FiniteMeasure.toMeasure_normalize_eq_of_nonzero _ hne]
+  congr 2
+  rw [← hmass, Real.toNNReal_coe]
+
+omit hconv hφ hw hD in
+theorem integral_kernNorm {n : ℕ} (h0 : 0 < (kernMeasure s₀ (cLaw μ a n)).real univ)
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] (g : ℝ → E) :
+    ∫ z, g z ∂(kernNorm s₀ μ a n : Measure ℝ) =
+      ((kernMeasure s₀ (cLaw μ a n)).real univ)⁻¹ • ∫ z, g z ∂(kernMeasure s₀ (cLaw μ a n)) := by
+  rw [kernNorm_eq h0, integral_smul_nnreal_measure, NNReal.smul_def]
+  simp only [NNReal.coe_inv, Real.coe_toNNReal _ h0.le]
+
+/-- **Convergence of the canonical measures.** Under the standing hypotheses, together with the
+lower bound `n P(|X| > 2 aₙ) ≥ c > 0`, there are `L₀ > 0` and a probability measure `P` with
+`n ∫ k(z) g(z) dρₙ(z) → L₀ ∫ g dP` for every bounded continuous `g`. -/
+theorem exists_tendsto_mul_integral_kern (ha : ∀ n, 0 < a n) (hs₀ : 0 < s₀)
+    (hlow : ∃ c > 0, ∀ᶠ n : ℕ in atTop, c ≤ (n : ℝ) * absTail μ (2 * a n)) :
+    ∃ L₀ > 0, ∃ P : ProbabilityMeasure ℝ, ∀ g : ℝ →ᵇ ℝ,
+      Tendsto (fun n : ℕ => (n : ℝ) * ∫ z, kern s₀ z * g z ∂(cLaw μ a n)) atTop
+        (𝓝 (L₀ * ∫ z, g z ∂(P : Measure ℝ))) := by
+  obtain ⟨c, hc, hlow⟩ := hlow
+  obtain ⟨ck, hck, hk⟩ := exists_le_kern hs₀ one_pos
+  set r : ℕ → ℝ := fun n => (n : ℝ) * (kernMeasure s₀ (cLaw μ a n)).real univ with hr
+  have hr_lim : Tendsto (fun n => (r n : ℂ)) atTop (𝓝 (lamK (ν : Measure ℝ) s₀ 0)) := by
+    refine (tendsto_mul_charFun_kernMeasure hconv hφ hw hD hs₀.le 0).congr fun n => ?_
+    rw [charFun_zero, hr]; push_cast; ring
+  have hr_low : ∀ᶠ n : ℕ in atTop, ck * c ≤ r n := by
+    filter_upwards [hlow] with n hn
+    have h1 := le_measureReal_univ_kernMeasure (μ := μ) hs₀ hk (ha n)
+    calc ck * c ≤ ck * ((n : ℝ) * absTail μ (2 * a n)) := mul_le_mul_of_nonneg_left hn hck.le
+      _ = n * (ck * absTail μ (2 * a n)) := by ring
+      _ ≤ r n := mul_le_mul_of_nonneg_left h1 (Nat.cast_nonneg n)
+  set L₀ := (lamK (ν : Measure ℝ) s₀ 0).re
+  have hr_lim' : Tendsto r atTop (𝓝 L₀) := by
+    have := (Complex.continuous_re.tendsto _).comp hr_lim
+    exact this.congr fun n => by simp
+  have hL₀ : ck * c ≤ L₀ := ge_of_tendsto hr_lim' hr_low
+  have hL₀pos : 0 < L₀ := lt_of_lt_of_le (mul_pos hck hc) hL₀
+  have hlam0 : lamK (ν : Measure ℝ) s₀ 0 = (L₀ : ℂ) := by
+    have him := (Complex.continuous_im.tendsto _).comp hr_lim
+    have h0 : (lamK (ν : Measure ℝ) s₀ 0).im = 0 :=
+      tendsto_nhds_unique him (tendsto_const_nhds.congr fun n => by simp)
+    exact Complex.ext rfl (by rw [h0]; simp)
+  -- eventually the mass is positive
+  have hmass : ∀ᶠ n : ℕ in atTop, 0 < (kernMeasure s₀ (cLaw μ a n)).real univ ∧ 0 < r n := by
+    filter_upwards [hr_low, eventually_gt_atTop 0] with n hn hn0
+    have hrpos : 0 < r n := lt_of_lt_of_le (mul_pos hck hc) hn
+    refine ⟨?_, hrpos⟩
+    have : (0 : ℝ) < n := by exact_mod_cast hn0
+    by_contra h
+    have h' : (kernMeasure s₀ (cLaw μ a n)).real univ = 0 := le_antisymm (not_lt.1 h)
+      measureReal_nonneg
+    simp only [hr, h', mul_zero] at hrpos
+    exact lt_irrefl _ hrpos
+  -- characteristic functions of the normalized measures
+  have hcf : ∀ t, Tendsto (fun n => charFun (kernNorm s₀ μ a n : Measure ℝ) t) atTop
+      (𝓝 (lamK (ν : Measure ℝ) s₀ t / (L₀ : ℂ))) := by
+    intro t
+    refine ((tendsto_mul_charFun_kernMeasure hconv hφ hw hD hs₀.le t).div hr_lim'.ofReal
+      (by exact_mod_cast hL₀pos.ne')).congr' ?_
+    filter_upwards [hmass, eventually_gt_atTop 0] with n hn hn0
+    have : (0 : ℝ) < n := by exact_mod_cast hn0
+    rw [charFun_apply_real, integral_kernNorm hn.1, ← charFun_apply_real, Complex.real_smul, hr]
+    push_cast
+    have h1 : ((kernMeasure s₀ (cLaw μ a n)).real univ : ℂ) ≠ 0 := by exact_mod_cast hn.1.ne'
+    have h2 : (n : ℂ) ≠ 0 := by exact_mod_cast this.ne'
+    simp only [Pi.div_apply]
+    field_simp
+  have hcont : ContinuousAt (fun t => lamK (ν : Measure ℝ) s₀ t / (L₀ : ℂ)) 0 :=
+    (continuousAt_lamK hconv hφ hw hD hs₀.le).div_const _
+  obtain ⟨P, -, hPlim⟩ := exists_tendsto_of_tendsto_charFun (μ := kernNorm s₀ μ a) hcont hcf
+  refine ⟨L₀, hL₀pos, P, fun g => ?_⟩
+  have hint := (ProbabilityMeasure.tendsto_iff_forall_integral_tendsto.1 hPlim) g
+  refine (hr_lim'.mul hint).congr' ?_
+  filter_upwards [hmass] with n hn
+  rw [integral_kernNorm hn.1, integral_kernMeasure hs₀.le, smul_eq_mul, hr]
+  simp only [smul_eq_mul]
+  have := hn.1.ne'
+  field_simp
+
 end LevyLimit
 
 end GCLTConverse
