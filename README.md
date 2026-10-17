@@ -64,6 +64,10 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   domain of attraction of `H_ξ`, `ξ ∈ ℝ`, the Pickands estimator converges to `ξ` in probability.
   The **moment estimator** (Dekkers–Einmahl–de Haan) and the log-moments are consistent for
   `ξ > 0` (`tendstoInMeasure_momentEstimator_of_isInMDAGEV`).
+- **Extreme quantiles** (`Statistics/ExtremeQuantile.lean`): ratio consistency of the Weissman
+  estimator `X₍ₖ₊₁₎ (k/(n pₙ))^γ̂` and of the tail-probability estimator, for intermediate levels
+  unconditionally and beyond the sample range given a `√k` rate for the Hill estimator and a bias
+  condition (automatic for Pareto tails). GEV return levels.
 - **Stable laws and the generalized central limit theorem, symmetric case**
   (`tendsto_map_convPow_of_isRegularlyVarying`): for iid symmetric `X` with `P(|X| > x)`
   regularly varying of index `-α`, `0 < α < 2`, and `n P(|X| > aₙ) → 1`, the law of
