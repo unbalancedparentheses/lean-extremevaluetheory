@@ -1140,6 +1140,93 @@ theorem HasSpectralTailProcess.candidateExtremalIndex_eq_one_of_indepFun {Ω : T
   candidateExtremalIndex_eq_one hα (h.ae_abs_eq_one hΘm (hX 0)) fun k =>
     h.ae_eq_zero_of_indepFun hX hΘm (hind _ (by omega))
 
+/-- **The candidate extremal index in terms of the tail process** ([Planinić–Soulier 2018,
+Lemma 4.1], [KS20, §7.5]): if `(X_t)` has tail process `(Y_t)`, then the candidate extremal index
+of the spectral tail process `Θ_t = Y_t / |Y_0|` is `ϑ = P(|Y_k| ≤ 1 for all k ≥ 1)`. The event
+involves infinitely many coordinates; it is reached from the finite windows by continuity from
+above, using the structure `Y = R Θ` of the finite-dimensional laws
+(`HasTailProcess.map_window_eq`). No condition such as `|Y_t| → 0` is needed with the convention
+of `candidateExtremalIndex`. -/
+theorem HasTailProcess.candidateExtremalIndex_eq {Ω : Type*} {mΩ : MeasurableSpace Ω}
+    {P : Measure Ω} [IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} [IsProbabilityMeasure Q]
+    {Y : ℤ → Ω' → ℝ} (hα : 0 < α) (hX : ∀ t, Measurable (X t)) (hYm : ∀ t, Measurable (Y t))
+    (h : HasTailProcess P X α Q Y) :
+    candidateExtremalIndex Q (fun t ω' => Y t ω' / |Y 0 ω'|) α =
+      Q {ω' | ∀ k : ℕ, |Y (k + 1) ω'| ≤ 1} := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  set Θ : ℤ → Ω' → ℝ := fun t ω' => Y t ω' / |Y 0 ω'|
+  have hΘm : ∀ t, Measurable (Θ t) := fun t =>
+    (hYm t).div (continuous_abs.measurable.comp (hYm 0))
+  have hspec := h.hasSpectralTailProcess hα hX hYm
+  have h0 := hspec.ae_abs_eq_one hΘm (hX 0)
+  set π := (paretoMeasure 1 α).prod Q
+  rw [candidateExtremalIndex_eq_measure hα hΘm h0]
+  have hπ1 : ∀ᵐ p ∂π, 1 < p.1 := Measure.quasiMeasurePreserving_fst.ae ae_one_lt_paretoMeasure
+  have heq : π {p | ∀ k : ℕ, p.1 * |Θ (k + 1) p.2| ≤ 1} =
+      π {p | ∀ k : ℕ, |p.1 * Θ (k + 1) p.2| ≤ 1} := by
+    refine measure_congr (Filter.eventuallyEqSet_iff.2 ?_)
+    filter_upwards [hπ1] with p hp
+    simp only [abs_mul, abs_of_pos (one_pos.trans hp)]
+  rw [heq]
+  -- finite windows
+  set S : ℕ → Finset ℤ := fun n => Finset.Icc (1 : ℤ) n
+  set B : (n : ℕ) → Set (S n → ℝ) := fun n => {y | ∀ t, |y t| ≤ 1}
+  have hB : ∀ n, MeasurableSet (B n) := fun n => by
+    simp only [B, ofPred_forall]
+    exact MeasurableSet.iInter fun t =>
+      measurableSet_le (continuous_abs.measurable.comp (measurable_pi_apply t)) measurable_const
+  set a : ℕ → Set Ω' := fun n => {ω' | ∀ t ∈ S n, |Y t ω'| ≤ 1}
+  set b : ℕ → Set (ℝ × Ω') := fun n => {p | ∀ t ∈ S n, |p.1 * Θ t p.2| ≤ 1}
+  have hab : ∀ n, Q (a n) = π (b n) := by
+    intro n
+    have key := congrArg (fun m : Measure (S n → ℝ) => m (B n)) (h.map_window_eq hα hX hYm (S n))
+    have hm1 : Measurable fun ω' (t : S n) => Y t ω' := measurable_pi_iff.2 fun t => hYm _
+    have hm2 : Measurable fun p : ℝ × Ω' => fun t : S n => p.1 * (Y t p.2 / |Y 0 p.2|) :=
+      measurable_pi_iff.2 fun t => measurable_fst.mul ((hΘm _).comp measurable_snd)
+    rw [Measure.map_apply hm1 (hB n), Measure.map_apply hm2 (hB n)] at key
+    convert key using 2 <;> ext <;> simp [a, b, B, Θ]
+  have hfa : ∀ t : ℤ, Measurable fun ω' => |Y t ω'| := fun t =>
+    continuous_abs.measurable.comp (hYm t)
+  have hfb : ∀ t : ℤ, Measurable fun p : ℝ × Ω' => |p.1 * Θ t p.2| := fun t =>
+    continuous_abs.measurable.comp (measurable_fst.mul ((hΘm t).comp measurable_snd))
+  have hanti_a : Antitone a := fun m n hmn ω' hω' t ht =>
+    hω' t (Finset.Icc_subset_Icc le_rfl (by exact_mod_cast hmn) ht)
+  have hanti_b : Antitone b := fun m n hmn p hp t ht =>
+    hp t (Finset.Icc_subset_Icc le_rfl (by exact_mod_cast hmn) ht)
+  have hma : ∀ n, MeasurableSet (a n) := fun n => by
+    simp only [a, ofPred_forall]
+    exact MeasurableSet.iInter fun t => MeasurableSet.iInter fun _ =>
+      measurableSet_le (hfa t) measurable_const
+  have hmb : ∀ n, MeasurableSet (b n) := fun n => by
+    simp only [b, ofPred_forall]
+    exact MeasurableSet.iInter fun t => MeasurableSet.iInter fun _ =>
+      measurableSet_le (hfb t) measurable_const
+  have hla := tendsto_measure_iInter_atTop (μ := Q) (fun n => (hma n).nullMeasurableSet)
+    hanti_a ⟨0, measure_ne_top _ _⟩
+  have hlb := tendsto_measure_iInter_atTop (μ := π) (fun n => (hmb n).nullMeasurableSet)
+    hanti_b ⟨0, measure_ne_top _ _⟩
+  have hia : (⋂ n, a n) = {ω' | ∀ k : ℕ, |Y (k + 1) ω'| ≤ 1} := by
+    ext ω'
+    simp only [mem_ofPred_eq, mem_iInter, a, S, Finset.mem_Icc]
+    constructor
+    · intro hω k
+      exact_mod_cast hω (k + 1) ((k : ℤ) + 1) ⟨by omega, by push_cast; omega⟩
+    · intro hω n t ht
+      obtain ⟨k, rfl⟩ : ∃ k : ℕ, t = (k : ℤ) + 1 := ⟨(t - 1).toNat, by omega⟩
+      exact_mod_cast hω k
+  have hib : (⋂ n, b n) = {p | ∀ k : ℕ, |p.1 * Θ (k + 1) p.2| ≤ 1} := by
+    ext p
+    simp only [mem_ofPred_eq, mem_iInter, b, S, Finset.mem_Icc]
+    constructor
+    · intro hp k
+      exact_mod_cast hp (k + 1) ((k : ℤ) + 1) ⟨by omega, by push_cast; omega⟩
+    · intro hp n t ht
+      obtain ⟨k, rfl⟩ : ∃ k : ℕ, t = (k : ℤ) + 1 := ⟨(t - 1).toNat, by omega⟩
+      exact_mod_cast hp k
+  rw [hia] at hla
+  rw [hib] at hlb
+  exact tendsto_nhds_unique hlb (hla.congr hab)
+
 end CandidateExtremalIndex
 
 end ExtremeValueTheory
