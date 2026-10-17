@@ -271,69 +271,6 @@ theorem exists_memLp_logExcess_pow (hY : Measurable Y) {α : ℝ} (hα : 0 < α)
 
 end Tail
 
-/-! ### Deterministic thresholds -/
-
-section Threshold
-
-variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P] {Y : Ω → ℝ}
-
-/-- For a regularly varying survival function and an intermediate sequence `k`, there are
-deterministic thresholds `t_n → ∞` with `n F̄(c t_n) / k_n → c ^ (-α)` for every `c > 0`. -/
-theorem exists_threshold_of_isRegularlyVarying (hY : Measurable Y) {α : ℝ}
-    (hRV : IsRegularlyVarying (survival P Y) (-α)) {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
-    (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0)) :
-    ∃ t : ℕ → ℝ, Tendsto t atTop atTop ∧ ∀ c : ℝ, 0 < c →
-      Tendsto (fun n => n * survival P Y (c * t n) / k n) atTop (𝓝 (c ^ (-α))) := by
-  set F := survival P Y with hF_def
-  have hFanti : Antitone F := survival_anti Y
-  have hFpos : ∀ x, 0 < F x := survival_pos hRV
-  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
-  have hkpos : ∀ᶠ n in atTop, (0 : ℝ) < k n := hkR.eventually_gt_atTop 0
-  have hnpos : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < n :=
-    (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0
-  have hppos : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < k n / n := by
-    filter_upwards [hkpos, hnpos] with n h1 h2; positivity
-  set t : ℕ → ℝ := fun n => sInf {x | F x ≤ (k n : ℝ) / n} with ht_def
-  have hspec : ∀ M, ∀ᶠ n in atTop, F (t n) ≤ (k n : ℝ) / n ∧
-      (∀ x < t n, (k n : ℝ) / n < F x) ∧ M ≤ t n := by
-    intro M
-    filter_upwards [hppos, hkn.eventually (gt_mem_nhds (hFpos M))] with n h1 h2
-    exact threshold_spec hFanti (continuousWithinAt_survival hY) (tendsto_survival_atTop hY)
-      h1 h2
-  have htinf : Tendsto t atTop atTop :=
-    tendsto_atTop.2 fun M => (hspec M).mono fun n h => h.2.2
-  have hr : Tendsto (fun n => n * F (t n) / k n) atTop (𝓝 1) := by
-    refine tendsto_order.2 ⟨fun a ha => ?_, fun a ha => ?_⟩
-    · have hcont : Tendsto (fun c : ℝ => c ^ (-α)) (𝓝 1) (𝓝 1) := by
-        have := Real.continuousAt_rpow_const 1 (-α) (Or.inl one_ne_zero)
-        simpa using this.tendsto
-      obtain ⟨c, hca, hc1⟩ := (((hcont.eventually (lt_mem_nhds ha)).filter_mono
-        nhdsWithin_le_nhds).and (self_mem_nhdsWithin (s := Ioi (1 : ℝ)))).exists
-      have hc0 : (0 : ℝ) < c := zero_lt_one.trans hc1
-      have hlim := (hRV.tendsto hc0).comp (htinf.atTop_div_const hc0)
-      filter_upwards [hlim.eventually (lt_mem_nhds hca), hspec 1, hkpos, hnpos] with n h1 h2 h3 h4
-      simp only [Function.comp_apply, mul_div_cancel₀ _ hc0.ne'] at h1
-      have htn : 0 < t n := one_pos.trans_le h2.2.2
-      have hlt : (k n : ℝ) / n < F (t n / c) := h2.2.1 _ (div_lt_self htn hc1)
-      refine h1.trans_le ?_
-      rw [div_le_div_iff₀ (hFpos _) h3]
-      rw [div_lt_iff₀ h4] at hlt
-      nlinarith [hFpos (t n)]
-    · filter_upwards [hspec 0, hkpos, hnpos] with n h1 h2 h3
-      refine lt_of_le_of_lt ?_ ha
-      rw [div_le_one h2]
-      have := h1.1
-      rw [le_div_iff₀ h3] at this
-      linarith
-  refine ⟨t, htinf, fun c hc => ?_⟩
-  have h := ((hRV.tendsto hc).comp htinf).mul hr
-  rw [mul_one] at h
-  refine h.congr fun n => ?_
-  simp only [Function.comp_apply]
-  field_simp [(hFpos (t n)).ne']
-
-end Threshold
-
 /-! ### Convergence in probability and continuous maps -/
 
 section ContinuousMapping
@@ -363,6 +300,122 @@ theorem tendstoInMeasure_comp₂ {ι : Type*} {l : Filter ι} {f g : ι → Ω �
     rw [Prod.dist_eq]
     exact max_lt hcon.1 hcon.2
   exact absurd hω (not_le.2 (hball hd))
+
+/-- A deterministic convergent sequence converges in probability. -/
+theorem tendstoInMeasure_const_of_tendsto {ι : Type*} {l : Filter ι} {a : ι → ℝ} {c : ℝ}
+    (ha : Tendsto a l (𝓝 c)) :
+    TendstoInMeasure P (fun i (_ : Ω) => a i) l (fun _ => c) := by
+  rw [tendstoInMeasure_iff_dist]
+  intro ε hε
+  refine tendsto_const_nhds.congr' ?_
+  filter_upwards [Metric.tendsto_nhds.1 ha ε hε] with i hi
+  have : {ω : Ω | ε ≤ dist (a i) c} = ∅ := by
+    ext ω; simp [not_le.2 hi]
+  rw [this, measure_empty]
+
+/-- **Continuous mapping theorem** for convergence in probability to a constant, in one
+variable. -/
+theorem tendstoInMeasure_comp {ι : Type*} {l : Filter ι} {f : ι → Ω → ℝ} {a : ℝ}
+    (hf : TendstoInMeasure P f l (fun _ => a)) {φ : ℝ → ℝ} (hφ : ContinuousAt φ a) :
+    TendstoInMeasure P (fun i ω => φ (f i ω)) l (fun _ => φ a) :=
+  tendstoInMeasure_comp₂ hf hf (φ := fun p => φ p.1) (hφ.comp continuousAt_fst)
+
+/-- Products of sequences converging in probability to constants. -/
+theorem tendstoInMeasure_mul {ι : Type*} {l : Filter ι} {f g : ι → Ω → ℝ} {a b : ℝ}
+    (hf : TendstoInMeasure P f l (fun _ => a)) (hg : TendstoInMeasure P g l (fun _ => b)) :
+    TendstoInMeasure P (fun i ω => f i ω * g i ω) l (fun _ => a * b) :=
+  tendstoInMeasure_comp₂ hf hg (φ := fun p => p.1 * p.2) continuous_mul.continuousAt
+
+/-- If `g_i → c` in probability and `f_i = g_i` on events `A_i` whose probability tends to one,
+then `f_i → c` in probability. No measurability is needed. -/
+theorem tendstoInMeasure_of_eqOn {ι : Type*} {l : Filter ι} {f g : ι → Ω → ℝ} {c : ℝ}
+    (hg : TendstoInMeasure P g l (fun _ => c)) {A : ι → Set Ω}
+    (hA : Tendsto (fun i => P (A i)ᶜ) l (𝓝 0)) (heq : ∀ᶠ i in l, ∀ ω ∈ A i, f i ω = g i ω) :
+    TendstoInMeasure P f l (fun _ => c) := by
+  rw [tendstoInMeasure_iff_dist] at hg ⊢
+  intro ε hε
+  have h := (hg ε hε).add hA
+  rw [add_zero] at h
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds h
+    (Eventually.of_forall fun _ => bot_le) ?_
+  filter_upwards [heq] with i hi
+  refine (measure_mono ?_).trans (measure_union_le _ _)
+  intro ω hω
+  by_cases hωA : ω ∈ A i
+  · left
+    simp only [Set.mem_ofPred_eq] at hω ⊢
+    rwa [← hi ω hωA]
+  · right
+    exact hωA
+
+/-- If `f_i = g_i` everywhere for `i` large, convergence in probability transfers. -/
+theorem tendstoInMeasure_of_eventuallyEq {ι : Type*} {l : Filter ι} {f g : ι → Ω → ℝ} {c : ℝ}
+    (hg : TendstoInMeasure P g l (fun _ => c)) (heq : ∀ᶠ i in l, ∀ ω, f i ω = g i ω) :
+    TendstoInMeasure P f l (fun _ => c) :=
+  tendstoInMeasure_of_eqOn hg (A := fun _ => univ) (by simpa using tendsto_const_nhds)
+    (heq.mono fun i hi ω _ => hi ω)
+
+/-- If `Z_n → 0` in probability and `a_n` is eventually bounded, then `a_n Z_n → 0` in
+probability. -/
+theorem tendstoInMeasure_mul_zero_of_bounded {Z : ℕ → Ω → ℝ}
+    (hZ : TendstoInMeasure P Z atTop (fun _ => 0)) {a : ℕ → ℝ} {C : ℝ}
+    (ha : ∀ᶠ n in atTop, |a n| ≤ C) :
+    TendstoInMeasure P (fun n ω => a n * Z n ω) atTop (fun _ => 0) := by
+  rw [tendstoInMeasure_iff_dist] at hZ ⊢
+  intro ε hε
+  have hC : 0 < |C| + 1 := by positivity
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds
+    (hZ (ε / (|C| + 1)) (by positivity)) (Eventually.of_forall fun _ => bot_le) ?_
+  filter_upwards [ha] with n hn
+  refine measure_mono fun ω hω => ?_
+  simp only [Set.mem_ofPred_eq, Real.dist_eq, sub_zero, abs_mul] at hω ⊢
+  by_contra hlt
+  push Not at hlt
+  have h1 : |a n| * |Z n ω| ≤ (|C| + 1) * |Z n ω| :=
+    mul_le_mul_of_nonneg_right (hn.trans ((le_abs_self C).trans (by linarith)))
+      (abs_nonneg _)
+  rw [lt_div_iff₀ hC] at hlt
+  linarith
+
+/-- A sequence of random variables is *bounded in probability* (tight) if for every `ε > 0`
+there is `M` with `P(|Z_n| > M) ≤ ε` for all large `n`. This holds, for instance, whenever
+`Z_n` converges in distribution. -/
+def IsBoundedInProbability (P : Measure Ω) (Z : ℕ → Ω → ℝ) : Prop :=
+  ∀ ε : ENNReal, 0 < ε → ∃ M : ℝ, ∀ᶠ n in atTop, P {ω | M < |Z n ω|} ≤ ε
+
+/-- **Slutsky-type lemma, random version**: if `Z_n` is bounded in probability and `Y_n → 0` in
+probability, then `Y_n Z_n → 0` in probability. -/
+theorem tendstoInMeasure_mul_zero_of_isBoundedInProbability' {Z Y : ℕ → Ω → ℝ}
+    (hZ : IsBoundedInProbability P Z) (hY : TendstoInMeasure P Y atTop (fun _ => 0)) :
+    TendstoInMeasure P (fun n ω => Y n ω * Z n ω) atTop (fun _ => 0) := by
+  rw [tendstoInMeasure_iff_dist] at hY ⊢
+  intro δ hδ
+  rw [ENNReal.tendsto_nhds_zero]
+  intro ε hε
+  have hε2 : 0 < ε / 2 := ENNReal.half_pos hε.ne'
+  obtain ⟨M, hM⟩ := hZ (ε / 2) hε2
+  set M' := max M 1 with hM'
+  have hM'pos : 0 < M' := lt_of_lt_of_le one_pos (le_max_right _ _)
+  have hY' := (ENNReal.tendsto_nhds_zero.1 (hY (δ / M') (by positivity))) (ε / 2) hε2
+  filter_upwards [hM, hY'] with n h1 h2
+  refine (measure_mono (t := {ω | M < |Z n ω|} ∪ {ω | δ / M' ≤ dist (Y n ω) 0}) ?_).trans
+    ((measure_union_le _ _).trans ((add_le_add h1 h2).trans (ENNReal.add_halves ε).le))
+  intro ω hω
+  simp only [mem_ofPred_eq, Real.dist_eq, sub_zero, abs_mul, mem_union] at hω ⊢
+  by_contra hcon
+  push Not at hcon
+  obtain ⟨hz, hy⟩ := hcon
+  have h3 : |Y n ω| * |Z n ω| ≤ |Y n ω| * M' :=
+    mul_le_mul_of_nonneg_left (hz.trans (le_max_left _ _)) (abs_nonneg _)
+  rw [lt_div_iff₀ hM'pos] at hy
+  linarith
+
+/-- **Slutsky-type lemma**: if `Z_n` is bounded in probability and `a_n → 0`, then
+`a_n Z_n → 0` in probability. -/
+theorem tendstoInMeasure_mul_zero_of_isBoundedInProbability {Z : ℕ → Ω → ℝ}
+    (hZ : IsBoundedInProbability P Z) {a : ℕ → ℝ} (ha : Tendsto a atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n ω => a n * Z n ω) atTop (fun _ => 0) :=
+  tendstoInMeasure_mul_zero_of_isBoundedInProbability' hZ (tendstoInMeasure_const_of_tendsto ha)
 
 end ContinuousMapping
 

@@ -423,6 +423,63 @@ theorem threshold_spec {F : ℝ → ℝ} (hF : Antitone F) (hrc : ∀ x, Continu
   · have := notMem_of_lt_csInf hx hbdd
     simpa [hS] using this
 
+variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+
+/-- For a regularly varying survival function and an intermediate sequence `k`, there are
+deterministic thresholds `t_n → ∞` with `n F̄(c t_n) / k_n → c ^ (-α)` for every `c > 0`. -/
+theorem exists_threshold_of_isRegularlyVarying {Y : Ω → ℝ} (hY : Measurable Y) {α : ℝ}
+    (hRV : IsRegularlyVarying (survival P Y) (-α)) {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
+    (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0)) :
+    ∃ t : ℕ → ℝ, Tendsto t atTop atTop ∧ ∀ c : ℝ, 0 < c →
+      Tendsto (fun n => n * survival P Y (c * t n) / k n) atTop (𝓝 (c ^ (-α))) := by
+  set F := survival P Y with hF_def
+  have hFanti : Antitone F := survival_anti Y
+  have hFpos : ∀ x, 0 < F x := survival_pos hRV
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hkpos : ∀ᶠ n in atTop, (0 : ℝ) < k n := hkR.eventually_gt_atTop 0
+  have hnpos : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < n :=
+    (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0
+  have hppos : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < k n / n := by
+    filter_upwards [hkpos, hnpos] with n h1 h2; positivity
+  set t : ℕ → ℝ := fun n => sInf {x | F x ≤ (k n : ℝ) / n} with ht_def
+  have hspec : ∀ M, ∀ᶠ n in atTop, F (t n) ≤ (k n : ℝ) / n ∧
+      (∀ x < t n, (k n : ℝ) / n < F x) ∧ M ≤ t n := by
+    intro M
+    filter_upwards [hppos, hkn.eventually (gt_mem_nhds (hFpos M))] with n h1 h2
+    exact threshold_spec hFanti (continuousWithinAt_survival hY) (tendsto_survival_atTop hY)
+      h1 h2
+  have htinf : Tendsto t atTop atTop :=
+    tendsto_atTop.2 fun M => (hspec M).mono fun n h => h.2.2
+  have hr : Tendsto (fun n => n * F (t n) / k n) atTop (𝓝 1) := by
+    refine tendsto_order.2 ⟨fun a ha => ?_, fun a ha => ?_⟩
+    · have hcont : Tendsto (fun c : ℝ => c ^ (-α)) (𝓝 1) (𝓝 1) := by
+        have := Real.continuousAt_rpow_const 1 (-α) (Or.inl one_ne_zero)
+        simpa using this.tendsto
+      obtain ⟨c, hca, hc1⟩ := (((hcont.eventually (lt_mem_nhds ha)).filter_mono
+        nhdsWithin_le_nhds).and (self_mem_nhdsWithin (s := Ioi (1 : ℝ)))).exists
+      have hc0 : (0 : ℝ) < c := zero_lt_one.trans hc1
+      have hlim := (hRV.tendsto hc0).comp (htinf.atTop_div_const hc0)
+      filter_upwards [hlim.eventually (lt_mem_nhds hca), hspec 1, hkpos, hnpos] with n h1 h2 h3 h4
+      simp only [Function.comp_apply, mul_div_cancel₀ _ hc0.ne'] at h1
+      have htn : 0 < t n := one_pos.trans_le h2.2.2
+      have hlt : (k n : ℝ) / n < F (t n / c) := h2.2.1 _ (div_lt_self htn hc1)
+      refine h1.trans_le ?_
+      rw [div_le_div_iff₀ (hFpos _) h3]
+      rw [div_lt_iff₀ h4] at hlt
+      nlinarith [hFpos (t n)]
+    · filter_upwards [hspec 0, hkpos, hnpos] with n h1 h2 h3
+      refine lt_of_le_of_lt ?_ ha
+      rw [div_le_one h2]
+      have := h1.1
+      rw [le_div_iff₀ h3] at this
+      linarith
+  refine ⟨t, htinf, fun c hc => ?_⟩
+  have h := ((hRV.tendsto hc).comp htinf).mul hr
+  rw [mul_one] at h
+  refine h.congr fun n => ?_
+  simp only [Function.comp_apply]
+  field_simp [(hFpos (t n)).ne']
+
 end Threshold
 
 /-! ### Weak consistency of the Hill estimator -/
@@ -452,56 +509,15 @@ theorem tendstoInMeasure_hill {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (
       (fun _ => 1 / α) := by
   set F := survival P (X 0) with hF_def
   change IsRegularlyVarying F (-α) at hRV
-  have hFanti : Antitone F := survival_anti (X 0)
   have hFpos : ∀ x, 0 < F x := survival_pos hRV
   have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
   have hkinv : Tendsto (fun n => ((k n : ℝ))⁻¹) atTop (𝓝 0) := tendsto_inv_atTop_zero.comp hkR
   have hkpos : ∀ᶠ n in atTop, (0 : ℝ) < k n := hkR.eventually_gt_atTop 0
   have hnpos : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < n :=
     (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0
-  have hppos : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < k n / n := by
-    filter_upwards [hkpos, hnpos] with n h1 h2; positivity
   -- the deterministic thresholds
-  set t : ℕ → ℝ := fun n => sInf {x | F x ≤ (k n : ℝ) / n} with ht_def
-  have hspec : ∀ M, ∀ᶠ n in atTop, F (t n) ≤ (k n : ℝ) / n ∧
-      (∀ x < t n, (k n : ℝ) / n < F x) ∧ M ≤ t n := by
-    intro M
-    filter_upwards [hppos, hkn.eventually (gt_mem_nhds (hFpos M))] with n h1 h2
-    exact threshold_spec hFanti (continuousWithinAt_survival (hX 0)) (tendsto_survival_atTop (hX 0))
-      h1 h2
-  have htinf : Tendsto t atTop atTop :=
-    tendsto_atTop.2 fun M => (hspec M).mono fun n h => h.2.2
-  -- `n F̄(t_n) / k_n → 1`
-  have hr : Tendsto (fun n => n * F (t n) / k n) atTop (𝓝 1) := by
-    refine tendsto_order.2 ⟨fun a ha => ?_, fun a ha => ?_⟩
-    · have hcont : Tendsto (fun c : ℝ => c ^ (-α)) (𝓝 1) (𝓝 1) := by
-        have := Real.continuousAt_rpow_const 1 (-α) (Or.inl one_ne_zero)
-        simpa using this.tendsto
-      obtain ⟨c, hca, hc1⟩ := (((hcont.eventually (lt_mem_nhds ha)).filter_mono
-        nhdsWithin_le_nhds).and (self_mem_nhdsWithin (s := Ioi (1 : ℝ)))).exists
-      have hc0 : (0 : ℝ) < c := zero_lt_one.trans hc1
-      have hlim := (hRV.tendsto hc0).comp (htinf.atTop_div_const hc0)
-      filter_upwards [hlim.eventually (lt_mem_nhds hca), hspec 1, hkpos, hnpos] with n h1 h2 h3 h4
-      simp only [Function.comp_apply, mul_div_cancel₀ _ hc0.ne'] at h1
-      have htn : 0 < t n := one_pos.trans_le h2.2.2
-      have hlt : (k n : ℝ) / n < F (t n / c) := h2.2.1 _ (div_lt_self htn hc1)
-      refine h1.trans_le ?_
-      rw [div_le_div_iff₀ (hFpos _) h3]
-      rw [div_lt_iff₀ h4] at hlt
-      nlinarith [hFpos (t n)]
-    · filter_upwards [hspec 0, hkpos, hnpos] with n h1 h2 h3
-      refine lt_of_le_of_lt ?_ ha
-      rw [div_le_one h2]
-      have := h1.1
-      rw [le_div_iff₀ h3] at this
-      linarith
-  have hcount : ∀ c : ℝ, 0 < c → Tendsto (fun n => n * F (c * t n) / k n) atTop (𝓝 (c ^ (-α))) := by
-    intro c hc
-    have h := ((hRV.tendsto hc).comp htinf).mul hr
-    rw [mul_one] at h
-    refine h.congr fun n => ?_
-    simp only [Function.comp_apply]
-    field_simp [(hFpos (t n)).ne']
+  obtain ⟨t, htinf, hcount⟩ := exists_threshold_of_isRegularlyVarying (hX 0) hRV hk hkn
+  rw [← hF_def] at hcount
   -- the two weak laws of large numbers
   have hWcount : ∀ c : ℝ, 0 < c → ∀ δ : ℝ, 0 < δ → Tendsto (fun n => P {ω | δ ≤
       |(∑ i ∈ range n, (if c * t n < X i ω then (1 : ℝ) else 0)) / k n - c ^ (-α)|})
@@ -596,8 +612,8 @@ theorem tendstoInMeasure_hill {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (
     filter_upwards [hkn.eventually (gt_mem_nhds one_pos), hnpos] with n h1 h2
     rw [div_lt_one h2] at h1
     exact_mod_cast h1
-  filter_upwards [hkn', hkpos, hspec 1] with n hkn hkpos' hsp
-  have htn : 0 < t n := one_pos.trans_le hsp.2.2
+  filter_upwards [hkn', hkpos, htinf.eventually_ge_atTop 1] with n hkn hkpos' hsp
+  have htn : 0 < t n := one_pos.trans_le hsp
   refine (measure_mono ?_).trans ((measure_union_le _ _).trans (add_le_add_left
     ((measure_union_le _ _).trans (add_le_add_left (measure_union_le _ _) _)) _))
   intro ω hω

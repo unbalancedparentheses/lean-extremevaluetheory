@@ -768,12 +768,8 @@ omit [IsProbabilityMeasure P] in
 indices. -/
 theorem tendstoInMeasure_congr_eventually {ι : Type*} {l : Filter ι} {f g : ι → Ω → ℝ} {a : ℝ}
     (hg : TendstoInMeasure P g l (fun _ => a)) (h : ∀ᶠ n in l, ∀ ω, f n ω = g n ω) :
-    TendstoInMeasure P f l (fun _ => a) := by
-  rw [tendstoInMeasure_iff_dist] at hg ⊢
-  intro ε hε
-  refine (hg ε hε).congr' ?_
-  filter_upwards [h] with n hn
-  simp only [hn]
+    TendstoInMeasure P f l (fun _ => a) :=
+  tendstoInMeasure_of_eventuallyEq hg h
 
 omit [IsProbabilityMeasure P] in
 /-- If `f_n → a` in probability and the deterministic `c_n → c`, then `c_n f_n → c a` in
@@ -781,40 +777,8 @@ probability. -/
 theorem tendstoInMeasure_const_mul_of_tendsto {ι : Type*} {l : Filter ι} {f : ι → Ω → ℝ}
     {a c : ℝ} {cn : ι → ℝ} (hf : TendstoInMeasure P f l (fun _ => a))
     (hc : Tendsto cn l (𝓝 c)) :
-    TendstoInMeasure P (fun n ω => cn n * f n ω) l (fun _ => c * a) := by
-  rw [tendstoInMeasure_iff_dist] at hf ⊢
-  intro ε hε
-  set M := |c| + 1 with hM
-  have hM0 : 0 < M := by positivity
-  have hδ : 0 < ε / (2 * M) := by positivity
-  have h1 : ∀ᶠ n in l, |cn n| ≤ M := by
-    filter_upwards [hc.eventually (Metric.ball_mem_nhds c one_pos)] with n hn
-    have hn' : |cn n - c| < 1 := by simpa [Metric.mem_ball, Real.dist_eq] using hn
-    have := abs_sub_abs_le_abs_sub (cn n) c
-    linarith
-  have h2 : ∀ᶠ n in l, |cn n - c| * |a| < ε / 2 := by
-    have : Tendsto (fun n => |cn n - c| * |a|) l (𝓝 (|c - c| * |a|)) :=
-      ((hc.sub_const c).abs).mul_const _
-    rw [sub_self, abs_zero, zero_mul] at this
-    exact this.eventually (gt_mem_nhds (half_pos hε))
-  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds (hf _ hδ)
-    (Eventually.of_forall fun _ => bot_le) ?_
-  filter_upwards [h1, h2] with n hn1 hn2
-  refine measure_mono fun ω hω => ?_
-  simp only [Set.mem_ofPred_eq, Real.dist_eq] at hω ⊢
-  by_contra hcon
-  push Not at hcon
-  have e : cn n * f n ω - c * a = cn n * (f n ω - a) + (cn n - c) * a := by ring
-  have : |cn n * f n ω - c * a| < ε := by
-    rw [e]
-    calc |cn n * (f n ω - a) + (cn n - c) * a|
-        ≤ |cn n| * |f n ω - a| + |cn n - c| * |a| := by
-          rw [← abs_mul, ← abs_mul]; exact abs_add_le _ _
-      _ ≤ M * (ε / (2 * M)) + |cn n - c| * |a| := by
-          gcongr
-      _ < M * (ε / (2 * M)) + ε / 2 := by linarith
-      _ = ε := by field_simp; ring
-  linarith
+    TendstoInMeasure P (fun n ω => cn n * f n ω) l (fun _ => c * a) :=
+  tendstoInMeasure_mul (tendstoInMeasure_const_of_tendsto hc) hf
 
 /-- For an intermediate sequence (`k → ∞`, `k / n → 0`), `n / k → ∞`. -/
 theorem tendsto_div_atTop_of_intermediate {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)

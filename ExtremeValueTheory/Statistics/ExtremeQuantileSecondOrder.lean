@@ -1030,39 +1030,6 @@ end IntermediateOrderStat
 
 /-! ### Asymptotic normality of the Weissman estimator -/
 
-section Aux
-
-variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω}
-
-/-- **Slutsky-type lemma, random version**: if `Z_n` is bounded in probability and `Y_n → 0` in
-probability, then `Y_n Z_n → 0` in probability. -/
-theorem tendstoInMeasure_mul_zero_of_isBoundedInProbability' {Z Y : ℕ → Ω → ℝ}
-    (hZ : IsBoundedInProbability P Z) (hY : TendstoInMeasure P Y atTop (fun _ => 0)) :
-    TendstoInMeasure P (fun n ω => Y n ω * Z n ω) atTop (fun _ => 0) := by
-  rw [tendstoInMeasure_iff_dist] at hY ⊢
-  intro δ hδ
-  rw [ENNReal.tendsto_nhds_zero]
-  intro ε hε
-  have hε2 : 0 < ε / 2 := ENNReal.half_pos hε.ne'
-  obtain ⟨M, hM⟩ := hZ (ε / 2) hε2
-  set M' := max M 1 with hM'
-  have hM'pos : 0 < M' := lt_of_lt_of_le one_pos (le_max_right _ _)
-  have hY' := (ENNReal.tendsto_nhds_zero.1 (hY (δ / M') (by positivity))) (ε / 2) hε2
-  filter_upwards [hM, hY'] with n h1 h2
-  refine (measure_mono (t := {ω | M < |Z n ω|} ∪ {ω | δ / M' ≤ dist (Y n ω) 0}) ?_).trans
-    ((measure_union_le _ _).trans ((add_le_add h1 h2).trans (ENNReal.add_halves ε).le))
-  intro ω hω
-  simp only [mem_ofPred_eq, Real.dist_eq, sub_zero, abs_mul, mem_union] at hω ⊢
-  by_contra hcon
-  push Not at hcon
-  obtain ⟨hz, hy⟩ := hcon
-  have h3 : |Y n ω| * |Z n ω| ≤ |Y n ω| * M' :=
-    mul_le_mul_of_nonneg_left (hz.trans (le_max_left _ _)) (abs_nonneg _)
-  rw [lt_div_iff₀ hM'pos] at hy
-  linarith
-
-end Aux
-
 /-- The difference quotient `(e^y - 1) / y` of the exponential at `0`, extended by `1` at `0`. -/
 noncomputable def expSlope (y : ℝ) : ℝ := if y = 0 then 1 else (exp y - 1) / y
 
@@ -1097,24 +1064,33 @@ section Normality
 variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
   {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'} [IsProbabilityMeasure P']
 
-/-- **Asymptotic normality of the Weissman estimator** ([dHF, §4.3]). Let
-`X_0, X_1, …` be iid with tail quantile function `U` of second-order regular variation with
-`γ > 0`, `ρ < 0` and auxiliary function `A`. If `k → ∞`, `k / n → 0`, `√k A(n/k) → λ`, and the
-extrapolation factor `d_n = k / (n p_n)` satisfies `d_n → ∞` and `log d_n / √k → 0`, then
+/-- **Asymptotic normality of the Weissman estimator with an explicit extrapolation bias**
+(any `ρ ≤ 0`; [dHF, §4.3]). Let `X_0, X_1, …` be iid with tail quantile function `U` of
+second-order regular variation with `γ > 0`, `ρ ≤ 0` and auxiliary function `A`, let `k → ∞`,
+`k / n → 0`, `√k A(n/k) → λ`, and let `d_n = k / (n p_n) → ∞` with `log d_n / √k → 0`. If the
+deterministic extrapolation remainder `r_n = log U(d_n n/k) - log U(n/k) - γ log d_n` satisfies
+`√k r_n / log d_n → μ`, then, for `Z ~ N(λ / (1 - ρ), γ²)`,
 
-  `(√k / log d_n) (x̂_{p_n} / x_{p_n} - 1) ⇒ N(λ / (1 - ρ), γ²)`. -/
-theorem tendstoInDistribution_weissman {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
+  `(√k / log d_n) (x̂_{p_n} / x_{p_n} - 1) ⇒ Z - μ ~ N(λ / (1 - ρ) - μ, γ²)`.
+
+For `ρ < 0`, `μ = 0` (`tendstoInDistribution_weissman`); for `ρ = 0`, typically `μ = λ`
+(`tendstoInDistribution_weissman_of_rho_eq_zero`). -/
+theorem tendstoInDistribution_weissman_of_tendsto_bias {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
     (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ}
-    {A : ℝ → ℝ} (hγ : 0 < γ) (hρ : ρ < 0)
+    {A : ℝ → ℝ} (hγ : 0 < γ)
     (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
     (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
     (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {p : ℕ → ℝ}
     (hp0 : ∀ᶠ n in atTop, 0 < p n) (hd : Tendsto (fun n => (k n : ℝ) / (n * p n)) atTop atTop)
     (hdk : Tendsto (fun n => Real.log ((k n : ℝ) / (n * p n)) / √(k n : ℝ)) atTop (𝓝 0))
+    {μ : ℝ} (hμ : Tendsto (fun n => √(k n : ℝ) *
+      (log (survivalQuantile (survival P (X 0)) ((k n : ℝ) / (n * p n) * (n / k n))) -
+        log (survivalQuantile (survival P (X 0)) (n / k n)) -
+        γ * log ((k n : ℝ) / (n * p n))) / log ((k n : ℝ) / (n * p n))) atTop (𝓝 μ))
     {Z : Ω' → ℝ} (hZ : HasLaw Z (gaussianReal (lam / (1 - ρ)) (γ ^ 2).toNNReal) P') :
     TendstoInDistribution (fun n ω => √(k n : ℝ) / Real.log ((k n : ℝ) / (n * p n)) *
       (weissman (fun i : Fin n => X i ω) (k n) (p n) / tailQuantile P (X 0) (p n) - 1))
-      atTop Z (fun _ => P) P' := by
+      atTop (fun ω => Z ω - μ) (fun _ => P) P' := by
   set U := survivalQuantile (survival P (X 0)) with hUdef
   have hUm := measurable_tailQuantile (survival_anti (P := P) (X 0))
     (continuousWithinAt_survival (P := P) (hX 0)) (tendsto_survival_atTop (P := P) (hX 0))
@@ -1125,36 +1101,10 @@ theorem tendstoInDistribution_weissman {X : ℕ → Ω → ℝ} (hX : ∀ i, Mea
   set t : ℕ → ℝ := fun n => (n : ℝ) / k n with ht_def
   have hnk : Tendsto t atTop atTop := tendsto_div_atTop_of_tendsto hk hkn
   have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
-  -- a measurable auxiliary function and the deterministic bias
-  obtain ⟨B, hBm, h2B, hBA⟩ := h2.exists_measurable hUm
-  have hlamB : Tendsto (fun n => √(k n : ℝ) * B (t n)) atTop (𝓝 lam) := by
-    have := hlam.mul (hBA.comp hnk)
-    rw [mul_one] at this
-    refine this.congr' ?_
-    filter_upwards [hnk.eventually h2.eventually_ne_zero] with n hn
-    simp only [Function.comp_apply, ht_def] at hn ⊢
-    field_simp
-  obtain ⟨C, t₀, -, hC⟩ := h2B.exists_bound_of_neg hUm hBm hρ
   set r : ℕ → ℝ := fun n => log (U (d n * t n)) - log (U (t n)) - γ * log (d n) with hr_def
   have hℓ : Tendsto ℓ atTop atTop := tendsto_log_atTop.comp hd
   have hℓinv : Tendsto (fun n => (ℓ n)⁻¹) atTop (𝓝 0) := tendsto_inv_atTop_zero.comp hℓ
-  have hrdet : Tendsto (fun n => √(k n : ℝ) * r n / ℓ n) atTop (𝓝 0) := by
-    have hb : Tendsto (fun n => |C| * (|lam| + 1) * (ℓ n)⁻¹) atTop (𝓝 0) := by
-      simpa using hℓinv.const_mul (|C| * (|lam| + 1))
-    refine squeeze_zero_norm' ?_ hb
-    filter_upwards [hnk.eventually_ge_atTop t₀, hd.eventually_ge_atTop 1,
-      hℓ.eventually_gt_atTop 0, hkR.eventually_gt_atTop 0,
-      hlamB.abs.eventually (gt_mem_nhds (lt_add_one |lam|))] with n h1 h3 hℓ0 hk0 hlamn
-    have hb1 := hC (t n) h1 (d n) h3
-    rw [Real.norm_eq_abs, abs_div, abs_mul, abs_of_pos hℓ0, abs_of_pos (sqrt_pos.2 hk0),
-      div_eq_mul_inv]
-    refine mul_le_mul_of_nonneg_right ?_ (inv_nonneg.2 hℓ0.le)
-    calc √(k n : ℝ) * |r n| ≤ √(k n : ℝ) * (C * |B (t n)|) := by gcongr
-      _ ≤ |C| * |√(k n : ℝ) * B (t n)| := by
-          rw [abs_mul, abs_of_pos (sqrt_pos.2 hk0),
-            show √(k n : ℝ) * (C * |B (t n)|) = C * (√(k n : ℝ) * |B (t n)|) by ring]
-          exact mul_le_mul_of_nonneg_right (le_abs_self C) (by positivity)
-      _ ≤ |C| * (|lam| + 1) := mul_le_mul_of_nonneg_left hlamn.le (abs_nonneg _)
+  have hrdet : Tendsto (fun n => √(k n : ℝ) * r n / ℓ n) atTop (𝓝 μ) := hμ
   -- the random terms
   have hW := tendstoInDistribution_hill hX hindep hident hγ h2 hk hkn hlam hZ
   have hV := isBoundedInProbability_log_orderStat hX hindep hident h2 hk hkn hlam
@@ -1167,20 +1117,22 @@ theorem tendstoInDistribution_weissman {X : ℕ → Ω → ℝ} (hX : ∀ i, Mea
   set V : ℕ → Ω → ℝ := fun n ω => √(k n : ℝ) *
     (log (orderStat (fun i : Fin n => X i ω) (k n)) - log (U (t n))) with hV_def
   set Y : ℕ → Ω → ℝ := fun n ω => (ℓ n)⁻¹ * V n ω - √(k n : ℝ) * r n / ℓ n with hY_def
-  have hY : TendstoInMeasure P Y atTop (fun _ => 0) := by
+  have hY : TendstoInMeasure P Y atTop (fun _ => -μ) := by
     have h1 := tendstoInMeasure_mul_zero_of_isBoundedInProbability hV hℓinv
     have h2' := tendstoInMeasure_const_of_tendsto (P := P) hrdet
     have := tendstoInMeasure_comp₂ h1 h2' (φ := fun q => q.1 - q.2) (by fun_prop)
-    simp only [sub_self] at this
+    simp only [zero_sub] at this
     exact this
   have hYm : ∀ n, Measurable (Y n) := fun n =>
     (measurable_const.mul (measurable_const.mul ((hOS n).log.sub measurable_const))).sub
       measurable_const
-  have hZ0 : (fun ω => Z ω + 0) = Z := by funext ω; simp
+  set Z' : Ω' → ℝ := fun ω => Z ω - μ with hZ'_def
+  have hZ0 : (fun ω => Z' ω + 0) = Z' := by funext ω; simp
   set G : ℕ → Ω → ℝ := fun n => W n + Y n with hG_def
-  have hG : TendstoInDistribution G atTop Z (fun _ => P) P' := by
+  have hG : TendstoInDistribution G atTop Z' (fun _ => P) P' := by
     have := hW.add_of_tendstoInMeasure_const hY fun n => (hYm n).aemeasurable
-    rwa [hZ0] at this
+    have e : (fun ω => Z ω + -μ) = Z' := by funext ω; simp [hZ'_def, sub_eq_add_neg]
+    rwa [e] at this
   have hGm : ∀ n, Measurable (G n) := fun n =>
     (measurable_const.mul ((hH n).sub measurable_const)).add (hYm n)
   have hGt := isBoundedInProbability_of_tendstoInDistribution hG
@@ -1194,7 +1146,7 @@ theorem tendstoInDistribution_weissman {X : ℕ → Ω → ℝ} (hX : ∀ i, Mea
     ((measurable_expSlope.comp (measurable_const.mul (hGm n))).sub_const 1).mul (hGm n)
   set T' : ℕ → Ω → ℝ := fun n => G n + fun ω => (expSlope (h n * G n ω) - 1) * G n ω
     with hT'_def
-  have hT' : TendstoInDistribution T' atTop Z (fun _ => P) P' := by
+  have hT' : TendstoInDistribution T' atTop Z' (fun _ => P) P' := by
     have := hG.add_of_tendstoInMeasure_const hY2 fun n => (hY2m n).aemeasurable
     rwa [hZ0] at this
   have hT'm : ∀ n, Measurable (T' n) := fun n => (hGm n).add (hY2m n)
@@ -1287,6 +1239,68 @@ theorem tendstoInDistribution_weissman {X : ℕ → Ω → ℝ} (hX : ∀ i, Mea
     simp
   rw [e] at hfinal
   exact hfinal
+
+/-- **Asymptotic normality of the Weissman estimator** ([dHF, §4.3]). Let
+`X_0, X_1, …` be iid with tail quantile function `U` of second-order regular variation with
+`γ > 0`, `ρ < 0` and auxiliary function `A`. If `k → ∞`, `k / n → 0`, `√k A(n/k) → λ`, and the
+extrapolation factor `d_n = k / (n p_n)` satisfies `d_n → ∞` and `log d_n / √k → 0`, then
+
+  `(√k / log d_n) (x̂_{p_n} / x_{p_n} - 1) ⇒ N(λ / (1 - ρ), γ²)`. -/
+theorem tendstoInDistribution_weissman {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
+    (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ}
+    {A : ℝ → ℝ} (hγ : 0 < γ) (hρ : ρ < 0)
+    (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {p : ℕ → ℝ}
+    (hp0 : ∀ᶠ n in atTop, 0 < p n) (hd : Tendsto (fun n => (k n : ℝ) / (n * p n)) atTop atTop)
+    (hdk : Tendsto (fun n => Real.log ((k n : ℝ) / (n * p n)) / √(k n : ℝ)) atTop (𝓝 0))
+    {Z : Ω' → ℝ} (hZ : HasLaw Z (gaussianReal (lam / (1 - ρ)) (γ ^ 2).toNNReal) P') :
+    TendstoInDistribution (fun n ω => √(k n : ℝ) / Real.log ((k n : ℝ) / (n * p n)) *
+      (weissman (fun i : Fin n => X i ω) (k n) (p n) / tailQuantile P (X 0) (p n) - 1))
+      atTop Z (fun _ => P) P' := by
+  set U := survivalQuantile (survival P (X 0)) with hUdef
+  have hUm := measurable_tailQuantile (survival_anti (P := P) (X 0))
+    (continuousWithinAt_survival (P := P) (hX 0)) (tendsto_survival_atTop (P := P) (hX 0))
+    (tendsto_survival_atBot (P := P) (hX 0))
+  set d : ℕ → ℝ := fun n => (k n : ℝ) / (n * p n) with hd_def
+  set ℓ : ℕ → ℝ := fun n => Real.log (d n) with hℓ_def
+  set h : ℕ → ℝ := fun n => ℓ n / √(k n : ℝ) with hh_def
+  set t : ℕ → ℝ := fun n => (n : ℝ) / k n with ht_def
+  have hnk : Tendsto t atTop atTop := tendsto_div_atTop_of_tendsto hk hkn
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  -- a measurable auxiliary function and the deterministic bias
+  obtain ⟨B, hBm, h2B, hBA⟩ := h2.exists_measurable hUm
+  have hlamB : Tendsto (fun n => √(k n : ℝ) * B (t n)) atTop (𝓝 lam) := by
+    have := hlam.mul (hBA.comp hnk)
+    rw [mul_one] at this
+    refine this.congr' ?_
+    filter_upwards [hnk.eventually h2.eventually_ne_zero] with n hn
+    simp only [Function.comp_apply, ht_def] at hn ⊢
+    field_simp
+  obtain ⟨C, t₀, -, hC⟩ := h2B.exists_bound_of_neg hUm hBm hρ
+  set r : ℕ → ℝ := fun n => log (U (d n * t n)) - log (U (t n)) - γ * log (d n) with hr_def
+  have hℓ : Tendsto ℓ atTop atTop := tendsto_log_atTop.comp hd
+  have hℓinv : Tendsto (fun n => (ℓ n)⁻¹) atTop (𝓝 0) := tendsto_inv_atTop_zero.comp hℓ
+  have hrdet : Tendsto (fun n => √(k n : ℝ) * r n / ℓ n) atTop (𝓝 0) := by
+    have hb : Tendsto (fun n => |C| * (|lam| + 1) * (ℓ n)⁻¹) atTop (𝓝 0) := by
+      simpa using hℓinv.const_mul (|C| * (|lam| + 1))
+    refine squeeze_zero_norm' ?_ hb
+    filter_upwards [hnk.eventually_ge_atTop t₀, hd.eventually_ge_atTop 1,
+      hℓ.eventually_gt_atTop 0, hkR.eventually_gt_atTop 0,
+      hlamB.abs.eventually (gt_mem_nhds (lt_add_one |lam|))] with n h1 h3 hℓ0 hk0 hlamn
+    have hb1 := hC (t n) h1 (d n) h3
+    rw [Real.norm_eq_abs, abs_div, abs_mul, abs_of_pos hℓ0, abs_of_pos (sqrt_pos.2 hk0),
+      div_eq_mul_inv]
+    refine mul_le_mul_of_nonneg_right ?_ (inv_nonneg.2 hℓ0.le)
+    calc √(k n : ℝ) * |r n| ≤ √(k n : ℝ) * (C * |B (t n)|) := by gcongr
+      _ ≤ |C| * |√(k n : ℝ) * B (t n)| := by
+          rw [abs_mul, abs_of_pos (sqrt_pos.2 hk0),
+            show √(k n : ℝ) * (C * |B (t n)|) = C * (√(k n : ℝ) * |B (t n)|) by ring]
+          exact mul_le_mul_of_nonneg_right (le_abs_self C) (by positivity)
+      _ ≤ |C| * (|lam| + 1) := mul_le_mul_of_nonneg_left hlamn.le (abs_nonneg _)
+  have := tendstoInDistribution_weissman_of_tendsto_bias hX hindep hident hγ h2 hk hkn hlam hp0
+    hd hdk hrdet hZ
+  simpa using this
 
 end Normality
 

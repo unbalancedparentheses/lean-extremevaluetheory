@@ -861,14 +861,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbability
 
 omit [IsProbabilityMeasure P] in
 theorem tendstoInMeasure_of_tendsto {a : ℕ → ℝ} {c : ℝ} (ha : Tendsto a atTop (𝓝 c)) :
-    TendstoInMeasure P (fun n (_ : Ω) => a n) atTop (fun _ => c) := by
-  rw [tendstoInMeasure_iff_dist]
-  intro ε hε
-  refine tendsto_const_nhds.congr' ?_
-  filter_upwards [Metric.tendsto_nhds.1 ha ε hε] with n hn
-  have : {x : Ω | ε ≤ dist (a n) c} = ∅ := by
-    ext x; simp [not_le.2 hn]
-  rw [this, measure_empty]
+    TendstoInMeasure P (fun n (_ : Ω) => a n) atTop (fun _ => c) :=
+  tendstoInMeasure_const_of_tendsto ha
 
 omit [IsProbabilityMeasure P] in
 /-- If `f_n = g_n` outside events of vanishing probability and `g_n → c` in probability, then
