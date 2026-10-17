@@ -123,4 +123,68 @@ lemma exists_orderIso_apply_eq {u b b' v : ℝ} (hu : 0 ≤ u) (hv : v ≤ 1) (h
     simp only [add_sub_cancel_left, abs_mul, abs_of_nonneg (tent_nonneg u b v t)]
     exact mul_le_of_le_one_right (abs_nonneg c) (tent_le_one hub hbv)
 
+/-- For finitely many points `R` of `I` and `δ > 0` there is a time change `φ` within `δ` of the
+identity such that `φ⁻¹ r` is rational for every `r ∈ R`. -/
+theorem exists_orderIso_dist_lt_rat (R : Finset I) {δ : ℝ} (hδ : 0 < δ) :
+    ∃ φ : I ≃o I, (∀ t, dist (φ t) t < δ) ∧ ∀ r ∈ R, ∃ q : ℚ, ((φ.symm r : I) : ℝ) = q := by
+  classical
+  induction R using Finset.induction_on generalizing δ with
+  | empty => exact ⟨OrderIso.refl I, by simpa using hδ, by simp⟩
+  | insert a R haR ih =>
+    obtain ⟨φ, hφδ, hφR⟩ := ih (half_pos hδ)
+    set b : ℝ := ((φ.symm a : I) : ℝ) with hb_def
+    by_cases hb : ∃ q : ℚ, b = q
+    · refine ⟨φ, fun t ↦ (hφδ t).trans (half_lt_self hδ), ?_⟩
+      rw [Finset.forall_mem_insert]
+      exact ⟨hb, hφR⟩
+    push Not at hb
+    -- A ball around `b` avoiding `0`, `1` and the points `φ⁻¹ r`, `r ∈ R`.
+    set K : Finset ℝ := R.image fun r ↦ (φ.symm r : ℝ)
+    have hbK : b ∉ K := by
+      simp only [K, Finset.mem_image, not_exists, not_and]
+      intro r hr hrb
+      exact haR (φ.symm.injective (Subtype.ext hrb) ▸ hr)
+    have hb0 : b ≠ 0 := fun h ↦ hb 0 (by simp [h])
+    have hb1 : b ≠ 1 := fun h ↦ hb 1 (by simp [h])
+    have hbO : b ∈ Ioo (0 : ℝ) 1 ∩ (K : Set ℝ)ᶜ :=
+      ⟨⟨lt_of_le_of_ne (φ.symm a).2.1 hb0.symm, lt_of_le_of_ne (φ.symm a).2.2 hb1⟩, hbK⟩
+    obtain ⟨η, hη, hηO⟩ := Metric.isOpen_iff.1 (isOpen_Ioo.inter K.finite_toSet.isClosed.isOpen_compl)
+      b hbO
+    have hball {x : ℝ} (hx : |x - b| < η) : x ∈ Ioo (0 : ℝ) 1 ∩ (K : Set ℝ)ᶜ :=
+      hηO (by rwa [mem_ball, Real.dist_eq])
+    set u := b - η / 2 with hu_def
+    set v := b + η / 2 with hv_def
+    obtain ⟨q, hbq, hqb⟩ := exists_rat_btwn (lt_add_of_pos_right b (lt_min (by positivity : 0 < η / 4)
+      (half_pos hδ)))
+    have hqb' : |b - q| < min (η / 4) (δ / 2) := by
+      rw [abs_sub_comm, abs_of_pos (sub_pos.2 hbq)]
+      linarith
+    have hu : 0 ≤ u :=
+      (hball (x := u) (by rw [abs_lt]; constructor <;> linarith)).1.1.le
+    have hv : v ≤ 1 :=
+      (hball (x := v) (by rw [abs_lt]; constructor <;> linarith)).1.2.le
+    have hη4 : |b - q| < η / 4 := hqb'.trans_le (min_le_left _ _)
+    have hη4' := abs_lt.1 hη4
+    obtain ⟨ν, hνq, hνfix, hνdist⟩ := exists_orderIso_apply_eq (b := q) (b' := b) hu hv
+      (by linarith) (by linarith) (lt_min (by linarith) (by linarith))
+    have hqI : (q : ℝ) ∈ I := ⟨by linarith [hbO.1.1], by linarith⟩
+    refine ⟨ν.trans φ, fun t ↦ ?_, ?_⟩
+    · calc dist (φ (ν t)) t ≤ dist (φ (ν t)) (ν t) + dist (ν t) t := dist_triangle _ _ _
+        _ < δ / 2 + δ / 2 := add_lt_add_of_lt_of_le (hφδ _)
+            ((hνdist t).trans (hqb'.le.trans (min_le_right _ _)))
+        _ = δ := add_halves δ
+    · simp only [Finset.forall_mem_insert, OrderIso.symm_trans_apply]
+      constructor
+      · refine ⟨q, ?_⟩
+        have : ν ⟨q, hqI⟩ = φ.symm a := Subtype.ext (hνq _ rfl)
+        rw [← this, OrderIso.symm_apply_apply]
+      · intro r hr
+        have hk : ((φ.symm r : I) : ℝ) ≤ u ∨ v ≤ (φ.symm r : I) := by
+          by_contra! h
+          refine (hball (x := φ.symm r) ?_).2 (Finset.mem_image_of_mem _ hr)
+          rw [abs_lt]
+          constructor <;> linarith [h.1, h.2]
+        rw [ν.symm_apply_eq.2 (hνfix _ hk).symm]
+        exact hφR r hr
+
 end unitInterval
