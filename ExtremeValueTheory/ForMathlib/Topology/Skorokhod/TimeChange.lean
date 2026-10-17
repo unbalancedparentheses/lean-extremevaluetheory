@@ -10,6 +10,7 @@ public import Mathlib.Topology.Order.IntermediateValue
 public import Mathlib.Data.Rat.Cast.Order
 public import Mathlib.Topology.Instances.Rat
 public import Mathlib.Algebra.Order.BigOperators.Group.Finset
+public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 
 /-!
 # Piecewise linear time changes of the unit interval
@@ -26,6 +27,9 @@ the Skorokhod `J₁` metric
   everything outside a neighbourhood `(u, v)` of `b`.
 * `unitInterval.exists_orderIso_apply_eq_of_separated`: a time change moving finitely many
   well separated points `r` to nearby targets `g r` at once.
+* `unitInterval.exists_orderIso_apply_eq_of_separated_and_slope`: the same time change has
+  increments within a factor `exp (± 2 S)` of those of the identity, where `S` is the total
+  displacement relative to the separation.
 * `unitInterval.exists_orderIso_dist_lt_rat`: for finitely many points `R` of `I` and `δ > 0`
   there is a time change `φ` within `δ` of the identity such that `φ⁻¹ r` is rational for every
   `r ∈ R`.
@@ -77,11 +81,16 @@ private lemma abs_tent_sub_le {u b v : ℝ} (hub : u < b) (hbv : b < v) (t t' : 
   have e2 : (v - t') / (v - b) - (v - t) / (v - b) = -((t' - t) / (v - b)) := by ring
   rw [e1, e2, abs_neg, abs_div, abs_div, abs_of_pos (sub_pos.2 hub), abs_of_pos (sub_pos.2 hbv)]
 
-/-- A time change of `I` moving the point `b` to `b'` and fixing everything outside `(u, v)`. -/
-lemma exists_orderIso_apply_eq {u b b' v : ℝ} (hu : 0 ≤ u) (hv : v ≤ 1) (hub : u < b)
+/-- A time change of `I` moving the point `b` to `b'` and fixing everything outside `(u, v)`.
+Its increments are within a factor `1 ± q` of the increments of the identity, where
+`q = |b' - b| / min (b - u) (v - b)`. -/
+lemma exists_orderIso_apply_eq_and_slope {u b b' v : ℝ} (hu : 0 ≤ u) (hv : v ≤ 1) (hub : u < b)
     (hbv : b < v) (hbb' : |b' - b| < min (b - u) (v - b)) :
     ∃ ν : I ≃o I, (∀ t : I, (t : ℝ) = b → (ν t : ℝ) = b') ∧
-      (∀ t : I, (t : ℝ) ≤ u ∨ v ≤ t → ν t = t) ∧ ∀ t, dist (ν t) t ≤ |b' - b| := by
+      (∀ t : I, (t : ℝ) ≤ u ∨ v ≤ t → ν t = t) ∧ (∀ t, dist (ν t) t ≤ |b' - b|) ∧
+      ∀ t t' : I, t ≤ t' →
+        (1 - |b' - b| / min (b - u) (v - b)) * ((t' : ℝ) - t) ≤ (ν t' : ℝ) - ν t ∧
+        (ν t' : ℝ) - ν t ≤ (1 + |b' - b| / min (b - u) (v - b)) * ((t' : ℝ) - t) := by
   set c := b' - b
   set g : ℝ → ℝ := fun t ↦ t + c * tent u b v t with hg
   have hgcont : Continuous g := continuous_id.add (continuous_const.mul (continuous_tent u b v))
@@ -115,8 +124,17 @@ lemma exists_orderIso_apply_eq {u b b' v : ℝ} (hu : 0 ≤ u) (hv : v ≤ 1) (h
     obtain ⟨t, ht, hty⟩ := intermediate_value_Icc zero_le_one hgcont.continuousOn
       (by rwa [hg0, hg1])
     exact ⟨⟨t, ht⟩, Subtype.ext hty⟩
+  have hslope (t t' : ℝ) (htt' : t ≤ t') :
+      |c * (tent u b v t' - tent u b v t)| ≤ |c| / min (b - u) (v - b) * (t' - t) := by
+    rw [abs_mul]
+    refine (mul_le_mul_of_nonneg_left (abs_tent_sub_le hub hbv t t') (abs_nonneg c)).trans ?_
+    rw [abs_of_nonneg (sub_nonneg.2 htt'), div_mul_eq_mul_div, mul_div_assoc]
+    gcongr
+    have hm : 0 < min (b - u) (v - b) := lt_min (sub_pos.2 hub) (sub_pos.2 hbv)
+    exact max_le (div_le_div_of_nonneg_left (sub_nonneg.2 htt') hm (min_le_left _ _))
+      (div_le_div_of_nonneg_left (sub_nonneg.2 htt') hm (min_le_right _ _))
   refine ⟨StrictMono.orderIsoOfSurjective gI hgImono hgIsurj, fun t ht ↦ ?_, fun t ht ↦ ?_,
-    fun t ↦ ?_⟩
+    fun t ↦ ?_, fun t t' htt' ↦ ?_⟩
   · change g t = b'
     simp [hg, ht, tent_self hub hbv, c]
   · exact Subtype.ext (hfix t ht)
@@ -124,6 +142,21 @@ lemma exists_orderIso_apply_eq {u b b' v : ℝ} (hu : 0 ≤ u) (hv : v ≤ 1) (h
     rw [Real.dist_eq, hg]
     simp only [add_sub_cancel_left, abs_mul, abs_of_nonneg (tent_nonneg u b v t)]
     exact mul_le_of_le_one_right (abs_nonneg c) (tent_le_one hub hbv)
+  · change (1 - |c| / min (b - u) (v - b)) * ((t' : ℝ) - t) ≤ g t' - g t ∧
+      g t' - g t ≤ (1 + |c| / min (b - u) (v - b)) * ((t' : ℝ) - t)
+    have e : g t' - g t = ((t' : ℝ) - t) + c * (tent u b v t' - tent u b v t) := by
+      simp only [hg]; ring
+    obtain ⟨h1, h2⟩ := abs_le.1 (hslope t t' (Subtype.coe_le_coe.2 htt'))
+    rw [e, sub_mul, add_mul, one_mul]
+    constructor <;> linarith
+
+/-- A time change of `I` moving the point `b` to `b'` and fixing everything outside `(u, v)`. -/
+lemma exists_orderIso_apply_eq {u b b' v : ℝ} (hu : 0 ≤ u) (hv : v ≤ 1) (hub : u < b)
+    (hbv : b < v) (hbb' : |b' - b| < min (b - u) (v - b)) :
+    ∃ ν : I ≃o I, (∀ t : I, (t : ℝ) = b → (ν t : ℝ) = b') ∧
+      (∀ t : I, (t : ℝ) ≤ u ∨ v ≤ t → ν t = t) ∧ ∀ t, dist (ν t) t ≤ |b' - b| := by
+  obtain ⟨ν, h₁, h₂, h₃, -⟩ := exists_orderIso_apply_eq_and_slope hu hv hub hbv hbb'
+  exact ⟨ν, h₁, h₂, h₃⟩
 
 /-- For finitely many points `R` of `I` and `δ > 0` there is a time change `φ` within `δ` of the
 identity such that `φ⁻¹ r` is rational for every `r ∈ R`. -/
@@ -189,29 +222,50 @@ theorem exists_orderIso_dist_lt_rat (R : Finset I) {δ : ℝ} (hδ : 0 < δ) :
         rw [ν.symm_apply_eq.2 (hνfix _ hk).symm]
         exact hφR r hr
 
+private lemma exp_neg_two_mul_le_one_sub {q : ℝ} (h0 : 0 ≤ q) (h1 : q ≤ 1 / 2) :
+    Real.exp (-(2 * q)) ≤ 1 - q := by
+  rw [← Real.le_log_iff_exp_le (by linarith)]
+  have h := Real.one_sub_inv_le_log_of_pos (x := 1 - q) (by linarith)
+  have : (1 - q)⁻¹ ≤ 1 + 2 * q := by
+    rw [inv_eq_one_div, div_le_iff₀ (by linarith)]
+    nlinarith
+  linarith
+
+private lemma one_add_le_exp_two_mul {q : ℝ} (h0 : 0 ≤ q) : 1 + q ≤ Real.exp (2 * q) := by
+  have := Real.add_one_le_exp (2 * q)
+  linarith
+
 /-- A time change moving finitely many points `r ∈ R` to targets `g r` at once, provided the
 points are `4η`-separated from each other and `2η`-separated from the endpoints, and each moves
-by less than `η`. It fixes every point at distance at least `2η` from `R`, and it moves every
-point by at most the total displacement `∑ r ∈ R, dist (g r) r`. -/
-theorem exists_orderIso_apply_eq_of_separated (R : Finset I) (g : I → I) {η : ℝ}
+by less than `η`. It fixes every point at distance at least `2η` from `R`, it moves every
+point by at most the total displacement `∑ r ∈ R, dist (g r) r`, and its increments are within a
+factor `exp (± 2 S)` of the increments of the identity, where `S = ∑ r ∈ R, dist (g r) r / (2η)`.
+-/
+theorem exists_orderIso_apply_eq_of_separated_and_slope (R : Finset I) (g : I → I) {η : ℝ}
     (hR₀ : ∀ r ∈ R, 2 * η ≤ (r : ℝ) ∧ (r : ℝ) + 2 * η ≤ 1)
     (hR : ∀ r ∈ R, ∀ r' ∈ R, r ≠ r' → 4 * η ≤ dist r r') (hg : ∀ r ∈ R, dist (g r) r < η) :
     ∃ φ : I ≃o I, (∀ r ∈ R, φ r = g r) ∧ (∀ t, (∀ r ∈ R, 2 * η ≤ dist t r) → φ t = t) ∧
-      ∀ t, dist (φ t) t ≤ ∑ r ∈ R, dist (g r) r := by
+      (∀ t, dist (φ t) t ≤ ∑ r ∈ R, dist (g r) r) ∧
+      ∀ s t : I, s ≤ t →
+        Real.exp (-(2 * ∑ r ∈ R, dist (g r) r / (2 * η))) * ((t : ℝ) - s) ≤ (φ t : ℝ) - φ s ∧
+        (φ t : ℝ) - φ s ≤ Real.exp (2 * ∑ r ∈ R, dist (g r) r / (2 * η)) * ((t : ℝ) - s) := by
   classical
   induction R using Finset.induction_on with
-  | empty => exact ⟨OrderIso.refl I, by simp, by simp, by simp⟩
+  | empty => exact ⟨OrderIso.refl I, by simp, by simp, by simp, by simp⟩
   | insert a R haR ih =>
     simp only [Finset.mem_insert, forall_eq_or_imp] at hR₀ hR hg
-    obtain ⟨φ, hφR, hφfix, hφdist⟩ := ih hR₀.2 (fun r hr r' hr' ↦ (hR.2 r hr).2 r' hr') hg.2
+    obtain ⟨φ, hφR, hφfix, hφdist, hφslope⟩ :=
+      ih hR₀.2 (fun r hr r' hr' ↦ (hR.2 r hr).2 r' hr') hg.2
     have hga := hg.1
     rw [Subtype.dist_eq, Real.dist_eq] at hga
     have hη : 0 < η := (abs_nonneg _).trans_lt hga
     -- The one-knot time change moving `a` to `g a` inside `(a - 2η, a + 2η)`.
-    obtain ⟨ν, hνa, hνfix, hνdist⟩ := exists_orderIso_apply_eq (b := a) (b' := g a)
-      (u := a - 2 * η) (v := a + 2 * η) (by linarith [hR₀.1.1]) hR₀.1.2
+    obtain ⟨ν, hνa, hνfix, hνdist, hνslope⟩ := exists_orderIso_apply_eq_and_slope (b := a)
+      (b' := g a) (u := a - 2 * η) (v := a + 2 * η) (by linarith [hR₀.1.1]) hR₀.1.2
       (by linarith [abs_nonneg ((g a : ℝ) - a)]) (by linarith [abs_nonneg ((g a : ℝ) - a)])
       (lt_min (by linarith) (by linarith))
+    rw [show ((a : ℝ) - (a - 2 * η)) = 2 * η by ring, show (a : ℝ) + 2 * η - a = 2 * η by ring,
+      min_self, ← Real.dist_eq, ← Subtype.dist_eq] at hνslope
     have hνfix' (t : I) (ht : 2 * η ≤ dist t a) : ν t = t := by
       refine hνfix t ?_
       rw [Subtype.dist_eq, Real.dist_eq] at ht
@@ -220,7 +274,7 @@ theorem exists_orderIso_apply_eq_of_separated (R : Finset I) (g : I → I) {η :
       · exact Or.inr (by linarith)
     have hsep (r : I) (hr : r ∈ R) : 4 * η ≤ dist r a :=
       (hR.2 r hr).1 fun h ↦ haR (h ▸ hr)
-    refine ⟨φ.trans ν, ?_, fun t ht ↦ ?_, fun t ↦ ?_⟩
+    refine ⟨φ.trans ν, ?_, fun t ht ↦ ?_, fun t ↦ ?_, fun s t hst ↦ ?_⟩
     · simp only [Finset.mem_insert, forall_eq_or_imp, OrderIso.trans_apply]
       refine ⟨?_, fun r hr ↦ ?_⟩
       · rw [hφfix a fun r hr ↦ ?_]
@@ -240,5 +294,41 @@ theorem exists_orderIso_apply_eq_of_separated (R : Finset I) (g : I → I) {η :
           gcongr
           · exact (hνdist _).trans_eq (by rw [Subtype.dist_eq, Real.dist_eq])
           · exact hφdist t
+    · set q := dist (g a) a / (2 * η)
+      set S := ∑ r ∈ R, dist (g r) r / (2 * η)
+      have hq0 : 0 ≤ q := div_nonneg dist_nonneg (by linarith)
+      have hq1 : q ≤ 1 / 2 := by
+        rw [div_le_iff₀ (by linarith)]
+        have := hg.1
+        linarith
+      obtain ⟨hφ₁, hφ₂⟩ := hφslope s t hst
+      obtain ⟨hν₁, hν₂⟩ := hνslope (φ s) (φ t) (φ.monotone hst)
+      have hts : 0 ≤ (t : ℝ) - s := sub_nonneg.2 (Subtype.coe_le_coe.2 hst)
+      have hφts : 0 ≤ (φ t : ℝ) - φ s := sub_nonneg.2 (Subtype.coe_le_coe.2 (φ.monotone hst))
+      rw [Finset.sum_insert haR, OrderIso.trans_apply, OrderIso.trans_apply]
+      constructor
+      · calc Real.exp (-(2 * (q + S))) * ((t : ℝ) - s)
+            = Real.exp (-(2 * q)) * (Real.exp (-(2 * S)) * ((t : ℝ) - s)) := by
+              rw [← mul_assoc, ← Real.exp_add]; ring_nf
+          _ ≤ (1 - q) * ((φ t : ℝ) - φ s) :=
+              mul_le_mul (exp_neg_two_mul_le_one_sub hq0 hq1) hφ₁ (by positivity) (by linarith)
+          _ ≤ _ := hν₁
+      · calc (ν (φ t) : ℝ) - ν (φ s) ≤ (1 + q) * ((φ t : ℝ) - φ s) := hν₂
+          _ ≤ Real.exp (2 * q) * (Real.exp (2 * S) * ((t : ℝ) - s)) :=
+              mul_le_mul (one_add_le_exp_two_mul hq0) hφ₂ hφts (Real.exp_pos _).le
+          _ = Real.exp (2 * (q + S)) * ((t : ℝ) - s) := by
+              rw [← mul_assoc, ← Real.exp_add]; ring_nf
+
+/-- A time change moving finitely many points `r ∈ R` to targets `g r` at once, provided the
+points are `4η`-separated from each other and `2η`-separated from the endpoints, and each moves
+by less than `η`. It fixes every point at distance at least `2η` from `R`, and it moves every
+point by at most the total displacement `∑ r ∈ R, dist (g r) r`. -/
+theorem exists_orderIso_apply_eq_of_separated (R : Finset I) (g : I → I) {η : ℝ}
+    (hR₀ : ∀ r ∈ R, 2 * η ≤ (r : ℝ) ∧ (r : ℝ) + 2 * η ≤ 1)
+    (hR : ∀ r ∈ R, ∀ r' ∈ R, r ≠ r' → 4 * η ≤ dist r r') (hg : ∀ r ∈ R, dist (g r) r < η) :
+    ∃ φ : I ≃o I, (∀ r ∈ R, φ r = g r) ∧ (∀ t, (∀ r ∈ R, 2 * η ≤ dist t r) → φ t = t) ∧
+      ∀ t, dist (φ t) t ≤ ∑ r ∈ R, dist (g r) r := by
+  obtain ⟨φ, h₁, h₂, h₃, -⟩ := exists_orderIso_apply_eq_of_separated_and_slope R g hR₀ hR hg
+  exact ⟨φ, h₁, h₂, h₃⟩
 
 end unitInterval
