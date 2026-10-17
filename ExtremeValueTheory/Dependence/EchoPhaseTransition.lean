@@ -237,6 +237,140 @@ theorem le_measureReal_block_echoProcess {u : ℝ} (hu : 1 ≤ u) (r : ℕ) :
   obtain ⟨i, hi⟩ := mem_iUnion.1 hmem
   exact mem_block_of_mem_echoBlockEvent hω hi
 
+include hα hZ hind hlaw hpos hLm in
+/-- **The cluster ratio of the echo process at every block length.** For iid Pareto(`α`)
+innovations and any measurable echo lag `L ≥ 1`, along `uₙ → ∞` and block lengths `rₙ ≥ 1` with
+`rₙ uₙ^(-α) → 0`,
+`clusterRatio - (1 + E[min(L(Z), rₙ); Z > uₙ] / (rₙ uₙ^(-α))) / 2 → 0`,
+that is, the cluster ratio is asymptotically `(1 + E[min(L(Z) / rₙ, 1) | Z > uₙ]) / 2`.
+Neither `L → ∞` nor `E[L(Z)] < ∞` is used. -/
+theorem tendsto_clusterRatio_sub_echoProcess (hL1 : ∀ z, 1 ≤ L z) {u : ℕ → ℝ}
+    (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : ∀ᶠ n in atTop, 0 < r n)
+    (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0)) :
+    Tendsto (fun n => clusterRatio P (echoProcess L Z) u r n -
+      (1 + echoBlockMass α L (u n) (r n) / (r n * u n ^ (-α))) / 2) atTop (𝓝 0) := by
+  set b : ℕ → ℝ := fun n => u n ^ (-α)
+  set ρ : ℕ → ℝ := fun n => P.real {ω | u n < echoProcess L Z 0 ω} / b n
+  have hρ : Tendsto ρ atTop (𝓝 2) :=
+    (tendsto_measureReal_lt_echoProcess_div hα hZ hind hlaw hLm hL1 0).comp hu
+  set g : ℕ → ℝ := fun n => 4 * (r n * b n) / ρ n + 2 * |1 / ρ n - 1 / 2|
+  have hg : Tendsto g atTop (𝓝 0) := by
+    have h1 : Tendsto (fun n => 4 * (r n * b n) / ρ n) atTop (𝓝 0) := by
+      have := (hrb.const_mul 4).div hρ two_ne_zero
+      rw [mul_zero, zero_div] at this
+      exact this
+    have h2 : Tendsto (fun n => 2 * |1 / ρ n - 1 / 2|) atTop (𝓝 0) := by
+      have := ((((tendsto_const_nhds (x := (1 : ℝ))).div hρ two_ne_zero).sub_const
+        (1 / 2)).abs).const_mul 2
+      simpa using this
+    have := h1.add h2
+    rw [add_zero] at this
+    exact this
+  refine squeeze_zero_norm' ?_ hg
+  filter_upwards [hu.eventually_ge_atTop 1, hr] with n hn hrn
+  have hb : 0 < b n := Real.rpow_pos_of_pos (by linarith) _
+  have hR0 : (0 : ℝ) < r n := by exact_mod_cast hrn
+  have hP0 : 0 < P.real {ω | u n < echoProcess L Z 0 ω} := by
+    refine hb.trans_le ?_
+    show u n ^ (-α) ≤ _
+    rw [← measureReal_lt_of_map_eq hZ hlaw hα 0 hn]
+    exact measureReal_mono fun ω hω => lt_of_lt_of_le hω (le_echoProcess 0 ω)
+  have hρpos : 0 < ρ n := div_pos hP0 hb
+  have hM0 := echoBlockMass_nonneg α L (u n) (r n)
+  have hM1 : echoBlockMass α L (u n) (r n) ≤ r n * b n := echoBlockMass_le hα hLm hn (r n)
+  have hup := measureReal_block_echoProcess_le hα hZ hlaw hpos hLm hn (r n) (P := P)
+  have hlow := le_measureReal_block_echoProcess hα hZ hind hlaw hLm hn (r n) (P := P)
+  set M := echoBlockMass α L (u n) (r n)
+  set PB := P.real {ω | ∃ t ∈ Finset.Ico (0 : ℤ) (r n), u n < |echoProcess L Z t ω|}
+  have hcr : clusterRatio P (echoProcess L Z) u r n = PB / (r n * b n * ρ n) := by
+    rw [clusterRatio]
+    congr 1
+    simp only [ρ, abs_of_nonneg (echoProcess_nonneg hpos _ _)]
+    field_simp
+  rw [Real.norm_eq_abs, hcr]
+  set D := (r n : ℝ) * b n with hD
+  set S := D + M with hS
+  have hD0 : 0 < D := mul_pos hR0 hb
+  have e : PB / (D * ρ n) - (1 + M / D) / 2 =
+      (PB - S) / (D * ρ n) + S / D * (1 / ρ n - 1 / 2) := by
+    field_simp
+    ring
+  rw [e]
+  have hS0 : 0 ≤ S := by linarith
+  have hS2 : S ≤ 2 * D := by linarith
+  have hq : S / D ≤ 2 := by rw [div_le_iff₀ hD0]; linarith
+  have hq0 : 0 ≤ S / D := div_nonneg hS0 hD0.le
+  have h1 : |PB - S| ≤ S ^ 2 := abs_le.2 ⟨by linarith, by nlinarith⟩
+  calc |(PB - S) / (D * ρ n) + S / D * (1 / ρ n - 1 / 2)|
+      ≤ |(PB - S) / (D * ρ n)| + |S / D * (1 / ρ n - 1 / 2)| := abs_add_le _ _
+    _ ≤ 4 * D / ρ n + 2 * |1 / ρ n - 1 / 2| := by
+      gcongr ?_ + ?_
+      · rw [abs_div, abs_of_pos (mul_pos hD0 hρpos), div_le_div_iff₀ (mul_pos hD0 hρpos) hρpos]
+        calc |PB - S| * ρ n ≤ S ^ 2 * ρ n := mul_le_mul_of_nonneg_right h1 hρpos.le
+          _ ≤ (2 * D) ^ 2 * ρ n := by gcongr
+          _ = 4 * D * (D * ρ n) := by ring
+      · rw [abs_mul, abs_of_nonneg hq0]
+        exact mul_le_mul_of_nonneg_right hq (abs_nonneg _)
+
+include hα hZ hind hlaw hpos hLm in
+/-- If `E[min(L(Z), rₙ); Z > uₙ] / (rₙ uₙ^(-α)) → c`, the cluster ratio tends to `(1 + c) / 2`. -/
+theorem tendsto_clusterRatio_echoProcess_of_tendsto (hL1 : ∀ z, 1 ≤ L z) {u : ℕ → ℝ}
+    (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : ∀ᶠ n in atTop, 0 < r n)
+    (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0)) {c : ℝ}
+    (hc : Tendsto (fun n => echoBlockMass α L (u n) (r n) / (r n * u n ^ (-α))) atTop (𝓝 c)) :
+    Tendsto (clusterRatio P (echoProcess L Z) u r) atTop (𝓝 ((1 + c) / 2)) := by
+  have := (tendsto_clusterRatio_sub_echoProcess hα hZ hind hlaw hpos hLm hL1 hu hr hrb).add
+    ((hc.const_add 1).div_const 2)
+  rw [zero_add] at this
+  exact this.congr fun n => by ring
+
+omit [IsProbabilityMeasure P] in
+include hα in
+/-- For blocks shorter than the echo lag of every exceedance, `E[min(L(Z), r); Z > u] = r u^(-α)`. -/
+theorem echoBlockMass_eq_of_le {u : ℝ} (hu : 1 ≤ u) {r : ℕ} (hle : ∀ z, u < z → r ≤ L z) :
+    echoBlockMass α L u r = r * u ^ (-α) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  rw [echoBlockMass, setIntegral_congr_fun measurableSet_Ioi fun z hz => by
+    rw [min_eq_right (hle z hz)], setIntegral_const, smul_eq_mul,
+    paretoMeasure_one_real_Ioi hα hu, mul_comm]
+
+include hα hZ hind hlaw hpos hLm in
+/-- **Short blocks: the cluster ratio tends to `1 = ϑ`.** If eventually every exceedance of `uₙ`
+has echo lag at least `rₙ` (`rₙ ≤ L(z)` for all `z > uₙ`), the two exceedances of a cluster are
+never in the same block, and the cluster ratio tends to `1`. -/
+theorem tendsto_clusterRatio_echoProcess_short (hL1 : ∀ z, 1 ≤ L z) {u : ℕ → ℝ}
+    (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : ∀ᶠ n in atTop, 0 < r n)
+    (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0))
+    (hshort : ∀ᶠ n in atTop, ∀ z, u n < z → r n ≤ L z) :
+    Tendsto (clusterRatio P (echoProcess L Z) u r) atTop (𝓝 1) := by
+  have h := tendsto_clusterRatio_echoProcess_of_tendsto hα hZ hind hlaw hpos hLm hL1 hu hr hrb
+    (c := 1) ?_
+  · norm_num at h
+    exact h
+  refine tendsto_const_nhds.congr' ?_
+  filter_upwards [hshort, hu.eventually_ge_atTop 1, hr] with n hn hu1 hrn
+  have hb : 0 < u n ^ (-α) := Real.rpow_pos_of_pos (by linarith) _
+  have hR : (0 : ℝ) < r n := by exact_mod_cast hrn
+  rw [echoBlockMass_eq_of_le hα hu1 hn, div_self (by positivity)]
+
+include hα hZ hind hlaw hpos hLm in
+/-- **Short blocks: no escape mass.** In the regime of `tendsto_clusterRatio_echoProcess_short`
+(and `L → ∞`, `rₙ → ∞`), the escape mass is `0`: at block lengths below the echo lag the echo
+process looks like an iid sequence, with cluster ratio `ϑ = 1`. -/
+theorem hasEscapeMass_echoProcess_short (hL1 : ∀ z, 1 ≤ L z) (hLinf : Tendsto L atTop atTop)
+    {u : ℕ → ℝ} (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0))
+    (hshort : ∀ᶠ n in atTop, ∀ z, u n < z → r n ≤ L z) :
+    HasEscapeMass P (echoProcess L Z) u r 0 := by
+  have h := (hasSpectralTailProcess_echoProcess hα hZ hind hlaw hpos hLm hL1 hLinf
+    ).tendsto_clusterRatio_iff hα (measurable_echoProcess hZ hLm) measurable_unitSpectral
+    (hasShiftInvariantWindows_echoProcess hZ hind hlaw hLm) hu hr 1
+  rw [candidateExtremalIndex_unitSpectral hα] at h
+  have := h.1 (tendsto_clusterRatio_echoProcess_short hα hZ hind hlaw hpos hLm hL1 hu
+    (hr.eventually_gt_atTop 0) hrb hshort)
+  convert this using 1
+  norm_num
+
 end EchoBlock
 
 end ExtremeValueTheory
