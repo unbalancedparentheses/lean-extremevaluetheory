@@ -31,7 +31,7 @@ cell when no cut point lies in `(t, u]`.
   with finitely many values (step functions).
 * `IsCadlag.finite_setOf_lt_edist_leftLim`: a càdlàg function has only finitely many jumps of
   size larger than `ε`.
-* `IsCadlag.countable_setOf_leftLim_ne`: a càdlàg function has at most countably many jumps.
+* `IsCadlag.countable_setOf_edist_leftLim_ne_zero`, `IsCadlag.countable_setOf_leftLim_ne`: a càdlàg function has at most countably many jumps.
 
 ## References
 
@@ -87,7 +87,8 @@ theorem IsCadlag.exists_finset_edist_lt (hf : IsCadlag f) {ε : ℝ≥0∞} (hε
   -- `V c`: an open order connected neighbourhood of `c` inside `U c`.
   set V : X → Set X := fun c ↦ ordConnectedComponent (interior (U c)) c
   have hVo (c : X) : IsOpen (V c) := isOpen_interior.ordConnectedComponent c
-  have hVc (c : X) : c ∈ V c := self_mem_ordConnectedComponent.2 (mem_interior_iff_mem_nhds.2 (hU c))
+  have hVc (c : X) : c ∈ V c :=
+    self_mem_ordConnectedComponent.2 (mem_interior_iff_mem_nhds.2 (hU c))
   have hVU (c : X) : V c ⊆ U c := ordConnectedComponent_subset.trans interior_subset
   obtain ⟨T, -, hT⟩ := isCompact_univ.elim_nhds_subcover V fun c _ ↦ (hVo c).mem_nhds (hVc c)
   have hcover (m : X) : ∃ c ∈ T, m ∈ V c := by simpa using hT (mem_univ m)
@@ -128,3 +129,72 @@ theorem IsCadlag.exists_finset_edist_lt (hf : IsCadlag f) {ε : ℝ≥0∞} (hε
     have hu : u ∈ V c₁ := (hVconv c₁).out htc₁ (hVc c₁) ⟨htu, hc₁.le⟩
     exact (hleft c₁ t u (hVU _ htc₁) (hVU _ hu) (htu.trans_lt hc₁) hc₁).trans_le
       ENNReal.half_le_self
+
+/-- A càdlàg function on a compact interval is a uniform limit of functions with finitely many
+values: for every `ε > 0` there is a step function `g` with `edist (f t) (g t) < ε` for all
+`t` ([Billingsley, §12][billingsley1999]). -/
+theorem IsCadlag.exists_finite_range_edist_lt (hf : IsCadlag f) {ε : ℝ≥0∞} (hε : 0 < ε) :
+    ∃ g : X → E, (range g).Finite ∧ ∀ t, edist (f t) (g t) < ε := by
+  classical
+  obtain ⟨s, hs⟩ := hf.exists_finset_edist_lt hε
+  -- `p t` is the last cut point before `t`, or the minimum of `X` if there is none.
+  let p : X → X := fun t ↦
+    if h : (s.filter (· ≤ t)).Nonempty then (s.filter (· ≤ t)).max' h else sInf univ
+  have hp (t : X) : p t ≤ t ∧ ∀ r ∈ s, r ≤ p t ∨ t < r := by
+    simp only [p]
+    split_ifs with h
+    · refine ⟨(Finset.mem_filter.1 (Finset.max'_mem _ h)).2, fun r hr ↦ ?_⟩
+      by_cases hrt : r ≤ t
+      · exact Or.inl (Finset.le_max' _ r (Finset.mem_filter.2 ⟨hr, hrt⟩))
+      · exact Or.inr (not_le.1 hrt)
+    · refine ⟨csInf_le isCompact_univ.bddBelow (mem_univ t), fun r hr ↦ Or.inr (not_le.1 ?_)⟩
+      exact fun hrt ↦ h ⟨r, Finset.mem_filter.2 ⟨hr, hrt⟩⟩
+  have hrange : range p ⊆ insert (sInf univ) (s : Set X) := by
+    rintro _ ⟨t, rfl⟩
+    simp only [p]
+    split_ifs with h
+    · exact Or.inr (Finset.mem_filter.1 (Finset.max'_mem _ h)).1
+    · exact Or.inl rfl
+  refine ⟨f ∘ p, ?_, fun t ↦ ?_⟩
+  · rw [range_comp]
+    exact ((s.finite_toSet.insert _).subset hrange).image f
+  · rw [edist_comm]
+    exact hs _ _ (hp t).1 (hp t).2
+
+/-- A càdlàg function on a compact interval has only finitely many jumps of size larger than
+`ε` ([Billingsley, §12][billingsley1999]). -/
+theorem IsCadlag.finite_setOf_lt_edist_leftLim (hf : IsCadlag f) {ε : ℝ≥0∞} (hε : 0 < ε) :
+    {t | ε < edist (Function.leftLim f t) (f t)}.Finite := by
+  obtain ⟨s, hs⟩ := hf.exists_finset_edist_lt hε
+  refine s.finite_toSet.subset fun t ht ↦ ?_
+  by_contra hts
+  refine (not_le.2 (show ε < _ from ht)) ?_
+  rcases eq_or_neBot (𝓝[<] t) with h | h
+  · simp [leftLim_eq_of_eq_bot _ h]
+  have hev : ∀ᶠ u in 𝓝[<] t, edist (f u) (f t) < ε := by
+    have : ∀ᶠ u in 𝓝[<] t, ∀ r ∈ s, r ≤ u ∨ t < r := by
+      refine (Finset.eventually_all s).2 fun r hr ↦ ?_
+      rcases lt_or_gt_of_ne (fun h : r = t ↦ hts (h ▸ hr)) with hrt | hrt
+      · exact (eventually_nhdsWithin_of_eventually_nhds (lt_mem_nhds hrt)).mono
+          fun u hu ↦ Or.inl hu.le
+      · exact Eventually.of_forall fun _ ↦ Or.inr hrt
+    filter_upwards [this, self_mem_nhdsWithin] with u hu hut
+    exact hs u t (le_of_lt hut) hu
+  exact le_of_tendsto ((hf.tendsto_nhdsLT_leftLim t).edist tendsto_const_nhds)
+    (hev.mono fun _ h ↦ h.le)
+
+/-- A càdlàg function on a compact interval has at most countably many jumps
+([Billingsley, §12][billingsley1999]). -/
+theorem IsCadlag.countable_setOf_edist_leftLim_ne_zero (hf : IsCadlag f) :
+    {t | edist (Function.leftLim f t) (f t) ≠ 0}.Countable := by
+  refine (countable_iUnion fun n : ℕ ↦
+    (hf.finite_setOf_lt_edist_leftLim (ε := (n : ℝ≥0∞)⁻¹)
+      (ENNReal.inv_pos.2 (ENNReal.natCast_ne_top n))).countable).mono fun t ht ↦ ?_
+  obtain ⟨n, hn⟩ := ENNReal.exists_inv_nat_lt ht
+  exact mem_iUnion.2 ⟨n, hn⟩
+
+/-- A càdlàg function on a compact interval has at most countably many discontinuities of the
+first kind, i.e. points where the left limit differs from the value. -/
+theorem IsCadlag.countable_setOf_leftLim_ne {E : Type*} [EMetricSpace E] {f : X → E}
+    (hf : IsCadlag f) : {t | Function.leftLim f t ≠ f t}.Countable :=
+  hf.countable_setOf_edist_leftLim_ne_zero.mono fun _ ht h ↦ ht (edist_eq_zero.1 h)
