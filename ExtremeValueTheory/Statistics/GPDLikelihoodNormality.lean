@@ -342,4 +342,176 @@ theorem crossAvg_sub_le (h1ξ : 0 < 1 + ξ) (hn : 0 < n) (hx : ∀ i < n, 0 < x 
 
 end Expansion
 
+/-! ### Convergence in probability: domination lemmas -/
+
+section InProbability
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
+
+/-- Domination: if `|fₙ| ≤ gₙ` everywhere and `gₙ → 0` in probability, then `fₙ → 0`. -/
+lemma tendstoInMeasure_zero_of_abs_le {f g : ℕ → Ω → ℝ} (h : ∀ n ω, |f n ω| ≤ g n ω)
+    (hg : TendstoInMeasure P g atTop (fun _ => 0)) :
+    TendstoInMeasure P f atTop (fun _ => 0) := by
+  rw [tendstoInMeasure_iff_dist] at hg ⊢
+  intro ε hε
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds (hg ε hε)
+    (fun _ => bot_le) fun n => measure_mono fun ω hω => ?_
+  simp only [mem_ofPred_eq, Real.dist_eq, sub_zero] at hω ⊢
+  exact hω.trans ((h n ω).trans (le_abs_self _))
+
+/-- Domination almost surely eventually: if a.s. `|fₙ| ≤ gₙ` for all large `n`, and `gₙ → 0` in
+probability, then `fₙ → 0` in probability. -/
+lemma tendstoInMeasure_zero_of_ae_eventually_abs_le [IsFiniteMeasure P] {f g : ℕ → Ω → ℝ}
+    (hf : ∀ n, AEStronglyMeasurable (f n) P) (hgm : ∀ n, AEStronglyMeasurable (g n) P)
+    (hle : ∀ᵐ ω ∂P, ∀ᶠ n in atTop, |f n ω| ≤ g n ω)
+    (hg : TendstoInMeasure P g atTop (fun _ => 0)) :
+    TendstoInMeasure P f atTop (fun _ => 0) := by
+  set d : ℕ → Ω → ℝ := fun n ω => max (|f n ω| - g n ω) 0
+  have hd : TendstoInMeasure P d atTop (fun _ => 0) := by
+    refine tendstoInMeasure_of_tendsto_ae (fun n => ?_) ?_
+    · exact (((hf n).norm.sub (hgm n)).sup aestronglyMeasurable_const)
+    · filter_upwards [hle] with ω hω
+      refine tendsto_const_nhds.congr' ?_
+      filter_upwards [hω] with n hn
+      simp only [d]
+      rw [max_eq_right (by linarith)]
+  have hsum := tendstoInMeasure_comp₂ hg hd (φ := fun p => p.1 + p.2) continuous_add.continuousAt
+  simp only [add_zero] at hsum
+  refine tendstoInMeasure_zero_of_abs_le (g := fun n ω => g n ω + d n ω) (fun n ω => ?_) hsum
+  simp only [d]
+  linarith [le_max_left (|f n ω| - g n ω) 0]
+
+/-- A continuous cutoff, `0` on `(-∞, 1/4]` and `1` on `[1/2, ∞)`. -/
+noncomputable def cutoff (r : ℝ) : ℝ := min 1 (max 0 (4 * r - 1))
+
+lemma continuous_cutoff : Continuous cutoff := by unfold cutoff; fun_prop
+
+lemma cutoff_nonneg (r : ℝ) : 0 ≤ cutoff r := le_min zero_le_one (le_max_left _ _)
+
+lemma cutoff_of_le {r : ℝ} (h : r ≤ 1 / 4) : cutoff r = 0 := by
+  unfold cutoff; rw [max_eq_left (by linarith), min_eq_right zero_le_one]
+
+lemma cutoff_of_ge {r : ℝ} (h : 1 / 2 ≤ r) : cutoff r = 1 := by
+  unfold cutoff; rw [max_eq_right (by linarith), min_eq_left (by linarith)]
+
+/-- If `ρₙ → 0` in probability, then `Wₙ · cutoff(ρₙ) → 0` in probability, whatever `Wₙ`. -/
+lemma tendstoInMeasure_mul_cutoff {ρ : ℕ → Ω → ℝ} (W : ℕ → Ω → ℝ)
+    (hρ : TendstoInMeasure P ρ atTop (fun _ => 0)) :
+    TendstoInMeasure P (fun n ω => W n ω * cutoff (ρ n ω)) atTop (fun _ => 0) := by
+  rw [tendstoInMeasure_iff_dist] at hρ ⊢
+  intro ε hε
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds (hρ (1 / 4) (by norm_num))
+    (fun _ => bot_le) fun n => measure_mono fun ω hω => ?_
+  simp only [mem_ofPred_eq, Real.dist_eq, sub_zero] at hω ⊢
+  by_contra h
+  rw [cutoff_of_le ((le_abs_self _).trans (not_le.1 h).le), mul_zero, abs_zero] at hω
+  linarith
+
+end InProbability
+
+/-! ### The central limit theorem for the score -/
+
+section ScoreCLT
+
+variable {ξ σ₀ : ℝ} {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'} [IsProbabilityMeasure P']
+  {X : ℕ → Ω → ℝ}
+
+/-- The normalized score sum `(√n)⁻¹ ∑_{i<n} ψ(Xᵢ) = √n Fₙ(σ₀)`. -/
+noncomputable def scoreSumNorm (ξ σ₀ : ℝ) (X : ℕ → Ω → ℝ) (n : ℕ) (ω : Ω) : ℝ :=
+  (√(n : ℝ))⁻¹ * ∑ i ∈ Finset.range n, gpdScorePsi ξ σ₀ (X i ω)
+
+omit [IsProbabilityMeasure P] in
+lemma memLp_gpdScorePsi_comp (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ₀ : 0 < σ₀) {Y : Ω → ℝ}
+    (hY : HasLaw Y (gpdMeasure ξ σ₀) P) : MemLp (gpdScorePsi ξ σ₀ ∘ Y) 2 P := by
+  rw [← memLp_map_measure_iff (measurable_gpdScorePsi ξ σ₀).aestronglyMeasurable hY.aemeasurable,
+    hY.map_eq]
+  exact memLp_gpdScorePsi hξ hξ0 hσ₀
+
+omit [IsProbabilityMeasure P] in
+lemma integral_gpdScorePsi_comp (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ₀ : 0 < σ₀) {Y : Ω → ℝ}
+    (hY : HasLaw Y (gpdMeasure ξ σ₀) P) : P[gpdScorePsi ξ σ₀ ∘ Y] = 0 := by
+  rw [hY.integral_comp (measurable_gpdScorePsi ξ σ₀).aestronglyMeasurable]
+  exact integral_gpdScorePsi hξ hξ0 hσ₀
+
+omit [IsProbabilityMeasure P] in
+lemma variance_gpdScorePsi_comp (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ₀ : 0 < σ₀) {Y : Ω → ℝ}
+    (hY : HasLaw Y (gpdMeasure ξ σ₀) P) : Var[gpdScorePsi ξ σ₀ ∘ Y; P] = 1 / (1 + 2 * ξ) := by
+  rw [variance_of_integral_eq_zero ((measurable_gpdScorePsi ξ σ₀).comp_aemeasurable
+    hY.aemeasurable) (integral_gpdScorePsi_comp hξ hξ0 hσ₀ hY)]
+  have := hY.integral_comp (f := fun x => gpdScorePsi ξ σ₀ x ^ 2)
+    ((measurable_gpdScorePsi ξ σ₀).pow_const 2).aestronglyMeasurable
+  simp only [Function.comp_def] at this ⊢
+  rw [this, integral_gpdScorePsi_sq hξ hξ0 hσ₀]
+
+/-- **The central limit theorem for the score**: `√n Fₙ(σ₀) ⇒ N(0, 1/(1 + 2ξ))`. -/
+theorem tendstoInDistribution_scoreSumNorm (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ₀ : 0 < σ₀)
+    (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ σ₀) P) (hind : iIndepFun X P) {Z : Ω' → ℝ}
+    (hZ : HasLaw Z (gaussianReal 0 (1 / (1 + 2 * ξ)).toNNReal) P') :
+    TendstoInDistribution (scoreSumNorm ξ σ₀ X) atTop Z (fun _ => P) P' := by
+  set Y : ℕ → Ω → ℝ := fun i => gpdScorePsi ξ σ₀ ∘ X i
+  have hind' : iIndepFun Y P := hind.comp (fun _ => gpdScorePsi ξ σ₀)
+    (fun _ => measurable_gpdScorePsi ξ σ₀)
+  have hident : ∀ i, IdentDistrib (Y i) (Y 0) P P := fun i =>
+    IdentDistrib.comp ⟨(hX i).aemeasurable, (hX 0).aemeasurable,
+      by rw [(hX i).map_eq, (hX 0).map_eq]⟩ (measurable_gpdScorePsi ξ σ₀)
+  have hZ' : HasLaw Z (gaussianReal 0 Var[Y 0; P].toNNReal) P' := by
+    rw [variance_gpdScorePsi_comp hξ hξ0 hσ₀ (hX 0)]; exact hZ
+  have hclt := tendstoInDistribution_inv_sqrt_mul_sum_sub hZ'
+    (memLp_gpdScorePsi_comp hξ hξ0 hσ₀ (hX 0)) hind' hident
+  rw [integral_gpdScorePsi_comp hξ hξ0 hσ₀ (hX 0)] at hclt
+  convert hclt using 3 with n ω
+  simp [scoreSumNorm, Y]
+
+/-- **The normalized score sum is bounded in probability** (Chebyshev: its variance is
+`1/(1 + 2ξ)`). -/
+theorem isBoundedInProbability_scoreSumNorm (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ₀ : 0 < σ₀)
+    (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ σ₀) P) (hind : iIndepFun X P) :
+    IsBoundedInProbability P (scoreSumNorm ξ σ₀ X) := by
+  set v : ℝ := 1 / (1 + 2 * ξ)
+  have hv : 0 < v := one_div_pos.2 (by linarith)
+  set Y : ℕ → Ω → ℝ := fun i => gpdScorePsi ξ σ₀ ∘ X i
+  have hind' : iIndepFun Y P := hind.comp (fun _ => gpdScorePsi ξ σ₀)
+    (fun _ => measurable_gpdScorePsi ξ σ₀)
+  have hL2 : ∀ i, MemLp (Y i) 2 P := fun i => memLp_gpdScorePsi_comp hξ hξ0 hσ₀ (hX i)
+  have hS : ∀ n, scoreSumNorm ξ σ₀ X n = fun ω => (√(n : ℝ))⁻¹ * (∑ i ∈ Finset.range n, Y i) ω :=
+    fun n => funext fun ω => by simp [scoreSumNorm, Y, Finset.sum_apply]
+  have hmemS : ∀ n, MemLp (scoreSumNorm ξ σ₀ X n) 2 P := fun n => by
+    rw [hS n]; exact (memLp_finsetSum' _ fun i _ => hL2 i).const_mul _
+  have hmean : ∀ n, P[scoreSumNorm ξ σ₀ X n] = 0 := fun n => by
+    rw [hS n, integral_const_mul]
+    simp_rw [Finset.sum_apply]
+    rw [integral_finsetSum _ fun i _ => (hL2 i).integrable one_le_two]
+    exact mul_eq_zero_of_right _ (Finset.sum_eq_zero fun i _ => integral_gpdScorePsi_comp hξ hξ0 hσ₀ (hX i))
+  have hvar : ∀ n, Var[scoreSumNorm ξ σ₀ X n; P] ≤ v := fun n => by
+    rw [hS n, variance_const_mul, IndepFun.variance_sum (fun i _ => hL2 i)
+      (fun i _ j _ hij => hind'.indepFun hij)]
+    simp only [Y, variance_gpdScorePsi_comp hξ hξ0 hσ₀ (hX _), Finset.sum_const,
+      Finset.card_range, nsmul_eq_mul, inv_pow, sq_sqrt (Nat.cast_nonneg n)]
+    rcases Nat.eq_zero_or_pos n with rfl | hn
+    · simp [hv.le]
+    · have : (0 : ℝ) < n := by exact_mod_cast hn
+      rw [← mul_assoc, inv_mul_cancel₀ this.ne', one_mul]
+  intro ε hε
+  rcases eq_or_ne ε ⊤ with rfl | hεtop
+  · exact ⟨0, Eventually.of_forall fun _ => le_top⟩
+  set e := ε.toReal
+  have he : 0 < e := ENNReal.toReal_pos hε.ne' hεtop
+  set M := √(v / e + 1)
+  have hM : 0 < M := sqrt_pos.2 (by positivity)
+  refine ⟨M, Eventually.of_forall fun n => ?_⟩
+  have h1 := meas_ge_le_variance_div_sq (hmemS n) hM
+  rw [hmean n] at h1
+  simp only [sub_zero] at h1
+  refine (measure_mono fun ω (hω : M < |scoreSumNorm ξ σ₀ X n ω|) => hω.le).trans
+    (h1.trans ?_)
+  rw [← ENNReal.ofReal_toReal hεtop]
+  refine ENNReal.ofReal_le_ofReal ?_
+  rw [sq_sqrt (by positivity), div_le_iff₀ (by positivity)]
+  have := hvar n
+  calc Var[scoreSumNorm ξ σ₀ X n; P] ≤ v := this
+    _ ≤ e * (v / e + 1) := by rw [mul_add, mul_div_cancel₀ _ he.ne']; linarith
+
+end ScoreCLT
+
 end ExtremeValueTheory
