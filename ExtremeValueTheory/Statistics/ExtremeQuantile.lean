@@ -524,4 +524,200 @@ theorem tendstoInMeasure_weissman_div_of_isBoundedInProbability {X : ℕ → Ω 
 
 end Weissman
 
+/-! ### Estimation of small tail probabilities -/
+
+section TailProbability
+
+/-- The **tail probability estimator** of `P(X > y)` based on the top `k + 1` order statistics:
+`p̂(y) = (k / n) (y / X_{(k+1)}) ^ (-1/γ̂)`, with `γ̂ = H_{k,n}` the Hill estimator ([dHF, §4.4];
+[EKM, §6.4.1]). -/
+noncomputable def tailProbEstimator {n : ℕ} (x : Fin n → ℝ) (k : ℕ) (y : ℝ) : ℝ :=
+  (k : ℝ) / n * (y / orderStat x k) ^ (-(hill x k)⁻¹)
+
+variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+
+/-- **Ratio consistency of the tail probability estimator, reduction form** ([dHF, Theorem
+4.4.7]). Let the iid `X_i` have survival function `F̄` regularly varying with index `-α`,
+`α > 0`, let `k → ∞`, `k / n → 0`, let `y_n > 0` and write `e_n = y_n / x_{k/n}`. If
+`(γ̂ - 1/α) log e_n → 0` in probability and the bias condition
+`(k / n) e_n ^ (-α) / F̄(y_n) → 1` holds, then `p̂(y_n) / F̄(y_n) → 1` in probability. -/
+theorem tendstoInMeasure_tailProbEstimator_div_of_bias {X : ℕ → Ω → ℝ}
+    (hX : ∀ i, Measurable (X i)) (hindep : iIndepFun X P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {α : ℝ} (hα : 0 < α)
+    (hRV : IsRegularlyVarying (fun x => (P {ω | x < X 0 ω}).toReal) (-α)) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    {y : ℕ → ℝ} (hy0 : ∀ᶠ n in atTop, 0 < y n)
+    (hlog : TendstoInMeasure P (fun n ω => (hill (fun i : Fin n => X i ω) (k n) - 1 / α) *
+      Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n))) atTop (fun _ => 0))
+    (hbias : Tendsto (fun n => (k n : ℝ) / n *
+      (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) ^ (-α) / (P {ω | y n < X 0 ω}).toReal) atTop
+      (𝓝 1)) :
+    TendstoInMeasure P (fun n ω => tailProbEstimator (fun i : Fin n => X i ω) (k n) (y n) /
+      (P {ω | y n < X 0 ω}).toReal) atTop (fun _ => 1) := by
+  have hloc := tendstoInMeasure_orderStat_div_tailQuantile hX hindep hident hα hRV hk hkn
+  have hhill := tendstoInMeasure_hill hX hindep hident hα hRV hk hkn
+  have hα' : (1 / α) ≠ 0 := by positivity
+  have hB : TendstoInMeasure P (fun n ω => (orderStat (fun i : Fin n => X i ω) (k n) /
+      tailQuantile P (X 0) ((k n : ℝ) / n)) ^ (hill (fun i : Fin n => X i ω) (k n))⁻¹) atTop
+      (fun _ => 1) := by
+    have hg : ContinuousAt (fun q : ℝ × ℝ => (q.1, q.2⁻¹)) ((1 : ℝ), 1 / α) :=
+      continuousAt_fst.prodMk ((continuousAt_snd (p := ((1 : ℝ), 1 / α))).inv₀ hα')
+    have hc : ContinuousAt (fun q : ℝ × ℝ => q.1 ^ q.2⁻¹) (1, 1 / α) :=
+      ContinuousAt.comp_of_eq (Real.continuousAt_rpow_of_ne ((1 : ℝ), (1 / α)⁻¹) one_ne_zero)
+        hg rfl
+    simpa only [Real.one_rpow] using tendstoInMeasure_comp₂ hloc hhill hc
+  have hV : TendstoInMeasure P (fun n ω => (α - (hill (fun i : Fin n => X i ω) (k n))⁻¹) *
+      Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n))) atTop (fun _ => 0) := by
+    have hc : ContinuousAt (fun q : ℝ × ℝ => q.1 * (α / q.2)) (0, 1 / α) :=
+      continuousAt_fst.mul (continuousAt_const.div continuousAt_snd hα')
+    have h0 := tendstoInMeasure_comp₂ hlog hhill hc
+    simp only [zero_mul] at h0
+    refine tendstoInMeasure_of_eqOn h0
+      (A := fun n => {ω | hill (fun i : Fin n => X i ω) (k n) ≠ 0}) ?_
+      (Eventually.of_forall fun n ω hω => ?_)
+    · rw [tendstoInMeasure_iff_dist] at hhill
+      refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds
+        (hhill (1 / α) (by positivity)) (Eventually.of_forall fun _ => bot_le)
+        (Eventually.of_forall fun n => measure_mono fun ω hω => ?_)
+      simp only [Set.mem_compl_iff, Set.mem_ofPred_eq, not_not] at hω
+      simp only [Set.mem_ofPred_eq, hω, Real.dist_eq, zero_sub, abs_neg]
+      exact le_abs_self _
+    · simp only [Set.mem_ofPred_eq] at hω
+      field_simp
+  have hC := tendstoInMeasure_comp hV (φ := Real.exp) Real.continuous_exp.continuousAt
+  have hdet := tendstoInMeasure_const_of_tendsto (P := P) hbias
+  have h := tendstoInMeasure_mul (tendstoInMeasure_mul hdet hB) hC
+  simp only [Real.exp_zero, mul_one] at h
+  change IsRegularlyVarying (survival P (X 0)) (-α) at hRV
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hkpos : ∀ᶠ n in atTop, (0 : ℝ) < k n := hkR.eventually_gt_atTop 0
+  have hnpos : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < n :=
+    (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0
+  have hr0 : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < k n / n := by
+    filter_upwards [hkpos, hnpos] with n h1 h2; positivity
+  obtain ⟨hs, -⟩ := tendsto_tailQuantile (hX 0) hRV hr0 hkn
+  refine tendstoInMeasure_of_eqOn h
+    (A := fun n => {ω | 0 < orderStat (fun i : Fin n => X i ω) (k n)}) ?_ ?_
+  · rw [tendstoInMeasure_iff_dist] at hloc
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds (hloc 1 one_pos)
+      (Eventually.of_forall fun _ => bot_le) ?_
+    filter_upwards [hs.eventually_gt_atTop 0] with n hsn
+    refine measure_mono fun ω hω => ?_
+    simp only [Set.mem_compl_iff, Set.mem_ofPred_eq, not_lt] at hω
+    simp only [Set.mem_ofPred_eq, Real.dist_eq]
+    have : orderStat (fun i : Fin n => X i ω) (k n) / tailQuantile P (X 0) ((k n : ℝ) / n) ≤ 0 :=
+      div_nonpos_of_nonpos_of_nonneg hω hsn.le
+    rw [abs_sub_comm]
+    exact (le_abs_self _).trans' (by linarith)
+  · filter_upwards [hs.eventually_gt_atTop 0, hy0] with n hsn hyn ω hω
+    change 0 < _ at hω
+    set Z := orderStat (fun i : Fin n => X i ω) (k n) with hZ
+    set g := hill (fun i : Fin n => X i ω) (k n) with hg
+    set t := tailQuantile P (X 0) ((k n : ℝ) / n) with ht
+    set e := y n / t with he_def
+    have he : 0 < e := div_pos hyn hsn
+    have hZs : 0 < Z / t := div_pos hω hsn
+    have h1 : y n / Z = e * (Z / t)⁻¹ := by
+      rw [he_def]; field_simp
+    have h2 : (y n / Z) ^ (-g⁻¹) = e ^ (-g⁻¹) * (Z / t) ^ g⁻¹ := by
+      rw [h1, Real.mul_rpow he.le (inv_nonneg.2 hZs.le), Real.inv_rpow hZs.le,
+        Real.rpow_neg hZs.le, inv_inv]
+    have h3 : e ^ (-g⁻¹) = e ^ (-α) * Real.exp ((α - g⁻¹) * Real.log e) := by
+      rw [rpow_def_of_pos he, rpow_def_of_pos he, ← Real.exp_add]
+      ring_nf
+    simp only [tailProbEstimator]
+    rw [h2, h3]
+    ring
+
+/-- **Ratio consistency of the tail probability estimator at intermediate levels**
+([dHF, §4.4]; [EKM, §6.4.1]): under regular variation of the tail with index `-α`, `α > 0`, with
+`k → ∞`, `k / n → 0`, and levels `y_n` comparable to the intermediate quantile (`y_n / x_{k/n}`
+stays in a compact subset `[a, b]` of `(0, ∞)`), `p̂(y_n) / P(X > y_n) → 1` in probability. -/
+theorem tendstoInMeasure_tailProbEstimator_div {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
+    (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {α : ℝ} (hα : 0 < α)
+    (hRV : IsRegularlyVarying (fun x => (P {ω | x < X 0 ω}).toReal) (-α)) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    {y : ℕ → ℝ} {a b : ℝ} (ha : 0 < a)
+    (hy : ∀ᶠ n in atTop, y n / tailQuantile P (X 0) ((k n : ℝ) / n) ∈ Icc a b) :
+    TendstoInMeasure P (fun n ω => tailProbEstimator (fun i : Fin n => X i ω) (k n) (y n) /
+      (P {ω | y n < X 0 ω}).toReal) atTop (fun _ => 1) := by
+  have hhill := tendstoInMeasure_hill hX hindep hident hα hRV hk hkn
+  have hZ := tendstoInMeasure_comp hhill (φ := fun x => x - 1 / α)
+    (continuousAt_id.sub continuousAt_const)
+  simp only [sub_self] at hZ
+  have hlog0 := tendstoInMeasure_mul_zero_of_bounded hZ
+    (a := fun n => Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n)))
+    (C := max |Real.log a| |Real.log b|) (hy.mono fun n hn =>
+      abs_le_max_abs_abs (Real.log_le_log ha hn.1)
+        (Real.log_le_log (ha.trans_le hn.1) hn.2))
+  have hlog : TendstoInMeasure P (fun n ω => (hill (fun i : Fin n => X i ω) (k n) - 1 / α) *
+      Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n))) atTop (fun _ => 0) :=
+    tendstoInMeasure_of_eventuallyEq hlog0 (Eventually.of_forall fun n ω => mul_comm _ _)
+  change IsRegularlyVarying (survival P (X 0)) (-α) at hRV
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hkpos : ∀ᶠ n in atTop, (0 : ℝ) < k n := hkR.eventually_gt_atTop 0
+  have hnpos : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < n :=
+    (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0
+  have hr0 : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < k n / n := by
+    filter_upwards [hkpos, hnpos] with n h1 h2; positivity
+  obtain ⟨hs, hFc⟩ := tendsto_tailQuantile (hX 0) hRV hr0 hkn
+  have hT : Tendsto (fun n => survival P (X 0) (tailQuantile P (X 0) ((k n : ℝ) / n)) /
+      ((k n : ℝ) / n)) atTop (𝓝 1) := by
+    simpa using hFc 1 one_pos
+  have hU := tendsto_div_mul_rpow_of_mem_Icc (survival_anti (X 0)) hRV hs ha hy
+  have hy0 : ∀ᶠ n in atTop, 0 < y n := by
+    filter_upwards [hy, hs.eventually_gt_atTop 0] with n hn hsn
+    have := ha.trans_le hn.1
+    rwa [div_pos_iff_of_pos_right hsn] at this
+  have hbias : Tendsto (fun n => (k n : ℝ) / n *
+      (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) ^ (-α) / (P {ω | y n < X 0 ω}).toReal) atTop
+      (𝓝 1) := by
+    have h := (hU.mul hT).inv₀ (by norm_num)
+    rw [mul_one, inv_one] at h
+    refine h.congr' ?_
+    filter_upwards [hs.eventually_gt_atTop 0, hy, hr0] with n hsn hn hrn
+    set t := tailQuantile P (X 0) ((k n : ℝ) / n) with ht
+    have hes : y n / t * t = y n := div_mul_cancel₀ _ hsn.ne'
+    have he : 0 < y n / t := ha.trans_le hn.1
+    have h1 := survival_pos hRV t
+    have h2 := survival_pos hRV (y n)
+    have h3 := rpow_pos_of_pos he (-α)
+    rw [hes]
+    change _ = (k n : ℝ) / n * (y n / t) ^ (-α) / survival P (X 0) (y n)
+    field_simp
+  exact tendstoInMeasure_tailProbEstimator_div_of_bias hX hindep hident hα hRV hk hkn hy0 hlog
+    hbias
+
+/-- **Ratio consistency of the tail probability estimator far in the tail, given a rate for
+the Hill estimator** ([dHF, Theorem 4.4.7]). If `√k (γ̂ - 1/α)` is bounded in probability,
+`log e_n / √k → 0` for `e_n = y_n / x_{k/n}`, and the bias condition
+`(k / n) e_n ^ (-α) / F̄(y_n) → 1` holds, then `p̂(y_n) / P(X > y_n) → 1` in probability. -/
+theorem tendstoInMeasure_tailProbEstimator_div_of_isBoundedInProbability {X : ℕ → Ω → ℝ}
+    (hX : ∀ i, Measurable (X i)) (hindep : iIndepFun X P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {α : ℝ} (hα : 0 < α)
+    (hRV : IsRegularlyVarying (fun x => (P {ω | x < X 0 ω}).toReal) (-α)) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    {y : ℕ → ℝ} (hy0 : ∀ᶠ n in atTop, 0 < y n)
+    (hrate : IsBoundedInProbability P (fun n ω =>
+      Real.sqrt (k n) * (hill (fun i : Fin n => X i ω) (k n) - 1 / α)))
+    (he : Tendsto (fun n => Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) /
+      Real.sqrt (k n)) atTop (𝓝 0))
+    (hbias : Tendsto (fun n => (k n : ℝ) / n *
+      (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) ^ (-α) / (P {ω | y n < X 0 ω}).toReal) atTop
+      (𝓝 1)) :
+    TendstoInMeasure P (fun n ω => tailProbEstimator (fun i : Fin n => X i ω) (k n) (y n) /
+      (P {ω | y n < X 0 ω}).toReal) atTop (fun _ => 1) := by
+  have h0 := tendstoInMeasure_mul_zero_of_isBoundedInProbability hrate he
+  have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hlog : TendstoInMeasure P (fun n ω => (hill (fun i : Fin n => X i ω) (k n) - 1 / α) *
+      Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n))) atTop (fun _ => 0) := by
+    refine tendstoInMeasure_of_eventuallyEq h0 ?_
+    filter_upwards [hkR.eventually_gt_atTop 0] with n hn ω
+    have : Real.sqrt (k n) ≠ 0 := (Real.sqrt_pos.2 hn).ne'
+    field_simp
+  exact tendstoInMeasure_tailProbEstimator_div_of_bias hX hindep hident hα hRV hk hkn hy0 hlog
+    hbias
+
+end TailProbability
+
 end ExtremeValueTheory
