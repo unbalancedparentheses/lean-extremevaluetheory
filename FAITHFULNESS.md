@@ -213,7 +213,7 @@ Processes*.
 `Test/` holds tests of the statements themselves, built in CI: non-vacuity (each headline theorem
 applied to a concrete object), known answers (definitions checked against textbook values) and a
 junk-value audit ([`Test/JUNK_VALUES.md`](Test/JUNK_VALUES.md)). The audit found one statement made
-trivial by a junk value: `HasSpectralMeasure.measure_univ_toReal` held for an infinite measure as
+trivial by a junk value (see below): `HasSpectralMeasure.measure_univ_toReal` held for an infinite measure as
 `0 = 0` (`ENNReal.toReal ∞ = 0`); it now assumes `IsFiniteMeasure H`.
 
 Points the non-vacuity and known-answer tests surfaced (no statement is false; these are scope notes
@@ -233,6 +233,11 @@ for readers):
 - **Index conventions.** `orderStat x j` is the `(j+1)`-th largest value, so `hill x k` uses the top
   `k+1` order statistics and Pickands uses `X_(k+1), X_(2k+1), X_(4k+1)` where EKM writes
   `X_(k), X_(2k), X_(4k)`. `gpdSurvival` is meaningful only for `ξ ≥ 0` (use `gpdSurvival'` for `ξ < 0`).
+
+Mutation checks ([`Test/MUTATION.md`](Test/MUTATION.md), `scripts/mutation_check.py`): 323 perturbations of
+the statements of the 45 headline and research theorems (flipped inequalities, shifted limits, changed
+constants and signs, hypotheses replaced by `True`); 306 broke the proof, 16 were ill-typed, and the one
+survivor (strengthening `1 < α` to `2 < α` in Karamata) is harmless. Every hypothesis tested is used.
 
 ## Independent kernel check
 
