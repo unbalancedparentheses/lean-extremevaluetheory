@@ -249,4 +249,151 @@ theorem hasGradientAt_gevReturnLevelVec {ξ μ σ m : ℝ} (hξ : ξ ≠ 0) (hm 
 
 end GEV
 
+/-! ### Gumbel and GPD return levels as functions of the parameters -/
+
+section Gradients
+
+/-- The Gumbel return level as a function of `(μ, σ) ∈ ℝ²`. -/
+noncomputable def gumbelReturnLevelVec (m : ℝ) (v : EuclideanSpace ℝ (Fin 2)) : ℝ :=
+  gevReturnLevel 0 (v 0) (v 1) m
+
+/-- The gradient of the Gumbel return level in `(μ, σ)`: `(1, -log y_m)` ([Coles, §3.3.3]). -/
+theorem hasGradientAt_gumbelReturnLevelVec (μ σ m : ℝ) :
+    HasGradientAt (gumbelReturnLevelVec m) !₂[1, -log (-log (1 - 1 / m))] !₂[μ, σ] := by
+  have p0 := (EuclideanSpace.proj (𝕜 := ℝ) (0 : Fin 2)).hasFDerivAt (x := !₂[μ, σ])
+  have p1 := (EuclideanSpace.proj (𝕜 := ℝ) (1 : Fin 2)).hasFDerivAt (x := !₂[μ, σ])
+  have hd := p0.add (p1.mul_const (-log (-log (1 - 1 / m))))
+  refine hasGradientAt_of_hasFDerivAt
+    (hd.congr_of_eventuallyEq (Eventually.of_forall fun v => ?_)) fun v => ?_
+  · simp [gumbelReturnLevelVec, gevReturnLevel_zero, sub_eq_add_neg]
+  · simp [Fin.sum_univ_two]
+
+/-- The **`N`-observation return level of the peaks-over-threshold model** ([Coles, (4.12)]):
+with threshold `u`, exceedance probability `ζ = P(X > u)` and excess law `GPD(ξ, σ)`, the level
+exceeded on average once every `N` observations is `x_N = u + σ h_ξ(N ζ)`. -/
+noncomputable def gpdReturnLevel (u ξ σ ζ N : ℝ) : ℝ := u + σ * boxCox ξ (N * ζ)
+
+/-- Coles' form, `ξ ≠ 0`: `x_N = u + σ/ξ ((N ζ)^ξ - 1)`. -/
+theorem gpdReturnLevel_of_ne {ξ : ℝ} (hξ : ξ ≠ 0) (u σ ζ N : ℝ) :
+    gpdReturnLevel u ξ σ ζ N = u + σ / ξ * ((N * ζ) ^ ξ - 1) := by
+  rw [gpdReturnLevel, boxCox_of_ne hξ]
+  ring
+
+/-- The exponential case: `x_N = u + σ log(N ζ)`. -/
+theorem gpdReturnLevel_zero (u σ ζ N : ℝ) :
+    gpdReturnLevel u 0 σ ζ N = u + σ * log (N * ζ) := by
+  rw [gpdReturnLevel, boxCox_zero]
+
+/-- The GPD return level is continuous in the shape at `ξ = 0`. -/
+theorem tendsto_gpdReturnLevel_zero (u σ : ℝ) {ζ N : ℝ} (hNζ : 0 < N * ζ) :
+    Tendsto (fun ξ => gpdReturnLevel u ξ σ ζ N) (𝓝 0) (𝓝 (gpdReturnLevel u 0 σ ζ N)) :=
+  (continuousAt_const.add (continuousAt_const.mul (continuousAt_boxCox_shape_zero hNζ))).tendsto
+
+/-- The GPD return level as a function of `(ξ, σ) ∈ ℝ²`, with `u`, `ζ` and `N` fixed. -/
+noncomputable def gpdReturnLevelVec (u ζ N : ℝ) (v : EuclideanSpace ℝ (Fin 2)) : ℝ :=
+  gpdReturnLevel u (v 0) (v 1) ζ N
+
+/-- The gradient of the GPD return level in `(ξ, σ)`: `(σ ∂_ξ h_ξ(Nζ), h_ξ(Nζ))`. -/
+noncomputable def gpdReturnLevelGrad (ξ σ ζ N : ℝ) : EuclideanSpace ℝ (Fin 2) :=
+  !₂[σ * boxCoxShapeDeriv ξ (N * ζ), boxCox ξ (N * ζ)]
+
+/-- Coles' form of the gradient ([Coles, §4.3.3]):
+`∂x_N/∂ξ = -σ ξ⁻² ((Nζ)^ξ - 1) + σ ξ⁻¹ (Nζ)^ξ log(Nζ)`, `∂x_N/∂σ = ξ⁻¹ ((Nζ)^ξ - 1)`. -/
+theorem gpdReturnLevelGrad_eq {ξ : ℝ} (hξ : ξ ≠ 0) (σ ζ N : ℝ) :
+    gpdReturnLevelGrad ξ σ ζ N =
+      !₂[-σ / ξ ^ 2 * ((N * ζ) ^ ξ - 1) + σ / ξ * (N * ζ) ^ ξ * log (N * ζ),
+        ((N * ζ) ^ ξ - 1) / ξ] := by
+  rw [gpdReturnLevelGrad, boxCoxShapeDeriv, boxCox_of_ne hξ]
+  congr 2
+  ring
+
+/-- **The gradient of the GPD return level**, `ξ ≠ 0`, `N ζ > 0`. -/
+theorem hasGradientAt_gpdReturnLevelVec {ξ σ u ζ N : ℝ} (hξ : ξ ≠ 0) (hNζ : 0 < N * ζ) :
+    HasGradientAt (gpdReturnLevelVec u ζ N) (gpdReturnLevelGrad ξ σ ζ N) !₂[ξ, σ] := by
+  have p0 := (EuclideanSpace.proj (𝕜 := ℝ) (0 : Fin 2)).hasFDerivAt (x := !₂[ξ, σ])
+  have p1 := (EuclideanSpace.proj (𝕜 := ℝ) (1 : Fin 2)).hasFDerivAt (x := !₂[ξ, σ])
+  have hb : HasDerivAt (fun ρ => boxCox ρ (N * ζ)) (boxCoxShapeDeriv ξ (N * ζ))
+      (EuclideanSpace.proj (𝕜 := ℝ) (0 : Fin 2) !₂[ξ, σ]) := by
+    simpa using hasDerivAt_boxCox_shape hξ hNζ
+  have hd := (p1.mul (hb.comp_hasFDerivAt !₂[ξ, σ] p0)).const_add u
+  refine hasGradientAt_of_hasFDerivAt
+    (hd.congr_of_eventuallyEq (Eventually.of_forall fun v => by
+      simp [gpdReturnLevelVec, gpdReturnLevel])) fun v => ?_
+  simp [Fin.sum_univ_two, gpdReturnLevelGrad]
+  ring
+
+/-- The asymptotic variance `∇x_Nᵀ I(ξ, σ)⁻¹ ∇x_N` of the GPD maximum likelihood return level,
+with `∇x_N = (a, b)`: `(1 + ξ) ((1 + ξ) a² - 2σ a b + 2σ² b²)`. -/
+noncomputable def gpdReturnLevelVar (ξ σ ζ N : ℝ) : ℝ :=
+  (1 + ξ) * ((1 + ξ) * (σ * boxCoxShapeDeriv ξ (N * ζ)) ^ 2 -
+    2 * σ * (σ * boxCoxShapeDeriv ξ (N * ζ)) * boxCox ξ (N * ζ) +
+    2 * σ ^ 2 * boxCox ξ (N * ζ) ^ 2)
+
+theorem dotProduct_gpdReturnLevelGrad (ξ σ ζ N : ℝ) :
+    gpdReturnLevelGrad ξ σ ζ N ⬝ᵥ gpdFisherInfoInv ξ σ *ᵥ gpdReturnLevelGrad ξ σ ζ N =
+      gpdReturnLevelVar ξ σ ζ N := by
+  simp [gpdReturnLevelGrad, gpdReturnLevelVar, gpdFisherInfoInv, Matrix.mulVec, dotProduct,
+    Fin.sum_univ_two]
+  ring
+
+/-- The return level variance is positive when the return period exceeds the mean waiting
+time between exceedances, `N ζ > 1`, and `ξ > -1/2`, `σ > 0`. -/
+theorem gpdReturnLevelVar_pos {ξ σ ζ N : ℝ} (hξ : -1 / 2 < ξ) (hσ : 0 < σ)
+    (hNζ : 1 < N * ζ) : 0 < gpdReturnLevelVar ξ σ ζ N := by
+  have hb := boxCox_pos_of_one_lt (ρ := ξ) hNζ
+  set a := σ * boxCoxShapeDeriv ξ (N * ζ)
+  set b := boxCox ξ (N * ζ)
+  have h1 : 0 < 1 + ξ := by linarith
+  have hq : 0 < (1 + ξ) * a ^ 2 - 2 * σ * a * b + 2 * σ ^ 2 * b ^ 2 := by
+    nlinarith [sq_nonneg ((1 + ξ) * a - σ * b), mul_pos hσ hb, mul_pos (mul_pos hσ hb) h1,
+      mul_pos (mul_pos hσ hb) (mul_pos hσ hb)]
+  exact mul_pos h1 hq
+
+/-- The POT return level as a function of `(ζ, ξ, σ) ∈ ℝ³`, with `u` and `N` fixed. -/
+noncomputable def gpdReturnLevelVec₃ (u N : ℝ) (v : EuclideanSpace ℝ (Fin 3)) : ℝ :=
+  gpdReturnLevel u (v 1) (v 2) (v 0) N
+
+/-- The gradient of the POT return level in `(ζ, ξ, σ)`:
+`(σ N (Nζ)^{ξ-1}, σ ∂_ξ h_ξ(Nζ), h_ξ(Nζ))`. -/
+noncomputable def gpdReturnLevelGrad₃ (ζ ξ σ N : ℝ) : EuclideanSpace ℝ (Fin 3) :=
+  !₂[σ * N * (N * ζ) ^ (ξ - 1), σ * boxCoxShapeDeriv ξ (N * ζ), boxCox ξ (N * ζ)]
+
+/-- The `ζ` component in Coles' form, `∂x_N/∂ζ = σ N^ξ ζ^{ξ-1}` ([Coles, §4.3.3]). -/
+theorem gpdReturnLevelGrad₃_zero {ζ N : ℝ} (hζ : 0 < ζ) (hN : 0 < N) (ξ σ : ℝ) :
+    gpdReturnLevelGrad₃ ζ ξ σ N 0 = σ * N ^ ξ * ζ ^ (ξ - 1) := by
+  simp only [gpdReturnLevelGrad₃]
+  simp only [Matrix.cons_val_zero]
+  rw [mul_rpow hN.le hζ.le, rpow_sub_one hN.ne']
+  field_simp
+
+/-- **The gradient of the POT return level in `(ζ, ξ, σ)`**, `ξ ≠ 0`, `N ζ > 0`. -/
+theorem hasGradientAt_gpdReturnLevelVec₃ {ζ ξ σ u N : ℝ} (hξ : ξ ≠ 0) (hNζ : 0 < N * ζ) :
+    HasGradientAt (gpdReturnLevelVec₃ u N) (gpdReturnLevelGrad₃ ζ ξ σ N) !₂[ζ, ξ, σ] := by
+  set θ : EuclideanSpace ℝ (Fin 3) := !₂[ζ, ξ, σ]
+  have p0 := (EuclideanSpace.proj (𝕜 := ℝ) (0 : Fin 3)).hasFDerivAt (x := θ)
+  have p1 := (EuclideanSpace.proj (𝕜 := ℝ) (1 : Fin 3)).hasFDerivAt (x := θ)
+  have p2 := (EuclideanSpace.proj (𝕜 := ℝ) (2 : Fin 3)).hasFDerivAt (x := θ)
+  have hθ0 : EuclideanSpace.proj (𝕜 := ℝ) (0 : Fin 3) θ = ζ := by simp [θ]
+  have hθ1 : EuclideanSpace.proj (𝕜 := ℝ) (1 : Fin 3) θ = ξ := by simp [θ]
+  have hθ2 : EuclideanSpace.proj (𝕜 := ℝ) (2 : Fin 3) θ = σ := by simp [θ]
+  have hpow := (p0.const_mul N).rpow p1 (by rw [hθ0]; exact hNζ)
+  have hinv : HasDerivAt (fun y : ℝ => y⁻¹) (-(ξ ^ 2)⁻¹)
+      (EuclideanSpace.proj (𝕜 := ℝ) (1 : Fin 3) θ) := by
+    rw [hθ1]; exact hasDerivAt_inv hξ
+  have hd := (p2.mul ((hpow.sub_const 1).mul (hinv.comp_hasFDerivAt θ p1))).const_add u
+  have hev : (gpdReturnLevelVec₃ u N) =ᶠ[𝓝 θ] fun v => u + v 2 * ((N * v 0) ^ v 1 - 1) * (v 1)⁻¹ := by
+    have hopen : {v : EuclideanSpace ℝ (Fin 3) | v 1 ≠ 0} ∈ 𝓝 θ :=
+      (isOpen_ne_fun (EuclideanSpace.proj (𝕜 := ℝ) (1 : Fin 3)).continuous
+        continuous_const).mem_nhds (by simp [θ, hξ])
+    filter_upwards [hopen] with v hv
+    simp only [gpdReturnLevelVec₃, gpdReturnLevel, boxCox_of_ne hv, div_eq_mul_inv, mul_assoc]
+  refine hasGradientAt_of_hasFDerivAt (hd.congr_of_eventuallyEq (hev.trans
+    (Eventually.of_forall fun v => by simp [mul_assoc]))) fun v => ?_
+  simp only [hθ0, hθ1, hθ2]
+  simp [θ, Fin.sum_univ_three, gpdReturnLevelGrad₃, boxCoxShapeDeriv, boxCox_of_ne hξ]
+  field_simp
+  ring
+
+end Gradients
+
 end ExtremeValueTheory
