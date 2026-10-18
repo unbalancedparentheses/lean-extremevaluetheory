@@ -207,6 +207,14 @@ Processes*.
 | ‡ `IsSubexponential.of_convPow` | Embrechts–Goldie–Veraverbeke (1979) | `F^{*n} ∈ 𝒮` ⇒ `F ∈ 𝒮` | For laws on `[0,∞)`, `n ≥ 1`. | FAITHFUL |
 | `kesten_bound` | EKM Lemma 1.3.5(c) | ∀ `ε > 0` ∃ `K` ∀ `n`, `x ≥ 0`: `F̄^{*n}(x) ≤ K(1+ε)^n F̄(x)` | Holds for all `n` and all real `x`. | FAITHFUL (slightly stronger) |
 
+## Specification tests
+
+`Test/` holds tests of the statements themselves, built in CI: non-vacuity (each headline theorem
+applied to a concrete object), known answers (definitions checked against textbook values) and a
+junk-value audit ([`Test/JUNK_VALUES.md`](Test/JUNK_VALUES.md)). The audit found one statement made
+trivial by a junk value: `HasSpectralMeasure.measure_univ_toReal` held for an infinite measure as
+`0 = 0` (`ENNReal.toReal ∞ = 0`); it now assumes `IsFiniteMeasure H`.
+
 ## Independent kernel check
 
 Besides Lean's own kernel at build time, CI re-checks the whole exported environment (the library
