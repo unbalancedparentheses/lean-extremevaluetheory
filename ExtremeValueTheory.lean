@@ -147,6 +147,7 @@ import ExtremeValueTheory.Statistics.GPDLikelihoodNormality
 import ExtremeValueTheory.Statistics.GPDScaleMLE
 import ExtremeValueTheory.Statistics.GPDFisherInformation
 import ExtremeValueTheory.Statistics.GPDJointNormality
+import ExtremeValueTheory.Statistics.GEVMLE
 import ExtremeValueTheory.ForMathlib.Probability.TriangularArrayCLT
 import ExtremeValueTheory.Statistics.TailEmpiricalProcess
 import ExtremeValueTheory.ForMathlib.Probability.FourthMoment
