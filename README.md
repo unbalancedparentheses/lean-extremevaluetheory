@@ -59,6 +59,7 @@ of variables. So every limit law of normalized maxima is, up to type, Gumbel, Fr
 | Statistics | Hill estimator: consistency, asymptotic normality, dependent data | `tendstoInMeasure_hill`, `tendstoInDistribution_hill`, `tendstoInMeasure_hill_of_alphaMixing_rate` |
 | | Pickands and moment estimators, Weissman extreme quantiles | `tendstoInMeasure_pickands`, `tendstoInMeasure_momentEstimator_of_isInMDAGEV'`, `tendstoInDistribution_weissman` |
 | | GPD/GEV maximum likelihood: consistency, Fisher information, joint normality | `ae_tendsto_gpdMLE'`, `exists_gpdMLE_tendstoInDistribution`, `ae_tendsto_gevMLE` |
+| | Return levels: asymptotic normality and Wald intervals with correct coverage | `tendstoInDistribution_gpdReturnLevel`, `tendsto_measure_mem_gpdReturnLevelInterval` |
 | Dependence | Leadbetter's theorem and the extremal index | `tendsto_measureReal_partialMax_le_exp`, `HasExtremalIndex` |
 | | Tail process, time-change formula, `θ = ϑ` under anticlustering | `HasSpectralTailProcess.lintegral_timeChange`, `HasSpectralTailProcess.hasExtremalIndex_abs` |
 | Multivariate | Regular variation, polar decomposition, converse Cramér–Wold (non-integer `α`) | `isRegVarVector_iff`, `CramerWold.isRegVarVector_of_tendsto_linear` |

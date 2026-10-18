@@ -329,3 +329,12 @@ Line counts are approximate and include docstrings.
   `TightNormed` are active areas. A2 and F1a should be coordinated with whoever maintains them.
 - **Gamma / zeta.** `ψ'(1) = π²/6` relates to `riemannZeta_two`/`hasSum_zeta_two`. Mention it
   in A4b and ask whether a general `trigamma` definition is wanted.
+
+## Added later: delta method and Wald intervals
+
+- `Probability/DeltaMethod.lean`: continuous mapping in probability, tightness from convergence in
+  distribution, `rₙYₙ ⇒ Z, rₙ → ∞ ⟹ Yₙ → 0` in probability, the delta method (general limit and
+  Gaussian), and the law of `⟨a, X⟩` for a multivariate Gaussian. Mathlib v4.35.0 has no delta method.
+- `Probability/WaldInterval.lean`: asymptotic coverage of `θ̂ ± zŜ/r` and existence of the Gaussian
+  quantile `z` with `N(0,1)([−z, z]) = 1 − α`.
+- Both cite `vandervaart1998`; add that key to `references.bib` with the first PR.
