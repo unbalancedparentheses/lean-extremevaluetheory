@@ -572,6 +572,107 @@ theorem exists_subseq_tendsto [IsProbabilityMeasure P] [FiniteDimensional ℝ E]
     refine (((NNReal.continuous_coe.tendsto _).comp hm_lim).mul ?_).congr fun n => (hseq n).symm
     exact (ProbabilityMeasure.tendsto_iff_forall_integral_tendsto.1 hQ_lim) h
 
+theorem scaledLaw_real_norm_lt (hX : Measurable X) [IsFiniteMeasure P] {V : ℝ → ℝ} {x : ℝ}
+    (hx : 0 < x) (hV : 0 ≤ V x) (t : ℝ) :
+    (scaledLaw P X V x).real {y | t < ‖y‖} = (V x)⁻¹ * P.real {ω | x * t < ‖X ω‖} := by
+  rw [measureReal_def, scaledLaw_norm_lt hX V hx, ENNReal.toReal_mul,
+    ENNReal.toReal_ofReal (inv_nonneg.2 hV)]
+  rfl
+
+theorem scaledLaw_real_linear_lt (hX : Measurable X) [IsFiniteMeasure P] {V : ℝ → ℝ} {x : ℝ}
+    (hx : 0 < x) (hV : 0 ≤ V x) (L : StrongDual ℝ E) (t : ℝ) :
+    (scaledLaw P X V x).real {y | t < L y} = (V x)⁻¹ * P.real {ω | x * t < L (X ω)} := by
+  rw [measureReal_def, scaledLaw_linear_lt hX V hx, ENNReal.toReal_mul,
+    ENNReal.toReal_ofReal (inv_nonneg.2 hV)]
+  rfl
+
+theorem vanishesNearZero_normCutoffBCF {t : ℝ} (ht : 0 < t) :
+    VanishesNearZero (⇑(normCutoffBCF t : E →ᵇ ℝ)) :=
+  ⟨t / 2, half_pos ht, fun y hy => by
+    simp [normCutoff_eq_zero ht hy.le]⟩
+
+theorem integral_normCutoffBCF_le (ν : Measure E) [IsFiniteMeasure ν] {t : ℝ} (ht : 0 < t) :
+    ∫ y, normCutoffBCF t y ∂ν ≤ ν.real {y | t / 2 < ‖y‖} := by
+  have hm : MeasurableSet {y : E | t / 2 < ‖y‖} :=
+    measurableSet_lt measurable_const continuous_norm.measurable
+  rw [← integral_indicator_one hm]
+  refine integral_mono ((normCutoffBCF t).integrable ν) ((integrable_const 1).indicator hm)
+    fun y => ?_
+  by_cases hy : t / 2 < ‖y‖
+  · rw [indicator_of_mem (show y ∈ {y : E | t / 2 < ‖y‖} from hy), Pi.one_apply,
+      normCutoffBCF_apply]
+    exact_mod_cast normCutoff_le_one t y
+  · rw [indicator_of_notMem (show y ∉ {y : E | t / 2 < ‖y‖} from hy), normCutoffBCF_apply,
+      normCutoff_eq_zero ht (not_lt.1 hy)]
+    simp
+
+/-- `μ {‖y‖ > t} ≤ ∫ normCutoff_t dμ` for a measure finite away from the origin. -/
+theorem measure_lt_norm_le_integral_normCutoff {μ : Measure E}
+    (hμ : ∀ r > 0, μ {y | r < ‖y‖} < ∞) {t : ℝ} (ht : 0 < t) :
+    μ {y | t < ‖y‖} ≤ ENNReal.ofReal (∫ y, normCutoffBCF t y ∂μ) := by
+  have hm : MeasurableSet {y : E | t / 2 < ‖y‖} :=
+    measurableSet_lt measurable_const continuous_norm.measurable
+  have hint : Integrable (fun y => normCutoffBCF t y) μ := by
+    have hsupp : Function.support (fun y => normCutoffBCF t y) ⊆ {y : E | t / 2 < ‖y‖} :=
+      fun y hy => by
+        by_contra h'
+        exact hy (by simp [normCutoff_eq_zero ht (not_lt.1 h')])
+    exact (integrableOn_iff_integrable_of_support_subset hsupp).1
+      (Measure.integrableOn_of_bounded (hμ _ (half_pos ht)).ne
+        (normCutoffBCF t).continuous.aestronglyMeasurable (M := ‖normCutoffBCF t‖)
+        (ae_of_all _ fun y => (normCutoffBCF t).norm_coe_le_norm y))
+  rw [ofReal_integral_eq_lintegral_ofReal hint (Eventually.of_forall fun y => by
+    simp only [normCutoffBCF_apply, Pi.zero_apply]; exact NNReal.coe_nonneg _)]
+  rw [← lintegral_indicator_one (measurableSet_lt measurable_const continuous_norm.measurable)]
+  refine lintegral_mono fun y => ?_
+  by_cases hy : t < ‖y‖
+  · rw [indicator_of_mem (show y ∈ {y : E | t < ‖y‖} from hy), Pi.one_apply,
+      normCutoffBCF_apply, normCutoff_eq_one ht hy.le]
+    simp
+  · rw [indicator_of_notMem (show y ∉ {y : E | t < ‖y‖} from hy)]
+    exact bot_le
+
+/-- **Tail bound for limit points**: a limit point `μ` of the normalized laws satisfies
+`μ {‖y‖ > t} ≤ W t ^ (-α)` for a finite constant `W` independent of the sequence. -/
+theorem exists_limit_tail_le [IsProbabilityMeasure P] [FiniteDimensional ℝ E]
+    (hX : Measurable X) {α : ℝ} {V : ℝ → ℝ} (hV : IsRegularlyVarying V (-α))
+    {w : StrongDual ℝ E → ℝ}
+    (hw : ∀ L : StrongDual ℝ E,
+      Tendsto (fun x => P.real {ω | x < L (X ω)} / V x) atTop (𝓝 (w L))) :
+    ∃ W : ℝ≥0∞, W ≠ ∞ ∧ ∀ {u : ℕ → ℝ}, Tendsto u atTop atTop → ∀ {μ : Measure E},
+      (∀ r > 0, μ {y | r < ‖y‖} < ∞) →
+      (∀ f : E →ᵇ ℝ, VanishesNearZero f →
+        Tendsto (fun n => ∫ y, f y ∂scaledLaw P X V (u n)) atTop (𝓝 (∫ y, f y ∂μ))) →
+      ∀ t > 0, μ {y | t < ‖y‖} ≤ ENNReal.ofReal (t ^ (-α)) * W := by
+  obtain ⟨ι, _, lf, hlf⟩ := exists_linear_family_norm (E := E)
+  set S : ℝ := ∑ i, w (lf i)
+  refine ⟨ENNReal.ofReal ((2 : ℝ) ^ α * S), ENNReal.ofReal_ne_top,
+    fun {u} hu {μ} hμ hconv t ht => ?_⟩
+  have ht2 : 0 < t / 2 := half_pos ht
+  have hlim := hconv _ (vanishesNearZero_normCutoffBCF ht)
+  have hR : Tendsto (fun n => ∑ i, P.real {ω | u n * (t / 2) < lf i (X ω)} / V (u n)) atTop
+      (𝓝 (∑ i, w (lf i) * (t / 2) ^ (-α))) :=
+    tendsto_finsetSum _ fun i _ => (tendsto_linear_mul hV hw (lf i) ht2).comp hu
+  have hle : ∀ᶠ n in atTop, ∫ y, normCutoffBCF t y ∂scaledLaw P X V (u n) ≤
+      ∑ i, P.real {ω | u n * (t / 2) < lf i (X ω)} / V (u n) := by
+    filter_upwards [hu.eventually hV.eventually_pos, hu.eventually_gt_atTop 0] with n hVn hun
+    refine (integral_normCutoffBCF_le _ ht).trans ?_
+    rw [scaledLaw_real_norm_lt hX hun hVn.le, ← Finset.sum_div, inv_mul_eq_div]
+    gcongr
+    have hsub : {ω | u n * (t / 2) < ‖X ω‖} ⊆ ⋃ i, {ω | u n * (t / 2) < lf i (X ω)} :=
+      fun ω hω => by
+        obtain ⟨i, hi⟩ := hlf (X ω) _ (mul_pos hun ht2).le hω
+        exact mem_iUnion.2 ⟨i, hi⟩
+    exact (measureReal_mono hsub).trans (measureReal_iUnion_fintype_le _)
+  have hint_le := le_of_tendsto_of_tendsto hlim hR hle
+  refine (measure_lt_norm_le_integral_normCutoff hμ ht).trans ?_
+  rw [← ENNReal.ofReal_mul (Real.rpow_nonneg ht.le _)]
+  refine ENNReal.ofReal_le_ofReal (hint_le.trans_eq ?_)
+  rw [← Finset.sum_mul, Real.div_rpow ht.le zero_le_two, Real.rpow_neg zero_le_two,
+    Real.rpow_neg ht.le]
+  simp only [S]
+  field_simp
+
 end Converse
 
 end CramerWold
