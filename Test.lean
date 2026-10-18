@@ -7,3 +7,6 @@ import Test.KnownAnswers.Classical
 import Test.KnownAnswers.DomainOfAttraction
 import Test.KnownAnswers.HeavyTails
 import Test.JunkValues
+import Test.NonVacuity.Dependence
+import Test.NonVacuity.Multivariate
+import Test.NonVacuity.Processes
