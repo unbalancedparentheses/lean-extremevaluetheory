@@ -153,3 +153,4 @@ import ExtremeValueTheory.ForMathlib.Probability.FourthMoment
 import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.Modulus
 import ExtremeValueTheory.ForMathlib.Probability.DyadicChaining
 import ExtremeValueTheory.ForMathlib.Probability.SkorokhodLaw
+import ExtremeValueTheory.ForMathlib.Probability.SkorokhodWeakConvergence
