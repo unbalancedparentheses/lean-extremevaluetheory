@@ -174,3 +174,4 @@ import ExtremeValueTheory.Minimality.ClassicalVonMises
 import ExtremeValueTheory.Minimality.ClassicalGeneralizedCLT
 import ExtremeValueTheory.Minimality.ClassicalBreiman
 import ExtremeValueTheory.Minimality.ClassicalHill
+import ExtremeValueTheory.Minimality.ClassicalSummary
