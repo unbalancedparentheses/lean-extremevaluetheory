@@ -1190,4 +1190,197 @@ theorem tendstoInMeasure_meanExcessStat_sub_sum_hillSummand (hU : ∀ i, Measura
 
 end Remainder
 
+/-! ### Asymptotic normality of the Hill estimator via the tail empirical process -/
+
+section Normality
+
+variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'} [IsProbabilityMeasure P']
+
+/-- **Central limit theorem for the Hill statistic via the tail empirical process.** If the
+`U_i` are i.i.d. uniform on `[0, 1]`, `k → ∞` and `k / n → 0`, then the Hill statistic of the
+standard exponential sample `E_i = -log (1 - U_i)`,
+`√k ((1/k) ∑_{j<k} (E_{(j+1)} - E_{(k+1)}) - 1)`, converges in distribution to `N(0, 1)`.
+
+The proof is the tail empirical process route of [de Haan–Ferreira, §5.1–5.2]: the statistic is
+`∫_0^T W_n(t) dt / t + √k (T - 1)` with `T = (n/k) (1 - U_{(k+1)})`
+(`meanExcess_eq_integral_tailEmpiricalProcess`); up to a remainder that is negligible in
+probability (`tendstoInMeasure_meanExcessStat_sub_sum_hillSummand`) this is the truncated
+functional `∫_ε^1 W_n(t) dt / t - W_n(1)` with `ε = ε_n → 0`, which is asymptotically
+`N(0, 1)` (`tendstoInDistribution_sum_hillSummand`); in the limit this is the Gaussian variable
+`∫_0^1 W(t) dt / t - W(1)` of a Brownian motion `W`. -/
+theorem tendstoInDistribution_meanExcessStat {U : ℕ → Ω → ℝ} (hU : ∀ i, Measurable (U i))
+    (hind : iIndepFun U P) (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))
+    {k : ℕ → ℕ} (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0))
+    {Z : Ω' → ℝ} (hZ : HasLaw Z (gaussianReal 0 1) P') :
+    TendstoInDistribution (fun n ↦ meanExcessStat U n (k n)) atTop Z (fun _ ↦ P) P' := by
+  set ε : ℕ → ℝ := fun n ↦ Real.exp (-√(√(k n : ℝ))) with hεdef
+  have hε0 (n : ℕ) : 0 < ε n := Real.exp_pos _
+  have hε1 (n : ℕ) : ε n ≤ 1 := Real.exp_le_one_iff.2 (neg_nonpos.2 (Real.sqrt_nonneg _))
+  have hkR : Tendsto (fun n ↦ (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hss : Tendsto (fun n ↦ √(√(k n : ℝ))) atTop atTop :=
+    Real.tendsto_sqrt_atTop.comp (Real.tendsto_sqrt_atTop.comp hkR)
+  have hεlim : Tendsto ε atTop (𝓝 0) := Real.tendsto_exp_neg_atTop_nhds_zero.comp hss
+  have hlog : Tendsto (fun n ↦ Real.log (ε n) / √(k n : ℝ)) atTop (𝓝 0) := by
+    have := (tendsto_inv_atTop_zero.comp hss).neg
+    rw [neg_zero] at this
+    refine this.congr' ?_
+    filter_upwards [hk.eventually_gt_atTop 0] with n hn
+    have hk' : (0 : ℝ) < k n := Nat.cast_pos.2 hn
+    have h1 : 0 < √(√(k n : ℝ)) := Real.sqrt_pos.2 (Real.sqrt_pos.2 hk')
+    have h2 : √(√(k n : ℝ)) * √(√(k n : ℝ)) = √(k n : ℝ) :=
+      Real.mul_self_sqrt (Real.sqrt_nonneg _)
+    simp only [Function.comp_apply, hεdef, Real.log_exp]
+    set r := √(√(k n : ℝ))
+    rw [← h2]
+    field_simp
+  have hA := tendstoInDistribution_sum_hillSummand hU hind hlaw hk hkn hε0 hε1 hεlim hlog
+  simp only [mul_zero, zero_mul, add_zero, Real.toNNReal_one] at hA
+  have hR := tendstoInMeasure_meanExcessStat_sub_sum_hillSummand hU hind hlaw hk hkn hε0 hε1 hεlim
+  have hM := tendstoInDistribution_of_tendstoInMeasure_sub
+    (fun n ↦ meanExcessStat U n (k n)) id hA hR
+    (fun n ↦ (measurable_meanExcessStat hU n (k n)).aemeasurable)
+  exact hM.congr_limit hZ.aemeasurable (by rw [Measure.map_id, hZ.map_eq])
+
+/-- The law of `-log (1 - U)`, `U` uniform on `[0, 1]`, is the standard exponential law. -/
+theorem map_uniform_neg_log_one_sub :
+    μU.map (fun u ↦ -Real.log (1 - u)) = expMeasure 1 := by
+  have hg : Measurable fun u : ℝ ↦ -Real.log (1 - u) := by fun_prop
+  refine measure_eq_of_Ioi fun a ↦ ?_
+  rw [Measure.map_apply hg measurableSet_Ioi, Measure.restrict_apply (hg measurableSet_Ioi)]
+  rcases le_or_gt 0 a with ha | ha
+  · have e : (fun u : ℝ ↦ -Real.log (1 - u)) ⁻¹' Set.Ioi a ∩ Set.Icc 0 1 =
+        Set.Ioo (1 - Real.exp (-a)) 1 := by
+      ext u
+      simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_Ioi, Set.mem_Icc, Set.mem_Ioo]
+      have hexp : Real.exp (-a) ≤ 1 := Real.exp_le_one_iff.2 (by linarith)
+      constructor
+      · rintro ⟨h, h0, h1⟩
+        rcases h1.eq_or_lt with h1 | h1
+        · subst h1; simp at h; linarith
+        have h1' : 0 < 1 - u := by linarith
+        have : Real.log (1 - u) < -a := by linarith
+        rw [Real.log_lt_iff_lt_exp h1'] at this
+        exact ⟨by linarith, h1⟩
+      · rintro ⟨h0, h1⟩
+        have h1' : 0 < 1 - u := by linarith
+        refine ⟨?_, by linarith [Real.exp_pos (-a)], h1.le⟩
+        have : Real.log (1 - u) < -a := by
+          rw [Real.log_lt_iff_lt_exp h1']; linarith
+        linarith
+    rw [e, Real.volume_Ioo, expMeasure_Ioi ha]
+    congr 1
+    ring
+  · have e : (fun u : ℝ ↦ -Real.log (1 - u)) ⁻¹' Set.Ioi a ∩ Set.Icc 0 1 = Set.Icc 0 1 := by
+      refine Set.inter_eq_right.2 fun u hu ↦ ?_
+      simp only [Set.mem_preimage, Set.mem_Ioi]
+      have : Real.log (1 - u) ≤ 0 := Real.log_nonpos (by linarith [hu.2]) (by linarith [hu.1])
+      linarith
+    rw [e, Real.volume_Icc, sub_zero, ENNReal.ofReal_one]
+    refine le_antisymm ?_ prob_le_one
+    calc (1 : ℝ≥0∞) = expMeasure 1 (Set.Ioi 0) := by
+          rw [expMeasure_Ioi le_rfl, neg_zero, Real.exp_zero, ENNReal.ofReal_one]
+      _ ≤ _ := measure_mono (Set.Ioi_subset_Ioi ha.le)
+
+/-- **Central limit theorem for the mean top excess of an exponential sample, via the tail
+empirical process.** This is `tendstoInDistribution_meanExcess` (proved there with the Rényi
+representation) under the additional assumption `k / n → 0`, proved through the uniform tail
+empirical process: the sample `E_i` has the law of `-log (1 - U_i)` with `U_i` uniform, and
+`tendstoInDistribution_meanExcessStat` applies. -/
+theorem tendstoInDistribution_meanExcess_of_tailEmpiricalProcess {E : ℕ → Ω → ℝ}
+    (hEm : ∀ i, Measurable (E i)) (hE : ∀ i, HasLaw (E i) (expMeasure 1) P)
+    (hind : iIndepFun E P) {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
+    (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0)) {Z : Ω' → ℝ}
+    (hZ : HasLaw Z (gaussianReal 0 1) P') :
+    TendstoInDistribution (fun n ω ↦ √(k n : ℝ) * (((k n : ℝ))⁻¹ * ∑ i ∈ range (k n),
+        (orderStat (fun i : Fin n ↦ E i ω) i - orderStat (fun i : Fin n ↦ E i ω) (k n)) - 1))
+      atTop Z (fun _ ↦ P) P' := by
+  obtain ⟨Ω₀, _, P₀, V, hVm, hV, hindV, hP₀⟩ := exists_iid ℕ μU
+  have hg : Measurable fun u : ℝ ↦ -Real.log (1 - u) := by fun_prop
+  have hE' (i : ℕ) : HasLaw (fun ω ↦ -Real.log (1 - V i ω)) (expMeasure 1) P₀ := by
+    have := (hasLaw_map hg.aemeasurable).comp (hV i)
+    rwa [map_uniform_neg_log_one_sub] at this
+  have hind' : iIndepFun (fun i ω ↦ -Real.log (1 - V i ω)) P₀ :=
+    hindV.comp (fun _ u ↦ -Real.log (1 - u)) fun _ ↦ hg
+  have hlawV (i : ℕ) : P₀.map (V i) = volume.restrict (Set.Icc 0 1) := (hV i).map_eq
+  have hM := tendstoInDistribution_meanExcessStat hVm hindV hlawV hk hkn hZ
+  refine hM.of_map_eq (fun n ↦ ?_) (Eventually.of_forall fun n ↦ ?_)
+  · have hv : ∀ i : Fin n, Measurable fun ω ↦ E i ω := fun i ↦ hEm i
+    exact (measurable_const.mul ((measurable_const.mul (Finset.measurable_sum _ fun i _ ↦
+      (measurable_orderStat hv i).sub (measurable_orderStat hv (k n)))).sub
+      measurable_const)).aemeasurable
+  · have hT : Measurable fun y : Fin n → ℝ ↦ √(k n : ℝ) * (((k n : ℝ))⁻¹ *
+        ∑ i ∈ range (k n), (orderStat y i - orderStat y (k n)) - 1) :=
+      measurable_const.mul ((measurable_const.mul (Finset.measurable_sum _ fun i _ ↦
+        (measurable_orderStat_pi i).sub (measurable_orderStat_pi _))).sub measurable_const)
+    rw [map_comp_vec_of_iid hE hind hT]
+    exact (map_comp_vec_of_iid hE' hind' hT).symm
+
+/-- **Asymptotic normality of the Hill estimator for Pareto samples, second proof** (via the
+tail empirical process, [de Haan–Ferreira, Theorem 3.2.5 and §5.2]). Let `X_0, X_1, …` be iid
+`Pareto(α)` and let `k(n) → ∞` with `k(n) / n → 0`. Then `√k (H_{k,n} - 1/α) ⇒ N(0, 1/α²)`.
+Compare `tendstoInDistribution_hill_pareto`, proved with the Rényi representation (which needs
+only `k(n) < n`). -/
+theorem tendstoInDistribution_hill_pareto_of_tailEmpiricalProcess {X : ℕ → Ω → ℝ}
+    (hX : ∀ i, Measurable (X i)) (hindep : iIndepFun X P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {α : ℝ} (hα : 0 < α)
+    (hPar : ∀ x : ℝ, 1 ≤ x → (P {ω | x < X 0 ω}).toReal = x ^ (-α)) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0))
+    {Z : Ω' → ℝ} (hZ : HasLaw Z (gaussianReal 0 (α⁻¹ ^ 2).toNNReal) P') :
+    TendstoInDistribution (fun n ω ↦ √(k n : ℝ) * (hill (fun i : Fin n ↦ X i ω) (k n) - α⁻¹))
+      atTop Z (fun _ ↦ P) P' := by
+  obtain ⟨Ω₀, _, P₀, E, hEm, hE, hind, hP₀⟩ := exists_iid ℕ (expMeasure 1)
+  set γ := α⁻¹ with hγ
+  have hγ0 : 0 < γ := inv_pos.2 hα
+  have hZ1 : HasLaw (fun ω ↦ α * Z ω) (gaussianReal 0 1) P' := by
+    have := gaussianReal_const_mul hZ α
+    convert this using 2
+    · simp
+    · ext
+      simp only [NNReal.coe_one, NNReal.coe_mul, NNReal.coe_mk, Real.coe_toNNReal _
+        (sq_nonneg _), hγ]
+      field_simp
+  have hA := tendstoInDistribution_meanExcess_of_tailEmpiricalProcess hEm hE hind hk hkn hZ1
+  have hB := hA.continuous_comp (g := fun x ↦ γ * x) (continuous_const.mul continuous_id)
+  have hZe : (fun ω ↦ γ * (α * Z ω)) = Z := by
+    funext ω; rw [hγ, ← mul_assoc, inv_mul_cancel₀ hα.ne', one_mul]
+  replace hB := hB.congr_limit hZ.aemeasurable (by congr 1)
+  refine hB.of_map_eq (fun n ↦ ?_) ?_
+  · exact (measurable_const.mul ((measurable_hill_pi n (k n)).comp
+      (measurable_pi_iff.2 fun i ↦ hX i) |>.sub measurable_const)).aemeasurable
+  · filter_upwards [eventually_lt_of_tendsto_div hkn] with n hn
+    have hg : Measurable fun e : ℝ ↦ Real.exp (γ * e) := by fun_prop
+    have hS : Measurable fun y : Fin n → ℝ ↦ √(k n : ℝ) * (hill y (k n) - γ) :=
+      measurable_const.mul ((measurable_hill_pi n (k n)).sub measurable_const)
+    have hlawX : HasLaw (fun ω (i : Fin n) ↦ X i ω)
+        (Measure.pi fun _ : Fin n ↦ (expMeasure 1).map fun e ↦ Real.exp (γ * e)) P := by
+      refine (hindep.precomp (g := (Fin.val : Fin n → ℕ)) Fin.val_injective).hasLaw_pi
+        (fun i ↦ ⟨(hX i).aemeasurable, ?_⟩)
+      rw [(hident i).map_eq]
+      exact map_eq_expMeasure_map_of_pareto (hX 0) hα hPar
+    have hT : Measurable fun y : Fin n → ℝ ↦ γ * (√(k n : ℝ) * (((k n : ℝ))⁻¹ *
+        ∑ i ∈ Finset.range (k n), (orderStat y i - orderStat y (k n)) - 1)) :=
+      measurable_const.mul (measurable_const.mul ((measurable_const.mul
+        (Finset.measurable_sum _ fun i _ ↦ (measurable_orderStat_pi i).sub
+          (measurable_orderStat_pi _))).sub measurable_const))
+    have e1 : P.map (fun ω ↦ √(k n : ℝ) * (hill (fun i : Fin n ↦ X i ω) (k n) - γ)) =
+        (Measure.pi fun _ : Fin n ↦ (expMeasure 1).map fun e ↦ Real.exp (γ * e)).map
+          (fun y : Fin n → ℝ ↦ √(k n : ℝ) * (hill y (k n) - γ)) :=
+      ((hasLaw_map hS.aemeasurable).comp hlawX).map_eq
+    have e2 : P₀.map ((fun x ↦ γ * x) ∘ fun ω ↦ √(k n : ℝ) * (((k n : ℝ))⁻¹ *
+        ∑ i ∈ Finset.range (k n), (orderStat (fun i : Fin n ↦ E i ω) i -
+          orderStat (fun i : Fin n ↦ E i ω) (k n)) - 1)) =
+        (Measure.pi fun _ : Fin n ↦ expMeasure 1).map (fun y : Fin n → ℝ ↦
+          γ * (√(k n : ℝ) * (((k n : ℝ))⁻¹ * ∑ i ∈ Finset.range (k n),
+            (orderStat y i - orderStat y (k n)) - 1))) :=
+      map_comp_vec_of_iid hE hind hT
+    rw [e1, e2, ← Measure.pi_map_pi (fun _ ↦ hg.aemeasurable), Measure.map_map hS (by fun_prop)]
+    congr 1
+    funext y
+    simp only [Function.comp_apply]
+    rw [hill_exp_mul γ hγ0.le y hn]
+    ring
+
+end Normality
+
 end ExtremeValueTheory
