@@ -555,4 +555,198 @@ lemma memLp_lin_score (u v : ℝ) :
 
 end GPDMoments
 
+/-! ### The information matrix -/
+
+section Information
+
+open Matrix
+
+/-- **The Fisher information matrix of the GPD** in the parametrization `(ξ, σ)`:
+`I(ξ, σ) = 1/((1 + ξ)(1 + 2ξ)) · [[2, 1/σ], [1/σ, (1 + ξ)/σ²]]`. -/
+noncomputable def gpdFisherInfo (ξ σ : ℝ) : Matrix (Fin 2) (Fin 2) ℝ :=
+  !![2 / ((1 + ξ) * (1 + 2 * ξ)), 1 / (σ * (1 + ξ) * (1 + 2 * ξ));
+    1 / (σ * (1 + ξ) * (1 + 2 * ξ)), 1 / (σ ^ 2 * (1 + 2 * ξ))]
+
+/-- **The inverse Fisher information of the GPD**, the asymptotic covariance of the joint MLE:
+`I(ξ, σ)⁻¹ = (1 + ξ) · [[1 + ξ, -σ], [-σ, 2σ²]]`. -/
+noncomputable def gpdFisherInfoInv (ξ σ : ℝ) : Matrix (Fin 2) (Fin 2) ℝ :=
+  !![(1 + ξ) * (1 + ξ), (1 + ξ) * -σ; (1 + ξ) * -σ, (1 + ξ) * (2 * σ ^ 2)]
+
+variable {ξ σ : ℝ}
+
+lemma dotProduct_gpdFisherInfo_mulVec (t : Fin 2 → ℝ) :
+    t ⬝ᵥ (gpdFisherInfo ξ σ *ᵥ t) =
+      t 0 ^ 2 * (2 / ((1 + ξ) * (1 + 2 * ξ))) +
+        2 * t 0 * t 1 * (1 / (σ * (1 + ξ) * (1 + 2 * ξ))) +
+        t 1 ^ 2 * (1 / (σ ^ 2 * (1 + 2 * ξ))) := by
+  simp [gpdFisherInfo, Matrix.mulVec, dotProduct, Fin.sum_univ_two]
+  ring
+
+/-- `I(ξ, σ) · I(ξ, σ)⁻¹ = 1`. -/
+theorem gpdFisherInfo_mul_inv (hξ : -1 / 2 < ξ) (hσ : 0 < σ) :
+    gpdFisherInfo ξ σ * gpdFisherInfoInv ξ σ = 1 := by
+  have h1ξ : 1 + ξ ≠ 0 := by intro h; linarith
+  have h2ξ : 1 + 2 * ξ ≠ 0 := by intro h; linarith
+  have h2ξ' : 1 + ξ * 2 ≠ 0 := by intro h; linarith
+  have hσ' := hσ.ne'
+  rw [gpdFisherInfo, gpdFisherInfoInv, Matrix.mul_fin_two, Matrix.one_fin_two]
+  congr 1
+  ext i j
+  fin_cases i <;> fin_cases j <;> simp <;> field_simp <;> ring
+
+/-- `I(ξ, σ)⁻¹ · I(ξ, σ) = 1`. -/
+theorem gpdFisherInfoInv_mul (hξ : -1 / 2 < ξ) (hσ : 0 < σ) :
+    gpdFisherInfoInv ξ σ * gpdFisherInfo ξ σ = 1 :=
+  mul_eq_one_comm.1 (gpdFisherInfo_mul_inv hξ hσ)
+
+/-- **The inverse of the Fisher information** is `(1 + ξ) · [[1 + ξ, -σ], [-σ, 2σ²]]`. -/
+theorem inv_gpdFisherInfo (hξ : -1 / 2 < ξ) (hσ : 0 < σ) :
+    (gpdFisherInfo ξ σ)⁻¹ = gpdFisherInfoInv ξ σ :=
+  Matrix.inv_eq_right_inv (gpdFisherInfo_mul_inv hξ hσ)
+
+/-- The Fisher information is positive definite for `ξ > -1/2`. -/
+theorem posDef_gpdFisherInfo (hξ : -1 / 2 < ξ) (hσ : 0 < σ) : (gpdFisherInfo ξ σ).PosDef := by
+  have h1ξ : 0 < 1 + ξ := by linarith
+  have h2ξ : 0 < 1 + 2 * ξ := by linarith
+  refine Matrix.posDef_iff_dotProduct_mulVec.2 ⟨?_, fun t ht => ?_⟩
+  · refine Matrix.IsHermitian.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;> simp [gpdFisherInfo]
+  · rw [star_trivial, dotProduct_gpdFisherInfo_mulVec]
+    have hK : 0 < (1 + ξ) * (1 + 2 * ξ) := by positivity
+    have e : t 0 ^ 2 * (2 / ((1 + ξ) * (1 + 2 * ξ))) +
+        2 * t 0 * t 1 * (1 / (σ * (1 + ξ) * (1 + 2 * ξ))) + t 1 ^ 2 * (1 / (σ ^ 2 * (1 + 2 * ξ)))
+        = (2 * (t 0 + t 1 / σ / 2) ^ 2 + (1 / 2 + ξ) * (t 1 / σ) ^ 2) /
+          ((1 + ξ) * (1 + 2 * ξ)) := by
+      field_simp
+      ring
+    rw [e]
+    refine div_pos ?_ hK
+    have hne : t 0 ≠ 0 ∨ t 1 ≠ 0 := by
+      by_contra h
+      push Not at h
+      exact ht (funext fun i => by fin_cases i <;> simp [h.1, h.2])
+    have hA : 0 ≤ 2 * (t 0 + t 1 / σ / 2) ^ 2 := by positivity
+    rcases eq_or_ne (t 1) 0 with h1 | h1
+    · have h0 : t 0 ≠ 0 := hne.resolve_right (not_not.2 h1)
+      rw [h1]
+      simp only [zero_div, add_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow,
+        mul_zero]
+      exact mul_pos two_pos (lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 h0)))
+    · have : 0 < (1 / 2 + ξ) * (t 1 / σ) ^ 2 :=
+        mul_pos (by linarith) (lt_of_le_of_ne (sq_nonneg _)
+          (Ne.symm (pow_ne_zero 2 (div_ne_zero h1 hσ.ne'))))
+      linarith
+
+/-- The inverse Fisher information is positive definite for `ξ > -1/2`. -/
+theorem posDef_gpdFisherInfoInv (hξ : -1 / 2 < ξ) (hσ : 0 < σ) :
+    (gpdFisherInfoInv ξ σ).PosDef :=
+  inv_gpdFisherInfo hξ hσ ▸ (posDef_gpdFisherInfo hξ hσ).inv
+
+end Information
+
+/-! ### The bivariate central limit theorem for the score -/
+
+section ScoreCLT
+
+open RealInnerProductSpace Matrix
+
+variable {ξ σ : ℝ}
+
+/-- **The score vector** `∇ℓ(ξ, σ; x) = (∂_ξ ℓ, ∂_σ ℓ) ∈ ℝ²` of one observation. -/
+noncomputable def gpdScoreVec (ξ σ x : ℝ) : EuclideanSpace ℝ (Fin 2) :=
+  !₂[gpdScoreXi ξ σ x, gpdScoreSigma ξ σ x]
+
+lemma measurable_gpdScoreVec (ξ σ : ℝ) : Measurable (gpdScoreVec ξ σ) := by
+  unfold gpdScoreVec
+  refine (WithLp.measurable_toLp 2 _).comp (measurable_pi_iff.2 fun i => ?_)
+  fin_cases i
+  · simpa using measurable_gpdScoreXi ξ σ
+  · simpa using measurable_gpdScoreSigma ξ σ
+
+lemma inner_gpdScoreVec (x : ℝ) (t : EuclideanSpace ℝ (Fin 2)) :
+    ⟪gpdScoreVec ξ σ x, t⟫ = t 0 * gpdScoreXi ξ σ x + t 1 * gpdScoreSigma ξ σ x := by
+  simp [gpdScoreVec, PiLp.inner_apply, Fin.sum_univ_two]
+
+variable {ι : Type*} [Fintype ι] [DecidableEq ι] {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω}
+  {mΩ' : MeasurableSpace Ω'} {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'}
+  [IsProbabilityMeasure P'] {X : ℕ → Ω → ℝ}
+
+omit [IsProbabilityMeasure P'] in
+/-- The scalar projections of a centered multivariate Gaussian vector are Gaussian:
+`⟪Z, t⟫ ~ N(0, tᵀ S t)` for `Z ~ N(0, S)`. -/
+lemma hasLaw_inner_multivariateGaussian {S : Matrix ι ι ℝ} (hS : S.PosSemidef)
+    {Z : Ω' → EuclideanSpace ℝ ι} (hZ : HasLaw Z (multivariateGaussian 0 S) P')
+    (t : EuclideanSpace ℝ ι) :
+    HasLaw (fun ω => ⟪Z ω, t⟫) (gaussianReal 0 (t ⬝ᵥ S *ᵥ t).toNNReal) P' := by
+  set μ := multivariateGaussian (0 : EuclideanSpace ℝ ι) S
+  have hL : (fun z : EuclideanSpace ℝ ι => ⟪z, t⟫) = innerSL ℝ t := by
+    funext z; simp [real_inner_comm]
+  have hmap : μ.map (innerSL ℝ t) = gaussianReal 0 (t ⬝ᵥ S *ᵥ t).toNNReal := by
+    rw [IsGaussian.map_eq_gaussianReal]
+    congr 1
+    · rw [ContinuousLinearMap.integral_comp_id_comm IsGaussian.integrable_id]
+      simp [μ]
+    · rw [← covarianceBilin_multivariateGaussian hS t t,
+        covarianceBilin_self IsGaussian.memLp_two_id]
+      rfl
+  have hc : (fun ω => ⟪Z ω, t⟫) = (innerSL ℝ t) ∘ Z := by
+    rw [← hL]; rfl
+  rw [hc]
+  exact HasLaw.comp ⟨(innerSL ℝ t).continuous.measurable.aemeasurable, hmap⟩ hZ
+
+/-- **The bivariate central limit theorem for the GPD score.** Let `X₀, X₁, …` be iid
+`GPD(ξ, σ)` with `-1/2 < ξ`, `ξ ≠ 0`. Then the normalized score sum
+`n^{-1/2} ∑_{i<n} ∇ℓ(ξ, σ; Xᵢ)` converges in distribution in `ℝ²` to the centered Gaussian law
+with covariance the Fisher information `I(ξ, σ)`. -/
+theorem tendstoInDistribution_gpdScoreVec (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ : 0 < σ)
+    (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ σ) P) (hind : iIndepFun X P)
+    {Z : Ω' → EuclideanSpace ℝ (Fin 2)}
+    (hZ : HasLaw Z (multivariateGaussian 0 (gpdFisherInfo ξ σ)) P') :
+    TendstoInDistribution
+      (fun (n : ℕ) ω => (√(n : ℝ))⁻¹ • ∑ i ∈ Finset.range n, gpdScoreVec ξ σ (X i ω))
+      atTop Z (fun _ => P) P' := by
+  refine TendstoInDistribution.of_inner hZ.aemeasurable (fun n => ?_) fun t => ?_
+  · have := measurable_gpdScoreVec ξ σ
+    have := fun i => (hX i).aemeasurable
+    fun_prop
+  set f : ℝ → ℝ := fun x => t 0 * gpdScoreXi ξ σ x + t 1 * gpdScoreSigma ξ σ x
+  have hf : Measurable f := by
+    have := measurable_gpdScoreXi ξ σ; have := measurable_gpdScoreSigma ξ σ
+    simp only [f]; fun_prop
+  set Y : ℕ → Ω → ℝ := fun i => f ∘ X i
+  have hind' : iIndepFun Y P := hind.comp (fun _ => f) (fun _ => hf)
+  have hident : ∀ i, IdentDistrib (Y i) (Y 0) P P := fun i =>
+    IdentDistrib.comp ⟨(hX i).aemeasurable, (hX 0).aemeasurable,
+      by rw [(hX i).map_eq, (hX 0).map_eq]⟩ hf
+  have hmemLp : MemLp (Y 0) 2 P := by
+    rw [← memLp_map_measure_iff hf.aestronglyMeasurable (hX 0).aemeasurable, (hX 0).map_eq]
+    exact memLp_lin_score hσ hξ0 hξ _ _
+  have hint : ∀ g : ℝ → ℝ, Measurable g → P[g ∘ X 0] = ∫ x, g x ∂gpdMeasure ξ σ :=
+    fun g hg => (hX 0).integral_comp hg.aestronglyMeasurable
+  have hmean : P[Y 0] = 0 := by
+    rw [hint f hf]
+    simp only [f]
+    rw [integral_add, integral_const_mul, integral_const_mul, integral_gpdScoreXi hσ hξ0 hξ,
+      integral_gpdScoreSigma hσ hξ0 hξ, mul_zero, mul_zero, add_zero]
+    · exact ((memLp_lin_score hσ hξ0 hξ (t 0) 0).integrable one_le_two).congr
+        (ae_of_all _ fun x => by simp)
+    · exact ((memLp_lin_score hσ hξ0 hξ 0 (t 1)).integrable one_le_two).congr
+        (ae_of_all _ fun x => by simp)
+  have hvar : Var[Y 0; P] = t ⬝ᵥ gpdFisherInfo ξ σ *ᵥ t := by
+    rw [variance_of_integral_eq_zero (hf.comp_aemeasurable (hX 0).aemeasurable) hmean]
+    have := hint (fun x => f x ^ 2) (hf.pow_const 2)
+    simp only [Function.comp_def] at this
+    simp only [Function.comp_def]
+    rw [this, integral_lin_score_sq hσ hξ0 hξ, dotProduct_gpdFisherInfo_mulVec]
+  have hZt : HasLaw (fun ω => ⟪Z ω, t⟫) (gaussianReal 0 Var[Y 0; P].toNNReal) P' := by
+    rw [hvar]
+    exact hasLaw_inner_multivariateGaussian (posDef_gpdFisherInfo hξ hσ).posSemidef hZ t
+  have hclt := tendstoInDistribution_inv_sqrt_mul_sum_sub hZt hmemLp hind' hident
+  rw [hmean] at hclt
+  convert hclt using 3 with n ω
+  rw [inner_smul_left, sum_inner]
+  simp [Y, f, inner_gpdScoreVec]
+
+end ScoreCLT
+
 end ExtremeValueTheory

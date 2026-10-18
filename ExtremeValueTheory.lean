@@ -145,3 +145,4 @@ import ExtremeValueTheory.Statistics.WaldEReal
 import ExtremeValueTheory.Statistics.GPDJointMLE
 import ExtremeValueTheory.Statistics.GPDLikelihoodNormality
 import ExtremeValueTheory.Statistics.GPDScaleMLE
+import ExtremeValueTheory.Statistics.GPDFisherInformation
