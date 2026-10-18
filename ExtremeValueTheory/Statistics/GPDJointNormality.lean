@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.Statistics.GPDFisherInformation
+import ExtremeValueTheory.Statistics.ExtremeQuantileSecondOrder
 
 /-!
 # Joint asymptotic normality of the GPD maximum likelihood estimator, `ξ₀ > 0`
@@ -654,5 +655,110 @@ lemma gpdFisherInfo_det_adj (hξ : -1 / 2 < ξ) (hσ : 0 < σ) :
   refine ⟨by positivity, ?_, ?_, ?_⟩ <;> simp only [I11, I12, I22] <;> field_simp
 
 end Adjugate
+
+/-! ### Central limit theorems for linear images of the score -/
+
+section ScoreLin
+
+open RealInnerProductSpace Matrix
+
+variable {ξ σ : ℝ} {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω}
+  {mΩ' : MeasurableSpace Ω'} {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'}
+  [IsProbabilityMeasure P'] {X : ℕ → Ω → ℝ}
+
+/-- The quadratic form of the Fisher information. -/
+noncomputable def gpdInfoQuad (ξ σ c₁ c₂ : ℝ) : ℝ :=
+  c₁ ^ 2 * (2 / ((1 + ξ) * (1 + 2 * ξ))) + 2 * c₁ * c₂ * (1 / (σ * (1 + ξ) * (1 + 2 * ξ))) +
+    c₂ ^ 2 * (1 / (σ ^ 2 * (1 + 2 * ξ)))
+
+/-- The image `M ∇ℓ(ξ, σ; x)` of the score under the matrix `[[m₁₁, m₁₂], [m₂₁, m₂₂]]`. -/
+noncomputable def gpdScoreLin (m₁₁ m₁₂ m₂₁ m₂₂ ξ σ x : ℝ) : EuclideanSpace ℝ (Fin 2) :=
+  !₂[m₁₁ * gpdScoreXi ξ σ x + m₁₂ * gpdScoreSigma ξ σ x,
+    m₂₁ * gpdScoreXi ξ σ x + m₂₂ * gpdScoreSigma ξ σ x]
+
+/-- The scalar CLT for a combination of the scores: `n^{-1/2} ∑ (c₁ ∂_ξ ℓ + c₂ ∂_σ ℓ)(Xᵢ)`
+converges to `N(0, Q_I(c₁, c₂))`. -/
+theorem tendstoInDistribution_lin_score (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ : 0 < σ)
+    (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ σ) P) (hind : iIndepFun X P) (c₁ c₂ : ℝ)
+    {Z : Ω' → ℝ} (hZ : HasLaw Z (gaussianReal 0 (gpdInfoQuad ξ σ c₁ c₂).toNNReal) P') :
+    TendstoInDistribution (fun (n : ℕ) ω => (√(n : ℝ))⁻¹ * ∑ i ∈ Finset.range n,
+      (c₁ * gpdScoreXi ξ σ (X i ω) + c₂ * gpdScoreSigma ξ σ (X i ω))) atTop Z (fun _ => P) P' := by
+  set f : ℝ → ℝ := fun x => c₁ * gpdScoreXi ξ σ x + c₂ * gpdScoreSigma ξ σ x
+  have hf : Measurable f := by
+    have := measurable_gpdScoreXi ξ σ; have := measurable_gpdScoreSigma ξ σ
+    simp only [f]; fun_prop
+  set Y : ℕ → Ω → ℝ := fun i => f ∘ X i
+  have hind' : iIndepFun Y P := hind.comp (fun _ => f) (fun _ => hf)
+  have hident : ∀ i, IdentDistrib (Y i) (Y 0) P P := fun i =>
+    IdentDistrib.comp ⟨(hX i).aemeasurable, (hX 0).aemeasurable,
+      by rw [(hX i).map_eq, (hX 0).map_eq]⟩ hf
+  have hmemLp : MemLp (Y 0) 2 P := by
+    rw [← memLp_map_measure_iff hf.aestronglyMeasurable (hX 0).aemeasurable, (hX 0).map_eq]
+    exact memLp_lin_score hσ hξ0 hξ _ _
+  have hint : ∀ g : ℝ → ℝ, Measurable g → P[g ∘ X 0] = ∫ x, g x ∂gpdMeasure ξ σ :=
+    fun g hg => (hX 0).integral_comp hg.aestronglyMeasurable
+  have hmean : P[Y 0] = 0 := by
+    rw [hint f hf]
+    simp only [f]
+    rw [integral_add, integral_const_mul, integral_const_mul, integral_gpdScoreXi hσ hξ0 hξ,
+      integral_gpdScoreSigma hσ hξ0 hξ, mul_zero, mul_zero, add_zero]
+    · exact ((memLp_lin_score hσ hξ0 hξ c₁ 0).integrable one_le_two).congr
+        (ae_of_all _ fun x => by simp)
+    · exact ((memLp_lin_score hσ hξ0 hξ 0 c₂).integrable one_le_two).congr
+        (ae_of_all _ fun x => by simp)
+  have hvar : Var[Y 0; P] = gpdInfoQuad ξ σ c₁ c₂ := by
+    rw [variance_of_integral_eq_zero (hf.comp_aemeasurable (hX 0).aemeasurable) hmean]
+    have := hint (fun x => f x ^ 2) (hf.pow_const 2)
+    simp only [Function.comp_def] at this
+    simp only [Function.comp_def]
+    rw [this, integral_lin_score_sq hσ hξ0 hξ]
+    rfl
+  have hZt : HasLaw Z (gaussianReal 0 Var[Y 0; P].toNNReal) P' := by rw [hvar]; exact hZ
+  have hclt := tendstoInDistribution_inv_sqrt_mul_sum_sub hZt hmemLp hind' hident
+  rw [hmean] at hclt
+  convert hclt using 3 with n ω
+  simp [Y, f]
+
+/-- The normalized sums of a combination of the scores are bounded in probability. -/
+theorem isBoundedInProbability_lin_score (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ : 0 < σ)
+    (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ σ) P) (hind : iIndepFun X P) (c₁ c₂ : ℝ) :
+    IsBoundedInProbability P (fun (n : ℕ) ω => (√(n : ℝ))⁻¹ * ∑ i ∈ Finset.range n,
+      (c₁ * gpdScoreXi ξ σ (X i ω) + c₂ * gpdScoreSigma ξ σ (X i ω))) :=
+  isBoundedInProbability_of_tendstoInDistribution
+    (tendstoInDistribution_lin_score (P' := gaussianReal 0 (gpdInfoQuad ξ σ c₁ c₂).toNNReal)
+      hξ hξ0 hσ hX hind c₁ c₂ HasLaw.id)
+
+/-- **The bivariate CLT for a linear image of the score**: `n^{-1/2} ∑ M ∇ℓ(Xᵢ) ⇒ N(0, Σ)`
+whenever `Q_I(Mᵀ t) = tᵀ Σ t` for all `t`. -/
+theorem tendstoInDistribution_gpdScoreLin (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ : 0 < σ)
+    (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ σ) P) (hind : iIndepFun X P)
+    (m₁₁ m₁₂ m₂₁ m₂₂ : ℝ) {S : Matrix (Fin 2) (Fin 2) ℝ} (hS : S.PosSemidef)
+    (hQ : ∀ t : Fin 2 → ℝ, gpdInfoQuad ξ σ (t 0 * m₁₁ + t 1 * m₂₁) (t 0 * m₁₂ + t 1 * m₂₂) =
+      t ⬝ᵥ S *ᵥ t)
+    {W : Ω' → EuclideanSpace ℝ (Fin 2)} (hW : HasLaw W (multivariateGaussian 0 S) P') :
+    TendstoInDistribution
+      (fun (n : ℕ) ω => (√(n : ℝ))⁻¹ • ∑ i ∈ Finset.range n,
+        gpdScoreLin m₁₁ m₁₂ m₂₁ m₂₂ ξ σ (X i ω))
+      atTop W (fun _ => P) P' := by
+  refine TendstoInDistribution.of_inner hW.aemeasurable (fun n => ?_) fun t => ?_
+  · have : Measurable (gpdScoreLin m₁₁ m₁₂ m₂₁ m₂₂ ξ σ) := by
+      unfold gpdScoreLin
+      refine (WithLp.measurable_toLp 2 _).comp (measurable_pi_iff.2 fun i => ?_)
+      have := measurable_gpdScoreXi ξ σ; have := measurable_gpdScoreSigma ξ σ
+      fin_cases i <;> simp <;> fun_prop
+    have := fun i => (hX i).aemeasurable
+    fun_prop
+  have hZt := hasLaw_inner_multivariateGaussian hS hW t
+  rw [← hQ] at hZt
+  have hclt := tendstoInDistribution_lin_score hξ hξ0 hσ hX hind _ _ hZt
+  convert hclt using 3 with n ω
+  rw [inner_smul_left, sum_inner]
+  simp only [gpdScoreLin, PiLp.inner_apply, Fin.sum_univ_two, RCLike.inner_apply, conj_trivial,
+    Matrix.cons_val_zero, Matrix.cons_val_one, map_inv₀]
+  rw [Finset.mul_sum, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  ring
+
+end ScoreLin
 
 end ExtremeValueTheory
