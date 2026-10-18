@@ -86,3 +86,51 @@ We follow de Haan, \emph{A spectral representation for max-stable processes}, An
   $\Lambda_M = \E[\min(R, M);\, \Theta \in \cdot]/\log M$ on the compact cube satisfy $\int \max_i \theta_i/y_i \ud\Lambda_M \to V(y)$; a weak
   cluster point (Prokhorov) is the spectral measure.
 \end{proof}
+
+\begin{theorem}[Uniqueness of the spectral measure]
+  \label{thm:max-stable-unique}
+  \uses{thm:max-stable-converse}
+  \lean{ExtremeValueTheory.eq_of_lintegral_iSup_div_eq, ExtremeValueTheory.spectralExponentMeasure, ExtremeValueTheory.lintegral_iSup_div_eq_iInf,
+    ExtremeValueTheory.HasSpectralMeasure.unique, ExtremeValueTheory.IsSimpleMaxStable.existsUnique_hasSpectralMeasure}
+  \leanok
+  A finite measure on the sup-norm sphere is determined by the integrals $\int \max_i w_i/y_i \ud H$, $y > 0$; hence every simple
+  max-stable law has exactly one spectral measure on the sphere [dHF, \S6.1].
+\end{theorem}
+\begin{proof}
+  \leanok
+  The exponent measure $\nu_H$ (image of $r^{-2}\ud r \otimes H$) is determined on complements of lower orthants, hence by
+  inclusion--exclusion on the $\pi$-system of upper orthants, and $H$ is its angular part.
+\end{proof}
+
+\begin{theorem}[Simplex form and the angular measure]
+  \label{thm:max-stable-simplex}
+  \uses{thm:max-stable-unique, def:pickands-dependence}
+  \lean{ExtremeValueTheory.normTransport, ExtremeValueTheory.simplexSpectralMeasure, ExtremeValueTheory.HasSpectralMeasure.simplex, ExtremeValueTheory.simplexSpectralProb,
+    ExtremeValueTheory.eq_of_lintegral_iSup_div_eq_of_simplex, ExtremeValueTheory.pickandsSpectral_simplexSpectralMeasure,
+    ExtremeValueTheory.pickandsAngularMeasure, ExtremeValueTheory.HasSpectralMeasure.pickandsDependence_eq_angular,
+    ExtremeValueTheory.HasSpectralMeasure.pickandsDependence_one_sub_eq_angular}
+  \leanok
+  Transporting $H$ to the sum-norm simplex gives the standard spectral measure (total mass $d$, $\int v_i = 1$), also unique. In
+  two dimensions, with the angular measure $Q$ on $[0,1]$ (mass $2$, mean $1$),
+  $A(1-t) = \int \max((1-t)q, t(1-q)) \ud Q(q)$, the convention of Beirlant et al.\ (8.48).
+\end{theorem}
+\begin{proof}
+  \leanok
+  The change of norm $w \mapsto w/N(w)$ with density $N(w)$ preserves integrals of positively homogeneous functions.
+\end{proof}
+
+\begin{theorem}[Max-stable vectors are regularly varying]
+  \label{thm:max-stable-rv}
+  \uses{thm:max-stable-unique, def:rv-vector}
+  \lean{ExtremeValueTheory.maxStableTailMeasure, ExtremeValueTheory.IsSimpleMaxStable.isRegVarVector, ExtremeValueTheory.spectralMeasure_maxStableTailMeasure,
+    ExtremeValueTheory.IsSimpleMaxStable.exists_isRegVarVector}
+  \leanok
+  A simple max-stable vector is regularly varying with index $1$; its exponent measure is $\nu_H$ normalized, and its spectral
+  measure in the sense of multivariate regular variation is $H/H(\text{univ})$, where $H(\text{univ})$ is the extremal
+  coefficient.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Exact tails $\PR[\exists i,\ X_i/x > d_i] = 1 - e^{-\Phi(d)/x}$; inclusion--exclusion on boxes, rational boxes for open sets, and
+  the portmanteau theorem.
+\end{proof}
