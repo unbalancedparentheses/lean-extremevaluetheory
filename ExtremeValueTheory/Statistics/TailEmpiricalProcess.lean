@@ -6,6 +6,7 @@ Authors: Federico Carrone
 import ExtremeValueTheory.ForMathlib.Probability.TriangularArrayCLT
 import ExtremeValueTheory.ForMathlib.Probability.FourthMoment
 import ExtremeValueTheory.ForMathlib.Probability.DyadicChaining
+import ExtremeValueTheory.ForMathlib.Probability.SkorokhodBlockTightness
 import Mathlib.Probability.BrownianMotion.Basic
 
 /-!
@@ -739,5 +740,101 @@ theorem measureReal_exists_abs_tailEmpiricalProcess_sub_gt_le [IsProbabilityMeas
       ≤ 12 * L ^ 2 * 7 + 2 * L / k * 2 ^ (q + 1) :=
         add_le_add (mul_le_mul_of_nonneg_left hs1 hL2) (mul_le_mul_of_nonneg_left hs2 hLk)
     _ = 84 * L ^ 2 + 2 ^ (q + 2) * L / k := by ring
+
+/-- **Maximal inequality on all the blocks** `[i/m, (i+1)/m]`, `i < m`. -/
+theorem measureReal_exists_block_abs_tailEmpiricalProcess_sub_gt_le [IsProbabilityMeasure P]
+    (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1)) {n k : ℕ} (hn : n ≠ 0)
+    (hkn : k ≤ n) {m : ℕ} (hm : 0 < m) {lam : ℝ} (hlam : 0 < lam) (q : ℕ)
+    (hq : √(k : ℝ) * ((1 / m : ℝ) / 2 ^ q) ≤ lam) :
+    P.real {ω | ∃ i < m, ∃ u ∈ Set.Icc ((i : ℝ) / m) ((i + 1 : ℝ) / m),
+      2 * lam < |tailEmpiricalProcess U n k u ω - tailEmpiricalProcess U n k (i / m) ω|} ≤
+      8 ^ 4 / lam ^ 4 * (84 / m + 2 ^ (q + 2) / k) := by
+  have hm' : (0 : ℝ) < m := Nat.cast_pos.2 hm
+  have hsub : {ω | ∃ i < m, ∃ u ∈ Set.Icc ((i : ℝ) / m) ((i + 1 : ℝ) / m),
+      2 * lam < |tailEmpiricalProcess U n k u ω - tailEmpiricalProcess U n k (i / m) ω|} ⊆
+      ⋃ i ∈ range m, {ω | ∃ u ∈ Set.Icc ((i : ℝ) / m) ((i : ℝ) / m + 1 / m),
+        2 * lam < |tailEmpiricalProcess U n k u ω - tailEmpiricalProcess U n k (i / m) ω|} := by
+    rintro ω ⟨i, hi, u, hu, hlt⟩
+    refine Set.mem_biUnion (Finset.mem_coe.2 (Finset.mem_range.2 hi)) ⟨u, ?_, hlt⟩
+    rwa [show (i : ℝ) / m + 1 / m = (i + 1) / m by ring]
+  refine (measureReal_mono hsub (measure_ne_top _ _)).trans
+    ((measureReal_biUnion_finset_le _ _).trans ?_)
+  have hblock (i : ℕ) (hi : i ∈ range m) :
+      P.real {ω | ∃ u ∈ Set.Icc ((i : ℝ) / m) ((i : ℝ) / m + 1 / m),
+        2 * lam < |tailEmpiricalProcess U n k u ω - tailEmpiricalProcess U n k (i / m) ω|} ≤
+        8 ^ 4 / lam ^ 4 * (84 * (1 / m) ^ 2 + 2 ^ (q + 2) * (1 / m) / k) := by
+    refine measureReal_exists_abs_tailEmpiricalProcess_sub_gt_le hU hind hlaw hn
+      (by positivity) (by positivity) ?_ hlam q hq
+    have hi' : (i : ℝ) + 1 ≤ m := by exact_mod_cast Finset.mem_range.1 hi
+    have hk : (k : ℝ) / n ≤ 1 := by
+      rcases Nat.eq_zero_or_pos k with h | h
+      · simp [h]
+      · exact (div_le_one (by exact_mod_cast Nat.pos_of_ne_zero hn)).2 (by exact_mod_cast hkn)
+    have h1 : (i : ℝ) / m + 1 / m ≤ 1 := by
+      rw [← add_div, div_le_one hm']; exact hi'
+    have h0 : 0 ≤ (i : ℝ) / m + 1 / m := by positivity
+    calc (k : ℝ) / n * ((i : ℝ) / m + 1 / m) ≤ 1 * 1 :=
+          mul_le_mul hk h1 h0 zero_le_one
+      _ = 1 := one_mul 1
+  refine (Finset.sum_le_sum hblock).trans_eq ?_
+  rw [Finset.sum_const, card_range, nsmul_eq_mul]
+  field_simp
+
+/-! ### The tail empirical process as a random element of `D([0, 1])` -/
+
+lemma isCadlag_indicator_Ici {p c : ℝ} (hp : 0 ≤ p) :
+    IsCadlag (fun t : unitInterval ↦ (Set.Ici (1 - p * t)).indicator (1 : ℝ → ℝ) c) := by
+  have hmono : Monotone (fun t : unitInterval ↦ (Set.Ici (1 - p * t)).indicator (1 : ℝ → ℝ) c) :=
+    fun t t' htt' ↦ Set.indicator_le_indicator_of_subset (Set.Ici_subset_Ici.2
+      (by have : (t : ℝ) ≤ t' := htt'; nlinarith)) (fun _ ↦ zero_le_one) c
+  refine ⟨fun t ↦ ?_, fun t ↦ ⟨_, hmono.tendsto_nhdsLT t⟩⟩
+  by_cases h : 1 - p * t ≤ c
+  · refine (continuousWithinAt_const (b := (1 : ℝ))).congr (fun y hy ↦ ?_) ?_
+    · have : 1 - p * y ≤ c := by
+        have : (t : ℝ) ≤ y := le_of_lt (show t < y from hy)
+        nlinarith
+      simp [Set.indicator, this]
+    · simp [Set.indicator, h]
+  · refine ((continuousAt_const (y := (0 : ℝ))).congr ?_).continuousWithinAt
+    have hopen : IsOpen {t' : unitInterval | c < 1 - p * t'} :=
+      isOpen_lt continuous_const (by fun_prop)
+    filter_upwards [hopen.mem_nhds (show c < 1 - p * t from not_le.1 h)] with y hy
+    simp [Set.indicator, not_le.2 (show c < 1 - p * y from hy)]
+
+lemma isCadlag_tailEmpiricalProcess (U : ℕ → Ω → ℝ) (n k : ℕ) (ω : Ω) :
+    IsCadlag (fun t : unitInterval ↦ tailEmpiricalProcess U n k t ω) := by
+  have hp : (0 : ℝ) ≤ k / n := by positivity
+  have hsum : ∀ N, IsCadlag (fun t : unitInterval ↦
+      ∑ i ∈ range N, (Set.Ici (1 - k / n * (t : ℝ))).indicator (1 : ℝ → ℝ) (U i ω)) := by
+    intro N
+    induction N with
+    | zero => simp
+    | succ N ih =>
+      have := ih.add (isCadlag_indicator_Ici (c := U N ω) hp)
+      convert this using 1
+      ext t
+      simp [Finset.sum_range_succ]
+  unfold tailEmpiricalProcess
+  have hid : IsCadlag (fun t : unitInterval ↦ (t : ℝ)) := continuous_subtype_val.isCadlag
+  have := ((hsum n).const_smul ((k : ℝ)⁻¹)).sub hid |>.const_smul (√(k : ℝ))
+  convert this using 1
+
+/-- The **uniform tail empirical process** as a random element of the Skorokhod space
+`D([0, 1])`: `t ↦ W_n(t)`, `t ∈ [0, 1]`. -/
+noncomputable def tailEmpiricalPath (U : ℕ → Ω → ℝ) (n k : ℕ) (ω : Ω) : SkorokhodSpace ℝ :=
+  ⟨fun t : unitInterval ↦ tailEmpiricalProcess U n k t ω, isCadlag_tailEmpiricalProcess U n k ω⟩
+
+@[simp]
+lemma tailEmpiricalPath_apply (U : ℕ → Ω → ℝ) (n k : ℕ) (ω : Ω) (t : unitInterval) :
+    tailEmpiricalPath U n k ω t = tailEmpiricalProcess U n k t ω := rfl
+
+lemma measurable_tailEmpiricalPath (hU : ∀ i, Measurable (U i)) (n k : ℕ) :
+    Measurable (tailEmpiricalPath U n k) := by
+  have h : Measurable fun ω ↦ ⇑(tailEmpiricalPath U n k ω) :=
+    measurable_pi_iff.2 fun t ↦ measurable_tailEmpiricalProcess hU n k t
+  rw [measurable_iff_comap_le, SkorokhodSpace.measurableSpace_eq_comap_coeFn,
+    MeasurableSpace.comap_comp]
+  exact h.comap_le
 
 end ExtremeValueTheory
