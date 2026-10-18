@@ -616,6 +616,180 @@ theorem meanExcess_eq_integral_tailEmpiricalProcess {U : ℕ → Ω → ℝ} {ω
   field_simp
   linear_combination (∫ t in (0 : ℝ)..T, tailEmpiricalProcess U n k t ω / t) * hs
 
+/-- Below the random threshold `T = (n/k) (1 - U_{(k+1)})` at most `k` observations exceed
+`1 - (k/n) t`. -/
+lemma sum_range_indicator_le_of_lt {U : ℕ → Ω → ℝ} {ω : Ω} {n k : ℕ} (hkn : k < n) {t : ℝ}
+    (ht : (k : ℝ) / n * t < 1 - orderStat (fun i : Fin n ↦ U i ω) k) :
+    ∑ i ∈ range n, (Set.Ici (1 - k / n * t)).indicator (1 : ℝ → ℝ) (U i ω) ≤ k := by
+  rw [sum_range_indicator_eq_card]
+  have h1 := (orderStat_le_iff (fun i : Fin n ↦ U i ω) hkn
+    (orderStat (fun i : Fin n ↦ U i ω) k)).1 le_rfl
+  have h2 : #{i : Fin n | 1 - k / n * t ≤ U i ω} ≤ exceedCount (fun i : Fin n ↦ U i ω)
+      (orderStat (fun i : Fin n ↦ U i ω) k) := by
+    unfold exceedCount
+    exact Finset.card_le_card fun i hi ↦ by
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
+      linarith
+  exact_mod_cast h2.trans h1
+
+/-- Above the random threshold at least `k + 1` observations exceed `1 - (k/n) t`. -/
+lemma le_sum_range_indicator_of_le {U : ℕ → Ω → ℝ} {ω : Ω} {n k : ℕ} (hkn : k < n) {t : ℝ}
+    (ht : 1 - orderStat (fun i : Fin n ↦ U i ω) k ≤ (k : ℝ) / n * t) :
+    (k : ℝ) + 1 ≤ ∑ i ∈ range n, (Set.Ici (1 - k / n * t)).indicator (1 : ℝ → ℝ) (U i ω) := by
+  rw [sum_range_indicator_eq_card]
+  have h1 := succ_le_card_orderStat_le (fun i : Fin n ↦ U i ω) hkn
+  have h2 : #{i : Fin n | orderStat (fun i : Fin n ↦ U i ω) k ≤ U i ω} ≤
+      #{i : Fin n | 1 - k / n * t ≤ U i ω} :=
+    Finset.card_le_card fun i hi ↦ by
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
+      linarith
+  exact_mod_cast h1.trans h2
+
+/-- **Deterministic remainder bound.** On the event where the weighted integral near `0` is
+small, the threshold `T` is within `δ` of `1`, the oscillation of `W_n` near `1` is small, and
+`W_n(1)` is bounded, the Hill statistic is close to the truncated functional
+`∫_ε^1 W_n(t) dt / t - W_n(1)`. -/
+theorem abs_meanExcess_sub_sum_hillSummand_lt {U : ℕ → Ω → ℝ} {ω : Ω} {n k : ℕ}
+    (hx : ∀ i < n, U i ω < 1) (hk : 0 < k) (hkn : k < n) {ε δ lam K : ℝ} (hε0 : 0 < ε)
+    (hε1 : ε ≤ 1) (hδ0 : 0 < δ) (hδ1 : δ ≤ 1 / 2) (hlam : 0 < lam)
+    (h1 : ∫⁻ t in Set.Ioc 0 ε, ‖tailEmpiricalProcess U n k t ω / t‖ₑ < ENNReal.ofReal lam)
+    (h2 : |tailEmpiricalProcess U n k (1 - δ) ω| < √(k : ℝ) * δ)
+    (h3 : |tailEmpiricalProcess U n k (1 + δ) ω| < √(k : ℝ) * δ)
+    (h4 : ∀ u ∈ Set.Icc (1 - δ) (1 - δ + 2 * δ),
+      |tailEmpiricalProcess U n k u ω - tailEmpiricalProcess U n k (1 - δ) ω| ≤ 2 * lam)
+    (h5 : |tailEmpiricalProcess U n k 1 ω| < K) :
+    |√(k : ℝ) * ((k : ℝ)⁻¹ * ∑ j ∈ range k,
+        (orderStat (fun i : Fin n ↦ -Real.log (1 - U i ω)) j -
+          orderStat (fun i : Fin n ↦ -Real.log (1 - U i ω)) k) - 1) -
+      ∑ i ∈ range n, hillSummand n k ε (U i ω)| < lam + 2 * δ * (K + 4 * lam) + 4 * lam := by
+  have hn : 0 < n := hk.trans hkn
+  have hp : (0 : ℝ) < k / n := by positivity
+  have hk' : (0 : ℝ) < k := Nat.cast_pos.2 hk
+  have hsk : 0 < √(k : ℝ) := Real.sqrt_pos.2 hk'
+  set W := fun t ↦ tailEmpiricalProcess U n k t ω with hWdef
+  set c := orderStat (fun i : Fin n ↦ U i ω) k with hc
+  set T := (1 - c) / (k / n) with hT
+  -- `√k W(t) = N(t) - k t`
+  have hNW (t : ℝ) := sqrt_mul_tailEmpiricalProcess U n hk t ω
+  have hlt (t : ℝ) (ht : t < T) : √(k : ℝ) * (t - 1) ≤ -W t := by
+    have := sum_range_indicator_le_of_lt (U := U) (ω := ω) hkn (t := t)
+      (by rw [hT, lt_div_iff₀ hp] at ht; linarith)
+    have e := hNW t
+    have : √(k : ℝ) * (√(k : ℝ) * (t - 1) + W t) ≤ 0 := by
+      rw [mul_add, ← mul_assoc, Real.mul_self_sqrt hk'.le]; simp only [hWdef]; linarith
+    nlinarith
+  have hge (t : ℝ) (ht : T ≤ t) : -W t + (√(k : ℝ))⁻¹ ≤ √(k : ℝ) * (t - 1) := by
+    have := le_sum_range_indicator_of_le (U := U) (ω := ω) hkn (t := t)
+      (by rw [hT, div_le_iff₀ hp] at ht; linarith)
+    have e := hNW t
+    have hs2 : √(k : ℝ) * √(k : ℝ) = k := Real.mul_self_sqrt hk'.le
+    have : 1 ≤ √(k : ℝ) * (√(k : ℝ) * (t - 1) + W t) := by
+      rw [mul_add, ← mul_assoc, hs2]; simp only [hWdef]; linarith
+    rw [← sub_nonneg]
+    have : 0 ≤ √(k : ℝ) * (√(k : ℝ) * (t - 1) + W t) - 1 := by linarith
+    have h' : √(k : ℝ) * (t - 1) - (-W t + (√(k : ℝ))⁻¹) =
+        (√(k : ℝ) * (√(k : ℝ) * (t - 1) + W t) - 1) / √(k : ℝ) := by
+      field_simp; ring
+    rw [h']
+    positivity
+  -- the threshold is close to `1`
+  have hTlow : 1 - δ < T := by
+    by_contra h
+    push Not at h
+    have := hge (1 - δ) h
+    have hW := (abs_lt.1 h2).2
+    have : √(k : ℝ) * δ < W (1 - δ) + (√(k : ℝ))⁻¹ - (√(k : ℝ))⁻¹ := by
+      simp only [hWdef] at *; nlinarith [inv_pos.2 hsk]
+    have : √(k : ℝ) * δ ≤ -W (1 - δ) := by nlinarith
+    linarith [abs_lt.1 h2]
+  have hTup : T ≤ 1 + δ := by
+    by_contra h
+    push Not at h
+    have := hlt (1 + δ) h
+    have hW := abs_lt.1 h3
+    simp only [hWdef] at *
+    nlinarith
+  -- the oscillation near `1`
+  have hclose (u : ℝ) (hu : u ∈ Set.Icc (1 - δ) (1 + δ)) : |W u - W 1| ≤ 4 * lam := by
+    have hu' : u ∈ Set.Icc (1 - δ) (1 - δ + 2 * δ) := ⟨hu.1, by linarith [hu.2]⟩
+    have h1' : (1 : ℝ) ∈ Set.Icc (1 - δ) (1 - δ + 2 * δ) := ⟨by linarith, by linarith⟩
+    have e1 := h4 u hu'
+    have e2 := h4 1 h1'
+    calc |W u - W 1| = |(W u - W (1 - δ)) - (W 1 - W (1 - δ))| := by ring_nf
+      _ ≤ |W u - W (1 - δ)| + |W 1 - W (1 - δ)| := abs_sub _ _
+      _ ≤ 2 * lam + 2 * lam := add_le_add e1 e2
+      _ = 4 * lam := by ring
+  -- the threshold term
+  have hup : √(k : ℝ) * (T - 1) ≤ -W 1 + 4 * lam := by
+    by_contra h
+    push Not at h
+    set s := 1 + (-W 1 + 4 * lam) / √(k : ℝ) with hs
+    have hsT : s < T := by
+      rw [hs]
+      have : (-W 1 + 4 * lam) / √(k : ℝ) < T - 1 := by rw [div_lt_iff₀ hsk]; linarith
+      linarith
+    set t := (max (1 - δ) s + T) / 2 with ht
+    have ht1 : max (1 - δ) s < t := by rw [ht]; linarith [max_lt hTlow hsT]
+    have htT : t < T := by rw [ht]; linarith [max_lt hTlow hsT]
+    have e1 := hlt t htT
+    have e2 := hclose t ⟨(le_max_left _ _).trans ht1.le, htT.le.trans hTup⟩
+    have e3 : -W 1 + 4 * lam < √(k : ℝ) * (t - 1) := by
+      have : s < t := (le_max_right _ _).trans_lt ht1
+      rw [hs] at this
+      have : (-W 1 + 4 * lam) / √(k : ℝ) < t - 1 := by linarith
+      rw [div_lt_iff₀ hsk] at this
+      linarith
+    linarith [(abs_le.1 e2).1]
+  have hlow : -W 1 - 4 * lam ≤ √(k : ℝ) * (T - 1) := by
+    have e1 := hge T le_rfl
+    have e2 := hclose T ⟨hTlow.le, hTup⟩
+    linarith [(abs_le.1 e2).2, inv_pos.2 hsk]
+  -- the integrals
+  have hI := intervalIntegrable_tailEmpiricalProcess_div hx hn hk
+  have hM := meanExcess_eq_integral_tailEmpiricalProcess hx hk hkn
+  have hA := sum_hillSummand_eq U ω hn hk hε0 hε1
+  rw [hM, hA, ← intervalIntegral.integral_add_adjacent_intervals (hI 0 ε) (hI ε T),
+    ← intervalIntegral.integral_add_adjacent_intervals (hI ε 1) (hI 1 T)]
+  set I0 := ∫ t in (0 : ℝ)..ε, tailEmpiricalProcess U n k t ω / t
+  set I1 := ∫ t in (1 : ℝ)..T, tailEmpiricalProcess U n k t ω / t
+  have hI0 : |I0| < lam := by
+    have := (enorm_integral_le_lintegral_enorm _).trans_lt h1
+    rw [← intervalIntegral.integral_of_le hε0.le, Real.enorm_eq_ofReal_abs,
+      ENNReal.ofReal_lt_ofReal_iff hlam] at this
+    exact this
+  have hI1 : |I1| ≤ 2 * δ * (K + 4 * lam) := by
+    have hb : ∀ t ∈ Set.uIoc 1 T, ‖tailEmpiricalProcess U n k t ω / t‖ ≤ 2 * (K + 4 * lam) := by
+      intro t ht
+      have ht' : t ∈ Set.Icc (1 - δ) (1 + δ) := by
+        rcases le_total 1 T with h | h
+        · rw [Set.uIoc_of_le h] at ht; exact ⟨by linarith [ht.1], ht.2.trans hTup⟩
+        · rw [Set.uIoc_of_ge h] at ht; exact ⟨hTlow.le.trans ht.1.le, by linarith [ht.2]⟩
+      have ht0 : 1 / 2 ≤ t := by linarith [ht'.1]
+      have hWt : |W t| ≤ K + 4 * lam := by
+        have := hclose t ht'
+        have := abs_sub_abs_le_abs_sub (W t) (W 1)
+        linarith
+      rw [Real.norm_eq_abs, abs_div, abs_of_pos (show (0 : ℝ) < t by linarith),
+        div_le_iff₀ (by linarith)]
+      have : 0 ≤ K + 4 * lam := (abs_nonneg _).trans hWt
+      simp only [hWdef] at hWt
+      nlinarith
+    have := intervalIntegral.norm_integral_le_of_norm_le_const hb
+    rw [Real.norm_eq_abs] at this
+    have hT1 : |T - 1| ≤ δ := abs_le.2 ⟨by linarith, by linarith⟩
+    calc |I1| ≤ 2 * (K + 4 * lam) * |T - 1| := this
+      _ ≤ 2 * (K + 4 * lam) * δ := by
+          refine mul_le_mul_of_nonneg_left hT1 ?_
+          have := (abs_nonneg _).trans_lt h5
+          positivity
+      _ = 2 * δ * (K + 4 * lam) := by ring
+  have hR : |√(k : ℝ) * (T - 1) + W 1| ≤ 4 * lam := abs_le.2 ⟨by linarith, by linarith⟩
+  rw [← hc, ← hT]
+  calc _ = |I0 + I1 + (√(k : ℝ) * (T - 1) + W 1)| := by congr 1; simp only [hWdef]; ring
+    _ ≤ |I0| + |I1| + |√(k : ℝ) * (T - 1) + W 1| :=
+        (abs_add_le _ _).trans (add_le_add_left (abs_add_le _ _) _)
+    _ < lam + 2 * δ * (K + 4 * lam) + 4 * lam := by linarith
+
 end Representation
 
 /-! ### Moment bounds for the tail empirical process -/
