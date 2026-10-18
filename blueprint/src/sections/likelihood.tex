@@ -193,3 +193,52 @@ We follow Smith, \emph{Maximum likelihood estimation in a class of nonregular ca
   estimated support, and the argument for $\xi_0 > 0$ applies. Measurability: the lexicographically least maximizer over a
   compact set is measurable (Jennrich 1969).
 \end{proof}
+
+\section{Return levels and confidence intervals}
+
+\begin{theorem}[The delta method]
+  \label{thm:delta-method}
+  \lean{MeasureTheory.TendstoInDistribution.delta_method, MeasureTheory.TendstoInDistribution.delta_method_gaussian,
+    MeasureTheory.TendstoInDistribution.tendstoInMeasure_of_smul, ProbabilityTheory.map_inner_multivariateGaussian}
+  \leanok
+  If $r_n(\hat\theta_n - \theta) \Rightarrow Z$ with $r_n \to \infty$ and $g$ is differentiable at $\theta$, then
+  $r_n(g(\hat\theta_n) - g(\theta)) \Rightarrow g'(\theta) Z$; for $Z \sim N(0, S)$ and a gradient $a$ the limit is $N(0, a^\top S a)$
+  [van der Vaart, Theorem~3.1].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Tightness of $r_n(\hat\theta_n - \theta)$, a first-order expansion, and Slutsky's lemma.
+\end{proof}
+
+\begin{theorem}[Asymptotic normality of return levels]
+  \label{thm:return-level-normality}
+  \uses{thm:delta-method}
+  \lean{ExtremeValueTheory.gevReturnLevel, ExtremeValueTheory.gpdReturnLevel, ExtremeValueTheory.tendstoInDistribution_gpdReturnLevel, ExtremeValueTheory.tendstoInDistribution_gevReturnLevel,
+    ExtremeValueTheory.tendstoInDistribution_gumbelReturnLevel, ExtremeValueTheory.gpdReturnLevelVar_pos}
+  \leanok
+  The GEV return level $z_m = \mu - \frac{\sigma}{\xi}(1 - y_m^{-\xi})$, $y_m = -\log(1 - 1/m)$, and the peaks-over-threshold
+  return level $x_N = u + \frac{\sigma}{\xi}((N\zeta_u)^\xi - 1)$ are asymptotically normal with variance $\nabla^\top V \nabla$ [Coles,
+  Sections~3.3.3 and~4.3.3]. For the GPD the result is unconditional, from the joint normality of the maximum likelihood
+  estimator ($\xi > -1/2$, $\xi \ne 0$, $\zeta_u$ known); for the GEV it assumes normality of the parameter estimator.
+\end{theorem}
+\begin{proof}
+  \leanok
+  The delta method with the explicit gradients of the return level maps.
+\end{proof}
+
+\begin{theorem}[Wald confidence intervals]
+  \label{thm:wald-intervals}
+  \uses{thm:delta-method, thm:return-level-normality}
+  \lean{MeasureTheory.TendstoInDistribution.tendsto_measure_mem_waldInterval,
+    MeasureTheory.TendstoInDistribution.tendsto_measure_mem_waldInterval_gaussian, ProbabilityTheory.exists_gaussianReal_Icc_eq,
+    ExtremeValueTheory.tendsto_measure_mem_hillInterval, ExtremeValueTheory.tendsto_measure_mem_gpdReturnLevelInterval, ExtremeValueTheory.tendsto_measure_mem_gevReturnLevelInterval}
+  \leanok
+  If $r_n(\hat\theta_n - \theta) \Rightarrow N(0, s^2)$ and $\hat s_n \to s > 0$ in probability, the interval
+  $\hat\theta_n \pm z\hat s_n/r_n$ has asymptotic coverage $N(0,1)([-z, z])$, which is $1 - \alpha$ for the right $z$. This applies
+  to the Hill estimator ($\hat\gamma \pm z\hat\gamma/\sqrt k$, without bias) and to peaks-over-threshold return levels with
+  the plug-in standard error.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Slutsky's lemma and the portmanteau theorem.
+\end{proof}
