@@ -540,6 +540,7 @@ theorem integral_lin3_gevScore (a b c : ℝ) :
   field_simp
   ring
 
+omit hξ in
 /-- The quadratic form of the score covariance on the exponential scale. -/
 private lemma sq_lin3_gevScore_transform (a b c : ℝ) {t : ℝ} (ht : 0 < t) :
     (a * gevScoreMu ξ μ σ (μ + σ * gevTransform ξ t) +
@@ -579,7 +580,7 @@ theorem integral_lin3_gevScore_sq (a b c : ℝ) :
     have := measurable_gevScoreMu ξ μ σ; have := measurable_gevScoreSigma ξ μ σ
     have := measurable_gevScoreXi ξ μ σ; fun_prop
   rw [integral_gevLocScaleCDF_of_logPoly hξ hσ hm
-    (fun t ht => sq_lin3_gevScore_transform hσ hξ0 hξ a b c ht),
+    (fun t ht => sq_lin3_gevScore_transform hσ hξ0 a b c ht),
     dotProduct_gevFisherInfo_mulVec]
   have h1ξ : 0 < 1 + ξ := by linarith
   have hG : Gamma (1 + ξ) ≠ 0 := (Gamma_pos_of_pos h1ξ).ne'
@@ -602,7 +603,7 @@ lemma memLp_lin3_gevScore (a b c : ℝ) :
     have := measurable_gevScoreXi ξ μ σ; fun_prop
   rw [memLp_two_iff_integrable_sq hm.aestronglyMeasurable]
   exact integrable_gevLocScaleCDF_of_logPoly hξ hσ (hm.pow_const 2)
-    (fun t ht => sq_lin3_gevScore_transform hσ hξ0 hξ a b c ht)
+    (fun t ht => sq_lin3_gevScore_transform hσ hξ0 a b c ht)
 
 end Information
 
@@ -790,7 +791,7 @@ theorem posDef_gevFisherInfo (hσ : 0 < σ) (hξ0 : ξ ≠ 0) (hξ : -1 / 2 < ξ
       have := measurable_gevScoreXi ξ 0 σ; fun_prop
     have hint := (integrable_gevLocScaleCDF_iff hσ hm).1
       (integrable_gevLocScaleCDF_of_logPoly hξ hσ hm
-        (fun t ht => sq_lin3_gevScore_transform hσ hξ0 hξ _ _ _ ht))
+        (fun t ht => sq_lin3_gevScore_transform hσ hξ0 _ _ _ ht))
     rw [integral_gevLocScaleCDF hσ hm]
     set a := v 0
     set b := v 1
@@ -817,5 +818,81 @@ theorem posDef_gevFisherInfo (hσ : 0 < σ) (hξ0 : ξ ≠ 0) (hξ : -1 / 2 < ξ
       exact ⟨t, ht, hne⟩
 
 end PosDef
+
+/-! ### The trivariate score CLT -/
+
+section ScoreCLT
+
+open RealInnerProductSpace Matrix
+
+variable {ξ μ σ : ℝ}
+
+/-- **The score vector** `(∂_μ ℓ, ∂_σ ℓ, ∂_ξ ℓ) ∈ ℝ³` of one observation. -/
+noncomputable def gevScoreVec3 (ξ μ σ x : ℝ) : EuclideanSpace ℝ (Fin 3) :=
+  WithLp.toLp 2 (gevScore ξ μ σ x)
+
+lemma measurable_gevScoreVec3 (ξ μ σ : ℝ) : Measurable (gevScoreVec3 ξ μ σ) := by
+  unfold gevScoreVec3
+  refine (WithLp.measurable_toLp 2 _).comp (measurable_pi_iff.2 fun i => ?_)
+  fin_cases i
+  · simpa [gevScore] using measurable_gevScoreMu ξ μ σ
+  · simpa [gevScore] using measurable_gevScoreSigma ξ μ σ
+  · simpa [gevScore] using measurable_gevScoreXi ξ μ σ
+
+lemma inner_gevScoreVec3 (x : ℝ) (v : EuclideanSpace ℝ (Fin 3)) :
+    ⟪gevScoreVec3 ξ μ σ x, v⟫ = (fun i => v i) ⬝ᵥ gevScore ξ μ σ x := by
+  simp [gevScoreVec3, PiLp.inner_apply, dotProduct, Fin.sum_univ_three, mul_comm]
+
+variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : Measure Ω}
+  [IsProbabilityMeasure P] {P' : Measure Ω'} [IsProbabilityMeasure P'] {X : ℕ → Ω → ℝ}
+
+/-- **The trivariate central limit theorem for the GEV score.** Let `X₀, X₁, …` be iid with the
+location-scale GEV law of parameters `(ξ, μ, σ)`, `-1/2 < ξ`, `ξ ≠ 0`. Then
+`n^{-1/2} ∑_{i<n} (∂_μ ℓ, ∂_σ ℓ, ∂_ξ ℓ)(Xᵢ)` converges in distribution in `ℝ³` to the centered
+Gaussian law whose covariance is the Fisher information `gevFisherInfo ξ σ`. -/
+theorem tendstoInDistribution_gevScoreVec3 (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ : 0 < σ)
+    (hX : ∀ i, HasLaw (X i) (gevLocScaleCDF ξ μ hσ).measure P) (hind : iIndepFun X P)
+    {Z : Ω' → EuclideanSpace ℝ (Fin 3)}
+    (hZ : HasLaw Z (multivariateGaussian 0 (gevFisherInfo ξ σ)) P') :
+    TendstoInDistribution
+      (fun (n : ℕ) ω => (√(n : ℝ))⁻¹ • ∑ i ∈ Finset.range n, gevScoreVec3 ξ μ σ (X i ω))
+      atTop Z (fun _ => P) P' := by
+  refine TendstoInDistribution.of_inner hZ.aemeasurable (fun n => ?_) fun v => ?_
+  · have := measurable_gevScoreVec3 ξ μ σ
+    have := fun i => (hX i).aemeasurable
+    fun_prop
+  set u : Fin 3 → ℝ := fun i => v i
+  set f : ℝ → ℝ := fun x => u ⬝ᵥ gevScore ξ μ σ x
+  have hf : Measurable f := measurable_dotProduct_gevScore u
+  set Y : ℕ → Ω → ℝ := fun i => f ∘ X i
+  have hind' : iIndepFun Y P := hind.comp (fun _ => f) (fun _ => hf)
+  have hident : ∀ i, IdentDistrib (Y i) (Y 0) P P := fun i =>
+    IdentDistrib.comp ⟨(hX i).aemeasurable, (hX 0).aemeasurable,
+      by rw [(hX i).map_eq, (hX 0).map_eq]⟩ hf
+  have hmemLp : MemLp (Y 0) 2 P := by
+    rw [← memLp_map_measure_iff hf.aestronglyMeasurable (hX 0).aemeasurable, (hX 0).map_eq]
+    exact memLp_dotProduct_gevScore hσ hξ0 hξ u
+  have hint : ∀ g : ℝ → ℝ, Measurable g →
+      P[g ∘ X 0] = ∫ x, g x ∂(gevLocScaleCDF ξ μ hσ).measure :=
+    fun g hg => (hX 0).integral_comp hg.aestronglyMeasurable
+  have hmean : P[Y 0] = 0 := by
+    rw [hint f hf]
+    exact integral_dotProduct_gevScore hσ hξ0 hξ u
+  have hvar : Var[Y 0; P] = v ⬝ᵥ gevFisherInfo ξ σ *ᵥ v := by
+    rw [variance_of_integral_eq_zero (hf.comp_aemeasurable (hX 0).aemeasurable) hmean]
+    have := hint (fun x => f x ^ 2) (hf.pow_const 2)
+    simp only [Function.comp_def] at this
+    simp only [Function.comp_def]
+    rw [this, integral_dotProduct_gevScore_sq hσ hξ0 hξ]
+  have hZt : HasLaw (fun ω => ⟪Z ω, v⟫) (gaussianReal 0 Var[Y 0; P].toNNReal) P' := by
+    rw [hvar]
+    exact hasLaw_inner_multivariateGaussian (posDef_gevFisherInfo hσ hξ0 hξ).posSemidef hZ v
+  have hclt := tendstoInDistribution_inv_sqrt_mul_sum_sub hZt hmemLp hind' hident
+  rw [hmean] at hclt
+  convert hclt using 3 with n ω
+  rw [inner_smul_left, sum_inner]
+  simp [Y, f, u, inner_gevScoreVec3]
+
+end ScoreCLT
 
 end ExtremeValueTheory
