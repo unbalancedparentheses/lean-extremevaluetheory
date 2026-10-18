@@ -169,3 +169,4 @@ import ExtremeValueTheory.Minimality.DependenceLeadbetter
 import ExtremeValueTheory.Minimality.DependenceScaleMixture
 import ExtremeValueTheory.Minimality.DependenceHill
 import ExtremeValueTheory.Minimality.DependenceMixing
+import ExtremeValueTheory.Minimality.Karamata
