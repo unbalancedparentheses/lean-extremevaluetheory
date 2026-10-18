@@ -104,3 +104,37 @@ We follow Smith, \emph{Maximum likelihood estimation in a class of nonregular ca
   $\xi > -1/2$), $R_n \to 1/(\sigma_0(1+2\xi))$ in probability, and Slutsky; for $\xi < 0$ a tail estimate controls
   $\max_i 1/(\sigma_0 + \xi X_i) = o_P(\sqrt n)$.
 \end{proof}
+
+\begin{theorem}[A measurable scale MLE]
+  \label{thm:gpd-scale-mle-measurable}
+  \uses{thm:mle-scale-normality}
+  \lean{ExtremeValueTheory.gpdScaleMLE, ExtremeValueTheory.measurable_gpdScaleMLE, ExtremeValueTheory.gpdScaleMLE_eq_of_root, ExtremeValueTheory.ae_gpdScaleMLE_isMLE,
+    ExtremeValueTheory.ae_tendsto_gpdScaleMLE', ExtremeValueTheory.tendstoInDistribution_gpdScaleMLE'}
+  \leanok
+  The supremum over rational admissible scales with nonnegative score is a measurable function of the sample that is
+  almost surely the unique root and the unique likelihood maximizer; it is strongly consistent and
+  $\sqrt n(\hat\sigma_n - \sigma_0) \Rightarrow N(0, \sigma_0^2(1+2\xi))$ for $\xi > -1/2$, $\xi \ne 0$, with no further hypotheses.
+\end{theorem}
+\begin{proof}
+  \leanok
+  The score is strictly decreasing in $\sigma$ and the admissible set is open.
+\end{proof}
+
+\begin{theorem}[Fisher information and joint asymptotic normality]
+  \label{thm:gpd-joint-normality}
+  \uses{thm:wald-ereal, thm:gpd-scale-mle-measurable}
+  \lean{ExtremeValueTheory.inv_gpdFisherInfo, ExtremeValueTheory.tendstoInDistribution_gpdScoreVec, ExtremeValueTheory.tendstoInDistribution_gpdJointMLE,
+    ExtremeValueTheory.tendstoInDistribution_gpdMLE, ExtremeValueTheory.score_eq_zero_of_isMaxOn}
+  \leanok
+  For $\xi > -1/2$, $\xi \ne 0$, the GPD score has mean zero and covariance
+  $I(\xi,\sigma) = \frac{1}{(1+\xi)(1+2\xi)}\begin{pmatrix} 2 & 1/\sigma \ 1/\sigma & (1+\xi)/\sigma^2 \end{pmatrix}$, equal to minus the expected
+  Hessian, with $I^{-1} = (1+\xi)\begin{pmatrix} 1+\xi & -\sigma \ -\sigma & 2\sigma^2 \end{pmatrix}$, and the normalized score is
+  asymptotically $N(0, I)$. For $\xi_0 > 0$, measurable maximizers over a compact set with $\theta_0$ in its interior satisfy
+  $\sqrt n(\hat\theta_n - \theta_0) \Rightarrow N(0, I(\theta_0)^{-1})$ [Smith 1985], [Coles, \S4.3]. The joint result for
+  $-1/2 < \xi_0 < 0$ (moving support) is not formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  An exact integral form of the mean-value expansion, a Lipschitz bound on the Hessian near $\theta_0$ (uses $\xi_0 > 0$), the strong
+  law for the averaged observed information, Cram\'er--Wold for the score, and Slutsky.
+\end{proof}
