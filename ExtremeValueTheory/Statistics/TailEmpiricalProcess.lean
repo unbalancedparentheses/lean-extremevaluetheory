@@ -213,4 +213,124 @@ lemma mul_integral_tailSummand_sq {I : Finset ℝ≥0} (a : I → ℝ) {n k : �
   rw [this, ← mul_min_of_nonneg _ _ hp0]
   field_simp
 
+lemma measurable_tailEmpiricalProcess {U : ℕ → Ω → ℝ} (hU : ∀ i, Measurable (U i)) (n k : ℕ)
+    (t : ℝ) : Measurable (tailEmpiricalProcess U n k t) := by
+  unfold tailEmpiricalProcess
+  refine Measurable.const_mul (Measurable.sub_const (Measurable.const_mul
+    (Finset.measurable_sum _ fun i _ ↦ ?_) _) _) _
+  exact (measurable_one.indicator measurableSet_Ici).comp (hU i)
+
+variable {U : ℕ → Ω → ℝ} {k : ℕ → ℕ}
+
+/-- The characteristic functions of the linear combinations `∑_t a_t W_n(t)` converge to the
+characteristic function of the centered Gaussian law with variance `∑_{s,t} a_s a_t min s t`. -/
+theorem tendsto_charFun_sum_mul_tailEmpiricalProcess (hU : ∀ i, Measurable (U i))
+    (hind : iIndepFun U P) (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0))
+    {I : Finset ℝ≥0} (a : I → ℝ) (s : ℝ) :
+    Tendsto (fun n ↦ charFun (P.map (fun ω ↦ ∑ t : I, a t *
+        tailEmpiricalProcess U n (k n) t ω)) s) atTop
+      (𝓝 (cexp (-((s : ℂ) ^ 2 * (∑ t : I, ∑ r : I, a t * a r * min (t : ℝ) r : ℝ) / 2)))) := by
+  have hkR : Tendsto (fun n ↦ (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  -- eventually all the levels `(k/n) t` lie in `[0, 1]`, and `n, k n ≠ 0`
+  have hp : ∀ᶠ n in atTop, ∀ t : I, (k n : ℝ) / n * t ≤ 1 := by
+    rw [eventually_all]
+    intro t
+    have : Tendsto (fun n ↦ (k n : ℝ) / n * t) atTop (𝓝 (0 * t)) := hkn.mul_const _
+    rw [zero_mul] at this
+    exact this.eventually (ge_mem_nhds zero_lt_one)
+  have hn0 : ∀ᶠ n : ℕ in atTop, n ≠ 0 := eventually_ne_atTop 0
+  have hk0 : ∀ᶠ n in atTop, k n ≠ 0 := hk.eventually_ne_atTop 0
+  -- the bound on the summands
+  set M : ℕ → ℝ := fun n ↦ (√(k n : ℝ))⁻¹ * ∑ t : I, |a t| * (1 + k n / n * t) with hM
+  have hMlim : Tendsto M atTop (𝓝 0) := by
+    have h1 : Tendsto (fun n ↦ (√(k n : ℝ))⁻¹) atTop (𝓝 0) :=
+      tendsto_inv_atTop_zero.comp (Real.tendsto_sqrt_atTop.comp hkR)
+    have h2 : Tendsto (fun n ↦ ∑ t : I, |a t| * (1 + k n / n * t)) atTop
+        (𝓝 (∑ t : I, |a t| * (1 + 0 * t))) :=
+      tendsto_finsetSum _ fun t _ ↦ ((hkn.mul_const _).const_add _).const_mul _
+    have := h1.mul h2
+    rw [zero_mul] at this
+    exact this
+  have hvar : Tendsto (fun n : ℕ ↦ n * ∫ u, tailSummand a n (k n) u ^ 2 ∂μU) atTop
+      (𝓝 (∑ t : I, ∑ r : I, a t * a r * min (t : ℝ) r)) := by
+    have hlim : Tendsto (fun n ↦ ∑ t : I, ∑ r : I, a t * a r * (min (t : ℝ) r - k n / n * t * r))
+        atTop (𝓝 (∑ t : I, ∑ r : I, a t * a r * (min (t : ℝ) r - 0 * t * r))) :=
+      tendsto_finsetSum _ fun t _ ↦ tendsto_finsetSum _ fun r _ ↦
+        (tendsto_const_nhds.sub ((hkn.mul_const _).mul_const _)).const_mul _
+    simp only [zero_mul, sub_zero] at hlim
+    refine hlim.congr' ?_
+    filter_upwards [hp, hn0, hk0] with n hpn hn hkn'
+    exact (mul_integral_tailSummand_sq a hn hkn' hpn).symm
+  have key := tendsto_charFun_sum_range_of_bounded hU hind hlaw (μ := μU)
+    (f := fun n ↦ tailSummand a n (k n)) (fun n ↦ measurable_tailSummand a n (k n)) hMlim
+    (fun n u ↦ abs_tailSummand_le a n (k n) u)
+    (by filter_upwards [hp] with n hpn; exact integral_tailSummand a hpn) hvar s
+  refine key.congr' ?_
+  filter_upwards [hn0] with n hn
+  congr 2
+  ext ω
+  exact (sum_mul_tailEmpiricalProcess_eq a U hn (k n) ω).symm
+
+/-- **Finite-dimensional convergence of the uniform tail empirical process** to Brownian motion
+([de Haan–Ferreira, Theorem 2.4.8]; [Einmahl 1992]). If `U 0, U 1, …` are i.i.d. uniform on
+`[0, 1]`, `k n → ∞` and `k n / n → 0`, then for every finite set of times `I`, the vector
+`(W_n(t))_{t ∈ I}` converges in distribution to the centered Gaussian vector with covariance
+`min s t`, the finite-dimensional law `BrownianReal.projectiveFamily I` of Brownian motion. -/
+theorem tendstoInDistribution_tailEmpiricalProcess_fdd [IsProbabilityMeasure P]
+    (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0))
+    (I : Finset ℝ≥0) :
+    TendstoInDistribution (fun n ω ↦ fun t : I ↦ tailEmpiricalProcess U n (k n) t ω) atTop id
+      (fun _ ↦ P) (BrownianReal.projectiveFamily I) := by
+  set V : ℕ → Ω → EuclideanSpace ℝ I :=
+    fun n ω ↦ WithLp.toLp 2 (fun t : I ↦ tailEmpiricalProcess U n (k n) t ω) with hV
+  have hVm (n : ℕ) : Measurable (V n) :=
+    (WithLp.measurable_toLp 2 _).comp
+      (measurable_pi_iff.2 fun t ↦ measurable_tailEmpiricalProcess hU n (k n) t)
+  have hconv : TendstoInDistribution V atTop id (fun _ ↦ P)
+      (multivariateGaussian 0 (BrownianReal.covMatrix I)) := by
+    refine .of_tendsto_charFun (fun n ↦ (hVm n).aemeasurable) aemeasurable_id fun a ↦ ?_
+    rw [Measure.map_id, charFun_multivariateGaussian (BrownianReal.posSemidef_covMatrix I)]
+    simp_rw [charFun_map_eq_charFun_map_inner_one (hVm _).aemeasurable a]
+    have hinner (n : ℕ) (ω : Ω) :
+        inner ℝ (V n ω) a = ∑ t : I, a t * tailEmpiricalProcess U n (k n) t ω := by
+      simp [hV, PiLp.inner_apply, mul_comm]
+    simp_rw [hinner]
+    convert tendsto_charFun_sum_mul_tailEmpiricalProcess hU hind hlaw hk hkn (fun t ↦ a t) 1
+      using 2
+    simp [dotProduct, Matrix.mulVec, Finset.mul_sum]
+    congr 3
+    refine Finset.sum_congr rfl fun x _ ↦ Finset.sum_congr rfl fun y _ ↦ ?_
+    ring
+  have hcomp := hconv.continuous_comp (PiLp.continuous_ofLp 2 _)
+  refine ⟨fun n ↦ (measurable_pi_iff.2 fun t : I ↦
+    measurable_tailEmpiricalProcess hU n (k n) t).aemeasurable, aemeasurable_id, ?_⟩
+  have h := hcomp.tendsto
+  simp only [Function.comp_id, (BrownianReal.measurePreserving_ofLp_multivariateGaussian I).map_eq]
+    at h
+  simp only [Measure.map_id]
+  exact h
+
+/-- **Finite-dimensional convergence of the uniform tail empirical process to a Brownian
+motion**: for a pre-Brownian motion `B` (a process with the finite-dimensional laws of Brownian
+motion) and every finite set of times `I`, `(W_n(t))_{t ∈ I}` converges in distribution to
+`(B t)_{t ∈ I}`. -/
+theorem tendstoInDistribution_tailEmpiricalProcess_fdd_of_isPreBrownianReal
+    [IsProbabilityMeasure P] {Ω' : Type*} {mΩ' : MeasurableSpace Ω'} {P' : Measure Ω'}
+    [IsProbabilityMeasure P'] {B : ℝ≥0 → Ω' → ℝ} (hB : IsPreBrownianReal B P')
+    (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0))
+    (I : Finset ℝ≥0) :
+    TendstoInDistribution (fun n ω ↦ fun t : I ↦ tailEmpiricalProcess U n (k n) t ω) atTop
+      (fun ω ↦ I.restrict (B · ω)) (fun _ ↦ P) P' := by
+  have h := tendstoInDistribution_tailEmpiricalProcess_fdd hU hind hlaw hk hkn I
+  refine ⟨h.forall_aemeasurable, (hB.hasLaw I).aemeasurable, ?_⟩
+  have h' := h.tendsto
+  simp only [Measure.map_id] at h'
+  simp only [(hB.hasLaw I).map_eq]
+  exact h'
+
 end ExtremeValueTheory

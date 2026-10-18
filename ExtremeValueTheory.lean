@@ -148,3 +148,4 @@ import ExtremeValueTheory.Statistics.GPDScaleMLE
 import ExtremeValueTheory.Statistics.GPDFisherInformation
 import ExtremeValueTheory.Statistics.GPDJointNormality
 import ExtremeValueTheory.ForMathlib.Probability.TriangularArrayCLT
+import ExtremeValueTheory.Statistics.TailEmpiricalProcess
