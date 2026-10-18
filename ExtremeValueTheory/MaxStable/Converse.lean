@@ -689,8 +689,10 @@ end IsSimpleMaxStable
 
 omit [Fintype ι] in
 /-- The total mass of a spectral measure concentrated on the unit sphere of the sup norm is the
-extremal coefficient `θ = V(1, …, 1)`. -/
-theorem HasSpectralMeasure.measure_univ_toReal {H : Measure (ι → ℝ≥0∞)}
+extremal coefficient `θ = V(1, …, 1)`. `H` must be finite: `HasSpectralMeasure` reads the
+exponent through `ENNReal.toReal`, so an infinite `H` would be a "spectral measure" of `δ₀` and the
+identity would read `0 = 0` (`ENNReal.toReal ∞ = 0`, `-log 1 = 0`); see `Test/JunkValues.lean`. -/
+theorem HasSpectralMeasure.measure_univ_toReal {H : Measure (ι → ℝ≥0∞)} [IsFiniteMeasure H]
     (hμ : HasSpectralMeasure μ H) (hH : ∀ᵐ w ∂H, ⨆ i, w i = 1) :
     (H univ).toReal = extremalCoefficient μ := by
   rw [extremalCoefficient, hμ.maxStableExponent_eq fun _ ↦ one_pos, ← lintegral_one]

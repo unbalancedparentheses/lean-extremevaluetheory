@@ -695,6 +695,7 @@ lemma measure_univ_ne_zero_of_hasSpectralMeasure [Nonempty ι] {μ : Measure (ι
     (h : IsSimpleMaxStable μ) (hS : HasSpectralMeasure μ H) (hH : ∀ᵐ w ∂H, ⨆ i, w i = 1) :
     H univ ≠ 0 := by
   intro h0
+  haveI : IsFiniteMeasure H := ⟨by rw [h0]; exact ENNReal.zero_lt_top⟩
   have := hS.measure_univ_toReal hH
   rw [h0, ENNReal.toReal_zero] at this
   linarith [h.one_le_extremalCoefficient]

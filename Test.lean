@@ -6,3 +6,4 @@ import Test.NonVacuity.StatisticsClusters
 import Test.KnownAnswers.Classical
 import Test.KnownAnswers.DomainOfAttraction
 import Test.KnownAnswers.HeavyTails
+import Test.JunkValues
