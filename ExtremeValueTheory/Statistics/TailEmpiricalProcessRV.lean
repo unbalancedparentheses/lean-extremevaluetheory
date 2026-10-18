@@ -715,6 +715,52 @@ lemma integral_abs_tailEmpiricalProcess_le (hU : ∀ i, Measurable (U i)) (hind 
     rw [div_le_iff₀ hs, Real.mul_self_sqrt ht.le]; exact this
   linarith
 
+lemma measurable_tailEmpiricalProcess_uncurry (hU : ∀ i, Measurable (U i)) (n k : ℕ) :
+    Measurable fun q : Ω × ℝ ↦ tailEmpiricalProcess U n k q.2 q.1 := by
+  unfold tailEmpiricalProcess
+  refine Measurable.const_mul (Measurable.sub (Measurable.const_mul (Finset.measurable_sum _
+    fun i _ ↦ ?_) _) measurable_snd) _
+  simp only [Set.indicator_apply, Set.mem_Ici, Pi.one_apply]
+  exact Measurable.ite (measurableSet_le (by fun_prop) ((hU i).comp measurable_fst))
+    measurable_const measurable_const
+
+/-- `∫_0^ε t^{-1/2} dt = 2 √ε`, as a lower integral. -/
+lemma lintegral_Ioc_rpow_neg_half {ε : ℝ} (hε : 0 ≤ ε) :
+    ∫⁻ t in Set.Ioc 0 ε, ENNReal.ofReal (t ^ (-(1 / 2) : ℝ)) = ENNReal.ofReal (2 * √ε) := by
+  have hi : IntervalIntegrable (fun t : ℝ ↦ t ^ (-(1 / 2) : ℝ)) volume 0 ε :=
+    intervalIntegral.intervalIntegrable_rpow' (by norm_num)
+  rw [← ofReal_integral_eq_lintegral_ofReal ((intervalIntegrable_iff_integrableOn_Ioc_of_le hε).1 hi)
+    ((ae_restrict_iff' measurableSet_Ioc).2 (ae_of_all _ fun t ht ↦ Real.rpow_nonneg ht.1.le _)),
+    ← intervalIntegral.integral_of_le hε, integral_rpow (Or.inl (by norm_num))]
+  congr 1
+  rw [Real.sqrt_eq_rpow, Real.zero_rpow (by norm_num)]
+  norm_num
+  ring
+
+/-- **The singularity at `0`**: `E ∫_0^ε |W_n(t)| dt / t ≤ 2 √ε`. -/
+theorem lintegral_lintegral_tailEmpiricalProcess_div_le (hU : ∀ i, Measurable (U i))
+    (hind : iIndepFun U P) (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1)) {n k : ℕ}
+    (hn : 0 < n) (hk : 0 < k) {ε : ℝ} (hε : 0 ≤ ε) (hεp : (k : ℝ) / n * ε ≤ 1) :
+    ∫⁻ ω, (∫⁻ t in Set.Ioc 0 ε, ‖tailEmpiricalProcess U n k t ω / t‖ₑ) ∂P ≤
+      ENNReal.ofReal (2 * √ε) := by
+  have hm := measurable_tailEmpiricalProcess_uncurry hU n k
+  rw [lintegral_lintegral_swap (f := fun ω t ↦ ‖tailEmpiricalProcess U n k t ω / t‖ₑ)
+    ((hm.div measurable_snd).enorm.aemeasurable), ← lintegral_Ioc_rpow_neg_half hε]
+  refine setLIntegral_mono' measurableSet_Ioc fun t ht ↦ ?_
+  have hp : (k : ℝ) / n * t ≤ 1 := (mul_le_mul_of_nonneg_left ht.2 (by positivity)).trans hεp
+  have hi : Integrable (fun ω ↦ tailEmpiricalProcess U n k t ω / t) P := by
+    have := integrable_tailEmpiricalProcess_pow (P := P) hU n k t 1
+    simp only [pow_one] at this
+    exact this.div_const t
+  rw [← ofReal_integral_norm_eq_lintegral_enorm hi]
+  refine ENNReal.ofReal_le_ofReal ?_
+  simp only [Real.norm_eq_abs, abs_div, abs_of_pos ht.1]
+  rw [integral_div, Real.rpow_neg ht.1.le, ← Real.sqrt_eq_rpow, div_le_iff₀ ht.1]
+  refine (integral_abs_tailEmpiricalProcess_le hU hind hlaw hn hk ht.1 hp).trans_eq ?_
+  have hs : 0 < √t := Real.sqrt_pos.2 ht.1
+  field_simp
+  rw [Real.sq_sqrt ht.1.le]
+
 end Moments
 
 end ExtremeValueTheory
