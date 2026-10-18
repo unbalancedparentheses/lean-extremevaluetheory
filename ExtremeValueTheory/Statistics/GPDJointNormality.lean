@@ -5,11 +5,50 @@ Authors: Federico Carrone
 -/
 import ExtremeValueTheory.Statistics.GPDFisherInformation
 import ExtremeValueTheory.Statistics.ExtremeQuantileSecondOrder
+import ExtremeValueTheory.Statistics.GPDJointMLE
 
 /-!
 # Joint asymptotic normality of the GPD maximum likelihood estimator, `ξ₀ > 0`
 
-WIP.
+Let `X₀, X₁, …` be iid `GPD(ξ₀, σ₀)` with `ξ₀ > 0`. We prove
+
+  `√n (θ̂ₙ - θ₀) ⇒ N(0, I(θ₀)⁻¹)`, `I(ξ, σ)⁻¹ = (1 + ξ) [[1 + ξ, -σ], [-σ, 2σ²]]`,
+
+for every measurable, strongly consistent sequence `θ̂ₙ` of roots of the likelihood equations
+(`tendstoInDistribution_gpdJointMLE`), and hence for measurable maximizers of the likelihood over
+a compact parameter set containing `θ₀` in its interior (`tendstoInDistribution_gpdMLE`, using
+the consistency theorem `ae_tendsto_gpdMLE'`).
+
+## Proof
+
+* *Lipschitz control of the Hessian* (`exists_gpdHess_lipschitz`). On the neighbourhood
+  `gpdNbhd ξ₀ σ₀ = {|ξ - ξ₀| ≤ ξ₀/8, |σ - σ₀| ≤ σ₀/8}` the Hessian entries are smooth functions of
+  `(ξ, σ, w)`, `w = x/(σ + ξ x) ∈ [0, 2/ξ₀]`, plus (for `∂²_ξ`) a multiple of
+  `log(1 + ξ x/σ)`. Since `w` and the logarithm are Lipschitz in `θ` uniformly in `x ≥ 0`
+  (`abs_gpdW_sub_le`, `abs_log_sub_le`) and `C¹` functions are Lipschitz on compact convex sets,
+  `|H(θ, x) - H(θ₀, x)| ≤ K |θ - θ₀|₁ (1 + log(1 + ξ₀ x/σ₀))`.
+* *Exact expansion* (`gpdScore_sub_eq_segHess`). By the fundamental theorem of calculus along
+  the segment from `θ₀` to `θ`, `∇ℓ(θ, x) - ∇ℓ(θ₀, x) = H̄(θ, x)(θ - θ₀)` with `H̄` the
+  (measurable, `measurable_segHess`) average of the Hessian along the segment.
+* *Convergence of the observed information* (`tendsto_avg_segHess`). By the strong law and the
+  Lipschitz control, `n⁻¹ ∑ H̄(θ̂ₙ, Xᵢ) → E H(θ₀, X) = -I(θ₀)` almost surely.
+* *Conclusion.* At a root, `Sₙ = -Bₙ Tₙ` with `Sₙ = n^{-1/2} ∑ ∇ℓ(θ₀; Xᵢ)`,
+  `Tₙ = √n (θ̂ₙ - θ₀)` and `Bₙ → -I(θ₀)`. Solving the `2 × 2` system,
+  `Tₙ - I⁻¹ Sₙ = Mₙ Sₙ` with `Mₙ → 0` almost surely, and `Sₙ` is bounded in probability, so
+  `Tₙ - I⁻¹ Sₙ → 0` in probability. The CLT for `I⁻¹ Sₙ` (`tendstoInDistribution_gpdScoreLin`,
+  Cramér–Wold) gives the limit `N(0, I⁻¹ I I⁻¹) = N(0, I⁻¹)`.
+
+The restriction `ξ₀ > 0` is used only for the uniform Lipschitz control of the Hessian (for
+`ξ₀ < 0` the support `[0, -σ/ξ]` moves with the parameter and `w` is unbounded near the endpoint);
+the score CLT and the information identity hold for all `ξ₀ > -1/2`, `ξ₀ ≠ 0`
+(`ExtremeValueTheory.Statistics.GPDFisherInformation`).
+
+## References
+
+* R. L. Smith, *Maximum likelihood estimation in a class of nonregular cases*, Biometrika 72
+  (1985).
+* S. Coles, *An Introduction to Statistical Modeling of Extreme Values*, Springer (2001), §4.3.3.
+* A. W. van der Vaart, *Asymptotic Statistics*, Cambridge (1998), §5.3.
 -/
 
 open Filter Topology Set Real MeasureTheory ProbabilityTheory
@@ -1048,5 +1087,111 @@ theorem tendstoInDistribution_gpdJointMLE (hξ₀ : 0 < ξ₀) (hσ₀ : 0 < σ�
   exact tendstoInDistribution_of_tendstoInMeasure_sub T W hV hdiff hTm
 
 end Normality
+
+/-! ### The maximum likelihood estimator on a compact parameter set -/
+
+section MLE
+
+lemma ereal_coe_finsetSum {ι : Type*} (s : Finset ι) (f : ι → ℝ) :
+    ((∑ i ∈ s, f i : ℝ) : EReal) = ∑ i ∈ s, (f i : EReal) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simp
+  | insert a s ha ih => rw [Finset.sum_insert ha, Finset.sum_insert ha, EReal.coe_add, ih]
+
+/-- For a positive shape and nonnegative data the extended-real log-likelihood is finite. -/
+lemma gpdLogLikE_eq_coe {ξ σ : ℝ} (hξ : 0 < ξ) (hσ : 0 < σ) {n : ℕ} {x : Fin n → ℝ}
+    (hx : ∀ i, 0 ≤ x i) :
+    gpdLogLikE ξ σ x = ((∑ i, log (gpdDensity ξ σ (x i)) : ℝ) : EReal) := by
+  rw [gpdLogLikE, ereal_coe_finsetSum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  have : 0 < 1 + ξ * x i / σ := by have := hx i; positivity
+  unfold gpdLogDensityE
+  rw [ite_eq_left (show _ ∧ _ from ⟨hx i, this⟩)]
+
+/-- **The likelihood equations at an interior maximizer.** If `θ` maximizes the log-likelihood
+over `K`, lies in the interior of `K` and has positive coordinates, and the data are
+nonnegative, then both components of the score vanish at `θ`. -/
+theorem score_eq_zero_of_isMaxOn {K : Set (ℝ × ℝ)} {n : ℕ} {x : Fin n → ℝ}
+    (hx : ∀ i, 0 ≤ x i) {θ : ℝ × ℝ} (hθK : θ ∈ interior K) (hθ₁ : 0 < θ.1) (hθ₂ : 0 < θ.2)
+    (hmax : IsMaxOn (fun p : ℝ × ℝ => gpdLogLikE p.1 p.2 x) K θ) :
+    ∑ i, gpdScoreXi θ.1 θ.2 (x i) = 0 ∧ ∑ i, gpdScoreSigma θ.1 θ.2 (x i) = 0 := by
+  have hint := isOpen_interior.mem_nhds hθK
+  have hle : ∀ p ∈ interior K, 0 < p.1 → 0 < p.2 →
+      ∑ i, log (gpdDensity p.1 p.2 (x i)) ≤ ∑ i, log (gpdDensity θ.1 θ.2 (x i)) := by
+    intro p hp h1 h2
+    have := hmax (interior_subset hp)
+    simp only [mem_ofPred_eq] at this
+    rw [gpdLogLikE_eq_coe h1 h2 hx, gpdLogLikE_eq_coe hθ₁ hθ₂ hx] at this
+    exact EReal.coe_le_coe_iff.1 this
+  constructor
+  · have hd : HasDerivAt (fun ξ => ∑ i, log (gpdDensity ξ θ.2 (x i)))
+        (∑ i, gpdScoreXi θ.1 θ.2 (x i)) θ.1 := by
+      have := HasDerivAt.sum (u := Finset.univ) fun i _ =>
+        hasDerivAt_log_gpdDensity_xi hθ₂ hθ₁.ne' (hx i) (by have := hx i; positivity)
+      convert this using 1
+      funext ξ; simp
+    have hloc : IsLocalMax (fun ξ => ∑ i, log (gpdDensity ξ θ.2 (x i))) θ.1 := by
+      have h1 : ∀ᶠ ξ in 𝓝 θ.1, (ξ, θ.2) ∈ interior K :=
+        (continuous_id.prodMk continuous_const).continuousAt.preimage_mem_nhds
+          (by simpa using hint)
+      filter_upwards [h1, lt_mem_nhds hθ₁] with ξ h1 h2
+      exact hle (ξ, θ.2) h1 h2 hθ₂
+    exact hloc.hasDerivAt_eq_zero hd
+  · have hd : HasDerivAt (fun σ => ∑ i, log (gpdDensity θ.1 σ (x i)))
+        (∑ i, gpdScoreSigma θ.1 θ.2 (x i)) θ.2 := by
+      have := HasDerivAt.sum (u := Finset.univ) fun i _ =>
+        hasDerivAt_log_gpdDensity_sigma hθ₂ hθ₁.ne' (hx i) (by have := hx i; positivity)
+      convert this using 1
+      funext σ; simp
+    have hloc : IsLocalMax (fun σ => ∑ i, log (gpdDensity θ.1 σ (x i))) θ.2 := by
+      have h1 : ∀ᶠ σ in 𝓝 θ.2, (θ.1, σ) ∈ interior K :=
+        (continuous_const.prodMk continuous_id).continuousAt.preimage_mem_nhds
+          (by simpa using hint)
+      filter_upwards [h1, lt_mem_nhds hθ₂] with σ h1 h2
+      exact hle (θ.1, σ) h1 hθ₁ h2
+    exact hloc.hasDerivAt_eq_zero hd
+
+variable {ξ₀ σ₀ : ℝ} {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω}
+  {mΩ' : MeasurableSpace Ω'} {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'}
+  [IsProbabilityMeasure P'] {X : ℕ → Ω → ℝ}
+
+/-- **Asymptotic normality of the joint GPD maximum likelihood estimator, `ξ₀ > 0`**
+([Smith 1985]; [Coles, §4.3.3]). Let `K ⊂ {ξ > -1, σ > 0}` be compact with the true parameter
+`θ₀ = (ξ₀, σ₀)`, `ξ₀ > 0`, in its interior, let `X₀, X₁, …` be iid `GPD(θ₀)`, and let `θ̂ₙ` be
+measurable maximizers over `K` of the log-likelihood of `X₀, …, X_{n-1}` (which exist by
+`exists_isMaxOn_gpdLogLikE`). Then `√n (θ̂ₙ - θ₀) ⇒ N(0, I(θ₀)⁻¹)` with
+`I(ξ, σ)⁻¹ = (1 + ξ) [[1 + ξ, -σ], [-σ, 2σ²]]`. -/
+theorem tendstoInDistribution_gpdMLE {K : Set (ℝ × ℝ)} (hK : IsCompact K)
+    (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K)
+    (hξ₀ : 0 < ξ₀) (hσ₀ : 0 < σ₀)
+    (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ₀ σ₀) P) (hind : iIndepFun X P)
+    {θh : ℕ → Ω → ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P) (hθK : ∀ n ω, θh n ω ∈ K)
+    (hmax : ∀ n ω, IsMaxOn (fun p : ℝ × ℝ => gpdLogLikE p.1 p.2 (fun i : Fin n => X i ω)) K
+      (θh n ω))
+    {W : Ω' → EuclideanSpace ℝ (Fin 2)}
+    (hW : HasLaw W (multivariateGaussian 0 (gpdFisherInfoInv ξ₀ σ₀)) P') :
+    TendstoInDistribution
+      (fun (n : ℕ) ω => √(n : ℝ) • !₂[(θh n ω).1 - ξ₀, (θh n ω).2 - σ₀])
+      atTop W (fun _ => P) P' := by
+  have hcons : ∀ᵐ ω ∂P, Tendsto (fun n => θh n ω) atTop (𝓝 (ξ₀, σ₀)) := by
+    filter_upwards [ae_tendsto_gpdMLE' hK hKS (interior_subset hθ₀) hX hind] with ω hω
+    refine hω (fun n => θh n ω) (fun _ => 0) (fun n => hθK n ω) tendsto_const_nhds
+      (Eventually.of_forall fun n => ?_)
+    have := hmax n ω (interior_subset hθ₀)
+    simp only [mem_ofPred_eq] at this
+    simpa using this
+  refine tendstoInDistribution_gpdJointMLE hξ₀ hσ₀ hX hind hθm hcons ?_ hW
+  filter_upwards [ae_forall_pos_of_gpd hσ₀ hX, hcons] with ω hω hc
+  filter_upwards [hc.eventually (isOpen_interior.mem_nhds hθ₀),
+    hc.eventually (gpdNbhd_mem_nhds hξ₀ hσ₀)] with n h1 h2
+  obtain ⟨h3, -, h4, -⟩ := pos_of_mem_gpdNbhd h2
+  have := score_eq_zero_of_isMaxOn (x := fun i : Fin n => X i ω) (fun i => (hω i).le) h1
+    (by linarith) (by linarith) (hmax n ω)
+  rw [Fin.sum_univ_eq_sum_range (fun i => gpdScoreXi (θh n ω).1 (θh n ω).2 (X i ω)) n,
+    Fin.sum_univ_eq_sum_range (fun i => gpdScoreSigma (θh n ω).1 (θh n ω).2 (X i ω)) n] at this
+  exact this
+
+end MLE
 
 end ExtremeValueTheory
