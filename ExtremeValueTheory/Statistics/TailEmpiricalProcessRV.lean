@@ -1664,12 +1664,216 @@ lemma measureReal_exists_one_sub_le (hU : ∀ i, Measurable (U i))
     ((measureReal_biUnion_finset_le _ _).trans ?_)
   have h (i : ℕ) : P.real (U i ⁻¹' Set.Ici (1 - k / n * s)) = k / n * s := by
     rw [← map_measureReal_apply (hU i) measurableSet_Ici, hlaw i]
-    exact measureReal_uniform_Ici (by positivity) hps
+    exact measureReal_uniform_Ici (mul_nonneg (by positivity) hs) hps
   simp_rw [h]
   rw [Finset.sum_const, card_range, nsmul_eq_mul]
   have : (n : ℝ) ≠ 0 := by exact_mod_cast hn.ne'
   field_simp
   rfl
+
+lemma tendsto_rpow_nhds_zero_of_pos {γ : ℝ} (hγ : 0 < γ) :
+    Tendsto (fun δ : ℝ ↦ δ ^ γ) (𝓝 0) (𝓝 0) := by
+  have := (Real.continuousAt_rpow_const 0 γ (Or.inr hγ.le)).tendsto
+  rwa [Real.zero_rpow hγ.ne'] at this
+
+/-- `(c / k) ^ g / k ^ h = c ^ g / k ^ (g + h)`. -/
+lemma div_rpow_div_rpow_eq {c x : ℝ} (hc : 0 ≤ c) (hx : 0 < x) (g h : ℝ) :
+    (c / x) ^ g / x ^ h = c ^ g / x ^ (g + h) := by
+  rw [Real.div_rpow hc hx.le, Real.rpow_add hx, div_div]
+
+/-- **Weighted approximation near `0`** (core case `η ≤ 1/20`). -/
+theorem exists_eventually_measureReal_weighted_le_aux (hU : ∀ i, Measurable (U i))
+    (hind : iIndepFun U P) (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))
+    {k : ℕ → ℕ} (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0))
+    {η : ℝ} (hη0 : 0 < η) (hη1 : η ≤ 1 / 20) {ε θ : ℝ} (hε : 0 < ε) (hθ : 0 < θ) :
+    ∃ δ ∈ Set.Ioc (0 : ℝ) 1, ∀ᶠ n in atTop, P.real {ω | ∃ t ∈ Set.Ioc 0 δ,
+      ε * t ^ (1 / 2 - η) < |tailEmpiricalProcess U n (k n) t ω|} ≤ θ := by
+  set α : ℝ := 1 / 2 - η with hα
+  have hα0 : 0 ≤ α := by rw [hα]; linarith
+  set K : ℝ := 8 ^ 4 * 256 / ε ^ 4 with hK
+  have hK0 : 0 < K := by positivity
+  have hg1 : 0 < 1 - 2 * α := by rw [hα]; linarith
+  have hg2 : 0 < 2 - 4 * α := by rw [hα]; linarith
+  have hg3 : 1 - 4 * α < 0 := by rw [hα]; linarith
+  have hg4 : 2 - 5 * α < 0 := by rw [hα]; linarith
+  have hd1 : 0 < (2 : ℝ) ^ (1 - 2 * α) - 1 := by
+    linarith [Real.one_lt_rpow one_lt_two hg1]
+  have hd2 : 0 < (2 : ℝ) ^ (2 - 4 * α) - 1 := by
+    linarith [Real.one_lt_rpow one_lt_two hg2]
+  have hd3 : 0 < 1 - (2 : ℝ) ^ (1 - 4 * α) := by
+    linarith [Real.rpow_lt_one_of_one_lt_of_neg one_lt_two hg3]
+  have hd4 : 0 < 1 - (2 : ℝ) ^ (2 - 5 * α) := by
+    linarith [Real.rpow_lt_one_of_one_lt_of_neg one_lt_two hg4]
+  -- the choice of `δ`
+  set F : ℝ → ℝ := fun δ ↦ 4 / ε ^ 2 * (δ ^ (1 - 2 * α) / (2 ^ (1 - 2 * α) - 1)) +
+    K * 84 * (δ ^ (2 - 4 * α) / (2 ^ (2 - 4 * α) - 1)) with hF
+  have hFlim : Tendsto F (𝓝 0) (𝓝 0) := by
+    have := (((tendsto_rpow_nhds_zero_of_pos hg1).div_const ((2 : ℝ) ^ (1 - 2 * α) - 1)).const_mul
+      (4 / ε ^ 2)).add (((tendsto_rpow_nhds_zero_of_pos hg2).div_const
+        ((2 : ℝ) ^ (2 - 4 * α) - 1)).const_mul (K * 84))
+    simpa using this
+  obtain ⟨r, hr, hFr⟩ := Metric.eventually_nhds_iff.1
+    (hFlim.eventually (gt_mem_nhds (show (0 : ℝ) < θ / 3 by positivity)))
+  set δ : ℝ := min (r / 2) 1 with hδ
+  have hδ0 : 0 < δ := by positivity
+  have hδ1 : δ ≤ 1 := min_le_right _ _
+  have hFδ : F δ < θ / 3 := hFr (by
+    rw [Real.dist_eq, sub_zero, abs_of_pos hδ0]
+    exact (min_le_left _ _).trans_lt (half_lt_self hr))
+  refine ⟨δ, ⟨hδ0, hδ1⟩, ?_⟩
+  -- the eventual conditions
+  set θ' : ℝ := θ / 3 with hθ'
+  have hθ'0 : 0 < θ' := by positivity
+  set c : ℝ := θ' / 2 with hc
+  have hc0 : 0 < c := by positivity
+  have hkR : Tendsto (fun n ↦ (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hlim (C g : ℝ) (hg : 0 < g) : Tendsto (fun n ↦ C / (k n : ℝ) ^ g) atTop (𝓝 0) :=
+    tendsto_const_nhds.div_atTop ((tendsto_rpow_atTop hg).comp hkR)
+  have hT3 := hlim (K * 8 * (c ^ (1 - 4 * α) / (1 - 2 ^ (1 - 4 * α)))) (1 - 4 * α + 1)
+    (by linarith)
+  have hT4 := hlim (K * (32 / ε) * (c ^ (2 - 5 * α) / (1 - 2 ^ (2 - 5 * α))))
+    (2 - 5 * α + 1 / 2) (by linarith)
+  have hT5 := hlim (θ' ^ (1 - α)) (1 - α - 1 / 2) (by rw [hα]; linarith)
+  filter_upwards [hk.eventually_gt_atTop 0, eventually_gt_atTop 0,
+    hkn.eventually (ge_mem_nhds (show (0 : ℝ) < 1 / 2 by norm_num)),
+    hkR.eventually (Filter.eventually_ge_atTop (θ' / δ)),
+    (hT3.add hT4).eventually (ge_mem_nhds (show (0 : ℝ) + 0 < θ / 3 by linarith)),
+    hT5.eventually (ge_mem_nhds hε)] with n hk0 hn0 hp hkδ hT34 hT5n
+  have hk' : (0 : ℝ) < k n := Nat.cast_pos.2 hk0
+  have hsk : 0 < √(k n : ℝ) := Real.sqrt_pos.2 hk'
+  set p : ℝ := (k n : ℝ) / n with hpdef
+  have hp0 : 0 ≤ p := by positivity
+  -- the dyadic scale
+  have hx1 : 1 ≤ δ * k n / θ' := by
+    rw [le_div_iff₀ hθ'0, one_mul]
+    rw [div_le_iff₀ hδ0] at hkδ
+    linarith
+  obtain ⟨J, hJ1, hJ2⟩ := exists_nat_pow_near hx1 one_lt_two
+  set M := J + 1 with hM
+  set s : ℝ := δ / 2 ^ M with hs
+  have hs0 : 0 < s := by positivity
+  have hsM : s * 2 ^ M = δ := by rw [hs]; field_simp
+  have hsup : s ≤ θ' / k n := by
+    rw [hs, div_le_div_iff₀ (by positivity) hk']
+    rw [div_lt_iff₀ hθ'0] at hJ2
+    linarith
+  have hslow : c / k n ≤ s := by
+    rw [hs, hc, div_div, div_le_div_iff₀ (by positivity) (by positivity), hM, pow_succ]
+    rw [le_div_iff₀ hθ'0] at hJ1
+    nlinarith
+  -- the events
+  set Bot := {ω | ∃ i < n, 1 - p * s ≤ U i ω}
+  set Bl : ℕ → Set Ω := fun i ↦ {ω | ∃ t ∈ Set.Icc (s * 2 ^ i) (2 * (s * 2 ^ i)),
+    ε * t ^ α < |tailEmpiricalProcess U n (k n) t ω|}
+  have hsub : {ω | ∃ t ∈ Set.Ioc 0 δ, ε * t ^ (1 / 2 - η) <
+      |tailEmpiricalProcess U n (k n) t ω|} ⊆ Bot ∪ ⋃ i ∈ range M, Bl i := by
+    rintro ω ⟨t, ht, hlt⟩
+    by_cases hB : ω ∈ Bot
+    · exact Or.inl hB
+    right
+    rcases le_or_gt t s with hts | hts
+    · exfalso
+      simp only [Bot, Set.mem_ofPred_eq, not_exists, not_and, not_le] at hB
+      have hW : tailEmpiricalProcess U n (k n) t ω = -(√(k n : ℝ) * t) := by
+        unfold tailEmpiricalProcess
+        rw [Finset.sum_eq_zero fun i hi ↦ ?_]
+        · ring
+        have : U i ω < 1 - k n / n * t := by
+          have := hB i (Finset.mem_range.1 hi)
+          have : p * t ≤ p * s := mul_le_mul_of_nonneg_left hts hp0
+          rw [hpdef] at *
+          linarith
+        simp [Set.indicator, not_le.2 this]
+      rw [hW, abs_neg, abs_of_pos (mul_pos hsk ht.1)] at hlt
+      -- `√k t = √k t ^ (1 - α) t ^ α ≤ ε t ^ α`
+      have ht0 := ht.1
+      have e : t = t ^ (1 - α) * t ^ α := by
+        rw [← Real.rpow_add ht0]; simp
+      have h1 : t ^ (1 - α) ≤ (θ' / k n) ^ (1 - α) :=
+        Real.rpow_le_rpow ht0.le (hts.trans hsup) (by rw [hα]; linarith)
+      have h2 : √(k n : ℝ) * (θ' / k n) ^ (1 - α) = θ' ^ (1 - α) / (k n : ℝ) ^ (1 - α - 1 / 2) := by
+        rw [Real.sqrt_eq_rpow, Real.div_rpow hθ'0.le hk'.le, Real.rpow_sub hk' (1 - α)]
+        field_simp
+      have h3 : √(k n : ℝ) * t ^ (1 - α) ≤ ε :=
+        (mul_le_mul_of_nonneg_left h1 hsk.le).trans (h2 ▸ hT5n)
+      have h4 : √(k n : ℝ) * t ≤ ε * t ^ α := by
+        calc √(k n : ℝ) * t = (√(k n : ℝ) * t ^ (1 - α)) * t ^ α := by rw [mul_assoc, ← e]
+          _ ≤ ε * t ^ α := mul_le_mul_of_nonneg_right h3 (by positivity)
+      rw [hα] at h4
+      linarith
+    · obtain ⟨i, hi, hti⟩ := exists_mem_dyadic_block hs0 M hts (hsM.symm ▸ ht.2)
+      exact Set.mem_biUnion (Finset.mem_coe.2 (Finset.mem_range.2 hi)) ⟨t, hti, by rwa [hα]⟩
+  -- the probabilities
+  have hPbot : P.real Bot ≤ θ' := by
+    refine (measureReal_exists_one_sub_le hU hlaw hn0 hs0.le ?_).trans ?_
+    · have : s ≤ 1 := (div_le_self hδ0.le (one_le_pow₀ one_le_two)).trans hδ1
+      calc p * s ≤ 1 / 2 * 1 := mul_le_mul hp this hs0.le (by norm_num)
+        _ ≤ 1 := by norm_num
+    · rw [le_div_iff₀ hk'] at hsup; linarith
+  set b : ℝ → ℝ := fun a ↦ 4 / ε ^ 2 * a ^ (1 - 2 * α) + K *
+    (84 * a ^ (2 - 4 * α) + 8 * a ^ (1 - 4 * α) / k n + 32 / ε * a ^ (2 - 5 * α) / √(k n : ℝ))
+  have hPbl (i : ℕ) (hi : i ∈ range M) : P.real (Bl i) ≤ b (s * 2 ^ i) := by
+    refine measureReal_block_weighted_le hU hind hlaw hn0 hk0 (by positivity) hα0 hε ?_
+    have h2a : 2 * (s * 2 ^ i) ≤ 1 := by
+      have hi' : i + 1 ≤ M := Finset.mem_range.1 hi
+      calc 2 * (s * 2 ^ i) = s * 2 ^ (i + 1) := by ring
+        _ ≤ s * 2 ^ M := mul_le_mul_of_nonneg_left (pow_le_pow_right₀ one_le_two hi') hs0.le
+        _ ≤ 1 := hsM ▸ hδ1
+    calc (k n : ℝ) / n * (2 * (s * 2 ^ i)) ≤ 1 / 2 * 1 :=
+          mul_le_mul hp h2a (by positivity) (by norm_num)
+      _ ≤ 1 := by norm_num
+  have hsum : ∑ i ∈ range M, b (s * 2 ^ i) ≤ F δ +
+      (K * 8 * (c ^ (1 - 4 * α) / (1 - 2 ^ (1 - 4 * α))) / (k n : ℝ) ^ (1 - 4 * α + 1) +
+        K * (32 / ε) * (c ^ (2 - 5 * α) / (1 - 2 ^ (2 - 5 * α))) /
+          (k n : ℝ) ^ (2 - 5 * α + 1 / 2)) := by
+    have e : ∑ i ∈ range M, b (s * 2 ^ i) =
+        4 / ε ^ 2 * ∑ i ∈ range M, (s * 2 ^ i) ^ (1 - 2 * α) +
+        K * 84 * ∑ i ∈ range M, (s * 2 ^ i) ^ (2 - 4 * α) +
+        K * 8 / k n * ∑ i ∈ range M, (s * 2 ^ i) ^ (1 - 4 * α) +
+        K * (32 / ε) / √(k n : ℝ) * ∑ i ∈ range M, (s * 2 ^ i) ^ (2 - 5 * α) := by
+      simp only [b, Finset.mul_sum, ← Finset.sum_add_distrib]
+      refine Finset.sum_congr rfl fun i _ ↦ ?_
+      ring
+    have s1 := sum_range_mul_two_pow_rpow_le_of_pos hs0 hg1 M
+    have s2 := sum_range_mul_two_pow_rpow_le_of_pos hs0 hg2 M
+    have s3 := sum_range_mul_two_pow_rpow_le_of_neg hs0 hg3 M
+    have s4 := sum_range_mul_two_pow_rpow_le_of_neg hs0 hg4 M
+    rw [hsM] at s1 s2
+    have c3 : s ^ (1 - 4 * α) ≤ (c / k n) ^ (1 - 4 * α) :=
+      Real.rpow_le_rpow_of_nonpos (by positivity) hslow hg3.le
+    have c4 : s ^ (2 - 5 * α) ≤ (c / k n) ^ (2 - 5 * α) :=
+      Real.rpow_le_rpow_of_nonpos (by positivity) hslow hg4.le
+    have e3 : K * 8 / k n * ((c / k n) ^ (1 - 4 * α) / (1 - 2 ^ (1 - 4 * α))) =
+        K * 8 * (c ^ (1 - 4 * α) / (1 - 2 ^ (1 - 4 * α))) / (k n : ℝ) ^ (1 - 4 * α + 1) := by
+      have h := div_rpow_div_rpow_eq hc0.le hk' (1 - 4 * α) 1
+      rw [Real.rpow_one] at h
+      calc _ = K * 8 * ((c / k n) ^ (1 - 4 * α) / k n) / (1 - 2 ^ (1 - 4 * α)) := by ring
+        _ = _ := by rw [h]; ring
+    have e4 : K * (32 / ε) / √(k n : ℝ) * ((c / k n) ^ (2 - 5 * α) / (1 - 2 ^ (2 - 5 * α))) =
+        K * (32 / ε) * (c ^ (2 - 5 * α) / (1 - 2 ^ (2 - 5 * α))) /
+          (k n : ℝ) ^ (2 - 5 * α + 1 / 2) := by
+      have h := div_rpow_div_rpow_eq hc0.le hk' (2 - 5 * α) (1 / 2)
+      rw [← Real.sqrt_eq_rpow] at h
+      calc _ = K * (32 / ε) * ((c / k n) ^ (2 - 5 * α) / √(k n : ℝ)) /
+            (1 - 2 ^ (2 - 5 * α)) := by ring
+        _ = _ := by rw [h]; ring
+    rw [e, hF, ← e3, ← e4]
+    have t1 := mul_le_mul_of_nonneg_left s1 (show 0 ≤ 4 / ε ^ 2 by positivity)
+    have t2 := mul_le_mul_of_nonneg_left s2 (show 0 ≤ K * 84 by positivity)
+    have t3 := mul_le_mul_of_nonneg_left (s3.trans (div_le_div_of_nonneg_right c3 hd3.le))
+      (show 0 ≤ K * 8 / k n by positivity)
+    have t4 := mul_le_mul_of_nonneg_left (s4.trans (div_le_div_of_nonneg_right c4 hd4.le))
+      (show 0 ≤ K * (32 / ε) / √(k n : ℝ) by positivity)
+    linarith
+  calc P.real _ ≤ P.real (Bot ∪ ⋃ i ∈ range M, Bl i) := measureReal_mono hsub
+    _ ≤ P.real Bot + ∑ i ∈ range M, P.real (Bl i) :=
+        (measureReal_union_le _ _).trans (add_le_add le_rfl (measureReal_biUnion_finset_le _ _))
+    _ ≤ θ' + ∑ i ∈ range M, b (s * 2 ^ i) :=
+        add_le_add hPbot (Finset.sum_le_sum hPbl)
+    _ ≤ θ' + (F δ + (K * 8 * (c ^ (1 - 4 * α) / (1 - 2 ^ (1 - 4 * α))) /
+          (k n : ℝ) ^ (1 - 4 * α + 1) + K * (32 / ε) * (c ^ (2 - 5 * α) /
+            (1 - 2 ^ (2 - 5 * α))) / (k n : ℝ) ^ (2 - 5 * α + 1 / 2))) := by linarith
+    _ ≤ θ := by linarith
 
 end Weighted
 
