@@ -639,4 +639,357 @@ theorem exists_delta_segHess_good {H : ℝ → ℝ → ℝ → ℝ}
 
 end SegmentNeg
 
+/-! ### Averages along the sample -/
+
+section AvgLemmas
+
+lemma abs_avg_sub_le {n : ℕ} (hn : 0 < n) {f g b : ℕ → ℝ} {e : ℝ}
+    (h : ∀ i < n, |f i - g i| ≤ e + b i) :
+    |(n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, f i - (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, g i| ≤
+      e + (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, b i := by
+  have hn' : (0 : ℝ) < n := Nat.cast_pos.2 hn
+  rw [← mul_sub, ← Finset.sum_sub_distrib, abs_mul, abs_of_pos (inv_pos.2 hn')]
+  calc (n : ℝ)⁻¹ * |∑ i ∈ Finset.range n, (f i - g i)|
+      ≤ (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, (e + b i) := by
+        gcongr
+        exact (Finset.abs_sum_le_sum_abs _ _).trans
+          (Finset.sum_le_sum fun i hi => h i (Finset.mem_range.1 hi))
+    _ = e + (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, b i := by
+        rw [Finset.sum_add_distrib, Finset.sum_const, Finset.card_range, nsmul_eq_mul, mul_add]
+        field_simp
+
+lemma avg_le_avg {n : ℕ} {f g : ℕ → ℝ} (h : ∀ i < n, f i ≤ g i) :
+    (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, f i ≤ (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, g i :=
+  mul_le_mul_of_nonneg_left (Finset.sum_le_sum fun i hi => h i (Finset.mem_range.1 hi))
+    (inv_nonneg.2 (Nat.cast_nonneg _))
+
+lemma avg_nonneg {n : ℕ} {f : ℕ → ℝ} (h : ∀ i < n, 0 ≤ f i) :
+    0 ≤ (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, f i :=
+  mul_nonneg (inv_nonneg.2 (Nat.cast_nonneg _))
+    (Finset.sum_nonneg fun i hi => h i (Finset.mem_range.1 hi))
+
+lemma quad_avg (n : ℕ) (a b c : ℕ → ℝ) (t₁ t₂ : ℝ) :
+    t₁ ^ 2 * ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, a i) +
+        2 * t₁ * t₂ * ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, b i) +
+        t₂ ^ 2 * ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, c i) =
+      (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, (t₁ ^ 2 * a i + 2 * t₁ * t₂ * b i + t₂ ^ 2 * c i) := by
+  rw [Finset.sum_add_distrib, Finset.sum_add_distrib, ← Finset.mul_sum, ← Finset.mul_sum,
+    ← Finset.mul_sum]
+  ring
+
+lemma avg_add_const_mul {n : ℕ} (hn : 0 < n) (a b : ℕ → ℝ) (e K T : ℝ) :
+    (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, (a i + (e + K * b i) * T) =
+      (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, a i +
+        (e + K * ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, b i)) * T := by
+  have hn' : (n : ℝ) ≠ 0 := Nat.cast_ne_zero.2 hn.ne'
+  have : ∑ i ∈ Finset.range n, (a i + (e + K * b i) * T) =
+      ∑ i ∈ Finset.range n, a i + (n * e + K * ∑ i ∈ Finset.range n, b i) * T := by
+    rw [Finset.sum_add_distrib, ← Finset.sum_mul, Finset.sum_add_distrib, Finset.sum_const,
+      Finset.card_range, nsmul_eq_mul, ← Finset.mul_sum]
+  rw [this]
+  field_simp
+
+lemma quad_le_of_abs_le {d₁ d₂ d₃ M : ℝ} (h₁ : |d₁| ≤ M) (h₂ : |d₂| ≤ M) (h₃ : |d₃| ≤ M)
+    (t₁ t₂ : ℝ) : t₁ ^ 2 * d₁ + 2 * t₁ * t₂ * d₂ + t₂ ^ 2 * d₃ ≤ 2 * M * (t₁ ^ 2 + t₂ ^ 2) := by
+  obtain ⟨a₁, b₁⟩ := abs_le.1 h₁
+  obtain ⟨a₂, b₂⟩ := abs_le.1 h₂
+  obtain ⟨a₃, b₃⟩ := abs_le.1 h₃
+  have e1 : t₁ ^ 2 * d₁ ≤ t₁ ^ 2 * M := mul_le_mul_of_nonneg_left b₁ (sq_nonneg _)
+  have e3 : t₂ ^ 2 * d₃ ≤ t₂ ^ 2 * M := mul_le_mul_of_nonneg_left b₃ (sq_nonneg _)
+  have e2 : 0 ≤ (M - d₂) * (t₁ + t₂) ^ 2 := mul_nonneg (by linarith) (sq_nonneg _)
+  have e2' : 0 ≤ (M + d₂) * (t₁ - t₂) ^ 2 := mul_nonneg (by linarith) (sq_nonneg _)
+  nlinarith
+
+end AvgLemmas
+
+/-! ### The averaged Hessian along a consistent sequence -/
+
+section Averages
+
+variable {ξ₀ σ₀ : ℝ}
+
+/-- The part `gpdDom · 1{σ₀ + ξ₀ x < c}` of the dominating function near the endpoint. -/
+noncomputable def gpdDomTail (ξ₀ σ₀ c x : ℝ) : ℝ :=
+  Set.indicator {y | σ₀ + ξ₀ * y < c} (gpdDom ξ₀ σ₀) x
+
+lemma measurable_gpdDomTail (ξ₀ σ₀ c : ℝ) : Measurable (gpdDomTail ξ₀ σ₀ c) :=
+  (measurable_gpdDom ξ₀ σ₀).indicator (measurableSet_lt (by fun_prop) measurable_const)
+
+lemma gpdDomTail_of_le {c x : ℝ} (h : c ≤ σ₀ + ξ₀ * x) : gpdDomTail ξ₀ σ₀ c x = 0 :=
+  Set.indicator_of_notMem (by simp only [mem_ofPred_eq, not_lt]; exact h) _
+
+lemma gpdDomTail_of_lt {c x : ℝ} (h : σ₀ + ξ₀ * x < c) :
+    gpdDomTail ξ₀ σ₀ c x = gpdDom ξ₀ σ₀ x :=
+  Set.indicator_of_mem (show x ∈ {y | σ₀ + ξ₀ * y < c} from h) _
+
+lemma gpdDomTail_nonneg (hξ₀' : ξ₀ < 0) (hσ₀ : 0 < σ₀) {c x : ℝ} (hx : 0 ≤ x)
+    (h0 : 0 < σ₀ + ξ₀ * x) : 0 ≤ gpdDomTail ξ₀ σ₀ c x := by
+  by_cases h : σ₀ + ξ₀ * x < c
+  · rw [gpdDomTail_of_lt h]; linarith [one_le_gpdDom hξ₀' hσ₀ hx h0]
+  · rw [gpdDomTail_of_le (not_lt.1 h)]
+
+lemma integrable_gpdDomTail (hξ₀ : -1 / 2 < ξ₀) (hξ₀' : ξ₀ < 0) (hσ₀ : 0 < σ₀) (c : ℝ) :
+    Integrable (gpdDomTail ξ₀ σ₀ c) (gpdMeasure ξ₀ σ₀) :=
+  (integrable_gpdDom hξ₀ hξ₀' hσ₀).indicator (measurableSet_lt (by fun_prop) measurable_const)
+
+/-- The tail of the dominating function has vanishing mean. -/
+lemma tendsto_integral_gpdDomTail (hξ₀ : -1 / 2 < ξ₀) (hξ₀' : ξ₀ < 0) (hσ₀ : 0 < σ₀) :
+    Tendsto (fun k : ℕ => ∫ x, gpdDomTail ξ₀ σ₀ (1 / ((k : ℝ) + 1)) x ∂gpdMeasure ξ₀ σ₀)
+      atTop (𝓝 0) := by
+  have h := tendsto_integral_of_dominated_convergence (fun x => |gpdDom ξ₀ σ₀ x|)
+    (F := fun (k : ℕ) x => gpdDomTail ξ₀ σ₀ (1 / ((k : ℝ) + 1)) x) (f := fun _ => 0)
+    (fun k => (measurable_gpdDomTail _ _ _).aestronglyMeasurable)
+    (integrable_gpdDom hξ₀ hξ₀' hσ₀).abs
+    (fun k => ae_of_all _ fun x =>
+      (norm_indicator_le_norm_self (s := {y | σ₀ + ξ₀ * y < 1 / ((k : ℝ) + 1)})
+          (gpdDom ξ₀ σ₀) x).trans_eq (Real.norm_eq_abs _)) ?_
+  · simpa using h
+  filter_upwards [ae_gpdMeasure (ξ := ξ₀) hσ₀] with x hx
+  refine tendsto_const_nhds.congr' ?_
+  filter_upwards [(tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)).eventually
+    (gt_mem_nhds hx.2)] with k hk
+  exact (gpdDomTail_of_le hk.le).symm
+
+variable (hξ₀ : -1 / 2 < ξ₀) (hξ₀' : ξ₀ < 0) (hσ₀ : 0 < σ₀)
+include hξ₀ hξ₀' hσ₀
+
+omit hξ₀ in
+/-- The Hessian at the true parameter is dominated by `4 Kc gpdDom`. -/
+theorem abs_gpdHess_self_le {H : ℝ → ℝ → ℝ → ℝ}
+    (hHb : ∀ ξ σ x, 0 ≤ x → 0 < σ + ξ * x → |H ξ σ x| ≤ gpdHessCoef (ξ, σ) *
+      (|log (1 + ξ * x / σ)| + x / (σ + ξ * x) + (x / (σ + ξ * x)) ^ 2 + 1))
+    {Kc : ℝ} (hK : ∀ θ ∈ gpdNbhdNeg ξ₀ σ₀, gpdHessCoef θ ≤ Kc) {x : ℝ} (hx : 0 ≤ x)
+    (h0 : 0 < σ₀ + ξ₀ * x) : |H ξ₀ σ₀ x| ≤ 4 * Kc * gpdDom ξ₀ σ₀ x := by
+  have hmem := mem_gpdNbhdNeg_self hξ₀' hσ₀
+  have h1 := hHb ξ₀ σ₀ x hx h0
+  have h2 := le_gpdDom_of_half hξ₀' hσ₀ hmem hx h0 (by linarith)
+  have h3 := hK _ hmem
+  have hc0 : 0 ≤ gpdHessCoef (ξ₀, σ₀) := by unfold gpdHessCoef; positivity
+  have hP : 0 ≤ |log (1 + ξ₀ * x / σ₀)| + x / (σ₀ + ξ₀ * x) + (x / (σ₀ + ξ₀ * x)) ^ 2 + 1 := by
+    have := div_nonneg hx h0.le; positivity
+  calc _ ≤ _ := h1
+    _ ≤ Kc * (4 * gpdDom ξ₀ σ₀ x) := mul_le_mul h3 h2 hP (hc0.trans h3)
+    _ = 4 * Kc * gpdDom ξ₀ σ₀ x := by ring
+
+omit hξ₀ in
+/-- **The deviation of one segment-averaged Hessian entry**: at most `ε` on the good set and
+`8 Kc gpdDom` near the endpoint, provided `σ + ξ x ≥ (σ₀ + ξ₀ x)/2`. -/
+theorem segHess_dev_le {H : ℝ → ℝ → ℝ → ℝ}
+    (hHm : Measurable fun q : ℝ × ℝ × ℝ => H q.1 q.2.1 q.2.2)
+    (hHb : ∀ ξ σ x, 0 ≤ x → 0 < σ + ξ * x → |H ξ σ x| ≤ gpdHessCoef (ξ, σ) *
+      (|log (1 + ξ * x / σ)| + x / (σ + ξ * x) + (x / (σ + ξ * x)) ^ 2 + 1))
+    {Kc : ℝ} (hK : ∀ θ ∈ gpdNbhdNeg ξ₀ σ₀, gpdHessCoef θ ≤ Kc) {c ε δ : ℝ}
+    (hgood : ∀ θ : ℝ × ℝ, gpdDist ξ₀ σ₀ θ ≤ δ → ∀ x, 0 ≤ x → c ≤ σ₀ + ξ₀ * x →
+      |segHess H ξ₀ σ₀ θ x - H ξ₀ σ₀ x| ≤ ε) (hε : 0 ≤ ε)
+    {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhdNeg ξ₀ σ₀) (hρ : gpdDist ξ₀ σ₀ θ ≤ δ) {x : ℝ} (hx : 0 ≤ x)
+    (h0 : 0 < σ₀ + ξ₀ * x) (hh : (σ₀ + ξ₀ * x) / 2 ≤ θ.2 + θ.1 * x) :
+    |segHess H ξ₀ σ₀ θ x - H ξ₀ σ₀ x| ≤ ε + 8 * Kc * gpdDomTail ξ₀ σ₀ c x := by
+  by_cases hcx : c ≤ σ₀ + ξ₀ * x
+  · rw [gpdDomTail_of_le hcx, mul_zero, add_zero]
+    exact hgood θ hρ x hx hcx
+  · rw [gpdDomTail_of_lt (not_le.1 hcx)]
+    have h1 := abs_segHess_le_gpdDom hξ₀' hσ₀ hHm hHb hK hθ hx h0 hh
+    have h2 := abs_gpdHess_self_le hξ₀' hσ₀ hHb hK hx h0
+    have := abs_sub (segHess H ξ₀ σ₀ θ x) (H ξ₀ σ₀ x)
+    linarith
+
+/-- **The deviation of the segment-averaged Hessian quadratic form** (one-sided): at most
+`2ε |t|²` on the good set and `(C₁ + 8 Kc) gpdDom |t|²` near the endpoint, whatever the
+position of the observation relative to the endpoint of `θ`. -/
+theorem segHess_quad_dev_le {Kc C₁ : ℝ} (hC₁ : 0 ≤ C₁)
+    (hK : ∀ θ ∈ gpdNbhdNeg ξ₀ σ₀, gpdHessCoef θ ≤ Kc)
+    (hC : ∀ θ ∈ gpdNbhdNeg ξ₀ σ₀, gpdQuadCoef θ ≤ C₁) {c ε δ : ℝ} (hε : 0 ≤ ε)
+    (g₁ : ∀ θ : ℝ × ℝ, gpdDist ξ₀ σ₀ θ ≤ δ → ∀ x, 0 ≤ x → c ≤ σ₀ + ξ₀ * x →
+      |segHess gpdHessXiXi ξ₀ σ₀ θ x - gpdHessXiXi ξ₀ σ₀ x| ≤ ε)
+    (g₂ : ∀ θ : ℝ × ℝ, gpdDist ξ₀ σ₀ θ ≤ δ → ∀ x, 0 ≤ x → c ≤ σ₀ + ξ₀ * x →
+      |segHess gpdHessXiSigma ξ₀ σ₀ θ x - gpdHessXiSigma ξ₀ σ₀ x| ≤ ε)
+    (g₃ : ∀ θ : ℝ × ℝ, gpdDist ξ₀ σ₀ θ ≤ δ → ∀ x, 0 ≤ x → c ≤ σ₀ + ξ₀ * x →
+      |segHess gpdHessSigmaSigma ξ₀ σ₀ θ x - gpdHessSigmaSigma ξ₀ σ₀ x| ≤ ε)
+    {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhdNeg ξ₀ σ₀) (hρ : gpdDist ξ₀ σ₀ θ ≤ δ) {x : ℝ} (hx : 0 ≤ x)
+    (h0 : 0 < σ₀ + ξ₀ * x) (h1 : 0 < θ.2 + θ.1 * x) (t₁ t₂ : ℝ) :
+    t₁ ^ 2 * segHess gpdHessXiXi ξ₀ σ₀ θ x + 2 * t₁ * t₂ * segHess gpdHessXiSigma ξ₀ σ₀ θ x +
+        t₂ ^ 2 * segHess gpdHessSigmaSigma ξ₀ σ₀ θ x ≤
+      (t₁ ^ 2 * gpdHessXiXi ξ₀ σ₀ x + 2 * t₁ * t₂ * gpdHessXiSigma ξ₀ σ₀ x +
+        t₂ ^ 2 * gpdHessSigmaSigma ξ₀ σ₀ x) +
+      (2 * ε + (C₁ + 8 * Kc) * gpdDomTail ξ₀ σ₀ c x) * (t₁ ^ 2 + t₂ ^ 2) := by
+  have ht : 0 ≤ t₁ ^ 2 + t₂ ^ 2 := by positivity
+  by_cases hcx : c ≤ σ₀ + ξ₀ * x
+  · rw [gpdDomTail_of_le hcx, mul_zero, add_zero]
+    have := quad_le_of_abs_le (g₁ θ hρ x hx hcx) (g₂ θ hρ x hx hcx) (g₃ θ hρ x hx hcx) t₁ t₂
+    nlinarith
+  · rw [gpdDomTail_of_lt (not_le.1 hcx)]
+    have hD := one_le_gpdDom hξ₀' hσ₀ hx h0
+    have hq := segHess_quad_le_neg hξ₀ hξ₀' hσ₀ hC hθ hx h0 h1 t₁ t₂
+    have b₁ := abs_gpdHess_self_le hξ₀' hσ₀ (fun ξ σ x hx hu => (abs_gpdHess_le hx hu).1)
+      hK hx h0
+    have b₂ := abs_gpdHess_self_le hξ₀' hσ₀ (fun ξ σ x hx hu => (abs_gpdHess_le hx hu).2.1)
+      hK hx h0
+    have b₃ := abs_gpdHess_self_le hξ₀' hσ₀ (fun ξ σ x hx hu => (abs_gpdHess_le hx hu).2.2)
+      hK hx h0
+    rw [← abs_neg] at b₁ b₂ b₃
+    have hneg := quad_le_of_abs_le b₁ b₂ b₃ t₁ t₂
+    have e1 : C₁ * (t₁ ^ 2 + t₂ ^ 2) ≤ C₁ * gpdDom ξ₀ σ₀ x * (t₁ ^ 2 + t₂ ^ 2) := by
+      have := mul_le_mul_of_nonneg_left hD hC₁
+      nlinarith
+    have e2 : 0 ≤ 2 * ε * (t₁ ^ 2 + t₂ ^ 2) := by positivity
+    nlinarith
+
+omit hξ₀ hξ₀' hσ₀ in
+lemma tendsto_gpdDist {θs : ℕ → ℝ × ℝ} (hθ : Tendsto θs atTop (𝓝 (ξ₀, σ₀))) {δ : ℝ}
+    (hδ : 0 < δ) :
+    ∀ᶠ n in atTop, gpdDist ξ₀ σ₀ (θs n) ≤ δ := by
+  have hc : Continuous (gpdDist ξ₀ σ₀) := by unfold gpdDist; fun_prop
+  have := (hc.tendsto (ξ₀, σ₀)).comp hθ
+  rw [show gpdDist ξ₀ σ₀ (ξ₀, σ₀) = 0 by simp [gpdDist]] at this
+  exact this.eventually (ge_mem_nhds hδ)
+
+/-- **Convergence of an averaged segment Hessian entry, negative shape** (deterministic). Along
+`θₙ → θ₀`, given the strong laws for `H(θ₀, ·)` and for the tails of the dominating function,
+for every `ε > 0` the empirical mean of `H̄(θₙ, xᵢ)` is eventually within `ε` of the limit `m`
+of the empirical means of `H(θ₀, xᵢ)`, whenever all observations satisfy
+`σₙ + ξₙ xᵢ ≥ (σ₀ + ξ₀ xᵢ)/2`. -/
+theorem eventually_abs_avg_segHess_sub_le {H : ℝ → ℝ → ℝ → ℝ}
+    (hHm : Measurable fun q : ℝ × ℝ × ℝ => H q.1 q.2.1 q.2.2)
+    (hH : ∀ q : ℝ × ℝ × ℝ, q.1 ≠ 0 → 0 < q.2.1 → 0 < q.2.1 + q.1 * q.2.2 →
+      ContinuousAt (fun q : ℝ × ℝ × ℝ => H q.1 q.2.1 q.2.2) q)
+    (hHb : ∀ ξ σ x, 0 ≤ x → 0 < σ + ξ * x → |H ξ σ x| ≤ gpdHessCoef (ξ, σ) *
+      (|log (1 + ξ * x / σ)| + x / (σ + ξ * x) + (x / (σ + ξ * x)) ^ 2 + 1))
+    {x : ℕ → ℝ} (hx : ∀ i, 0 ≤ x i ∧ 0 < σ₀ + ξ₀ * x i)
+    {θs : ℕ → ℝ × ℝ} (hθ : Tendsto θs atTop (𝓝 (ξ₀, σ₀)))
+    {m : ℝ} (hm : Tendsto (fun n : ℕ => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, H ξ₀ σ₀ (x i))
+      atTop (𝓝 m))
+    {d : ℕ → ℝ} (hD : ∀ k : ℕ, Tendsto (fun n : ℕ => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n,
+      gpdDomTail ξ₀ σ₀ (1 / ((k : ℝ) + 1)) (x i)) atTop (𝓝 (d k)))
+    (hd : Tendsto d atTop (𝓝 0)) {ε : ℝ} (hε : 0 < ε) :
+    ∀ᶠ n : ℕ in atTop, (∀ i < n, (σ₀ + ξ₀ * x i) / 2 ≤ (θs n).2 + (θs n).1 * x i) →
+      |(n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, segHess H ξ₀ σ₀ (θs n) (x i) - m| ≤ ε := by
+  obtain ⟨Kc, C₁, hKc, hC₁, hb⟩ := exists_gpdCoef_bound hξ₀ hξ₀' hσ₀
+  set A := 8 * Kc + 1 with hA
+  have hA0 : 0 < A := by positivity
+  obtain ⟨k, hk⟩ : ∃ k, A * d k < ε / 4 := by
+    have h := hd.const_mul A
+    rw [mul_zero] at h
+    exact (h.eventually (gt_mem_nhds (by positivity))).exists
+  obtain ⟨δ, hδ, hgood⟩ := exists_delta_segHess_good hξ₀ hξ₀' hσ₀ hHm hH
+    (c := 1 / ((k : ℝ) + 1)) (by positivity) (ε := ε / 4) (by positivity)
+  filter_upwards [tendsto_gpdDist hθ hδ, hθ.eventually (gpdNbhdNeg_mem_nhds hξ₀' hσ₀),
+    ((hD k).const_mul A).eventually (gt_mem_nhds hk),
+    hm.eventually (Metric.ball_mem_nhds m (show 0 < ε / 4 by positivity)),
+    eventually_gt_atTop 0] with n hn1 hn2 hn3 hn4 hn5 hhalf
+  set tail : ℕ → ℝ := fun i => gpdDomTail ξ₀ σ₀ (1 / ((k : ℝ) + 1)) (x i) with htail
+  have h1 := abs_avg_sub_le hn5 (f := fun i => segHess H ξ₀ σ₀ (θs n) (x i))
+    (g := fun i => H ξ₀ σ₀ (x i)) (e := ε / 4) (b := fun i => 8 * Kc * tail i)
+    (fun i hi => segHess_dev_le hξ₀' hσ₀ hHm hHb (fun θ hθ => (hb θ hθ).1) hgood
+      (by positivity) hn2 hn1 (hx i).1 (hx i).2 (hhalf i hi))
+  have htail0 : 0 ≤ (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, tail i :=
+    avg_nonneg fun i _ => gpdDomTail_nonneg hξ₀' hσ₀ (hx i).1 (hx i).2
+  have h2 : (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, 8 * Kc * tail i ≤
+      A * ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, tail i) := by
+    rw [← Finset.mul_sum, show (n : ℝ)⁻¹ * (8 * Kc * ∑ i ∈ Finset.range n, tail i) =
+      8 * Kc * ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, tail i) by ring]
+    exact mul_le_mul_of_nonneg_right (by linarith) htail0
+  have h3 : |(n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, H ξ₀ σ₀ (x i) - m| < ε / 4 := by
+    simpa [Metric.mem_ball, Real.dist_eq] using hn4
+  have h4 := abs_sub_le ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, segHess H ξ₀ σ₀ (θs n) (x i))
+    ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, H ξ₀ σ₀ (x i)) m
+  simp only [htail] at h2 hn3
+  linarith
+
+/-- **The averaged observed information is eventually uniformly positive** (deterministic,
+negative shape). Along `θₙ → θ₀` with all observations in the support of `θₙ`, if the limit
+`m` of the empirical mean Hessians at `θ₀` satisfies `tᵀ m t ≤ -λ |t|²`, then eventually the
+empirical mean of the segment-averaged Hessians `Bₙ` satisfies `tᵀ Bₙ t ≤ -(λ/2) |t|²`: the
+observations near the endpoint contribute only through the one-sided bound. -/
+theorem eventually_quad_avg_segHess_le {lam : ℝ} (hlam : 0 < lam) {m₁₁ m₁₂ m₂₂ : ℝ}
+    (hm : ∀ t₁ t₂ : ℝ, t₁ ^ 2 * m₁₁ + 2 * t₁ * t₂ * m₁₂ + t₂ ^ 2 * m₂₂ ≤
+      -lam * (t₁ ^ 2 + t₂ ^ 2))
+    {x : ℕ → ℝ} (hx : ∀ i, 0 ≤ x i ∧ 0 < σ₀ + ξ₀ * x i)
+    {θs : ℕ → ℝ × ℝ} (hθ : Tendsto θs atTop (𝓝 (ξ₀, σ₀)))
+    (hadm : ∀ᶠ n in atTop, ∀ i < n, 0 < (θs n).2 + (θs n).1 * x i)
+    (h₁₁ : Tendsto (fun n : ℕ => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, gpdHessXiXi ξ₀ σ₀ (x i))
+      atTop (𝓝 m₁₁))
+    (h₁₂ : Tendsto (fun n : ℕ => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, gpdHessXiSigma ξ₀ σ₀ (x i))
+      atTop (𝓝 m₁₂))
+    (h₂₂ : Tendsto (fun n : ℕ => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n,
+      gpdHessSigmaSigma ξ₀ σ₀ (x i)) atTop (𝓝 m₂₂))
+    {d : ℕ → ℝ} (hD : ∀ k : ℕ, Tendsto (fun n : ℕ => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n,
+      gpdDomTail ξ₀ σ₀ (1 / ((k : ℝ) + 1)) (x i)) atTop (𝓝 (d k)))
+    (hd : Tendsto d atTop (𝓝 0)) :
+    ∀ᶠ n : ℕ in atTop, ∀ t₁ t₂ : ℝ,
+      t₁ ^ 2 * ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, segHess gpdHessXiXi ξ₀ σ₀ (θs n) (x i)) +
+        2 * t₁ * t₂ *
+          ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, segHess gpdHessXiSigma ξ₀ σ₀ (θs n) (x i)) +
+        t₂ ^ 2 *
+          ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, segHess gpdHessSigmaSigma ξ₀ σ₀ (θs n) (x i)) ≤
+      -(lam / 2) * (t₁ ^ 2 + t₂ ^ 2) := by
+  obtain ⟨Kc, C₁, hKc, hC₁, hb⟩ := exists_gpdCoef_bound hξ₀ hξ₀' hσ₀
+  have hK : ∀ θ ∈ gpdNbhdNeg ξ₀ σ₀, gpdHessCoef θ ≤ Kc := fun θ hθ => (hb θ hθ).1
+  have hC : ∀ θ ∈ gpdNbhdNeg ξ₀ σ₀, gpdQuadCoef θ ≤ C₁ := fun θ hθ => (hb θ hθ).2
+  set A := C₁ + 8 * Kc + 1 with hA
+  have hA0 : 0 < A := by positivity
+  set ε := lam / 16 with hε
+  have hε0 : 0 < ε := by positivity
+  obtain ⟨k, hk⟩ : ∃ k, A * d k < lam / 16 := by
+    have h := hd.const_mul A
+    rw [mul_zero] at h
+    exact (h.eventually (gt_mem_nhds (by positivity))).exists
+  have hc : (0 : ℝ) < 1 / ((k : ℝ) + 1) := by positivity
+  obtain ⟨δ₁, hδ₁, g₁⟩ := exists_delta_segHess_good hξ₀ hξ₀' hσ₀ measurable_gpdHessXiXi₃
+    (fun _ h1 h2 h3 => continuousAt_gpdHessXiXi₃ h1 h2 h3) hc hε0
+  obtain ⟨δ₂, hδ₂, g₂⟩ := exists_delta_segHess_good hξ₀ hξ₀' hσ₀ measurable_gpdHessXiSigma₃
+    (fun _ _ h2 h3 => continuousAt_gpdHessXiSigma₃ h2 h3) hc hε0
+  obtain ⟨δ₃, hδ₃, g₃⟩ := exists_delta_segHess_good hξ₀ hξ₀' hσ₀ measurable_gpdHessSigmaSigma₃
+    (fun _ _ h2 h3 => continuousAt_gpdHessSigmaSigma₃ h2 h3) hc hε0
+  set δ := min δ₁ (min δ₂ δ₃)
+  have hδ : 0 < δ := lt_min hδ₁ (lt_min hδ₂ hδ₃)
+  have hball : ∀ {f : ℕ → ℝ} {m : ℝ}, Tendsto f atTop (𝓝 m) → ∀ᶠ n in atTop, |f n - m| ≤ ε :=
+    fun {f m} h => (h.eventually (Metric.closedBall_mem_nhds m hε0)).mono fun n hn => by
+      simpa [Metric.mem_closedBall, Real.dist_eq] using hn
+  filter_upwards [tendsto_gpdDist hθ hδ, hθ.eventually (gpdNbhdNeg_mem_nhds hξ₀' hσ₀),
+    ((hD k).const_mul A).eventually (gt_mem_nhds hk), hball h₁₁, hball h₁₂, hball h₂₂,
+    eventually_gt_atTop 0, hadm] with n hn1 hn2 hn3 hn4 hn5 hn6 hn7 hn8 t₁ t₂
+  set T := t₁ ^ 2 + t₂ ^ 2 with hT
+  have hT0 : 0 ≤ T := by positivity
+  set tail : ℕ → ℝ := fun i => gpdDomTail ξ₀ σ₀ (1 / ((k : ℝ) + 1)) (x i) with htail
+  set q₀ : ℕ → ℝ := fun i => t₁ ^ 2 * gpdHessXiXi ξ₀ σ₀ (x i) +
+    2 * t₁ * t₂ * gpdHessXiSigma ξ₀ σ₀ (x i) + t₂ ^ 2 * gpdHessSigmaSigma ξ₀ σ₀ (x i)
+    with hq₀
+  have hi : ∀ i < n, t₁ ^ 2 * segHess gpdHessXiXi ξ₀ σ₀ (θs n) (x i) +
+      2 * t₁ * t₂ * segHess gpdHessXiSigma ξ₀ σ₀ (θs n) (x i) +
+      t₂ ^ 2 * segHess gpdHessSigmaSigma ξ₀ σ₀ (θs n) (x i) ≤
+      q₀ i + (2 * ε + (C₁ + 8 * Kc) * tail i) * T := fun i hi =>
+    segHess_quad_dev_le hξ₀ hξ₀' hσ₀ hC₁ hK hC hε0.le
+      (fun θ hθ => g₁ θ (hθ.trans (min_le_left _ _)))
+      (fun θ hθ => g₂ θ (hθ.trans ((min_le_right _ _).trans (min_le_left _ _))))
+      (fun θ hθ => g₃ θ (hθ.trans ((min_le_right _ _).trans (min_le_right _ _))))
+      hn2 hn1 (hx i).1 (hx i).2 (hn8 i hi) t₁ t₂
+  rw [quad_avg]
+  refine (avg_le_avg hi).trans ?_
+  rw [avg_add_const_mul hn7, hq₀, ← quad_avg]
+  have htail0 : 0 ≤ (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, tail i :=
+    avg_nonneg fun i _ => gpdDomTail_nonneg hξ₀' hσ₀ (hx i).1 (hx i).2
+  have hdev := quad_le_of_abs_le hn4 hn5 hn6 t₁ t₂
+  have hmt := hm t₁ t₂
+  have htl : (C₁ + 8 * Kc) * ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, tail i) ≤ lam / 16 := by
+    have : (C₁ + 8 * Kc) * ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, tail i) ≤
+        A * ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, tail i) :=
+      mul_le_mul_of_nonneg_right (by linarith) htail0
+    simp only [htail] at hn3
+    linarith
+  have e : t₁ ^ 2 * ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, gpdHessXiXi ξ₀ σ₀ (x i)) +
+      2 * t₁ * t₂ * ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, gpdHessXiSigma ξ₀ σ₀ (x i)) +
+      t₂ ^ 2 * ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, gpdHessSigmaSigma ξ₀ σ₀ (x i)) =
+      (t₁ ^ 2 * m₁₁ + 2 * t₁ * t₂ * m₁₂ + t₂ ^ 2 * m₂₂) +
+      (t₁ ^ 2 * ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, gpdHessXiXi ξ₀ σ₀ (x i) - m₁₁) +
+        2 * t₁ * t₂ * ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, gpdHessXiSigma ξ₀ σ₀ (x i) - m₁₂) +
+        t₂ ^ 2 * ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, gpdHessSigmaSigma ξ₀ σ₀ (x i) - m₂₂)) := by
+    ring
+  rw [e]
+  have : (2 * ε + (C₁ + 8 * Kc) * ((n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, tail i)) * T ≤
+      (2 * ε + lam / 16) * T := mul_le_mul_of_nonneg_right (by linarith) hT0
+  rw [hε] at this hdev
+  nlinarith
+
+end Averages
+
 end ExtremeValueTheory
