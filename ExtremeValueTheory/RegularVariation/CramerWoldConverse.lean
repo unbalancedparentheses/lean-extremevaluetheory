@@ -673,6 +673,98 @@ theorem exists_limit_tail_le [IsProbabilityMeasure P] [FiniteDimensional ℝ E]
   simp only [S]
   field_simp
 
+omit [MeasurableSpace E] [BorelSpace E] in
+theorem exists_halfSpace_subset_norm (L : StrongDual ℝ E) {t : ℝ} (ht : 0 < t) :
+    ∃ r > 0, {y : E | t < L y} ⊆ {y | r < ‖y‖} :=
+  ⟨(‖t⁻¹ • L‖ + 1)⁻¹, by positivity, by
+    rw [setOf_lt_apply_eq ht L]; exact setOf_one_lt_apply_subset _⟩
+
+/-- **Half-spaces for limit points**: a limit point `μ` of the normalized laws satisfies
+`μ {L > s} = w (L) s ^ (-α)` for every continuous linear functional `L` and every `s > 0`. -/
+theorem limit_halfSpace [IsProbabilityMeasure P] (hX : Measurable X) {α : ℝ} {V : ℝ → ℝ}
+    (hα : 0 < α) (hV : IsRegularlyVarying V (-α)) {w : StrongDual ℝ E → ℝ}
+    (hw : ∀ L : StrongDual ℝ E,
+      Tendsto (fun x => P.real {ω | x < L (X ω)} / V x) atTop (𝓝 (w L)))
+    {u : ℕ → ℝ} (hu : Tendsto u atTop atTop) {μ : Measure E}
+    (hμ : ∀ r > 0, μ {y | r < ‖y‖} < ∞)
+    (hconv : ∀ f : E →ᵇ ℝ, VanishesNearZero f →
+        Tendsto (fun n => ∫ y, f y ∂scaledLaw P X V (u n)) atTop (𝓝 (∫ y, f y ∂μ)))
+    (L : StrongDual ℝ E) {s : ℝ} (hs : 0 < s) :
+    μ {y | s < L y} = ENNReal.ofReal (w L * s ^ (-α)) := by
+  have hfinL : ∀ t > 0, μ {y | t < L y} ≠ ∞ := fun t ht => by
+    obtain ⟨r, hr, hsub⟩ := exists_halfSpace_subset_norm L ht
+    exact ((measure_mono hsub).trans_lt (hμ r hr)).ne
+  -- good levels
+  have hgood : ∀ t > 0, μ {y | L y = t} = 0 → μ {y | t < L y} = ENNReal.ofReal (w L * t ^ (-α)) :=
+    fun t ht hnull => by
+      obtain ⟨r, hr, hsub⟩ := exists_halfSpace_subset_norm L ht
+      have hAm : MeasurableSet {y : E | t < L y} := measurableSet_lt measurable_const L.measurable
+      have hfr : μ (frontier {y : E | t < L y}) = 0 :=
+        measure_mono_null ((frontier_lt_subset_eq continuous_const L.continuous).trans
+          fun y (hy : t = L y) => (show L y = t from hy.symm)) hnull
+      have key := tendsto_measureReal_of_vanishesNearZero (μs := fun n => scaledLaw P X V (u n))
+        (fun n => inferInstance) hμ hconv hAm hr (fun y hy => (show r < ‖y‖ from hsub hy).le) hfr
+      have hlim : Tendsto (fun n => (scaledLaw P X V (u n)).real {y | t < L y}) atTop
+          (𝓝 (w L * t ^ (-α))) := by
+        refine ((tendsto_linear_mul hV hw L ht).comp hu).congr' ?_
+        filter_upwards [hu.eventually hV.eventually_pos, hu.eventually_gt_atTop 0] with n hVn hun
+        rw [scaledLaw_real_linear_lt hX hun hVn.le, Function.comp_apply, inv_mul_eq_div]
+      have hreal := tendsto_nhds_unique key hlim
+      rw [← ofReal_measureReal (hfinL t ht), hreal]
+  -- the countable set of bad levels above `s / 2`
+  set ρ := μ.restrict {y | s / 2 < L y}
+  have : IsFiniteMeasure ρ := isFiniteMeasure_restrict.2 (hfinL _ (half_pos hs))
+  have hcount := Measure.countable_meas_level_set_pos (μ := ρ) L.measurable
+  have hnull : ∀ t, s / 2 < t → t ∉ {t : ℝ | 0 < ρ {y | L y = t}} → μ {y | L y = t} = 0 :=
+    fun t ht hN => by
+      simp only [mem_ofPred_eq, not_lt, nonpos_iff_eq_zero] at hN
+      rw [Measure.restrict_apply (measurableSet_eq_fun L.measurable measurable_const)] at hN
+      rwa [inter_eq_left.2 (show {x : E | L x = t} ⊆ {y | s / 2 < L y} from
+        fun y (hy : L y = t) => (show s / 2 < L y by rw [hy]; exact ht))] at hN
+  have hdense := hcount.dense_compl ℝ
+  have hex : ∀ k : ℕ, ∃ t ∈ {t : ℝ | 0 < ρ {y | L y = t}}ᶜ,
+      t ∈ Ioo s (s + 1 / ((k : ℝ) + 1)) := fun k =>
+    hdense.exists_between (lt_add_of_pos_right s (by positivity))
+  choose t htN ht using hex
+  have ht_pos : ∀ k, 0 < t k := fun k => hs.trans (ht k).1
+  have hval : ∀ k, μ {y | t k < L y} = ENNReal.ofReal (w L * t k ^ (-α)) := fun k =>
+    hgood _ (ht_pos k) (hnull _ (by linarith [(ht k).1]) (htN k))
+  have hwL : 0 ≤ w L := limit_nonneg hV hw L
+  have ht_lim : Tendsto t atTop (𝓝 s) := by
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds ?_
+      (fun k => (ht k).1.le) (fun k => (ht k).2.le)
+    simpa using (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)).const_add s
+  have hval_lim : Tendsto (fun k => ENNReal.ofReal (w L * t k ^ (-α))) atTop
+      (𝓝 (ENNReal.ofReal (w L * s ^ (-α)))) :=
+    ENNReal.tendsto_ofReal (((Real.continuousAt_rpow_const _ _ (Or.inl hs.ne')).tendsto.comp
+      ht_lim).const_mul _)
+  refine le_antisymm ?_ ?_
+  · -- upper bound by continuity from below
+    have hU : {y : E | s < L y} = ⋃ k : ℕ, {y | s + 1 / ((k : ℝ) + 1) < L y} := by
+      ext y
+      simp only [mem_ofPred_eq, mem_iUnion]
+      refine ⟨fun hy => ?_, fun ⟨k, hk⟩ => lt_trans (by
+        have : (0 : ℝ) < 1 / ((k : ℝ) + 1) := by positivity
+        linarith) hk⟩
+      obtain ⟨k, hk⟩ := exists_nat_one_div_lt (sub_pos.2 hy)
+      exact ⟨k, by linarith⟩
+    have hmono : Monotone fun k : ℕ => {y : E | s + 1 / ((k : ℝ) + 1) < L y} := by
+      intro i j hij y hy
+      simp only [mem_ofPred_eq] at hy ⊢
+      refine lt_of_le_of_lt ?_ hy
+      gcongr
+    rw [hU]
+    refine le_of_tendsto' (tendsto_measure_iUnion_atTop hmono) fun k => ?_
+    calc μ {y | s + 1 / ((k : ℝ) + 1) < L y} ≤ μ {y | t k < L y} :=
+          measure_mono fun y (hy : _ < _) => lt_trans (ht k).2 hy
+      _ = ENNReal.ofReal (w L * t k ^ (-α)) := hval k
+      _ ≤ ENNReal.ofReal (w L * s ^ (-α)) := ENNReal.ofReal_le_ofReal
+          (mul_le_mul_of_nonneg_left (Real.rpow_le_rpow_of_nonpos hs (ht k).1.le
+            (by linarith)) hwL)
+  · refine le_of_tendsto' hval_lim fun k => ?_
+    rw [← hval k]
+    exact measure_mono fun y (hy : _ < _) => lt_trans (ht k).1 hy
+
 end Converse
 
 end CramerWold
