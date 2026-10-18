@@ -173,3 +173,23 @@ We follow Smith, \emph{Maximum likelihood estimation in a class of nonregular ca
   \leanok
   Moments $\E[T^k (T^\xi)^j] = \Gamma(k + j\xi + 1)$ for $T$ standard exponential; $\Gamma(1+\xi)^2 < \Gamma(1+2\xi)$; Cram\'er--Wold.
 \end{proof}
+
+\begin{theorem}[Joint normality of the GPD MLE for all regular shapes]
+  \label{thm:gpd-joint-normality-all}
+  \uses{thm:gpd-joint-normality}
+  \lean{ExtremeValueTheory.gpdHess_quad_le, ExtremeValueTheory.tendstoInDistribution_gpdJointMLE_neg, ExtremeValueTheory.exists_measurable_isMaxOn,
+    ExtremeValueTheory.tendstoInDistribution_gpdJointMLE_all, ExtremeValueTheory.tendstoInDistribution_gpdMLE_all, ExtremeValueTheory.score_eq_zero_of_isMaxOn',
+    ExtremeValueTheory.exists_measurable_gpdMLE, ExtremeValueTheory.exists_gpdMLE_tendstoInDistribution}
+  \leanok
+  For $\xi_0 > -1/2$, $\xi_0 \ne 0$, a measurable maximum likelihood estimator over a compact set with $\theta_0$ in its interior
+  exists and satisfies $\sqrt n(\hat\theta_n - \theta_0) \Rightarrow N(0, I(\theta_0)^{-1})$ [Smith 1985]. The case $\xi_0 = 0$ is not
+  formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  For $-1/2 < \xi_0 < 0$ the support moves with the parameter. A one-sided Hessian bound $t^\top H t \le C|t|^2$ (the terms
+  that blow up at the endpoint have a favourable sign) gives eventual uniform positive definiteness of the averaged
+  information, hence a $\sqrt n$ rate; with $\max_i 1/(\sigma_0 + \xi_0 X_i) = o_P(\sqrt n)$ all observations stay well inside the
+  estimated support, and the argument for $\xi_0 > 0$ applies. Measurability: the lexicographically least maximizer over a
+  compact set is measurable (Jennrich 1969).
+\end{proof}
