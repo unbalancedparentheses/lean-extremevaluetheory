@@ -134,6 +134,7 @@ import ExtremeValueTheory.Multivariate.DomainOfAttractionBasic
 import ExtremeValueTheory.Multivariate.DomainOfAttraction
 import ExtremeValueTheory.Multivariate.DomainOfAttractionStandardized
 import ExtremeValueTheory.Multivariate.DomainOfAttractionConverse
+import ExtremeValueTheory.Multivariate.POT
 import ExtremeValueTheory.MaxStable.Converse
 import ExtremeValueTheory.MaxStable.Uniqueness
 import ExtremeValueTheory.MaxStable.Simplex
