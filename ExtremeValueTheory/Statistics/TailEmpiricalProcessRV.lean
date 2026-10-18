@@ -270,7 +270,8 @@ lemma integral_logTruncExcess_sq {p ε : ℝ} (hp : 0 < p) (hp1 : p ≤ 1) (hε0
   rw [← intervalIntegral.integral_add_adjacent_intervals (h 0 (p * ε)) (h (p * ε) 1),
     ← intervalIntegral.integral_add_adjacent_intervals (h (p * ε) p) (h p 1),
     integral_logTruncExcess_zero_mul hp hε0 hε1 2,
-    integral_logTruncExcess_of_lt hp hε1 hp1 2 two_ne_zero, integral_logTruncExcess_sq_mid hp hε0 hε1]
+    integral_logTruncExcess_of_lt hp hε1 hp1 2 two_ne_zero,
+    integral_logTruncExcess_sq_mid hp hε0 hε1]
   ring
 
 end Integrals
@@ -307,7 +308,8 @@ lemma integral_hillSummand {n k : ℕ} (hk : 0 < k) (hkn : k ≤ n) {ε : ℝ} (
     integral_logTruncExcess hp hp1 hε0 hε1]
   · simp
   · exact (Integrable.of_bound (C := -Real.log ε + 1)
-      ((measurable_logTruncExcess _ ε).comp (measurable_const.sub measurable_id)).aestronglyMeasurable
+      ((measurable_logTruncExcess _ ε).comp
+        (measurable_const.sub measurable_id)).aestronglyMeasurable
       (ae_of_all _ fun u ↦ abs_logTruncExcess_le hε0 hε1 _))
   · exact integrable_const _
 
@@ -432,7 +434,8 @@ theorem tendstoInDistribution_sum_hillSummand [IsProbabilityMeasure P] {U : ℕ 
     (fun n ↦ measurable_hillSummand n (k n) (ε n))
     (M := fun n ↦ (√(k n : ℝ))⁻¹ * (-Real.log (ε n) + 1 + k n / n * ε n)) ?_
     (fun n u ↦ abs_hillSummand_le n (k n) (hε0 n) (hε1 n) u) ?_ ?_
-  · have h2 : Tendsto (fun n ↦ -(Real.log (ε n) / √(k n : ℝ)) + (√(k n : ℝ))⁻¹ * (1 + k n / n * ε n))
+  · have h2 : Tendsto (fun n ↦ -(Real.log (ε n) / √(k n : ℝ)) +
+        (√(k n : ℝ))⁻¹ * (1 + k n / n * ε n))
         atTop (𝓝 (-0 + 0 * (1 + 0 * ε₀))) :=
       hlog.neg.add (hsq.mul (tendsto_const_nhds.add (hkn.mul hεlim)))
     simp only [neg_zero, zero_mul, add_zero] at h2
@@ -904,7 +907,8 @@ lemma lintegral_Ioc_rpow_neg_half {ε : ℝ} (hε : 0 ≤ ε) :
     ∫⁻ t in Set.Ioc 0 ε, ENNReal.ofReal (t ^ (-(1 / 2) : ℝ)) = ENNReal.ofReal (2 * √ε) := by
   have hi : IntervalIntegrable (fun t : ℝ ↦ t ^ (-(1 / 2) : ℝ)) volume 0 ε :=
     intervalIntegral.intervalIntegrable_rpow' (by norm_num)
-  rw [← ofReal_integral_eq_lintegral_ofReal ((intervalIntegrable_iff_integrableOn_Ioc_of_le hε).1 hi)
+  rw [← ofReal_integral_eq_lintegral_ofReal
+    ((intervalIntegrable_iff_integrableOn_Ioc_of_le hε).1 hi)
     ((ae_restrict_iff' measurableSet_Ioc).2 (ae_of_all _ fun t ht ↦ Real.rpow_nonneg ht.1.le _)),
     ← intervalIntegral.integral_of_le hε, integral_rpow (Or.inl (by norm_num))]
   congr 1

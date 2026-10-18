@@ -111,7 +111,8 @@ section Integral
 /-- **Integral functionals are continuous on `D`**: for a measure `μ` on `ℝ` without atoms and an
 integrable weight `g`, the functional `x ↦ ∫ g(t) x(t) dμ(t)` (with `x` extended to `ℝ` by
 `x (projIcc 0 1 t)`) is continuous for the Skorokhod topology. -/
-theorem continuous_integral_mul {μ : Measure ℝ} [NullSingletonClass μ] {g : ℝ → ℝ} (hg : Integrable g μ) :
+theorem continuous_integral_mul {μ : Measure ℝ} [NullSingletonClass μ] {g : ℝ → ℝ}
+    (hg : Integrable g μ) :
     Continuous fun x : SkorokhodSpace ℝ ↦ ∫ t, g t * x (projIcc 0 1 zero_le_one t) ∂μ := by
   refine continuous_iff_continuousAt.2 fun x ↦ ?_
   refine tendsto_integral_filter_of_dominated_convergence (fun t ↦ |g t| * (supNorm x + 1))
@@ -128,7 +129,8 @@ theorem continuous_integral_mul {μ : Measure ℝ} [NullSingletonClass μ] {g : 
     linarith
   · -- outside a countable set of times, the evaluation is continuous at `x`
     set D := {s : I | edist (Function.leftLim x s) (x s) ≠ 0}
-    have hD : ((↑) '' D : Set ℝ).Countable := (x.isCadlag.countable_setOf_edist_leftLim_ne_zero).image _
+    have hD : ((↑) '' D : Set ℝ).Countable :=
+      (x.isCadlag.countable_setOf_edist_leftLim_ne_zero).image _
     filter_upwards [measure_eq_zero_iff_ae_notMem.1 (hD.measure_zero μ)] with t ht
     refine tendsto_const_nhds.mul (tendsto_apply_of_edist_leftLim_eq_zero ?_)
     by_contra hcon
