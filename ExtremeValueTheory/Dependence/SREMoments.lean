@@ -300,6 +300,125 @@ theorem one_lt_lintegral_enorm_rpow {κ : ℝ} (hκ : 0 < κ) (h1 : ∫⁻ p, �
   · rw [average_eq_integral, average_eq_integral, integral_congr_ae (ae_of_all _ he), hFl] at h
     exact absurd (Real.rpow_le_one hc0 hc1 hq0.le) (not_le.2 h)
 
+/-! ### Moments of the stationary solution in the Kesten–Goldie regime -/
+
+theorem enorm_rpow_le_one_add {b s κ : ℝ} (hs : 0 ≤ s) (hsκ : s ≤ κ) :
+    ‖b‖ₑ ^ s ≤ 1 + ‖b‖ₑ ^ κ := by
+  rcases le_total ‖b‖ₑ 1 with h | h
+  · exact (ENNReal.rpow_le_one h hs).trans le_self_add
+  · exact (ENNReal.rpow_le_rpow_of_exponent_le h hsκ).trans le_add_self
+
+/-- **Moments below the Kesten exponent** ([Kesten 1973]; [Goldie 1991, Theorem 4.1];
+[BDM16, Theorem 2.4.4 and Lemma 2.3.1]): if `E|A|^κ = 1` for some `κ > 0` (with `|A|` not a.s.
+`1`), `E log |A| < 0`, `E log⁺ |B| < ∞` and `E|B|^κ < ∞`, then the stationary solution has
+`E|X|^s < ∞` for every `0 < s < κ`. -/
+theorem lintegral_enorm_rpow_stationaryLaw_lt_top_of_lt
+    (hA : Integrable (fun p : ℝ × ℝ => log |p.1|) ν) (hneg : ∫ p, log |p.1| ∂ν < 0)
+    (hB : Integrable (fun p : ℝ × ℝ => posLog p.2) ν) {κ : ℝ} (hκ : 0 < κ)
+    (h1 : ∫⁻ p, ‖p.1‖ₑ ^ κ ∂ν = 1) (hnd : ¬ ∀ᵐ p ∂ν, |p.1| = 1)
+    (hBκ : ∫⁻ p, ‖p.2‖ₑ ^ κ ∂ν < ∞) {s : ℝ} (hs : 0 < s) (hsκ : s < κ) :
+    ∫⁻ x, ‖x‖ₑ ^ s ∂stationaryLaw ν < ∞ := by
+  refine lintegral_enorm_rpow_stationaryLaw_lt_top hA hneg hB hs
+    (lintegral_enorm_rpow_lt_one hκ h1 hnd hs hsκ) ?_
+  calc ∫⁻ p, ‖p.2‖ₑ ^ s ∂ν ≤ ∫⁻ p, (1 + ‖p.2‖ₑ ^ κ) ∂ν :=
+        lintegral_mono fun p => enorm_rpow_le_one_add hs.le hsκ.le
+    _ = 1 + ∫⁻ p, ‖p.2‖ₑ ^ κ ∂ν := by
+        rw [lintegral_add_left measurable_const, lintegral_const, measure_univ, one_mul]
+    _ < ∞ := ENNReal.add_lt_top.2 ⟨ENNReal.one_lt_top, hBκ⟩
+
+/-- Under `A, B ≥ 0` a.s., almost every iid sequence has nonnegative entries. -/
+theorem ae_seqLaw_nonneg (hApos : ∀ᵐ p ∂ν, 0 ≤ p.1) (hBpos : ∀ᵐ p ∂ν, 0 ≤ p.2) :
+    ∀ᵐ v ∂seqLaw ν, ∀ n, 0 ≤ (v n).1 ∧ 0 ≤ (v n).2 := by
+  rw [ae_all_iff]
+  intro n
+  have h : ∀ᵐ p ∂(seqLaw ν).map (fun v => v n), 0 ≤ p.1 ∧ 0 ≤ p.2 := by
+    rw [Measure.infinitePi_map_eval]; filter_upwards [hApos, hBpos] with p h1 h2 using ⟨h1, h2⟩
+  exact ae_of_ae_map (measurable_pi_apply n).aemeasurable h
+
+theorem term_nonneg {v : ℕ → ℝ × ℝ} (hv : ∀ n, 0 ≤ (v n).1 ∧ 0 ≤ (v n).2) (k : ℕ) :
+    0 ≤ term v k :=
+  mul_nonneg (Finset.prod_nonneg fun i _ => (hv i).1) (hv k).2
+
+/-- **Infinite moments above the Kesten exponent** ([Goldie 1991]; [BDM16, §2.4]): if `A, B ≥ 0`
+a.s., `B` is not a.s. `0`, and `E A^s > 1`, then the stationary solution has `E X^s = ∞`. -/
+theorem lintegral_enorm_rpow_stationaryLaw_eq_top_of_one_lt
+    (hA : Integrable (fun p : ℝ × ℝ => log |p.1|) ν) (hneg : ∫ p, log |p.1| ∂ν < 0)
+    (hB : Integrable (fun p : ℝ × ℝ => posLog p.2) ν) (hApos : ∀ᵐ p ∂ν, 0 ≤ p.1)
+    (hBpos : ∀ᵐ p ∂ν, 0 ≤ p.2) (hB0 : ¬ ∀ᵐ p ∂ν, p.2 = 0) {s : ℝ} (hs : 0 < s)
+    (hρ : 1 < ∫⁻ p, ‖p.1‖ₑ ^ s ∂ν) :
+    ∫⁻ x, ‖x‖ₑ ^ s ∂stationaryLaw ν = ∞ := by
+  have hc : (∫ p, log |p.1| ∂ν) / 2 < 0 := by linarith
+  set μX := stationaryLaw ν
+  set m := ∫⁻ x, ‖x‖ₑ ^ s ∂μX
+  have hnn := ae_seqLaw_nonneg hApos hBpos
+  -- the stationary law lives on `[0, ∞)`
+  have hμX0 : ∀ᵐ x ∂μX, 0 ≤ x := by
+    refine (ae_map_iff measurable_perpetuity.aemeasurable measurableSet_Ici).2 ?_
+    filter_upwards [hnn] with v hv using tsum_nonneg (term_nonneg hv)
+  -- the stationary law is not `δ_0`
+  have hm0 : m ≠ 0 := by
+    intro h0
+    rw [lintegral_eq_zero_iff (by fun_prop)] at h0
+    refine hB0 ?_
+    have h' : ∀ᵐ v ∂seqLaw ν, (v 0).2 = 0 := by
+      have h1 : ∀ᵐ v ∂seqLaw ν, ‖perpetuity v‖ₑ ^ s = 0 :=
+        ae_of_ae_map measurable_perpetuity.aemeasurable h0
+      filter_upwards [h1, hnn, ae_contracting_seqLaw hA hneg hB] with v h1 hv hcv
+      have hp : perpetuity v = 0 := by
+        simpa [ENNReal.rpow_eq_zero_iff, hs, not_lt.2 hs.le] using h1
+      have hle : term v 0 ≤ perpetuity v :=
+        (hcv.summable_term hc).le_tsum 0 fun j _ => term_nonneg hv j
+      rw [term_zero, hp] at hle
+      exact le_antisymm hle (hv 0).2
+    have h2 : ∀ᵐ p ∂(seqLaw ν).map (fun v => v 0), p.2 = 0 :=
+      (ae_map_iff (measurable_pi_apply (X := fun _ : ℕ => ℝ × ℝ) 0).aemeasurable
+        (measurableSet_eq_fun measurable_snd measurable_const)).2 h'
+    rwa [Measure.infinitePi_map_eval] at h2
+  by_contra hmtop
+  -- the fixed point equation gives `m ≥ E A^s · m`
+  have hle : (∫⁻ p, ‖p.1‖ₑ ^ s ∂ν) * m ≤ m := by
+    have hinv := map_affine_stationaryLaw hA hneg hB
+    have hpr0 : ∀ᵐ q ∂μX.prod ν, 0 ≤ q.1 := by
+      have : ∀ᵐ x ∂(μX.prod ν).map Prod.fst, 0 ≤ x := by
+        rw [Measure.map_fst_prod, measure_univ, one_smul]; exact hμX0
+      exact ae_of_ae_map measurable_fst.aemeasurable this
+    have hpr1 : ∀ᵐ q ∂μX.prod ν, 0 ≤ q.2.1 ∧ 0 ≤ q.2.2 := by
+      have : ∀ᵐ p ∂(μX.prod ν).map Prod.snd, 0 ≤ p.1 ∧ 0 ≤ p.2 := by
+        rw [Measure.map_snd_prod, measure_univ, one_smul]
+        filter_upwards [hApos, hBpos] with p h1 h2 using ⟨h1, h2⟩
+      exact ae_of_ae_map measurable_snd.aemeasurable this
+    calc (∫⁻ p, ‖p.1‖ₑ ^ s ∂ν) * m = ∫⁻ q, ‖q.1‖ₑ ^ s * ‖q.2.1‖ₑ ^ s ∂μX.prod ν := by
+          rw [mul_comm]
+          exact (lintegral_prod_mul (f := fun x : ℝ => ‖x‖ₑ ^ s)
+            (g := fun p : ℝ × ℝ => ‖p.1‖ₑ ^ s) (by fun_prop) (by fun_prop)).symm
+      _ ≤ ∫⁻ q, ‖Function.uncurry affine q‖ₑ ^ s ∂μX.prod ν := by
+          refine lintegral_mono_ae ?_
+          filter_upwards [hpr0, hpr1] with q h0 h1
+          rw [← ENNReal.mul_rpow_of_nonneg _ _ hs.le, ← enorm_mul]
+          refine ENNReal.rpow_le_rpow ?_ hs.le
+          simp only [Function.uncurry, affine, Real.enorm_eq_ofReal_abs]
+          refine ENNReal.ofReal_le_ofReal ?_
+          rw [abs_of_nonneg (mul_nonneg h0 h1.1), abs_of_nonneg (by nlinarith [h1.1, h1.2])]
+          nlinarith [h1.1, h1.2]
+      _ = m := by
+          rw [← lintegral_map (f := fun x : ℝ => ‖x‖ₑ ^ s) (by fun_prop) measurable_affine,
+            hinv]
+  exact absurd hle (not_le.2 (by
+    simpa using ENNReal.mul_lt_mul_left hm0 hmtop hρ))
+
+/-- **Infinite moments above the Kesten exponent** ([Goldie 1991, Theorem 4.1]; [BDM16, §2.4]):
+if `A, B ≥ 0` a.s., `B` is not a.s. `0`, `E A^κ = 1` for some `κ > 0` with `A` not a.s. `1`,
+`E log A < 0` and `E log⁺ B < ∞`, then `E X^s = ∞` for every `s > κ`. Together with
+`lintegral_enorm_rpow_stationaryLaw_lt_top_of_lt`, `κ` is exactly the moment index of `X`. -/
+theorem lintegral_enorm_rpow_stationaryLaw_eq_top_of_lt
+    (hA : Integrable (fun p : ℝ × ℝ => log |p.1|) ν) (hneg : ∫ p, log |p.1| ∂ν < 0)
+    (hB : Integrable (fun p : ℝ × ℝ => posLog p.2) ν) (hApos : ∀ᵐ p ∂ν, 0 ≤ p.1)
+    (hBpos : ∀ᵐ p ∂ν, 0 ≤ p.2) (hB0 : ¬ ∀ᵐ p ∂ν, p.2 = 0) {κ : ℝ} (hκ : 0 < κ)
+    (h1 : ∫⁻ p, ‖p.1‖ₑ ^ κ ∂ν = 1) (hnd : ¬ ∀ᵐ p ∂ν, |p.1| = 1) {s : ℝ} (hsκ : κ < s) :
+    ∫⁻ x, ‖x‖ₑ ^ s ∂stationaryLaw ν = ∞ :=
+  lintegral_enorm_rpow_stationaryLaw_eq_top_of_one_lt hA hneg hB hApos hBpos hB0
+    (hκ.trans hsκ) (one_lt_lintegral_enorm_rpow hκ h1 hnd hsκ)
+
 end SRE
 
 end ExtremeValueTheory
