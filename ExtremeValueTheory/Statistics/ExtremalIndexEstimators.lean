@@ -5,6 +5,7 @@ Authors: Federico Carrone
 -/
 import ExtremeValueTheory.Statistics.HillCluster
 import ExtremeValueTheory.Dependence.Mixing
+import ExtremeValueTheory.Statistics.Moment
 
 /-!
 # Estimators of the extremal index: blocks and runs
@@ -416,5 +417,270 @@ theorem tendstoInMeasure_blockCount_div (hX : ∀ t, Measurable (X t)) (hs : IsS
   · simp [Real.dist_eq]
 
 end Blocks
+
+/-! ### The runs estimator -/
+
+section Runs
+
+variable [IsProbabilityMeasure P] {X : ℕ → Ω → ℝ}
+
+/-- The lag-`h` covariance bound for runs indicators: `P(X_0 > u)` at lag `0`, nothing at lags
+`1 ≤ h ≤ r` (two runs events at such lags are disjoint), the joint exceedance probability at lags
+`r < h ≤ r + s`, and `α(h - r)` beyond. -/
+noncomputable def runsCovBound (X : ℕ → Ω → ℝ) (P : Measure Ω) (r s : ℕ) (u : ℝ) (h : ℕ) : ℝ :=
+  if h = 0 then P.real {ω | u < X 0 ω} else if h ≤ r then 0
+  else if h ≤ r + s then P.real {ω | u < X 0 ω ∧ u < X h ω} else (alphaMixing X P (h - r)).toReal
+
+omit [IsProbabilityMeasure P] in
+theorem runsCovBound_nonneg (r s : ℕ) (u : ℝ) (h : ℕ) : 0 ≤ runsCovBound X P r s u h := by
+  unfold runsCovBound
+  split_ifs <;> first | exact measureReal_nonneg | exact le_rfl | exact ENNReal.toReal_nonneg
+
+/-- Covariances of runs indicators of a stationary sequence. -/
+theorem measureReal_runEvent_inter_sub_le (hX : ∀ t, Measurable (X t)) (hs : IsStationary X P)
+    (r s : ℕ) (u : ℝ) (i h : ℕ) :
+    P.real (runEvent X r i u ∩ runEvent X r (i + h) u) -
+        P.real (runEvent X r i u) * P.real (runEvent X r (i + h) u) ≤
+      runsCovBound X P r s u h := by
+  have hprod := mul_nonneg (measureReal_nonneg (μ := P) (s := runEvent X r i u))
+    (measureReal_nonneg (μ := P) (s := runEvent X r (i + h) u))
+  unfold runsCovBound
+  split_ifs with h0 h1 h2
+  · subst h0
+    rw [add_zero, Set.inter_self, ← hs.measureReal_lt_eq hX i u]
+    have := measureReal_mono (μ := P) (fun ω (hω : ω ∈ runEvent X r i u) => hω.1)
+    nlinarith [mul_self_nonneg (P.real (runEvent X r i u))]
+  · have : runEvent X r i u ∩ runEvent X r (i + h) u = ∅ := by
+      ext ω
+      simp only [runEvent, maxLE, Set.mem_inter_iff, Set.mem_ofPred_eq, mem_Ioc,
+        Set.mem_empty_iff_false, iff_false]
+      rintro ⟨⟨_, h3⟩, h4, _⟩
+      exact absurd (h3 (i + h) ⟨by omega, by omega⟩) (not_le.2 h4)
+    rw [this, measureReal_empty]
+    linarith
+  · have hsub : runEvent X r i u ∩ runEvent X r (i + h) u ⊆
+        {ω | u < X i ω ∧ u < X (i + h) ω} := fun ω hω => ⟨hω.1.1, hω.2.1⟩
+    have := (measureReal_mono (μ := P) hsub).trans_eq
+      (hs.measureReal_lt_and_lt hX (Nat.le_add_right i h) u)
+    rw [Nat.add_sub_cancel_left] at this
+    linarith
+  · have hA : MeasurableSet[pastMeasurableSpace X (i + r)] (runEvent X r i u) :=
+      (comap_le_pastMeasurableSpace (Nat.le_add_right i r) _
+        ⟨Set.Ioi u, measurableSet_Ioi, rfl⟩).inter
+        (measurableSet_maxLE_of_comap_le (fun t ht => comap_le_pastMeasurableSpace (by
+          rw [mem_Ioc] at ht; omega)) u)
+    have e : i + h = i + r + (h - r) := by omega
+    have hB : MeasurableSet[futureMeasurableSpace X (i + r + (h - r))]
+        (runEvent X r (i + h) u) := by
+      rw [← e]
+      exact (comap_le_futureMeasurableSpace le_rfl _ ⟨Set.Ioi u, measurableSet_Ioi, rfl⟩).inter
+        (measurableSet_maxLE_of_comap_le (fun t ht => comap_le_futureMeasurableSpace (by
+          rw [mem_Ioc] at ht; omega)) u)
+    exact (le_abs_self _).trans (abs_measureReal_inter_sub_le_alphaMixing hA hB)
+
+omit [IsProbabilityMeasure P] in
+/-- Summing the runs covariance bound over the lags `1 ≤ h < m`. -/
+theorem sum_runsCovBound_le (r s : ℕ) (u : ℝ) (m : ℕ) :
+    ∑ h ∈ Ico 1 m, runsCovBound X P r s u h ≤
+      ∑ h ∈ Icc 1 (r + s), P.real {ω | u < X 0 ω ∧ u < X h ω} +
+        ∑ h ∈ Ico (s + 1) m, (alphaMixing X P h).toReal := by
+  set q : ℕ → ℝ := fun h => P.real {ω | u < X 0 ω ∧ u < X h ω}
+  set a : ℕ → ℝ := fun h => (alphaMixing X P h).toReal
+  have hq : ∀ h, 0 ≤ q h := fun _ => measureReal_nonneg
+  have ha : ∀ h, 0 ≤ a h := fun _ => ENNReal.toReal_nonneg
+  calc ∑ h ∈ Ico 1 m, runsCovBound X P r s u h
+      ≤ ∑ h ∈ Ico 1 m, ((if h ∈ Icc 1 (r + s) then q h else 0) +
+          (if r + s < h then a (h - r) else 0)) := by
+        refine Finset.sum_le_sum fun h hh => ?_
+        rw [mem_Ico] at hh
+        unfold runsCovBound
+        have h0 : h ≠ 0 := by omega
+        simp only [h0, ↓reduceIte, mem_Icc]
+        split_ifs <;> first | omega | linarith [hq h, ha (h - r)]
+    _ = ∑ h ∈ (Ico 1 m).filter (· ∈ Icc 1 (r + s)), q h +
+          ∑ h ∈ (Ico 1 m).filter (r + s < ·), a (h - r) := by
+        rw [Finset.sum_add_distrib, Finset.sum_filter, Finset.sum_filter]
+    _ ≤ ∑ h ∈ Icc 1 (r + s), q h + ∑ h ∈ Ico (s + 1) m, a h := by
+        refine add_le_add ?_ ?_
+        · exact Finset.sum_le_sum_of_subset_of_nonneg (fun h hh => (Finset.mem_filter.1 hh).2)
+            fun h _ _ => hq h
+        · rw [← Finset.sum_image (g := fun h => h - r) (fun x hx y hy hxy => by
+            simp only [Finset.coe_filter, Finset.mem_Ico, Set.mem_ofPred_eq] at hx hy hxy
+            omega)]
+          refine Finset.sum_le_sum_of_subset_of_nonneg (fun h hh => ?_) fun h _ _ => ha h
+          simp only [Finset.mem_image, Finset.mem_filter, Finset.mem_Ico] at hh
+          obtain ⟨j, ⟨⟨hj1, hj2⟩, hj3⟩, rfl⟩ := hh
+          simp only [Finset.mem_Ico]; omega
+
+/-- **Variance of the runs count**: `Var(∑_{i<m} 1{X_i > u, X_{i+1}, …, X_{i+r} ≤ u}) ≤
+m (P(X_0 > u) + 2 ∑_{1 ≤ h ≤ r + s} P(X_0 > u, X_h > u) + 2 ∑_{s < h < m} α(h))`, for every
+auxiliary lag `s`. -/
+theorem variance_runsCount_le (hX : ∀ t, Measurable (X t)) (hs : IsStationary X P)
+    (r s m : ℕ) (u : ℝ) :
+    variance (runsCount X r m u) P ≤ m * (P.real {ω | u < X 0 ω} +
+      2 * (∑ h ∈ Icc 1 (r + s), P.real {ω | u < X 0 ω ∧ u < X h ω} +
+        ∑ h ∈ Ico (s + 1) m, (alphaMixing X P h).toReal)) := by
+  have h := variance_sum_ite_mem_le (P := P) (fun i => measurableSet_runEvent hX r i u) m
+    (runsCovBound_nonneg r s u) (fun i h _ => measureReal_runEvent_inter_sub_le hX hs r s u i h)
+  have h0 : runsCovBound X P r s u 0 = P.real {ω | u < X 0 ω} := by simp [runsCovBound]
+  rw [h0] at h
+  refine h.trans ?_
+  have := sum_runsCovBound_le (X := X) (P := P) r s u m
+  have hm : (0 : ℝ) ≤ m := m.cast_nonneg
+  gcongr
+
+/-- **Concentration of the runs count.** For a stationary sequence with `rₙ / n → 0`,
+`n pₙ → ∞`, runs ratio `P(X_0 > uₙ, X_1, …, X_{rₙ} ≤ uₙ) / pₙ → θ`, the cluster condition
+`∑_{1 ≤ h ≤ rₙ + sₙ} P(X_0 > uₙ, X_h > uₙ) = o(n pₙ²)` and the mixing condition
+`∑_{sₙ < h < n} α(h) = o(n pₙ²)`, the runs count over the times `i < n - rₙ`, divided by
+`n pₙ`, tends to `θ` in probability. -/
+theorem tendstoInMeasure_runsCount_div (hX : ∀ t, Measurable (X t)) (hs : IsStationary X P)
+    {u : ℕ → ℝ} {r : ℕ → ℕ} {θ : ℝ} (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hk : Tendsto (fun n : ℕ => n * P.real {ω | u n < X 0 ω}) atTop atTop)
+    (hθ : Tendsto (fun n => P.real (runEvent X (r n) 0 (u n)) / P.real {ω | u n < X 0 ω})
+      atTop (𝓝 θ))
+    (s : ℕ → ℕ)
+    (hclus : Tendsto (fun n : ℕ =>
+      (∑ h ∈ Icc 1 (r n + s n), P.real {ω | u n < X 0 ω ∧ u n < X h ω}) /
+        (n * P.real {ω | u n < X 0 ω} ^ 2)) atTop (𝓝 0))
+    (hmix : Tendsto (fun n : ℕ => (∑ h ∈ Ico (s n + 1) n, (alphaMixing X P h).toReal) /
+      (n * P.real {ω | u n < X 0 ω} ^ 2)) atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n ω => runsCount X (r n) (n - r n) (u n) ω /
+      (n * P.real {ω | u n < X 0 ω})) atTop (fun _ => θ) := by
+  set p : ℕ → ℝ := fun n => P.real {ω | u n < X 0 ω} with hp
+  have hpos := hk.eventually_gt_atTop 0
+  have hgood : ∀ᶠ n in atTop, r n ≤ n ∧ (0 : ℝ) < n ∧ 0 < p n := by
+    filter_upwards [hpos, hrn.eventually (gt_mem_nhds one_pos)] with n hn hr1
+    obtain ⟨hn0, hp0⟩ := pos_and_pos_of_mul_pos hn
+    refine ⟨?_, hn0, hp0⟩
+    rw [div_lt_one hn0] at hr1
+    exact_mod_cast hr1.le
+  rw [tendstoInMeasure_iff_dist]
+  intro ε hε
+  refine (tendsto_measure_abs_div_sub_of_variance
+    (S := fun n => runsCount X (r n) (n - r n) (u n)) (c := θ)
+    (fun n => memLp_sum_ite_mem (P := P) (fun j => measurableSet_runEvent hX (r n) j (u n))
+      (n - r n) 2) hpos ?_ ?_ hε).congr fun n => ?_
+  · -- the mean
+    have h1 := (hrn.const_sub 1).mul hθ
+    rw [sub_zero, one_mul] at h1
+    refine h1.congr' ?_
+    filter_upwards [hgood] with n ⟨hrn', hn0, hp0⟩
+    have hp0' : 0 < P.real {ω | u n < X 0 ω} := hp0
+    unfold runsCount
+    rw [integral_sum_ite_mem (fun j => measurableSet_runEvent hX (r n) j (u n))]
+    simp only [hs.measureReal_runEvent hX, sum_const, card_range, nsmul_eq_mul,
+      Nat.cast_sub hrn']
+    field_simp
+  · -- the variance
+    have hlim := ((tendsto_inv_atTop_zero.comp hk).add ((hclus.add hmix).const_mul 2))
+    simp only [mul_zero, add_zero] at hlim
+    refine squeeze_zero' (Eventually.of_forall fun n => by
+      have := variance_nonneg (runsCount X (r n) (n - r n) (u n)) P; positivity) ?_ hlim
+    filter_upwards [hgood] with n ⟨hrn', hn0, hp0⟩
+    have hp0' : 0 < P.real {ω | u n < X 0 ω} := hp0
+    have hV := variance_runsCount_le hX hs (r n) (s n) (n - r n) (u n)
+    have hA : ∑ h ∈ Ico (s n + 1) (n - r n), (alphaMixing X P h).toReal ≤
+        ∑ h ∈ Ico (s n + 1) n, (alphaMixing X P h).toReal :=
+      Finset.sum_le_sum_of_subset_of_nonneg (Finset.Ico_subset_Ico le_rfl (Nat.sub_le _ _))
+        fun _ _ _ => ENNReal.toReal_nonneg
+    have hC : 0 ≤ ∑ h ∈ Icc 1 (r n + s n), P.real {ω | u n < X 0 ω ∧ u n < X h ω} :=
+      Finset.sum_nonneg fun _ _ => measureReal_nonneg
+    have hA0 : 0 ≤ ∑ h ∈ Ico (s n + 1) (n - r n), (alphaMixing X P h).toReal :=
+      Finset.sum_nonneg fun _ _ => ENNReal.toReal_nonneg
+    have hm : ((n - r n : ℕ) : ℝ) ≤ n := by exact_mod_cast Nat.sub_le _ _
+    calc variance (runsCount X (r n) (n - r n) (u n)) P / (n * p n) ^ 2
+        ≤ n * (p n + 2 * (∑ h ∈ Icc 1 (r n + s n), P.real {ω | u n < X 0 ω ∧ u n < X h ω} +
+          ∑ h ∈ Ico (s n + 1) n, (alphaMixing X P h).toReal)) / (n * p n) ^ 2 := by
+          gcongr
+          refine hV.trans ?_
+          gcongr
+      _ = _ := by simp only [Function.comp_apply, hp]; field_simp
+  · simp [Real.dist_eq]
+
+end Runs
+
+/-! ### Consistency of the estimators -/
+
+section Consistency
+
+variable [IsProbabilityMeasure P] {X : ℕ → Ω → ℝ}
+
+omit [IsProbabilityMeasure P] in
+/-- A ratio of two statistics, each normalized by `n pₙ`, converges to the ratio of the limits. -/
+theorem tendstoInMeasure_div_of_div {A N : ℕ → Ω → ℝ} {c : ℕ → ℝ} {θ : ℝ}
+    (hc : ∀ᶠ n in atTop, c n ≠ 0)
+    (hA : TendstoInMeasure P (fun n ω => A n ω / c n) atTop (fun _ => θ))
+    (hN : TendstoInMeasure P (fun n ω => N n ω / c n) atTop (fun _ => 1)) :
+    TendstoInMeasure P (fun n ω => A n ω / N n ω) atTop (fun _ => θ) := by
+  have h := tendstoInMeasure_comp₂ hA hN (φ := fun q => q.1 / q.2)
+    (continuousAt_fst.div continuousAt_snd one_ne_zero)
+  simp only [div_one] at h
+  refine tendstoInMeasure_of_eventuallyEq h ?_
+  filter_upwards [hc] with n hn ω
+  by_cases hN0 : N n ω = 0
+  · simp [hN0]
+  · field_simp
+
+/-- **Consistency of the disjoint blocks estimator** ([KS20, §10.2], Hsing 1991,
+Smith–Weissman 1994). Let `X` be stationary, `pₙ = P(X_0 > uₙ)` with `n pₙ → ∞`, `rₙ ≥ 1`,
+`rₙ / n → 0`, and assume
+
+* the block cluster ratio converges: `P(M_{rₙ} > uₙ) / (rₙ pₙ) → θ`;
+* the cluster condition `∑_{1 ≤ h ≤ sₙ} P(X_0 > uₙ, X_h > uₙ) = o(n pₙ²)` for some `sₙ`;
+* the mixing conditions `∑_{sₙ < h < n} α(h) = o(n pₙ²)` and `α(rₙ + 1) = o((rₙ pₙ)²)`.
+
+Then `θ̂ᴮ = #{blocks with an exceedance} / #{exceedances} → θ` in probability. -/
+theorem tendstoInMeasure_blocksEstimator (hX : ∀ t, Measurable (X t)) (hs : IsStationary X P)
+    {u : ℕ → ℝ} {r : ℕ → ℕ} {θ : ℝ} (hr : ∀ᶠ n in atTop, 0 < r n)
+    (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hk : Tendsto (fun n : ℕ => n * P.real {ω | u n < X 0 ω}) atTop atTop)
+    (hθ : Tendsto (fun n => P.real (blockEvent X (r n) 0 (u n)) /
+      (r n * P.real {ω | u n < X 0 ω})) atTop (𝓝 θ))
+    (s : ℕ → ℕ)
+    (hclus : Tendsto (fun n : ℕ => (∑ h ∈ Icc 1 (s n), P.real {ω | u n < X 0 ω ∧ u n < X h ω}) /
+      (n * P.real {ω | u n < X 0 ω} ^ 2)) atTop (𝓝 0))
+    (hmix : Tendsto (fun n : ℕ => (∑ h ∈ Ico (s n + 1) n, (alphaMixing X P h).toReal) /
+      (n * P.real {ω | u n < X 0 ω} ^ 2)) atTop (𝓝 0))
+    (hmixB : Tendsto (fun n => (alphaMixing X P (r n + 1)).toReal /
+      (r n * P.real {ω | u n < X 0 ω}) ^ 2) atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n => blocksEstimator X n (r n) (u n)) atTop (fun _ => θ) :=
+  tendstoInMeasure_div_of_div ((hk.eventually_gt_atTop 0).mono fun _ h => h.ne')
+    (tendstoInMeasure_blockCount_div hX hs hr hrn hk hθ hmixB)
+    (tendstoInMeasure_tailCount_div hX hs hk s hclus hmix)
+
+/-- **Consistency of the runs estimator** ([KS20, §10.2], Smith–Weissman 1994, Weissman–Novak
+1998). Let `X` be stationary, `pₙ = P(X_0 > uₙ)` with `n pₙ → ∞`, `rₙ / n → 0`, and assume
+
+* the runs ratio converges: `P(X_1, …, X_{rₙ} ≤ uₙ | X_0 > uₙ) → θ`;
+* the cluster condition `∑_{1 ≤ h ≤ rₙ + sₙ} P(X_0 > uₙ, X_h > uₙ) = o(n pₙ²)` for some `sₙ`;
+* the mixing condition `∑_{sₙ < h < n} α(h) = o(n pₙ²)`.
+
+Then `θ̂ᴿ → θ` in probability. -/
+theorem tendstoInMeasure_runsEstimator (hX : ∀ t, Measurable (X t)) (hs : IsStationary X P)
+    {u : ℕ → ℝ} {r : ℕ → ℕ} {θ : ℝ} (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hk : Tendsto (fun n : ℕ => n * P.real {ω | u n < X 0 ω}) atTop atTop)
+    (hθ : Tendsto (fun n => P.real (runEvent X (r n) 0 (u n)) / P.real {ω | u n < X 0 ω})
+      atTop (𝓝 θ))
+    (s : ℕ → ℕ)
+    (hclus : Tendsto (fun n : ℕ =>
+      (∑ h ∈ Icc 1 (r n + s n), P.real {ω | u n < X 0 ω ∧ u n < X h ω}) /
+        (n * P.real {ω | u n < X 0 ω} ^ 2)) atTop (𝓝 0))
+    (hmix : Tendsto (fun n : ℕ => (∑ h ∈ Ico (s n + 1) n, (alphaMixing X P h).toReal) /
+      (n * P.real {ω | u n < X 0 ω} ^ 2)) atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n => runsEstimator X n (r n) (u n)) atTop (fun _ => θ) := by
+  have hclus' : Tendsto (fun n : ℕ =>
+      (∑ h ∈ Icc 1 (s n), P.real {ω | u n < X 0 ω ∧ u n < X h ω}) /
+        (n * P.real {ω | u n < X 0 ω} ^ 2)) atTop (𝓝 0) := by
+    refine squeeze_zero' (Eventually.of_forall fun n => div_nonneg
+      (Finset.sum_nonneg fun _ _ => measureReal_nonneg) (by positivity)) ?_ hclus
+    exact Eventually.of_forall fun n => div_le_div_of_nonneg_right
+      (Finset.sum_le_sum_of_subset_of_nonneg (Finset.Icc_subset_Icc le_rfl (by omega))
+        fun _ _ _ => measureReal_nonneg) (by positivity)
+  exact tendstoInMeasure_div_of_div ((hk.eventually_gt_atTop 0).mono fun _ h => h.ne')
+    (tendstoInMeasure_runsCount_div hX hs hrn hk hθ s hclus hmix)
+    (tendstoInMeasure_tailCount_div hX hs hk s hclus' hmix)
+
+end Consistency
 
 end ExtremeValueTheory
