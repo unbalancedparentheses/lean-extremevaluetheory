@@ -734,4 +734,220 @@ theorem tendsto_integral_scaledLaw [Nonempty ι] {f : (ι → ℝ) →ᵇ ℝ} (
 
 end Integrals
 
+/-! ### Simple max-stable vectors are regularly varying -/
+
+section RegVar
+
+variable [Fintype ι] {H : Measure (ι → ℝ≥0∞)}
+
+/-- The exponent measure has no atom at the origin. -/
+lemma spectralExponentMeasure_singleton_zero [SFinite H] (hH : ∀ᵐ w ∂H, ⨆ i, w i = 1) :
+    spectralExponentMeasure H {0} = 0 := by
+  rw [spectralExponentMeasure, Measure.map_apply measurable_coneMap (measurableSet_singleton 0),
+    Measure.prod_apply_symm (measurable_coneMap (measurableSet_singleton 0))]
+  refine (lintegral_congr_ae (hH.mono fun w hw ↦ ?_)).trans lintegral_zero
+  obtain ⟨i, hi⟩ : ∃ i, w i ≠ 0 := by
+    by_contra hc
+    push Not at hc
+    simp [hc] at hw
+  refine measure_mono_null (fun r hr ↦ ?_) (radialMeasure_Iic_zero (α := 1))
+  simp only [mem_preimage, mem_singleton_iff] at hr
+  have := congrFun hr i
+  simp only [coneMap, Pi.zero_apply, mul_eq_zero] at this
+  rcases this with h0 | h0
+  · exact ENNReal.ofReal_eq_zero.1 h0
+  · exact absurd h0 hi
+
+/-- On the sup-norm sphere, `‖w‖ = 1` in real coordinates. -/
+lemma norm_toRealVec [Nonempty ι] {w : ι → ℝ≥0∞} (hw : ⨆ i, w i = 1) : ‖toRealVec w‖ = 1 := by
+  refine le_antisymm ((pi_norm_le_iff_of_nonneg zero_le_one).2 fun i ↦ ?_) ?_
+  · simp only [toRealVec]
+    rw [Real.norm_eq_abs, abs_of_nonneg ENNReal.toReal_nonneg]
+    exact ENNReal.toReal_le_of_le_ofReal zero_le_one (by
+      rw [ENNReal.ofReal_one, ← hw]; exact le_iSup w i)
+  · obtain ⟨i, hi⟩ := exists_eq_ciSup_of_finite (f := w)
+    have h1 : w i = 1 := hi.trans hw
+    calc (1 : ℝ) = ‖toRealVec w i‖ := by simp [toRealVec, h1]
+      _ ≤ _ := norm_le_pi_norm _ i
+
+/-- The **normalized exponent measure** `ν_H / H(univ)` in real coordinates; for a normalized
+spectral measure `H(univ)` is the extremal coefficient. -/
+noncomputable def maxStableTailMeasure (H : Measure (ι → ℝ≥0∞)) : Measure (ι → ℝ) :=
+  (H univ)⁻¹ • spectralExponentMeasureReal H
+
+/-- **The spectral measure of the normalized exponent measure** (in the sense of
+`RegularVariation/Multivariate.lean`, the law of `Y / ‖Y‖` under `μ` restricted to `{‖y‖ > 1}`) is
+the normalized spectral measure `H / H(univ)` of the max-stable law. -/
+theorem spectralMeasure_maxStableTailMeasure [Nonempty ι] [SFinite H]
+    (hH : ∀ᵐ w ∂H, ⨆ i, w i = 1) :
+    spectralMeasure (maxStableTailMeasure H) = (H univ)⁻¹ • H.map toRealVec := by
+  have hg : Measurable fun y : ι → ℝ ↦ ‖y‖⁻¹ • y := (measurable_norm.inv).smul measurable_id
+  have hA : MeasurableSet {y : ι → ℝ | 1 < ‖y‖} :=
+    measurableSet_lt measurable_const measurable_norm
+  rw [maxStableTailMeasure, spectralMeasure, Measure.restrict_smul, Measure.map_smul]
+  congr 1
+  ext B hB
+  have hset : MeasurableSet ((fun y : ι → ℝ ↦ ‖y‖⁻¹ • y) ⁻¹' B ∩ {y | 1 < ‖y‖}) := hg hB |>.inter hA
+  rw [Measure.map_apply hg hB, Measure.restrict_apply (hg hB),
+    Measure.map_apply measurable_toRealVec hB, spectralExponentMeasureReal,
+    Measure.map_apply measurable_toRealVec hset, spectralExponentMeasure,
+    Measure.map_apply measurable_coneMap (measurable_toRealVec hset),
+    Measure.prod_apply_symm (measurable_coneMap (measurable_toRealVec hset)),
+    ← lintegral_indicator_one (measurable_toRealVec hB)]
+  refine lintegral_congr_ae (hH.mono fun w hw ↦ ?_)
+  dsimp only
+  have hcone (r : ℝ) : toRealVec (coneMap (r, w)) = max r 0 • toRealVec w := by
+    funext i
+    simp [toRealVec, coneMap, ENNReal.toReal_mul, ENNReal.toReal_ofReal']
+  have hpre : (fun r : ℝ ↦ (r, w)) ⁻¹' (coneMap ⁻¹' (toRealVec ⁻¹'
+      ((fun y : ι → ℝ ↦ ‖y‖⁻¹ • y) ⁻¹' B ∩ {y | 1 < ‖y‖}))) = {r | 1 < r ∧ toRealVec w ∈ B} := by
+    ext r
+    simp only [mem_preimage, mem_inter_iff, mem_ofPred_eq, hcone, norm_smul, norm_toRealVec hw,
+      mul_one, Real.norm_eq_abs, abs_of_nonneg (le_max_right r 0)]
+    constructor
+    · rintro ⟨hB', h1⟩
+      have hr : 1 < r := by
+        rcases lt_max_iff.1 h1 with h | h
+        · exact h
+        · linarith
+      rw [max_eq_left (by linarith), smul_smul, inv_mul_cancel₀ (by linarith), one_smul] at hB'
+      exact ⟨hr, hB'⟩
+    · rintro ⟨hr, hB'⟩
+      rw [max_eq_left (by linarith), smul_smul, inv_mul_cancel₀ (by linarith), one_smul]
+      exact ⟨hB', by simpa using hr⟩
+  rw [hpre]
+  by_cases hwB : toRealVec w ∈ B
+  · simp only [hwB, and_true, indicator_of_mem (show w ∈ toRealVec ⁻¹' B from hwB),
+      Pi.one_apply]
+    rw [show {r : ℝ | 1 < r} = Ioi 1 from rfl, radialMeasure_Ioi one_pos one_pos]
+    simp
+  · simp [hwB]
+  · exact hg.aemeasurable
+
+variable [IsFiniteMeasure H] {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
+  [IsProbabilityMeasure P] {X : Ω → ι → ℝ}
+  (hX : Measurable X) (hS : HasSpectralMeasure (P.map X) H)
+  (h : IsSimpleMaxStable (P.map X)) (hH : ∀ᵐ w ∂H, ⨆ i, w i = 1)
+include hX hS h hH
+
+/-- **The tail of the norm**: `P(‖X‖ > x) = 1 - exp (-θ / x)`, `θ = H(univ)`. -/
+theorem measureReal_lt_norm {x : ℝ} (hx : 0 < x) :
+    P.real {ω | x < ‖X ω‖} = 1 - Real.exp (-(x⁻¹ * (H univ).toReal)) := by
+  have hpos := ae_of_ae_map hX.aemeasurable h.ae_forall_pos
+  have hint : ∫⁻ w, ⨆ i, w i / (1 : ι → ℝ≥0∞) i ∂H = H univ := by
+    rw [← lintegral_one]
+    exact lintegral_congr_ae (hH.mono fun w hw ↦ by simp [hw])
+  rw [measureReal_congr (t := {ω | ofRealVec (x⁻¹ • X ω) ∈ exceedSet 1}) ?_,
+    measureReal_exceedSet (d := (1 : ι → ℝ≥0∞)) hX hS hH hx (fun _ ↦ one_ne_zero), hint]
+  refine Filter.eventuallyEqSet_iff.2 (hpos.mono fun ω hω ↦ ?_)
+  simp only [mem_ofPred_eq, exceedSet, ofRealVec, Pi.one_apply, Pi.smul_apply, smul_eq_mul,
+    ENNReal.one_lt_ofReal]
+  rw [← not_le, pi_norm_le_iff_of_nonneg hx.le]
+  push Not
+  refine exists_congr fun i ↦ ?_
+  rw [Real.norm_eq_abs, abs_of_pos (hω i), inv_mul_eq_div, one_lt_div hx]
+
+/-- **Simple max-stable vectors are regularly varying** ([Res87, Proposition 5.15]; [dHF, §6.1]):
+a random vector `X` whose law is simple max-stable with spectral measure `H` on the sup-norm
+sphere is regularly varying with index `1`, and its exponent measure is the normalized exponent
+measure `ν_H / H(univ)` of the max-stable law. -/
+theorem IsSimpleMaxStable.isRegVarVector [Nonempty ι] :
+    IsRegVarVector P X 1 (maxStableTailMeasure H) := by
+  have hle := ae_le_one_of_ae_iSup_eq_one hH
+  have hnt := ae_ne_top_of_ae_le_one hle
+  have hH0 := measure_univ_ne_zero_of_hasSpectralMeasure h hS hH
+  set θ := (H univ).toReal with hθdef
+  have hθ : 0 < θ := ENNReal.toReal_pos hH0 (measure_ne_top _ _)
+  set T : ℝ → ℝ := fun x ↦ P.real {ω | x < ‖X ω‖} with hTdef
+  have hT : ∀ x, 0 < x → T x = 1 - Real.exp (-(x⁻¹ * θ)) := fun x hx ↦
+    measureReal_lt_norm hX hS h hH hx
+  have hxT : Tendsto (fun x ↦ x * T x) atTop (𝓝 θ) := by
+    refine (tendsto_mul_one_sub_exp hθ.le).congr' ?_
+    filter_upwards [eventually_gt_atTop 0] with x hx
+    rw [hT x hx]
+  have hinv : (H univ)⁻¹ ≠ ∞ := ENNReal.inv_ne_top.2 hH0
+  refine ⟨⟨?_, fun c hc ↦ ?_⟩, ?_, fun r hr ↦ ?_, fun f hf ↦ ?_⟩
+  · filter_upwards [eventually_gt_atTop 0] with x hx
+    show 0 < T x
+    rw [hT x hx, sub_pos, ← Real.exp_zero]
+    exact Real.exp_lt_exp.2 (neg_lt_zero.2 (by positivity))
+  · -- `T(c x) / T(x) → 1 / c`
+    have h1 := hxT.comp (tendsto_id.const_mul_atTop hc)
+    have h2 := (tendsto_const_nhds (x := c)).mul hxT
+    have := h1.div h2 (mul_pos hc hθ).ne'
+    rw [show θ / (c * θ) = c ^ (-(1 : ℝ)) by rw [Real.rpow_neg_one]; field_simp] at this
+    refine this.congr' ?_
+    filter_upwards [eventually_gt_atTop 0] with x hx
+    have hx0 := hx.ne'
+    have hc0 := hc.ne'
+    simp only [Function.comp_apply, id, Pi.div_apply]
+    field_simp
+    rfl
+
+  · rw [maxStableTailMeasure, Measure.smul_apply, smul_eq_mul]
+    refine mul_eq_zero_of_right _ (measure_mono_null (t := ofRealVec ⁻¹' {0}) ?_ ?_)
+    · intro y hy
+      rw [mem_singleton_iff.1 hy, mem_preimage, mem_singleton_iff]
+      funext i
+      simp [ofRealVec]
+
+    · rw [spectralExponentMeasureReal_preimage hnt (measurableSet_singleton 0)]
+      exact spectralExponentMeasure_singleton_zero hH
+  · rw [maxStableTailMeasure, Measure.smul_apply, smul_eq_mul]
+    refine ENNReal.mul_lt_top hinv.lt_top ?_
+    have hsub : {y : ι → ℝ | r < ‖y‖} ⊆
+        posOrthantᶜ ∪ ofRealVec ⁻¹' exceedSet fun _ ↦ ENNReal.ofReal r := by
+      intro y hy
+      by_cases hyQ : y ∈ posOrthant
+      · right
+        have : ¬ ‖y‖ ≤ r := not_le.2 hy
+        rw [pi_norm_le_iff_of_nonneg hr.le] at this
+        push Not at this
+        obtain ⟨i, hi⟩ := this
+        rw [Real.norm_eq_abs, abs_of_nonneg (hyQ i)] at hi
+        exact ⟨i, (ENNReal.ofReal_lt_ofReal_iff (hr.trans hi)).2 hi⟩
+      · exact Or.inl hyQ
+    refine (measure_mono hsub).trans_lt ((measure_union_le _ _).trans_lt ?_)
+    rw [spectralExponentMeasureReal_compl_posOrthant, zero_add,
+      spectralExponentMeasureReal_preimage hnt (measurableSet_exceedSet _)]
+    exact (spectralExponentMeasure_exceedSet_ne_top hle
+      fun _ ↦ (ENNReal.ofReal_pos.2 hr).ne').lt_top
+  · -- `E[f(X / x)] / P(‖X‖ > x) → ∫ f dμ`
+    have hlim : ∫ y, f y ∂maxStableTailMeasure H =
+        θ⁻¹ * ∫ y, f y ∂spectralExponentMeasureReal H := by
+      rw [maxStableTailMeasure, integral_smul_measure, ENNReal.toReal_inv, smul_eq_mul]
+    rw [hlim]
+    refine ((hxT.inv₀ hθ.ne').mul (tendsto_integral_scaledLaw hX hS h hH hf)).congr' ?_
+    filter_upwards [eventually_gt_atTop 0] with x hx
+    have hXs : Measurable fun ω ↦ x⁻¹ • X ω := hX.const_smul x⁻¹
+    have hI : ∫ y, f y ∂scaledLaw P X x = x * ∫ ω, f (x⁻¹ • X ω) ∂P := by
+      rw [scaledLaw, integral_smul_measure, ENNReal.toReal_ofReal hx.le, smul_eq_mul,
+        integral_map hXs.aemeasurable f.continuous.aestronglyMeasurable]
+    rw [hI, mul_inv, mul_mul_mul_comm, inv_mul_cancel₀ hx.ne', one_mul]
+
+/-- The spectral measure of `X` in the sense of multivariate regular variation is the normalized
+spectral measure of its max-stable law: `S = H / H(univ)`. -/
+theorem IsSimpleMaxStable.spectralMeasure_eq [Nonempty ι] :
+    IsRegVarVector P X 1 (maxStableTailMeasure H) ∧
+      spectralMeasure (maxStableTailMeasure H) = (H univ)⁻¹ • H.map toRealVec :=
+  ⟨IsSimpleMaxStable.isRegVarVector hX hS h hH, spectralMeasure_maxStableTailMeasure hH⟩
+
+omit hS hH in
+/-- **Simple max-stable vectors are regularly varying, with the max-stable spectral measure**:
+for a random vector `X` with simple max-stable law, there is a finite measure `H` on the
+sup-norm sphere, normalized by `∫ w i dH = 1` and with total mass the extremal coefficient `θ`,
+such that `P(X ≤ y) = exp (-∫ max_i w i / y i dH)`, `X` is regularly varying with index `1`, and
+its spectral measure (`RegularVariation/Multivariate.lean`) is `H / θ`. -/
+theorem IsSimpleMaxStable.exists_isRegVarVector [Nonempty ι] :
+    ∃ H : Measure (ι → ℝ≥0∞), IsFiniteMeasure H ∧ (∀ᵐ w ∂H, ⨆ i, w i = 1) ∧
+      (∀ i, ∫⁻ w, w i ∂H = 1) ∧ HasSpectralMeasure (P.map X) H ∧
+      (H univ).toReal = extremalCoefficient (P.map X) ∧
+      IsRegVarVector P X 1 (maxStableTailMeasure H) ∧
+      spectralMeasure (maxStableTailMeasure H) = (H univ)⁻¹ • H.map toRealVec := by
+  obtain ⟨H, hfin, -, hsph, hnorm, hS⟩ := h.exists_hasSpectralMeasure
+  exact ⟨H, hfin, hsph, hnorm, hS, hS.measure_univ_toReal hsph,
+    IsSimpleMaxStable.isRegVarVector hX hS h hsph, spectralMeasure_maxStableTailMeasure hsph⟩
+
+end RegVar
+
 end ExtremeValueTheory
