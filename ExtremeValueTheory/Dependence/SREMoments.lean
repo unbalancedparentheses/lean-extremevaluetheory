@@ -240,6 +240,66 @@ theorem lintegral_enorm_rpow_lt_one {κ : ℝ} (hκ : 0 < κ) (h1 : ∫⁻ p, �
       (ae_of_all _ fun p => Real.rpow_nonneg (abs_nonneg _) _)]
   exact ENNReal.ofReal_lt_one.2 hJ
 
+/-- The real moment `E|g|^s` as a real integral, when the `ℝ≥0∞`-valued one is finite. -/
+theorem integrable_abs_rpow_of_lintegral_lt_top {α : Type*} {mα : MeasurableSpace α}
+    {μ : Measure α} {g : α → ℝ} (hg : Measurable g) {s : ℝ} (hs : 0 ≤ s)
+    (h : ∫⁻ x, ‖g x‖ₑ ^ s ∂μ < ∞) :
+    Integrable (fun x => |g x| ^ s) μ ∧
+      ENNReal.ofReal (∫ x, |g x| ^ s ∂μ) = ∫⁻ x, ‖g x‖ₑ ^ s ∂μ := by
+  have hm : Measurable fun x => |g x| ^ s := by fun_prop
+  have hl : ∫⁻ x, ENNReal.ofReal (|g x| ^ s) ∂μ = ∫⁻ x, ‖g x‖ₑ ^ s ∂μ :=
+    lintegral_congr fun x => (enorm_rpow_eq_ofReal _ hs).symm
+  have hi : Integrable (fun x => |g x| ^ s) μ := by
+    refine ⟨hm.aestronglyMeasurable, ?_⟩
+    rw [hasFiniteIntegral_iff_ofReal (ae_of_all _ fun x => Real.rpow_nonneg (abs_nonneg _) _),
+      hl]
+    exact h
+  exact ⟨hi, by rw [ofReal_integral_eq_lintegral_ofReal hi
+    (ae_of_all _ fun x => Real.rpow_nonneg (abs_nonneg _) _), hl]⟩
+
+theorem abs_eq_one_of_rpow_eq_one {a κ : ℝ} (hκ : κ ≠ 0) (h : |a| ^ κ = 1) : |a| = 1 := by
+  have := congrArg (fun t => t ^ κ⁻¹) h
+  simp only [Real.one_rpow] at this
+  rwa [← Real.rpow_mul (abs_nonneg _), mul_inv_cancel₀ hκ, Real.rpow_one] at this
+
+/-- If `E|A|^κ = 1` (with `|A|` not a.s. `1`), then `E|A|^s > 1` for `s > κ`. -/
+theorem one_lt_lintegral_enorm_rpow {κ : ℝ} (hκ : 0 < κ) (h1 : ∫⁻ p, ‖p.1‖ₑ ^ κ ∂ν = 1)
+    (hnd : ¬ ∀ᵐ p ∂ν, |p.1| = 1) {s : ℝ} (hsκ : κ < s) :
+    1 < ∫⁻ p, ‖p.1‖ₑ ^ s ∂ν := by
+  have hs : 0 < s := hκ.trans hsκ
+  by_contra hle
+  rw [not_lt] at hle
+  obtain ⟨hGi, hGl⟩ := integrable_abs_rpow_of_lintegral_lt_top (μ := ν) measurable_fst hs.le
+    (hle.trans_lt ENNReal.one_lt_top)
+  obtain ⟨hFi, hFl⟩ := integrable_abs_rpow_of_lintegral_lt_top (μ := ν) measurable_fst hκ.le
+    (h1.trans_lt ENNReal.one_lt_top)
+  rw [h1, ENNReal.ofReal_eq_one] at hFl
+  set c := ∫ p, |p.1| ^ s ∂ν
+  have hc0 : 0 ≤ c := integral_nonneg fun p => Real.rpow_nonneg (abs_nonneg _) _
+  have hc1 : c ≤ 1 := by
+    have := hGl.trans_le hle
+    rwa [ENNReal.ofReal_le_one] at this
+  have hq0 : 0 < κ / s := div_pos hκ hs
+  have hq1 : κ / s < 1 := (div_lt_one hs).2 hsκ
+  have he : ∀ p : ℝ × ℝ, (|p.1| ^ s) ^ (κ / s) = |p.1| ^ κ := fun p => by
+    rw [← Real.rpow_mul (abs_nonneg _), mul_div_cancel₀ _ hs.ne']
+  have hgi : Integrable (fun p : ℝ × ℝ => (|p.1| ^ s) ^ (κ / s)) ν := by
+    simp only [he]; exact hFi
+  rcases (Real.strictConcaveOn_rpow hq0 hq1).ae_eq_const_or_lt_map_average
+    ((Real.continuous_rpow_const hq0.le).continuousOn) isClosed_Ici
+    (ae_of_all _ fun p => Real.rpow_nonneg (abs_nonneg _) _) hGi hgi with h | h
+  · rw [average_eq_integral] at h
+    have hκc : ∀ᵐ p ∂ν, |p.1| ^ κ = c ^ (κ / s) := by
+      filter_upwards [h] with p hp
+      rw [← he p]; exact congrArg (· ^ (κ / s)) hp
+    have hcκ : c ^ (κ / s) = 1 := by
+      rw [← hFl, integral_congr_ae hκc, integral_const, probReal_univ, one_smul]
+    exact hnd (by
+      filter_upwards [hκc] with p hp
+      exact abs_eq_one_of_rpow_eq_one hκ.ne' (hp.trans hcκ))
+  · rw [average_eq_integral, average_eq_integral, integral_congr_ae (ae_of_all _ he), hFl] at h
+    exact absurd (Real.rpow_le_one hc0 hc1 hq0.le) (not_le.2 h)
+
 end SRE
 
 end ExtremeValueTheory
