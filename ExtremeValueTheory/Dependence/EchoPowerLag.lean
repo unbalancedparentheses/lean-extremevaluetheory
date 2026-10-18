@@ -122,4 +122,115 @@ theorem setIntegral_min_rpow_pareto (hα : 0 < α) (hγ : 0 < γ) (hγα : γ < 
 
 end PowerMoment
 
+/-! ### Anticlustering of the echo process for blocks shorter than the echo lag -/
+
+section EchoAC
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+  {α : ℝ} {Z : ℤ → Ω → ℝ} {L : ℝ → ℕ}
+  (hα : 0 < α) (hZ : ∀ t, Measurable (Z t)) (hind : iIndepFun Z P)
+  (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α) (hpos : ∀ t ω, 0 ≤ Z t ω) (hLm : Measurable L)
+  (hL1 : ∀ z, 1 ≤ L z)
+
+include hα hZ hlaw hLm hL1 in
+omit [IsProbabilityMeasure P] in
+theorem tsum_measure_echoSource (t : ℤ) {x : ℝ} (hx : 1 ≤ x) :
+    ∑' j, P (echoSource L Z t x j) = ENNReal.ofReal (2 * x ^ (-α)) := by
+  have hs := hasSum_measureReal_echoSource hα hZ hlaw hLm hL1 (P := P) t hx
+  have hfin : ∀ j, P (echoSource L Z t x j) ≠ ∞ := fun j => by
+    rw [echoSource_eq, measure_preimage_eq hZ hlaw _ (measurableSet_echoSourceSet hLm x j)]
+    have := isProbabilityMeasure_paretoMeasure one_pos hα
+    exact measure_ne_top _ _
+  rw [← hs.tsum_eq, ENNReal.ofReal_tsum_of_nonneg (fun _ => measureReal_nonneg) hs.summable]
+  exact tsum_congr fun j => (ofReal_measureReal (hfin j)).symm
+
+include hα hZ hind hlaw hpos hLm hL1 in
+/-- **Two-sided pair bound inside a short window.** If every innovation `z ≥ x` has echo lag
+`L(z) > r`, then `P(X_0 > x, X_t > x for some 1 ≤ |t| ≤ r) ≤ (2 r + 1) (2 x^(-α))²`: within the
+window, the exceedance at `0` and the other exceedance never come from the same innovation, and
+distinct innovations are independent. -/
+theorem measureReal_pair_window_le {x : ℝ} (hx : 1 ≤ x) {r : ℕ} (hshort : ∀ z, x ≤ z → r < L z)
+    (m : ℕ) (hm : 1 ≤ m) :
+    P.real {ω | x < |echoProcess L Z 0 ω| ∧
+        ∃ t : ℤ, (m : ℤ) ≤ |t| ∧ |t| ≤ r ∧ x < |echoProcess L Z t ω|} ≤
+      (2 * r + 1) * (2 * x ^ (-α)) ^ 2 := by
+  set T : Finset ℤ := (Finset.Icc (-(r : ℤ)) r).erase 0
+  have hsub : {ω | x < |echoProcess L Z 0 ω| ∧
+      ∃ t : ℤ, (m : ℤ) ≤ |t| ∧ |t| ≤ r ∧ x < |echoProcess L Z t ω|} ⊆
+      ⋃ t ∈ T, ⋃ j, ⋃ j', echoSource L Z 0 x j ∩ echoSource L Z t x j' := by
+    rintro ω ⟨h0, t, h1, h2, h3⟩
+    rw [abs_of_nonneg (echoProcess_nonneg hpos _ _)] at h0 h3
+    obtain ⟨j, hj⟩ := mem_iUnion.1 (setOf_lt_echoProcess_subset (by linarith) 0 h0)
+    obtain ⟨j', hj'⟩ := mem_iUnion.1 (setOf_lt_echoProcess_subset (by linarith) t h3)
+    have ht0 : t ≠ 0 := by
+      rintro rfl
+      simp at h1
+      omega
+    refine mem_iUnion₂.2 ⟨t, ?_, mem_iUnion.2 ⟨j, mem_iUnion.2 ⟨j', hj, hj'⟩⟩⟩
+    simp only [T, Finset.mem_erase, Finset.mem_Icc]
+    refine ⟨ht0, ?_, ?_⟩ <;> [linarith [neg_abs_le t]; linarith [le_abs_self t]]
+  have hb : ∀ t ∈ T, P (⋃ j, ⋃ j', echoSource L Z 0 x j ∩ echoSource L Z t x j') ≤
+      ENNReal.ofReal (2 * x ^ (-α)) * ENNReal.ofReal (2 * x ^ (-α)) := by
+    intro t ht
+    simp only [T, Finset.mem_erase, Finset.mem_Icc] at ht
+    have hz : ∀ z, x ≤ z → t.natAbs < L z := fun z hz => by
+      have := hshort z hz
+      omega
+    calc _ ≤ ∑' j, ∑' j', P (echoSource L Z 0 x j ∩ echoSource L Z t x j') :=
+          (measure_iUnion_le _).trans (ENNReal.tsum_le_tsum fun j => measure_iUnion_le _)
+      _ ≤ ∑' j, ∑' j', P (echoSource L Z 0 x j) * P (echoSource L Z t x j') :=
+          ENNReal.tsum_le_tsum fun j => ENNReal.tsum_le_tsum fun j' =>
+            measure_echoSource_inter_le hind ht.1 hz hLm le_rfl j j'
+      _ = _ := by
+          simp_rw [ENNReal.tsum_mul_left]
+          rw [ENNReal.tsum_mul_right, tsum_measure_echoSource hα hZ hlaw hLm hL1 0 hx,
+            tsum_measure_echoSource hα hZ hlaw hLm hL1 t hx]
+  have hcard : (T.card : ℝ) ≤ 2 * r + 1 := by
+    have : T.card ≤ (Finset.Icc (-(r : ℤ)) r).card := Finset.card_erase_le
+    rw [Int.card_Icc] at this
+    have h' : ((r : ℤ) + 1 - -(r : ℤ)).toNat = 2 * r + 1 := by omega
+    rw [h'] at this
+    exact_mod_cast this
+  have hP : P (⋃ t ∈ T, ⋃ j, ⋃ j', echoSource L Z 0 x j ∩ echoSource L Z t x j') ≤
+      T.card * (ENNReal.ofReal (2 * x ^ (-α)) * ENNReal.ofReal (2 * x ^ (-α))) :=
+    (measure_biUnion_finset_le _ _).trans ((Finset.sum_le_sum hb).trans_eq (by simp))
+  have h2 : 0 ≤ 2 * x ^ (-α) := by positivity
+  refine (measureReal_mono hsub (measure_ne_top _ _)).trans ?_
+  rw [measureReal_def]
+  refine (ENNReal.toReal_mono ?_ hP).trans ?_
+  · exact ENNReal.mul_ne_top (ENNReal.natCast_ne_top _)
+      (ENNReal.mul_ne_top ENNReal.ofReal_ne_top ENNReal.ofReal_ne_top)
+  · rw [ENNReal.toReal_mul, ENNReal.toReal_mul, ENNReal.toReal_ofReal h2, ENNReal.toReal_natCast]
+    rw [sq]
+    exact mul_le_mul_of_nonneg_right hcard (mul_nonneg h2 h2)
+
+include hα hZ hind hlaw hpos hLm hL1 in
+/-- **Anticlustering for blocks shorter than the echo lag.** For iid Pareto(`α`) innovations and
+any measurable echo lag `L ≥ 1`: if `uₙ → ∞`, `rₙ uₙ^(-α) → 0` and eventually every innovation
+`z ≥ uₙ` has echo lag `L(z) > rₙ`, then the (two-sided) anticlustering condition holds along
+`uₙ`, `rₙ`, already with `m = 1`. -/
+theorem antiClusteringAt_echoProcess {u : ℕ → ℝ} (hu : Tendsto u atTop atTop) {r : ℕ → ℕ}
+    (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0))
+    (hshort : ∀ᶠ n in atTop, ∀ z, u n ≤ z → r n < L z) :
+    AntiClusteringAt P (echoProcess L Z) u r := by
+  intro ε hε
+  refine ⟨1, ?_⟩
+  have hb : Tendsto (fun n => u n ^ (-α)) atTop (𝓝 0) := (tendsto_rpow_neg_atTop hα).comp hu
+  have hlim : Tendsto (fun n => 4 * (2 * ((r n : ℝ) * u n ^ (-α)) + u n ^ (-α))) atTop (𝓝 0) := by
+    simpa using ((hrb.const_mul 2).add hb).const_mul 4
+  filter_upwards [hshort, hu.eventually_ge_atTop 1, hlim.eventually (ge_mem_nhds hε)]
+    with n hn hun hεn
+  have hb0 : 0 < u n ^ (-α) := Real.rpow_pos_of_pos (by linarith) _
+  have hX0 : u n ^ (-α) ≤ P.real {ω | u n < |echoProcess L Z 0 ω|} := by
+    rw [← measureReal_lt_of_map_eq hZ hlaw hα 0 hun]
+    exact measureReal_mono fun ω hω => lt_of_lt_of_le hω
+      ((le_echoProcess 0 ω).trans (le_abs_self _))
+  refine (measureReal_pair_window_le hα hZ hind hlaw hpos hLm hL1 hun hn 1 le_rfl).trans ?_
+  calc (2 * (r n : ℝ) + 1) * (2 * u n ^ (-α)) ^ 2
+      = 4 * (2 * ((r n : ℝ) * u n ^ (-α)) + u n ^ (-α)) * u n ^ (-α) := by ring
+    _ ≤ ε * u n ^ (-α) := mul_le_mul_of_nonneg_right hεn hb0.le
+    _ ≤ _ := mul_le_mul_of_nonneg_left hX0 hε.le
+
+end EchoAC
+
 end ExtremeValueTheory
