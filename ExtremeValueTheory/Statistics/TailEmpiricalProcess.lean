@@ -5,6 +5,7 @@ Authors: Federico Carrone
 -/
 import ExtremeValueTheory.ForMathlib.Probability.TriangularArrayCLT
 import ExtremeValueTheory.ForMathlib.Probability.FourthMoment
+import ExtremeValueTheory.ForMathlib.Probability.DyadicChaining
 import Mathlib.Probability.BrownianMotion.Basic
 
 /-!
@@ -541,5 +542,202 @@ theorem integral_tailEmpiricalProcess_sub_pow_four_le [IsProbabilityMeasure P]
   have : (∑ i ∈ range n, ∫ ω, X i ω ^ 2 ∂P) ^ 2 ≤ (2 * (t - s)) ^ 2 :=
     pow_le_pow_left₀ hS2' hS2 2
   nlinarith
+
+/-! ### A maximal inequality on blocks -/
+
+/-- Between grid points, a function that can decrease at most linearly (with slope `c`) stays
+close to its values at the grid points. -/
+lemma abs_sub_le_of_grid {w : ℝ → ℝ} {c a h lam : ℝ} {q : ℕ} (hh : 0 < h)
+    (hmono : ∀ u v, u ≤ v → w u ≤ w v + c * (v - u)) (hc : 0 ≤ c)
+    (hgrid : ∀ j : ℕ, j ≤ 2 ^ q → |w (a + j * h) - w a| ≤ lam) {u : ℝ}
+    (hu : u ∈ Set.Icc a (a + 2 ^ q * h)) : |w u - w a| ≤ lam + c * h := by
+  have hq : 1 ≤ 2 ^ q := Nat.one_le_two_pow
+  set j : ℕ := min ⌊(u - a) / h⌋₊ (2 ^ q - 1) with hj
+  have hua : 0 ≤ (u - a) / h := div_nonneg (by linarith [hu.1]) hh.le
+  have hjs : a + j * h ≤ u := by
+    have : (j : ℝ) ≤ (u - a) / h :=
+      (Nat.cast_le.2 (min_le_left _ _)).trans (Nat.floor_le hua)
+    rw [le_div_iff₀ hh] at this
+    linarith
+  have hjq : j + 1 ≤ 2 ^ q := by omega
+  have hju : u ≤ a + ((j + 1 : ℕ) : ℝ) * h := by
+    rcases le_or_gt ⌊(u - a) / h⌋₊ (2 ^ q - 1) with hle | hgt
+    · rw [hj, min_eq_left hle]
+      have := Nat.lt_floor_add_one ((u - a) / h)
+      rw [div_lt_iff₀ hh] at this
+      push_cast
+      linarith
+    · rw [hj, min_eq_right hgt.le, Nat.sub_add_cancel hq]
+      push_cast
+      exact hu.2
+  have h1 := hgrid j ((min_le_right _ _).trans (Nat.sub_le _ _))
+  have h2 := hgrid (j + 1) hjq
+  have hup := hmono u _ hju
+  have hdown := hmono _ u hjs
+  have e : a + ((j + 1 : ℕ) : ℝ) * h - u ≤ h := by push_cast at hju ⊢; linarith
+  have e' : u - (a + j * h) ≤ h := by push_cast at hju ⊢; linarith
+  push_cast at hup e h2 ⊢
+  rw [abs_le] at h1 h2 ⊢
+  constructor <;> nlinarith [mul_le_mul_of_nonneg_left e hc, mul_le_mul_of_nonneg_left e' hc]
+
+/-- The tail empirical process decreases at most with slope `√k`. -/
+lemma tailEmpiricalProcess_le_add (U : ℕ → Ω → ℝ) (n k : ℕ) {u v : ℝ} (huv : u ≤ v) (ω : Ω) :
+    tailEmpiricalProcess U n k u ω ≤ tailEmpiricalProcess U n k v ω + √(k : ℝ) * (v - u) := by
+  unfold tailEmpiricalProcess
+  have hS : ∑ i ∈ range n, (Set.Ici (1 - k / n * u)).indicator (1 : ℝ → ℝ) (U i ω) ≤
+      ∑ i ∈ range n, (Set.Ici (1 - k / n * v)).indicator 1 (U i ω) := by
+    refine Finset.sum_le_sum fun i _ ↦ Set.indicator_le_indicator_of_subset
+      (Set.Ici_subset_Ici.2 ?_) (fun _ ↦ zero_le_one) _
+    have : (0 : ℝ) ≤ k / n := by positivity
+    nlinarith
+  have : (0 : ℝ) ≤ √(k : ℝ) * (k : ℝ)⁻¹ := by positivity
+  nlinarith [mul_le_mul_of_nonneg_left hS this]
+
+lemma abs_tailEmpiricalProcess_le (U : ℕ → Ω → ℝ) (n k : ℕ) (t : ℝ) (ω : Ω) :
+    |tailEmpiricalProcess U n k t ω| ≤ √(k : ℝ) * ((k : ℝ)⁻¹ * n + |t|) := by
+  unfold tailEmpiricalProcess
+  rw [abs_mul, abs_of_nonneg (Real.sqrt_nonneg _)]
+  refine mul_le_mul_of_nonneg_left ((abs_sub _ _).trans (add_le_add ?_ le_rfl))
+    (Real.sqrt_nonneg _)
+  rw [abs_mul, abs_of_nonneg (by positivity)]
+  refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+  rw [abs_of_nonneg (Finset.sum_nonneg fun i _ ↦ Set.indicator_nonneg (fun _ _ ↦ zero_le_one) _)]
+  simpa using Finset.sum_le_sum fun i (_ : i ∈ range n) ↦
+    Set.indicator_le_self' (s := Set.Ici (1 - k / n * t)) (f := (1 : ℝ → ℝ))
+      (fun _ _ ↦ zero_le_one) (U i ω)
+
+lemma integrable_tailEmpiricalProcess_sub_pow [IsFiniteMeasure P] (hU : ∀ i, Measurable (U i))
+    (n k : ℕ) (s t : ℝ) (j : ℕ) :
+    Integrable (fun ω ↦ (tailEmpiricalProcess U n k t ω - tailEmpiricalProcess U n k s ω) ^ j)
+      P := by
+  refine Integrable.of_bound (C := (√(k : ℝ) * ((k : ℝ)⁻¹ * n + |t|) +
+      √(k : ℝ) * ((k : ℝ)⁻¹ * n + |s|)) ^ j)
+    (((measurable_tailEmpiricalProcess hU n k t).sub
+      (measurable_tailEmpiricalProcess hU n k s)).pow_const j).aestronglyMeasurable
+    (ae_of_all _ fun ω ↦ ?_)
+  rw [Real.norm_eq_abs, abs_pow]
+  exact pow_le_pow_left₀ (abs_nonneg _) ((abs_sub _ _).trans (add_le_add
+    (abs_tailEmpiricalProcess_le U n k t ω) (abs_tailEmpiricalProcess_le U n k s ω))) j
+
+lemma sum_range_geom_le_of_lt_one {r : ℝ} (hr0 : 0 ≤ r) (hr1 : r < 1) (q : ℕ) :
+    ∑ ℓ ∈ range q, r ^ ℓ ≤ (1 - r)⁻¹ := by
+  have h := geom_sum_mul r q
+  have hpos : 0 < 1 - r := by linarith
+  have : 0 ≤ r ^ q := pow_nonneg hr0 q
+  rw [inv_eq_one_div, le_div_iff₀ hpos]
+  nlinarith
+
+/-- **Maximal inequality for the tail empirical process on a block** `[a, a + L]`: with
+`q` dyadic refinement levels, fine enough that `√k · L / 2 ^ q ≤ λ`,
+`P (∃ u ∈ [a, a + L], 2 λ < |W_n(u) - W_n(a)|) ≤ 8⁴ / λ⁴ · (84 L² + 2 ^ (q + 2) L / k)`.
+This combines the fourth-moment bound for the increments, dyadic chaining on the grid
+`a + j L / 2 ^ q`, and the monotonicity of the counts between grid points. -/
+theorem measureReal_exists_abs_tailEmpiricalProcess_sub_gt_le [IsProbabilityMeasure P]
+    (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1)) {n k : ℕ} (hn : n ≠ 0)
+    {a L lam : ℝ} (ha : 0 ≤ a) (hL : 0 < L) (hp : (k : ℝ) / n * (a + L) ≤ 1) (hlam : 0 < lam)
+    (q : ℕ) (hq : √(k : ℝ) * (L / 2 ^ q) ≤ lam) :
+    P.real {ω | ∃ u ∈ Set.Icc a (a + L),
+      2 * lam < |tailEmpiricalProcess U n k u ω - tailEmpiricalProcess U n k a ω|} ≤
+      8 ^ 4 / lam ^ 4 * (84 * L ^ 2 + 2 ^ (q + 2) * L / k) := by
+  set h : ℝ := L / 2 ^ q with hh
+  have hh0 : 0 < h := by positivity
+  set Y : ℕ → Ω → ℝ := fun j ω ↦ tailEmpiricalProcess U n k (a + j * h) ω with hY
+  set lamℓ : ℕ → ℝ := fun ℓ ↦ lam * (7 / 8) ^ ℓ / 8 with hlamℓ
+  have hlamℓ0 (ℓ : ℕ) : 0 < lamℓ ℓ := by positivity
+  have hsumlam : ∑ ℓ ∈ range (q + 1), lamℓ ℓ ≤ lam := by
+    have hg := sum_range_geom_le_of_lt_one (r := 7 / 8) (by norm_num) (by norm_num) (q + 1)
+    norm_num at hg
+    simp only [hlamℓ, ← Finset.sum_div, ← Finset.mul_sum]
+    rw [div_le_iff₀ (by norm_num)]
+    nlinarith
+  have hsub : {ω | ∃ u ∈ Set.Icc a (a + L),
+      2 * lam < |tailEmpiricalProcess U n k u ω - tailEmpiricalProcess U n k a ω|} ⊆
+      {ω | ∃ j ≤ 2 ^ q, ∑ ℓ ∈ range (q + 1), lamℓ ℓ < |Y j ω - Y 0 ω|} := by
+    intro ω ⟨u, hu, hlt⟩
+    by_contra hω
+    simp only [Set.mem_ofPred_eq, not_exists, not_and, not_lt] at hω
+    have hY0 : Y 0 ω = tailEmpiricalProcess U n k a ω := by simp [hY]
+    have hgrid : ∀ j : ℕ, j ≤ 2 ^ q → |tailEmpiricalProcess U n k (a + j * h) ω -
+        tailEmpiricalProcess U n k a ω| ≤ lam := fun j hj ↦ by
+      have := (hω j hj).trans hsumlam
+      rwa [hY0] at this
+    have hL' : a + 2 ^ q * h = a + L := by rw [hh]; field_simp
+    have := abs_sub_le_of_grid (w := fun u ↦ tailEmpiricalProcess U n k u ω) hh0
+      (fun u v huv ↦ tailEmpiricalProcess_le_add U n k huv ω) (Real.sqrt_nonneg _) hgrid
+      (u := u) (by rw [hL']; exact hu)
+    linarith
+  refine (measureReal_mono hsub (measure_ne_top _ _)).trans ?_
+  set B : ℕ → ℝ := fun ℓ ↦ 12 * (L / 2 ^ ℓ) ^ 2 + 2 * (L / 2 ^ ℓ) / k with hB
+  have hinc (ℓ : ℕ) (hℓ : ℓ ∈ range (q + 1)) (i : ℕ) :
+      ((((i + 1) * 2 ^ (q - ℓ) : ℕ) : ℝ) * h) - (((i * 2 ^ (q - ℓ) : ℕ) : ℝ) * h) =
+        L / 2 ^ ℓ := by
+    have hℓq : ℓ ≤ q := Nat.lt_succ_iff.1 (Finset.mem_range.1 hℓ)
+    rw [hh]
+    push_cast
+    rw [show (2 : ℝ) ^ q = 2 ^ (q - ℓ) * 2 ^ ℓ by rw [← pow_add, Nat.sub_add_cancel hℓq]]
+    field_simp
+    ring
+  have hle (ℓ : ℕ) (hℓ : ℓ ∈ range (q + 1)) (i : ℕ) (hi : i < 2 ^ ℓ) :
+      a + (((i + 1) * 2 ^ (q - ℓ) : ℕ) : ℝ) * h ≤ a + L := by
+    have hℓq : ℓ ≤ q := Nat.lt_succ_iff.1 (Finset.mem_range.1 hℓ)
+    have h1 : (((i + 1) * 2 ^ (q - ℓ) : ℕ) : ℝ) ≤ 2 ^ q := by
+      have : (i + 1) * 2 ^ (q - ℓ) ≤ 2 ^ ℓ * 2 ^ (q - ℓ) := Nat.mul_le_mul_right _ hi
+      rw [← pow_add, Nat.add_sub_cancel' hℓq] at this
+      exact_mod_cast this
+    have h2 : (((i + 1) * 2 ^ (q - ℓ) : ℕ) : ℝ) * h ≤ 2 ^ q * h :=
+      mul_le_mul_of_nonneg_right h1 hh0.le
+    have hL' : 2 ^ q * h = L := by rw [hh]; field_simp
+    linarith
+  have hchain := measureReal_exists_lt_abs_sub_le (P := P) q (Y := Y) hlamℓ0 (B := B)
+    (fun ℓ hℓ i hi ↦ integrable_tailEmpiricalProcess_sub_pow hU n k _ _ 4)
+    (fun ℓ hℓ i hi ↦ by
+      have hd := hinc ℓ hℓ i
+      have hL0 : (0 : ℝ) ≤ L / 2 ^ ℓ := by positivity
+      have hst : a + ((i * 2 ^ (q - ℓ) : ℕ) : ℝ) * h ≤
+          a + (((i + 1) * 2 ^ (q - ℓ) : ℕ) : ℝ) * h := by linarith
+      have hp0 : (0 : ℝ) ≤ k / n := by positivity
+      have hmom := integral_tailEmpiricalProcess_sub_pow_four_le hU hind hlaw hn
+        (s := a + ((i * 2 ^ (q - ℓ) : ℕ) : ℝ) * h) (by positivity) hst
+        ((mul_le_mul_of_nonneg_left (hle ℓ hℓ i hi) hp0).trans hp)
+      have e : a + (((i + 1) * 2 ^ (q - ℓ) : ℕ) : ℝ) * h - (a + ((i * 2 ^ (q - ℓ) : ℕ) : ℝ) * h) =
+          L / 2 ^ ℓ := by linarith
+      rw [e] at hmom
+      exact hmom)
+  refine hchain.trans ?_
+  -- the arithmetic
+  have hterm (ℓ : ℕ) : (2 : ℝ) ^ ℓ * (B ℓ / lamℓ ℓ ^ 4) =
+      8 ^ 4 / lam ^ 4 * (12 * L ^ 2 * (2048 / 2401) ^ ℓ + 2 * L / k * (4096 / 2401) ^ ℓ) := by
+    have e1 : (2048 / 2401 : ℝ) ^ ℓ = ((2 : ℝ) ^ ℓ * ((7 / 8 : ℝ) ^ ℓ) ^ 4)⁻¹ := by
+      rw [← pow_mul, mul_comm ℓ 4, pow_mul, ← mul_pow, ← inv_pow]
+      norm_num
+    have e2 : (4096 / 2401 : ℝ) ^ ℓ = (((7 / 8 : ℝ) ^ ℓ) ^ 4)⁻¹ := by
+      rw [← pow_mul, mul_comm ℓ 4, pow_mul, ← inv_pow]
+      norm_num
+    rw [e1, e2]
+    simp only [hB, hlamℓ]
+    have : (2 : ℝ) ^ ℓ ≠ 0 := by positivity
+    have : ((7 / 8 : ℝ) ^ ℓ) ≠ 0 := by positivity
+    field_simp
+  simp_rw [hterm]
+  rw [← Finset.mul_sum]
+  refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+  rw [Finset.sum_add_distrib, ← Finset.mul_sum, ← Finset.mul_sum]
+  have hs1 : ∑ ℓ ∈ range (q + 1), (2048 / 2401 : ℝ) ^ ℓ ≤ 7 :=
+    (sum_range_geom_le_of_lt_one (by norm_num) (by norm_num) _).trans (by norm_num)
+  have hs2 : ∑ ℓ ∈ range (q + 1), (4096 / 2401 : ℝ) ^ ℓ ≤ 2 ^ (q + 1) := by
+    calc ∑ ℓ ∈ range (q + 1), (4096 / 2401 : ℝ) ^ ℓ ≤ ∑ ℓ ∈ range (q + 1), (2 : ℝ) ^ ℓ :=
+          Finset.sum_le_sum fun ℓ _ ↦ pow_le_pow_left₀ (by norm_num) (by norm_num) ℓ
+      _ ≤ 2 ^ (q + 1) := by
+          have := geom_sum_mul (2 : ℝ) (q + 1)
+          norm_num at this
+          linarith
+  have hL2 : 0 ≤ 12 * L ^ 2 := by positivity
+  have hLk : 0 ≤ 2 * L / k := by positivity
+  calc 12 * L ^ 2 * ∑ ℓ ∈ range (q + 1), (2048 / 2401 : ℝ) ^ ℓ +
+        2 * L / k * ∑ ℓ ∈ range (q + 1), (4096 / 2401 : ℝ) ^ ℓ
+      ≤ 12 * L ^ 2 * 7 + 2 * L / k * 2 ^ (q + 1) :=
+        add_le_add (mul_le_mul_of_nonneg_left hs1 hL2) (mul_le_mul_of_nonneg_left hs2 hLk)
+    _ = 84 * L ^ 2 + 2 ^ (q + 2) * L / k := by ring
 
 end ExtremeValueTheory
