@@ -370,6 +370,28 @@ lemma iInf_iSup_div_min_eq {w d : ι → ℝ≥0∞} (hw : ∀ i, w i ≠ ∞) :
     refine ENNReal.div_le_div_left (inf_le_inf_left _ ?_) _
     gcongr
 
+lemma inf_add_one_ne_zero {a : ℝ≥0∞} (ha : a ≠ 0) (n : ℕ) : a ⊓ ((n : ℝ≥0∞) + 1) ≠ 0 :=
+  (lt_inf_iff.2 ⟨pos_iff_ne_zero.2 ha, by positivity⟩).ne'
+
+lemma inf_add_one_ne_top (a : ℝ≥0∞) (n : ℕ) : a ⊓ ((n : ℝ≥0∞) + 1) ≠ ∞ :=
+  ne_top_of_le_ne_top (by simp) inf_le_right
+
+omit [Fintype ι] in
+lemma antitone_iSup_div_inf (d : ι → ℝ≥0∞) :
+    Antitone fun n : ℕ ↦ fun w : ι → ℝ≥0∞ ↦ ⨆ i, w i / (d i ⊓ ((n : ℝ≥0∞) + 1)) :=
+  fun m n hmn w ↦ iSup_mono fun i ↦ ENNReal.div_le_div_left
+    (inf_le_inf_left _ (by gcongr)) _
+
+/-- The spectral integral at thresholds in `(0, ∞]^ι` is the decreasing limit of the spectral
+integrals at the finite thresholds `min (d i, n + 1)`. -/
+theorem lintegral_iSup_div_eq_iInf {G : Measure (ι → ℝ≥0∞)} (hG : ∀ᵐ w ∂G, ∀ i, w i ≠ ∞)
+    (hGfin : ∀ i, ∫⁻ w, w i ∂G ≠ ∞) {d : ι → ℝ≥0∞} (hd : ∀ i, d i ≠ 0) :
+    ∫⁻ w, ⨆ i, w i / d i ∂G = ⨅ n : ℕ, ∫⁻ w, ⨆ i, w i / (d i ⊓ ((n : ℝ≥0∞) + 1)) ∂G := by
+  rw [← lintegral_iInf (fun n ↦ Measurable.iSup fun i ↦ (measurable_pi_apply i).div_const _)
+    (antitone_iSup_div_inf d) (lintegral_iSup_div_ne_top (fun i ↦ measurable_pi_apply i)
+      hGfin fun i ↦ inf_add_one_ne_zero (hd i) 0)]
+  exact lintegral_congr_ae (hG.mono fun w hw ↦ (iInf_iSup_div_min_eq hw).symm)
+
 /-- Equality of the spectral integrals at finite thresholds `y ∈ (0, ∞)^ι` extends to thresholds
 in `(0, ∞]^ι`. -/
 theorem lintegral_iSup_div_eq_of_forall {H H' : Measure (ι → ℝ≥0∞)}
@@ -379,26 +401,11 @@ theorem lintegral_iSup_div_eq_of_forall {H H' : Measure (ι → ℝ≥0∞)}
       ∫⁻ w, ⨆ i, w i / ENNReal.ofReal (y i) ∂H = ∫⁻ w, ⨆ i, w i / ENNReal.ofReal (y i) ∂H')
     {d : ι → ℝ≥0∞} (hd : ∀ i, d i ≠ 0) :
     ∫⁻ w, ⨆ i, w i / d i ∂H = ∫⁻ w, ⨆ i, w i / d i ∂H' := by
-  set dn : ℕ → ι → ℝ≥0∞ := fun n i ↦ d i ⊓ ((n : ℝ≥0∞) + 1) with hdn
-  have hdn0 (n : ℕ) (i : ι) : dn n i ≠ 0 :=
-    (lt_inf_iff.2 ⟨pos_iff_ne_zero.2 (hd i), by positivity⟩).ne'
-  have hdntop (n : ℕ) (i : ι) : dn n i ≠ ∞ :=
-    ne_top_of_le_ne_top (by simp) inf_le_right
-  have hmeas (n : ℕ) : Measurable fun w : ι → ℝ≥0∞ ↦ ⨆ i, w i / dn n i :=
-    Measurable.iSup fun i ↦ (measurable_pi_apply i).div_const _
-  have hanti : Antitone fun n : ℕ ↦ fun w : ι → ℝ≥0∞ ↦ ⨆ i, w i / dn n i :=
-    fun m n hmn w ↦ iSup_mono fun i ↦ ENNReal.div_le_div_left
-      (inf_le_inf_left _ (by gcongr)) _
-  have hlim {G : Measure (ι → ℝ≥0∞)} (hG : ∀ᵐ w ∂G, ∀ i, w i ≠ ∞)
-      (hGfin : ∀ i, ∫⁻ w, w i ∂G ≠ ∞) :
-      ∫⁻ w, ⨆ i, w i / d i ∂G = ⨅ n, ∫⁻ w, ⨆ i, w i / dn n i ∂G := by
-    rw [← lintegral_iInf hmeas hanti (lintegral_iSup_div_ne_top (fun i ↦ measurable_pi_apply i)
-      hGfin (hdn0 0))]
-    exact lintegral_congr_ae (hG.mono fun w hw ↦ (iInf_iSup_div_min_eq hw).symm)
-  rw [hlim hH hfin, hlim hH' hfin']
+  rw [lintegral_iSup_div_eq_iInf hH hfin hd, lintegral_iSup_div_eq_iInf hH' hfin' hd]
   refine iInf_congr fun n ↦ ?_
-  have := heq (fun i ↦ (dn n i).toReal) fun i ↦ ENNReal.toReal_pos (hdn0 n i) (hdntop n i)
-  simpa only [ENNReal.ofReal_toReal (hdntop n _)] using this
+  have := heq (fun i ↦ (d i ⊓ ((n : ℝ≥0∞) + 1)).toReal) fun i ↦
+    ENNReal.toReal_pos (inf_add_one_ne_zero (hd i) n) (inf_add_one_ne_top _ n)
+  simpa only [ENNReal.ofReal_toReal (inf_add_one_ne_top _ n)] using this
 
 /-- **Uniqueness of the spectral measure on the sup-norm sphere**: two finite measures `H`, `H'`
 on `[0, ∞]^ι`, concentrated on `{w | max_i w i = 1}`, with
