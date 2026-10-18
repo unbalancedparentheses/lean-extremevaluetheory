@@ -390,6 +390,108 @@ theorem norm_expRem_le (n : ℕ) (s : ℝ) : ‖expRem n s‖ ≤ (n + 2) * minP
           have : 1 ≤ |s| ^ n := one_le_pow₀ hs.le
           linarith
 
+/-! ### Integrability from a power-law tail -/
+
+theorem lintegral_rpow_mul_lt_top {S : Set ℝ} {s : ℝ} (hint : IntegrableOn (fun t : ℝ => t ^ s) S)
+    {C : ℝ≥0∞} (hC : C ≠ ∞) : ∫⁻ t in S, ENNReal.ofReal (t ^ s) * C < ∞ := by
+  rw [lintegral_mul_const' _ _ hC]
+  exact ENNReal.mul_lt_top hint.lintegral_lt_top hC.lt_top
+
+omit [NormedSpace ℝ E] [BorelSpace E] [FiniteDimensional ℝ E] in
+/-- If `μ {‖y‖ > t} ≤ C t ^ (-α)` with `n < α < n + 1`, then `min (‖y‖ ^ (n + 1), ‖y‖ ^ n)` is
+`μ`-integrable. -/
+theorem integrable_minPow_norm [OpensMeasurableSpace E] {α : ℝ} {n : ℕ} (hn : (n : ℝ) < α)
+    (hn1 : α < n + 1) {C : ℝ≥0∞} (hC : C ≠ ∞)
+    (htail : ∀ t > 0, μ {y | t < ‖y‖} ≤ ENNReal.ofReal (t ^ (-α)) * C) :
+    Integrable (fun y => minPow n ‖y‖) μ := by
+  have hcont : Continuous fun y : E => minPow n ‖y‖ := by
+    unfold minPow; fun_prop
+  refine ⟨hcont.aestronglyMeasurable, ?_⟩
+  have hnn : 0 ≤ᵐ[μ] fun y => minPow n ‖y‖ :=
+    Eventually.of_forall fun y => minPow_nonneg n (norm_nonneg y)
+  rw [hasFiniteIntegral_iff_ofReal hnn,
+    lintegral_eq_lintegral_meas_lt μ hnn hcont.measurable.aemeasurable,
+    ← Ioc_union_Ioi_eq_Ioi zero_le_one, lintegral_union measurableSet_Ioi
+      (Ioc_disjoint_Ioi le_rfl)]
+  refine ENNReal.add_lt_top.2 ⟨?_, ?_⟩
+  · -- small values: `{t < minPow} ⊆ {t ^ (1 / (n + 1)) < ‖y‖}`
+    have hs : -1 < -α / ((n : ℝ) + 1) := by
+      rw [lt_div_iff₀ (by positivity)]; linarith
+    have hint : IntegrableOn (fun t : ℝ => t ^ (-α / ((n : ℝ) + 1))) (Ioc 0 1) :=
+      (integrableOn_Ioc_iff_integrableOn_Ioo).2
+        ((intervalIntegral.integrableOn_Ioo_rpow_iff one_pos).2 hs)
+    refine lt_of_le_of_lt (setLIntegral_mono' measurableSet_Ioc fun t ht => ?_)
+      (lintegral_rpow_mul_lt_top hint hC)
+    have ht0 : 0 < t := ht.1
+    set r : ℝ := t ^ (((n + 1 : ℕ) : ℝ)⁻¹)
+    have hr : 0 < r := Real.rpow_pos_of_pos ht0 _
+    have hsub : {y : E | t < minPow n ‖y‖} ⊆ {y | r < ‖y‖} := fun y hy => by
+      by_contra hle
+      simp only [mem_ofPred_eq, not_lt] at hle hy
+      have h1 : ‖y‖ ^ (n + 1) ≤ r ^ (n + 1) := pow_le_pow_left₀ (norm_nonneg y) hle _
+      rw [Real.rpow_inv_natCast_pow ht0.le (Nat.succ_ne_zero n)] at h1
+      exact absurd (lt_of_lt_of_le hy ((min_le_left _ _).trans h1)) (lt_irrefl t)
+    refine (measure_mono hsub).trans ((htail r hr).trans_eq ?_)
+    congr 2
+    rw [← Real.rpow_mul ht0.le]
+    congr 1
+    push_cast
+    field_simp
+  · -- large values
+    rcases Nat.eq_zero_or_pos n with rfl | hnpos
+    · refine lt_of_le_of_lt (setLIntegral_mono' measurableSet_Ioi fun t ht => ?_)
+        (show ∫⁻ t in Ioi (1 : ℝ), (0 : ℝ≥0∞) < ∞ by simp)
+      have hempty : {y : E | t < minPow 0 ‖y‖} = ∅ := by
+        ext y
+        simp only [mem_ofPred_eq, mem_empty_iff_false, iff_false, not_lt]
+        exact (min_le_right _ _).trans (by simpa using (le_of_lt (mem_Ioi.1 ht)))
+      rw [hempty, measure_empty]
+    have hnR : (0 : ℝ) < n := by exact_mod_cast hnpos
+    have hs : -α / (n : ℝ) < -1 := by
+      rw [div_lt_iff₀ hnR]; linarith
+    have hint : IntegrableOn (fun t : ℝ => t ^ (-α / (n : ℝ))) (Ioi 1) :=
+      integrableOn_Ioi_rpow_of_lt hs one_pos
+    refine lt_of_le_of_lt (setLIntegral_mono' measurableSet_Ioi fun t ht => ?_)
+      (lintegral_rpow_mul_lt_top hint hC)
+    have ht0 : 0 < t := lt_trans one_pos ht
+    set r : ℝ := t ^ ((n : ℝ)⁻¹)
+    have hr : 0 < r := Real.rpow_pos_of_pos ht0 _
+    have hsub : {y : E | t < minPow n ‖y‖} ⊆ {y | r < ‖y‖} := fun y hy => by
+      by_contra hle
+      simp only [mem_ofPred_eq, not_lt] at hle hy
+      have h1 : ‖y‖ ^ n ≤ r ^ n := pow_le_pow_left₀ (norm_nonneg y) hle _
+      rw [Real.rpow_inv_natCast_pow ht0.le hnpos.ne'] at h1
+      exact absurd (lt_of_lt_of_le hy ((min_le_right _ _).trans h1)) (lt_irrefl t)
+    refine (measure_mono hsub).trans ((htail r hr).trans_eq ?_)
+    congr 2
+    rw [← Real.rpow_mul ht0.le]
+    congr 1
+    field_simp
+
+omit [BorelSpace E] [FiniteDimensional ℝ E] in
+theorem integrable_expRem_comp [OpensMeasurableSpace E] {n : ℕ}
+    (hμ : Integrable (fun y => minPow n ‖y‖) μ) (M : StrongDual ℝ E) :
+    Integrable (fun y => expRem n (M y)) μ := by
+  refine Integrable.mono' (hμ.const_mul ((n + 2) * (‖M‖ ^ n + ‖M‖ ^ (n + 1))))
+    ((continuous_expRem n).comp M.continuous).aestronglyMeasurable
+    (Eventually.of_forall fun y => ?_)
+  refine (norm_expRem_le n (M y)).trans ?_
+  rw [mul_assoc]
+  refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+  calc minPow n |M y| ≤ minPow n (‖M‖ * ‖y‖) :=
+        minPow_mono n (abs_nonneg _) (by simpa [Real.norm_eq_abs] using M.le_opNorm y)
+    _ ≤ (‖M‖ ^ n + ‖M‖ ^ (n + 1)) * minPow n ‖y‖ :=
+        minPow_mul_le n (norm_nonneg _) (norm_nonneg _)
+
+omit [MeasurableSpace E] [BorelSpace E] [FiniteDimensional ℝ E] in
+/-- Half-spaces `{L > 1}` are contained in `{‖y‖ > 1 / (‖L‖ + 1)}`. -/
+theorem setOf_one_lt_apply_subset (L : StrongDual ℝ E) :
+    {y : E | 1 < L y} ⊆ {y | (‖L‖ + 1)⁻¹ < ‖y‖} := fun y hy => by
+  simp only [mem_ofPred_eq] at hy ⊢
+  rw [inv_lt_iff_one_lt_mul₀ (by positivity)]
+  have h1 : L y ≤ ‖L‖ * ‖y‖ := (le_abs_self _).trans (by simpa using L.le_opNorm y)
+  nlinarith [norm_nonneg y]
+
 end CramerWold
 
 end ExtremeValueTheory
