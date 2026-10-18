@@ -6,6 +6,7 @@ Authors: Federico Carrone
 import ExtremeValueTheory.Dependence.MarkovChain
 import Mathlib.Probability.StrongLaw
 import Mathlib.Analysis.SpecialFunctions.Log.PosLog
+import Mathlib.MeasureTheory.Measure.HasOuterApproxClosed
 
 /-!
 # Stochastic recurrence equations
@@ -303,6 +304,85 @@ theorem map_affine_stationaryLaw (hA : Integrable (fun p : ℝ × ℝ => log |p.
           Measure.prod_swap]
     _ = (ν.prod (seqLaw ν)).map g := by rw [Measure.map_map hm measurable_swap]; rfl
     _ = stationaryLaw ν := h1.symm
+
+/-! ### Uniqueness of the invariant law -/
+
+open RandomIteration in
+/-- If `π'` is invariant for the recursion, then under `π' ⊗ ν^⊗ℕ` every backward iterate
+`f_{v_0} ∘ ⋯ ∘ f_{v_{n-1}} (x)` has law `π'`. -/
+theorem map_backward_canonicalMeasure (π' : Measure ℝ) [IsProbabilityMeasure π']
+    (hinv : (π'.prod ν).map (Function.uncurry affine) = π') (n : ℕ) :
+    (canonicalMeasure π' ν).map (fun p => backward p.1 p.2 n) = π' := by
+  set μ' := canonicalMeasure π' ν
+  have hsh : Measurable fun p : ℝ × (ℕ → ℝ × ℝ) => shift p.2 := measurable_shift.comp measurable_snd
+  have h0 : Measurable fun p : ℝ × (ℕ → ℝ × ℝ) => p.2 0 :=
+    (measurable_pi_apply 0).comp measurable_snd
+  have hcan := indepFun_canonical π' ν
+  have hX : IndepFun Prod.fst (fun p : ℝ × (ℕ → ℝ × ℝ) => (shift p.2, p.2 0)) μ' :=
+    hcan.comp measurable_id (measurable_shift.prodMk (measurable_pi_apply 0))
+  have hYZ : IndepFun (fun p : ℝ × (ℕ → ℝ × ℝ) => shift p.2) (fun p => p.2 0) μ' :=
+    (indepFun_zero_shift (V := fun n (p : ℝ × (ℕ → ℝ × ℝ)) => p.2 n)
+      (fun n => (measurable_pi_apply n).comp measurable_snd) (iIndepFun_canonical π' ν)).symm
+  have hind : IndepFun (fun p : ℝ × (ℕ → ℝ × ℝ) => (p.1, shift p.2)) (fun p => p.2 0) μ' :=
+    indepFun_prodMk_of_indepFun measurable_fst hsh h0 hX hYZ
+  have hXY : IndepFun Prod.fst (fun p : ℝ × (ℕ → ℝ × ℝ) => shift p.2) μ' :=
+    hcan.comp measurable_id measurable_shift
+  have hlawY : μ'.map (fun p => shift p.2) = seqLaw ν := by
+    rw [show (fun p : ℝ × (ℕ → ℝ × ℝ) => shift p.2) = shift ∘ Prod.snd from rfl,← Measure.map_map measurable_shift measurable_snd, map_snd_canonicalMeasure,
+      map_shift_seqLaw]
+  have hlaw1 : μ'.map (fun p => (p.1, shift p.2)) = μ' := by
+    rw [(indepFun_iff_map_prod_eq_prod_map_map measurable_fst.aemeasurable
+      hsh.aemeasurable).1 hXY, hlawY, map_fst_canonicalMeasure]; rfl
+  have hlaw : μ'.map (fun p => ((p.1, shift p.2), p.2 0)) = μ'.prod ν := by
+    rw [(indepFun_iff_map_prod_eq_prod_map_map (measurable_fst.prodMk hsh).aemeasurable
+      h0.aemeasurable).1 hind, hlaw1, map_coord_canonicalMeasure]
+  induction n with
+  | zero => simp only [backward_zero]; exact map_fst_canonicalMeasure π' ν
+  | succ n ih =>
+    have e : (fun p : ℝ × (ℕ → ℝ × ℝ) => backward p.1 p.2 (n + 1)) =
+        (Function.uncurry affine ∘ Prod.map (fun q : ℝ × (ℕ → ℝ × ℝ) => backward q.1 q.2 n) id) ∘
+          fun p => ((p.1, shift p.2), p.2 0) := by
+      funext p; simp [backward_succ]
+    rw [e, ← Measure.map_map (measurable_affine.comp ((measurable_backward n).prodMap
+      measurable_id)) ((measurable_fst.prodMk hsh).prodMk h0), hlaw,
+      ← Measure.map_map measurable_affine ((measurable_backward n).prodMap measurable_id),
+      ← Measure.map_prod_map _ _ (measurable_backward n) measurable_id, Measure.map_id, ih, hinv]
+
+/-- **Uniqueness of the stationary law** ([BDM16, Theorem 2.1.3]): if `E log |A| < 0` and
+`E log⁺ |B| < ∞`, every probability law `π'` solving the fixed point equation `X =ᵈ A X + B`,
+`X ⊥ (A, B)`, is the law of the perpetuity. -/
+theorem eq_stationaryLaw (hA : Integrable (fun p : ℝ × ℝ => log |p.1|) ν)
+    (hneg : ∫ p, log |p.1| ∂ν < 0) (hB : Integrable (fun p : ℝ × ℝ => posLog p.2) ν)
+    (π' : Measure ℝ) [IsProbabilityMeasure π']
+    (hinv : (π'.prod ν).map (Function.uncurry affine) = π') :
+    π' = stationaryLaw ν := by
+  have hc : (∫ p, log |p.1| ∂ν) / 2 < 0 := by linarith
+  set μ' := RandomIteration.canonicalMeasure π' ν
+  have hae : ∀ᵐ p ∂μ', Contracting ((∫ p, log |p.1| ∂ν) / 2) p.2 := by
+    have h : ∀ᵐ v ∂μ'.map Prod.snd, Contracting ((∫ p, log |p.1| ∂ν) / 2) v := by
+      rw [RandomIteration.map_snd_canonicalMeasure π' ν]; exact ae_contracting_seqLaw hA hneg hB
+    exact ae_of_ae_map measurable_snd.aemeasurable h
+  refine ext_of_forall_integral_eq_of_IsFiniteMeasure fun f => ?_
+  have hlim : Tendsto (fun n => ∫ p, f (backward p.1 p.2 n) ∂μ') atTop
+      (𝓝 (∫ p, f (perpetuity p.2) ∂μ')) := by
+    refine tendsto_integral_of_dominated_convergence (fun _ => ‖f‖)
+      (fun n => (f.continuous.measurable.comp (measurable_backward n)).aestronglyMeasurable)
+      (integrable_const _) (fun n => ae_of_all _ fun p => f.norm_coe_le_norm _) ?_
+    filter_upwards [hae] with p hp
+    exact (f.continuous.tendsto _).comp (hp.tendsto_backward hc p.1)
+  have hconst : ∀ n, ∫ p, f (backward p.1 p.2 n) ∂μ' = ∫ x, f x ∂π' := fun n => by
+    rw [← map_backward_canonicalMeasure π' hinv n, integral_map
+      (measurable_backward n).aemeasurable f.continuous.aestronglyMeasurable]
+  simp only [hconst] at hlim
+  rw [tendsto_nhds_unique tendsto_const_nhds hlim]
+  change _ = ∫ x, f x ∂(seqLaw ν).map perpetuity
+  rw [ integral_map
+    measurable_perpetuity.aemeasurable f.continuous.aestronglyMeasurable]
+  have e : ∫ x, f (perpetuity x) ∂(μ'.map Prod.snd) = ∫ p, f (perpetuity p.2) ∂μ' :=
+    integral_map measurable_snd.aemeasurable
+      (f.continuous.measurable.comp measurable_perpetuity).aestronglyMeasurable
+  rw [RandomIteration.map_snd_canonicalMeasure π' ν] at e
+  exact e.symm
 
 end StationaryLaw
 
