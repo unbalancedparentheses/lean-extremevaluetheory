@@ -14,3 +14,8 @@ require «doc-gen4» from git
 
 @[default_target]
 lean_lib «ExtremeValueTheory» where
+
+/-- Specification tests: non-vacuity, known answers and junk-value checks for the statements of
+the library. Built in CI by `lake build Test`; see `Test/README.md`. -/
+lean_lib «Test» where
+  globs := #[.andSubmodules `Test]

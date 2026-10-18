@@ -11,6 +11,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: leanprover/lean-action@v1
+      - name: Build the specification tests
+        run: lake build Test
       - name: Count remaining sorries
         run: |
           echo "Remaining sorries: $(grep -rnw sorry ExtremeValueTheory --include='*.lean' | wc -l)"
