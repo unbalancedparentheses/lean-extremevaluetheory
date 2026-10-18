@@ -6,6 +6,8 @@ Authors: Federico Carrone
 import ExtremeValueTheory.Dependence.SRE
 import Mathlib.Analysis.MeanInequalitiesPow
 import Mathlib.MeasureTheory.Integral.MeanInequalities
+import Mathlib.Analysis.Convex.SpecificFunctions.Pow
+import Mathlib.Analysis.Convex.Integral
 
 /-!
 # Moments of the stationary solution of a stochastic recurrence equation
@@ -163,6 +165,80 @@ theorem lintegral_enorm_rpow_stationaryLaw_lt_top
     _ ≤ liminf (fun n => ∫⁻ v, ‖backward 0 v n‖ₑ ^ s ∂seqLaw ν) atTop :=
         lintegral_liminf_le hmeas
     _ ≤ K := liminf_le_of_frequently_le' (Frequently.of_forall hle)
+
+/-! ### The Kesten exponent: `E |A|^κ = 1` -/
+
+theorem rpow_le_one_add {x q : ℝ} (hx : 0 ≤ x) (hq0 : 0 ≤ q) (hq1 : q ≤ 1) :
+    x ^ q ≤ 1 + x := by
+  rcases le_total x 1 with h | h
+  · linarith [Real.rpow_le_one hx h hq0]
+  · have := Real.rpow_le_rpow_of_exponent_le h hq1
+    rw [Real.rpow_one] at this
+    linarith
+
+/-- **Strict Jensen for a power `q ∈ (0, 1)`**: if `F ≥ 0` has mean `1` and is not a.e. `1`, then
+`E F^q < 1`. -/
+theorem integral_rpow_lt_one {α : Type*} {mα : MeasurableSpace α} {μ : Measure α}
+    [IsProbabilityMeasure μ] {F : α → ℝ} (hF0 : ∀ᵐ x ∂μ, 0 ≤ F x) (hFi : Integrable F μ)
+    (h1 : ∫ x, F x ∂μ = 1) {q : ℝ} (hq0 : 0 < q) (hq1 : q < 1) (hnd : ¬ F =ᵐ[μ] 1) :
+    ∫ x, F x ^ q ∂μ < 1 := by
+  have hgi : Integrable (fun x => F x ^ q) μ := by
+    refine ((integrable_const 1).add hFi).mono'
+      (hFi.aestronglyMeasurable.aemeasurable.pow_const q).aestronglyMeasurable ?_
+    filter_upwards [hF0] with x hx
+    rw [Real.norm_eq_abs, abs_of_nonneg (Real.rpow_nonneg hx q)]
+    exact rpow_le_one_add hx hq0.le hq1.le
+  rcases (Real.strictConcaveOn_rpow hq0 hq1).ae_eq_const_or_lt_map_average
+    ((Real.continuous_rpow_const hq0.le).continuousOn) isClosed_Ici hF0 hFi hgi with h | h
+  · refine absurd ?_ hnd
+    rw [average_eq_integral, h1] at h
+    exact h
+  · rw [average_eq_integral, average_eq_integral, h1, Real.one_rpow] at h
+    exact h
+
+theorem enorm_rpow_eq_ofReal (a : ℝ) {s : ℝ} (hs : 0 ≤ s) : ‖a‖ₑ ^ s = ENNReal.ofReal (|a| ^ s) := by
+  rw [Real.enorm_eq_ofReal_abs, ENNReal.ofReal_rpow_of_nonneg (abs_nonneg a) hs]
+
+/-- If `E|A|^κ = 1` (with `|A|` not a.s. `1`), then `E|A|^s < 1` for `0 < s < κ`. -/
+theorem lintegral_enorm_rpow_lt_one {κ : ℝ} (hκ : 0 < κ) (h1 : ∫⁻ p, ‖p.1‖ₑ ^ κ ∂ν = 1)
+    (hnd : ¬ ∀ᵐ p ∂ν, |p.1| = 1) {s : ℝ} (hs : 0 < s) (hsκ : s < κ) :
+    ∫⁻ p, ‖p.1‖ₑ ^ s ∂ν < 1 := by
+  set F : ℝ × ℝ → ℝ := fun p => |p.1| ^ κ
+  have hFm : Measurable F := by fun_prop
+  have hFl : ∫⁻ p, ENNReal.ofReal (F p) ∂ν = 1 := by
+    rw [← h1]; exact lintegral_congr fun p => (enorm_rpow_eq_ofReal _ hκ.le).symm
+  have hFi : Integrable F ν := by
+    refine ⟨hFm.aestronglyMeasurable, ?_⟩
+    rw [hasFiniteIntegral_iff_ofReal (ae_of_all _ fun p => Real.rpow_nonneg (abs_nonneg _) _),
+      hFl]
+    exact ENNReal.one_lt_top
+  have hF1 : ∫ p, F p ∂ν = 1 := by
+    rw [integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun p => Real.rpow_nonneg
+      (abs_nonneg _) _) hFm.aestronglyMeasurable, hFl, ENNReal.toReal_one]
+  have hq0 : 0 < s / κ := div_pos hs hκ
+  have hq1 : s / κ < 1 := (div_lt_one hκ).2 hsκ
+  have hnd' : ¬ F =ᵐ[ν] 1 := by
+    intro h
+    refine hnd ?_
+    filter_upwards [h] with p hp
+    have hp' : |p.1| ^ κ = 1 := hp
+    have := congrArg (fun t => t ^ κ⁻¹) hp'
+    simp only [Real.one_rpow] at this
+    rwa [← Real.rpow_mul (abs_nonneg _), mul_inv_cancel₀ hκ.ne', Real.rpow_one] at this
+  have hJ := integral_rpow_lt_one (ae_of_all _ fun p => Real.rpow_nonneg (abs_nonneg _) _) hFi
+    hF1 hq0 hq1 hnd'
+  have he : ∀ p : ℝ × ℝ, F p ^ (s / κ) = |p.1| ^ s := fun p => by
+    simp only [F]
+    rw [← Real.rpow_mul (abs_nonneg _), mul_div_cancel₀ _ hκ.ne']
+  replace hJ := lt_of_eq_of_lt (integral_congr_ae (ae_of_all _ he)).symm hJ
+  have hGi : Integrable (fun p : ℝ × ℝ => |p.1| ^ s) ν := by
+    refine ((integrable_const 1).add hFi).mono' (by fun_prop) (ae_of_all _ fun p => ?_)
+    rw [Real.norm_eq_abs, abs_of_nonneg (Real.rpow_nonneg (abs_nonneg _) _), ← he p]
+    exact rpow_le_one_add (Real.rpow_nonneg (abs_nonneg _) _) hq0.le hq1.le
+  rw [lintegral_congr (fun p : ℝ × ℝ => enorm_rpow_eq_ofReal p.1 hs.le),
+    ← ofReal_integral_eq_lintegral_ofReal hGi
+      (ae_of_all _ fun p => Real.rpow_nonneg (abs_nonneg _) _)]
+  exact ENNReal.ofReal_lt_one.2 hJ
 
 end SRE
 
