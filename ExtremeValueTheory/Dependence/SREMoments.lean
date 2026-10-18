@@ -8,6 +8,8 @@ import Mathlib.Analysis.MeanInequalitiesPow
 import Mathlib.MeasureTheory.Integral.MeanInequalities
 import Mathlib.Analysis.Convex.SpecificFunctions.Pow
 import Mathlib.Analysis.Convex.Integral
+import Mathlib.Analysis.SpecialFunctions.ImproperIntegrals
+import Mathlib.Analysis.SpecialFunctions.Pow.Integral
 
 /-!
 # Moments of the stationary solution of a stochastic recurrence equation
@@ -418,6 +420,68 @@ theorem lintegral_enorm_rpow_stationaryLaw_eq_top_of_lt
     ∫⁻ x, ‖x‖ₑ ^ s ∂stationaryLaw ν = ∞ :=
   lintegral_enorm_rpow_stationaryLaw_eq_top_of_one_lt hA hneg hB hApos hBpos hB0
     (hκ.trans hsκ) (one_lt_lintegral_enorm_rpow hκ h1 hnd hsκ)
+
+/-! ### Tail bounds from moments and moments from tail bounds -/
+
+section TailMoment
+
+variable {μ : Measure ℝ}
+
+/-- **Markov's inequality** for `|X|^s`: `P(|X| > x) ≤ E|X|^s / x^s`. -/
+theorem measure_lt_abs_le_lintegral_div {s x : ℝ} (hs : 0 < s) (hx : 0 < x) :
+    μ {y | x < |y|} ≤ (∫⁻ y, ‖y‖ₑ ^ s ∂μ) / ENNReal.ofReal (x ^ s) := by
+  refine (measure_mono fun y (hy : x < |y|) => ?_).trans
+    (meas_ge_le_lintegral_div (f := fun y : ℝ => ‖y‖ₑ ^ s) (by fun_prop)
+      (ENNReal.ofReal_pos.2 (Real.rpow_pos_of_pos hx s)).ne' ENNReal.ofReal_ne_top)
+  show ENNReal.ofReal (x ^ s) ≤ ‖y‖ₑ ^ s
+  rw [enorm_rpow_eq_ofReal _ hs.le]
+  exact ENNReal.ofReal_le_ofReal (Real.rpow_le_rpow hx.le hy.le hs.le)
+
+/-- **Power tail bound from a finite moment**: if `E|X|^s < ∞` then
+`P(|X| > x) ≤ C x^{-s}` for all `x > 0`. -/
+theorem exists_measure_lt_abs_le_of_lintegral_lt_top {s : ℝ} (hs : 0 < s)
+    (h : ∫⁻ y, ‖y‖ₑ ^ s ∂μ < ∞) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ x : ℝ, 0 < x → μ {y | x < |y|} ≤ ENNReal.ofReal (C * x ^ (-s)) := by
+  refine ⟨(∫⁻ y, ‖y‖ₑ ^ s ∂μ).toReal, ENNReal.toReal_nonneg, fun x hx => ?_⟩
+  refine (measure_lt_abs_le_lintegral_div hs hx).trans_eq ?_
+  have hxs : 0 < x ^ s := Real.rpow_pos_of_pos hx s
+  rw [Real.rpow_neg hx.le, ENNReal.ofReal_mul ENNReal.toReal_nonneg, ENNReal.ofReal_toReal h.ne,
+    ENNReal.ofReal_inv_of_pos hxs, div_eq_mul_inv]
+
+/-- **A finite moment from a power tail bound**: if `P(|X| > x) ≤ C x^{-s}` for all `x ≥ x₀ > 0`,
+then `E|X|^r < ∞` for every `0 < r < s`. -/
+theorem lintegral_lt_top_of_measure_lt_abs_le [IsProbabilityMeasure μ] {s r C x₀ : ℝ}
+    (hr : 0 < r) (hrs : r < s) (hC : 0 ≤ C) (hx₀ : 0 < x₀)
+    (h : ∀ x, x₀ ≤ x → μ {y | x < |y|} ≤ ENNReal.ofReal (C * x ^ (-s))) :
+    ∫⁻ y, ‖y‖ₑ ^ r ∂μ < ∞ := by
+  rw [lintegral_congr fun y => enorm_rpow_eq_ofReal y hr.le,
+    lintegral_rpow_eq_lintegral_meas_lt_mul μ (ae_of_all _ fun y => abs_nonneg y)
+      (continuous_abs.measurable.aemeasurable) hr]
+  refine ENNReal.mul_lt_top ENNReal.ofReal_lt_top ?_
+  have hsub : Set.Ioi (0 : ℝ) ⊆ Set.Ioc 0 x₀ ∪ Set.Ioi x₀ := fun t ht => by
+    rcases le_or_gt t x₀ with h | h
+    · exact Or.inl ⟨ht, h⟩
+    · exact Or.inr h
+  refine (lintegral_mono_set hsub).trans_lt ((lintegral_union_le _ _ _).trans_lt
+    (ENNReal.add_lt_top.2 ⟨?_, ?_⟩))
+  · have hi : IntegrableOn (fun t : ℝ => t ^ (r - 1)) (Set.Ioc 0 x₀) :=
+      (intervalIntegrable_iff_integrableOn_Ioc_of_le hx₀.le).1
+        (intervalIntegral.intervalIntegrable_rpow' (by linarith))
+    refine (setLIntegral_mono' measurableSet_Ioc fun t _ => ?_).trans_lt
+      hi.lintegral_lt_top
+    exact mul_le_of_le_one_left (by positivity) prob_le_one
+  · have hi : IntegrableOn (fun t : ℝ => C * t ^ (r - s - 1)) (Set.Ioi x₀) :=
+      (integrableOn_Ioi_rpow_of_lt (by linarith) hx₀).const_mul C
+    refine (setLIntegral_mono' measurableSet_Ioi fun t (ht : x₀ < t) => ?_).trans_lt
+      hi.lintegral_lt_top
+    have ht0 : 0 < t := hx₀.trans ht
+    refine (show _ ≤ ENNReal.ofReal (C * t ^ (-s)) * ENNReal.ofReal (t ^ (r - 1)) by
+      gcongr; exact h t ht.le).trans_eq ?_
+    rw [← ENNReal.ofReal_mul (mul_nonneg hC (Real.rpow_nonneg ht0.le _)), mul_assoc,
+      ← Real.rpow_add ht0]
+    ring_nf
+
+end TailMoment
 
 end SRE
 
