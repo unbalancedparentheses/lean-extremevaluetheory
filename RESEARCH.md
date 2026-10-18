@@ -97,6 +97,25 @@ to "mixing plus a vanishing tail process implies `θ = ϑ`". Recommended write-u
 centred on the echo process (title suggestion: "An echo process: a simple regularly varying sequence
 whose extremal index is invisible to its tail process").
 
+### Minimal hypotheses: dependence results (`Minimality/Dependence*.lean`)
+
+| Theorem | Hypothesis | Status | Witness |
+|---|---|---|---|
+| cluster ratio → `ϑ` (`tendsto_blockRatio`) | forward anticlustering | needed (cannot be dropped) | `logEcho_blockRatio_ne` |
+| same | anticlustering as a necessary condition | not necessary (exact condition: escape mass `0`) | `mixture_tendsto_blockRatio_of_not_antiClustering` |
+| same | `rₙ → ∞` | needed | `movingMax_blockRatio_const_one` |
+| `Θₜ → 0` from anticlustering | anticlustering | sufficient, not necessary | `logEcho_tendsto_zero_of_not_antiClustering` |
+| `θ = ϑ` (`hasExtremalIndex_abs`) | condition `𝒜` under anticlustering | needed, even for `θ` to exist | `scaleMixture_needs_conditionA` |
+| Leadbetter's theorem | `D′(uₙ)` | needed | `leadbetter_needs_conditionD'` |
+| Hill under α-mixing | the mixing condition | needed | `mixture_hill_needs_mixing` |
+| m-dependent `θ = ϑ` | m-dependence → α-mixing | true if anticlustering is kept (`hasExtremalIndex_abs_of_alphaMixing`); anticlustering does **not** follow from mixing | `logEcho_alphaMixing_theta_ne_vartheta` |
+
+New findings: (1) the log-lag echo process is strongly mixing at a geometric rate (`α(h) ≤ C e^{−αh}`,
+`alphaMixing_echoProcess_le`) yet has `θ = 1/2 ≠ ϑ = 1`, so mixing plus a vanishing tail process does
+not give `θ = ϑ`; (2) a scale mixture with anticlustering and `ϑ = 1` has no extremal index, so `𝒜`
+is needed for existence, not only identification. Novelty of (1) not yet checked against the
+literature.
+
 ## Open problems
 
 1. **The gap between `θ` and `ϑ`, and phase transitions.** Bai, Kulik, Wang (2024),

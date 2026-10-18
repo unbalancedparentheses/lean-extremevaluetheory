@@ -60,7 +60,7 @@ Kulik and Soulier, *Heavy-Tailed Time Series* (KS); Beirlant, Goegebeur, Segers 
 ## 7. Point processes and functional limits
 - [x] Vague convergence, Poisson random measures, exceedance point processes
 - [x] Skorokhod space (Polish), weak convergence in `D`, tail empirical process ⇒ Brownian motion
-- [ ] Weighted tail empirical process; tail empirical quantile process (dHF ch. 5)
+- [~] Weighted tail empirical process (tail bound near 0 done; weighted weak convergence missing); tail empirical quantile process (dHF ch. 5)
 - [ ] Point-process approach to sums: stable limits via point processes (Resnick 2007 ch. 7)
 - [ ] Records and record times as point processes (Resnick ch. 4)
 
