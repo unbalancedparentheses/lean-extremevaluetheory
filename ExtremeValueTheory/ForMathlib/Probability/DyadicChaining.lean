@@ -113,7 +113,8 @@ theorem measureReal_exists_lt_abs_sub_le (q : ℕ) {Y : ℕ → Ω → ℝ} {lam
     simp only [Set.mem_iUnion, Set.mem_ofPred_eq, mem_range, not_exists, not_lt] at hω
     exact (not_le.2 hlt) (abs_sub_le_sum_of_dyadic q (fun m ↦ Y m ω) lam
       (fun ℓ hℓ i hi ↦ hω ℓ (mem_range.1 hℓ) i hi) j hj)
-  refine (measureReal_mono hsub (measure_ne_top _ _)).trans ((measureReal_biUnion_finset_le _ _).trans
+  refine (measureReal_mono hsub (measure_ne_top _ _)).trans
+    ((measureReal_biUnion_finset_le _ _).trans
     (Finset.sum_le_sum fun ℓ hℓ ↦ ((measureReal_biUnion_finset_le _ _).trans ?_)))
   calc ∑ i ∈ range (2 ^ ℓ), P.real {ω | lam ℓ < |Y ((i + 1) * 2 ^ (q - ℓ)) ω -
         Y (i * 2 ^ (q - ℓ)) ω|}

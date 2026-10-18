@@ -91,7 +91,8 @@ lemma indicator_Ici_mul_indicator_Ici (x y u : ℝ) :
   split_ifs <;> simp_all
 
 /-- The summand of the row sum representing the linear combination `∑_t a_t W_n(t)`. -/
-noncomputable def tailSummand {ι : Type*} [Fintype ι] (τ : ι → ℝ≥0) (a : ι → ℝ) (n k : ℕ) (u : ℝ) : ℝ :=
+noncomputable def tailSummand {ι : Type*} [Fintype ι] (τ : ι → ℝ≥0) (a : ι → ℝ) (n k : ℕ)
+    (u : ℝ) : ℝ :=
   (√k)⁻¹ * ∑ t : ι, a t * ((Set.Ici (1 - k / n * (τ t : ℝ))).indicator 1 u - k / n * τ t)
 
 lemma measurable_tailSummand {ι : Type*} [Fintype ι] (τ : ι → ℝ≥0) (a : ι → ℝ) (n k : ℕ) :
@@ -111,9 +112,11 @@ lemma sqrt_mul_inv_sub_eq {n k : ℕ} (hn : n ≠ 0) (S t : ℝ) :
   field_simp
   rw [hsq]
 
-lemma sum_mul_tailEmpiricalProcess_eq {ι : Type*} [Fintype ι] (τ : ι → ℝ≥0) (a : ι → ℝ) (U : ℕ → Ω → ℝ) {n : ℕ}
+lemma sum_mul_tailEmpiricalProcess_eq {ι : Type*} [Fintype ι] (τ : ι → ℝ≥0) (a : ι → ℝ)
+    (U : ℕ → Ω → ℝ) {n : ℕ}
     (hn : n ≠ 0) (k : ℕ) (ω : Ω) :
-    ∑ t : ι, a t * tailEmpiricalProcess U n k (τ t) ω = ∑ i ∈ range n, tailSummand τ a n k (U i ω) := by
+    ∑ t : ι, a t * tailEmpiricalProcess U n k (τ t) ω =
+      ∑ i ∈ range n, tailSummand τ a n k (U i ω) := by
   unfold tailEmpiricalProcess tailSummand
   simp_rw [sqrt_mul_inv_sub_eq hn]
   simp only [Finset.mul_sum]
@@ -174,7 +177,8 @@ lemma abs_tailSummand_le {ι : Type*} [Fintype ι] (τ : ι → ℝ≥0) (a : ι
   · by_cases h : u ∈ Set.Ici (1 - k / n * (τ t : ℝ)) <;> simp [h]
   · rw [abs_of_nonneg (by positivity)]
 
-lemma mul_integral_tailSummand_sq {ι : Type*} [Fintype ι] (τ : ι → ℝ≥0) (a : ι → ℝ) {n k : ℕ} (hn : n ≠ 0)
+lemma mul_integral_tailSummand_sq {ι : Type*} [Fintype ι] (τ : ι → ℝ≥0) (a : ι → ℝ) {n k : ℕ}
+    (hn : n ≠ 0)
     (hk : k ≠ 0) (hp : ∀ t : ι, (k : ℝ) / n * τ t ≤ 1) :
     n * ∫ u, tailSummand τ a n k u ^ 2 ∂μU =
       ∑ t : ι, ∑ s : ι, a t * a s * (min (τ t : ℝ) (τ s) - k / n * τ t * τ s) := by
@@ -233,7 +237,8 @@ theorem tendsto_charFun_sum_mul_tailEmpiricalProcess (hU : ∀ i, Measurable (U 
     {ι : Type*} [Fintype ι] (τ : ι → ℝ≥0) (a : ι → ℝ) (s : ℝ) :
     Tendsto (fun n ↦ charFun (P.map (fun ω ↦ ∑ t : ι, a t *
         tailEmpiricalProcess U n (k n) (τ t) ω)) s) atTop
-      (𝓝 (cexp (-((s : ℂ) ^ 2 * (∑ t : ι, ∑ r : ι, a t * a r * min (τ t : ℝ) (τ r) : ℝ) / 2)))) := by
+      (𝓝 (cexp (-((s : ℂ) ^ 2 *
+        (∑ t : ι, ∑ r : ι, a t * a r * min (τ t : ℝ) (τ r) : ℝ) / 2)))) := by
   have hkR : Tendsto (fun n ↦ (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
   -- eventually all the levels `(k/n) t` lie in `[0, 1]`, and `n, k n ≠ 0`
   have hp : ∀ᶠ n in atTop, ∀ t : ι, (k n : ℝ) / n * τ t ≤ 1 := by
@@ -257,7 +262,8 @@ theorem tendsto_charFun_sum_mul_tailEmpiricalProcess (hU : ∀ i, Measurable (U 
     exact this
   have hvar : Tendsto (fun n : ℕ ↦ n * ∫ u, tailSummand τ a n (k n) u ^ 2 ∂μU) atTop
       (𝓝 (∑ t : ι, ∑ r : ι, a t * a r * min (τ t : ℝ) (τ r))) := by
-    have hlim : Tendsto (fun n ↦ ∑ t : ι, ∑ r : ι, a t * a r * (min (τ t : ℝ) (τ r) - k n / n * τ t * τ r))
+    have hlim : Tendsto (fun n ↦ ∑ t : ι, ∑ r : ι,
+        a t * a r * (min (τ t : ℝ) (τ r) - k n / n * τ t * τ r))
         atTop (𝓝 (∑ t : ι, ∑ r : ι, a t * a r * (min (τ t : ℝ) (τ r) - 0 * τ t * τ r))) :=
       tendsto_finsetSum _ fun t _ ↦ tendsto_finsetSum _ fun r _ ↦
         (tendsto_const_nhds.sub ((hkn.mul_const _).mul_const _)).const_mul _
@@ -971,6 +977,30 @@ theorem exists_eventually_measure_blockOscillation_le [IsProbabilityMeasure P]
     _ ≤ ENNReal.ofReal η' := ENNReal.ofReal_le_ofReal (hPE.trans hbound)
     _ ≤ η := hη'η
 
+/-- The finite-dimensional laws of Brownian motion depend continuously on the times. -/
+theorem tendsto_brownianFdd {ι : Type*} [Fintype ι] [DecidableEq ι] {τs : ℕ → ι → ℝ≥0}
+    {τ : ι → ℝ≥0} (h : ∀ i, Tendsto (fun m ↦ (τs m i : ℝ)) atTop (𝓝 (τ i))) :
+    Tendsto (β := ProbabilityMeasure (ι → ℝ))
+      (fun m ↦ (⟨brownianFdd (τs m), isProbabilityMeasure_brownianFdd _⟩ :
+      ProbabilityMeasure (ι → ℝ))) atTop
+      (𝓝 (⟨brownianFdd τ, isProbabilityMeasure_brownianFdd _⟩ : ProbabilityMeasure (ι → ℝ))) := by
+  have hG : TendstoInDistribution (fun _ : ℕ ↦ (id : EuclideanSpace ℝ ι → EuclideanSpace ℝ ι))
+      atTop id (fun m ↦ multivariateGaussian 0 (brownianCovMatrix (τs m)))
+      (multivariateGaussian 0 (brownianCovMatrix τ)) := by
+    refine .of_tendsto_charFun (fun _ ↦ aemeasurable_id) aemeasurable_id fun a ↦ ?_
+    simp only [Measure.map_id]
+    simp_rw [charFun_multivariateGaussian (posSemidef_brownianCovMatrix _)]
+    have hq : Tendsto (fun m ↦ dotProduct a.ofLp (Matrix.mulVec (brownianCovMatrix (τs m)) a.ofLp))
+        atTop (𝓝 (dotProduct a.ofLp (Matrix.mulVec (brownianCovMatrix τ) a.ofLp))) := by
+      simp only [dotProduct, Matrix.mulVec, brownianCovMatrix, Matrix.of_apply]
+      exact tendsto_finsetSum _ fun i _ ↦ (tendsto_finsetSum _ fun j _ ↦
+        (((h i).min (h j)).mul_const _)).const_mul _
+    exact (Complex.continuous_exp.tendsto _).comp (tendsto_const_nhds.sub
+      (((Complex.continuous_ofReal.tendsto _).comp hq).div_const _))
+  have h' := (hG.continuous_comp (PiLp.continuous_ofLp 2 _)).tendsto
+  simp only [Function.comp_id] at h'
+  exact h'
+
 /-- A time `t ∈ [0, 1]` as a nonnegative real number. -/
 def _root_.unitInterval.toNNReal' (t : unitInterval) : ℝ≥0 := ⟨t, t.2.1⟩
 
@@ -982,9 +1012,11 @@ lemma _root_.unitInterval.coe_toNNReal' (t : unitInterval) :
 ([de Haan–Ferreira, Theorem 5.1.4]; [Einmahl 1992]). If `U 0, U 1, …` are i.i.d. uniform on
 `[0, 1]`, `k n → ∞` and `k n / n → 0`, then the laws of the paths `t ↦ W_n(t)`, `t ∈ [0, 1]`,
 converge weakly in the Skorokhod space `D([0, 1])` to a probability measure `μ` whose
-finite-dimensional distributions are those of Brownian motion: `μ π_J⁻¹ = brownianFdd J` for
-every finite set `J` of continuity times of `μ` (a co-countable set of times containing `1`).
-In particular the limit is unique and is the law of Brownian motion on `D([0, 1])`. -/
+finite-dimensional distributions are those of Brownian motion: for every finite family of
+times `τ i ∈ [0, 1]`, the law of `(x (τ i))_i` under `μ` is `brownianFdd τ`, the centered
+Gaussian law with covariance `min (τ i) (τ j)`. Since the finite-dimensional distributions
+determine a law on `D([0, 1])` (`SkorokhodSpace.ext_of_forall_map_restrict_eq`), `μ` is unique:
+it is the law of Brownian motion on `D([0, 1])`. -/
 theorem exists_tendsto_tailEmpiricalPath [IsProbabilityMeasure P]
     (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
     (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))
@@ -992,10 +1024,9 @@ theorem exists_tendsto_tailEmpiricalPath [IsProbabilityMeasure P]
     ∃ μ : ProbabilityMeasure (SkorokhodSpace ℝ),
       Tendsto (fun n ↦ ProbabilityMeasure.map (⟨P, inferInstance⟩ : ProbabilityMeasure Ω)
         (tailEmpiricalPath U n (k n))) atTop (𝓝 μ) ∧
-      ∀ J : Finset unitInterval,
-        (J : Set unitInterval) ⊆ SkorokhodSpace.continuityTimes (μ : Measure (SkorokhodSpace ℝ)) →
-          (μ : Measure (SkorokhodSpace ℝ)).map (fun x : SkorokhodSpace ℝ ↦ fun t : J ↦ x t) =
-            brownianFdd (fun t : J ↦ unitInterval.toNNReal' t) := by
+      ∀ {ι : Type} [Fintype ι] [DecidableEq ι] (τ : ι → unitInterval),
+        (μ : Measure (SkorokhodSpace ℝ)).map (fun x : SkorokhodSpace ℝ ↦ fun i ↦ x (τ i)) =
+          brownianFdd (fun i ↦ unitInterval.toNNReal' (τ i)) := by
   set μs : ℕ → ProbabilityMeasure (SkorokhodSpace ℝ) := fun n ↦
     ProbabilityMeasure.map (⟨P, inferInstance⟩ : ProbabilityMeasure Ω)
       (tailEmpiricalPath U n (k n)) with hμs
@@ -1033,10 +1064,63 @@ theorem exists_tendsto_tailEmpiricalPath [IsProbabilityMeasure P]
     · obtain ⟨m, hm, hev⟩ := exists_eventually_measure_blockOscillation_le hU hind hlaw hk hkn
         hε hη
       exact ⟨m, hm, hev.mono fun n hn ↦ by rw [hμs_apply]; exact hn⟩
-  obtain ⟨μ, hconv, hμ⟩ := SkorokhodSpace.exists_tendsto_of_tendsto_map_restrict_of_isTight
+  obtain ⟨μ, hconv, -⟩ := SkorokhodSpace.exists_tendsto_of_tendsto_map_restrict_of_isTight
     (T := Set.univ) (by simp) (Set.mem_univ _) ρ hfdd htight
-  refine ⟨μ, hconv, fun J hJ ↦ ?_⟩
-  have := congrArg ProbabilityMeasure.toMeasure (hμ J fun t ht ↦ ⟨Set.mem_univ _, hJ ht⟩)
-  simpa [hρ] using this
+  refine ⟨μ, hconv, fun {ι} _ _ τ ↦ ?_⟩
+  -- the finite-dimensional laws along an arbitrary family of times
+  have hfam (σ : ι → unitInterval) : Tendsto (fun n ↦ (μs n).map
+      (fun x : SkorokhodSpace ℝ ↦ fun i ↦ x (σ i))) atTop
+      (𝓝 ⟨brownianFdd (fun i ↦ unitInterval.toNNReal' (σ i)),
+        isProbabilityMeasure_brownianFdd _⟩) := by
+    have h := (tendstoInDistribution_tailEmpiricalProcess_comp hU hind hlaw hk hkn
+      (fun i ↦ unitInterval.toNNReal' (σ i))).tendsto
+    simp only [Measure.map_id] at h
+    refine h.congr fun n ↦ ProbabilityMeasure.toMeasure_injective ?_
+    simp only [ProbabilityMeasure.toMeasure_map, hμs_apply]
+    rw [Measure.map_map (measurable_pi_iff.2 fun i ↦ SkorokhodSpace.measurable_apply (σ i))
+      (measurable_tailEmpiricalPath hU n (k n))]
+    rfl
+  -- at continuity times of `μ`, by the continuous mapping theorem
+  have hgood (σ : ι → unitInterval)
+      (hσ : ∀ i, σ i ∈ SkorokhodSpace.continuityTimes (μ : Measure (SkorokhodSpace ℝ))) :
+      μ.map (fun x : SkorokhodSpace ℝ ↦ fun i ↦ x (σ i)) =
+        ⟨brownianFdd (fun i ↦ unitInterval.toNNReal' (σ i)), isProbabilityMeasure_brownianFdd _⟩ :=
+    tendsto_nhds_unique (SkorokhodSpace.tendsto_map_comp_of_tendsto hconv hσ) (hfam σ)
+  -- approximate arbitrary times from the right by continuity times
+  have hdense : Dense (SkorokhodSpace.continuityTimes (μ : Measure (SkorokhodSpace ℝ))) := by
+    simpa using unitInterval.dense_compl_of_countable
+      (SkorokhodSpace.countable_compl_continuityTimes (μ : Measure (SkorokhodSpace ℝ)))
+  have happrox (i : ι) : ∃ s : ℕ → unitInterval,
+      (∀ m, s m ∈ SkorokhodSpace.continuityTimes (μ : Measure (SkorokhodSpace ℝ))) ∧
+      (∀ x : SkorokhodSpace ℝ, Tendsto (fun m ↦ x (s m)) atTop (𝓝 (x (τ i)))) ∧
+      Tendsto (fun m ↦ ((s m : unitInterval) : ℝ)) atTop (𝓝 (τ i)) := by
+    by_cases h1 : τ i = 1
+    · refine ⟨fun _ ↦ 1, fun _ ↦ SkorokhodSpace.one_mem_continuityTimes _, fun x ↦ ?_, ?_⟩
+      · rw [h1]; exact tendsto_const_nhds
+      · rw [h1]; exact tendsto_const_nhds
+    · obtain ⟨s, hsT, hs⟩ := SkorokhodSpace.exists_seq_mem_tendsto_nhdsGT hdense
+        (lt_of_le_of_ne le_top h1)
+      exact ⟨s, hsT, fun x ↦ (x.isRightContinuous (τ i)).tendsto.comp hs,
+        (continuous_subtype_val.tendsto _).comp (hs.mono_right nhdsWithin_le_nhds)⟩
+  choose s hsT hsx hsR using happrox
+  have hA : TendstoInDistribution (fun m (x : SkorokhodSpace ℝ) ↦ fun i ↦ x (s i m)) atTop
+      (fun (x : SkorokhodSpace ℝ) i ↦ x (τ i)) (fun _ ↦ (μ : Measure (SkorokhodSpace ℝ))) μ :=
+    tendstoInDistribution_of_ae_tendsto
+      (fun m ↦ (measurable_pi_iff.2 fun i ↦ SkorokhodSpace.measurable_apply (s i m)).aemeasurable)
+      (measurable_pi_iff.2 fun i ↦ SkorokhodSpace.measurable_apply (τ i)).aemeasurable
+      (ae_of_all _ fun x ↦ tendsto_pi_nhds.2 fun i ↦ hsx i x)
+  have hB := tendsto_brownianFdd (τs := fun m i ↦ unitInterval.toNNReal' (s i m))
+    (τ := fun i ↦ unitInterval.toNNReal' (τ i)) fun i ↦ hsR i
+  have hA' := hA.tendsto
+  have heq : (fun m ↦ (⟨(μ : Measure (SkorokhodSpace ℝ)).map
+      (fun x : SkorokhodSpace ℝ ↦ fun i ↦ x (s i m)), inferInstance⟩ :
+        ProbabilityMeasure (ι → ℝ))) = fun m ↦
+      ⟨brownianFdd (fun i ↦ unitInterval.toNNReal' (s i m)),
+        isProbabilityMeasure_brownianFdd _⟩ := by
+    funext m
+    exact congrArg (fun ν : ProbabilityMeasure (ι → ℝ) ↦ ν) (hgood (fun i ↦ s i m) fun i ↦ hsT i m)
+  rw [heq] at hA'
+  have := congrArg ProbabilityMeasure.toMeasure (tendsto_nhds_unique hA' hB)
+  simpa using this
 
 end ExtremeValueTheory

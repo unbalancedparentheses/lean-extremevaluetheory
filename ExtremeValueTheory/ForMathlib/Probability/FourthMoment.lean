@@ -104,7 +104,8 @@ theorem integral_sum_range_pow_four_le (hX : ∀ i, Measurable (X i)) (hind : iI
     have hind' := indepFun_sum_range hX hind n
     have hprod (a b : ℕ) : ∫ ω, S ω ^ a * X n ω ^ b ∂P =
         (∫ ω, S ω ^ a ∂P) * ∫ ω, X n ω ^ b ∂P :=
-      (hind'.comp (measurable_id.pow_const a) (measurable_id.pow_const b)).integral_fun_mul_eq_mul_integral
+      (hind'.comp (measurable_id.pow_const a)
+        (measurable_id.pow_const b)).integral_fun_mul_eq_mul_integral
         (hSm.pow_const a).aestronglyMeasurable ((hX n).pow_const b).aestronglyMeasurable
     have iprod (a b : ℕ) : Integrable (fun ω ↦ S ω ^ a * X n ω ^ b) P := by
       refine Integrable.of_bound (C := (n * C) ^ a * C ^ b)

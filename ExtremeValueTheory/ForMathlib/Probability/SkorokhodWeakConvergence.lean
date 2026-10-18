@@ -26,7 +26,8 @@ finite-dimensional projections `π_J` with `J ⊆ T ∩ T_ν` are `ν`-a.e. cont
 the co-countable set of times that are not fixed discontinuities of `ν`
 (`SkorokhodSpace.countable_setOf_measure_not_continuousAt_ne_zero`); so by the continuous
 mapping theorem `ν π_J⁻¹ = μ π_J⁻¹`. Since `T ∩ T_ν` is dense and contains `1`, the
-finite-dimensional distributions on it determine the law (`SkorokhodSpace.ext_of_forall_map_restrict_eq`).
+finite-dimensional distributions on it determine the law
+(`SkorokhodSpace.ext_of_forall_map_restrict_eq`).
 
 ## Main statements
 
@@ -125,6 +126,30 @@ theorem tendsto_map_restrict_of_tendsto {μs : ℕ → ProbabilityMeasure (Skoro
       exact measure_mono_null (fun x hx ↦ (not_imp.1 hx).2) h0
   exact this.mono fun x hx ↦ continuousAt_restrict_of_ne_one hx
 
+/-- **Continuous mapping for families of times**: if `μ_n → ν` weakly and the times `τ i` are
+continuity times of `ν`, then the laws of `(x (τ i))_i` converge. -/
+theorem tendsto_map_comp_of_tendsto {ι : Type*} [Fintype ι]
+    {μs : ℕ → ProbabilityMeasure (SkorokhodSpace E)} {ν : ProbabilityMeasure (SkorokhodSpace E)}
+    (h : Tendsto μs atTop (𝓝 ν)) {τ : ι → I}
+    (hτ : ∀ i, τ i ∈ continuityTimes (ν : Measure (SkorokhodSpace E))) :
+    Tendsto (fun n ↦ (μs n).map (fun x : SkorokhodSpace E ↦ fun i ↦ x (τ i))) atTop
+      (𝓝 (ν.map (fun x : SkorokhodSpace E ↦ fun i ↦ x (τ i)))) := by
+  refine ProbabilityMeasure.tendsto_map_of_ae_continuousAt h
+    (measurable_pi_iff.2 fun i ↦ measurable_apply (τ i)) ?_
+  have : ∀ᵐ x ∂(ν : Measure (SkorokhodSpace E)), ∀ i, τ i ≠ 1 →
+      ContinuousAt (⇑(x : SkorokhodSpace E)) (τ i) := by
+    rw [ae_all_iff]
+    intro i
+    rcases hτ i with h1 | h0
+    · exact Eventually.of_forall fun _ h ↦ absurd h1 h
+    · rw [ae_iff] at *
+      exact measure_mono_null (fun x hx ↦ (not_imp.1 hx).2) h0
+  refine this.mono fun x hx ↦ continuousAt_pi.2 fun i ↦ ?_
+  by_cases hi : τ i = 1
+  · simp only [hi]
+    exact continuous_apply_one.continuousAt
+  · exact tendsto_apply_of_continuousAt (x := fun y : SkorokhodSpace E ↦ y) tendsto_id (hx i hi)
+
 /-- A cluster point `ν` of a sequence `μ_n` whose finite-dimensional distributions converge to
 those of `μ` on a co-countable set `T ∋ 1` is equal to `μ`. -/
 lemma eq_of_mapClusterPt {μs : ℕ → ProbabilityMeasure (SkorokhodSpace E)}
@@ -188,7 +213,8 @@ theorem exists_tendsto_of_tendsto_map_restrict_of_isTight
       ∀ J : Finset I, (J : Set I) ⊆ T ∩ continuityTimes (μ : Measure (SkorokhodSpace E)) →
         μ.map (fun x : SkorokhodSpace E ↦ fun t : J ↦ x t) = ρ J := by
   obtain ⟨μ, -, hμ⟩ := (isCompact_closure_range htight).exists_mapClusterPt
-    (f := atTop) (u := μs) (tendsto_principal.2 (Eventually.of_forall fun n ↦ subset_closure (mem_range_self n)))
+    (f := atTop) (u := μs)
+    (tendsto_principal.2 (Eventually.of_forall fun n ↦ subset_closure (mem_range_self n)))
   obtain ⟨ψ, hψ, hψμ⟩ := hμ.tendsto_subseq
   have hρ : ∀ J : Finset I, (J : Set I) ⊆ T ∩ continuityTimes (μ : Measure (SkorokhodSpace E)) →
       μ.map (fun x : SkorokhodSpace E ↦ fun t : J ↦ x t) = ρ J := fun J hJ ↦
