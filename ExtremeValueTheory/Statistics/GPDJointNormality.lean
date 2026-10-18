@@ -326,4 +326,87 @@ theorem exists_gpdHess_lipschitz :
 
 end Lipschitz
 
+/-! ### The score along a segment in parameter space -/
+
+section Segment
+
+variable {ξ σ a b x s : ℝ}
+
+/-- The derivative of the shape score along the line `s ↦ (ξ + s a, σ + s b)`. -/
+theorem hasDerivAt_gpdScoreXi_line (hξ : ξ + s * a ≠ 0) (hσ : 0 < σ + s * b)
+    (hu : 0 < (σ + s * b) + (ξ + s * a) * x) :
+    HasDerivAt (fun s => gpdScoreXi (ξ + s * a) (σ + s * b) x)
+      (a * gpdHessXiXi (ξ + s * a) (σ + s * b) x +
+        b * gpdHessXiSigma (ξ + s * a) (σ + s * b) x) s := by
+  have hu' := one_add_mul_div_pos hσ hu
+  have hA : HasDerivAt (fun s => ξ + s * a) a s := by
+    simpa using ((hasDerivAt_id s).mul_const a).const_add ξ
+  have hB : HasDerivAt (fun s => σ + s * b) b s := by
+    simpa using ((hasDerivAt_id s).mul_const b).const_add σ
+  have hR : HasDerivAt (fun s => (ξ + s * a) * x / (σ + s * b))
+      ((a * x * (σ + s * b) - (ξ + s * a) * x * b) / (σ + s * b) ^ 2) s :=
+    (hA.mul_const x).div hB hσ.ne'
+  have hL : HasDerivAt (fun s => log (1 + (ξ + s * a) * x / (σ + s * b)))
+      (((a * x * (σ + s * b) - (ξ + s * a) * x * b) / (σ + s * b) ^ 2) /
+        (1 + (ξ + s * a) * x / (σ + s * b))) s :=
+    (hR.const_add 1).log hu'.ne'
+  have hS : HasDerivAt (fun s => (ξ + s * a) ^ 2) (2 * (ξ + s * a) * a) s := by
+    convert hA.mul hA using 1
+    · funext s; simp only [Pi.mul_apply]; ring
+    · ring
+  have hD : HasDerivAt (fun s => (σ + s * b) + (ξ + s * a) * x) (b + a * x) s :=
+    hB.add (hA.mul_const x)
+  have hW : HasDerivAt (fun s => x / ((σ + s * b) + (ξ + s * a) * x))
+      (-(x * (b + a * x)) / ((σ + s * b) + (ξ + s * a) * x) ^ 2) s := by
+    have := (hasDerivAt_const s x).div hD hu.ne'
+    exact this.congr_deriv (by ring)
+  have hI : HasDerivAt (fun s => 1 / (ξ + s * a) + 1) (-(a / (ξ + s * a) ^ 2)) s := by
+    have := (hA.inv hξ).add_const 1
+    exact (this.congr_deriv (by ring)).congr_of_eventuallyEq
+      (Eventually.of_forall fun s => by simp [one_div])
+  have := (hL.div hS (pow_ne_zero 2 hξ)).sub (hI.mul hW)
+  unfold gpdScoreXi gpdHessXiXi gpdHessXiSigma
+  refine this.congr_deriv ?_
+  generalize ξ + s * a = p at hξ hu hu' ⊢
+  generalize σ + s * b = q at hσ hu hu' ⊢
+  have := hσ.ne'
+  have h1 : q + p * x ≠ 0 := hu.ne'
+  have h2 : x * p + q ≠ 0 := by rw [add_comm, mul_comm]; exact h1
+  have h3 : p * x + q ≠ 0 := by rw [add_comm]; exact h1
+  have h4 : q + x * p ≠ 0 := by rw [mul_comm]; exact h1
+  field_simp
+  ring
+
+/-- The derivative of the scale score along the line `s ↦ (ξ + s a, σ + s b)`. -/
+theorem hasDerivAt_gpdScoreSigma_line (hσ : 0 < σ + s * b)
+    (hu : 0 < (σ + s * b) + (ξ + s * a) * x) :
+    HasDerivAt (fun s => gpdScoreSigma (ξ + s * a) (σ + s * b) x)
+      (a * gpdHessXiSigma (ξ + s * a) (σ + s * b) x +
+        b * gpdHessSigmaSigma (ξ + s * a) (σ + s * b) x) s := by
+  have hA : HasDerivAt (fun s => ξ + s * a) a s := by
+    simpa using ((hasDerivAt_id s).mul_const a).const_add ξ
+  have hB : HasDerivAt (fun s => σ + s * b) b s := by
+    simpa using ((hasDerivAt_id s).mul_const b).const_add σ
+  have hD : HasDerivAt (fun s => (σ + s * b) + (ξ + s * a) * x) (b + a * x) s :=
+    hB.add (hA.mul_const x)
+  have hW : HasDerivAt (fun s => x / ((σ + s * b) + (ξ + s * a) * x))
+      (-(x * (b + a * x)) / ((σ + s * b) + (ξ + s * a) * x) ^ 2) s := by
+    have := (hasDerivAt_const s x).div hD hu.ne'
+    exact this.congr_deriv (by ring)
+  have := ((((hA.const_add 1).mul hW).sub_const 1).div hB hσ.ne')
+  unfold gpdScoreSigma gpdHessXiSigma gpdHessSigmaSigma
+  refine this.congr_deriv ?_
+  simp only [Pi.mul_apply]
+  generalize ξ + s * a = p at hu ⊢
+  generalize σ + s * b = q at hσ hu ⊢
+  have := hσ.ne'
+  have h1 : q + p * x ≠ 0 := hu.ne'
+  have h2 : x * p + q ≠ 0 := by rw [add_comm, mul_comm]; exact h1
+  have h3 : p * x + q ≠ 0 := by rw [add_comm]; exact h1
+  have h4 : q + x * p ≠ 0 := by rw [mul_comm]; exact h1
+  field_simp
+  ring
+
+end Segment
+
 end ExtremeValueTheory
