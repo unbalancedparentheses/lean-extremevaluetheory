@@ -36,7 +36,9 @@ with `p = (1 + ξ)² Γ(1 + 2ξ)` (`gevFisherInfoMuSigma`).
 * `integral_gevScoreMu`, `integral_gevScoreSigma`: the scores have mean zero.
 * `integral_gevScoreMu_sq`, `integral_gevScoreMu_mul_gevScoreSigma`, `integral_gevScoreSigma_sq`:
   the Fisher information entries; `integral_lin_gevScore_sq`: the quadratic form.
-* `posSemidef_gevFisherInfoMuSigma`: the information matrix is positive semidefinite.
+* `posSemidef_gevFisherInfoMuSigma`, `posDef_gevFisherInfoMuSigma`: the information matrix is
+  positive definite; its determinant is `((1 + ξ)² Γ(1 + 2ξ) - Γ(2 + ξ)²)/(ξ² σ⁴)`, positive by
+  `Gamma_one_add_sq_lt`: `Γ(1 + ξ)² < Γ(1 + 2ξ)` (the variance of `T^ξ`, `T` exponential).
 * `tendstoInDistribution_gevScoreVec`: **the bivariate score CLT**
   `n^{-1/2} ∑_{i<n} (∂_μ ℓ, ∂_σ ℓ)(Xᵢ) ⇒ N(0, I_{(μ,σ)})`, and in particular the one-parameter
   (location only, scale only) score CLTs `tendstoInDistribution_gevScoreMu`,
@@ -435,6 +437,83 @@ theorem posSemidef_gevFisherInfoMuSigma (hσ : 0 < σ) (hξ0 : ξ ≠ 0) (hξ : 
   · rw [star_trivial, dotProduct_gevFisherInfoMuSigma_mulVec,
       ← integral_lin_gevScore_sq hσ hξ0 hξ (μ := 0) (v 0) (v 1)]
     exact integral_nonneg fun x => sq_nonneg _
+
+/-- **`Γ(1 + ξ)² < Γ(1 + 2ξ)`** for `ξ > -1/2`, `ξ ≠ 0`: the difference is the variance
+`∫_0^∞ e^{-t} (t^ξ - Γ(1 + ξ))² dt` of `T^ξ` for a standard exponential `T`, and `t ↦ t^ξ` is
+injective. -/
+theorem Gamma_one_add_sq_lt (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) :
+    Gamma (1 + ξ) ^ 2 < Gamma (1 + 2 * ξ) := by
+  set c := Gamma (1 + ξ) with hc
+  have heq : ∀ t, gevPoly ξ (c ^ 2) 0 0 (-2 * c) 0 0 1 0 0 t = (t ^ ξ - c) ^ 2 := fun t => by
+    rw [gevPoly]; ring
+  have hI := integral_gevPoly (ξ := ξ) (c ^ 2) 0 0 (-2 * c) 0 0 1 0 0 hξ
+  simp only [heq] at hI
+  have hint : IntegrableOn (fun t => exp (-t) * (t ^ ξ - c) ^ 2) (Ioi 0) := by
+    have := integrableOn_gevPoly (a₀ := c ^ 2) (b₀ := 0) (c₀ := 0) (a₁ := -2 * c) (b₁ := 0)
+      (c₁ := 0) (a₂ := 1) (b₂ := 0) (c₂ := 0) hξ
+    simpa only [heq] using this
+  have hpos : 0 < ∫ t in Ioi 0, exp (-t) * (t ^ ξ - c) ^ 2 := by
+    rw [setIntegral_pos_iff_support_of_nonneg_ae
+      (ae_of_all _ fun t => by simp only [Pi.zero_apply]; positivity) hint]
+    set S := {t : ℝ | 0 < t ∧ t ^ ξ = c}
+    have hS : volume S = 0 := by
+      refine Set.Subsingleton.measure_zero ?_ _
+      intro s hs t ht
+      exact rpow_left_injOn hξ0 (show (0 : ℝ) ≤ s from hs.1.le) (show (0 : ℝ) ≤ t from ht.1.le)
+        (hs.2.trans ht.2.symm)
+    have hsub : Ioi 0 \ S ⊆ Function.support (fun t => exp (-t) * (t ^ ξ - c) ^ 2) ∩ Ioi 0 := by
+      intro t ht
+      refine ⟨?_, ht.1⟩
+      simp only [Function.mem_support]
+      exact mul_ne_zero (exp_pos _).ne'
+        (pow_ne_zero 2 (sub_ne_zero.2 fun h => ht.2 ⟨ht.1, h⟩))
+    refine lt_of_lt_of_le ?_ (measure_mono hsub)
+    rw [measure_sdiff_null hS, Real.volume_Ioi]
+    exact ENNReal.zero_lt_top
+  rw [hI, show ξ + 1 = 1 + ξ by ring, show 2 * ξ + 1 = 1 + 2 * ξ by ring, ← hc] at hpos
+  nlinarith
+
+/-- **The location-scale Fisher information of the GEV is positive definite** for
+`ξ > -1/2`, `ξ ≠ 0`: its determinant is `((1 + ξ)² Γ(1 + 2ξ) - Γ(2 + ξ)²)/(ξ² σ⁴) > 0`. -/
+theorem posDef_gevFisherInfoMuSigma (hσ : 0 < σ) (hξ0 : ξ ≠ 0) (hξ : -1 / 2 < ξ) :
+    (gevFisherInfoMuSigma ξ σ).PosDef := by
+  have hG := Gamma_one_add_sq_lt hξ hξ0
+  have hg2 : Gamma (2 + ξ) = (1 + ξ) * Gamma (1 + ξ) := by
+    rw [show 2 + ξ = 1 + ξ + 1 by ring, Gamma_add_one (by linarith)]
+  have hΓ : 0 < Gamma (1 + 2 * ξ) := Gamma_pos_of_pos (by linarith)
+  have h1ξ : 0 < 1 + ξ := by linarith
+  have hp : 0 < (1 + ξ) ^ 2 * Gamma (1 + 2 * ξ) := by positivity
+  have hpg : 0 < (1 + ξ) ^ 2 * Gamma (1 + 2 * ξ) - Gamma (2 + ξ) ^ 2 := by
+    rw [hg2, mul_pow, ← mul_sub]
+    exact mul_pos (by positivity) (by linarith)
+  set p := (1 + ξ) ^ 2 * Gamma (1 + 2 * ξ)
+  set g := Gamma (2 + ξ)
+  refine Matrix.posDef_iff_dotProduct_mulVec.2 ⟨?_, fun v hv => ?_⟩
+  · refine Matrix.IsHermitian.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;> simp [gevFisherInfoMuSigma]
+  · rw [star_trivial, dotProduct_gevFisherInfoMuSigma_mulVec]
+    have e : v 0 ^ 2 * (p / σ ^ 2) + 2 * v 0 * v 1 * ((g - p) / (ξ * σ ^ 2)) +
+        v 1 ^ 2 * ((1 - 2 * g + p) / (ξ ^ 2 * σ ^ 2)) =
+        (p * (v 0 + v 1 * ((g - p) / (ξ * p))) ^ 2 + v 1 ^ 2 * ((p - g ^ 2) / (ξ ^ 2 * p))) /
+          σ ^ 2 := by
+      field_simp
+      ring
+    rw [e]
+    refine div_pos ?_ (by positivity)
+    have hne : v 0 ≠ 0 ∨ v 1 ≠ 0 := by
+      by_contra h
+      push Not at h
+      exact hv (funext fun i => by fin_cases i <;> simp [h.1, h.2])
+    have hA : 0 ≤ p * (v 0 + v 1 * ((g - p) / (ξ * p))) ^ 2 := by positivity
+    rcases eq_or_ne (v 1) 0 with h1 | h1
+    · have h0 : v 0 ≠ 0 := hne.resolve_right (not_not.2 h1)
+      rw [h1]
+      simp only [zero_mul, add_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow]
+      exact mul_pos hp (lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 h0)))
+    · have : 0 < v 1 ^ 2 * ((p - g ^ 2) / (ξ ^ 2 * p)) :=
+        mul_pos (lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 h1)))
+          (div_pos hpg (mul_pos (lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 hξ0))) hp))
+      linarith
 
 /-- **The location-scale score vector** `(∂_μ ℓ, ∂_σ ℓ) ∈ ℝ²` of one observation. -/
 noncomputable def gevScoreVec (ξ μ σ x : ℝ) : EuclideanSpace ℝ (Fin 2) :=
