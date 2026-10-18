@@ -32,9 +32,33 @@ combination `∑_{t ∈ I} a_t W_n(t)` is the row sum `∑_{i < n} f_n(U_i)` wit
 `f_n(u) = k^{-1/2} ∑_t a_t (1{u ≥ 1 - (k/n) t} - (k/n) t)`, which is centered, bounded by
 `O(k^{-1/2})`, and has `n ∫ f_n ^ 2 = ∑_{s, t} a_s a_t (min s t - (k/n) s t) → ∑ a_s a_t min s t`.
 
+We then prove **weak convergence in the Skorokhod space `D([0, 1])`**: the paths
+`t ↦ W_n(t)`, `t ∈ [0, 1]`, are càdlàg random elements of `D([0, 1])`, and their laws converge
+weakly to the law of Brownian motion on `D([0, 1])` (a probability measure with the
+finite-dimensional distributions of Brownian motion, whose existence is part of the result).
+Tightness is proved with the criterion of Billingsley's Theorem 13.2 in the form
+`SkorokhodSpace.isTightMeasureSet_of_blockOscillation`: the block oscillation of `W_n` on the
+blocks `[i/m, (i+1)/m]` is controlled by
+* the fourth moments of the increments,
+  `E (W_n(t) - W_n(s)) ^ 4 ≤ 12 (t - s) ^ 2 + 2 (t - s) / k`
+  (`integral_tailEmpiricalProcess_sub_pow_four_le`, from
+  `ProbabilityTheory.integral_sum_range_pow_four_le`),
+* dyadic chaining on the grid `i/m + j / (m 2 ^ q)`
+  (`MeasureTheory.measureReal_exists_lt_abs_sub_le`),
+* the monotonicity of the counts between grid points: `W_n` decreases at most with slope `√k`,
+  so with `q ≈ log₂ √k` levels the gaps between grid points are negligible.
+This gives `P (blockOscillation ≥ ε) ≤ C ε⁻⁴ (1/m + 2 ^ q / k)`, which is small for large `m`
+and `n`. Billingsley's Theorem 13.1
+(`SkorokhodSpace.exists_tendsto_of_tendsto_map_restrict_of_isTight`)
+then gives the weak limit, and the finite-dimensional distributions of the limit are identified at
+all times using the continuity of the Brownian finite-dimensional laws in the times.
+
 ## Main definitions
 
 * `ExtremeValueTheory.tailEmpiricalProcess U n k t ω`: the uniform tail empirical process.
+* `ExtremeValueTheory.tailEmpiricalPath U n k ω`: the same process as a random element of
+  `D([0, 1])`.
+* `ExtremeValueTheory.brownianFdd τ`: the law of Brownian motion at the times `τ i`.
 
 ## Main statements
 
@@ -42,6 +66,18 @@ combination `∑_{t ∈ I} a_t W_n(t)` is the row sum `∑_{i < n} f_n(U_i)` wit
   finite-dimensional distributions to `BrownianReal.projectiveFamily I`.
 * `ExtremeValueTheory.tendstoInDistribution_tailEmpiricalProcess_fdd_of_isPreBrownianReal`: the
   same statement with the limit given by a (pre-)Brownian motion.
+* `ExtremeValueTheory.tendstoInDistribution_tailEmpiricalProcess_comp`: the same for arbitrary
+  finite families of times.
+* `ExtremeValueTheory.integral_tailEmpiricalProcess_sub_pow_four_le`: fourth moments of the
+  increments.
+* `ExtremeValueTheory.measureReal_exists_block_abs_tailEmpiricalProcess_sub_gt_le`: the maximal
+  inequality on blocks.
+* `ExtremeValueTheory.exists_tendsto_tailEmpiricalPath`: **weak convergence of the tail empirical
+  process in `D([0, 1])`** to a limit with the finite-dimensional distributions of Brownian
+  motion at all times ([de Haan–Ferreira, Theorem 5.1.4]; [Einmahl 1992]).
+* `ExtremeValueTheory.tendstoInDistribution_tailEmpiricalPath`,
+  `ExtremeValueTheory.tendsto_tailEmpiricalPath_of_fdd`: the same convergence to any given
+  random element / law on `D([0, 1])` with Brownian finite-dimensional distributions.
 
 ## References
 
@@ -1122,5 +1158,52 @@ theorem exists_tendsto_tailEmpiricalPath [IsProbabilityMeasure P]
   rw [heq] at hA'
   have := congrArg ProbabilityMeasure.toMeasure (tendsto_nhds_unique hA' hB)
   simpa using this
+
+/-- **Functional central limit theorem for the uniform tail empirical process**
+([de Haan–Ferreira, Theorem 5.1.4]; [Einmahl 1992]): if `B` is a random element of
+`D([0, 1])` whose finite-dimensional distributions are those of Brownian motion (for instance a
+Brownian motion with càdlàg paths), then the tail empirical processes `W_n` converge to `B` in
+distribution in the Skorokhod space. -/
+theorem tendstoInDistribution_tailEmpiricalPath [IsProbabilityMeasure P]
+    (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0))
+    {Ω' : Type*} {mΩ' : MeasurableSpace Ω'} {P' : Measure Ω'} [IsProbabilityMeasure P']
+    {B : Ω' → SkorokhodSpace ℝ} (hB : Measurable B)
+    (hBfdd : ∀ J : Finset unitInterval,
+      (P'.map B).map (fun x : SkorokhodSpace ℝ ↦ fun t : J ↦ x t) =
+        brownianFdd (fun t : J ↦ unitInterval.toNNReal' t)) :
+    TendstoInDistribution (fun n ↦ tailEmpiricalPath U n (k n)) atTop B (fun _ ↦ P) P' := by
+  obtain ⟨μ, hconv, hμ⟩ := exists_tendsto_tailEmpiricalPath hU hind hlaw hk hkn
+  have hBμ : P'.map B = (μ : Measure (SkorokhodSpace ℝ)) := by
+    refine SkorokhodSpace.ext_of_forall_map_restrict_eq (T := Set.univ) dense_univ
+      (Set.mem_univ _) fun J _ ↦ ?_
+    rw [hBfdd J]
+    exact (hμ (fun t : J ↦ (t : unitInterval))).symm
+  refine ⟨fun n ↦ (measurable_tailEmpiricalPath hU n (k n)).aemeasurable, hB.aemeasurable, ?_⟩
+  have e : (⟨P'.map B, inferInstance⟩ : ProbabilityMeasure (SkorokhodSpace ℝ)) = μ :=
+    Subtype.ext hBμ
+  rw [e]
+  exact hconv
+
+/-- **Uniqueness of the limit**: a probability measure on `D([0, 1])` with the
+finite-dimensional distributions of Brownian motion at all times is the weak limit of the laws of
+the tail empirical processes. -/
+theorem tendsto_tailEmpiricalPath_of_fdd [IsProbabilityMeasure P]
+    (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0))
+    (ν : ProbabilityMeasure (SkorokhodSpace ℝ))
+    (hν : ∀ J : Finset unitInterval,
+      (ν : Measure (SkorokhodSpace ℝ)).map (fun x : SkorokhodSpace ℝ ↦ fun t : J ↦ x t) =
+        brownianFdd (fun t : J ↦ unitInterval.toNNReal' t)) :
+    Tendsto (fun n ↦ ProbabilityMeasure.map (⟨P, inferInstance⟩ : ProbabilityMeasure Ω)
+      (tailEmpiricalPath U n (k n))) atTop (𝓝 ν) := by
+  obtain ⟨μ, hconv, hμ⟩ := exists_tendsto_tailEmpiricalPath hU hind hlaw hk hkn
+  have : ν = μ := ProbabilityMeasure.toMeasure_injective <|
+    SkorokhodSpace.ext_of_forall_map_restrict_eq (T := Set.univ) dense_univ (Set.mem_univ _)
+      fun J _ ↦ by rw [hν J]; exact (hμ (fun t : J ↦ (t : unitInterval))).symm
+  rw [this]
+  exact hconv
 
 end ExtremeValueTheory
