@@ -5,6 +5,7 @@ Authors: Federico Carrone
 -/
 import ExtremeValueTheory.Statistics.TailEmpiricalProcess
 import ExtremeValueTheory.Statistics.HillNormality
+import ExtremeValueTheory.ForMathlib.Probability.SkorokhodFunctionals
 
 /-!
 # Hill's estimator via the tail empirical process
@@ -1382,5 +1383,133 @@ theorem tendstoInDistribution_hill_pareto_of_tailEmpiricalProcess {X : ℕ → �
     ring
 
 end Normality
+
+/-! ### Continuous functionals of the tail empirical process -/
+
+section ContinuousMapping
+
+variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'} [IsProbabilityMeasure P']
+
+/-- **Continuous mapping theorem for the tail empirical process** ([de Haan–Ferreira, §5.1]): if
+`B` is a random element of `D([0, 1])` with the finite-dimensional distributions of Brownian
+motion and `h` is a measurable functional on `D([0, 1])` that is continuous at almost every path
+of `B`, then `h(W_n) ⇒ h(B)`. -/
+theorem tendstoInDistribution_comp_tailEmpiricalPath {U : ℕ → Ω → ℝ}
+    (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1)) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0))
+    {B : Ω' → SkorokhodSpace ℝ} (hB : Measurable B)
+    (hBfdd : ∀ J : Finset unitInterval,
+      (P'.map B).map (fun x : SkorokhodSpace ℝ ↦ fun t : J ↦ x t) =
+        brownianFdd (fun t : J ↦ unitInterval.toNNReal' t))
+    {F : Type*} [TopologicalSpace F] [MeasurableSpace F] [OpensMeasurableSpace F]
+    {h : SkorokhodSpace ℝ → F} (hh : Measurable h)
+    (hcont : ∀ᵐ x ∂(P'.map B), ContinuousAt h x) :
+    TendstoInDistribution (fun n ω ↦ h (tailEmpiricalPath U n (k n) ω)) atTop (h ∘ B)
+      (fun _ ↦ P) P' := by
+  have hW := (tendstoInDistribution_tailEmpiricalPath hU hind hlaw hk hkn hB hBfdd).tendsto
+  have h2 := ProbabilityMeasure.tendsto_map_of_ae_continuousAt hW hh hcont
+  refine ⟨fun n ↦ (hh.comp (measurable_tailEmpiricalPath hU n (k n))).aemeasurable,
+    (hh.comp hB).aemeasurable, ?_⟩
+  have hlim : ProbabilityMeasure.map
+      (⟨P'.map B, inferInstance⟩ : ProbabilityMeasure (SkorokhodSpace ℝ)) h =
+      ⟨P'.map (h ∘ B), inferInstance⟩ := by
+    refine ProbabilityMeasure.toMeasure_injective ?_
+    exact Measure.map_map hh hB
+  rw [hlim] at h2
+  refine h2.congr fun n ↦ ProbabilityMeasure.toMeasure_injective ?_
+  exact Measure.map_map hh (measurable_tailEmpiricalPath hU n (k n))
+
+/-- The supremum of the tail empirical process converges in distribution to the supremum of
+Brownian motion. -/
+theorem tendstoInDistribution_supNorm_tailEmpiricalPath {U : ℕ → Ω → ℝ}
+    (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1)) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0))
+    {B : Ω' → SkorokhodSpace ℝ} (hB : Measurable B)
+    (hBfdd : ∀ J : Finset unitInterval,
+      (P'.map B).map (fun x : SkorokhodSpace ℝ ↦ fun t : J ↦ x t) =
+        brownianFdd (fun t : J ↦ unitInterval.toNNReal' t)) :
+    TendstoInDistribution (fun n ω ↦ SkorokhodSpace.supNorm (tailEmpiricalPath U n (k n) ω))
+      atTop (SkorokhodSpace.supNorm ∘ B) (fun _ ↦ P) P' :=
+  tendstoInDistribution_comp_tailEmpiricalPath hU hind hlaw hk hkn hB hBfdd
+    SkorokhodSpace.continuous_supNorm.measurable
+    (ae_of_all _ fun _ ↦ SkorokhodSpace.continuous_supNorm.continuousAt)
+
+/-- The truncated Hill functional `x ↦ ∫_ε^1 x(t) dt / t - x(1)` on `D([0, 1])`. -/
+noncomputable def hillFunctional (ε : ℝ) (x : SkorokhodSpace ℝ) : ℝ :=
+  (∫ t in Set.Ioc ε 1, t⁻¹ * x (Set.projIcc 0 1 zero_le_one t)) - x 1
+
+lemma continuous_hillFunctional {ε : ℝ} (hε : 0 < ε) : Continuous (hillFunctional ε) := by
+  have hg : Integrable (fun t : ℝ ↦ t⁻¹) (volume.restrict (Set.Ioc ε 1)) := by
+    rcases le_or_gt ε 1 with h | h
+    · exact (intervalIntegrable_iff_integrableOn_Ioc_of_le h).1
+        (intervalIntegral.intervalIntegrable_inv (fun x hx ↦ by
+          rw [Set.uIcc_of_le h] at hx; exact (hε.trans_le hx.1).ne') continuousOn_id)
+    · rw [Set.Ioc_eq_empty (not_lt.2 h.le), Measure.restrict_empty]
+      exact integrable_zero_measure
+  exact (SkorokhodSpace.continuous_integral_mul hg).sub SkorokhodSpace.continuous_apply_one
+
+lemma hillFunctional_tailEmpiricalPath (U : ℕ → Ω → ℝ) {n k : ℕ} (hn : 0 < n) (hk : 0 < k)
+    {ε : ℝ} (hε0 : 0 < ε) (hε1 : ε ≤ 1) (ω : Ω) :
+    hillFunctional ε (tailEmpiricalPath U n k ω) = ∑ i ∈ range n, hillSummand n k ε (U i ω) := by
+  rw [sum_hillSummand_eq U ω hn hk hε0 hε1, hillFunctional, intervalIntegral.integral_of_le hε1]
+  congr 1
+  · refine setIntegral_congr_fun measurableSet_Ioc fun t ht ↦ ?_
+    simp only [tailEmpiricalPath_apply]
+    rw [Set.projIcc_of_mem _ ⟨hε0.le.trans ht.1.le, ht.2⟩, div_eq_inv_mul]
+
+/-- **The law of a Brownian functional, via the invariance principle.** If `B` is a random
+element of `D([0, 1])` with the finite-dimensional distributions of Brownian motion, then for
+`0 < ε ≤ 1`, `∫_ε^1 B(t) dt / t - B(1)` is centered Gaussian with variance `1 + 2 ε log ε`.
+The proof compares two limits of the truncated Hill functional of the uniform tail empirical
+process: the continuous mapping theorem in `D` and the triangular-array central limit theorem
+(`tendstoInDistribution_sum_hillSummand`). As `ε → 0` the variance tends to `1`, the variance of
+`∫_0^1 B(t) dt / t - B(1)`, the limit of the Hill statistic. -/
+theorem map_hillFunctional_eq_gaussianReal {B : Ω' → SkorokhodSpace ℝ} (hB : Measurable B)
+    (hBfdd : ∀ J : Finset unitInterval,
+      (P'.map B).map (fun x : SkorokhodSpace ℝ ↦ fun t : J ↦ x t) =
+        brownianFdd (fun t : J ↦ unitInterval.toNNReal' t))
+    {ε : ℝ} (hε0 : 0 < ε) (hε1 : ε ≤ 1) :
+    P'.map (hillFunctional ε ∘ B) = gaussianReal 0 (1 + 2 * ε * Real.log ε).toNNReal := by
+  obtain ⟨Ω₀, _, P₀, V, hVm, hV, hindV, hP₀⟩ := exists_iid ℕ μU
+  have hlawV (i : ℕ) : P₀.map (V i) = volume.restrict (Set.Icc 0 1) := (hV i).map_eq
+  set k : ℕ → ℕ := fun n ↦ Nat.sqrt n with hkdef
+  have hk : Tendsto k atTop atTop := by
+    refine tendsto_atTop_atTop.2 fun b ↦ ⟨b * b, fun n hn ↦ ?_⟩
+    exact Nat.le_sqrt.2 hn
+  have hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0) := by
+    have h1 : Tendsto (fun n : ℕ ↦ (√(n : ℝ))⁻¹) atTop (𝓝 0) :=
+      tendsto_inv_atTop_zero.comp (Real.tendsto_sqrt_atTop.comp tendsto_natCast_atTop_atTop)
+    refine squeeze_zero (fun n ↦ by positivity) (fun n ↦ ?_) h1
+    rcases Nat.eq_zero_or_pos n with h | h
+    · simp [h]
+    have hn : (0 : ℝ) < n := Nat.cast_pos.2 h
+    have hs : 0 < √(n : ℝ) := Real.sqrt_pos.2 hn
+    rw [div_le_iff₀ hn]
+    calc (k n : ℝ) ≤ √(n : ℝ) := Real.nat_sqrt_le_real_sqrt
+      _ = (√(n : ℝ))⁻¹ * n := by
+          field_simp
+          rw [Real.sq_sqrt hn.le]
+  have h1 := tendstoInDistribution_comp_tailEmpiricalPath hVm hindV hlawV hk hkn hB hBfdd
+    (continuous_hillFunctional hε0).measurable
+    (ae_of_all _ fun _ ↦ (continuous_hillFunctional hε0).continuousAt)
+  have hkR : Tendsto (fun n ↦ (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have h2 := tendstoInDistribution_sum_hillSummand hVm hindV hlawV hk hkn (ε := fun _ ↦ ε)
+    (fun _ ↦ hε0) (fun _ ↦ hε1) tendsto_const_nhds
+    (tendsto_const_nhds.div_atTop (Real.tendsto_sqrt_atTop.comp hkR))
+  have h2' := h2.of_map_eq
+    (X := fun n ω ↦ hillFunctional ε (tailEmpiricalPath V n (k n) ω))
+    (fun n ↦ ((continuous_hillFunctional hε0).measurable.comp
+      (measurable_tailEmpiricalPath hVm n (k n))).aemeasurable) (by
+      filter_upwards [eventually_gt_atTop 0, hk.eventually_gt_atTop 0] with n hn hk0
+      congr 1
+      funext ω
+      exact hillFunctional_tailEmpiricalPath V hn hk0 hε0 hε1 ω)
+  have := tendstoInDistribution_unique _ h1 h2'
+  rw [this, Measure.map_id]
+
+end ContinuousMapping
 
 end ExtremeValueTheory
