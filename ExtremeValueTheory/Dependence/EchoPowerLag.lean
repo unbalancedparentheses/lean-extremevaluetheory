@@ -1,5 +1,6 @@
 import ExtremeValueTheory.Dependence.EchoPhaseTransition
 
+
 open MeasureTheory ProbabilityTheory Filter Topology Set
 open scoped ENNReal NNReal
 
@@ -232,5 +233,113 @@ theorem antiClusteringAt_echoProcess {u : ℕ → ℝ} (hu : Tendsto u atTop atT
     _ ≤ _ := mul_le_mul_of_nonneg_left hX0 hε.le
 
 end EchoAC
+
+/-! ### The power echo lag `L(z) = ⌊z^γ⌋₊ + 1` -/
+
+section PowLag
+
+variable {α γ : ℝ}
+
+/-- The power echo lag `L(z) = ⌊z^γ⌋₊ + 1` (`≈ z^γ`, and `≥ 1`). -/
+noncomputable def powLag (γ z : ℝ) : ℕ := ⌊z ^ γ⌋₊ + 1
+
+theorem measurable_powLag (γ : ℝ) : Measurable (powLag γ) :=
+  (Nat.measurable_floor.comp (measurable_id.pow_const γ)).add_const 1
+
+theorem one_le_powLag (γ z : ℝ) : 1 ≤ powLag γ z := Nat.le_add_left 1 _
+
+theorem tendsto_powLag (hγ : 0 < γ) : Tendsto (powLag γ) atTop atTop :=
+  tendsto_atTop_mono (fun _ => Nat.le_succ _)
+    (tendsto_nat_floor_atTop.comp (tendsto_rpow_atTop hγ))
+
+theorem rpow_lt_powLag (γ z : ℝ) : z ^ γ < powLag γ z := by
+  simp only [powLag, Nat.cast_add, Nat.cast_one]
+  exact Nat.lt_floor_add_one _
+
+theorem powLag_le {z : ℝ} (hz : 0 ≤ z) : (powLag γ z : ℝ) ≤ z ^ γ + 1 := by
+  simp only [powLag, Nat.cast_add, Nat.cast_one]
+  linarith [Nat.floor_le (Real.rpow_nonneg hz γ)]
+
+/-- The tail of the power lag: `P(L(Z) ≥ j + 2) ≤ (j + 1)^(-α/γ)`. -/
+theorem measureReal_powLag_le (hα : 0 < α) (hγ : 0 < γ) (j : ℕ) :
+    (paretoMeasure 1 α).real {z | j + 1 + 1 ≤ powLag γ z} ≤ ((j : ℝ) + 1) ^ (-(α / γ)) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  set x : ℝ := ((j : ℝ) + 1) ^ (1 / γ)
+  have hj : (1 : ℝ) ≤ (j : ℝ) + 1 := by have := j.cast_nonneg (α := ℝ); linarith
+  have hx : 1 ≤ x := Real.one_le_rpow hj (by positivity)
+  calc (paretoMeasure 1 α).real {z | j + 1 + 1 ≤ powLag γ z}
+      ≤ (paretoMeasure 1 α).real (Ioi x ∪ {x}) := by
+        refine ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono_ae ?_)
+        filter_upwards [ae_one_lt_paretoMeasure (α := α)] with z hz1 hz
+        have hz' : j + 1 ≤ ⌊z ^ γ⌋₊ := by simpa [powLag] using hz
+        have hle : (j : ℝ) + 1 ≤ z ^ γ := by
+          have := (Nat.cast_le (α := ℝ)).2 hz'
+          push_cast at this
+          exact this.trans (Nat.floor_le (Real.rpow_nonneg (by linarith) _))
+        have hxz : x ≤ z := by
+          have := Real.rpow_le_rpow (by linarith) hle (by positivity : (0 : ℝ) ≤ 1 / γ)
+          rwa [← Real.rpow_mul (by linarith), mul_one_div_cancel hγ.ne', Real.rpow_one] at this
+        rcases hxz.lt_or_eq with h | h
+        · exact Or.inl h
+        · exact Or.inr h.symm
+    _ ≤ (paretoMeasure 1 α).real (Ioi x) + (paretoMeasure 1 α).real {x} := measureReal_union_le _ _
+    _ = ((j : ℝ) + 1) ^ (-(α / γ)) := by
+        rw [paretoMeasure_one_real_Ioi hα hx, measureReal_def, paretoMeasure_singleton,
+          ENNReal.toReal_zero, add_zero, ← Real.rpow_mul (by linarith)]
+        congr 1
+        ring
+
+/-- `E[L(Z)] < ∞` for the power lag, when `γ < α`. -/
+theorem summable_powLag (hα : 0 < α) (hγ : 0 < γ) (hγα : γ < α) :
+    Summable fun j : ℕ => (paretoMeasure 1 α).real {z | j + 1 ≤ powLag γ z} := by
+  refine (summable_nat_add_iff 1).1 ?_
+  have hs : Summable fun j : ℕ => ((j : ℝ) + 1) ^ (-(α / γ)) := by
+    have h := (summable_nat_add_iff 1).2 (Real.summable_nat_rpow.2
+      (show -(α / γ) < -1 by have := (one_lt_div hγ).2 hγα; linarith))
+    simpa using h
+  refine hs.of_nonneg_of_le (fun _ => measureReal_nonneg) fun j => ?_
+  simpa using measureReal_powLag_le hα hγ j
+
+/-- **Block mass of the power lag.** With `I = E[min(Z^γ, r); Z > u] = r u^(-α) φ_{α/γ}(u^γ / r)`,
+`I ≤ E[min(L(Z), r); Z > u] ≤ I + u^(-α)`. -/
+theorem echoBlockMass_powLag_bounds (hα : 0 < α) (hγ : 0 < γ) (hγα : γ < α) {u : ℝ}
+    (hu : 1 ≤ u) {r : ℕ} (hr : 0 < r) :
+    r * u ^ (-α) * echoShape (α / γ) (u ^ γ / r) ≤ echoBlockMass α (powLag γ) u r ∧
+      echoBlockMass α (powLag γ) u r ≤
+        r * u ^ (-α) * echoShape (α / γ) (u ^ γ / r) + u ^ (-α) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  have hu0 : 0 < u := one_pos.trans_le hu
+  have hR : (0 : ℝ) < r := by exact_mod_cast hr
+  rw [← setIntegral_min_rpow_pareto hα hγ hγα hu hR]
+  have hint1 : IntegrableOn (fun z => min (z ^ γ) (r : ℝ)) (Ioi u) (paretoMeasure 1 α) := by
+    refine (integrable_const (r : ℝ)).mono' ?_ (ae_restrict_of_forall_mem measurableSet_Ioi
+      fun z hz => ?_)
+    · exact ((measurable_id.pow_const γ).min measurable_const).aestronglyMeasurable
+    · rw [Real.norm_of_nonneg (le_min (Real.rpow_nonneg (hu0.trans hz).le _) hR.le)]
+      exact min_le_right _ _
+  have hint2 := integrable_min_lag hα (measurable_powLag γ) u r
+  have hpt : ∀ z ∈ Ioi u, min (z ^ γ) (r : ℝ) ≤ ((min (powLag γ z) r : ℕ) : ℝ) ∧
+      ((min (powLag γ z) r : ℕ) : ℝ) ≤ min (z ^ γ) (r : ℝ) + 1 := by
+    intro z hz
+    have hz0 : 0 ≤ z := (hu0.trans hz).le
+    have h1 := rpow_lt_powLag γ z
+    have h2 := powLag_le (γ := γ) hz0
+    rw [Nat.cast_min]
+    constructor
+    · exact min_le_min h1.le le_rfl
+    · rcases le_total (z ^ γ) r with h | h
+      · rw [min_eq_left h]; exact (min_le_left _ _).trans h2
+      · rw [min_eq_right h]; linarith [min_le_right (powLag γ z : ℝ) r]
+  constructor
+  · exact setIntegral_mono_on hint1 hint2 measurableSet_Ioi fun z hz => (hpt z hz).1
+  · calc echoBlockMass α (powLag γ) u r
+        ≤ ∫ z in Ioi u, (min (z ^ γ) (r : ℝ) + 1) ∂(paretoMeasure 1 α) :=
+          setIntegral_mono_on hint2 (hint1.add (integrable_const 1)) measurableSet_Ioi
+            fun z hz => (hpt z hz).2
+      _ = _ := by
+          rw [integral_add hint1 (integrable_const 1), setIntegral_const, smul_eq_mul, mul_one,
+            paretoMeasure_one_real_Ioi hα hu]
+
+end PowLag
 
 end ExtremeValueTheory
