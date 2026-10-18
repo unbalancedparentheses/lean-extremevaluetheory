@@ -9,6 +9,41 @@ import ExtremeValueTheory.ForMathlib.Probability.SkorokhodFunctionals
 
 /-!
 # Hill's estimator via the tail empirical process
+
+Applications of the uniform tail empirical process
+`W_n(t) = √k ((1/k) ∑_{i<n} 1{U_i ≥ 1 - (k/n) t} - t)` (`tailEmpiricalProcess`) and of its
+weak convergence in `D([0, 1])` ([de Haan–Ferreira, §5.1–5.2]; [Drees 1998]).
+
+* **Continuous functionals.** If `B` has the finite-dimensional distributions of Brownian motion,
+  `h(W_n) ⇒ h(B)` for every measurable functional `h` on `D` continuous at almost every path of
+  `B` (`tendstoInDistribution_comp_tailEmpiricalPath`), e.g. the supremum
+  (`tendstoInDistribution_supNorm_tailEmpiricalPath`) and the integral functionals of
+  `SkorokhodSpace.continuous_integral_mul`. As an application, the law of the Brownian functional
+  `∫_ε^1 B(t) dt / t - B(1)` is `N(0, 1 + 2 ε log ε)` (`map_hillFunctional_eq_gaussianReal`).
+* **Weighted approximation near `0`.** For `η > 0`,
+  `lim_{δ → 0} limsup_n P(sup_{0 < t ≤ δ} |W_n(t)| / t ^ (1/2 - η) > ε) = 0`
+  (`exists_eventually_measureReal_weighted_le`), and `E ∫_0^ε |W_n(t)| dt / t ≤ 2 √ε`
+  (`lintegral_lintegral_tailEmpiricalProcess_div_le`).
+* **Hill's estimator.** For the exponential sample `E_i = -log (1 - U_i)` and
+  `T = (n/k) (1 - U_{(k+1)})`, the Hill statistic is exactly
+  `√k ((1/k) ∑_{j<k} (E_{(j+1)} - E_{(k+1)}) - 1) = ∫_0^T W_n(t) dt / t + √k (T - 1)`
+  (`meanExcess_eq_integral_tailEmpiricalProcess`). This is
+  `∫_ε^1 W_n(t) dt / t - W_n(1)` up to a remainder that vanishes in probability
+  (`tendstoInMeasure_meanExcessStat_sub_sum_hillSummand`), and the truncated functional is a row
+  sum of a triangular array satisfying the central limit theorem
+  (`tendstoInDistribution_sum_hillSummand`). Hence the Hill statistic is asymptotically `N(0, 1)`
+  (`tendstoInDistribution_meanExcessStat`,
+  `tendstoInDistribution_meanExcess_of_tailEmpiricalProcess`)
+  and, for Pareto samples with `k → ∞`, `k / n → 0`, `√k (H_{k,n} - 1/α) ⇒ N(0, 1/α²)`
+  (`tendstoInDistribution_hill_pareto_of_tailEmpiricalProcess`), a second proof of
+  `tendstoInDistribution_hill_pareto` (which uses the Rényi representation).
+
+## References
+
+* [L. de Haan, A. Ferreira, *Extreme Value Theory: An Introduction*], Theorems 3.2.5, 5.1.4
+* [J. H. J. Einmahl, *Limit theorems for tail processes with application to intermediate quantile
+  estimation*, J. Statist. Plann. Inference 32 (1992)]
+* [H. Drees, *On smooth statistical tail functionals*, Scand. J. Statist. 25 (1998)]
 -/
 
 open MeasureTheory ProbabilityTheory Filter Finset Topology
@@ -1877,7 +1912,8 @@ theorem exists_eventually_measureReal_weighted_le_aux (hU : ∀ i, Measurable (U
 
 /-- **Weighted approximation of the tail empirical process near `0`** (Chibisov–O'Reilly type
 tail estimate; [de Haan–Ferreira, Theorem 5.1.4, weighted form]; [Einmahl 1992]). For
-`η > 0` (the interesting range is `η < 1/2`), `ε > 0` and `θ > 0` there is `δ ∈ (0, 1]` such that eventually
+`η > 0` (the interesting range is `η < 1/2`), `ε > 0` and `θ > 0` there is `δ ∈ (0, 1]` such
+that eventually
 `P(∃ t ∈ (0, δ], |W_n(t)| > ε t ^ (1/2 - η)) ≤ θ`; that is,
 `lim_{δ → 0} limsup_n P(sup_{0 < t ≤ δ} |W_n(t)| / t ^ (1/2 - η) > ε) = 0`.
 
