@@ -1,5 +1,50 @@
+/-
+Copyright (c) 2026 Federico Carrone.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Federico Carrone
+-/
 import ExtremeValueTheory.RegularVariation.CramerWold
 import Mathlib.MeasureTheory.Measure.Prokhorov
+
+/-!
+# The converse Cramér–Wold device for non-integer indices
+
+We prove Theorem 1.1 (i) of Basrak, Davis and Mikosch, *A characterization of multivariate
+regular variation*, Ann. Appl. Probab. 12 (2002) [BDM02]: let `X` be a random vector in a
+finite-dimensional real normed space `E` and `V` regularly varying with index `-α`, where `α > 0`
+is **not an integer**. If `P(L X > x) / V(x) → w(L)` for every continuous linear functional `L`,
+and `w` is not identically zero, then `X` is multivariate regularly varying with index `α`
+(`isRegVarVector_of_tendsto_linear`, in the `IsRegVarVector` sense of
+`RegularVariation/Multivariate.lean`). For integer `α` this fails in general (Hult and Lindskog,
+Bernoulli 12 (2006) [HL06b]).
+
+## The argument
+
+Write `ν_x = P(X / x ∈ ·) / V(x)` (`scaledLaw`). We first replace `V` by the antitone function
+`P(L₀ X > x)` with `w(L₀) ≠ 0` (it is regularly varying by `IsRegularlyVarying.of_tendsto_div`).
+
+1. *Tail bounds.* Finitely many linear functionals dominate the norm
+   (`exists_linear_family_norm`), so together with the Potter bounds for `V`,
+   `ν_x {‖y‖ > t} ≤ K max (t ^ (-α / 2), t ^ (-3 α / 2))` whenever `x ≥ x₁` and `x t ≥ x₁`
+   (`exists_tail_bound`).
+2. *Compactness.* The weighted laws `min (1, ‖y‖) ^ (2 α) ν_x (dy)` (`weightedLaw`) have masses
+   bounded above (`exists_weightedLaw_univ_le`, a Karamata-type estimate by the layer-cake
+   formula) and below (`exists_le_weightedLaw_univ`) and are uniformly tight. By Prokhorov's
+   theorem (`isCompact_closure_of_isTightMeasureSet`) every sequence `x_n → ∞` has a subsequence
+   along which they converge weakly; dividing by the weight gives a measure `μ` on `E \ {0}` with
+   `∫ f dν_{x_n} → ∫ f dμ` for bounded continuous `f` vanishing near the origin
+   (`exists_subseq_tendsto`).
+3. *Identification of limit points.* Every such limit point satisfies
+   `μ {‖y‖ > t} ≤ W t ^ (-α)` (`exists_limit_tail_le`) and `μ {L > s} = w(L) s ^ (-α)`
+   (`limit_halfSpace`, by the portmanteau theorem at all but countably many levels and
+   monotonicity). By the uniqueness theorem `ext_of_halfSpace_of_tail` (which needs `α ∉ ℤ`) all
+   limit points coincide, so `ν_x → μ` along `x → ∞` (`tendsto_of_subseq_tendsto`).
+4. *Conclusion.* The same uniqueness theorem shows that `μ` is homogeneous of order `-α`, so
+   spheres are `μ`-null (`measure_norm_eq_zero_of_map_smul`), `P(‖X‖ > x) / V(x) → κ =
+   μ {‖y‖ > 1} > 0`, `P(‖X‖ > x)` is regularly varying, and `X` is regularly varying with exponent
+   measure `κ⁻¹ μ` (`isRegVarVector_of_tendsto_linear_of_antitone`, which also records
+   `κ⁻¹ μ {L > 1} = w(L) / κ`).
+-/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set BoundedContinuousFunction
 open scoped ENNReal NNReal
@@ -939,7 +984,7 @@ theorem isRegVarVector_of_tendsto_linear_of_antitone [IsProbabilityMeasure P]
 for some function `V` regularly varying with index `-α`, `α > 0` **not an integer**, the tails of
 all linear combinations satisfy `P(L X > x) / V(x) → w(L)` for every continuous linear functional
 `L`, with `w` not identically zero. Then `X` is multivariate regularly varying with index `α`.
-For integer `α` the statement fails ([HL06]). -/
+For integer `α` the statement fails in general ([HL06b]). -/
 theorem isRegVarVector_of_tendsto_linear [IsProbabilityMeasure P] [FiniteDimensional ℝ E]
     (hX : Measurable X) {α : ℝ} (hα : 0 < α) (hαZ : ∀ k : ℤ, α ≠ k)
     {V : ℝ → ℝ} (hV : IsRegularlyVarying V (-α)) {w : StrongDual ℝ E → ℝ}

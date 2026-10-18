@@ -88,6 +88,7 @@ import ExtremeValueTheory.ForMathlib.Probability.PoissonRandomMeasureLaplace
 import ExtremeValueTheory.ForMathlib.Probability.RandomMeasureLaw
 import ExtremeValueTheory.RegularVariation.Multivariate
 import ExtremeValueTheory.RegularVariation.CramerWold
+import ExtremeValueTheory.RegularVariation.CramerWoldConverse
 import ExtremeValueTheory.Dependence.StationaryWindows
 import ExtremeValueTheory.Dependence.Anticlustering
 import ExtremeValueTheory.Dependence.ThetaLeVartheta

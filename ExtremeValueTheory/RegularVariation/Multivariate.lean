@@ -54,7 +54,8 @@ bounded away from the origin with `μ(∂A) = 0`.
 
 The converse Cramér–Wold device (regular variation of every `L X`, with a common normalization,
 implies regular variation of `X` when `α` is not an integer [BDM02]; it fails for integer `α`) is
-not formalized.
+in `RegularVariation/CramerWold.lean` (uniqueness of the exponent measure given the half-space
+values) and `RegularVariation/CramerWoldConverse.lean` (existence).
 
 The polar decomposition reuses the single-vector Basrak–Segers machinery of
 `Dependence/TailProcess.lean` (`tendstoLawCond_smul`, `tendstoLawCond_spectral_of_tendstoLawCond`).

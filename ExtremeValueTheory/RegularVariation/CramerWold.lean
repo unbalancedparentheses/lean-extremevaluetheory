@@ -9,7 +9,53 @@ import Mathlib.NumberTheory.Real.Irrational
 import Mathlib.Algebra.Group.ForwardDiff
 
 /-!
-# Half-spaces determine homogeneous measures (converse Cramér–Wold, uniqueness part)
+# Half-spaces determine homogeneous measures of non-integer order
+
+This file proves the uniqueness step of the converse Cramér–Wold device of Basrak, Davis and
+Mikosch, *A characterization of multivariate regular variation*, Ann. Appl. Probab. 12 (2002)
+[BDM02], Theorem 1.1 (i) (see also Boman and Lindskog, *Support theorems for the Radon transform
+and Cramér–Wold theorems*, J. Theoret. Probab. 22 (2009) [BL09]): on a finite-dimensional real
+normed space, a measure `μ` without atom at the origin whose norm tail is `O(t ^ (-α))`, with
+`α > 0` **not an integer**, is determined by its values `μ {L > 1}` on the half-spaces not
+containing the origin. The existence step (regular variation of `X` from the tails of its linear
+combinations) is in `RegularVariation/CramerWoldConverse.lean`.
+
+## The argument
+
+Instead of the Radon transform we use characteristic functions. With `n = ⌊α⌋`, the kernel
+`g (s) = e^{is} - ∑_{k ≤ n} (is)^k / k!` (`expRem n`) satisfies `|g (s)| ≤ (n + 2) min (|s| ^ (n + 1),
+|s| ^ n)` (`norm_expRem_le`), and `min (‖y‖ ^ (n + 1), ‖y‖ ^ n)` is `μ`-integrable exactly because
+`n < α < n + 1` (`integrable_minPow_norm`, by the layer-cake formula). This is where the
+non-integrality of `α` is used.
+
+1. If `μ` and `ν` agree on all half-spaces `{L > 1}`, the images of `μ` and `ν` under any linear
+   functional agree on `(0, ∞)` (`map_restrict_Ioi_eq`), hence `∫ G (M y) dμ = ∫ G (M y) dν` for
+   every `G` with `G 0 = 0` (`integral_comp_eq`).
+2. The `2 (n + 1)`-th forward difference in the step `b` of `g` equals that of `x ↦ e^{ix}`,
+   because forward differences of that order kill polynomials of degree `≤ n`
+   (`fwdDiff_iter_expRem`, via Mathlib's `Polynomial.fwdDiff_iter_eq_zero_of_degree_lt`), and
+   `Δ_b^{2m} e^{i·} (a) = (-4)^m sin (b / 2) ^ {2m} e^{i (a + m b)}` (`fwdDiff_iter_cexp`,
+   `cexp_sub_one_pow`). Hence the characteristic function of the finite measure
+   `sin (v y / 2) ^ {2m} μ (dy)` is a finite combination of integrals `∫ g (M y) dμ`.
+3. By uniqueness of characteristic functions (`Measure.ext_of_charFunDual`), `μ` and `ν` agree on
+   `{sin (v y / 2) ≠ 0}` for every `v`; the coordinate functionals of a basis and their
+   `√2`-multiples give finitely many such sets covering `E \ {0}`
+   (`exists_coordFamily_sin_ne_zero`, using the irrationality of `√2`).
+
+## Main results
+
+* `ext_of_halfSpace`: the abstract uniqueness theorem for a kernel `g` with the forward-difference
+  property and integrable compositions `g ∘ M`.
+* `ext_of_halfSpace_of_tail`: two measures without atom at `0`, with `O(t ^ (-α))` norm tails,
+  `α > 0` not an integer, agreeing on all half-spaces `{L > 1}`, are equal.
+* `ext_of_halfSpace_of_map_smul`: the same for measures homogeneous of order `-α`.
+* `IsRegVarVector.eq_of_measureReal_halfSpace`, `IsRegVarVector.eq_of_tendsto_linear`: the
+  exponent measure of a regularly varying vector with non-integer index is determined by the
+  limits `lim P(L X > x) / P(‖X‖ > x)` of the tails of its linear combinations.
+
+For integer `α` these statements fail in general: Hult and Lindskog, *On Kesten's counterexample
+to the Cramér–Wold device for regular variation*, Bernoulli 12 (2006) [HL06b], construct
+counterexamples. In the proof above the integrability of the kernel is what needs `α ∉ ℤ`.
 -/
 
 open MeasureTheory Filter Topology Set Complex
@@ -503,7 +549,7 @@ the origin, with `μ {‖y‖ > t} ≤ C t ^ (-α)` and `ν {‖y‖ > t} ≤ C'
 With `n = ⌊α⌋`, the kernel `e^{is} - ∑_{k ≤ n} (is)^k / k!` is `O(min (|s| ^ (n + 1), |s| ^ n))`,
 which is integrable against both measures exactly because `n < α < n + 1`; its forward
 differences of order `2 (n + 1)` agree with those of `e^{is}`, and `ext_of_halfSpace` applies.
-For integer `α` the statement is false ([HL06], [BL09]). -/
+For integer `α` the statement is false in general ([HL06b]). -/
 theorem ext_of_halfSpace_of_tail {α : ℝ} (hα : 0 < α) (hαZ : ∀ k : ℤ, α ≠ k)
     {C C' : ℝ≥0∞} (hC : C ≠ ∞) (hC' : C' ≠ ∞)
     (hμt : ∀ t > 0, μ {y | t < ‖y‖} ≤ ENNReal.ofReal (t ^ (-α)) * C)
