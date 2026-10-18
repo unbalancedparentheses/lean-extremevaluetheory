@@ -483,6 +483,40 @@ theorem lintegral_lt_top_of_measure_lt_abs_le [IsProbabilityMeasure μ] {s r C x
 
 end TailMoment
 
+/-! ### Tail bounds for the stationary solution -/
+
+/-- **Tail upper bound in the Kesten–Goldie regime**: under the hypotheses of
+`lintegral_enorm_rpow_stationaryLaw_lt_top_of_lt`, for every `0 < s < κ` there is `C` with
+`P(|X| > x) ≤ C x^{-s}` for all `x > 0`; i.e. `P(|X| > x) = O(x^{-κ + ε})` for every `ε > 0`. -/
+theorem exists_stationaryLaw_tail_le
+    (hA : Integrable (fun p : ℝ × ℝ => log |p.1|) ν) (hneg : ∫ p, log |p.1| ∂ν < 0)
+    (hB : Integrable (fun p : ℝ × ℝ => posLog p.2) ν) {κ : ℝ} (hκ : 0 < κ)
+    (h1 : ∫⁻ p, ‖p.1‖ₑ ^ κ ∂ν = 1) (hnd : ¬ ∀ᵐ p ∂ν, |p.1| = 1)
+    (hBκ : ∫⁻ p, ‖p.2‖ₑ ^ κ ∂ν < ∞) {s : ℝ} (hs : 0 < s) (hsκ : s < κ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ x : ℝ, 0 < x →
+      stationaryLaw ν {y | x < |y|} ≤ ENNReal.ofReal (C * x ^ (-s)) :=
+  exists_measure_lt_abs_le_of_lintegral_lt_top hs
+    (lintegral_enorm_rpow_stationaryLaw_lt_top_of_lt hA hneg hB hκ h1 hnd hBκ hs hsκ)
+
+/-- **No faster power decay than `x^{-κ}`**: under the hypotheses of
+`lintegral_enorm_rpow_stationaryLaw_eq_top_of_lt` (`A, B ≥ 0`), for every `s > κ` the tail
+`P(X > x)` is **not** `O(x^{-s})`. With `exists_stationaryLaw_tail_le`, the tail index of the
+stationary solution is exactly `κ`. -/
+theorem not_stationaryLaw_tail_le
+    (hA : Integrable (fun p : ℝ × ℝ => log |p.1|) ν) (hneg : ∫ p, log |p.1| ∂ν < 0)
+    (hB : Integrable (fun p : ℝ × ℝ => posLog p.2) ν) (hApos : ∀ᵐ p ∂ν, 0 ≤ p.1)
+    (hBpos : ∀ᵐ p ∂ν, 0 ≤ p.2) (hB0 : ¬ ∀ᵐ p ∂ν, p.2 = 0) {κ : ℝ} (hκ : 0 < κ)
+    (h1 : ∫⁻ p, ‖p.1‖ₑ ^ κ ∂ν = 1) (hnd : ¬ ∀ᵐ p ∂ν, |p.1| = 1) {s : ℝ} (hsκ : κ < s) :
+    ¬ ∃ C x₀ : ℝ, 0 ≤ C ∧ 0 < x₀ ∧ ∀ x, x₀ ≤ x →
+      stationaryLaw ν {y | x < |y|} ≤ ENNReal.ofReal (C * x ^ (-s)) := by
+  rintro ⟨C, x₀, hC, hx₀, h⟩
+  have hr : κ < (κ + s) / 2 := by linarith
+  have hfin := lintegral_lt_top_of_measure_lt_abs_le (r := (κ + s) / 2) (by linarith) (by linarith)
+    hC hx₀ h
+  rw [lintegral_enorm_rpow_stationaryLaw_eq_top_of_lt hA hneg hB hApos hBpos hB0 hκ h1 hnd hr]
+    at hfin
+  exact lt_irrefl _ hfin
+
 end SRE
 
 end ExtremeValueTheory
