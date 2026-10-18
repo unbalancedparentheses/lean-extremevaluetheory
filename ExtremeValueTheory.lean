@@ -108,6 +108,7 @@ import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.Separable
 import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.Complete
 import ExtremeValueTheory.Statistics.ExtremeQuantileSecondOrder
 import ExtremeValueTheory.Statistics.ExtremeQuantileRhoZero
+import ExtremeValueTheory.Statistics.MomentNormality
 import ExtremeValueTheory.HeavyTails.LinearProcess
 import ExtremeValueTheory.HeavyTails.LinearProcessSeries
 import ExtremeValueTheory.Dependence.MovingAverage
