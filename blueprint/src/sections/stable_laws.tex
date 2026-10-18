@@ -686,3 +686,40 @@ $\mu^{*n}$ for the convolution power (Definition~\ref{def:convPow}).
   Sufficiency by Theorem~\ref{thm:gclt-asymmetric}; necessity by Theorem~\ref{thm:stable-limit-identification}, after
   ruling out a converse index of $2$ via $|\varphi_\nu(t)|^2 \ge \exp(-6 K t^{\alpha'})$ and uniqueness of the index.
 \end{proof}
+
+\begin{theorem}[Every stable law has a unique index]
+  \label{thm:stable-index}
+  \uses{def:is-stable-index, thm:stable-limit-identification}
+  \lean{ExtremeValueTheory.IsStable.exists_tendsto_self, ExtremeValueTheory.IsStable.exists_isStableIndex, ExtremeValueTheory.IsStable.exists_norm_charFun,
+    ExtremeValueTheory.IsStableIndex.index_eq, ExtremeValueTheory.IsStableIndex.pos, ExtremeValueTheory.IsStableIndex.le_two,
+    ExtremeValueTheory.IsStable.existsUnique_isStableIndex, ExtremeValueTheory.isStable_iff_exists_isStableIndex, ExtremeValueTheory.stableIndex,
+    ExtremeValueTheory.isStableIndex_iff_stableIndex_eq, ExtremeValueTheory.domainOfAttraction_isStable_iff}
+  \leanok
+  Every stable law has a unique index $\alpha \in (0, 2]$: its norming constants are $a_n = n^{1/\alpha}$ and
+  $|\varphi(t)| = e^{-c|t|^\alpha}$ [Feller, \S VI.1, Theorem~1]. Hence the domain-of-attraction characterization holds with
+  a plain stable limit of index $\alpha$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  A stable law lies in its own domain of attraction, so the converse of the generalized CLT supplies an index; the
+  identification theorem ($\alpha < 2$) or a second-order bound ($\alpha = 2$) gives $|\varphi|$, which pins $a_n$.
+\end{proof}
+
+\begin{theorem}[The domain of attraction of the normal law]
+  \label{thm:gaussian-domain}
+  \uses{thm:stable-index, thm:gclt-converse-asymmetric}
+  \lean{ExtremeValueTheory.exists_eq_gaussianReal_of_tendsto_mul_sqRatio_two,
+    ExtremeValueTheory.exists_eq_gaussianReal_of_isRegularlyVarying_truncSecondMoment, ExtremeValueTheory.exists_isStableIndex_or_gaussian_of_tendsto,
+    ExtremeValueTheory.isStable_of_tendsto, ExtremeValueTheory.IsStableIndex.exists_eq_gaussianReal, ExtremeValueTheory.isStableIndex_two_iff,
+    ExtremeValueTheory.exists_tendsto_gaussianReal_of_isRegularlyVarying, ExtremeValueTheory.domainOfAttraction_gaussianReal_iff,
+    ExtremeValueTheory.domainOfAttraction_isStable_two_iff}
+  \leanok
+  Every non-degenerate limit of normalized sums is stable, and the stable laws of index $2$ are the non-degenerate
+  Gaussians. $X$ is in the domain of attraction of the normal law if and only if it is not a point mass and its
+  truncated second moment is slowly varying [Feller, \S XVII.5], [L\'evy, Feller, Khinchine].
+\end{theorem}
+\begin{proof}
+  \leanok
+  A Lindeberg-type step: if $n\PR[|X| > \varepsilon a_n] \to 0$ and $n \Var(\mathrm{clip}(X/a_n)) \to \sigma^2$ then the centered sums converge
+  to $N(0, \sigma^2)$; the converse at index $2$ supplies these conditions.
+\end{proof}

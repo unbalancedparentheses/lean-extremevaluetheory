@@ -182,7 +182,10 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
   (`GCLTConverse.exists_isRegularlyVarying_tailBalance_of_tendsto`). The limit is identified as stable, giving the
   complete characterization: for `0 < α < 2`, `X` is in the domain of attraction of an `α`-stable law iff
   its tail is `RV_{−α}` with tail balance (`domainOfAttraction_isStableIndex_iff`), with explicit
-  normalizing and centering constants.
+  normalizing and centering constants. Every stable law has a unique index `α ∈ (0, 2]` (Feller VI.1,
+  `IsStable.existsUnique_isStableIndex`), every non-degenerate limit of normalized sums is stable, and
+  the domain of attraction of the normal law is characterized by slow variation of the truncated second
+  moment (`domainOfAttraction_gaussianReal_iff`).
 - **Bivariate extremes** (`Multivariate/`): the Pickands dependence function `A` (bounds, spectral form
   and convexity), the extremal coefficient `θ_E = 2A(1/2)`, the upper tail dependence coefficient
   `λ_U = 2 − θ_E`, tail dependence of regularly varying vectors, and a.s. consistency of the Pickands
