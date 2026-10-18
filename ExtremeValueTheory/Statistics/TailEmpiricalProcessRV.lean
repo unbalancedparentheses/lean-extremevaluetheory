@@ -1516,4 +1516,101 @@ theorem map_hillFunctional_eq_gaussianReal {B : Ω' → SkorokhodSpace ℝ} (hB 
 
 end ContinuousMapping
 
+/-! ### A weighted bound near `0` -/
+
+section Weighted
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+  {U : ℕ → Ω → ℝ}
+
+/-- **The weighted process on one block** `[a, 2a]`: the probability that
+`|W_n(t)| > ε t ^ α` for some `t ∈ [a, 2a]` is bounded by Chebyshev's inequality at `a` and the
+maximal inequality on the block. -/
+lemma measureReal_block_weighted_le (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1)) {n k : ℕ} (hn : 0 < n)
+    (hk : 0 < k) {a α ε : ℝ} (ha : 0 < a) (hα : 0 ≤ α) (hε : 0 < ε)
+    (hp : (k : ℝ) / n * (2 * a) ≤ 1) :
+    P.real {ω | ∃ t ∈ Set.Icc a (2 * a), ε * t ^ α < |tailEmpiricalProcess U n k t ω|} ≤
+      4 / ε ^ 2 * a ^ (1 - 2 * α) + 8 ^ 4 * 256 / ε ^ 4 *
+        (84 * a ^ (2 - 4 * α) + 8 * a ^ (1 - 4 * α) / k + 32 / ε * a ^ (2 - 5 * α) / √(k : ℝ)) := by
+  set c : ℝ := ε * a ^ α with hc
+  have haα : 0 < a ^ α := Real.rpow_pos_of_pos ha α
+  have hc0 : 0 < c := mul_pos hε haα
+  set lam : ℝ := c / 4 with hlam
+  have hlam0 : 0 < lam := by positivity
+  have hk' : (0 : ℝ) < k := Nat.cast_pos.2 hk
+  have hsk : 0 < √(k : ℝ) := Real.sqrt_pos.2 hk'
+  -- the number of dyadic levels
+  obtain ⟨q₀, hq₀', hq₀⟩ := exists_nat_pow_near (le_max_left 1 (√(k : ℝ) * a / lam))
+    (one_lt_two : (1 : ℝ) < 2)
+  set q := q₀ + 1
+  have hq1 : √(k : ℝ) * a / lam ≤ 2 ^ q := (le_max_right _ _).trans hq₀.le
+  have hq2 : (2 : ℝ) ^ q ≤ 2 * (1 + √(k : ℝ) * a / lam) := by
+    rw [pow_succ]
+    have : max 1 (√(k : ℝ) * a / lam) ≤ 1 + √(k : ℝ) * a / lam :=
+      max_le (by linarith [show 0 ≤ √(k : ℝ) * a / lam by positivity]) (by linarith)
+    linarith [hq₀']
+  have hq : √(k : ℝ) * (a / 2 ^ q) ≤ lam := by
+    rw [div_le_iff₀ hlam0] at hq1
+    rw [mul_div_assoc', div_le_iff₀ (by positivity)]
+    linarith
+  -- the events
+  have hsub : {ω | ∃ t ∈ Set.Icc a (2 * a), ε * t ^ α < |tailEmpiricalProcess U n k t ω|} ⊆
+      {ω | c / 2 ≤ |tailEmpiricalProcess U n k a ω|} ∪
+        {ω | ∃ u ∈ Set.Icc a (a + a), 2 * lam <
+          |tailEmpiricalProcess U n k u ω - tailEmpiricalProcess U n k a ω|} := by
+    rintro ω ⟨t, ht, hlt⟩
+    by_contra hcon
+    simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_le, not_exists, not_and,
+      not_lt] at hcon
+    have h1 := hcon.2 t ⟨ht.1, by linarith [ht.2]⟩
+    have h2 : c ≤ ε * t ^ α := mul_le_mul_of_nonneg_left
+      (Real.rpow_le_rpow ha.le ht.1 hα) hε.le
+    have h3 := abs_sub_abs_le_abs_sub (tailEmpiricalProcess U n k t ω)
+      (tailEmpiricalProcess U n k a ω)
+    rw [hlam] at h1
+    linarith [hcon.1]
+  refine (measureReal_mono hsub).trans ((measureReal_union_le _ _).trans ?_)
+  have hA := measureReal_le_abs_tailEmpiricalProcess_le hU hind hlaw (P := P) hn hk ha.le
+    ((mul_le_mul_of_nonneg_left (by linarith) (by positivity)).trans hp) (half_pos hc0)
+  have hB := measureReal_exists_abs_tailEmpiricalProcess_sub_gt_le hU hind hlaw (P := P)
+    hn.ne' ha.le ha (by rw [← two_mul]; exact hp) hlam0 q hq
+  refine add_le_add (hA.trans_eq ?_) (hB.trans ?_)
+  · have h2 : (a ^ α) ^ 2 = a ^ (2 * α) := by
+      rw [← Real.rpow_natCast, ← Real.rpow_mul ha.le]; ring_nf
+    rw [hc, Real.rpow_sub ha, Real.rpow_one, ← h2]
+    field_simp
+    ring
+  · -- simplify the bound of the maximal inequality
+    have h4 : (a ^ α) ^ 4 = a ^ (4 * α) := by
+      rw [← Real.rpow_natCast, ← Real.rpow_mul ha.le]; ring_nf
+    have hl4 : lam ^ 4 = ε ^ 4 * a ^ (4 * α) / 256 := by
+      rw [hlam, hc, ← h4]; ring
+    have e1 : a ^ 2 / a ^ (4 * α) = a ^ (2 - 4 * α) := by
+      rw [Real.rpow_sub ha]; norm_num
+    have e2 : a / a ^ (4 * α) = a ^ (1 - 4 * α) := by
+      rw [Real.rpow_sub ha, Real.rpow_one]
+    have e3 : a * a / lam / a ^ (4 * α) = 4 / ε * a ^ (2 - 5 * α) := by
+      rw [show 2 - 5 * α = 2 - α - 4 * α by ring, Real.rpow_sub ha, Real.rpow_sub ha, hlam, hc]
+      norm_num
+      field_simp
+    have h2q : (2 : ℝ) ^ (q + 2) * a / k ≤
+        8 * (a / k) + 8 * √(k : ℝ) * (a * a / lam) / k := by
+      calc (2 : ℝ) ^ (q + 2) * a / k = 4 * (2 ^ q * a) / k := by ring
+        _ ≤ 4 * (2 * (1 + √(k : ℝ) * a / lam) * a) / k := by gcongr
+        _ = _ := by ring
+    have hkk : √(k : ℝ) / k = 1 / √(k : ℝ) := by
+      field_simp; rw [Real.sq_sqrt hk'.le]
+    calc 8 ^ 4 / lam ^ 4 * (84 * a ^ 2 + 2 ^ (q + 2) * a / k)
+        ≤ 8 ^ 4 / lam ^ 4 * (84 * a ^ 2 + (8 * (a / k) + 8 * √(k : ℝ) * (a * a / lam) / k)) :=
+          mul_le_mul_of_nonneg_left (by linarith) (by positivity)
+      _ = 8 ^ 4 * 256 / ε ^ 4 * (84 * (a ^ 2 / a ^ (4 * α)) + 8 * (a / a ^ (4 * α)) / k +
+          8 * (a * a / lam / a ^ (4 * α)) * (√(k : ℝ) / k)) := by
+          rw [hl4]; field_simp; ring
+      _ = _ := by
+          rw [e1, e2, e3, hkk]
+          ring
+
+end Weighted
+
 end ExtremeValueTheory
