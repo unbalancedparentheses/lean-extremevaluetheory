@@ -24,6 +24,7 @@ Outcomes per mutant:
   invalid   the mutated statement itself does not elaborate (uninformative, counted as killed)
   survived  the original proof still proves the mutated statement (inspect by hand)
   timeout   the check exceeded the time limit (inconclusive)
+  error     the check could not run (OS resource error after retries; inconclusive)
 """
 
 from __future__ import annotations
@@ -358,7 +359,7 @@ def _flip(rel):
     return lambda m: (f"({m.group(1)})" if " " in m.group(1) else m.group(1)) + f" {rel} 0"
 
 
-NUM = r"(?<![\w.₀-₉'])(?<!Fin )({})(?![\w.₀-₉])"
+NUM = r"(?<![\w.₀-₉'≥])(?<!Fin )({})(?![\w.₀-₉∞])"
 
 OPERATORS = [
     # (key, description, op), in priority order
@@ -439,7 +440,8 @@ def mutants_for(stmt: str, cap: int):
 def scratch_source(text, mask, decls, target: Decl, statement: str | None, fast: bool):
     """The file truncated after `target`, with `statement` substituted, prior proofs sorried.
 
-    Returns the source and the (1-based) line range of the statement in it."""
+    Returns the source and the (line, column) span of the statement in it, lines 1-based,
+    columns 0-based (as in Lean's messages); the span ends at the top-level `:=`."""
     parts, cur = [], 0
     if fast:
         for d in decls:
@@ -453,26 +455,48 @@ def scratch_source(text, mask, decls, target: Decl, statement: str | None, fast:
     first = "".join(parts).count("\n") + 1
     stmt = text[target.name_end:target.assign] if statement is None else statement
     parts.append(stmt)
+    before = "".join(parts)
+    assign = (before.count("\n") + 1, len(before) - (before.rfind("\n") + 1))
     parts.append(text[target.assign:target.end])
-    return "".join(parts), (first, first + stmt.count("\n"))
+    return "".join(parts), ((first, 0), assign)
 
 
-def run_lean(path: Path, timeout: float):
-    t0 = time.time()
-    try:
-        p = subprocess.run([LAKE, "env", "lean", str(path)], cwd=ROOT, capture_output=True,
-                           text=True, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        return "timeout", time.time() - t0, ""
+def run_lean(path: Path, timeout: float, attempts: int = 5):
+    """Check one file. Transient OS errors (e.g. a full system file table) are retried."""
+    for attempt in range(attempts):
+        t0 = time.time()
+        try:
+            p = subprocess.run([LAKE, "env", "lean", str(path)], cwd=ROOT, capture_output=True,
+                               text=True, timeout=timeout)
+            if "Too many open files" in p.stdout + p.stderr:  # resource exhaustion, not a verdict
+                raise OSError("Too many open files (reported by lean)")
+            break
+        except subprocess.TimeoutExpired:
+            return "timeout", time.time() - t0, ""
+        except OSError as e:
+            if attempt == attempts - 1:
+                return "oserror", time.time() - t0, str(e)
+            time.sleep(30 * (attempt + 1))
     out = p.stdout + p.stderr
     ok = p.returncode == 0 and ": error" not in out
     return ("ok" if ok else "error"), time.time() - t0, out
 
 
-def first_error(out: str, path: Path) -> tuple[int | None, str]:
-    """Line number and first message line of the first error reported in `path`."""
-    m = re.search(re.escape(str(path)) + r":(\d+):\d+: error:?\s*(.*)", out)
-    return (int(m.group(1)), m.group(2).strip()[:200]) if m else (None, "")
+def write_retry(path: Path, text: str, attempts: int = 5):
+    for attempt in range(attempts):
+        try:
+            path.write_text(text, encoding="utf-8")
+            return
+        except OSError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(30 * (attempt + 1))
+
+
+def first_error(out: str, path: Path) -> tuple[tuple[int, int] | None, str]:
+    """Position (line, column) and first message line of the first error reported in `path`."""
+    m = re.search(re.escape(str(path)) + r":(\d+):(\d+): error:?\s*(.*)", out)
+    return ((int(m.group(1)), int(m.group(2))), m.group(3).strip()[:200]) if m else (None, "")
 
 
 @dataclass
@@ -535,10 +559,13 @@ def main():
         def baseline(ji: int, j: Job):
             for mode in ("fast", "full"):
                 f = tmp / f"b{ji}_{mode}.lean"
-                f.write_text(scratch_source(j.text, j.mask, j.decls, j.decl, None, mode == "fast")[0])
+                write_retry(f, scratch_source(j.text, j.mask, j.decls, j.decl, None, mode == "fast")[0])
                 st, dt, out = run_lean(f, args.skip_after)
                 if st == "ok":
                     j.mode, j.baseline, j.status = mode, dt, "ok"
+                    return
+                if st == "oserror":
+                    j.status = f"skipped: {out}"
                     return
                 if st == "timeout":
                     j.status = f"skipped: unmutated check exceeded {args.skip_after:.0f}s ({mode} prefix)"
@@ -555,18 +582,20 @@ def main():
             j = jobs[ji]
             m = j.mutants[mi]
             f = tmp / f"m{ji}_{mi}.lean"
-            src, (s_line, e_line) = scratch_source(j.text, j.mask, j.decls, j.decl, m["statement"],
+            src, (s_pos, e_pos) = scratch_source(j.text, j.mask, j.decls, j.decl, m["statement"],
                                                    j.mode == "fast")
-            f.write_text(src)
+            write_retry(f, src)
             st, dt, out = run_lean(f, max(300.0, 3 * j.baseline + 60))
             if st == "ok":
                 res = "survived"
             elif st == "timeout":
                 res = "timeout"
+            elif st == "oserror":
+                res, m["error"] = "error", out
             else:
                 # error inside the statement => the mutant does not even elaborate
-                line, m["error"] = first_error(out, f)
-                res = "invalid" if line is not None and s_line <= line <= e_line else "killed"
+                pos, m["error"] = first_error(out, f)
+                res = "invalid" if pos is not None and s_pos <= pos < e_pos else "killed"
             m["result"], m["seconds"] = res, round(dt)
             print(f"  {res:8s} {j.name} [{m['op']}] {m['where']}: {m['context']}"
                   + (f"\n           -> {m['error']}" if m.get("error") else ""), flush=True)
