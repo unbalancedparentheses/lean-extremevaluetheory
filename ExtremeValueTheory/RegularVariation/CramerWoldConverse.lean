@@ -177,15 +177,15 @@ theorem limit_nonneg {α : ℝ} {V : ℝ → ℝ} (hV : IsRegularlyVarying V (-�
 /-- The weight `min (1, ‖y‖) ^ (2 α)`. -/
 noncomputable def weight (α : ℝ) (y : E) : ℝ := min 1 ‖y‖ ^ (2 * α)
 
-omit [MeasurableSpace E] [BorelSpace E] in
+omit [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E] in
 theorem continuous_weight {α : ℝ} (hα : 0 < α) : Continuous (weight (E := E) α) :=
   (continuous_const.min continuous_norm).rpow_const fun _ => Or.inr (by positivity)
 
-omit [MeasurableSpace E] [BorelSpace E] in
+omit [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E] in
 theorem weight_nonneg (α : ℝ) (y : E) : 0 ≤ weight α y :=
   Real.rpow_nonneg (le_min zero_le_one (norm_nonneg y)) _
 
-omit [MeasurableSpace E] [BorelSpace E] in
+omit [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E] in
 theorem weight_le_one {α : ℝ} (hα : 0 < α) (y : E) : weight α y ≤ 1 :=
   Real.rpow_le_one (le_min zero_le_one (norm_nonneg y)) (min_le_left _ _) (by positivity)
 
@@ -194,7 +194,7 @@ noncomputable def weightedLaw (P : Measure Ω) (X : Ω → E) (α : ℝ) (V : �
     Measure E :=
   (scaledLaw P X V x).withDensity fun y => ENNReal.ofReal (weight α y)
 
-omit [MeasurableSpace E] [BorelSpace E] in
+omit [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E] in
 theorem setOf_lt_weight_subset {α : ℝ} (hα : 0 < α) {t : ℝ} (ht : 0 < t) :
     {y : E | t < weight α y} ⊆ {y | t ^ (2 * α)⁻¹ < ‖y‖} := fun y hy => by
   by_contra hle
@@ -205,7 +205,7 @@ theorem setOf_lt_weight_subset {α : ℝ} (hα : 0 < α) {t : ℝ} (ht : 0 < t) 
   rw [Real.rpow_inv_rpow ht.le (by positivity)] at h1
   linarith
 
-omit [MeasurableSpace E] [BorelSpace E] in
+omit [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E] in
 theorem setOf_lt_weight_eq_empty {α : ℝ} (hα : 0 < α) {t : ℝ} (ht : 1 ≤ t) :
     {y : E | t < weight α y} = ∅ := by
   ext y
@@ -315,6 +315,7 @@ theorem exists_weightedLaw_univ_le [IsProbabilityMeasure P] [FiniteDimensional �
         rw [Real.volume_Ioc, sub_zero, ← ENNReal.ofReal_mul (inv_nonneg.2 hVx.le)]
         exact ENNReal.ofReal_le_ofReal hc_le
 
+omit [BorelSpace E] in
 theorem weightedLaw_le [IsFiniteMeasure P] {α : ℝ} (hα : 0 < α) (V : ℝ → ℝ) (x : ℝ) (A : Set E) :
     weightedLaw P X α V x A ≤ scaledLaw P X V x A := by
   rw [weightedLaw, withDensity_apply' _ A]
@@ -323,6 +324,7 @@ theorem weightedLaw_le [IsFiniteMeasure P] {α : ℝ} (hα : 0 < α) (V : ℝ �
         lintegral_mono fun y => by simpa using weight_le_one hα y
     _ = scaledLaw P X V x A := by rw [setLIntegral_const, one_mul]
 
+omit [BorelSpace E] in
 theorem isFiniteMeasure_weightedLaw [IsFiniteMeasure P] {α : ℝ} (hα : 0 < α) (V : ℝ → ℝ)
     (x : ℝ) : IsFiniteMeasure (weightedLaw P X α V x) :=
   ⟨(weightedLaw_le hα V x univ).trans_lt (measure_lt_top _ _)⟩
@@ -371,7 +373,7 @@ theorem exists_le_weightedLaw_univ [IsProbabilityMeasure P] (hX : Measurable X) 
     _ = weightedLaw P X α V x {y | 1 < ‖y‖} := (weightedLaw_one_lt_norm α V x).symm
     _ ≤ weightedLaw P X α V x univ := measure_mono (subset_univ _)
 
-omit [MeasurableSpace E] [BorelSpace E] in
+omit [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E] in
 /-- A bounded continuous function vanishing near the origin, divided by the weight, is again
 bounded continuous. -/
 theorem exists_bcf_div_weight {α : ℝ} (hα : 0 < α) (f : E →ᵇ ℝ) (hf : VanishesNearZero f) :
@@ -586,11 +588,13 @@ theorem scaledLaw_real_linear_lt (hX : Measurable X) [IsFiniteMeasure P] {V : �
     ENNReal.toReal_ofReal (inv_nonneg.2 hV)]
   rfl
 
+omit [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E] in
 theorem vanishesNearZero_normCutoffBCF {t : ℝ} (ht : 0 < t) :
     VanishesNearZero (⇑(normCutoffBCF t : E →ᵇ ℝ)) :=
   ⟨t / 2, half_pos ht, fun y hy => by
     simp [normCutoff_eq_zero ht hy.le]⟩
 
+omit [NormedSpace ℝ E] in
 theorem integral_normCutoffBCF_le (ν : Measure E) [IsFiniteMeasure ν] {t : ℝ} (ht : 0 < t) :
     ∫ y, normCutoffBCF t y ∂ν ≤ ν.real {y | t / 2 < ‖y‖} := by
   have hm : MeasurableSet {y : E | t / 2 < ‖y‖} :=
@@ -606,6 +610,7 @@ theorem integral_normCutoffBCF_le (ν : Measure E) [IsFiniteMeasure ν] {t : ℝ
       normCutoff_eq_zero ht (not_lt.1 hy)]
     simp
 
+omit [NormedSpace ℝ E] in
 /-- `μ {‖y‖ > t} ≤ ∫ normCutoff_t dμ` for a measure finite away from the origin. -/
 theorem measure_lt_norm_le_integral_normCutoff {μ : Measure E}
     (hμ : ∀ r > 0, μ {y | r < ‖y‖} < ∞) {t : ℝ} (ht : 0 < t) :
