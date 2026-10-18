@@ -125,8 +125,6 @@ lemma integrable_mul_one_sub_cdf_pow (h : Integrable (fun x ↦ x) μ) (r : ℕ)
       rw [norm_pow, Real.norm_eq_abs, abs_of_nonneg (by linarith)]
       exact pow_le_one₀ (by linarith) (by linarith))
 
-variable [IsProbabilityMeasure μ]
-
 /-- `β₁ = α₀ - α₁`. -/
 theorem pwm_one_eq (h : Integrable (fun x ↦ x) μ) : pwm μ 1 = pwmSurv μ 0 - pwmSurv μ 1 := by
   simp only [pwm, pwmSurv, pow_zero, mul_one, pow_one]
@@ -154,6 +152,8 @@ theorem lMoment2_eq (h : Integrable (fun x ↦ x) μ) :
 theorem lMoment3_eq (h : Integrable (fun x ↦ x) μ) :
     lMoment3 μ = pwmSurv μ 0 - 6 * pwmSurv μ 1 + 6 * pwmSurv μ 2 := by
   rw [lMoment3, pwm_one_eq h, pwm_two_eq h, ← pwmSurv_zero_eq_pwm_zero]; ring
+
+variable [IsProbabilityMeasure μ]
 
 /-- The distribution function of the image of `μ` under `x ↦ a x + b`, `a > 0`. -/
 lemma cdf_map_affine {a : ℝ} (ha : 0 < a) (b x : ℝ) :
