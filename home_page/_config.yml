@@ -20,7 +20,7 @@
 
 title: Extreme Value Theory in Lean
 #email: your-email@example.com
-description: by Kalle Kytölä
+description: "Extreme value theory in Lean 4. Builds on ExtremeValueProject by Kalle Kytölä and the participants of the Aalto course MS-EV0029."
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://unbalancedparentheses.github.io/lean-extremevaluetheory" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username:
