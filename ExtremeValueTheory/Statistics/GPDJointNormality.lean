@@ -173,6 +173,157 @@ lemma abs_log_sub_le {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhd ξ₀ σ₀) {x : �
     linarith
   linarith
 
+lemma log_one_add_nonneg {x : ℝ} (hx : 0 ≤ x) : 0 ≤ log (1 + ξ₀ * x / σ₀) :=
+  log_nonneg (by have : 0 ≤ ξ₀ * x / σ₀ := by positivity
+                 linarith)
+
+/-- The compact convex box of values of `(ξ, σ, w(θ, x))`, `θ ∈ gpdNbhd ξ₀ σ₀`, `x ≥ 0`. -/
+def gpdBox (ξ₀ σ₀ : ℝ) : Set (ℝ × ℝ × ℝ) :=
+  Icc (ξ₀ / 2) (2 * ξ₀) ×ˢ (Icc (σ₀ / 2) (2 * σ₀) ×ˢ Icc 0 (2 / ξ₀))
+
+lemma mem_gpdBox {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhd ξ₀ σ₀) {x : ℝ} (hx : 0 ≤ x) :
+    (θ.1, θ.2, gpdW θ x) ∈ gpdBox ξ₀ σ₀ := by
+  obtain ⟨h1, h2, h3, h4⟩ := pos_of_mem_gpdNbhd hθ
+  obtain ⟨hw0, hw1⟩ := gpdW_nonneg_le hξ₀ hσ₀ hθ hx
+  have hi : 1 / θ.1 ≤ 2 / ξ₀ := by rw [div_le_div_iff₀ (by linarith) hξ₀]; linarith
+  exact ⟨⟨by linarith, by linarith⟩, ⟨by linarith, by linarith⟩, hw0, hw1.trans hi⟩
+
+omit hξ₀ hσ₀ in
+lemma dist_triple_le (p q : ℝ × ℝ × ℝ) :
+    dist p q ≤ |p.1 - q.1| + |p.2.1 - q.2.1| + |p.2.2 - q.2.2| := by
+  simp only [Prod.dist_eq, Real.dist_eq]
+  have := abs_nonneg (p.1 - q.1); have := abs_nonneg (p.2.1 - q.2.1)
+  have := abs_nonneg (p.2.2 - q.2.2)
+  exact max_le (by linarith) (max_le (by linarith) (by linarith))
+
+/-- A `C¹` function of `(ξ, σ, w)` on the box is Lipschitz in `θ` along `w(θ, x)`, uniformly in
+`x ≥ 0`. -/
+lemma exists_lipschitz_gpdBox {F : ℝ × ℝ × ℝ → ℝ} (hF : ContDiffOn ℝ 1 F (gpdBox ξ₀ σ₀)) :
+    ∃ K : ℝ, 0 ≤ K ∧ ∀ θ ∈ gpdNbhd ξ₀ σ₀, ∀ x, 0 ≤ x →
+      |F (θ.1, θ.2, gpdW θ x) - F (ξ₀, σ₀, gpdW (ξ₀, σ₀) x)| ≤ K * gpdDist ξ₀ σ₀ θ := by
+  have hc : IsCompact (gpdBox ξ₀ σ₀) := isCompact_Icc.prod (isCompact_Icc.prod isCompact_Icc)
+  have hv : Convex ℝ (gpdBox ξ₀ σ₀) :=
+    (convex_Icc _ _).prod ((convex_Icc _ _).prod (convex_Icc _ _))
+  obtain ⟨K, hK⟩ := hF.exists_lipschitzOnWith one_ne_zero hv hc
+  set Cw := 2 / (ξ₀ * σ₀) + 2 / ξ₀ ^ 2
+  have hCw : 0 ≤ Cw := by positivity
+  refine ⟨K * (1 + Cw), by positivity, fun θ hθ x hx => ?_⟩
+  have h := hK.dist_le_mul _ (mem_gpdBox hξ₀ hσ₀ hθ hx) _
+    (mem_gpdBox hξ₀ hσ₀ (mem_gpdNbhd_self hξ₀ hσ₀) hx)
+  rw [Real.dist_eq] at h
+  refine h.trans ?_
+  have hd := dist_triple_le (θ.1, θ.2, gpdW θ x) (ξ₀, σ₀, gpdW (ξ₀, σ₀) x)
+  simp only at hd
+  have hw := abs_gpdW_sub_le hξ₀ hσ₀ hθ hx
+  have : dist (θ.1, θ.2, gpdW θ x) (ξ₀, σ₀, gpdW (ξ₀, σ₀) x) ≤ (1 + Cw) * gpdDist ξ₀ σ₀ θ := by
+    unfold gpdDist at hw ⊢
+    linarith
+  calc (K : ℝ) * dist (θ.1, θ.2, gpdW θ x) (ξ₀, σ₀, gpdW (ξ₀, σ₀) x)
+      ≤ K * ((1 + Cw) * gpdDist ξ₀ σ₀ θ) := by gcongr
+    _ = K * (1 + Cw) * gpdDist ξ₀ σ₀ θ := by ring
+
+/-- **The Hessian of the GPD log-density is Lipschitz near `θ₀`**, with a Lipschitz constant
+growing like `log(1 + ξ₀ x/σ₀)` in the data: for `θ ∈ gpdNbhd ξ₀ σ₀` and `x ≥ 0`,
+`|H(θ, x) - H(θ₀, x)| ≤ K ρ(θ) (1 + log(1 + ξ₀ x/σ₀))` entrywise. -/
+theorem exists_gpdHess_lipschitz :
+    ∃ K : ℝ, 0 ≤ K ∧ ∀ θ ∈ gpdNbhd ξ₀ σ₀, ∀ x, 0 ≤ x →
+      |gpdHessXiXi θ.1 θ.2 x - gpdHessXiXi ξ₀ σ₀ x| ≤
+          K * gpdDist ξ₀ σ₀ θ * (1 + log (1 + ξ₀ * x / σ₀)) ∧
+      |gpdHessXiSigma θ.1 θ.2 x - gpdHessXiSigma ξ₀ σ₀ x| ≤
+          K * gpdDist ξ₀ σ₀ θ * (1 + log (1 + ξ₀ * x / σ₀)) ∧
+      |gpdHessSigmaSigma θ.1 θ.2 x - gpdHessSigmaSigma ξ₀ σ₀ x| ≤
+          K * gpdDist ξ₀ σ₀ θ * (1 + log (1 + ξ₀ * x / σ₀)) := by
+  have hbox : ∀ p ∈ gpdBox ξ₀ σ₀, 0 < p.1 ∧ 0 < p.2.1 := fun p hp => by
+    obtain ⟨⟨h1, -⟩, ⟨h2, -⟩, -⟩ := hp
+    exact ⟨by linarith, by linarith⟩
+  have c0 : ContDiffOn ℝ 1 (fun p : ℝ × ℝ × ℝ => -2 / p.1 ^ 3) (gpdBox ξ₀ σ₀) := by
+    fun_prop (disch := intro p hp; have := (hbox p hp).1; positivity)
+  have c1 : ContDiffOn ℝ 1 (fun p : ℝ × ℝ × ℝ => 2 * p.2.2 / p.1 ^ 2 + (1 / p.1 + 1) * p.2.2 ^ 2)
+      (gpdBox ξ₀ σ₀) := by
+    fun_prop (disch := intro p hp; have := (hbox p hp).1; positivity)
+  have c2 : ContDiffOn ℝ 1 (fun p : ℝ × ℝ × ℝ => (p.2.2 - (1 + p.1) * p.2.2 ^ 2) / p.2.1)
+      (gpdBox ξ₀ σ₀) := by
+    fun_prop (disch := intro p hp; have := (hbox p hp).2; positivity)
+  have c3 : ContDiffOn ℝ 1 (fun p : ℝ × ℝ × ℝ =>
+      (1 - 2 * (1 + p.1) * p.2.2 + p.1 * (1 + p.1) * p.2.2 ^ 2) / p.2.1 ^ 2) (gpdBox ξ₀ σ₀) := by
+    fun_prop (disch := intro p hp; have := (hbox p hp).2; positivity)
+  obtain ⟨K0, hK0, h0⟩ := exists_lipschitz_gpdBox hξ₀ hσ₀ c0
+  obtain ⟨K1, hK1, h1⟩ := exists_lipschitz_gpdBox hξ₀ hσ₀ c1
+  obtain ⟨K2, hK2, h2⟩ := exists_lipschitz_gpdBox hξ₀ hσ₀ c2
+  obtain ⟨K3, hK3, h3⟩ := exists_lipschitz_gpdBox hξ₀ hσ₀ c3
+  set CL := 4 / ξ₀ + 4 / σ₀
+  have hCL : 0 ≤ CL := by positivity
+  refine ⟨16 / ξ₀ ^ 3 * CL + K0 + K1 + K2 + K3, by positivity, fun θ hθ x hx => ?_⟩
+  have hρ := gpdDist_nonneg (ξ₀ := ξ₀) (σ₀ := σ₀) θ
+  have hL₀ := log_one_add_nonneg hξ₀ hσ₀ hx
+  set ρ := gpdDist ξ₀ σ₀ θ
+  set L₀ := log (1 + ξ₀ * x / σ₀)
+  have hρL : ρ ≤ ρ * (1 + L₀) := le_mul_of_one_le_right hρ (by linarith)
+  have hρL' : ρ * L₀ ≤ ρ * (1 + L₀) := mul_le_mul_of_nonneg_left (by linarith) hρ
+  have hK : ∀ k : ℝ, 0 ≤ k → k ≤ 16 / ξ₀ ^ 3 * CL + K0 + K1 + K2 + K3 →
+      k * ρ ≤ (16 / ξ₀ ^ 3 * CL + K0 + K1 + K2 + K3) * ρ * (1 + L₀) := fun k hk hkK => by
+    calc k * ρ ≤ (16 / ξ₀ ^ 3 * CL + K0 + K1 + K2 + K3) * ρ := by gcongr
+      _ ≤ _ := by rw [mul_assoc]; gcongr
+  have h16 : 0 ≤ 16 / ξ₀ ^ 3 * CL := by positivity
+  refine ⟨?_, ?_, ?_⟩
+  · -- the `ξξ` entry carries the logarithm
+    have e : ∀ ξ σ : ℝ, gpdHessXiXi ξ σ x = (-2 / ξ ^ 3) * log (1 + ξ * x / σ) +
+        (2 * gpdW (ξ, σ) x / ξ ^ 2 + (1 / ξ + 1) * gpdW (ξ, σ) x ^ 2) := fun ξ σ => by
+      unfold gpdHessXiXi gpdW; simp only; ring
+    rw [e, e]
+    obtain ⟨hξ1, -, -, -⟩ := pos_of_mem_gpdNbhd hθ
+    have hξ : 0 < θ.1 := by linarith
+    have hF0 : |-2 / θ.1 ^ 3| ≤ 16 / ξ₀ ^ 3 := by
+      rw [abs_div, abs_neg, abs_two, abs_of_pos (by positivity), div_le_div_iff₀ (by positivity)
+        (by positivity)]
+      have : ξ₀ ^ 3 ≤ (2 * θ.1) ^ 3 := pow_le_pow_left₀ hξ₀.le (by linarith) 3
+      nlinarith
+    have hlog := abs_log_sub_le hξ₀ hσ₀ hθ hx
+    have hA := h0 θ hθ x hx
+    have hB := h1 θ hθ x hx
+    simp only at hA hB
+    have split : (-2 / θ.1 ^ 3) * log (1 + θ.1 * x / θ.2) +
+        (2 * gpdW (θ.1, θ.2) x / θ.1 ^ 2 + (1 / θ.1 + 1) * gpdW (θ.1, θ.2) x ^ 2) -
+        ((-2 / ξ₀ ^ 3) * L₀ + (2 * gpdW (ξ₀, σ₀) x / ξ₀ ^ 2 +
+          (1 / ξ₀ + 1) * gpdW (ξ₀, σ₀) x ^ 2)) =
+        (-2 / θ.1 ^ 3) * (log (1 + θ.1 * x / θ.2) - L₀) + (-2 / θ.1 ^ 3 - -2 / ξ₀ ^ 3) * L₀ +
+        ((2 * gpdW θ x / θ.1 ^ 2 + (1 / θ.1 + 1) * gpdW θ x ^ 2) -
+          (2 * gpdW (ξ₀, σ₀) x / ξ₀ ^ 2 + (1 / ξ₀ + 1) * gpdW (ξ₀, σ₀) x ^ 2)) := by
+      simp only [Prod.mk.eta]; ring
+    rw [split]
+    have t1 : |(-2 / θ.1 ^ 3) * (log (1 + θ.1 * x / θ.2) - L₀)| ≤ 16 / ξ₀ ^ 3 * CL * ρ := by
+      rw [abs_mul, mul_assoc]
+      exact mul_le_mul hF0 hlog (abs_nonneg _) (by positivity)
+    have t2 : |(-2 / θ.1 ^ 3 - -2 / ξ₀ ^ 3) * L₀| ≤ K0 * ρ * L₀ := by
+      rw [abs_mul, abs_of_nonneg hL₀]
+      exact mul_le_mul_of_nonneg_right hA hL₀
+    have t3 := hB
+    have := abs_add_three ((-2 / θ.1 ^ 3) * (log (1 + θ.1 * x / θ.2) - L₀))
+      ((-2 / θ.1 ^ 3 - -2 / ξ₀ ^ 3) * L₀)
+      ((2 * gpdW θ x / θ.1 ^ 2 + (1 / θ.1 + 1) * gpdW θ x ^ 2) -
+          (2 * gpdW (ξ₀, σ₀) x / ξ₀ ^ 2 + (1 / ξ₀ + 1) * gpdW (ξ₀, σ₀) x ^ 2))
+    have hsum : 16 / ξ₀ ^ 3 * CL * ρ + K0 * ρ * L₀ + K1 * ρ ≤
+        (16 / ξ₀ ^ 3 * CL + K0 + K1 + K2 + K3) * ρ * (1 + L₀) := by
+      have := mul_le_mul_of_nonneg_left hρL (add_nonneg h16 hK1)
+      have := mul_le_mul_of_nonneg_left hρL' hK0
+      have : 0 ≤ (K0 * ρ + K2 * ρ + K3 * ρ) * (1 + L₀) + (16 / ξ₀ ^ 3 * CL + K1) * ρ * L₀ := by
+        positivity
+      nlinarith
+    linarith
+  · have e : ∀ ξ σ : ℝ, gpdHessXiSigma ξ σ x =
+        (gpdW (ξ, σ) x - (1 + ξ) * gpdW (ξ, σ) x ^ 2) / σ := fun ξ σ => rfl
+    rw [e, e]
+    have := h2 θ hθ x hx
+    simp only at this
+    exact this.trans (hK K2 hK2 (by linarith))
+  · have e : ∀ ξ σ : ℝ, gpdHessSigmaSigma ξ σ x =
+        (1 - 2 * (1 + ξ) * gpdW (ξ, σ) x + ξ * (1 + ξ) * gpdW (ξ, σ) x ^ 2) / σ ^ 2 :=
+      fun ξ σ => rfl
+    rw [e, e]
+    have := h3 θ hθ x hx
+    simp only at this
+    exact this.trans (hK K3 hK3 (by linarith))
+
 end Lipschitz
 
 end ExtremeValueTheory
