@@ -165,3 +165,4 @@ import ExtremeValueTheory.ForMathlib.Probability.SkorokhodBlockTightness
 import ExtremeValueTheory.Statistics.TailEmpiricalProcessRV
 import ExtremeValueTheory.ForMathlib.Probability.SkorokhodFunctionals
 import ExtremeValueTheory.Minimality.DependenceBlockRatio
+import ExtremeValueTheory.Minimality.DependenceLeadbetter
