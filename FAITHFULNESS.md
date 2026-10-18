@@ -203,6 +203,15 @@ Processes*.
 | ‡ `IsSubexponential.of_convPow` | Embrechts–Goldie–Veraverbeke (1979) | `F^{*n} ∈ 𝒮` ⇒ `F ∈ 𝒮` | For laws on `[0,∞)`, `n ≥ 1`. | FAITHFUL |
 | `kesten_bound` | EKM Lemma 1.3.5(c) | ∀ `ε > 0` ∃ `K` ∀ `n`, `x ≥ 0`: `F̄^{*n}(x) ≤ K(1+ε)^n F̄(x)` | Holds for all `n` and all real `x`. | FAITHFUL (slightly stronger) |
 
+## Independent kernel check
+
+Besides Lean's own kernel at build time, CI re-checks the whole exported environment (the library
+and everything it uses from Mathlib) with `con-leche --verified`, an independent kernel checker with a
+machine-checked proof that it never accepts a declaration of type `False`
+(`.github/workflows/kernel-check.yml`). First full run (2026-10-18): 718,274 declarations accepted.
+This checks proofs, not statements: the audits below remain the evidence that the statements are
+the intended ones.
+
 ## Sixth audit (results added after the fifth audit)
 
 No critical problems; all main results use only the standard axioms and match Feller II, Billingsley
