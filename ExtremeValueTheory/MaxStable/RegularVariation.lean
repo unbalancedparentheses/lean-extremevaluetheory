@@ -9,7 +9,45 @@ import Mathlib.MeasureTheory.Measure.Portmanteau
 /-!
 # Simple max-stable vectors are regularly varying
 
-PLACEHOLDER
+Let `X` be a random vector in `ℝ^ι` (`ι` finite and nonempty, with the sup norm) whose law is
+simple max-stable, with spectral measure `H` on the sup-norm sphere `{w | max_i w i = 1}`
+(`IsSimpleMaxStable.exists_hasSpectralMeasure`). Then `X` is **regularly varying with index `1`**
+in the sense of `RegularVariation/Multivariate.lean` (`IsRegVarVector P X 1 μ`), with exponent
+measure `μ = ν_H / H(univ)`, where `ν_H` is the image of `r ^ (-2) dr ⊗ H` under `(r, w) ↦ r w`
+(`spectralExponentMeasure`, `MaxStable/Uniqueness.lean`), and its spectral measure, the law of
+`Y / ‖Y‖` under `μ` restricted to `{‖y‖ > 1}`, is `H / H(univ)`: the max-stable spectral measure up
+to normalization. For a normalized `H` (`∫ w i dH = 1`) the normalizing constant `H(univ)` is the
+extremal coefficient `θ = V(1, …, 1)` ([Res87, Proposition 5.15 and Corollary 5.18]; [dHF, §6.1]).
+
+## The proof
+
+* **Tails.** `P(∃ i, X i / x > d i) = 1 - exp (-Φ(d) / x)` with `Φ(d) = ∫ max_i w i / d i dH`, for
+  thresholds `d ∈ (0, ∞]^ι` (`measureReal_exceedSet`; infinite thresholds by monotone limits). In
+  particular `P(‖X‖ > x) = 1 - exp (-θ / x)` (`measureReal_lt_norm`), which is regularly varying
+  with index `-1`, and the scaled laws `m_x = x P(X / x ∈ ·)` satisfy
+  `m_x {∃ i, y i > d i} → ν_H {∃ i, y i > d i} = Φ(d)` (`tendsto_scaledLaw_exceedSet`).
+* **Boxes.** By inclusion–exclusion the convergence propagates to the boxes
+  `{c < y ≤ b} ∩ {∃ i, y i > δ i}` and their finite unions (`tendsto_measureReal_iUnion_boxSet`).
+* **Open sets.** The trace on the orthant of an open set `G` bounded away from the origin is a
+  countable union of rational boxes (`exists_ratBox`), so `ν_H(G | O) ≤ liminf m_x(G | O)` for the
+  region `O = {∃ i, y i > δ}` (`le_liminf_cond_scaledLaw`). By the portmanteau theorem the
+  conditional laws converge weakly, which gives `∫ f dm_x → ∫ f dν_H` for every bounded continuous
+  `f` vanishing near the origin (`tendsto_integral_scaledLaw`).
+
+## Main results
+
+* `IsSimpleMaxStable.isRegVarVector`: `X` is regularly varying with index `1` and exponent measure
+  `maxStableTailMeasure H = ν_H / H(univ)`.
+* `spectralMeasure_maxStableTailMeasure`: its spectral measure is `H / H(univ)`.
+* `IsSimpleMaxStable.exists_isRegVarVector`: the combined statement for the normalized spectral
+  measure, with `H(univ)` the extremal coefficient.
+
+## References
+
+* S. I. Resnick, *Extreme Values, Regular Variation, and Point Processes*, Springer (1987),
+  §5.4 [Res87].
+* L. de Haan and A. Ferreira, *Extreme Value Theory: An Introduction*, Springer (2006),
+  §6.1 [dHF].
 -/
 
 open MeasureTheory ProbabilityTheory Filter Set Topology
@@ -56,11 +94,12 @@ lemma measurableSet_boxSet (δ c b : ι → ℝ≥0∞) : MeasurableSet (boxSet 
   rw [← compl_exceedSet]
   exact (measurableSet_exceedSet b).compl
 
+omit [Fintype ι] in
 /-- A box is the difference of two upper-orthant–exceedance sets. -/
 lemma boxSet_eq_diff (δ c b : ι → ℝ≥0∞) :
     boxSet δ c b = (upperOrthant c ∩ exceedSet (δ ⊓ b)) \ (upperOrthant c ∩ exceedSet b) := by
   ext x
-  simp only [boxSet, lowerOrthant, exceedSet, mem_inter_iff, mem_diff, mem_ofPred_eq,
+  simp only [boxSet, lowerOrthant, exceedSet, mem_inter_iff, Set.mem_sdiff, mem_ofPred_eq,
     Pi.inf_apply]
   constructor
   · rintro ⟨⟨hU, hL⟩, i, hi⟩
@@ -145,6 +184,7 @@ theorem tendsto_measureReal_boxSet
   exact (tendsto_measureReal_upperSet_inter_exceedSet hfin hνfin hconv _ c hc _ hδb).sub
     (tendsto_measureReal_upperSet_inter_exceedSet hfin hνfin hconv _ c hc _ hb)
 
+omit [Fintype ι] in
 /-- Finite intersections of boxes are boxes. -/
 lemma exists_biInter_boxSet_eq (δ : ι → ℝ≥0∞) (s : ℕ → (ι → ℝ≥0∞) × (ι → ℝ≥0∞))
     (hs : ∀ k i, (s k).2 i ≠ 0) {u : Finset ℕ} (hu : u.Nonempty) :
@@ -399,12 +439,14 @@ instance [IsFiniteMeasure P] (x : ℝ) : IsFiniteMeasure (scaledLaw P X x) :=
     rw [scaledLaw, Measure.smul_apply, smul_eq_mul]
     exact ENNReal.mul_lt_top ENNReal.ofReal_lt_top (measure_lt_top _ _)⟩
 
+omit [Fintype ι] in
 lemma scaledLaw_apply (hX : Measurable X) (x : ℝ) {A : Set (ι → ℝ)} (hA : MeasurableSet A) :
     scaledLaw P X x A = ENNReal.ofReal x * P {ω | x⁻¹ • X ω ∈ A} := by
   have hXs : Measurable fun ω ↦ x⁻¹ • X ω := hX.const_smul x⁻¹
   rw [scaledLaw, Measure.smul_apply, Measure.map_apply hXs hA, smul_eq_mul]
   rfl
 
+omit [Fintype ι] in
 lemma scaledLaw_real_preimage (hX : Measurable X) {x : ℝ} (hx : 0 ≤ x) {A : Set (ι → ℝ≥0∞)}
     (hA : MeasurableSet A) :
     (scaledLaw P X x).real (ofRealVec ⁻¹' A) = x * P.real {ω | ofRealVec (x⁻¹ • X ω) ∈ A} := by
@@ -624,10 +666,12 @@ section Integrals
 
 variable [Fintype ι] {H : Measure (ι → ℝ≥0∞)}
 
-/-- `∫ f dm = m(O) ∫ f dm[|O]` when `m` lives on the orthant and `f` vanishes on the orthant
+omit [Fintype ι] in
+/-- `∫ f dm = m(O) ∫ f dm[|O]`
+ when `m` lives on the orthant and `f` vanishes on the orthant
 outside `O`. -/
 lemma integral_eq_measureReal_mul_integral_cond {m : Measure (ι → ℝ)} {O : Set (ι → ℝ)}
-    (hO : MeasurableSet O) (hOfin : m O ≠ ∞) (hm : m posOrthantᶜ = 0) {f : (ι → ℝ) → ℝ}
+    (hOfin : m O ≠ ∞) (hm : m posOrthantᶜ = 0) {f : (ι → ℝ) → ℝ}
     (hf : ∀ y ∈ posOrthant, y ∉ O → f y = 0) :
     ∫ y, f y ∂m = m.real O * ∫ y, f y ∂m[|O] := by
   have hae : ∀ᵐ y ∂m, y ∈ posOrthant :=
@@ -641,7 +685,7 @@ lemma integral_eq_measureReal_mul_integral_cond {m : Measure (ι → ℝ)} {O : 
   · rw [measureReal_def, mul_inv_cancel₀ (ENNReal.toReal_pos h0 hOfin).ne', one_mul]
 
 /-- The exponent measure of `{x | ∃ i, c < x i}` is `H(univ) / c` for `H` on the sphere. -/
-lemma spectralExponentMeasure_exceedSet_const [Countable ι] [SFinite H]
+lemma spectralExponentMeasure_exceedSet_const [SFinite H]
     (hH : ∀ᵐ w ∂H, ⨆ i, w i = 1) {c : ℝ≥0∞} (hc0 : c ≠ 0) :
     spectralExponentMeasure H (exceedSet fun _ ↦ c) = c⁻¹ * H univ := by
   rw [spectralExponentMeasure_exceedSet fun _ ↦ hc0, ← lintegral_const]
@@ -719,7 +763,7 @@ theorem tendsto_integral_scaledLaw [Nonempty ι] {f : (ι → ℝ) →ᵇ ℝ} (
     filter_upwards [hPMeq] with x hx
     rw [hx, cond_apply hOm]
   have hI := ProbabilityMeasure.tendsto_iff_forall_integral_tendsto.1 hT f
-  rw [integral_eq_measureReal_mul_integral_cond hOm hνEO
+  rw [integral_eq_measureReal_mul_integral_cond hνEO
     spectralExponentMeasureReal_compl_posOrthant hf0]
   have hI' : Tendsto (fun x ↦ ∫ y, f y ∂(scaledLaw P X x)[|O]) atTop
       (𝓝 (∫ y, f y ∂νE[|O])) := by
@@ -729,7 +773,7 @@ theorem tendsto_integral_scaledLaw [Nonempty ι] {f : (ι → ℝ) →ᵇ ℝ} (
   refine (hR2.mul hI').congr' ?_
   · filter_upwards
  [eventually_gt_atTop 0] with x hx
-    exact (integral_eq_measureReal_mul_integral_cond hOm (measure_ne_top _ _)
+    exact (integral_eq_measureReal_mul_integral_cond (measure_ne_top _ _)
       (scaledLaw_compl_posOrthant hX h hx) hf0).symm
 
 end Integrals

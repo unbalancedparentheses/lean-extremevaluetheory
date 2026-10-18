@@ -61,8 +61,10 @@ and angle are needed: only the values of `∫ g_y dP` are used.
   `IsSimpleMaxStable.convexOn_pickandsDependence`: every bivariate simple max-stable law has
   `A(t) = ∫ max(t w 0, (1 - t) w 1) dH(w)`, so its Pickands function is convex.
 
-The spectral measure is not shown to be unique (it is, up to the choice of the sphere, by the
-uniqueness of the exponent measure; this is not formalized).
+The spectral measure on the sphere is unique (`HasSpectralMeasure.unique`,
+`IsSimpleMaxStable.existsUnique_hasSpectralMeasure` in `MaxStable/Uniqueness.lean`); its
+transport to the unit simplex is in `MaxStable/Simplex.lean`, and the regular variation of simple
+max-stable vectors in `MaxStable/RegularVariation.lean`.
 
 ## References
 
