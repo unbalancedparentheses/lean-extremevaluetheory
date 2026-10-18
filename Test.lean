@@ -10,3 +10,7 @@ import Test.JunkValues
 import Test.NonVacuity.Dependence
 import Test.NonVacuity.Multivariate
 import Test.NonVacuity.Processes
+import Test.KnownAnswers.Dependence
+import Test.KnownAnswers.Multivariate
+import Test.KnownAnswers.Processes
+import Test.KnownAnswers.Statistics
