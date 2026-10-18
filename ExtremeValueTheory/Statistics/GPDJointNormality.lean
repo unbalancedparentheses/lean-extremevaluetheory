@@ -546,6 +546,113 @@ theorem gpdScore_sub_eq_segHess {K : ℝ} (hK0 : 0 ≤ K) (hK : ∀ θ ∈ gpdNb
     rw [← hftc]
     rfl
 
+omit hξ₀ hσ₀ in
+/-- The segment average of a jointly measurable Hessian entry is jointly measurable in the
+parameter and the observation. -/
+lemma measurable_segHess {H : ℝ → ℝ → ℝ → ℝ}
+    (hH : Measurable fun q : ℝ × ℝ × ℝ => H q.1 q.2.1 q.2.2) :
+    Measurable fun p : (ℝ × ℝ) × ℝ => segHess H ξ₀ σ₀ p.1 p.2 := by
+  have : (fun p : (ℝ × ℝ) × ℝ => segHess H ξ₀ σ₀ p.1 p.2) = fun p =>
+      ∫ s, H (ξ₀ + s * (p.1.1 - ξ₀)) (σ₀ + s * (p.1.2 - σ₀)) p.2 ∂(volume.restrict (Ioc 0 1)) := by
+    funext p
+    rw [segHess, intervalIntegral.integral_of_le zero_le_one]
+  rw [this]
+  refine StronglyMeasurable.measurable ?_
+  refine StronglyMeasurable.integral_prod_right
+    (f := fun p : (ℝ × ℝ) × ℝ => fun s : ℝ => H (ξ₀ + s * (p.1.1 - ξ₀)) (σ₀ + s * (p.1.2 - σ₀)) p.2)
+    ?_
+  refine Measurable.stronglyMeasurable ?_
+  exact hH.comp (f := fun q : ((ℝ × ℝ) × ℝ) × ℝ =>
+    (ξ₀ + q.2 * (q.1.1.1 - ξ₀), σ₀ + q.2 * (q.1.1.2 - σ₀), q.1.2)) (by fun_prop)
+
+omit hξ₀ hσ₀ in
+lemma measurable_gpdHessXiXi₃ : Measurable fun q : ℝ × ℝ × ℝ => gpdHessXiXi q.1 q.2.1 q.2.2 := by
+  unfold gpdHessXiXi; fun_prop
+
+omit hξ₀ hσ₀ in
+lemma measurable_gpdHessXiSigma₃ :
+    Measurable fun q : ℝ × ℝ × ℝ => gpdHessXiSigma q.1 q.2.1 q.2.2 := by
+  unfold gpdHessXiSigma; fun_prop
+
+omit hξ₀ hσ₀ in
+lemma measurable_gpdHessSigmaSigma₃ :
+    Measurable fun q : ℝ × ℝ × ℝ => gpdHessSigmaSigma q.1 q.2.1 q.2.2 := by
+  unfold gpdHessSigmaSigma; fun_prop
+
+/-- **Convergence of the averaged segment Hessian** (deterministic): if `θₙ → θ₀`, the empirical
+mean of `H(θ₀, xᵢ)` tends to `m` and that of `log(1 + ξ₀ xᵢ/σ₀)` converges, and `H` satisfies the
+Lipschitz control along segments, then the empirical mean of the segment averages
+`H̄(θₙ, xᵢ)` tends to `m` as well. -/
+theorem tendsto_avg_segHess {H : ℝ → ℝ → ℝ → ℝ} {K : ℝ}
+    (hK : ∀ θ ∈ gpdNbhd ξ₀ σ₀, ∀ x, 0 ≤ x → |segHess H ξ₀ σ₀ θ x - H ξ₀ σ₀ x| ≤
+      K * gpdDist ξ₀ σ₀ θ * (1 + log (1 + ξ₀ * x / σ₀)))
+    {x : ℕ → ℝ} (hx : ∀ i, 0 ≤ x i) {θs : ℕ → ℝ × ℝ} (hθ : Tendsto θs atTop (𝓝 (ξ₀, σ₀)))
+    {m ℓ : ℝ} (hm : Tendsto (fun n : ℕ => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, H ξ₀ σ₀ (x i))
+      atTop (𝓝 m))
+    (hℓ : Tendsto (fun n : ℕ => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, log (1 + ξ₀ * x i / σ₀))
+      atTop (𝓝 ℓ)) :
+    Tendsto (fun n : ℕ => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, segHess H ξ₀ σ₀ (θs n) (x i))
+      atTop (𝓝 m) := by
+  have hρ : Tendsto (fun n => gpdDist ξ₀ σ₀ (θs n)) atTop (𝓝 0) := by
+    have hc : Continuous (gpdDist ξ₀ σ₀) := by unfold gpdDist; fun_prop
+    have := (hc.tendsto (ξ₀, σ₀)).comp hθ
+    rwa [show gpdDist ξ₀ σ₀ (ξ₀, σ₀) = 0 by simp [gpdDist]] at this
+  have hbound : Tendsto (fun n : ℕ => K * gpdDist ξ₀ σ₀ (θs n) *
+      (1 + (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, log (1 + ξ₀ * x i / σ₀))) atTop (𝓝 0) := by
+    have := ((hρ.const_mul K).mul (hℓ.const_add 1))
+    simpa using this
+  have hdiff : Tendsto (fun n : ℕ => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, segHess H ξ₀ σ₀ (θs n) (x i)
+      - (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, H ξ₀ σ₀ (x i)) atTop (𝓝 0) := by
+    refine squeeze_zero_norm' ?_ hbound
+    filter_upwards [hθ.eventually (gpdNbhd_mem_nhds hξ₀ hσ₀), eventually_gt_atTop 0]
+      with n hn hn0
+    rw [Real.norm_eq_abs, ← mul_sub, ← Finset.sum_sub_distrib, abs_mul,
+      abs_of_pos (inv_pos.2 (Nat.cast_pos.2 hn0))]
+    refine (mul_le_mul_of_nonneg_left (Finset.abs_sum_le_sum_abs _ _)
+      (inv_pos.2 (Nat.cast_pos.2 hn0)).le).trans ?_
+    have hn' : (0 : ℝ) < n := Nat.cast_pos.2 hn0
+    have hsum : ∑ i ∈ Finset.range n, |segHess H ξ₀ σ₀ (θs n) (x i) - H ξ₀ σ₀ (x i)| ≤
+        ∑ i ∈ Finset.range n, K * gpdDist ξ₀ σ₀ (θs n) * (1 + log (1 + ξ₀ * x i / σ₀)) :=
+      Finset.sum_le_sum fun i _ => hK _ hn _ (hx i)
+    calc (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, |segHess H ξ₀ σ₀ (θs n) (x i) - H ξ₀ σ₀ (x i)|
+        ≤ (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n,
+          K * gpdDist ξ₀ σ₀ (θs n) * (1 + log (1 + ξ₀ * x i / σ₀)) := by gcongr
+      _ = K * gpdDist ξ₀ σ₀ (θs n) *
+          (1 + (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, log (1 + ξ₀ * x i / σ₀)) := by
+        rw [← Finset.mul_sum, Finset.sum_add_distrib, Finset.sum_const, Finset.card_range,
+          nsmul_eq_mul, mul_one]
+        field_simp
+  have := hdiff.add hm
+  simpa using this
+
 end Expansion
+
+/-! ### The inverse information as the adjugate over the determinant -/
+
+section Adjugate
+
+variable {ξ σ : ℝ}
+
+/-- `det I(ξ, σ) = 1/(σ² (1 + ξ)² (1 + 2ξ))`, and `I⁻¹ = adj(I)/det(I)` entrywise. -/
+lemma gpdFisherInfo_det_adj (hξ : -1 / 2 < ξ) (hσ : 0 < σ) :
+    let I11 := 2 / ((1 + ξ) * (1 + 2 * ξ))
+    let I12 := 1 / (σ * (1 + ξ) * (1 + 2 * ξ))
+    let I22 := 1 / (σ ^ 2 * (1 + 2 * ξ))
+    0 < I11 * I22 - I12 ^ 2 ∧
+    I22 / (I11 * I22 - I12 ^ 2) = (1 + ξ) * (1 + ξ) ∧
+    -I12 / (I11 * I22 - I12 ^ 2) = (1 + ξ) * -σ ∧
+    I11 / (I11 * I22 - I12 ^ 2) = (1 + ξ) * (2 * σ ^ 2) := by
+  intro I11 I12 I22
+  have h1ξ : 0 < 1 + ξ := by linarith
+  have h2ξ : 0 < 1 + 2 * ξ := by linarith
+  have h2ξ' : 1 + ξ * 2 ≠ 0 := by intro h; linarith
+  have hdet : I11 * I22 - I12 ^ 2 = 1 / (σ ^ 2 * (1 + ξ) ^ 2 * (1 + 2 * ξ)) := by
+    simp only [I11, I12, I22]
+    field_simp
+    ring
+  rw [hdet]
+  refine ⟨by positivity, ?_, ?_, ?_⟩ <;> simp only [I11, I12, I22] <;> field_simp
+
+end Adjugate
 
 end ExtremeValueTheory
