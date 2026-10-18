@@ -337,8 +337,8 @@ noncomputable def brownianFdd {ι : Type*} [Fintype ι] [DecidableEq ι] (τ : �
     Measure (ι → ℝ) :=
   (multivariateGaussian 0 (brownianCovMatrix τ)).map WithLp.ofLp
 
-instance {ι : Type*} [Fintype ι] [DecidableEq ι] (τ : ι → ℝ≥0) :
-    IsProbabilityMeasure (brownianFdd τ) :=
+instance isProbabilityMeasure_brownianFdd {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (τ : ι → ℝ≥0) : IsProbabilityMeasure (brownianFdd τ) :=
   ⟨by rw [brownianFdd, Measure.map_apply (by fun_prop) MeasurableSet.univ]; simp⟩
 
 /-- **Finite-dimensional convergence of the uniform tail empirical process**, for an arbitrary
@@ -836,5 +836,207 @@ lemma measurable_tailEmpiricalPath (hU : ∀ i, Measurable (U i)) (n k : ℕ) :
   rw [measurable_iff_comap_le, SkorokhodSpace.measurableSpace_eq_comap_coeFn,
     MeasurableSpace.comap_comp]
   exact h.comap_le
+
+/-! ### Tightness and weak convergence in `D([0, 1])` -/
+
+lemma ofReal_inv_nat_succ_le {N : ℕ} :
+    ENNReal.ofReal (1 / ((N : ℝ) + 1)) ≤ (N : ℝ≥0∞)⁻¹ := by
+  rw [one_div, ENNReal.ofReal_inv_of_pos (by positivity), ENNReal.ofReal_add (by positivity)
+    zero_le_one, ENNReal.ofReal_natCast, ENNReal.ofReal_one]
+  exact ENNReal.inv_le_inv.2 le_self_add
+
+/-- At time `0` the tail empirical process vanishes almost surely. -/
+lemma measure_tailEmpiricalProcess_zero_ne_zero [IsProbabilityMeasure P]
+    (hU : ∀ i, Measurable (U i)) (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))
+    (n k : ℕ) : P {ω | 0 < |tailEmpiricalProcess U n k 0 ω|} = 0 := by
+  have hnull (i : ℕ) : P {ω | 1 ≤ U i ω} = 0 := by
+    have h := measureReal_uniform_Ici (x := 0) le_rfl zero_le_one
+    rw [sub_zero, measureReal_eq_zero_iff] at h
+    rw [show {ω | 1 ≤ U i ω} = U i ⁻¹' Set.Ici 1 from rfl, ← Measure.map_apply (hU i)
+      measurableSet_Ici, hlaw i]
+    exact h
+  refine measure_mono_null (fun ω hω ↦ ?_) ((measure_biUnion_null_iff
+    (Finset.range n).countable_toSet).2 fun i _ ↦ hnull i)
+  by_contra hcon
+  simp only [Set.mem_iUnion, Set.mem_ofPred_eq, not_exists, not_le] at hcon
+  have : tailEmpiricalProcess U n k 0 ω = 0 := by
+    unfold tailEmpiricalProcess
+    rw [Finset.sum_eq_zero fun i hi ↦ ?_]
+    · simp
+    · simp [Set.indicator, not_le.2 (hcon i (Finset.mem_coe.2 hi))]
+  simp [this] at hω
+
+/-- The block oscillation condition for the uniform tail empirical process. -/
+theorem exists_eventually_measure_blockOscillation_le [IsProbabilityMeasure P]
+    (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0))
+    {ε η : ℝ≥0∞} (hε : 0 < ε) (hη : 0 < η) :
+    ∃ m > 0, ∀ᶠ n in atTop,
+      P.map (tailEmpiricalPath U n (k n)) {x | ε ≤ blockOscillation (⇑x) m} ≤ η := by
+  obtain ⟨N, hN⟩ := ENNReal.exists_inv_nat_lt hε.ne'
+  obtain ⟨M, hM⟩ := ENNReal.exists_inv_nat_lt hη.ne'
+  set lam : ℝ := 1 / (2 * ((N : ℝ) + 1)) with hlam
+  have hlam0 : 0 < lam := by positivity
+  have hlamε : ENNReal.ofReal (2 * lam) < ε := by
+    have : 2 * lam = 1 / ((N : ℝ) + 1) := by rw [hlam]; field_simp
+    rw [this]
+    exact ofReal_inv_nat_succ_le.trans_lt hN
+  set η' : ℝ := 1 / ((M : ℝ) + 1) with hη'
+  have hη'0 : 0 < η' := by positivity
+  have hη'η : ENNReal.ofReal η' ≤ η := ofReal_inv_nat_succ_le.trans hM.le
+  set C : ℝ := 8 ^ 4 / lam ^ 4 with hC
+  have hC0 : 0 < C := by positivity
+  set m : ℕ := ⌈2 * C * 84 / η'⌉₊ + 1 with hm
+  have hm0 : 0 < m := Nat.succ_pos _
+  have hm' : (0 : ℝ) < m := Nat.cast_pos.2 hm0
+  have hCm : C * (84 / m) ≤ η' / 2 := by
+    have h1 : 2 * C * 84 / η' ≤ m := by
+      rw [hm]; push_cast; linarith [Nat.le_ceil (2 * C * 84 / η')]
+    rw [div_le_iff₀ hη'0] at h1
+    rw [mul_div_assoc', div_le_iff₀ hm']
+    nlinarith
+  refine ⟨m, hm0, ?_⟩
+  -- the number of dyadic levels for the `n`-th process
+  have hq (n : ℕ) : ∃ q : ℕ, √(k n : ℝ) / (m * lam) ≤ 2 ^ q ∧
+      (2 : ℝ) ^ q ≤ 2 * (1 + √(k n : ℝ) / (m * lam)) := by
+    obtain ⟨q₀, h1, h2⟩ := exists_nat_pow_near (le_max_left 1 (√(k n : ℝ) / (m * lam)))
+      (one_lt_two : (1 : ℝ) < 2)
+    refine ⟨q₀ + 1, (le_max_right _ _).trans h2.le, ?_⟩
+    rw [pow_succ]
+    have : max 1 (√(k n : ℝ) / (m * lam)) ≤ 1 + √(k n : ℝ) / (m * lam) :=
+      max_le (by linarith [show 0 ≤ √(k n : ℝ) / (m * lam) by positivity]) (by linarith)
+    linarith
+  choose q hq1 hq2 using hq
+  have hkR : Tendsto (fun n ↦ (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hsmall : Tendsto (fun n ↦ C * (8 * (1 + √(k n : ℝ) / (m * lam)) / k n)) atTop
+      (𝓝 0) := by
+    have h1 : Tendsto (fun n ↦ (k n : ℝ)⁻¹) atTop (𝓝 0) := tendsto_inv_atTop_zero.comp hkR
+    have h2 : Tendsto (fun n ↦ (√(k n : ℝ))⁻¹) atTop (𝓝 0) :=
+      tendsto_inv_atTop_zero.comp (Real.tendsto_sqrt_atTop.comp hkR)
+    have h3 : Tendsto (fun n ↦ C * (8 * ((k n : ℝ)⁻¹ + (√(k n : ℝ))⁻¹ / (m * lam))))
+        atTop (𝓝 (C * (8 * (0 + 0 / (m * lam))))) :=
+      ((h1.add (h2.div_const _)).const_mul _).const_mul _
+    simp only [zero_div, add_zero, mul_zero] at h3
+    refine h3.congr fun n ↦ ?_
+    rw [mul_div_assoc, add_div, one_div, div_right_comm (√(k n : ℝ)), Real.sqrt_div_self',
+      one_div]
+  have hkn1 : ∀ᶠ n in atTop, k n ≤ n := by
+    filter_upwards [hkn.eventually (gt_mem_nhds zero_lt_one), eventually_gt_atTop 0] with n hn hn0
+    have hn' : (0 : ℝ) < n := Nat.cast_pos.2 hn0
+    rw [div_lt_one hn'] at hn
+    exact_mod_cast hn.le
+  filter_upwards [hsmall.eventually (ge_mem_nhds (half_pos hη'0)), hkn1, eventually_gt_atTop 0]
+    with n hn hkn' hn0
+  set E := {ω | ∃ i < m, ∃ u ∈ Set.Icc ((i : ℝ) / m) ((i + 1 : ℝ) / m),
+      2 * lam < |tailEmpiricalProcess U n (k n) u ω - tailEmpiricalProcess U n (k n) (i / m) ω|}
+    with hE
+  have hqn : √(k n : ℝ) * ((1 / m : ℝ) / 2 ^ q n) ≤ lam := by
+    have h1 := hq1 n
+    rw [div_le_iff₀ (by positivity)] at h1
+    rw [div_div, mul_one_div, div_le_iff₀ (by positivity)]
+    nlinarith
+  have hPE := measureReal_exists_block_abs_tailEmpiricalProcess_sub_gt_le hU hind hlaw
+    hn0.ne' hkn' hm0 hlam0 (q n) hqn
+  have hbound : 8 ^ 4 / lam ^ 4 * (84 / m + 2 ^ (q n + 2) / (k n : ℝ)) ≤ η' := by
+    have h2 : (2 : ℝ) ^ (q n + 2) / k n ≤ 8 * (1 + √(k n : ℝ) / (m * lam)) / k n := by
+      refine div_le_div_of_nonneg_right ?_ (Nat.cast_nonneg _)
+      rw [pow_add]
+      nlinarith [hq2 n]
+    have : C * (2 ^ (q n + 2) / (k n : ℝ)) ≤ η' / 2 :=
+      (mul_le_mul_of_nonneg_left h2 hC0.le).trans hn
+    rw [← hC, mul_add]
+    linarith
+  -- if all blocks are good, the block oscillation is at most `2 λ`
+  have hsub : tailEmpiricalPath U n (k n) ⁻¹' {x | ENNReal.ofReal (2 * lam) <
+      blockOscillation (⇑x) m} ⊆ E := by
+    intro ω hω
+    by_contra hωE
+    simp only [hE, Set.mem_ofPred_eq, not_exists, not_and, not_lt] at hωE
+    refine (not_le.2 (show ENNReal.ofReal (2 * lam) < _ from hω)) ?_
+    refine iSup₂_le fun i hi ↦ iSup₂_le fun u hu ↦ ?_
+    rw [edist_dist, Real.dist_eq, tailEmpiricalPath_apply, tailEmpiricalPath_apply,
+      unitInterval.coe_gridPt hi.le]
+    exact ENNReal.ofReal_le_ofReal (hωE i hi u hu)
+  have hmeas : MeasurableSet {x : SkorokhodSpace ℝ | ENNReal.ofReal (2 * lam) <
+      blockOscillation (⇑x) m} :=
+    measurableSet_lt measurable_const (SkorokhodSpace.measurable_blockOscillation m)
+  calc P.map (tailEmpiricalPath U n (k n)) {x | ε ≤ blockOscillation (⇑x) m}
+      ≤ P.map (tailEmpiricalPath U n (k n)) {x | ENNReal.ofReal (2 * lam) <
+          blockOscillation (⇑x) m} := measure_mono fun x hx ↦ hlamε.trans_le hx
+    _ = P (tailEmpiricalPath U n (k n) ⁻¹' {x | ENNReal.ofReal (2 * lam) <
+          blockOscillation (⇑x) m}) := Measure.map_apply (measurable_tailEmpiricalPath hU _ _) hmeas
+    _ ≤ P E := measure_mono hsub
+    _ = ENNReal.ofReal (P.real E) := (ofReal_measureReal (measure_ne_top _ _)).symm
+    _ ≤ ENNReal.ofReal η' := ENNReal.ofReal_le_ofReal (hPE.trans hbound)
+    _ ≤ η := hη'η
+
+/-- A time `t ∈ [0, 1]` as a nonnegative real number. -/
+def _root_.unitInterval.toNNReal' (t : unitInterval) : ℝ≥0 := ⟨t, t.2.1⟩
+
+@[simp]
+lemma _root_.unitInterval.coe_toNNReal' (t : unitInterval) :
+    ((unitInterval.toNNReal' t : ℝ≥0) : ℝ) = t := rfl
+
+/-- **Weak convergence of the uniform tail empirical process in `D([0, 1])`**
+([de Haan–Ferreira, Theorem 5.1.4]; [Einmahl 1992]). If `U 0, U 1, …` are i.i.d. uniform on
+`[0, 1]`, `k n → ∞` and `k n / n → 0`, then the laws of the paths `t ↦ W_n(t)`, `t ∈ [0, 1]`,
+converge weakly in the Skorokhod space `D([0, 1])` to a probability measure `μ` whose
+finite-dimensional distributions are those of Brownian motion: `μ π_J⁻¹ = brownianFdd J` for
+every finite set `J` of continuity times of `μ` (a co-countable set of times containing `1`).
+In particular the limit is unique and is the law of Brownian motion on `D([0, 1])`. -/
+theorem exists_tendsto_tailEmpiricalPath [IsProbabilityMeasure P]
+    (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0)) :
+    ∃ μ : ProbabilityMeasure (SkorokhodSpace ℝ),
+      Tendsto (fun n ↦ ProbabilityMeasure.map (⟨P, inferInstance⟩ : ProbabilityMeasure Ω)
+        (tailEmpiricalPath U n (k n))) atTop (𝓝 μ) ∧
+      ∀ J : Finset unitInterval,
+        (J : Set unitInterval) ⊆ SkorokhodSpace.continuityTimes (μ : Measure (SkorokhodSpace ℝ)) →
+          (μ : Measure (SkorokhodSpace ℝ)).map (fun x : SkorokhodSpace ℝ ↦ fun t : J ↦ x t) =
+            brownianFdd (fun t : J ↦ unitInterval.toNNReal' t) := by
+  set μs : ℕ → ProbabilityMeasure (SkorokhodSpace ℝ) := fun n ↦
+    ProbabilityMeasure.map (⟨P, inferInstance⟩ : ProbabilityMeasure Ω)
+      (tailEmpiricalPath U n (k n)) with hμs
+  have hμs_apply (n : ℕ) : (μs n : Measure (SkorokhodSpace ℝ)) =
+      P.map (tailEmpiricalPath U n (k n)) := rfl
+  set ρ : ∀ J : Finset unitInterval, ProbabilityMeasure (J → ℝ) := fun J ↦
+    ⟨brownianFdd (fun t : J ↦ unitInterval.toNNReal' t), isProbabilityMeasure_brownianFdd _⟩
+    with hρ
+  have hfdd : ∀ J : Finset unitInterval, (J : Set unitInterval) ⊆ Set.univ →
+      Tendsto (fun n ↦ (μs n).map (fun x : SkorokhodSpace ℝ ↦ fun t : J ↦ x t)) atTop
+        (𝓝 (ρ J)) := by
+    intro J _
+    have h := (tendstoInDistribution_tailEmpiricalProcess_comp hU hind hlaw hk hkn
+      (fun t : J ↦ unitInterval.toNNReal' t)).tendsto
+    simp only [Measure.map_id] at h
+    refine h.congr fun n ↦ ProbabilityMeasure.toMeasure_injective ?_
+    simp only [ProbabilityMeasure.toMeasure_map, hμs_apply]
+    rw [Measure.map_map (SkorokhodSpace.measurable_restrict_finset J)
+      (measurable_tailEmpiricalPath hU n (k n))]
+    rfl
+  have htight : IsTightMeasureSet (Set.range fun n ↦ (μs n : Measure (SkorokhodSpace ℝ))) := by
+    refine SkorokhodSpace.isTightMeasureSet_of_blockOscillation
+      (μs := fun n ↦ (μs n : Measure (SkorokhodSpace ℝ))) (fun η hη ↦ ⟨0, ?_⟩)
+      (fun ε hε η hη ↦ ?_)
+    · refine Eventually.of_forall fun n ↦ ?_
+      have hS : MeasurableSet {x : SkorokhodSpace ℝ | (0 : ℝ) < |x 0|} :=
+        measurableSet_lt measurable_const
+          (continuous_abs.comp SkorokhodSpace.continuous_apply_zero).measurable
+      rw [hμs_apply, Measure.map_apply (measurable_tailEmpiricalPath hU n (k n)) hS]
+      have := measure_tailEmpiricalProcess_zero_ne_zero hU hlaw (P := P) n (k n)
+      refine le_of_eq_of_le ?_ zero_le
+      convert this using 2
+      ext ω
+      simp
+    · obtain ⟨m, hm, hev⟩ := exists_eventually_measure_blockOscillation_le hU hind hlaw hk hkn
+        hε hη
+      exact ⟨m, hm, hev.mono fun n hn ↦ by rw [hμs_apply]; exact hn⟩
+  obtain ⟨μ, hconv, hμ⟩ := SkorokhodSpace.exists_tendsto_of_tendsto_map_restrict_of_isTight
+    (T := Set.univ) (by simp) (Set.mem_univ _) ρ hfdd htight
+  refine ⟨μ, hconv, fun J hJ ↦ ?_⟩
+  have := congrArg ProbabilityMeasure.toMeasure (hμ J fun t ht ↦ ⟨Set.mem_univ _, hJ ht⟩)
+  simpa [hρ] using this
 
 end ExtremeValueTheory
