@@ -805,4 +805,216 @@ theorem tendstoInMeasure_runsEstimator_of_isMDependent (hX : ∀ t, Measurable (
 
 end Conditions
 
+/-! ### Population targets: the cluster ratio and the runs ratio -/
+
+section Targets
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} {X : ℤ → Ω → ℝ}
+
+omit [MeasurableSpace Ω] in
+/-- The block event of `(|X_k|)_{k ∈ ℕ}` is the event `max_{0 ≤ t < r} |X_t| > u` of the cluster
+ratio `clusterRatio` of `Dependence/Anticlustering.lean`. -/
+theorem blockEvent_abs (r : ℕ) (u : ℝ) :
+    blockEvent (fun k : ℕ => |X k|) r 0 u = {ω | ∃ t ∈ Finset.Ico (0 : ℤ) r, u < |X t ω|} := by
+  rw [blockEvent_zero]
+  ext ω
+  simp only [Set.mem_ofPred_eq, Finset.mem_Ico]
+  constructor
+  · rintro ⟨t, ht, h⟩
+    exact ⟨t, ⟨by omega, by exact_mod_cast ht⟩, h⟩
+  · rintro ⟨t, ⟨h0, ht⟩, h⟩
+    refine ⟨t.toNat, by omega, ?_⟩
+    rwa [Int.toNat_of_nonneg h0]
+
+omit [MeasurableSpace Ω] in
+/-- The runs event of `(|X_k|)_{k ∈ ℕ}`. -/
+theorem runEvent_abs (r : ℕ) (u : ℝ) :
+    runEvent (fun k : ℕ => |X k|) r 0 u =
+      {ω | u < |X 0 ω| ∧ ∀ t ∈ Finset.Ioc (0 : ℤ) r, |X t ω| ≤ u} := by
+  ext ω
+  simp only [runEvent, maxLE, Set.mem_inter_iff, Set.mem_ofPred_eq, Finset.mem_Ioc,
+    Nat.cast_zero, zero_add]
+  refine and_congr_right fun _ => ⟨fun h t ht => ?_, fun h t ht => h t ⟨by omega, by
+    exact_mod_cast ht.2⟩⟩
+  have := h t.toNat ⟨by omega, by omega⟩
+  rwa [Int.toNat_of_nonneg ht.1.le] at this
+
+omit [MeasurableSpace Ω] in
+theorem setOf_lt_abs_zero (u : ℝ) :
+    {ω | u < (fun k : ℕ => |X k|) 0 ω} = {ω | u < |X 0 ω|} := by
+  ext ω; simp
+
+variable [IsFiniteMeasure P]
+
+/-- **Runs ratio versus cluster ratio** (the averaging identity of Segers 2006 and
+Weissman–Novak 1998, in inequality form). For a stationary series, with
+`D_k = {|X_0| > u, max_{0 < t ≤ k} |X_t| ≤ u}`:
+`r P(D_r) ≤ P(max_{0 ≤ t < r} |X_t| > u)` and
+`P(max_{0 ≤ t < 2r} |X_t| > u) ≤ r P(|X_0| > u) + r P(D_r)`.
+In terms of ratios: `runs ratio(r) ≤ cluster ratio(r)` and
+`runs ratio(r) ≥ 2 cluster ratio(2r) - 1`. -/
+theorem HasShiftInvariantWindows.runs_bounds (hstat : HasShiftInvariantWindows P X)
+    (hX : ∀ t, Measurable (X t)) (r : ℕ) (u : ℝ) :
+    r * P.real {ω | u < |X 0 ω| ∧ ∀ t ∈ Finset.Ioc (0 : ℤ) r, |X t ω| ≤ u} ≤
+        P.real {ω | ∃ t ∈ Finset.Ico (0 : ℤ) r, u < |X t ω|} ∧
+      P.real {ω | ∃ t ∈ Finset.Ico (0 : ℤ) (2 * r : ℕ), u < |X t ω|} ≤
+        r * P.real {ω | u < |X 0 ω|} +
+          r * P.real {ω | u < |X 0 ω| ∧ ∀ t ∈ Finset.Ioc (0 : ℤ) r, |X t ω| ≤ u} := by
+  set D : ℕ → ℝ := fun k => P.real {ω | u < |X 0 ω| ∧ ∀ t ∈ Finset.Ioc (0 : ℤ) k, |X t ω| ≤ u}
+  have hanti : ∀ m k, m ≤ k → D k ≤ D m := fun m k hmk => measureReal_mono fun ω hω =>
+    ⟨hω.1, fun t ht => hω.2 t (Finset.Ioc_subset_Ioc le_rfl (by exact_mod_cast hmk) ht)⟩
+  have hDp : ∀ k, D k ≤ P.real {ω | u < |X 0 ω|} := fun k => measureReal_mono fun ω hω => hω.1
+  constructor
+  · rw [hstat.measureReal_exists_lt_eq_sum hX]
+    calc (r : ℝ) * D r = ∑ _k ∈ Finset.range r, D r := by
+          rw [sum_const, card_range, nsmul_eq_mul]
+      _ ≤ ∑ k ∈ Finset.range r, D k :=
+          Finset.sum_le_sum fun k hk => hanti k r (Finset.mem_range.1 hk).le
+  · rw [hstat.measureReal_exists_lt_eq_sum hX, show 2 * r = r + r by ring,
+      Finset.sum_range_add]
+    gcongr
+    · calc ∑ k ∈ Finset.range r, D k ≤ ∑ _k ∈ Finset.range r, P.real {ω | u < |X 0 ω|} :=
+            Finset.sum_le_sum fun k _ => hDp k
+        _ = _ := by rw [sum_const, card_range, nsmul_eq_mul]
+    · calc ∑ k ∈ Finset.range r, D (r + k) ≤ ∑ _k ∈ Finset.range r, D r :=
+            Finset.sum_le_sum fun k _ => hanti r (r + k) (Nat.le_add_right r k)
+        _ = _ := by rw [sum_const, card_range, nsmul_eq_mul]
+
+end Targets
+
+section TailProcess
+
+variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {P : Measure Ω} [IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ}
+  {Q : Measure Ω'} [IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ}
+
+/-- **The runs ratio converges to the candidate extremal index under anticlustering**
+([KS20, §10.2]; the population counterpart of the runs estimator):
+`P(max_{0 < t ≤ rₙ} |X_t| ≤ uₙ | |X_0| > uₙ) → ϑ`, for a series with spectral tail process `Θ`,
+`uₙ → ∞`, `rₙ → ∞` and the forward anticlustering bound. No stationarity is used. -/
+theorem HasSpectralTailProcess.tendsto_runsRatio (hα : 0 < α) (hX : ∀ t, Measurable (X t))
+    (hΘm : ∀ t, Measurable (Θ t)) (h : HasSpectralTailProcess P X α Q Θ) {u : ℕ → ℝ}
+    (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hAC : ForwardAntiClusteringAt P X u r) :
+    Tendsto (fun n => P.real {ω | u n < |X 0 ω| ∧ ∀ t ∈ Finset.Ioc (0 : ℤ) (r n), |X t ω| ≤ u n} /
+      P.real {ω | u n < |X 0 ω|}) atTop (𝓝 (candidateExtremalIndex Q Θ α).toReal) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  set π := (paretoMeasure 1 α).prod Q
+  set ϑ := (candidateExtremalIndex Q Θ α).toReal
+  have hs : ∀ x : ℝ, MeasurableSet {ω | x < |X 0 ω|} := fun x =>
+    measurableSet_lt measurable_const (continuous_abs.measurable.comp (hX 0))
+  set S : ℕ → Set Ω := fun n => {ω | u n < |X 0 ω|}
+  set D : ℕ → ℕ → Set Ω := fun n k =>
+    {ω | u n < |X 0 ω| ∧ ∀ t ∈ Finset.Ioc (0 : ℤ) k, |X t ω| ≤ u n}
+  set q : ℕ → ℕ → ℝ := fun n k => P.real (D n k) / P.real (S n)
+  set θk : ℕ → ℝ := fun k => π.real {p | ∀ t ∈ Finset.Ioc (0 : ℤ) k, |p.1 * Θ t p.2| ≤ 1}
+  have hS0 : ∀ n, 0 < P.real (S n) := fun n => h.measureReal_lt_abs_pos (u n)
+  have hqanti : ∀ n m k, m ≤ k → q n k ≤ q n m := fun n m k hmk =>
+    div_le_div_of_nonneg_right (measureReal_mono fun ω hω =>
+      ⟨hω.1, fun t ht => hω.2 t (Finset.Ioc_subset_Ioc le_rfl (by exact_mod_cast hmk) ht)⟩)
+      measureReal_nonneg
+  have hqlim : ∀ k, Tendsto (fun n => q n k) atTop (𝓝 (θk k)) := by
+    intro k
+    have key := (h.tendsto_cond_forall_le hα hX hΘm (Finset.Ioc (0 : ℤ) k)).comp hu
+    have key' := (ENNReal.tendsto_toReal (measure_ne_top π _)).comp key
+    refine key'.congr fun n => ?_
+    simp only [Function.comp_apply]
+    rw [cond_toReal_eq (hs _)]
+    rfl
+  have hθlim : Tendsto θk atTop (𝓝 ϑ) := tendsto_measureReal_forall_le_candidateExtremalIndex hα
+    hΘm (h.ae_abs_eq_one hΘm (hX 0))
+  have hθanti : ∀ m k, m ≤ k → θk k ≤ θk m := fun m k hmk => measureReal_mono (fun p hp t ht =>
+    hp t (Finset.Ioc_subset_Ioc le_rfl (by exact_mod_cast hmk) ht))
+  have hθge : ∀ m, ϑ ≤ θk m := fun m =>
+    le_of_tendsto hθlim ((eventually_ge_atTop m).mono fun k hk => hθanti m k hk)
+  rw [tendsto_order]
+  constructor
+  · intro a ha
+    set ε := (ϑ - a) / 3 with hε
+    have hε0 : 0 < ε := by rw [hε]; linarith
+    obtain ⟨m, hm1, hm⟩ := hAC.exists_ge hε0 1
+    obtain ⟨k, rfl⟩ : ∃ k, m = k + 1 := ⟨m - 1, by omega⟩
+    filter_upwards [hm, (hqlim k).eventually (lt_mem_nhds (show θk k - ε < θk k by linarith))]
+      with n hn hqk
+    have hsub : D n k ⊆ D n (r n) ∪ {ω | u n < |X 0 ω| ∧ ∃ t : ℤ, ((k + 1 : ℕ) : ℤ) ≤ t ∧
+        t ≤ r n ∧ u n < |X t ω|} := by
+      intro ω hω
+      by_cases hc : ω ∈ D n (r n)
+      · exact Or.inl hc
+      · right
+        simp only [D, Set.mem_ofPred_eq, not_and, not_forall, not_le, Finset.mem_Ioc] at hc hω
+        obtain ⟨t, ⟨ht0, htr⟩, ht⟩ := hc hω.1
+        refine ⟨hω.1, t, ?_, htr, ht⟩
+        by_contra hlt
+        exact absurd (hω.2 t ⟨ht0, by push_cast at hlt; omega⟩) (not_le.2 ht)
+    have h1 := (measureReal_mono (μ := P) hsub).trans (measureReal_union_le (μ := P) _ _)
+    have h2 : q n k ≤ q n (r n) + ε := by
+      simp only [q]
+      rw [div_add' _ _ _ (hS0 n).ne', div_le_div_iff_of_pos_right (hS0 n)]
+      linarith
+    linarith [hθge k]
+  · intro b hb
+    obtain ⟨m, hm⟩ := (hθlim.eventually (gt_mem_nhds hb)).exists
+    filter_upwards [(hqlim m).eventually (gt_mem_nhds hm), hr.eventually_ge_atTop m] with n hn hrn
+    exact (hqanti n m (r n) hrn).trans_lt hn
+
+/-- **The blocks estimator of `|X|` converges to the candidate extremal index** under
+anticlustering. For a stationary series with spectral tail process `Θ`, `uₙ → ∞`, `rₙ → ∞`, the
+forward anticlustering bound, and the concentration conditions of
+`tendstoInMeasure_blocksEstimator` for `|X|`, `θ̂ᴮ → ϑ` in probability. Under the block
+condition `𝒜(uₙ)` as well, `ϑ` is the extremal index `θ`
+(`HasSpectralTailProcess.hasExtremalIndex_abs`). -/
+theorem HasSpectralTailProcess.tendstoInMeasure_blocksEstimator (hα : 0 < α)
+    (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
+    (hstat : HasShiftInvariantWindows P X) (h : HasSpectralTailProcess P X α Q Θ) {u : ℕ → ℝ}
+    (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hAC : ForwardAntiClusteringAt P X u r)
+    (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hk : Tendsto (fun n : ℕ => n * P.real {ω | u n < |X 0 ω|}) atTop atTop) (s : ℕ → ℕ)
+    (hclus : Tendsto (fun n : ℕ =>
+      (∑ h ∈ Icc 1 (s n), P.real {ω | u n < |X 0 ω| ∧ u n < |X h ω|}) /
+        (n * P.real {ω | u n < |X 0 ω|} ^ 2)) atTop (𝓝 0))
+    (hmix : Tendsto (fun n : ℕ =>
+      (∑ h ∈ Ico (s n + 1) n, (alphaMixing (fun k : ℕ => |X k|) P h).toReal) /
+        (n * P.real {ω | u n < |X 0 ω|} ^ 2)) atTop (𝓝 0))
+    (hmixB : Tendsto (fun n => (alphaMixing (fun k : ℕ => |X k|) P (r n + 1)).toReal /
+      (r n * P.real {ω | u n < |X 0 ω|}) ^ 2) atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n => blocksEstimator (fun k : ℕ => |X k|) n (r n) (u n)) atTop
+      (fun _ => (candidateExtremalIndex Q Θ α).toReal) := by
+  have hXa : ∀ t : ℕ, Measurable ((fun k : ℕ => |X k|) t) := fun t =>
+    continuous_abs.measurable.comp (hX t)
+  refine _root_.ExtremeValueTheory.tendstoInMeasure_blocksEstimator (X := fun k : ℕ => |X k|)
+    hXa (hstat.isStationary_abs hX) (hr.eventually_gt_atTop 0) hrn
+    (by simpa using hk) ?_ s (by simpa using hclus) (by simpa using hmix) (by simpa using hmixB)
+  simp only [blockEvent_abs]
+  simpa using h.tendsto_blockRatio hα hX hΘm hstat hu hr hAC
+
+/-- **The runs estimator of `|X|` converges to the candidate extremal index** under
+anticlustering, with the concentration conditions of `tendstoInMeasure_runsEstimator` for
+`|X|`. -/
+theorem HasSpectralTailProcess.tendstoInMeasure_runsEstimator (hα : 0 < α)
+    (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
+    (hstat : HasShiftInvariantWindows P X) (h : HasSpectralTailProcess P X α Q Θ) {u : ℕ → ℝ}
+    (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hAC : ForwardAntiClusteringAt P X u r)
+    (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hk : Tendsto (fun n : ℕ => n * P.real {ω | u n < |X 0 ω|}) atTop atTop) (s : ℕ → ℕ)
+    (hclus : Tendsto (fun n : ℕ =>
+      (∑ h ∈ Icc 1 (r n + s n), P.real {ω | u n < |X 0 ω| ∧ u n < |X h ω|}) /
+        (n * P.real {ω | u n < |X 0 ω|} ^ 2)) atTop (𝓝 0))
+    (hmix : Tendsto (fun n : ℕ =>
+      (∑ h ∈ Ico (s n + 1) n, (alphaMixing (fun k : ℕ => |X k|) P h).toReal) /
+        (n * P.real {ω | u n < |X 0 ω|} ^ 2)) atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n => runsEstimator (fun k : ℕ => |X k|) n (r n) (u n)) atTop
+      (fun _ => (candidateExtremalIndex Q Θ α).toReal) := by
+  have hXa : ∀ t : ℕ, Measurable ((fun k : ℕ => |X k|) t) := fun t =>
+    continuous_abs.measurable.comp (hX t)
+  refine _root_.ExtremeValueTheory.tendstoInMeasure_runsEstimator (X := fun k : ℕ => |X k|)
+    hXa (hstat.isStationary_abs hX) hrn (by simpa using hk) ?_ s (by simpa using hclus)
+    (by simpa using hmix)
+  simp only [runEvent_abs]
+  simpa using h.tendsto_runsRatio hα hX hΘm hu hr hAC
+
+end TailProcess
+
 end ExtremeValueTheory
