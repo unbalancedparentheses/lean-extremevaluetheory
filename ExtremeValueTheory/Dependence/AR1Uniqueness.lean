@@ -22,6 +22,9 @@ tightness. So `P(|Y_t - X_t| > δ) = 0` for all `δ > 0`.
 ## Main results
 
 * `AR1.ae_eq_partialSum_add`: the iterated recursion.
+* `AR1.ae_eq_of_tight_of_iterate`: the abstract core, `Y_t = S_n + R_n Y_{t-n}` with `S_n → X`,
+  `R_n → 0` a.s. and `Y` tight forces `Y_t = X` a.s.; also used for stochastic recurrence
+  equations (`Dependence/SREPathwise.lean`).
 * `AR1.ae_eq_process_of_tight`: uniqueness among solutions bounded in probability.
 * `AR1.ae_eq_process_of_identDistrib`: uniqueness among solutions with identically distributed
   marginals (e.g. stationary ones).
@@ -57,6 +60,67 @@ theorem ae_eq_partialSum_add (hrec : ∀ᵐ ω ∂P, ∀ t, Y t ω = φ * Y (t -
 
 variable [IsProbabilityMeasure P]
 
+/-- **Uniqueness from an iterated recursion** (the common core of the AR(1) and stochastic
+recurrence uniqueness theorems). Suppose that almost surely `Y_t = S_n + R_n Y_{t-n}` for all `n`,
+where `S_n → X` and `R_n → 0` almost surely, and `Y` is bounded in probability. Then `Y_t = X`
+almost surely. -/
+theorem ae_eq_of_tight_of_iterate {X : Ω → ℝ} {S R : ℕ → Ω → ℝ} (t : ℤ)
+    (hSm : ∀ n, AEStronglyMeasurable (S n) P) (hRm : ∀ n, AEStronglyMeasurable (R n) P)
+    (hiter : ∀ᵐ ω ∂P, ∀ n : ℕ, Y t ω = S n ω + R n ω * Y (t - n) ω)
+    (hSlim : ∀ᵐ ω ∂P, Tendsto (fun n => S n ω) atTop (𝓝 (X ω)))
+    (hRlim : ∀ᵐ ω ∂P, Tendsto (fun n => R n ω) atTop (𝓝 0))
+    (htight : ∀ ε : ℝ≥0∞, 0 < ε → ∃ C : ℝ, ∀ s, P {ω | C < |Y s ω|} ≤ ε) :
+    Y t =ᵐ[P] X := by
+  have hconv : TendstoInMeasure P S atTop X := tendstoInMeasure_of_tendsto_ae hSm hSlim
+  have hRconv : TendstoInMeasure P R atTop (fun _ => 0) := tendstoInMeasure_of_tendsto_ae hRm hRlim
+  -- every deviation `δ > 0` has probability zero
+  have hδ : ∀ δ : ℝ, 0 < δ → P {ω | δ < |Y t ω - X ω|} = 0 := by
+    intro δ hδ
+    refine le_antisymm (ENNReal.le_of_forall_pos_le_add fun ε hε _ => ?_) zero_le
+    rw [zero_add]
+    have hε3 : (0 : ℝ≥0∞) < ε / 3 := ENNReal.div_pos (by exact_mod_cast hε.ne') (by simp)
+    obtain ⟨C, hC⟩ := htight _ hε3
+    set η := δ / 2 / (max C 0 + 1)
+    have hη : 0 < η := by positivity
+    have h1 := hconv (ENNReal.ofReal (δ / 2)) (ENNReal.ofReal_pos.2 (by positivity))
+    have h2 := hRconv (ENNReal.ofReal η) (ENNReal.ofReal_pos.2 hη)
+    obtain ⟨n, hn1, hn2⟩ :=
+      ((h1.eventually (ge_mem_nhds hε3)).and (h2.eventually (ge_mem_nhds hε3))).exists
+    calc P {ω | δ < |Y t ω - X ω|}
+        ≤ P (({ω | ENNReal.ofReal (δ / 2) ≤ edist (S n ω) (X ω)} ∪
+            {ω | ENNReal.ofReal η ≤ edist (R n ω) 0}) ∪ {ω | C < |Y (t - n) ω|}) := by
+          refine measure_mono_ae ?_
+          filter_upwards [hiter] with ω hω hmem
+          have hmem : δ < |Y t ω - X ω| := hmem
+          by_contra hc
+          simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_le, not_lt] at hc
+          obtain ⟨⟨hc1, hc2⟩, hc3⟩ := hc
+          rw [edist_dist, ENNReal.ofReal_lt_ofReal_iff (by positivity), Real.dist_eq] at hc1 hc2
+          rw [sub_zero] at hc2
+          have hrem : |R n ω * Y (t - n) ω| < δ / 2 := by
+            rw [abs_mul]
+            have hM : 0 < max C 0 + 1 := by positivity
+            calc |R n ω| * |Y (t - n) ω| ≤ |R n ω| * (max C 0 + 1) :=
+                  mul_le_mul_of_nonneg_left (by linarith [le_max_left C 0]) (abs_nonneg _)
+              _ < η * (max C 0 + 1) := mul_lt_mul_of_pos_right hc2 hM
+              _ = δ / 2 := div_mul_cancel₀ _ hM.ne'
+          have : Y t ω - X ω = (S n ω - X ω) + R n ω * Y (t - n) ω := by rw [hω n]; ring
+          rw [this] at hmem
+          linarith [abs_add_le (S n ω - X ω) (R n ω * Y (t - n) ω)]
+      _ ≤ ε / 3 + ε / 3 + ε / 3 :=
+          (measure_union_le _ _).trans (add_le_add ((measure_union_le _ _).trans
+            (add_le_add hn1 (by simpa using hn2))) (hC _))
+      _ = ε := ENNReal.add_thirds ε
+  -- conclude
+  have hnull : P {ω | Y t ω ≠ X ω} = 0 := by
+    have hsub : {ω | Y t ω ≠ X ω} ⊆ ⋃ k : ℕ, {ω | 1 / ((k : ℝ) + 1) < |Y t ω - X ω|} := by
+      intro ω hω
+      have hpos : 0 < |Y t ω - X ω| := abs_pos.2 (sub_ne_zero.2 hω)
+      obtain ⟨k, hk⟩ := exists_nat_one_div_lt hpos
+      exact Set.mem_iUnion.2 ⟨k, hk⟩
+    exact measure_mono_null hsub (measure_iUnion_null fun k => hδ _ (by positivity))
+  exact measure_eq_zero_iff_ae_notMem.1 hnull |>.mono fun ω hω => not_not.1 hω
+
 /-- **Uniqueness of the AR(1) solution among solutions bounded in probability.** Let `|φ| < 1`
 and let `Y` solve `Y_t = φ Y_{t-1} + Z_t` almost surely, with `Y` bounded in probability
 (`sup_s P(|Y_s| > C)` can be made arbitrarily small). If the series `∑_j φ^j Z_{t-j}` converges
@@ -66,58 +130,12 @@ theorem ae_eq_process_of_tight (hZ : ∀ t, Measurable (Z t))
     (htight : ∀ ε : ℝ≥0∞, 0 < ε → ∃ C : ℝ, ∀ s, P {ω | C < |Y s ω|} ≤ ε) (t : ℤ)
     (hsum : ∀ᵐ ω ∂P, Summable fun j : ℕ => φ ^ j * Z (t - j) ω) :
     Y t =ᵐ[P] process φ Z t := by
-  set S : ℕ → Ω → ℝ := fun n ω => ∑ j ∈ Finset.range n, φ ^ j * Z (t - j) ω
-  have hSm : ∀ n, Measurable (S n) := fun n =>
-    Finset.measurable_sum _ fun j _ => (hZ _).const_mul _
-  have hX : Measurable (process φ Z t) := InfiniteMovingAverage.measurable_process hZ t
-  have hconv : TendstoInMeasure P S atTop (process φ Z t) := by
-    refine tendstoInMeasure_of_tendsto_ae (fun n => (hSm n).aestronglyMeasurable) ?_
-    filter_upwards [hsum] with ω hω
-    exact hω.hasSum.tendsto_sum_nat
-  have hiter := ae_eq_partialSum_add hrec
-  have hpow : Tendsto (fun n : ℕ => |φ| ^ n) atTop (𝓝 0) :=
-    tendsto_pow_atTop_nhds_zero_of_lt_one (abs_nonneg φ) hφ
-  -- every deviation `δ > 0` has probability zero
-  have hδ : ∀ δ : ℝ, 0 < δ → P {ω | δ < |Y t ω - process φ Z t ω|} = 0 := by
-    intro δ hδ
-    refine le_antisymm (ENNReal.le_of_forall_pos_le_add fun ε hε _ => ?_) zero_le
-    rw [zero_add]
-    have hε2 : (0 : ℝ≥0∞) < ε / 2 := ENNReal.half_pos (by exact_mod_cast hε.ne')
-    obtain ⟨C, hC⟩ := htight _ hε2
-    have h1 := hconv (ENNReal.ofReal (δ / 2)) (ENNReal.ofReal_pos.2 (by positivity))
-    have h2 := (hpow.mul_const (max C 0)).eventually (gt_mem_nhds (by
-      rw [zero_mul]; positivity : (0 : ℝ) * max C 0 < δ / 2))
-    obtain ⟨n, hn1, hn2⟩ := ((h1.eventually (ge_mem_nhds hε2)).and h2).exists
-    calc P {ω | δ < |Y t ω - process φ Z t ω|}
-        ≤ P ({ω | ENNReal.ofReal (δ / 2) ≤ edist (S n ω) (process φ Z t ω)} ∪ {ω | C < |Y (t - n) ω|}) := by
-          refine measure_mono_ae ?_
-          filter_upwards [hiter] with ω hω hmem
-          have hmem : δ < |Y t ω - process φ Z t ω| := hmem
-          by_contra hc
-          simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_le, not_lt] at hc
-          obtain ⟨hc1, hc2⟩ := hc
-          rw [edist_dist, ENNReal.ofReal_lt_ofReal_iff (by positivity), Real.dist_eq] at hc1
-          have hrem : |φ ^ n * Y (t - n) ω| < δ / 2 := by
-            rw [abs_mul, abs_pow]
-            calc |φ| ^ n * |Y (t - n) ω| ≤ |φ| ^ n * max C 0 :=
-                  mul_le_mul_of_nonneg_left (hc2.trans (le_max_left _ _)) (by positivity)
-              _ < δ / 2 := hn2
-          have : Y t ω - process φ Z t ω = (S n ω - process φ Z t ω) + φ ^ n * Y (t - n) ω := by
-            rw [hω t n]; ring
-          rw [this] at hmem
-          linarith [abs_add_le (S n ω - process φ Z t ω) (φ ^ n * Y (t - n) ω)]
-      _ ≤ ε / 2 + ε / 2 := (measure_union_le _ _).trans (add_le_add hn1 (hC _))
-      _ = ε := ENNReal.add_halves _
-  -- conclude
-  have hnull : P {ω | Y t ω ≠ process φ Z t ω} = 0 := by
-    have hsub : {ω | Y t ω ≠ process φ Z t ω} ⊆
-        ⋃ k : ℕ, {ω | 1 / ((k : ℝ) + 1) < |Y t ω - process φ Z t ω|} := by
-      intro ω hω
-      have hpos : 0 < |Y t ω - process φ Z t ω| := abs_pos.2 (sub_ne_zero.2 hω)
-      obtain ⟨k, hk⟩ := exists_nat_one_div_lt hpos
-      exact Set.mem_iUnion.2 ⟨k, hk⟩
-    exact measure_mono_null hsub (measure_iUnion_null fun k => hδ _ (by positivity))
-  exact measure_eq_zero_iff_ae_notMem.1 hnull |>.mono fun ω hω => not_not.1 hω
+  refine ae_eq_of_tight_of_iterate (S := fun n ω => ∑ j ∈ Finset.range n, φ ^ j * Z (t - j) ω)
+    (R := fun n _ => φ ^ n) t (fun n => (Finset.measurable_sum _ fun j _ =>
+      (hZ _).const_mul _).aestronglyMeasurable) (fun n => aestronglyMeasurable_const) ?_ ?_
+    (ae_of_all _ fun _ => tendsto_pow_atTop_nhds_zero_of_abs_lt_one hφ) htight
+  · filter_upwards [ae_eq_partialSum_add hrec] with ω hω n using hω t n
+  · filter_upwards [hsum] with ω hω using hω.hasSum.tendsto_sum_nat
 
 /-- A family of identically distributed real random variables is bounded in probability. -/
 theorem tight_of_identDistrib (hY : ∀ t, Measurable (Y t))
