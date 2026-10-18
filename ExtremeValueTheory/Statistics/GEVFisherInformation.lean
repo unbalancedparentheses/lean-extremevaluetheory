@@ -693,4 +693,129 @@ theorem integral_gevScoreXi : ∫ x, gevScoreXi ξ μ σ x ∂(gevLocScaleCDF ξ
 
 end Covariance
 
+/-! ### Positive definiteness -/
+
+section PosDef
+
+open Matrix
+
+/-- `(t - 1) log t` is not in the span of `1, t, t^ξ, t^{ξ + 1}` on `(0, ∞)` (`ξ ≠ 0`,
+`ξ > -1`): compare growth at `0⁺` (for `ξ > 0`) or at `∞` (for `ξ < 0`). -/
+theorem exists_logComb_ne_zero {ξ A₀ B₀ A₁ B₁ C : ℝ} (hξ0 : ξ ≠ 0) (hξ : -1 < ξ) (hC : C ≠ 0) :
+    ∃ t, 0 < t ∧ A₀ + B₀ * t + t ^ ξ * (A₁ + B₁ * t) + C * (t - 1) * log t ≠ 0 := by
+  by_contra hcon
+  push Not at hcon
+  apply hC
+  rcases lt_or_gt_of_ne hξ0 with hneg | hpos
+  · -- `ξ < 0`: divide by `t log t` and let `t → ∞`.
+    have hL : Tendsto (fun t : ℝ => C * (1 - t⁻¹)) atTop (𝓝 C) := by
+      simpa using ((tendsto_const_nhds (x := (1 : ℝ))).sub tendsto_inv_atTop_zero).const_mul C
+    have hp : Tendsto (fun t : ℝ => t ^ ξ) atTop (𝓝 0) := by
+      simpa using tendsto_rpow_neg_atTop (y := -ξ) (by linarith)
+    have hR : Tendsto (fun t : ℝ => -((log t)⁻¹ *
+        (A₀ * t⁻¹ + B₀ + A₁ * (t ^ ξ * t⁻¹) + B₁ * t ^ ξ))) atTop (𝓝 0) := by
+      have := (tendsto_log_atTop.inv_tendsto_atTop).mul
+        ((((tendsto_inv_atTop_zero.const_mul A₀).add (tendsto_const_nhds (x := B₀))).add
+          ((hp.mul tendsto_inv_atTop_zero).const_mul A₁)).add (hp.const_mul B₁))
+      simpa using this.neg
+    refine tendsto_nhds_unique hL (hR.congr' ?_)
+    filter_upwards [eventually_gt_atTop 1] with t ht
+    have ht0 : 0 < t := by linarith
+    have hl : 0 < log t := log_pos ht
+    have h := hcon t ht0
+    field_simp
+    linear_combination -h
+  · -- `ξ > 0`: divide by `log t` and let `t → 0⁺`.
+    have hL : Tendsto (fun t : ℝ => C * (t - 1)) (𝓝[>] 0) (𝓝 (C * (0 - 1))) :=
+      ((continuous_const.mul (continuous_id.sub continuous_const)).tendsto 0).mono_left
+        nhdsWithin_le_nhds
+    have hp : Tendsto (fun t : ℝ => A₀ + B₀ * t + t ^ ξ * (A₁ + B₁ * t)) (𝓝[>] 0)
+        (𝓝 (A₀ + B₀ * 0 + (0 : ℝ) ^ ξ * (A₁ + B₁ * 0))) := by
+      refine (ContinuousAt.tendsto ?_).mono_left nhdsWithin_le_nhds
+      exact (continuousAt_const.add (continuousAt_const.mul continuousAt_id)).add
+        ((Real.continuousAt_rpow_const _ _ (Or.inr hpos.le)).mul
+          (continuousAt_const.add (continuousAt_const.mul continuousAt_id)))
+    have hR : Tendsto (fun t : ℝ => -((log t)⁻¹ * (A₀ + B₀ * t + t ^ ξ * (A₁ + B₁ * t))))
+        (𝓝[>] 0) (𝓝 0) := by
+      simpa using (tendsto_log_nhdsGT_zero.inv_tendsto_atBot.mul hp).neg
+    have := tendsto_nhds_unique hL (hR.congr' ?_)
+    · linarith
+    filter_upwards [Ioo_mem_nhdsGT (show (0 : ℝ) < 1 by norm_num)] with t ht
+    have hl : log t ≠ 0 := (log_neg ht.1 ht.2).ne
+    have h := hcon t ht.1
+    field_simp
+    linear_combination -h
+
+/-- A weighted integral of a square which is continuous and not identically zero on `(0, ∞)`
+is positive. -/
+lemma setIntegral_exp_neg_mul_sq_pos {F : ℝ → ℝ} (hF : ContinuousOn F (Ioi 0))
+    (hint : IntegrableOn (fun t => exp (-t) * F t ^ 2) (Ioi 0)) (hne : ∃ t, 0 < t ∧ F t ≠ 0) :
+    0 < ∫ t in Ioi 0, exp (-t) * F t ^ 2 := by
+  rw [setIntegral_pos_iff_support_of_nonneg_ae
+    (ae_of_all _ fun t => by simp only [Pi.zero_apply]; positivity) hint]
+  have hU : IsOpen (Ioi (0 : ℝ) ∩ F ⁻¹' {0}ᶜ) :=
+    hF.isOpen_inter_preimage isOpen_Ioi isOpen_compl_singleton
+  obtain ⟨t, ht, hFt⟩ := hne
+  have hpos := hU.measure_pos volume ⟨t, ht, hFt⟩
+  refine hpos.trans_le (measure_mono fun s hs => ⟨?_, hs.1⟩)
+  simp only [Function.mem_support]
+  exact mul_ne_zero (exp_pos _).ne' (pow_ne_zero 2 hs.2)
+
+variable {ξ μ σ : ℝ}
+
+/-- **The Fisher information of the GEV family is positive definite** for `ξ > -1/2`,
+`ξ ≠ 0`. -/
+theorem posDef_gevFisherInfo (hσ : 0 < σ) (hξ0 : ξ ≠ 0) (hξ : -1 / 2 < ξ) :
+    (gevFisherInfo ξ σ).PosDef := by
+  refine Matrix.posDef_iff_dotProduct_mulVec.2 ⟨?_, fun v hv => ?_⟩
+  · refine Matrix.IsHermitian.ext fun i j => ?_
+    fin_cases i <;> fin_cases j <;> simp [gevFisherInfo]
+  rw [star_trivial, eq_vec_three v, ← integral_lin3_gevScore_sq hσ hξ0 hξ (μ := 0)]
+  rcases eq_or_ne (v 2) 0 with hc | hc
+  · -- no shape component: the location-scale block
+    have hw : ![v 0, v 1] ≠ 0 := by
+      intro h
+      apply hv
+      have h0 : v 0 = 0 := by simpa using congrFun h 0
+      have h1 : v 1 = 0 := by simpa using congrFun h 1
+      ext i; fin_cases i <;> simp [h0, h1, hc]
+    have := (Matrix.posDef_iff_dotProduct_mulVec.1
+      (posDef_gevFisherInfoMuSigma hσ hξ0 hξ)).2 hw
+    rw [star_trivial, dotProduct_gevFisherInfoMuSigma_mulVec,
+      ← integral_lin_gevScore_sq hσ hξ0 hξ (μ := 0)] at this
+    simpa [hc] using this
+  · have hm : Measurable fun x => (v 0 * gevScoreMu ξ 0 σ x + v 1 * gevScoreSigma ξ 0 σ x +
+        v 2 * gevScoreXi ξ 0 σ x) ^ 2 := by
+      have := measurable_gevScoreMu ξ 0 σ; have := measurable_gevScoreSigma ξ 0 σ
+      have := measurable_gevScoreXi ξ 0 σ; fun_prop
+    have hint := (integrable_gevLocScaleCDF_iff hσ hm).1
+      (integrable_gevLocScaleCDF_of_logPoly hξ hσ hm
+        (fun t ht => sq_lin3_gevScore_transform hσ hξ0 hξ _ _ _ ht))
+    rw [integral_gevLocScaleCDF hσ hm]
+    set a := v 0
+    set b := v 1
+    set c := v 2
+    set F : ℝ → ℝ := fun t => (b / (ξ * σ) - c * (1 + ξ) / ξ ^ 2) +
+      (-(b / (ξ * σ)) + c / ξ ^ 2) * t +
+      t ^ ξ * ((a * (1 + ξ) / σ - b * (1 + ξ) / (ξ * σ) + c * (1 + ξ) / ξ ^ 2) +
+        (b / (ξ * σ) - a / σ - c / ξ ^ 2) * t) + c / ξ * (t - 1) * log t with hF
+    have heq : ∀ t ∈ Ioi (0 : ℝ), exp (-t) * (a * gevScoreMu ξ 0 σ (0 + σ * gevTransform ξ t) +
+        b * gevScoreSigma ξ 0 σ (0 + σ * gevTransform ξ t) +
+        c * gevScoreXi ξ 0 σ (0 + σ * gevTransform ξ t)) ^ 2 = exp (-t) * F t ^ 2 :=
+      fun t ht => by rw [lin3_gevScore_transform hσ hξ0 a b c ht]
+    rw [setIntegral_congr_fun measurableSet_Ioi heq]
+    refine setIntegral_exp_neg_mul_sq_pos ?_ (hint.congr_fun heq measurableSet_Ioi) ?_
+    · intro t ht
+      have ht0 : t ≠ 0 := (show (0 : ℝ) < t from ht).ne'
+      refine ContinuousAt.continuousWithinAt ?_
+      simp only [hF]
+      fun_prop (disch := first | exact ht0 | exact Or.inl ht0)
+    · obtain ⟨t, ht, hne⟩ := exists_logComb_ne_zero (A₀ := b / (ξ * σ) - c * (1 + ξ) / ξ ^ 2)
+        (B₀ := -(b / (ξ * σ)) + c / ξ ^ 2)
+        (A₁ := a * (1 + ξ) / σ - b * (1 + ξ) / (ξ * σ) + c * (1 + ξ) / ξ ^ 2)
+        (B₁ := b / (ξ * σ) - a / σ - c / ξ ^ 2) hξ0 (by linarith) (div_ne_zero hc hξ0)
+      exact ⟨t, ht, hne⟩
+
+end PosDef
+
 end ExtremeValueTheory
