@@ -1639,7 +1639,7 @@ lemma sum_range_mul_two_pow_rpow_le_of_pos {s : ℝ} (hs : 0 < s) {γ : ℝ} (h�
   exact div_le_div_of_nonneg_right (by linarith) hr'.le
 
 /-- Dyadic blocks `[s 2^i, s 2^{i+1}]`, `i < M`, cover `(s, s 2^M]`. -/
-lemma exists_mem_dyadic_block {s t : ℝ} (hs : 0 < s) (M : ℕ) (hst : s < t)
+lemma exists_mem_dyadic_block {s t : ℝ} (M : ℕ) (hst : s < t)
     (ht : t ≤ s * 2 ^ M) : ∃ i < M, t ∈ Set.Icc (s * 2 ^ i) (2 * (s * 2 ^ i)) := by
   induction M with
   | zero => simp at ht; linarith
@@ -1801,7 +1801,7 @@ theorem exists_eventually_measureReal_weighted_le_aux (hU : ∀ i, Measurable (U
           _ ≤ ε * t ^ α := mul_le_mul_of_nonneg_right h3 (by positivity)
       rw [hα] at h4
       linarith
-    · obtain ⟨i, hi, hti⟩ := exists_mem_dyadic_block hs0 M hts (hsM.symm ▸ ht.2)
+    · obtain ⟨i, hi, hti⟩ := exists_mem_dyadic_block M hts (hsM.symm ▸ ht.2)
       exact Set.mem_biUnion (Finset.mem_coe.2 (Finset.mem_range.2 hi)) ⟨t, hti, by rwa [hα]⟩
   -- the probabilities
   have hPbot : P.real Bot ≤ θ' := by
@@ -1874,6 +1874,33 @@ theorem exists_eventually_measureReal_weighted_le_aux (hU : ∀ i, Measurable (U
           (k n : ℝ) ^ (1 - 4 * α + 1) + K * (32 / ε) * (c ^ (2 - 5 * α) /
             (1 - 2 ^ (2 - 5 * α))) / (k n : ℝ) ^ (2 - 5 * α + 1 / 2))) := by linarith
     _ ≤ θ := by linarith
+
+/-- **Weighted approximation of the tail empirical process near `0`** (Chibisov–O'Reilly type
+tail estimate; [de Haan–Ferreira, Theorem 5.1.4, weighted form]; [Einmahl 1992]). For
+`η > 0` (the interesting range is `η < 1/2`), `ε > 0` and `θ > 0` there is `δ ∈ (0, 1]` such that eventually
+`P(∃ t ∈ (0, δ], |W_n(t)| > ε t ^ (1/2 - η)) ≤ θ`; that is,
+`lim_{δ → 0} limsup_n P(sup_{0 < t ≤ δ} |W_n(t)| / t ^ (1/2 - η) > ε) = 0`.
+
+The proof covers `(0, δ]` by the region `(0, s]` with `s ≍ θ / k`, where with high probability
+no observation exceeds `1 - (k/n) s`, so that `W_n(t) = -√k t` there, and by the dyadic blocks
+`[s 2^i, s 2^{i+1}]`, on which Chebyshev's inequality and the maximal inequality
+(`measureReal_exists_abs_tailEmpiricalProcess_sub_gt_le`) give geometrically summable bounds.
+It suffices to treat `η ≤ 1/20`, since the weight `t ^ (1/2 - η)` increases with `η` on
+`(0, 1]`. -/
+theorem exists_eventually_measureReal_weighted_le (hU : ∀ i, Measurable (U i))
+    (hind : iIndepFun U P) (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))
+    {k : ℕ → ℕ} (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0))
+    {η : ℝ} (hη0 : 0 < η) {ε θ : ℝ} (hε : 0 < ε) (hθ : 0 < θ) :
+    ∃ δ ∈ Set.Ioc (0 : ℝ) 1, ∀ᶠ n in atTop, P.real {ω | ∃ t ∈ Set.Ioc 0 δ,
+      ε * t ^ (1 / 2 - η) < |tailEmpiricalProcess U n (k n) t ω|} ≤ θ := by
+  set η' := min η (1 / 20) with hη'
+  obtain ⟨δ, hδ, hev⟩ := exists_eventually_measureReal_weighted_le_aux hU hind hlaw hk hkn
+    (η := η') (lt_min hη0 (by norm_num)) (min_le_right _ _) hε hθ
+  refine ⟨δ, hδ, hev.mono fun n hn ↦ (measureReal_mono ?_).trans hn⟩
+  rintro ω ⟨t, ht, hlt⟩
+  refine ⟨t, ht, lt_of_le_of_lt (mul_le_mul_of_nonneg_left ?_ hε.le) hlt⟩
+  exact Real.rpow_le_rpow_of_exponent_ge ht.1 (ht.2.trans hδ.2)
+    (by linarith [min_le_left η (1 / 20)])
 
 end Weighted
 
