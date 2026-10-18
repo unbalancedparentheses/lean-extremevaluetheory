@@ -90,7 +90,7 @@ Values}, Springer (2001), Ch.~8.
   \label{thm:multivariate-mda}
   \uses{thm:max-stable-converse, thm:three-types-of-extr-val-distr}
   \lean{ExtremeValueTheory.IsMDAWith, ExtremeValueTheory.IsInMultivariateMDA, ExtremeValueTheory.IsMDAWith.tendsto_marginal, ExtremeValueTheory.IsMDAWith.exists_pow_eq,
-    ExtremeValueTheory.IsMDAWith.tendsto_mul_one_sub_tailQuantile, ExtremeValueTheory.isSimpleMaxStable_frechetStandardization, ExtremeValueTheory.isMDAWith_iff}
+    ExtremeValueTheory.IsMDAWith.tendsto_mul_one_sub_tailQuantile, ExtremeValueTheory.IsMDAWith.isSimpleMaxStable_frechetStandardization, ExtremeValueTheory.isMDAWith_iff}
   \leanok
   If $F^n(a_n x + b_n) \to G(x)$ coordinatewise-affinely with non-degenerate marginal limits, then each margin of $G$ is a
   univariate extreme value distribution, each margin of $F$ is in its domain of attraction, $G$ is max-stable, and
@@ -107,7 +107,7 @@ Values}, Springer (2001), Ch.~8.
 \begin{theorem}[Multivariate generalized Pareto distributions]
   \label{thm:mgpd}
   \uses{thm:multivariate-mda}
-  \lean{ExtremeValueTheory.IsMDAWith.tendsto_conditionalExcessCDF, ExtremeValueTheory.tendsto_conditionalExcess_tailQuantile,
+  \lean{ExtremeValueTheory.IsMDAWith.tendsto_conditionalExcessCDF, ExtremeValueTheory.IsMDAWith.tendsto_conditionalExcess_tailQuantile,
     ExtremeValueTheory.IsSimpleMaxStable.standardMGPD_threshold_stable}
   \leanok
   Under the domain-of-attraction condition, the law of $(X - b_n)/a_n$ given that some coordinate exceeds its threshold
