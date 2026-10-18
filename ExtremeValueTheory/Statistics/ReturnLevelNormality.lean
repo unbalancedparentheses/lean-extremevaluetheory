@@ -396,4 +396,171 @@ theorem hasGradientAt_gpdReturnLevelVec₃ {ζ ξ σ u N : ℝ} (hξ : ξ ≠ 0)
 
 end Gradients
 
+/-! ### Asymptotic normality of estimated return levels -/
+
+section Normality
+
+variable {Ω Ω' Ω'' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {mΩ'' : MeasurableSpace Ω''} {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'}
+  [IsProbabilityMeasure P'] {P'' : Measure Ω''} [IsProbabilityMeasure P'']
+
+lemma tendsto_sqrt_natCast_atTop : Tendsto (fun n : ℕ => √(n : ℝ)) atTop atTop :=
+  tendsto_sqrt_atTop.comp tendsto_natCast_atTop_atTop
+
+/-- **Asymptotic normality of the GEV return level** ([Coles, §3.3.3]). If estimators
+`θ̂ₙ = (ξ̂ₙ, μ̂ₙ, σ̂ₙ)` of the GEV parameters satisfy `√n (θ̂ₙ - θ₀) ⇒ N(0, V)` and `ξ₀ ≠ 0`, then
+the plug-in `m`-block return level satisfies `√n (ẑ_m - z_m) ⇒ N(0, ∇z_mᵀ V ∇z_m)`, with the
+gradient `gevReturnLevelGrad` (`gevReturnLevelGrad_eq`). -/
+theorem tendstoInDistribution_gevReturnLevel {ξ₀ μ₀ σ₀ m : ℝ} (hξ₀ : ξ₀ ≠ 0) (hm : 1 < m)
+    {θh : ℕ → Ω → ℝ × ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P)
+    {V : Matrix (Fin 3) (Fin 3) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 3)}
+    (h : TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
+      !₂[(θh n ω).1 - ξ₀, (θh n ω).2.1 - μ₀, (θh n ω).2.2 - σ₀]) atTop Z (fun _ => P) P')
+    (hZ : HasLaw Z (multivariateGaussian 0 V) P') {W : Ω'' → ℝ}
+    (hW : HasLaw W (gaussianReal 0
+      (gevReturnLevelGrad ξ₀ σ₀ m ⬝ᵥ V *ᵥ gevReturnLevelGrad ξ₀ σ₀ m).toNNReal) P'') :
+    TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) *
+      (gevReturnLevel (θh n ω).1 (θh n ω).2.1 (θh n ω).2.2 m - gevReturnLevel ξ₀ μ₀ σ₀ m))
+      atTop W (fun _ => P) P'' := by
+  have h' : TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
+      ((!₂[(θh n ω).1, (θh n ω).2.1, (θh n ω).2.2] : EuclideanSpace ℝ (Fin 3)) -
+        !₂[ξ₀, μ₀, σ₀])) atTop Z (fun _ => P) P' := by
+    refine h.congr (fun n => Eventually.of_forall fun ω => ?_) (ae_of_all _ fun _ => rfl)
+    simp only
+    congr 1
+    ext i; fin_cases i <;> simp
+  have hd := h'.delta_method_gaussian hV hZ tendsto_sqrt_natCast_atTop
+    (hasGradientAt_gevReturnLevelVec (μ := μ₀) hξ₀ hm)
+    (fun n => ((measurable_gevReturnLevel m).comp_aemeasurable (hθm n)).congr
+      (Eventually.of_forall fun ω => by simp [gevReturnLevelVec])) hW
+  simpa [gevReturnLevelVec] using hd
+
+/-- **Asymptotic normality of the Gumbel return level** ([Coles, §3.3.3]): if
+`√n (μ̂ₙ - μ₀, σ̂ₙ - σ₀) ⇒ N(0, V)`, then `√n (ẑ_m - z_m) ⇒ N(0, ∇zᵀ V ∇z)`,
+`∇z = (1, -log y_m)`, `y_m = -log(1 - 1/m)`. -/
+theorem tendstoInDistribution_gumbelReturnLevel {μ₀ σ₀ m : ℝ}
+    {θh : ℕ → Ω → ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P)
+    {V : Matrix (Fin 2) (Fin 2) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 2)}
+    (h : TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
+      !₂[(θh n ω).1 - μ₀, (θh n ω).2 - σ₀]) atTop Z (fun _ => P) P')
+    (hZ : HasLaw Z (multivariateGaussian 0 V) P') {W : Ω'' → ℝ}
+    (hW : HasLaw W (gaussianReal 0 ((!₂[1, -log (-log (1 - 1 / m))] : EuclideanSpace ℝ (Fin 2)) ⬝ᵥ
+      V *ᵥ (!₂[1, -log (-log (1 - 1 / m))] : EuclideanSpace ℝ (Fin 2))).toNNReal) P'') :
+    TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) *
+      (gevReturnLevel 0 (θh n ω).1 (θh n ω).2 m - gevReturnLevel 0 μ₀ σ₀ m))
+      atTop W (fun _ => P) P'' := by
+  have h' : TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
+      ((!₂[(θh n ω).1, (θh n ω).2] : EuclideanSpace ℝ (Fin 2)) - !₂[μ₀, σ₀]))
+      atTop Z (fun _ => P) P' := by
+    refine h.congr (fun n => Eventually.of_forall fun ω => ?_) (ae_of_all _ fun _ => rfl)
+    simp only
+    congr 1
+    ext i; fin_cases i <;> simp
+  have hmeas : Measurable fun p : ℝ × ℝ => gevReturnLevel 0 p.1 p.2 m := by
+    simp only [gevReturnLevel_zero]; fun_prop
+  have hd := h'.delta_method_gaussian hV hZ tendsto_sqrt_natCast_atTop
+    (hasGradientAt_gumbelReturnLevelVec μ₀ σ₀ m)
+    (fun n => (hmeas.comp_aemeasurable (hθm n)).congr
+      (Eventually.of_forall fun ω => by simp [gumbelReturnLevelVec])) hW
+  simpa [gumbelReturnLevelVec] using hd
+
+lemma measurable_gpdReturnLevel (u ζ N : ℝ) :
+    Measurable fun p : ℝ × ℝ => gpdReturnLevel u p.1 p.2 ζ N := by
+  unfold gpdReturnLevel
+  exact measurable_const.add (measurable_snd.mul
+    (measurable_boxCox.comp (measurable_fst.prodMk measurable_const)))
+
+/-- **Asymptotic normality of a POT return level from asymptotically normal GPD parameter
+estimators**, `ζ_u` known: if `√n (ξ̂ₙ - ξ₀, σ̂ₙ - σ₀) ⇒ N(0, V)`, `ξ₀ ≠ 0`, `N ζ > 0`, then
+`√n (x̂_N - x_N) ⇒ N(0, ∇x_Nᵀ V ∇x_N)`. -/
+theorem tendstoInDistribution_gpdReturnLevel_of_tendstoInDistribution {ξ₀ σ₀ u ζ N : ℝ}
+    (hξ₀ : ξ₀ ≠ 0) (hNζ : 0 < N * ζ)
+    {θh : ℕ → Ω → ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P)
+    {V : Matrix (Fin 2) (Fin 2) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 2)}
+    (h : TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
+      !₂[(θh n ω).1 - ξ₀, (θh n ω).2 - σ₀]) atTop Z (fun _ => P) P')
+    (hZ : HasLaw Z (multivariateGaussian 0 V) P') {W : Ω'' → ℝ}
+    (hW : HasLaw W (gaussianReal 0 (gpdReturnLevelGrad ξ₀ σ₀ ζ N ⬝ᵥ
+      V *ᵥ gpdReturnLevelGrad ξ₀ σ₀ ζ N).toNNReal) P'') :
+    TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) *
+      (gpdReturnLevel u (θh n ω).1 (θh n ω).2 ζ N - gpdReturnLevel u ξ₀ σ₀ ζ N))
+      atTop W (fun _ => P) P'' := by
+  have h' : TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
+      ((!₂[(θh n ω).1, (θh n ω).2] : EuclideanSpace ℝ (Fin 2)) - !₂[ξ₀, σ₀]))
+      atTop Z (fun _ => P) P' := by
+    refine h.congr (fun n => Eventually.of_forall fun ω => ?_) (ae_of_all _ fun _ => rfl)
+    simp only
+    congr 1
+    ext i; fin_cases i <;> simp
+  have hd := h'.delta_method_gaussian hV hZ tendsto_sqrt_natCast_atTop
+    (hasGradientAt_gpdReturnLevelVec (σ := σ₀) (u := u) hξ₀ hNζ)
+    (fun n => ((measurable_gpdReturnLevel u ζ N).comp_aemeasurable (hθm n)).congr
+      (Eventually.of_forall fun ω => by simp [gpdReturnLevelVec])) hW
+  simpa [gpdReturnLevelVec] using hd
+
+/-- **Asymptotic normality of the maximum likelihood POT return level** ([Coles, §4.3.3];
+[Smith 1985]). Let `K ⊂ {ξ > -1, σ > 0}` be compact with `θ₀ = (ξ₀, σ₀)`, `ξ₀ > -1/2`,
+`ξ₀ ≠ 0`, in its interior, let the excesses `X₀, X₁, …` be iid `GPD(θ₀)`, and let `θ̂ₙ` be
+measurable maximizers of the GPD log-likelihood over `K`. For a known exceedance probability
+`ζ` and `N ζ > 0`, the return level `x̂_N = u + σ̂ₙ h_{ξ̂ₙ}(N ζ)` satisfies
+
+  `√n (x̂_N - x_N) ⇒ N(0, ∇x_Nᵀ I(θ₀)⁻¹ ∇x_N)`,
+
+the variance being `gpdReturnLevelVar ξ₀ σ₀ ζ N` (`dotProduct_gpdReturnLevelGrad`). -/
+theorem tendstoInDistribution_gpdReturnLevel {ξ₀ σ₀ u ζ N : ℝ} {X : ℕ → Ω → ℝ}
+    {K : Set (ℝ × ℝ)} (hK : IsCompact K)
+    (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K)
+    (hξ₀ : -1 / 2 < ξ₀) (hξ₀0 : ξ₀ ≠ 0) (hσ₀ : 0 < σ₀)
+    (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ₀ σ₀) P) (hind : iIndepFun X P)
+    {θh : ℕ → Ω → ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P) (hθK : ∀ n ω, θh n ω ∈ K)
+    (hmax : ∀ n ω, IsMaxOn (fun p : ℝ × ℝ => gpdLogLikE p.1 p.2 (fun i : Fin n => X i ω)) K
+      (θh n ω)) (hNζ : 0 < N * ζ) {W : Ω'' → ℝ}
+    (hW : HasLaw W (gaussianReal 0 (gpdReturnLevelVar ξ₀ σ₀ ζ N).toNNReal) P'') :
+    TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) *
+      (gpdReturnLevel u (θh n ω).1 (θh n ω).2 ζ N - gpdReturnLevel u ξ₀ σ₀ ζ N))
+      atTop W (fun _ => P) P'' := by
+  have hZ : HasLaw id (multivariateGaussian (0 : EuclideanSpace ℝ (Fin 2))
+      (gpdFisherInfoInv ξ₀ σ₀)) (multivariateGaussian 0 (gpdFisherInfoInv ξ₀ σ₀)) := HasLaw.id
+  have h := tendstoInDistribution_gpdMLE_all hK hKS hθ₀ hξ₀ hξ₀0 hσ₀ hX hind hθm hθK hmax hZ
+  exact tendstoInDistribution_gpdReturnLevel_of_tendstoInDistribution hξ₀0 hNζ hθm
+    (posDef_gpdFisherInfoInv hξ₀ hσ₀).posSemidef h hZ
+    (by rwa [dotProduct_gpdReturnLevelGrad])
+
+lemma measurable_gpdReturnLevel₃ (u N : ℝ) :
+    Measurable fun p : ℝ × ℝ × ℝ => gpdReturnLevel u p.2.1 p.2.2 p.1 N := by
+  unfold gpdReturnLevel
+  exact measurable_const.add (measurable_snd.snd.mul
+    (measurable_boxCox.comp (measurable_snd.fst.prodMk (measurable_const.mul measurable_fst))))
+
+/-- **Asymptotic normality of the POT return level with estimated exceedance rate**
+([Coles, §4.3.3]). If `√n (ζ̂ₙ - ζ₀, ξ̂ₙ - ξ₀, σ̂ₙ - σ₀) ⇒ N(0, V)`, `ξ₀ ≠ 0`, `N ζ₀ > 0`, then
+`√n (x̂_N - x_N) ⇒ N(0, ∇x_Nᵀ V ∇x_N)` with `∇x_N = (σ N^ξ ζ^{ξ-1}, σ ∂_ξ h, h)`
+(`gpdReturnLevelGrad₃`, `gpdReturnLevelGrad₃_zero`). Coles takes `V` block diagonal, with
+`ζ̂` the exceedance frequency (`Var = ζ(1 - ζ)`) and the GPD inverse information. -/
+theorem tendstoInDistribution_gpdReturnLevel₃ {ζ₀ ξ₀ σ₀ u N : ℝ} (hξ₀ : ξ₀ ≠ 0)
+    (hNζ : 0 < N * ζ₀) {θh : ℕ → Ω → ℝ × ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P)
+    {V : Matrix (Fin 3) (Fin 3) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 3)}
+    (h : TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
+      !₂[(θh n ω).1 - ζ₀, (θh n ω).2.1 - ξ₀, (θh n ω).2.2 - σ₀]) atTop Z (fun _ => P) P')
+    (hZ : HasLaw Z (multivariateGaussian 0 V) P') {W : Ω'' → ℝ}
+    (hW : HasLaw W (gaussianReal 0 (gpdReturnLevelGrad₃ ζ₀ ξ₀ σ₀ N ⬝ᵥ
+      V *ᵥ gpdReturnLevelGrad₃ ζ₀ ξ₀ σ₀ N).toNNReal) P'') :
+    TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) *
+      (gpdReturnLevel u (θh n ω).2.1 (θh n ω).2.2 (θh n ω).1 N - gpdReturnLevel u ξ₀ σ₀ ζ₀ N))
+      atTop W (fun _ => P) P'' := by
+  have h' : TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
+      ((!₂[(θh n ω).1, (θh n ω).2.1, (θh n ω).2.2] : EuclideanSpace ℝ (Fin 3)) -
+        !₂[ζ₀, ξ₀, σ₀])) atTop Z (fun _ => P) P' := by
+    refine h.congr (fun n => Eventually.of_forall fun ω => ?_) (ae_of_all _ fun _ => rfl)
+    simp only
+    congr 1
+    ext i; fin_cases i <;> simp
+  have hd := h'.delta_method_gaussian hV hZ tendsto_sqrt_natCast_atTop
+    (hasGradientAt_gpdReturnLevelVec₃ (σ := σ₀) (u := u) hξ₀ hNζ)
+    (fun n => ((measurable_gpdReturnLevel₃ u N).comp_aemeasurable (hθm n)).congr
+      (Eventually.of_forall fun ω => by simp [gpdReturnLevelVec₃])) hW
+  simpa [gpdReturnLevelVec₃] using hd
+
+end Normality
+
 end ExtremeValueTheory
