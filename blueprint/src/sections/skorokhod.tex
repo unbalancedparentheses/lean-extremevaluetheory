@@ -85,3 +85,40 @@ for upstreaming.
   sequence has a subsequence with summable distances; compose the time changes and pass to a uniform limit, which
   is c\`adl\`ag.
 \end{proof}
+
+\section{\texorpdfstring{Weak convergence in $D$ and the tail empirical process}{Weak convergence in D and the tail empirical process}}
+
+\begin{theorem}[Weak convergence in $D$]
+  \label{thm:skorokhod-weak-convergence}
+  \uses{thm:skorokhod-polish}
+  \lean{SkorokhodSpace.tendsto_of_tendsto_map_restrict_of_isTight,
+    SkorokhodSpace.exists_tendsto_of_tendsto_map_restrict_of_isTight,
+    SkorokhodSpace.isTightMeasureSet_of_cadlagModulus, SkorokhodSpace.isTightMeasureSet_of_blockOscillation}
+  \leanok
+  Tight laws on $D$ whose finite-dimensional distributions converge outside a countable set of times (with $1$ included)
+  converge weakly [Billingsley, Theorem~13.1]; tightness follows from a boundedness condition and the modulus condition
+  $w'_x(\delta) \to 0$ [Billingsley, Theorem~13.2].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Compactness in $D$ via the modulus $w'$ (Billingsley, Theorem~12.3), Prokhorov, and determination of laws on $D$ by the
+  finite-dimensional distributions on a dense set of times.
+\end{proof}
+
+\begin{theorem}[The uniform tail empirical process converges to Brownian motion]
+  \label{thm:tail-empirical-process}
+  \uses{thm:skorokhod-weak-convergence}
+  \lean{ExtremeValueTheory.tendstoInDistribution_tailEmpiricalProcess_fdd,
+    ExtremeValueTheory.exists_tendsto_tailEmpiricalPath, ExtremeValueTheory.tendstoInDistribution_tailEmpiricalPath,
+    ExtremeValueTheory.tendsto_tailEmpiricalPath_of_fdd}
+  \leanok
+  For iid uniform $U_i$, $k \to \infty$ and $k/n \to 0$, the process
+  $W_n(t) = \sqrt k\,\big(k^{-1}\sum_{i<n} \mathbf 1\{U_i \ge 1 - (k/n)t\} - t\big)$, $t \in [0,1]$, converges weakly in $D[0,1]$ to Brownian
+  motion [dHF, Theorem~5.1.4], [Einmahl 1992]. In particular a Brownian law on $D$ exists. The weighted version and the
+  corresponding process for regularly varying $F$ (which gives a second proof of Hill normality) are not formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Finite-dimensional convergence by a triangular-array CLT. Tightness: $\E(W_n(t) - W_n(s))^4 \le 12(t-s)^2 + 2(t-s)/k$,
+  dyadic chaining, and monotonicity of the counts between grid points.
+\end{proof}
