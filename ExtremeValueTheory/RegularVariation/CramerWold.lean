@@ -286,6 +286,110 @@ theorem ext_of_halfSpace {g : ℝ → ℂ} (m : ℕ) (hgm : Measurable g) (hg0 :
   rw [← hself μ hμ0, ← hself ν hν0, Measure.restrict_iUnion_congr]
   exact fun p => hdens _
 
+/-! ### The kernel `e^{is} - ∑_{k ≤ n} (is)^k / k!` -/
+
+/-- The Taylor remainder of order `n` of `s ↦ e^{is}`. -/
+noncomputable def expRem (n : ℕ) (s : ℝ) : ℂ :=
+  cexp (s * I) - ∑ k ∈ Finset.range (n + 1), ((s : ℂ) * I) ^ k / (k.factorial : ℂ)
+
+theorem continuous_expRem (n : ℕ) : Continuous (expRem n) := by
+  unfold expRem
+  fun_prop
+
+@[simp] theorem expRem_zero (n : ℕ) : expRem n 0 = 0 := by
+  simp [expRem, Finset.sum_range_succ']
+
+/-- Forward differences of order `N` kill polynomials of degree `< N`. -/
+theorem sum_shift_pow_eq_zero {k N : ℕ} (hk : k < N) (a b : ℝ) :
+    ∑ j ∈ Finset.range (N + 1), ((-1 : ℤ) ^ (N - j) * (N.choose j : ℤ)) •
+      (((a + j • b : ℝ) : ℂ) * I) ^ k = 0 := by
+  have hdeg : ((Polynomial.C ((b : ℂ) * I) * Polynomial.X + Polynomial.C ((a : ℂ) * I)) ^
+      k).natDegree < N := by
+    refine lt_of_le_of_lt (Polynomial.natDegree_pow_le.trans ?_) hk
+    calc k * _ ≤ k * 1 := Nat.mul_le_mul_left k Polynomial.natDegree_linear_le
+      _ = k := mul_one k
+  have := congrFun (Polynomial.fwdDiff_iter_eq_zero_of_degree_lt hdeg) 0
+  rw [fwdDiff_iter_eq_sum_shift, Pi.zero_apply] at this
+  rw [← this]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  congr 1
+  simp only [Polynomial.eval_pow, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C,
+    Polynomial.eval_X, zero_add, nsmul_eq_mul, mul_one]
+  push_cast
+  ring
+
+theorem fwdDiff_iter_expRem (n : ℕ) (a b : ℝ) :
+    Δ_[b]^[2 * (n + 1)] (expRem n) a = Δ_[b]^[2 * (n + 1)] (fun x : ℝ => cexp (x * I)) a := by
+  rw [fwdDiff_iter_eq_sum_shift, fwdDiff_iter_eq_sum_shift]
+  simp only [expRem, smul_sub, Finset.sum_sub_distrib, sub_eq_self]
+  simp_rw [Finset.smul_sum]
+  rw [Finset.sum_comm]
+  refine Finset.sum_eq_zero fun k hk => ?_
+  have hk' : k < 2 * (n + 1) := by
+    have := Finset.mem_range.1 hk; omega
+  simp_rw [← smul_div_assoc, ← Finset.sum_div]
+  rw [sum_shift_pow_eq_zero hk' a b, zero_div]
+
+/-- The comparison function `min (u ^ (n + 1)) (u ^ n)`. -/
+noncomputable def minPow (n : ℕ) (u : ℝ) : ℝ := min (u ^ (n + 1)) (u ^ n)
+
+theorem minPow_nonneg (n : ℕ) {u : ℝ} (hu : 0 ≤ u) : 0 ≤ minPow n u :=
+  le_min (pow_nonneg hu _) (pow_nonneg hu _)
+
+theorem minPow_mono (n : ℕ) {u v : ℝ} (hu : 0 ≤ u) (huv : u ≤ v) : minPow n u ≤ minPow n v :=
+  min_le_min (pow_le_pow_left₀ hu huv _) (pow_le_pow_left₀ hu huv _)
+
+theorem minPow_mul_le (n : ℕ) {c u : ℝ} (hc : 0 ≤ c) (hu : 0 ≤ u) :
+    minPow n (c * u) ≤ (c ^ n + c ^ (n + 1)) * minPow n u := by
+  have hK1 : c ^ (n + 1) ≤ c ^ n + c ^ (n + 1) := le_add_of_nonneg_left (pow_nonneg hc _)
+  have hK2 : c ^ n ≤ c ^ n + c ^ (n + 1) := le_add_of_nonneg_right (pow_nonneg hc _)
+  rw [minPow, minPow, mul_pow, mul_pow, mul_min_of_nonneg _ _ (by positivity)]
+  exact min_le_min (mul_le_mul_of_nonneg_right hK1 (pow_nonneg hu _))
+    (mul_le_mul_of_nonneg_right hK2 (pow_nonneg hu _))
+
+theorem norm_expRem_le (n : ℕ) (s : ℝ) : ‖expRem n s‖ ≤ (n + 2) * minPow n |s| := by
+  have hx : ‖(s : ℂ) * I‖ = |s| := by simp
+  rcases le_or_gt |s| 1 with hs | hs
+  · have hmin : minPow n |s| = |s| ^ (n + 1) :=
+      min_eq_left (pow_le_pow_of_le_one (abs_nonneg s) hs (Nat.le_succ n))
+    have := Complex.exp_bound (x := (s : ℂ) * I) (by rw [hx]; exact hs) (n := n + 1) n.succ_pos
+    rw [hx] at this
+    rw [expRem, hmin]
+    refine this.trans ?_
+    rw [mul_comm]
+    refine mul_le_mul_of_nonneg_right ?_ (pow_nonneg (abs_nonneg s) _)
+    have h1 : (1 : ℝ) ≤ ((n + 1).factorial * (n + 1) : ℝ) := by
+      have := Nat.one_le_iff_ne_zero.2 (Nat.factorial_ne_zero (n + 1))
+      have h2 : (1 : ℝ) ≤ ((n + 1).factorial : ℝ) := by exact_mod_cast this
+      nlinarith
+    calc (((n + 1).succ : ℕ) : ℝ) * (((n + 1).factorial : ℝ) * ((n + 1 : ℕ) : ℝ))⁻¹
+        ≤ (((n + 1).succ : ℕ) : ℝ) * 1 := by
+          refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+          push_cast
+          exact inv_le_one_of_one_le₀ h1
+      _ = n + 2 := by push_cast; ring
+  · have hmin : minPow n |s| = |s| ^ n :=
+      min_eq_right (pow_le_pow_right₀ hs.le (Nat.le_succ n))
+    rw [expRem, hmin]
+    have hterm : ∀ k ∈ Finset.range (n + 1), ‖((s : ℂ) * I) ^ k / (k.factorial : ℂ)‖ ≤ |s| ^ n :=
+      fun k hk => by
+        rw [norm_div, norm_pow, hx, Complex.norm_natCast]
+        refine (div_le_self (pow_nonneg (abs_nonneg s) _) ?_).trans
+          (pow_le_pow_right₀ hs.le (Nat.lt_succ_iff.1 (Finset.mem_range.1 hk)))
+        exact_mod_cast Nat.one_le_iff_ne_zero.2 (Nat.factorial_ne_zero k)
+    calc ‖cexp (s * I) - ∑ k ∈ Finset.range (n + 1), ((s : ℂ) * I) ^ k / (k.factorial : ℂ)‖
+        ≤ ‖cexp (s * I)‖ + ‖∑ k ∈ Finset.range (n + 1), ((s : ℂ) * I) ^ k / (k.factorial : ℂ)‖ :=
+          norm_sub_le _ _
+      _ ≤ 1 + (n + 1) * |s| ^ n := by
+          rw [Complex.norm_exp_ofReal_mul_I]
+          gcongr
+          refine (norm_sum_le _ _).trans ?_
+          refine (Finset.sum_le_sum hterm).trans ?_
+          simp
+      _ ≤ (n + 2) * |s| ^ n := by
+          have : 1 ≤ |s| ^ n := one_le_pow₀ hs.le
+          linarith
+
 end CramerWold
 
 end ExtremeValueTheory
