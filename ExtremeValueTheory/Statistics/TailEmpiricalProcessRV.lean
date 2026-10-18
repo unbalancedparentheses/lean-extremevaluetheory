@@ -618,4 +618,103 @@ theorem meanExcess_eq_integral_tailEmpiricalProcess {U : ℕ → Ω → ℝ} {ω
 
 end Representation
 
+/-! ### Moment bounds for the tail empirical process -/
+
+section Moments
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+  {U : ℕ → Ω → ℝ}
+
+lemma integrable_tailEmpiricalProcess_pow (hU : ∀ i, Measurable (U i)) (n k : ℕ) (t : ℝ)
+    (j : ℕ) : Integrable (fun ω ↦ tailEmpiricalProcess U n k t ω ^ j) P :=
+  integrable_pow_of_abs_le (measurable_tailEmpiricalProcess hU n k t)
+    (fun ω ↦ abs_tailEmpiricalProcess_le U n k t ω) j
+
+/-- The variance of the tail empirical process: `E W_n(t) ^ 2 = t - (k/n) t ^ 2`. -/
+theorem integral_tailEmpiricalProcess_sq (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1)) {n k : ℕ} (hn : 0 < n)
+    (hk : 0 < k) {t : ℝ} (ht : 0 ≤ t) (htp : (k : ℝ) / n * t ≤ 1) :
+    ∫ ω, tailEmpiricalProcess U n k t ω ^ 2 ∂P = t - k / n * t ^ 2 := by
+  set τ : Unit → ℝ≥0 := fun _ ↦ ⟨t, ht⟩
+  set a : Unit → ℝ := fun _ ↦ 1
+  set X : ℕ → Ω → ℝ := fun i ω ↦ tailSummand τ a n k (U i ω) with hX
+  have hXm (i : ℕ) : Measurable (X i) := (measurable_tailSummand τ a n k).comp (hU i)
+  have hXind : iIndepFun X P := hind.comp (fun _ ↦ tailSummand τ a n k)
+    (fun _ ↦ measurable_tailSummand τ a n k)
+  have hXC (i : ℕ) (ω : Ω) : |X i ω| ≤ (√(k : ℝ))⁻¹ * ∑ s : Unit, |a s| * (1 + k / n * τ s) :=
+    abs_tailSummand_le τ a n k _
+  have hmap (i : ℕ) {g : ℝ → ℝ} (hg : Measurable g) :
+      ∫ ω, g (X i ω) ∂P = ∫ u, g (tailSummand τ a n k u) ∂μU := by
+    rw [show μU = P.map (U i) from (hlaw i).symm, integral_map (hU i).aemeasurable
+      (f := fun u ↦ g (tailSummand τ a n k u))
+      (hg.comp (measurable_tailSummand τ a n k)).aestronglyMeasurable]
+  have hX0 (i : ℕ) : ∫ ω, X i ω ∂P = 0 := by
+    have := hmap i measurable_id
+    simp only [id] at this
+    rw [this, integral_tailSummand τ a fun _ ↦ htp]
+  have hW (ω : Ω) : tailEmpiricalProcess U n k t ω = ∑ i ∈ range n, X i ω := by
+    have := sum_mul_tailEmpiricalProcess_eq τ a U hn.ne' k ω
+    simp only [Finset.univ_unique, Finset.sum_singleton, one_mul, a] at this
+    exact this
+  have h2 (i : ℕ) : ∫ ω, X i ω ^ 2 ∂P = ∫ u, tailSummand τ a n k u ^ 2 ∂μU :=
+    hmap i (g := fun x ↦ x ^ 2) (measurable_id.pow_const 2)
+  simp_rw [hW]
+  rw [integral_sum_range_sq_eq hXm hXind hXC hX0 n]
+  simp_rw [h2]
+  rw [Finset.sum_const, card_range, nsmul_eq_mul,
+    mul_integral_tailSummand_sq τ a hn.ne' hk.ne' fun _ ↦ htp]
+  simp only [a, τ, Finset.univ_unique, Finset.sum_singleton, one_mul, min_self]
+  change t - (k : ℝ) / n * t * t = _
+  ring
+
+lemma integral_tailEmpiricalProcess_sq_le (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1)) {n k : ℕ} (hn : 0 < n)
+    (hk : 0 < k) {t : ℝ} (ht : 0 ≤ t) (htp : (k : ℝ) / n * t ≤ 1) :
+    ∫ ω, tailEmpiricalProcess U n k t ω ^ 2 ∂P ≤ t := by
+  rw [integral_tailEmpiricalProcess_sq hU hind hlaw hn hk ht htp]
+  have : 0 ≤ (k : ℝ) / n * t ^ 2 := by positivity
+  linarith
+
+omit [IsProbabilityMeasure P] in
+/-- Chebyshev's inequality. -/
+lemma measureReal_le_abs_le_integral_sq_div {X : Ω → ℝ}
+    (hint : Integrable (fun ω ↦ X ω ^ 2) P) {a : ℝ} (ha : 0 < a) :
+    P.real {ω | a ≤ |X ω|} ≤ (∫ ω, X ω ^ 2 ∂P) / a ^ 2 := by
+  have h := mul_meas_ge_le_integral_of_nonneg (ae_of_all _ fun ω ↦ sq_nonneg (X ω)) hint (a ^ 2)
+  have e : {ω | a ≤ |X ω|} = {ω | a ^ 2 ≤ X ω ^ 2} := by
+    ext ω
+    simp only [Set.mem_ofPred_eq]
+    rw [← sq_abs (X ω)]
+    exact (pow_le_pow_iff_left₀ ha.le (abs_nonneg _) two_ne_zero).symm
+  rw [e, le_div_iff₀ (by positivity), mul_comm]
+  exact h
+
+/-- `E |W_n(t)| ≤ √t`. -/
+lemma integral_abs_tailEmpiricalProcess_le (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1)) {n k : ℕ} (hn : 0 < n)
+    (hk : 0 < k) {t : ℝ} (ht : 0 < t) (htp : (k : ℝ) / n * t ≤ 1) :
+    ∫ ω, |tailEmpiricalProcess U n k t ω| ∂P ≤ √t := by
+  have hs : 0 < √t := Real.sqrt_pos.2 ht
+  have hle (ω : Ω) : |tailEmpiricalProcess U n k t ω| ≤
+      (tailEmpiricalProcess U n k t ω ^ 2 / √t + √t) / 2 := by
+    have h := sq_nonneg (|tailEmpiricalProcess U n k t ω| - √t)
+    rw [← sq_abs (tailEmpiricalProcess U n k t ω)]
+    rw [le_div_iff₀ two_pos, div_add' _ _ _ hs.ne', le_div_iff₀ hs]
+    nlinarith
+  have hi2 := integrable_tailEmpiricalProcess_pow (P := P) hU n k t 2
+  have hi1 := integrable_tailEmpiricalProcess_pow (P := P) hU n k t 1
+  simp only [pow_one] at hi1
+  refine (integral_mono hi1.abs (((hi2.div_const _).add (integrable_const _)).div_const 2)
+    hle).trans ?_
+  rw [integral_div]
+  simp only [Pi.add_apply]
+  rw [integral_add (hi2.div_const _) (integrable_const _), integral_div,
+    integral_const, probReal_univ, one_smul, div_le_iff₀ two_pos]
+  have := integral_tailEmpiricalProcess_sq_le hU hind hlaw hn hk ht.le htp
+  have h3 : (∫ ω, tailEmpiricalProcess U n k t ω ^ 2 ∂P) / √t ≤ √t := by
+    rw [div_le_iff₀ hs, Real.mul_self_sqrt ht.le]; exact this
+  linarith
+
+end Moments
+
 end ExtremeValueTheory
