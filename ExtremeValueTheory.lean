@@ -150,3 +150,6 @@ import ExtremeValueTheory.Statistics.GPDJointNormality
 import ExtremeValueTheory.ForMathlib.Probability.TriangularArrayCLT
 import ExtremeValueTheory.Statistics.TailEmpiricalProcess
 import ExtremeValueTheory.ForMathlib.Probability.FourthMoment
+import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.Modulus
+import ExtremeValueTheory.ForMathlib.Probability.DyadicChaining
+import ExtremeValueTheory.ForMathlib.Probability.SkorokhodLaw
