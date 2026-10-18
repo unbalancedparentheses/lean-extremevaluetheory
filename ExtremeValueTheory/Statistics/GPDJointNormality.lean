@@ -761,4 +761,292 @@ theorem tendstoInDistribution_gpdScoreLin (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) 
 
 end ScoreLin
 
+/-! ### Joint asymptotic normality -/
+
+section Normality
+
+open RealInnerProductSpace Matrix
+
+/-- Solving the `2 × 2` linearized likelihood equations `S = -B T`. -/
+lemma solve_two_by_two {B₁₁ B₁₂ B₂₂ S₁ S₂ T₁ T₂ j₁₁ j₁₂ j₂₂ : ℝ}
+    (hS₁ : S₁ = -(B₁₁ * T₁ + B₁₂ * T₂)) (hS₂ : S₂ = -(B₁₂ * T₁ + B₂₂ * T₂))
+    (hD : B₁₁ * B₂₂ - B₁₂ ^ 2 ≠ 0) :
+    T₁ - (j₁₁ * S₁ + j₁₂ * S₂) = (-B₂₂ / (B₁₁ * B₂₂ - B₁₂ ^ 2) - j₁₁) * S₁ +
+        (B₁₂ / (B₁₁ * B₂₂ - B₁₂ ^ 2) - j₁₂) * S₂ ∧
+      T₂ - (j₁₂ * S₁ + j₂₂ * S₂) = (B₁₂ / (B₁₁ * B₂₂ - B₁₂ ^ 2) - j₁₂) * S₁ +
+        (-B₁₁ / (B₁₁ * B₂₂ - B₁₂ ^ 2) - j₂₂) * S₂ := by
+  have e₁ : -B₂₂ * S₁ + B₁₂ * S₂ = (B₁₁ * B₂₂ - B₁₂ ^ 2) * T₁ := by rw [hS₁, hS₂]; ring
+  have e₂ : B₁₂ * S₁ + -B₁₁ * S₂ = (B₁₁ * B₂₂ - B₁₂ ^ 2) * T₂ := by rw [hS₁, hS₂]; ring
+  constructor
+  · rw [show (-B₂₂ / (B₁₁ * B₂₂ - B₁₂ ^ 2) - j₁₁) * S₁ + (B₁₂ / (B₁₁ * B₂₂ - B₁₂ ^ 2) - j₁₂) * S₂
+      = (-B₂₂ * S₁ + B₁₂ * S₂) / (B₁₁ * B₂₂ - B₁₂ ^ 2) - (j₁₁ * S₁ + j₁₂ * S₂) by ring,
+      e₁, mul_div_cancel_left₀ _ hD]
+  · rw [show (B₁₂ / (B₁₁ * B₂₂ - B₁₂ ^ 2) - j₁₂) * S₁ + (-B₁₁ / (B₁₁ * B₂₂ - B₁₂ ^ 2) - j₂₂) * S₂
+      = (B₁₂ * S₁ + -B₁₁ * S₂) / (B₁₁ * B₂₂ - B₁₂ ^ 2) - (j₁₂ * S₁ + j₂₂ * S₂) by ring,
+      e₂, mul_div_cancel_left₀ _ hD]
+
+lemma norm_euclidean_two_le (v : EuclideanSpace ℝ (Fin 2)) : ‖v‖ ≤ |v 0| + |v 1| := by
+  rw [EuclideanSpace.norm_eq, Fin.sum_univ_two, Real.sqrt_le_left]
+  · simp only [Real.norm_eq_abs]
+    nlinarith [abs_nonneg (v 0), abs_nonneg (v 1)]
+  · positivity
+
+variable {ξ₀ σ₀ : ℝ} {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω}
+  {mΩ' : MeasurableSpace Ω'} {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'}
+  [IsProbabilityMeasure P'] {X : ℕ → Ω → ℝ}
+
+omit [IsProbabilityMeasure P] in
+lemma tendstoInMeasure_add_zero {f g : ℕ → Ω → ℝ}
+    (hf : TendstoInMeasure P f atTop (fun _ => 0)) (hg : TendstoInMeasure P g atTop (fun _ => 0)) :
+    TendstoInMeasure P (fun n ω => f n ω + g n ω) atTop (fun _ => 0) := by
+  have := tendstoInMeasure_comp₂ hf hg (φ := fun p => p.1 + p.2) continuous_add.continuousAt
+  simpa using this
+
+omit [IsProbabilityMeasure P] in
+lemma tendstoInMeasure_abs_zero {f : ℕ → Ω → ℝ}
+    (hf : TendstoInMeasure P f atTop (fun _ => 0)) :
+    TendstoInMeasure P (fun n ω => |f n ω|) atTop (fun _ => 0) := by
+  have := tendstoInMeasure_comp hf (φ := fun r => |r|) continuous_abs.continuousAt
+  simpa using this
+
+/-- **Joint asymptotic normality of the GPD maximum likelihood estimator** for a positive shape
+([Smith 1985]; [Coles, §4.3.3]). Let `X₀, X₁, …` be iid `GPD(ξ₀, σ₀)` with `ξ₀ > 0`, and let
+`θ̂ₙ = (ξ̂ₙ, σ̂ₙ)` be measurable, strongly consistent estimators which almost surely, for all large
+`n`, solve the likelihood equations `∑_{i<n} ∂_ξ ℓ(θ̂ₙ; Xᵢ) = 0`, `∑_{i<n} ∂_σ ℓ(θ̂ₙ; Xᵢ) = 0`.
+Then
+
+  `√n (θ̂ₙ - θ₀) ⇒ N(0, I(θ₀)⁻¹)`, `I(ξ, σ)⁻¹ = (1 + ξ) [[1 + ξ, -σ], [-σ, 2σ²]]`. -/
+theorem tendstoInDistribution_gpdJointMLE (hξ₀ : 0 < ξ₀) (hσ₀ : 0 < σ₀)
+    (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ₀ σ₀) P) (hind : iIndepFun X P)
+    {θh : ℕ → Ω → ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P)
+    (hcons : ∀ᵐ ω ∂P, Tendsto (fun n => θh n ω) atTop (𝓝 (ξ₀, σ₀)))
+    (hroot : ∀ᵐ ω ∂P, ∀ᶠ n in atTop,
+      ∑ i ∈ Finset.range n, gpdScoreXi (θh n ω).1 (θh n ω).2 (X i ω) = 0 ∧
+      ∑ i ∈ Finset.range n, gpdScoreSigma (θh n ω).1 (θh n ω).2 (X i ω) = 0)
+    {W : Ω' → EuclideanSpace ℝ (Fin 2)}
+    (hW : HasLaw W (multivariateGaussian 0 (gpdFisherInfoInv ξ₀ σ₀)) P') :
+    TendstoInDistribution
+      (fun (n : ℕ) ω => √(n : ℝ) • !₂[(θh n ω).1 - ξ₀, (θh n ω).2 - σ₀])
+      atTop W (fun _ => P) P' := by
+  have hξ : -1 / 2 < ξ₀ := by linarith
+  have hξ0 : ξ₀ ≠ 0 := hξ₀.ne'
+  set j₁₁ := (1 + ξ₀) * (1 + ξ₀)
+  set j₁₂ := (1 + ξ₀) * -σ₀
+  set j₂₂ := (1 + ξ₀) * (2 * σ₀ ^ 2)
+  set I₁₁ := 2 / ((1 + ξ₀) * (1 + 2 * ξ₀))
+  set I₁₂ := 1 / (σ₀ * (1 + ξ₀) * (1 + 2 * ξ₀))
+  set I₂₂ := 1 / (σ₀ ^ 2 * (1 + 2 * ξ₀))
+  obtain ⟨hd, hJ₁₁, hJ₁₂, hJ₂₂⟩ := gpdFisherInfo_det_adj hξ hσ₀
+  set d := I₁₁ * I₂₂ - I₁₂ ^ 2
+  have hJ₁₁' : I₂₂ / d = j₁₁ := hJ₁₁
+  have hJ₁₂' : -I₁₂ / d = j₁₂ := hJ₁₂
+  have hJ₂₂' : I₁₁ / d = j₂₂ := hJ₂₂
+  -- the CLT for `I⁻¹ × score`
+  have hQ : ∀ t : Fin 2 → ℝ, gpdInfoQuad ξ₀ σ₀ (t 0 * j₁₁ + t 1 * j₁₂) (t 0 * j₁₂ + t 1 * j₂₂) =
+      t ⬝ᵥ gpdFisherInfoInv ξ₀ σ₀ *ᵥ t := fun t => by
+    have h1ξ : 1 + ξ₀ ≠ 0 := by intro h; linarith
+    have h2ξ : 1 + 2 * ξ₀ ≠ 0 := by intro h; linarith
+    have h2ξ' : 1 + ξ₀ * 2 ≠ 0 := by intro h; linarith
+    have := hσ₀.ne'
+    simp only [gpdInfoQuad, gpdFisherInfoInv, Matrix.mulVec, dotProduct, Fin.sum_univ_two,
+      Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one,
+      Matrix.empty_val', Matrix.cons_val_fin_one, j₁₁, j₁₂, j₂₂]
+    field_simp
+    ring
+  have hV := tendstoInDistribution_gpdScoreLin hξ hξ0 hσ₀ hX hind j₁₁ j₁₂ j₁₂ j₂₂
+    (posDef_gpdFisherInfoInv hξ hσ₀).posSemidef hQ hW
+  -- the random quantities
+  set S₁ : ℕ → Ω → ℝ := fun n ω => (√(n : ℝ))⁻¹ * ∑ i ∈ Finset.range n,
+    (1 * gpdScoreXi ξ₀ σ₀ (X i ω) + 0 * gpdScoreSigma ξ₀ σ₀ (X i ω))
+  set S₂ : ℕ → Ω → ℝ := fun n ω => (√(n : ℝ))⁻¹ * ∑ i ∈ Finset.range n,
+    (0 * gpdScoreXi ξ₀ σ₀ (X i ω) + 1 * gpdScoreSigma ξ₀ σ₀ (X i ω))
+  set B₁₁ : ℕ → Ω → ℝ := fun n ω => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n,
+    segHess gpdHessXiXi ξ₀ σ₀ (θh n ω) (X i ω)
+  set B₁₂ : ℕ → Ω → ℝ := fun n ω => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n,
+    segHess gpdHessXiSigma ξ₀ σ₀ (θh n ω) (X i ω)
+  set B₂₂ : ℕ → Ω → ℝ := fun n ω => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n,
+    segHess gpdHessSigmaSigma ξ₀ σ₀ (θh n ω) (X i ω)
+  set Dn : ℕ → Ω → ℝ := fun n ω => B₁₁ n ω * B₂₂ n ω - B₁₂ n ω ^ 2
+  set M₁₁ : ℕ → Ω → ℝ := fun n ω => -B₂₂ n ω / Dn n ω - j₁₁
+  set M₁₂ : ℕ → Ω → ℝ := fun n ω => B₁₂ n ω / Dn n ω - j₁₂
+  set M₂₂ : ℕ → Ω → ℝ := fun n ω => -B₁₁ n ω / Dn n ω - j₂₂
+  set T : ℕ → Ω → EuclideanSpace ℝ (Fin 2) :=
+    fun n ω => √(n : ℝ) • !₂[(θh n ω).1 - ξ₀, (θh n ω).2 - σ₀]
+  set V : ℕ → Ω → EuclideanSpace ℝ (Fin 2) := fun n ω => (√(n : ℝ))⁻¹ •
+    ∑ i ∈ Finset.range n, gpdScoreLin j₁₁ j₁₂ j₁₂ j₂₂ ξ₀ σ₀ (X i ω)
+  -- measurability
+  have hXm : ∀ i, AEMeasurable (X i) P := fun i => (hX i).aemeasurable
+  have hBm : ∀ (H : ℝ → ℝ → ℝ → ℝ), (Measurable fun q : ℝ × ℝ × ℝ => H q.1 q.2.1 q.2.2) →
+      ∀ n : ℕ, AEMeasurable (fun ω => (n : ℝ)⁻¹ * ∑ i ∈ Finset.range n,
+        segHess H ξ₀ σ₀ (θh n ω) (X i ω)) P := fun H hH n => by
+    have h := measurable_segHess (ξ₀ := ξ₀) (σ₀ := σ₀) hH
+    have : ∀ i, AEMeasurable (fun ω => segHess H ξ₀ σ₀ (θh n ω) (X i ω)) P := fun i =>
+      h.comp_aemeasurable ((hθm n).prodMk (hXm i))
+    exact (Finset.aemeasurable_fun_sum _ fun i _ => this i).const_mul _
+  have hB₁₁m := hBm _ measurable_gpdHessXiXi₃
+  have hB₁₂m := hBm _ measurable_gpdHessXiSigma₃
+  have hB₂₂m := hBm _ measurable_gpdHessSigmaSigma₃
+  have hSm : ∀ (c₁ c₂ : ℝ) (n : ℕ), AEMeasurable (fun ω => (√(n : ℝ))⁻¹ * ∑ i ∈ Finset.range n,
+      (c₁ * gpdScoreXi ξ₀ σ₀ (X i ω) + c₂ * gpdScoreSigma ξ₀ σ₀ (X i ω))) P := fun c₁ c₂ n => by
+    have := measurable_gpdScoreXi ξ₀ σ₀; have := measurable_gpdScoreSigma ξ₀ σ₀
+    have : ∀ i, AEMeasurable (fun ω => c₁ * gpdScoreXi ξ₀ σ₀ (X i ω) +
+        c₂ * gpdScoreSigma ξ₀ σ₀ (X i ω)) P := fun i => by
+      have := hXm i; fun_prop
+    exact (Finset.aemeasurable_fun_sum _ fun i _ => this i).const_mul _
+  have hMm : ∀ (F : ℝ → ℝ → ℝ → ℝ), Measurable (fun p : ℝ × ℝ × ℝ => F p.1 p.2.1 p.2.2) →
+      ∀ n, AEMeasurable (fun ω => F (B₁₁ n ω) (B₁₂ n ω) (B₂₂ n ω)) P := fun F hF n =>
+    hF.comp_aemeasurable ((hB₁₁m n).prodMk ((hB₁₂m n).prodMk (hB₂₂m n)))
+  have hM₁₁m : ∀ n, AEMeasurable (M₁₁ n) P :=
+    hMm (fun a b c => -c / (a * c - b ^ 2) - j₁₁) (by fun_prop)
+  have hM₁₂m : ∀ n, AEMeasurable (M₁₂ n) P :=
+    hMm (fun a b c => b / (a * c - b ^ 2) - j₁₂) (by fun_prop)
+  have hM₂₂m : ∀ n, AEMeasurable (M₂₂ n) P :=
+    hMm (fun a b c => -a / (a * c - b ^ 2) - j₂₂) (by fun_prop)
+  have hTm : ∀ n, AEMeasurable (T n) P := fun n => by
+    have hm : Measurable fun θ : ℝ × ℝ => (!₂[θ.1 - ξ₀, θ.2 - σ₀] : EuclideanSpace ℝ (Fin 2)) :=
+      (WithLp.measurable_toLp 2 _).comp (f := fun θ : ℝ × ℝ => ![θ.1 - ξ₀, θ.2 - σ₀])
+        (measurable_pi_iff.2 fun i => by fin_cases i <;> simp <;> fun_prop)
+    exact (hm.comp_aemeasurable (hθm n)).const_smul (√(n : ℝ))
+  have hVm : ∀ n, AEMeasurable (V n) P := hV.forall_aemeasurable
+  -- the strong laws
+  have hpos := ae_forall_pos_of_gpd hσ₀ hX
+  have hL₀m : Measurable fun x : ℝ => log (1 + ξ₀ * x / σ₀) := by fun_prop
+  have hL₀i : Integrable (fun x : ℝ => log (1 + ξ₀ * x / σ₀)) (gpdMeasure ξ₀ σ₀) :=
+    integrable_gpdMeasure_of_poly hξ hL₀m 0 ξ₀ 0 0 0 0 fun t => by
+      rw [log_one_add_mul_gpdTransform hσ₀ hξ0]; ring
+  have hsL := ae_tendsto_avg_comp hX hind hL₀m hL₀i
+  have hs₁₁ := ae_tendsto_avg_comp hX hind (measurable_gpdHessXiXi ξ₀ σ₀)
+    (integrable_gpdHessXiXi hσ₀ hξ0 hξ)
+  have hs₁₂ := ae_tendsto_avg_comp hX hind (measurable_gpdHessXiSigma ξ₀ σ₀)
+    (integrable_gpdHessXiSigma hσ₀ hξ0 hξ)
+  have hs₂₂ := ae_tendsto_avg_comp hX hind (measurable_gpdHessSigmaSigma ξ₀ σ₀)
+    (integrable_gpdHessSigmaSigma hσ₀ hξ0 hξ)
+  rw [integral_gpdHessXiXi hσ₀ hξ0 hξ] at hs₁₁
+  rw [integral_gpdHessXiSigma hσ₀ hξ0 hξ] at hs₁₂
+  rw [integral_gpdHessSigmaSigma hσ₀ hξ0 hξ] at hs₂₂
+  -- the Lipschitz control
+  obtain ⟨K, hK0, hK⟩ := exists_gpdHess_lipschitz hξ₀ hσ₀
+  have hexp := fun {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhd ξ₀ σ₀) {x : ℝ} (hx : 0 ≤ x) =>
+    gpdScore_sub_eq_segHess hξ₀ hσ₀ hK0 hK hθ hx
+  -- almost sure convergence of the averaged Hessians
+  have hB : ∀ᵐ ω ∂P, Tendsto (fun n => B₁₁ n ω) atTop (𝓝 (-I₁₁)) ∧
+      Tendsto (fun n => B₁₂ n ω) atTop (𝓝 (-I₁₂)) ∧
+      Tendsto (fun n => B₂₂ n ω) atTop (𝓝 (-I₂₂)) := by
+    filter_upwards [hpos, hcons, hsL, hs₁₁, hs₁₂, hs₂₂] with ω hω hc hl h₁₁ h₁₂ h₂₂
+    have hx : ∀ i, 0 ≤ X i ω := fun i => (hω i).le
+    exact ⟨tendsto_avg_segHess hξ₀ hσ₀ (fun θ hθ x hx => (hexp hθ hx).2.2.1) hx hc h₁₁ hl,
+      tendsto_avg_segHess hξ₀ hσ₀ (fun θ hθ x hx => (hexp hθ hx).2.2.2.1) hx hc h₁₂ hl,
+      tendsto_avg_segHess hξ₀ hσ₀ (fun θ hθ x hx => (hexp hθ hx).2.2.2.2) hx hc h₂₂ hl⟩
+  have hDlim : ∀ᵐ ω ∂P, Tendsto (fun n => Dn n ω) atTop (𝓝 d) := by
+    filter_upwards [hB] with ω ⟨h₁, h₂, h₃⟩
+    have := (h₁.mul h₃).sub (h₂.pow 2)
+    simpa [d, neg_mul_neg] using this
+  have hMlim : ∀ᵐ ω ∂P, Tendsto (fun n => M₁₁ n ω) atTop (𝓝 0) ∧
+      Tendsto (fun n => M₁₂ n ω) atTop (𝓝 0) ∧ Tendsto (fun n => M₂₂ n ω) atTop (𝓝 0) := by
+    filter_upwards [hB, hDlim] with ω ⟨h₁, h₂, h₃⟩ hD
+    refine ⟨?_, ?_, ?_⟩
+    · have := (h₃.neg.div hD hd.ne').sub_const j₁₁
+      rwa [neg_neg, hJ₁₁', sub_self] at this
+    · have := (h₂.div hD hd.ne').sub_const j₁₂
+      rwa [hJ₁₂', sub_self] at this
+    · have := (h₁.neg.div hD hd.ne').sub_const j₂₂
+      rwa [neg_neg, hJ₂₂', sub_self] at this
+  have hM₁₁ : TendstoInMeasure P M₁₁ atTop (fun _ => 0) :=
+    tendstoInMeasure_of_tendsto_ae (fun n => (hM₁₁m n).aestronglyMeasurable)
+      (hMlim.mono fun ω h => h.1)
+  have hM₁₂ : TendstoInMeasure P M₁₂ atTop (fun _ => 0) :=
+    tendstoInMeasure_of_tendsto_ae (fun n => (hM₁₂m n).aestronglyMeasurable)
+      (hMlim.mono fun ω h => h.2.1)
+  have hM₂₂ : TendstoInMeasure P M₂₂ atTop (fun _ => 0) :=
+    tendstoInMeasure_of_tendsto_ae (fun n => (hM₂₂m n).aestronglyMeasurable)
+      (hMlim.mono fun ω h => h.2.2)
+  have hS₁b := isBoundedInProbability_lin_score hξ hξ0 hσ₀ hX hind 1 0
+  have hS₂b := isBoundedInProbability_lin_score hξ hξ0 hσ₀ hX hind 0 1
+  -- the dominating sequence
+  set G : ℕ → Ω → ℝ := fun n ω => |M₁₁ n ω * S₁ n ω| + |M₁₂ n ω * S₂ n ω| +
+    (|M₁₂ n ω * S₁ n ω| + |M₂₂ n ω * S₂ n ω|)
+  have hG : TendstoInMeasure P G atTop (fun _ => 0) := by
+    have a₁ := tendstoInMeasure_abs_zero (tendstoInMeasure_mul_zero_of_isBoundedInProbability'
+      hS₁b hM₁₁)
+    have a₂ := tendstoInMeasure_abs_zero (tendstoInMeasure_mul_zero_of_isBoundedInProbability'
+      hS₂b hM₁₂)
+    have a₃ := tendstoInMeasure_abs_zero (tendstoInMeasure_mul_zero_of_isBoundedInProbability'
+      hS₁b hM₁₂)
+    have a₄ := tendstoInMeasure_abs_zero (tendstoInMeasure_mul_zero_of_isBoundedInProbability'
+      hS₂b hM₂₂)
+    exact tendstoInMeasure_add_zero (tendstoInMeasure_add_zero a₁ a₂)
+      (tendstoInMeasure_add_zero a₃ a₄)
+  -- the eventual domination
+  have hdom : ∀ᵐ ω ∂P, ∀ᶠ n in atTop, |‖T n ω - V n ω‖| ≤ G n ω := by
+    filter_upwards [hpos, hcons, hroot, hDlim] with ω hω hc hr hD
+    filter_upwards [hc.eventually (gpdNbhd_mem_nhds hξ₀ hσ₀), hr,
+      hD.eventually (isOpen_ne.mem_nhds hd.ne'), eventually_gt_atTop 0] with n hn hrn hDn hn0
+    have hx : ∀ i, 0 ≤ X i ω := fun i => (hω i).le
+    set a := (θh n ω).1 - ξ₀
+    set b := (θh n ω).2 - σ₀
+    have hsq : (√(n : ℝ))⁻¹ * n = √(n : ℝ) := by
+      have : (0 : ℝ) < √(n : ℝ) := Real.sqrt_pos.2 (Nat.cast_pos.2 hn0)
+      field_simp
+      rw [Real.sq_sqrt (Nat.cast_nonneg n)]
+    have hn' : (n : ℝ) ≠ 0 := Nat.cast_ne_zero.2 hn0.ne'
+    -- the linearized likelihood equations
+    have eξ : ∑ i ∈ Finset.range n, gpdScoreXi ξ₀ σ₀ (X i ω) =
+        -(a * (n * B₁₁ n ω) + b * (n * B₁₂ n ω)) := by
+      have h := Finset.sum_congr rfl fun i (_ : i ∈ Finset.range n) => (hexp hn (hx i)).1
+      rw [Finset.sum_sub_distrib, hrn.1] at h
+      simp only [B₁₁, B₁₂, ← mul_assoc, mul_inv_cancel₀ hn', one_mul]
+      rw [Finset.mul_sum, Finset.mul_sum, ← Finset.sum_add_distrib, ← h]
+      ring
+    have eσ : ∑ i ∈ Finset.range n, gpdScoreSigma ξ₀ σ₀ (X i ω) =
+        -(a * (n * B₁₂ n ω) + b * (n * B₂₂ n ω)) := by
+      have h := Finset.sum_congr rfl fun i (_ : i ∈ Finset.range n) => (hexp hn (hx i)).2.1
+      rw [Finset.sum_sub_distrib, hrn.2] at h
+      simp only [B₁₂, B₂₂, ← mul_assoc, mul_inv_cancel₀ hn', one_mul]
+      rw [Finset.mul_sum, Finset.mul_sum, ← Finset.sum_add_distrib, ← h]
+      ring
+    have hS₁e : S₁ n ω = -(B₁₁ n ω * (√(n : ℝ) * a) + B₁₂ n ω * (√(n : ℝ) * b)) := by
+      simp only [S₁, one_mul, zero_mul, add_zero]
+      rw [eξ, show (√(n : ℝ))⁻¹ * -(a * (n * B₁₁ n ω) + b * (n * B₁₂ n ω)) =
+        -(((√(n : ℝ))⁻¹ * n) * a * B₁₁ n ω + ((√(n : ℝ))⁻¹ * n) * b * B₁₂ n ω) by ring, hsq]
+      ring
+    have hS₂e : S₂ n ω = -(B₁₂ n ω * (√(n : ℝ) * a) + B₂₂ n ω * (√(n : ℝ) * b)) := by
+      simp only [S₂, one_mul, zero_mul, zero_add]
+      rw [eσ, show (√(n : ℝ))⁻¹ * -(a * (n * B₁₂ n ω) + b * (n * B₂₂ n ω)) =
+        -(((√(n : ℝ))⁻¹ * n) * a * B₁₂ n ω + ((√(n : ℝ))⁻¹ * n) * b * B₂₂ n ω) by ring, hsq]
+      ring
+    obtain ⟨h₁, h₂⟩ := solve_two_by_two (j₁₁ := j₁₁) (j₁₂ := j₁₂) (j₂₂ := j₂₂) hS₁e hS₂e hDn
+    -- the coordinates of `T - V`
+    have hV0 : V n ω 0 = j₁₁ * S₁ n ω + j₁₂ * S₂ n ω := by
+      simp only [V, S₁, S₂, gpdScoreLin, PiLp.smul_apply, WithLp.ofLp_sum, Finset.sum_apply,
+        smul_eq_mul, Matrix.cons_val_zero, one_mul, zero_mul, add_zero, zero_add,
+        Finset.sum_add_distrib, ← Finset.mul_sum]
+      ring
+    have hV1 : V n ω 1 = j₁₂ * S₁ n ω + j₂₂ * S₂ n ω := by
+      simp only [V, S₁, S₂, gpdScoreLin, PiLp.smul_apply, WithLp.ofLp_sum, Finset.sum_apply,
+        smul_eq_mul, Matrix.cons_val_one, Matrix.cons_val_zero, one_mul, zero_mul, add_zero,
+        zero_add, Finset.sum_add_distrib, ← Finset.mul_sum]
+      ring
+    have hT0 : T n ω 0 = √(n : ℝ) * a := by simp [T, a]
+    have hT1 : T n ω 1 = √(n : ℝ) * b := by simp [T, b]
+    rw [abs_norm]
+    refine (norm_euclidean_two_le _).trans ?_
+    simp only [PiLp.sub_apply, hT0, hT1, hV0, hV1]
+    rw [h₁, h₂]
+    simp only [G, M₁₁, M₁₂, M₂₂, Dn]
+    exact add_le_add (abs_add_le _ _) (abs_add_le _ _)
+  have hdiff : TendstoInMeasure P (T - V) atTop 0 := by
+    have hr := tendstoInMeasure_zero_of_ae_eventually_abs_le
+      (f := fun n ω => ‖T n ω - V n ω‖)
+      (fun n => ((hTm n).sub (hVm n)).norm.aestronglyMeasurable)
+      (fun n => by
+        have := hM₁₁m n; have := hM₁₂m n; have := hM₂₂m n
+        have := hSm 1 0 n; have := hSm 0 1 n
+        exact (by fun_prop : AEMeasurable (G n) P).aestronglyMeasurable) hdom hG
+    rw [tendstoInMeasure_iff_norm] at hr ⊢
+    intro ε hε
+    simpa using hr ε hε
+  exact tendstoInDistribution_of_tendstoInMeasure_sub T W hV hdiff hTm
+
+end Normality
+
 end ExtremeValueTheory
