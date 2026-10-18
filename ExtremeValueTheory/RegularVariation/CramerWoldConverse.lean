@@ -370,6 +370,68 @@ theorem exists_le_weightedLaw_univ [IsProbabilityMeasure P] (hX : Measurable X) 
     _ = weightedLaw P X α V x {y | 1 < ‖y‖} := (weightedLaw_one_lt_norm α V x).symm
     _ ≤ weightedLaw P X α V x univ := measure_mono (subset_univ _)
 
+omit [MeasurableSpace E] [BorelSpace E] in
+/-- A bounded continuous function vanishing near the origin, divided by the weight, is again
+bounded continuous. -/
+theorem exists_bcf_div_weight {α : ℝ} (hα : 0 < α) (f : E →ᵇ ℝ) (hf : VanishesNearZero f) :
+    ∃ h : E →ᵇ ℝ, (∀ y, weight α y * h y = f y) ∧ (∀ y, y ≠ 0 → (weight α y)⁻¹ * f y = h y) ∧
+      h 0 = 0 := by
+  obtain ⟨r, hr, hfr⟩ := hf
+  have hq : ∀ y : E, min 1 r ≤ min 1 (max r ‖y‖) := fun y =>
+    min_le_min le_rfl (le_max_left _ _)
+  have hq0 : 0 < min 1 r := lt_min one_pos hr
+  let g : E →ᵇ ℝ := BoundedContinuousFunction.ofNormedAddCommGroup
+    (fun y => min 1 (max r ‖y‖) ^ (-(2 * α)))
+    ((continuous_const.min (continuous_const.max continuous_norm)).rpow_const
+      fun y => Or.inl (hq0.trans_le (hq y)).ne')
+    (min 1 r ^ (-(2 * α))) fun y => by
+      rw [Real.norm_eq_abs, abs_of_nonneg (Real.rpow_nonneg (hq0.le.trans (hq y)) _)]
+      exact Real.rpow_le_rpow_of_nonpos hq0 (hq y) (by linarith)
+  have key : ∀ y : E, r ≤ ‖y‖ → weight α y * g y = 1 := fun y hy => by
+    have hmax : max r ‖y‖ = ‖y‖ := max_eq_right hy
+    have hpos : 0 < min 1 ‖y‖ := lt_min one_pos (hr.trans_le hy)
+    show min 1 ‖y‖ ^ (2 * α) * min 1 (max r ‖y‖) ^ (-(2 * α)) = 1
+    rw [hmax, Real.rpow_neg hpos.le, mul_inv_cancel₀ (Real.rpow_pos_of_pos hpos _).ne']
+  refine ⟨f * g, fun y => ?_, fun y _ => ?_, ?_⟩
+  · rcases le_or_gt r ‖y‖ with hy | hy
+    · rw [BoundedContinuousFunction.coe_mul, Pi.mul_apply, mul_left_comm, key y hy, mul_one]
+    · rw [BoundedContinuousFunction.coe_mul, Pi.mul_apply, hfr y hy, zero_mul, mul_zero]
+  · rcases le_or_gt r ‖y‖ with hy | hy
+    · have h1 := key y hy
+      rw [BoundedContinuousFunction.coe_mul, Pi.mul_apply, mul_comm]
+      congr 1
+      exact (eq_inv_of_mul_eq_one_right h1).symm
+    · rw [BoundedContinuousFunction.coe_mul, Pi.mul_apply, hfr y hy, mul_zero, zero_mul]
+  · rw [BoundedContinuousFunction.coe_mul, Pi.mul_apply, hfr 0 (by simpa using hr), zero_mul]
+
+theorem integral_weightedLaw {α : ℝ} (V : ℝ → ℝ) (x : ℝ) (h : E → ℝ) :
+    ∫ y, h y ∂weightedLaw P X α V x = ∫ y, weight α y * h y ∂scaledLaw P X V x := by
+  have hm : Measurable fun y : E => (weight α y).toNNReal := by
+    refine Measurable.real_toNNReal ?_
+    exact (measurable_const.min measurable_norm).pow_const _
+  rw [show weightedLaw P X α V x = (scaledLaw P X V x).withDensity
+    (fun y => ((weight α y).toNNReal : ℝ≥0∞)) from rfl, integral_withDensity_eq_integral_smul hm]
+  congr 1
+  funext y
+  rw [NNReal.smul_def, Real.coe_toNNReal _ (weight_nonneg α y), smul_eq_mul]
+
+/-- The tail bound in terms of the normalized law. -/
+theorem scaledLaw_norm_lt_le (hX : Measurable X) {V : ℝ → ℝ} {x₁ K α : ℝ}
+    (hVpos : ∀ x ≥ x₁, 0 < V x)
+    (hT : ∀ x ≥ x₁, ∀ t > 0, x₁ ≤ x * t →
+        P.real {ω | x * t < ‖X ω‖} ≤ K * max (t ^ (-α + α / 2)) (t ^ (-α - α / 2)) * V x)
+    [IsFiniteMeasure P] {x t : ℝ} (hx : x₁ ≤ x) (hx0 : 0 < x) (ht : 0 < t) (hxt : x₁ ≤ x * t) :
+    scaledLaw P X V x {y | t < ‖y‖} ≤
+      ENNReal.ofReal (K * max (t ^ (-α + α / 2)) (t ^ (-α - α / 2))) := by
+  have hVx := hVpos x hx
+  rw [scaledLaw_norm_lt hX V hx0, ← ofReal_measureReal (measure_ne_top _ _),
+    ← ENNReal.ofReal_mul (inv_nonneg.2 hVx.le)]
+  refine ENNReal.ofReal_le_ofReal ?_
+  calc (V x)⁻¹ * P.real {ω | x * t < ‖X ω‖}
+      ≤ (V x)⁻¹ * (K * max (t ^ (-α + α / 2)) (t ^ (-α - α / 2)) * V x) :=
+        mul_le_mul_of_nonneg_left (hT x hx t ht hxt) (inv_nonneg.2 hVx.le)
+    _ = K * max (t ^ (-α + α / 2)) (t ^ (-α - α / 2)) := by field_simp
+
 end Converse
 
 end CramerWold
