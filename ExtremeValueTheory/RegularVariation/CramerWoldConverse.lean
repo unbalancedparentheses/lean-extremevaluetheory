@@ -314,6 +314,62 @@ theorem exists_weightedLaw_univ_le [IsProbabilityMeasure P] [FiniteDimensional �
         rw [Real.volume_Ioc, sub_zero, ← ENNReal.ofReal_mul (inv_nonneg.2 hVx.le)]
         exact ENNReal.ofReal_le_ofReal hc_le
 
+theorem weightedLaw_le [IsFiniteMeasure P] {α : ℝ} (hα : 0 < α) (V : ℝ → ℝ) (x : ℝ) (A : Set E) :
+    weightedLaw P X α V x A ≤ scaledLaw P X V x A := by
+  rw [weightedLaw, withDensity_apply' _ A]
+  calc ∫⁻ y in A, ENNReal.ofReal (weight α y) ∂scaledLaw P X V x
+      ≤ ∫⁻ _ in A, 1 ∂scaledLaw P X V x :=
+        lintegral_mono fun y => by simpa using weight_le_one hα y
+    _ = scaledLaw P X V x A := by rw [setLIntegral_const, one_mul]
+
+theorem isFiniteMeasure_weightedLaw [IsFiniteMeasure P] {α : ℝ} (hα : 0 < α) (V : ℝ → ℝ)
+    (x : ℝ) : IsFiniteMeasure (weightedLaw P X α V x) :=
+  ⟨(weightedLaw_le hα V x univ).trans_lt (measure_lt_top _ _)⟩
+
+theorem weightedLaw_one_lt_norm (α : ℝ) (V : ℝ → ℝ) (x : ℝ) :
+    weightedLaw P X α V x {y | 1 < ‖y‖} = scaledLaw P X V x {y | 1 < ‖y‖} := by
+  have hm : MeasurableSet {y : E | 1 < ‖y‖} :=
+    measurableSet_lt measurable_const continuous_norm.measurable
+  rw [weightedLaw, withDensity_apply _ hm]
+  rw [setLIntegral_congr_fun hm (g := fun _ => 1) fun y (hy : 1 < ‖y‖) => by
+    simp [weight, min_eq_left hy.le]]
+  simp
+
+/-- **Lower bound for the weighted masses**, from a non-degenerate linear combination. -/
+theorem exists_le_weightedLaw_univ [IsProbabilityMeasure P] (hX : Measurable X) {α : ℝ}
+    {V : ℝ → ℝ} (hV : IsRegularlyVarying V (-α)) {w : StrongDual ℝ E → ℝ}
+    (hw : ∀ L : StrongDual ℝ E,
+      Tendsto (fun x => P.real {ω | x < L (X ω)} / V x) atTop (𝓝 (w L)))
+    {L₀ : StrongDual ℝ E} (hL₀ : w L₀ ≠ 0) :
+    ∃ c : ℝ, 0 < c ∧ ∀ᶠ x in atTop, ENNReal.ofReal c ≤ weightedLaw P X α V x univ := by
+  set a : ℝ := (‖L₀‖ + 1)⁻¹
+  have ha : 0 < a := by positivity
+  set L : StrongDual ℝ E := a • L₀
+  have hwL : 0 < w L := by
+    rw [limit_smul hV hw L₀ ha]
+    exact mul_pos (Real.rpow_pos_of_pos ha _)
+      (lt_of_le_of_ne (limit_nonneg hV hw L₀) (Ne.symm hL₀))
+  have hLn : ‖L‖ ≤ 1 := by
+    rw [norm_smul, Real.norm_eq_abs, abs_of_pos ha, inv_mul_le_iff₀ (by positivity)]
+    linarith
+  have hsub : {y : E | 1 < L y} ⊆ {y | 1 < ‖y‖} := fun y (hy : 1 < L y) => by
+    show 1 < ‖y‖
+    calc 1 < L y := hy
+      _ ≤ ‖L‖ * ‖y‖ := (le_abs_self _).trans (by simpa using L.le_opNorm y)
+      _ ≤ 1 * ‖y‖ := mul_le_mul_of_nonneg_right hLn (norm_nonneg _)
+      _ = ‖y‖ := one_mul _
+  refine ⟨w L / 2, half_pos hwL, ?_⟩
+  filter_upwards [(tendsto_order.1 (hw L)).1 _ (half_lt_self hwL), hV.eventually_pos,
+    eventually_gt_atTop 0] with x hx hVx hx0
+  calc ENNReal.ofReal (w L / 2) ≤ ENNReal.ofReal (P.real {ω | x < L (X ω)} / V x) :=
+        ENNReal.ofReal_le_ofReal hx.le
+    _ = scaledLaw P X V x {y | 1 < L y} := by
+        rw [scaledLaw_linear_lt hX V hx0, mul_one, div_eq_inv_mul,
+          ENNReal.ofReal_mul (inv_nonneg.2 hVx.le), ofReal_measureReal (measure_ne_top _ _)]
+    _ ≤ scaledLaw P X V x {y | 1 < ‖y‖} := measure_mono hsub
+    _ = weightedLaw P X α V x {y | 1 < ‖y‖} := (weightedLaw_one_lt_norm α V x).symm
+    _ ≤ weightedLaw P X α V x univ := measure_mono (subset_univ _)
+
 end Converse
 
 end CramerWold
