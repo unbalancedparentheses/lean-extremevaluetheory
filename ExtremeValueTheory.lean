@@ -162,3 +162,4 @@ import ExtremeValueTheory.ForMathlib.Probability.SkorokhodWeakConvergence
 import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.ModulusCompact
 import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.BlockOscillation
 import ExtremeValueTheory.ForMathlib.Probability.SkorokhodBlockTightness
+import ExtremeValueTheory.Statistics.TailEmpiricalProcessRV
