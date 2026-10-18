@@ -82,6 +82,77 @@ lemma continuousAt_restrict_of_ne_one {J : Finset I} {x : SkorokhodSpace E}
   · exact tendsto_apply_of_continuousAt (x := fun y : SkorokhodSpace E ↦ y) tendsto_id
       (hx t t.2 ht)
 
+/-- The *continuity times* `T_ν` of a measure `ν` on the Skorokhod space: `1`, and the times
+`t` at which `ν`-almost every path is continuous. Their complement is countable
+(`SkorokhodSpace.countable_compl_continuityTimes`) and the projections `π_J` with `J ⊆ T_ν`
+are `ν`-a.e. continuous. -/
+def continuityTimes (ν : Measure (SkorokhodSpace E)) : Set I :=
+  {1} ∪ {t | ν {x | ¬ ContinuousAt (⇑x) t} = 0}
+
+omit [SecondCountableTopology E] [MeasurableSpace E] [BorelSpace E] in
+lemma one_mem_continuityTimes (ν : Measure (SkorokhodSpace E)) : (1 : I) ∈ continuityTimes ν :=
+  Or.inl rfl
+
+lemma countable_compl_continuityTimes (ν : Measure (SkorokhodSpace E)) [IsFiniteMeasure ν] :
+    (continuityTimes ν)ᶜ.Countable :=
+  (countable_setOf_measure_not_continuousAt_ne_zero ν).mono fun _ ht h ↦
+    ht (Or.inr h)
+
+omit [SecondCountableTopology E] in
+lemma measurable_restrict_finset (J : Finset I) :
+    Measurable fun x : SkorokhodSpace E ↦ fun t : J ↦ x t :=
+  measurable_pi_iff.2 fun t ↦ measurable_apply t.1
+
+/-- **Continuous mapping for finite-dimensional projections**: if `μ_n → ν` weakly, then the
+finite-dimensional distributions converge at the continuity times of `ν`. -/
+theorem tendsto_map_restrict_of_tendsto {μs : ℕ → ProbabilityMeasure (SkorokhodSpace E)}
+    {ν : ProbabilityMeasure (SkorokhodSpace E)} (h : Tendsto μs atTop (𝓝 ν)) {J : Finset I}
+    (hJ : (J : Set I) ⊆ continuityTimes (ν : Measure (SkorokhodSpace E))) :
+    Tendsto (fun n ↦ (μs n).map (fun x : SkorokhodSpace E ↦ fun t : J ↦ x t)) atTop
+      (𝓝 (ν.map (fun x : SkorokhodSpace E ↦ fun t : J ↦ x t))) := by
+  refine ProbabilityMeasure.tendsto_map_of_ae_continuousAt h (measurable_restrict_finset J) ?_
+  have : ∀ᵐ x ∂(ν : Measure (SkorokhodSpace E)), ∀ t ∈ J, t ≠ 1 →
+      ContinuousAt (⇑(x : SkorokhodSpace E)) t := by
+    rw [Filter.eventually_all_finset]
+    intro t ht
+    rcases hJ ht with h1 | h0
+    · exact Eventually.of_forall fun _ h ↦ absurd h1 h
+    · rw [ae_iff] at *
+      exact measure_mono_null (fun x hx ↦ (not_imp.1 hx).2) h0
+  exact this.mono fun x hx ↦ continuousAt_restrict_of_ne_one hx
+
+/-- A cluster point `ν` of a sequence `μ_n` whose finite-dimensional distributions converge to
+those of `μ` on a co-countable set `T ∋ 1` is equal to `μ`. -/
+lemma eq_of_mapClusterPt {μs : ℕ → ProbabilityMeasure (SkorokhodSpace E)}
+    {μ ν : ProbabilityMeasure (SkorokhodSpace E)} {T : Set I} (hT : Tᶜ.Countable)
+    (h1 : (1 : I) ∈ T)
+    (hfdd : ∀ J : Finset I, (J : Set I) ⊆ T →
+      Tendsto (fun n ↦ (μs n).map (fun x : SkorokhodSpace E ↦ fun t : J ↦ x t)) atTop
+        (𝓝 (μ.map (fun x : SkorokhodSpace E ↦ fun t : J ↦ x t))))
+    (hν : MapClusterPt ν atTop μs) : ν = μ := by
+  obtain ⟨ψ, hψ, hψν⟩ := hν.tendsto_subseq
+  set T' : Set I := T ∩ continuityTimes (ν : Measure (SkorokhodSpace E)) with hT'
+  have hT'c : T'ᶜ.Countable := by
+    rw [hT', compl_inter]
+    exact hT.union (countable_compl_continuityTimes _)
+  have hT'd : Dense T' := by simpa using dense_compl_of_countable hT'c
+  have h1' : (1 : I) ∈ T' := ⟨h1, one_mem_continuityTimes _⟩
+  refine ProbabilityMeasure.toMeasure_injective (ext_of_forall_map_restrict_eq hT'd h1'
+    fun J hJ ↦ ?_)
+  have hlim1 := tendsto_map_restrict_of_tendsto hψν fun t ht ↦ (hJ ht).2
+  have hlim2 := (hfdd J fun t ht ↦ (hJ ht).1).comp hψ.tendsto_atTop
+  have := congrArg ProbabilityMeasure.toMeasure (tendsto_nhds_unique hlim1 hlim2)
+  simpa using this
+
+omit [SecondCountableTopology E] [MeasurableSpace E] [BorelSpace E] in
+lemma isCompact_closure_range {μs : ℕ → ProbabilityMeasure (SkorokhodSpace E)}
+    (htight : IsTightMeasureSet (range fun n ↦ (μs n : Measure (SkorokhodSpace E)))) :
+    IsCompact (closure (range μs)) := by
+  refine isCompact_closure_of_isTightMeasureSet ?_
+  convert htight using 2
+  ext ν
+  simp
+
 /-- **Billingsley, Theorem 13.1.** Let `μ_n`, `μ` be probability measures on the Skorokhod space
 `D([0, 1], E)`. If `{μ_n}` is tight and the finite-dimensional distributions of `μ_n` converge
 to those of `μ` at the times of a set `T` with countable complement and containing `1`, then
@@ -93,54 +164,36 @@ theorem tendsto_of_tendsto_map_restrict_of_isTight
       Tendsto (fun n ↦ (μs n).map (fun x : SkorokhodSpace E ↦ fun t : J ↦ x t)) atTop
         (𝓝 (μ.map (fun x : SkorokhodSpace E ↦ fun t : J ↦ x t))))
     (htight : IsTightMeasureSet (range fun n ↦ (μs n : Measure (SkorokhodSpace E)))) :
-    Tendsto μs atTop (𝓝 μ) := by
-  have hS : IsCompact (closure (range μs)) := by
-    refine isCompact_closure_of_isTightMeasureSet ?_
-    convert htight using 2
-    ext ν
-    simp
-  refine hS.tendsto_nhds_of_unique_mapClusterPt (Eventually.of_forall fun n ↦
-    subset_closure (mem_range_self n)) fun ν _ hν ↦ ?_
-  obtain ⟨ψ, hψ, hψν⟩ := hν.tendsto_subseq
-  -- the good times: in `T` and not fixed discontinuities of `ν`, or `1`
-  set T' : Set I := T ∩ ({1} ∪ {t | (ν : Measure (SkorokhodSpace E)) {x | ¬ ContinuousAt (⇑x) t} = 0})
-    with hT'
-  have hT'c : T'ᶜ.Countable := by
-    refine (hT.union (countable_setOf_measure_not_continuousAt_ne_zero
-      (ν : Measure (SkorokhodSpace E)))).mono fun t ht ↦ ?_
-    simp only [hT', mem_compl_iff, mem_inter_iff, mem_union, mem_singleton_iff, mem_ofPred_eq,
-      not_and_or, not_or] at ht
-    rcases ht with ht | ⟨-, ht⟩
-    · exact Or.inl ht
-    · exact Or.inr ht
-  have hT'd : Dense T' := by simpa using dense_compl_of_countable hT'c
-  have h1' : (1 : I) ∈ T' := ⟨h1, Or.inl rfl⟩
-  refine ProbabilityMeasure.toMeasure_injective (ext_of_forall_map_restrict_eq hT'd h1'
-    fun J hJ ↦ ?_)
-  have hm : Measurable fun x : SkorokhodSpace E ↦ fun t : J ↦ x t :=
-    measurable_pi_iff.2 fun t ↦ measurable_apply t.1
-  -- along the subsequence, `π_J` is `ν`-a.e. continuous
-  have hcont : ∀ᵐ x ∂(ν : Measure (SkorokhodSpace E)),
-      ContinuousAt (fun y : SkorokhodSpace E ↦ fun t : J ↦ y t) x := by
-    have hnull : ∀ t ∈ J, t ≠ 1 →
-        ∀ᵐ x ∂(ν : Measure (SkorokhodSpace E)), ContinuousAt (⇑(x : SkorokhodSpace E)) t := by
-      intro t ht ht1
-      rcases (hJ ht).2 with h | h
-      · exact absurd h ht1
-      · rw [ae_iff]
-        exact h
-    have : ∀ᵐ x ∂(ν : Measure (SkorokhodSpace E)), ∀ t ∈ J, t ≠ 1 →
-        ContinuousAt (⇑(x : SkorokhodSpace E)) t := by
-      rw [Filter.eventually_all_finset]
-      exact fun t ht ↦ by
-        by_cases ht1 : t = 1
-        · exact Eventually.of_forall fun _ h ↦ absurd ht1 h
-        · exact (hnull t ht ht1).mono fun _ h _ ↦ h
-    exact this.mono fun x hx ↦ continuousAt_restrict_of_ne_one hx
-  have hlim1 := ProbabilityMeasure.tendsto_map_of_ae_continuousAt hψν hm hcont
-  have hlim2 := (hfdd J fun t ht ↦ (hJ ht).1).comp hψ.tendsto_atTop
-  have := tendsto_nhds_unique hlim1 hlim2
-  have := congrArg ProbabilityMeasure.toMeasure this
-  simpa using this
+    Tendsto μs atTop (𝓝 μ) :=
+  (isCompact_closure_range htight).tendsto_nhds_of_unique_mapClusterPt
+    (Eventually.of_forall fun n ↦ subset_closure (mem_range_self n))
+    fun _ _ hν ↦ eq_of_mapClusterPt hT h1 hfdd hν
+
+/-- **Existence of the limit** (Billingsley, Theorem 13.1, existence form). If `{μ_n}` is tight
+and, for every finite set of times `J` in a co-countable set `T ∋ 1`, the finite-dimensional
+distributions `μ_n π_J⁻¹` converge to some `ρ J`, then `μ_n` converges weakly to a probability
+measure `μ` with `μ π_J⁻¹ = ρ J` whenever `J ⊆ T` consists of continuity times of `μ`. -/
+theorem exists_tendsto_of_tendsto_map_restrict_of_isTight
+    {μs : ℕ → ProbabilityMeasure (SkorokhodSpace E)} {T : Set I} (hT : Tᶜ.Countable)
+    (h1 : (1 : I) ∈ T) (ρ : ∀ J : Finset I, ProbabilityMeasure (J → E))
+    (hfdd : ∀ J : Finset I, (J : Set I) ⊆ T →
+      Tendsto (fun n ↦ (μs n).map (fun x : SkorokhodSpace E ↦ fun t : J ↦ x t)) atTop
+        (𝓝 (ρ J)))
+    (htight : IsTightMeasureSet (range fun n ↦ (μs n : Measure (SkorokhodSpace E)))) :
+    ∃ μ : ProbabilityMeasure (SkorokhodSpace E), Tendsto μs atTop (𝓝 μ) ∧
+      ∀ J : Finset I, (J : Set I) ⊆ T ∩ continuityTimes (μ : Measure (SkorokhodSpace E)) →
+        μ.map (fun x : SkorokhodSpace E ↦ fun t : J ↦ x t) = ρ J := by
+  obtain ⟨μ, -, hμ⟩ := (isCompact_closure_range htight).exists_mapClusterPt
+    (f := atTop) (u := μs) (tendsto_principal.2 (Eventually.of_forall fun n ↦ subset_closure (mem_range_self n)))
+  obtain ⟨ψ, hψ, hψμ⟩ := hμ.tendsto_subseq
+  have hρ : ∀ J : Finset I, (J : Set I) ⊆ T ∩ continuityTimes (μ : Measure (SkorokhodSpace E)) →
+      μ.map (fun x : SkorokhodSpace E ↦ fun t : J ↦ x t) = ρ J := fun J hJ ↦
+    tendsto_nhds_unique (tendsto_map_restrict_of_tendsto hψμ fun t ht ↦ (hJ ht).2)
+      ((hfdd J fun t ht ↦ (hJ ht).1).comp hψ.tendsto_atTop)
+  have hc : (T ∩ continuityTimes (μ : Measure (SkorokhodSpace E)))ᶜ.Countable := by
+    rw [compl_inter]
+    exact hT.union (countable_compl_continuityTimes _)
+  refine ⟨μ, tendsto_of_tendsto_map_restrict_of_isTight hc ⟨h1, one_mem_continuityTimes _⟩
+    (fun J hJ ↦ (hρ J hJ) ▸ hfdd J fun t ht ↦ (hJ ht).1) htight, hρ⟩
 
 end SkorokhodSpace
