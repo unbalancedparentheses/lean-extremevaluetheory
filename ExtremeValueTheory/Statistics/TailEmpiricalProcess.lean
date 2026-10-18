@@ -88,11 +88,11 @@ lemma indicator_Ici_mul_indicator_Ici (x y u : ℝ) :
   split_ifs <;> simp_all
 
 /-- The summand of the row sum representing the linear combination `∑_t a_t W_n(t)`. -/
-noncomputable def tailSummand {I : Finset ℝ≥0} (a : I → ℝ) (n k : ℕ) (u : ℝ) : ℝ :=
-  (√k)⁻¹ * ∑ t : I, a t * ((Set.Ici (1 - k / n * (t : ℝ))).indicator 1 u - k / n * t)
+noncomputable def tailSummand {ι : Type*} [Fintype ι] (τ : ι → ℝ≥0) (a : ι → ℝ) (n k : ℕ) (u : ℝ) : ℝ :=
+  (√k)⁻¹ * ∑ t : ι, a t * ((Set.Ici (1 - k / n * (τ t : ℝ))).indicator 1 u - k / n * τ t)
 
-lemma measurable_tailSummand {I : Finset ℝ≥0} (a : I → ℝ) (n k : ℕ) :
-    Measurable (tailSummand a n k) := by
+lemma measurable_tailSummand {ι : Type*} [Fintype ι] (τ : ι → ℝ≥0) (a : ι → ℝ) (n k : ℕ) :
+    Measurable (tailSummand τ a n k) := by
   unfold tailSummand
   refine Measurable.const_mul (Finset.measurable_sum _ fun t _ ↦ ?_) _
   exact ((measurable_one.indicator measurableSet_Ici).sub_const _).const_mul _
@@ -108,9 +108,9 @@ lemma sqrt_mul_inv_sub_eq {n k : ℕ} (hn : n ≠ 0) (S t : ℝ) :
   field_simp
   rw [hsq]
 
-lemma sum_mul_tailEmpiricalProcess_eq {I : Finset ℝ≥0} (a : I → ℝ) (U : ℕ → Ω → ℝ) {n : ℕ}
+lemma sum_mul_tailEmpiricalProcess_eq {ι : Type*} [Fintype ι] (τ : ι → ℝ≥0) (a : ι → ℝ) (U : ℕ → Ω → ℝ) {n : ℕ}
     (hn : n ≠ 0) (k : ℕ) (ω : Ω) :
-    ∑ t : I, a t * tailEmpiricalProcess U n k t ω = ∑ i ∈ range n, tailSummand a n k (U i ω) := by
+    ∑ t : ι, a t * tailEmpiricalProcess U n k (τ t) ω = ∑ i ∈ range n, tailSummand τ a n k (U i ω) := by
   unfold tailEmpiricalProcess tailSummand
   simp_rw [sqrt_mul_inv_sub_eq hn]
   simp only [Finset.mul_sum]
@@ -150,8 +150,8 @@ lemma integral_uniform_indicator_sub_mul {x y : ℝ} (hx0 : 0 ≤ x) (hx1 : x �
   simp only [integral_const, probReal_univ, one_smul]
   ring
 
-lemma integral_tailSummand {I : Finset ℝ≥0} (a : I → ℝ) {n k : ℕ}
-    (hp : ∀ t : I, (k : ℝ) / n * t ≤ 1) : ∫ u, tailSummand a n k u ∂μU = 0 := by
+lemma integral_tailSummand {ι : Type*} [Fintype ι] (τ : ι → ℝ≥0) (a : ι → ℝ) {n k : ℕ}
+    (hp : ∀ t : ι, (k : ℝ) / n * τ t ≤ 1) : ∫ u, tailSummand τ a n k u ∂μU = 0 := by
   unfold tailSummand
   rw [integral_const_mul, integral_finsetSum _ fun t _ ↦ by
     exact ((integrable_uniform_indicator_Ici _).sub (integrable_const _)).const_mul _]
@@ -160,44 +160,44 @@ lemma integral_tailSummand {I : Finset ℝ≥0} (a : I → ℝ) {n k : ℕ}
     integral_uniform_indicator_Ici (by positivity) (hp t)]
   simp
 
-lemma abs_tailSummand_le {I : Finset ℝ≥0} (a : I → ℝ) (n k : ℕ) (u : ℝ) :
-    |tailSummand a n k u| ≤ (√(k : ℝ))⁻¹ * ∑ t : I, |a t| * (1 + k / n * t) := by
+lemma abs_tailSummand_le {ι : Type*} [Fintype ι] (τ : ι → ℝ≥0) (a : ι → ℝ) (n k : ℕ) (u : ℝ) :
+    |tailSummand τ a n k u| ≤ (√(k : ℝ))⁻¹ * ∑ t : ι, |a t| * (1 + k / n * τ t) := by
   unfold tailSummand
   rw [abs_mul, abs_of_nonneg (by positivity)]
   refine mul_le_mul_of_nonneg_left ((Finset.abs_sum_le_sum_abs _ _).trans
     (Finset.sum_le_sum fun t _ ↦ ?_)) (by positivity)
   rw [abs_mul]
   refine mul_le_mul_of_nonneg_left ((abs_sub _ _).trans (add_le_add ?_ ?_)) (abs_nonneg _)
-  · by_cases h : u ∈ Set.Ici (1 - k / n * (t : ℝ)) <;> simp [h]
+  · by_cases h : u ∈ Set.Ici (1 - k / n * (τ t : ℝ)) <;> simp [h]
   · rw [abs_of_nonneg (by positivity)]
 
-lemma mul_integral_tailSummand_sq {I : Finset ℝ≥0} (a : I → ℝ) {n k : ℕ} (hn : n ≠ 0)
-    (hk : k ≠ 0) (hp : ∀ t : I, (k : ℝ) / n * t ≤ 1) :
-    n * ∫ u, tailSummand a n k u ^ 2 ∂μU =
-      ∑ t : I, ∑ s : I, a t * a s * (min (t : ℝ) s - k / n * t * s) := by
+lemma mul_integral_tailSummand_sq {ι : Type*} [Fintype ι] (τ : ι → ℝ≥0) (a : ι → ℝ) {n k : ℕ} (hn : n ≠ 0)
+    (hk : k ≠ 0) (hp : ∀ t : ι, (k : ℝ) / n * τ t ≤ 1) :
+    n * ∫ u, tailSummand τ a n k u ^ 2 ∂μU =
+      ∑ t : ι, ∑ s : ι, a t * a s * (min (τ t : ℝ) (τ s) - k / n * τ t * τ s) := by
   have hk' : (0 : ℝ) < k := Nat.cast_pos.2 (Nat.pos_of_ne_zero hk)
   have hn' : (0 : ℝ) < n := Nat.cast_pos.2 (Nat.pos_of_ne_zero hn)
   have hp0 : (0 : ℝ) ≤ k / n := by positivity
-  set g : I → ℝ → ℝ := fun t u ↦ (Set.Ici (1 - k / n * (t : ℝ))).indicator 1 u - k / n * t
-  have hg (t : I) : Integrable (g t) μU :=
+  set g : ι → ℝ → ℝ := fun t u ↦ (Set.Ici (1 - k / n * (τ t : ℝ))).indicator 1 u - k / n * τ t
+  have hg (t : ι) : Integrable (g t) μU :=
     (integrable_uniform_indicator_Ici _).sub (integrable_const _)
-  have hsq (u : ℝ) : tailSummand a n k u ^ 2 =
-      (k : ℝ)⁻¹ * ∑ t : I, ∑ s : I, a t * a s * (g t u * g s u) := by
+  have hsq (u : ℝ) : tailSummand τ a n k u ^ 2 =
+      (k : ℝ)⁻¹ * ∑ t : ι, ∑ s : ι, a t * a s * (g t u * g s u) := by
     unfold tailSummand
     rw [mul_pow, inv_pow, Real.sq_sqrt hk'.le, sq, Finset.sum_mul_sum]
     congr 1
     refine Finset.sum_congr rfl fun t _ ↦ Finset.sum_congr rfl fun s _ ↦ ?_
     ring
   simp_rw [hsq]
-  have hint (t s : I) : Integrable (fun u ↦ a t * a s * (g t u * g s u)) μU := by
+  have hint (t s : ι) : Integrable (fun u ↦ a t * a s * (g t u * g s u)) μU := by
     refine Integrable.const_mul ?_ _
-    refine Integrable.of_bound (C := (1 + k / n * t) * (1 + k / n * s))
+    refine Integrable.of_bound (C := (1 + k / n * τ t) * (1 + k / n * τ s))
       ((hg t).aestronglyMeasurable.mul (hg s).aestronglyMeasurable) (ae_of_all _ fun u ↦ ?_)
     rw [norm_mul]
-    have hb (r : I) : ‖g r u‖ ≤ 1 + k / n * r := by
+    have hb (r : ι) : ‖g r u‖ ≤ 1 + k / n * τ r := by
       simp only [g, Real.norm_eq_abs]
       refine (abs_sub _ _).trans (add_le_add ?_ ?_)
-      · by_cases h : u ∈ Set.Ici (1 - k / n * (r : ℝ)) <;> simp [h]
+      · by_cases h : u ∈ Set.Ici (1 - k / n * (τ r : ℝ)) <;> simp [h]
       · rw [abs_of_nonneg (by positivity)]
     exact mul_le_mul (hb t) (hb s) (norm_nonneg _) (by positivity)
   rw [integral_const_mul, integral_finsetSum _ fun t _ ↦ integrable_finsetSum _ fun s _ ↦
@@ -207,7 +207,7 @@ lemma mul_integral_tailSummand_sq {I : Finset ℝ≥0} (a : I → ℝ) {n k : �
   refine Finset.sum_congr rfl fun t _ ↦ ?_
   rw [Finset.mul_sum]
   refine Finset.sum_congr rfl fun s _ ↦ ?_
-  have := integral_uniform_indicator_sub_mul (x := k / n * t) (y := k / n * s) (by positivity)
+  have := integral_uniform_indicator_sub_mul (x := k / n * τ t) (y := k / n * τ s) (by positivity)
     (hp t) (by positivity) (hp s)
   simp only [g]
   rw [this, ← mul_min_of_nonneg _ _ hp0]
@@ -227,50 +227,50 @@ characteristic function of the centered Gaussian law with variance `∑_{s,t} a_
 theorem tendsto_charFun_sum_mul_tailEmpiricalProcess (hU : ∀ i, Measurable (U i))
     (hind : iIndepFun U P) (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))
     (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0))
-    {I : Finset ℝ≥0} (a : I → ℝ) (s : ℝ) :
-    Tendsto (fun n ↦ charFun (P.map (fun ω ↦ ∑ t : I, a t *
-        tailEmpiricalProcess U n (k n) t ω)) s) atTop
-      (𝓝 (cexp (-((s : ℂ) ^ 2 * (∑ t : I, ∑ r : I, a t * a r * min (t : ℝ) r : ℝ) / 2)))) := by
+    {ι : Type*} [Fintype ι] (τ : ι → ℝ≥0) (a : ι → ℝ) (s : ℝ) :
+    Tendsto (fun n ↦ charFun (P.map (fun ω ↦ ∑ t : ι, a t *
+        tailEmpiricalProcess U n (k n) (τ t) ω)) s) atTop
+      (𝓝 (cexp (-((s : ℂ) ^ 2 * (∑ t : ι, ∑ r : ι, a t * a r * min (τ t : ℝ) (τ r) : ℝ) / 2)))) := by
   have hkR : Tendsto (fun n ↦ (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
   -- eventually all the levels `(k/n) t` lie in `[0, 1]`, and `n, k n ≠ 0`
-  have hp : ∀ᶠ n in atTop, ∀ t : I, (k n : ℝ) / n * t ≤ 1 := by
+  have hp : ∀ᶠ n in atTop, ∀ t : ι, (k n : ℝ) / n * τ t ≤ 1 := by
     rw [eventually_all]
     intro t
-    have : Tendsto (fun n ↦ (k n : ℝ) / n * t) atTop (𝓝 (0 * t)) := hkn.mul_const _
+    have : Tendsto (fun n ↦ (k n : ℝ) / n * τ t) atTop (𝓝 (0 * τ t)) := hkn.mul_const _
     rw [zero_mul] at this
     exact this.eventually (ge_mem_nhds zero_lt_one)
   have hn0 : ∀ᶠ n : ℕ in atTop, n ≠ 0 := eventually_ne_atTop 0
   have hk0 : ∀ᶠ n in atTop, k n ≠ 0 := hk.eventually_ne_atTop 0
   -- the bound on the summands
-  set M : ℕ → ℝ := fun n ↦ (√(k n : ℝ))⁻¹ * ∑ t : I, |a t| * (1 + k n / n * t) with hM
+  set M : ℕ → ℝ := fun n ↦ (√(k n : ℝ))⁻¹ * ∑ t : ι, |a t| * (1 + k n / n * τ t) with hM
   have hMlim : Tendsto M atTop (𝓝 0) := by
     have h1 : Tendsto (fun n ↦ (√(k n : ℝ))⁻¹) atTop (𝓝 0) :=
       tendsto_inv_atTop_zero.comp (Real.tendsto_sqrt_atTop.comp hkR)
-    have h2 : Tendsto (fun n ↦ ∑ t : I, |a t| * (1 + k n / n * t)) atTop
-        (𝓝 (∑ t : I, |a t| * (1 + 0 * t))) :=
+    have h2 : Tendsto (fun n ↦ ∑ t : ι, |a t| * (1 + k n / n * τ t)) atTop
+        (𝓝 (∑ t : ι, |a t| * (1 + 0 * τ t))) :=
       tendsto_finsetSum _ fun t _ ↦ ((hkn.mul_const _).const_add _).const_mul _
     have := h1.mul h2
     rw [zero_mul] at this
     exact this
-  have hvar : Tendsto (fun n : ℕ ↦ n * ∫ u, tailSummand a n (k n) u ^ 2 ∂μU) atTop
-      (𝓝 (∑ t : I, ∑ r : I, a t * a r * min (t : ℝ) r)) := by
-    have hlim : Tendsto (fun n ↦ ∑ t : I, ∑ r : I, a t * a r * (min (t : ℝ) r - k n / n * t * r))
-        atTop (𝓝 (∑ t : I, ∑ r : I, a t * a r * (min (t : ℝ) r - 0 * t * r))) :=
+  have hvar : Tendsto (fun n : ℕ ↦ n * ∫ u, tailSummand τ a n (k n) u ^ 2 ∂μU) atTop
+      (𝓝 (∑ t : ι, ∑ r : ι, a t * a r * min (τ t : ℝ) (τ r))) := by
+    have hlim : Tendsto (fun n ↦ ∑ t : ι, ∑ r : ι, a t * a r * (min (τ t : ℝ) (τ r) - k n / n * τ t * τ r))
+        atTop (𝓝 (∑ t : ι, ∑ r : ι, a t * a r * (min (τ t : ℝ) (τ r) - 0 * τ t * τ r))) :=
       tendsto_finsetSum _ fun t _ ↦ tendsto_finsetSum _ fun r _ ↦
         (tendsto_const_nhds.sub ((hkn.mul_const _).mul_const _)).const_mul _
     simp only [zero_mul, sub_zero] at hlim
     refine hlim.congr' ?_
     filter_upwards [hp, hn0, hk0] with n hpn hn hkn'
-    exact (mul_integral_tailSummand_sq a hn hkn' hpn).symm
+    exact (mul_integral_tailSummand_sq τ a hn hkn' hpn).symm
   have key := tendsto_charFun_sum_range_of_bounded hU hind hlaw (μ := μU)
-    (f := fun n ↦ tailSummand a n (k n)) (fun n ↦ measurable_tailSummand a n (k n)) hMlim
-    (fun n u ↦ abs_tailSummand_le a n (k n) u)
-    (by filter_upwards [hp] with n hpn; exact integral_tailSummand a hpn) hvar s
+    (f := fun n ↦ tailSummand τ a n (k n)) (fun n ↦ measurable_tailSummand τ a n (k n)) hMlim
+    (fun n u ↦ abs_tailSummand_le τ a n (k n) u)
+    (by filter_upwards [hp] with n hpn; exact integral_tailSummand τ a hpn) hvar s
   refine key.congr' ?_
   filter_upwards [hn0] with n hn
   congr 2
   ext ω
-  exact (sum_mul_tailEmpiricalProcess_eq a U hn (k n) ω).symm
+  exact (sum_mul_tailEmpiricalProcess_eq τ a U hn (k n) ω).symm
 
 /-- **Finite-dimensional convergence of the uniform tail empirical process** to Brownian motion
 ([de Haan–Ferreira, Theorem 2.4.8]; [Einmahl 1992]). If `U 0, U 1, …` are i.i.d. uniform on
@@ -298,7 +298,8 @@ theorem tendstoInDistribution_tailEmpiricalProcess_fdd [IsProbabilityMeasure P]
         inner ℝ (V n ω) a = ∑ t : I, a t * tailEmpiricalProcess U n (k n) t ω := by
       simp [hV, PiLp.inner_apply, mul_comm]
     simp_rw [hinner]
-    convert tendsto_charFun_sum_mul_tailEmpiricalProcess hU hind hlaw hk hkn (fun t ↦ a t) 1
+    convert tendsto_charFun_sum_mul_tailEmpiricalProcess hU hind hlaw hk hkn (fun t : I ↦ (t : ℝ≥0))
+      (fun t ↦ a t) 1
       using 2
     simp [dotProduct, Matrix.mulVec, Finset.mul_sum]
     congr 3
@@ -311,6 +312,67 @@ theorem tendstoInDistribution_tailEmpiricalProcess_fdd [IsProbabilityMeasure P]
   simp only [Function.comp_id, (BrownianReal.measurePreserving_ofLp_multivariateGaussian I).map_eq]
     at h
   simp only [Measure.map_id]
+  exact h
+
+/-- The covariance matrix `min (τ i) (τ j)` of Brownian motion at the times `τ i`. -/
+def brownianCovMatrix {ι : Type*} (τ : ι → ℝ≥0) : Matrix ι ι ℝ :=
+  .of fun i j ↦ min (τ i : ℝ) (τ j)
+
+lemma posSemidef_brownianCovMatrix {ι : Type*} [Finite ι] (τ : ι → ℝ≥0) :
+    (brownianCovMatrix τ).PosSemidef := by
+  have : brownianCovMatrix τ = .of fun i j ↦ volume.real (Set.Icc 0 (τ i : ℝ) ∩
+      Set.Icc 0 (τ j : ℝ)) := by
+    ext i j
+    simp [brownianCovMatrix, Set.Icc_inter_Icc]
+  rw [this]
+  exact posSemidef_matrix_measure_inter (fun _ ↦ measurableSet_Icc)
+    (fun j ↦ by rw [Real.volume_Icc]; exact ENNReal.ofReal_ne_top)
+
+/-- The law of Brownian motion at the times `τ i` (`i : ι`, possibly repeated): the centered
+Gaussian vector with covariance `min (τ i) (τ j)`. -/
+noncomputable def brownianFdd {ι : Type*} [Fintype ι] [DecidableEq ι] (τ : ι → ℝ≥0) :
+    Measure (ι → ℝ) :=
+  (multivariateGaussian 0 (brownianCovMatrix τ)).map WithLp.ofLp
+
+instance {ι : Type*} [Fintype ι] [DecidableEq ι] (τ : ι → ℝ≥0) :
+    IsProbabilityMeasure (brownianFdd τ) :=
+  ⟨by rw [brownianFdd, Measure.map_apply (by fun_prop) MeasurableSet.univ]; simp⟩
+
+/-- **Finite-dimensional convergence of the uniform tail empirical process**, for an arbitrary
+finite family of times `τ i`: `(W_n(τ i))_i` converges in distribution to `brownianFdd τ`. -/
+theorem tendstoInDistribution_tailEmpiricalProcess_comp [IsProbabilityMeasure P]
+    (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0))
+    {ι : Type*} [Fintype ι] [DecidableEq ι] (τ : ι → ℝ≥0) :
+    TendstoInDistribution (fun n ω ↦ fun i : ι ↦ tailEmpiricalProcess U n (k n) (τ i) ω) atTop
+      id (fun _ ↦ P) (brownianFdd τ) := by
+  set V : ℕ → Ω → EuclideanSpace ℝ ι :=
+    fun n ω ↦ WithLp.toLp 2 (fun i : ι ↦ tailEmpiricalProcess U n (k n) (τ i) ω) with hV
+  have hVm (n : ℕ) : Measurable (V n) :=
+    (WithLp.measurable_toLp 2 _).comp
+      (measurable_pi_iff.2 fun i ↦ measurable_tailEmpiricalProcess hU n (k n) _)
+  have hconv : TendstoInDistribution V atTop id (fun _ ↦ P)
+      (multivariateGaussian 0 (brownianCovMatrix τ)) := by
+    refine .of_tendsto_charFun (fun n ↦ (hVm n).aemeasurable) aemeasurable_id fun a ↦ ?_
+    rw [Measure.map_id, charFun_multivariateGaussian (posSemidef_brownianCovMatrix τ)]
+    simp_rw [charFun_map_eq_charFun_map_inner_one (hVm _).aemeasurable a]
+    have hinner (n : ℕ) (ω : Ω) :
+        inner ℝ (V n ω) a = ∑ i : ι, a i * tailEmpiricalProcess U n (k n) (τ i) ω := by
+      simp [hV, PiLp.inner_apply, mul_comm]
+    simp_rw [hinner]
+    convert tendsto_charFun_sum_mul_tailEmpiricalProcess hU hind hlaw hk hkn τ
+      (fun i ↦ a i) 1 using 2
+    simp [dotProduct, Matrix.mulVec, Finset.mul_sum, brownianCovMatrix]
+    congr 3
+    refine Finset.sum_congr rfl fun x _ ↦ Finset.sum_congr rfl fun y _ ↦ ?_
+    ring
+  have hcomp := hconv.continuous_comp (PiLp.continuous_ofLp 2 _)
+  refine ⟨fun n ↦ (measurable_pi_iff.2 fun i : ι ↦
+    measurable_tailEmpiricalProcess hU n (k n) _).aemeasurable, aemeasurable_id, ?_⟩
+  have h := hcomp.tendsto
+  simp only [Function.comp_id] at h
+  simp only [Measure.map_id, brownianFdd]
   exact h
 
 /-- **Finite-dimensional convergence of the uniform tail empirical process to a Brownian
