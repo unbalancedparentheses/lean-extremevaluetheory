@@ -384,6 +384,39 @@ theorem eq_stationaryLaw (hA : Integrable (fun p : ℝ × ℝ => log |p.1|) ν)
   rw [RandomIteration.map_snd_canonicalMeasure π' ν] at e
   exact e.symm
 
+/-- **The stationary solution of the stochastic recurrence equation** ([BDM16, Theorem 2.1.3];
+[Kesten 1973]; [Vervaat 1979]): if `E log |A| < 0` and `E log⁺ |B| < ∞`, the random iteration
+`X_{n+1} = A_n X_n + B_n` started from the law of the perpetuity, independently of the iid
+innovations `(A_n, B_n) ∼ ν`, is a strictly stationary Markov chain
+(`RandomIteration.isStationary_canonicalChain`). Its marginal law is the unique invariant law
+(`eq_stationaryLaw`). -/
+theorem isStationary_chain (hA : Integrable (fun p : ℝ × ℝ => log |p.1|) ν)
+    (hneg : ∫ p, log |p.1| ∂ν < 0) (hB : Integrable (fun p : ℝ × ℝ => posLog p.2) ν) :
+    IsStationary (RandomIteration.chain affine Prod.fst fun n (p : ℝ × (ℕ → ℝ × ℝ)) => p.2 n)
+      (RandomIteration.canonicalMeasure (stationaryLaw ν) ν) :=
+  RandomIteration.isStationary_canonicalChain _ ν measurable_affine
+    (map_affine_stationaryLaw hA hneg hB)
+
+/-- The perpetuity of an iid sequence `V_n = (A_n, B_n)` with law `ν` on any probability space
+converges absolutely almost surely, and has law `stationaryLaw ν`. -/
+theorem ae_summable_and_map_perpetuity {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
+    {V : ℕ → Ω → ℝ × ℝ} (hV : ∀ n, Measurable (V n)) (hiid : iIndepFun V P)
+    (hid : ∀ n, P.map (V n) = ν) (hA : Integrable (fun p : ℝ × ℝ => log |p.1|) ν)
+    (hneg : ∫ p, log |p.1| ∂ν < 0) (hB : Integrable (fun p : ℝ × ℝ => posLog p.2) ν) :
+    (∀ᵐ ω ∂P, Summable fun k => |term (fun n => V n ω) k|) ∧
+      P.map (fun ω => perpetuity fun n => V n ω) = stationaryLaw ν := by
+  have hc : (∫ p, log |p.1| ∂ν) / 2 < 0 := by linarith
+  have hVm : Measurable fun ω n => V n ω := Measurable.of_eval hV
+  have hlaw : P.map (fun ω n => V n ω) = seqLaw ν :=
+    RandomIteration.map_path_eq_infinitePi hV hiid hid
+  refine ⟨?_, ?_⟩
+  · have h : ∀ᵐ v ∂P.map (fun ω n => V n ω), Summable fun k => |term v k| := by
+      rw [hlaw]
+      filter_upwards [ae_contracting_seqLaw hA hneg hB] with v hv using hv.summable_abs_term hc
+    exact ae_of_ae_map hVm.aemeasurable h
+  · rw [stationaryLaw, ← hlaw, Measure.map_map measurable_perpetuity hVm]
+    rfl
+
 end StationaryLaw
 
 end SRE
