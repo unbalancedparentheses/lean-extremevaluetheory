@@ -492,6 +492,110 @@ theorem setOf_one_lt_apply_subset (L : StrongDual ℝ E) :
   have h1 : L y ≤ ‖L‖ * ‖y‖ := (le_abs_self _).trans (by simpa using L.le_opNorm y)
   nlinarith [norm_nonneg y]
 
+/-! ### Uniqueness for non-integer indices -/
+
+/-- **Half-spaces determine a measure with a power tail of non-integer index** ([BDM02],
+[BL09]). Let `μ` and `ν` be measures on a finite-dimensional real normed space, without atom at
+the origin, with `μ {‖y‖ > t} ≤ C t ^ (-α)` and `ν {‖y‖ > t} ≤ C' t ^ (-α)` for all `t > 0`, where
+`α > 0` is **not an integer**. If `μ {L > 1} = ν {L > 1}` for every continuous linear functional
+`L`, then `μ = ν`.
+
+With `n = ⌊α⌋`, the kernel `e^{is} - ∑_{k ≤ n} (is)^k / k!` is `O(min (|s| ^ (n + 1), |s| ^ n))`,
+which is integrable against both measures exactly because `n < α < n + 1`; its forward
+differences of order `2 (n + 1)` agree with those of `e^{is}`, and `ext_of_halfSpace` applies.
+For integer `α` the statement is false ([HL06], [BL09]). -/
+theorem ext_of_halfSpace_of_tail {α : ℝ} (hα : 0 < α) (hαZ : ∀ k : ℤ, α ≠ k)
+    {C C' : ℝ≥0∞} (hC : C ≠ ∞) (hC' : C' ≠ ∞)
+    (hμt : ∀ t > 0, μ {y | t < ‖y‖} ≤ ENNReal.ofReal (t ^ (-α)) * C)
+    (hνt : ∀ t > 0, ν {y | t < ‖y‖} ≤ ENNReal.ofReal (t ^ (-α)) * C')
+    (hμ0 : μ {0} = 0) (hν0 : ν {0} = 0)
+    (h : ∀ L : StrongDual ℝ E, μ {y | 1 < L y} = ν {y | 1 < L y}) : μ = ν := by
+  set n := ⌊α⌋₊
+  have hn : (n : ℝ) < α := lt_of_le_of_ne (Nat.floor_le hα.le) fun he =>
+    hαZ n (by rw [← he, Int.cast_natCast])
+  have hn1 : α < n + 1 := Nat.lt_floor_add_one α
+  have hμi := integrable_minPow_norm hn hn1 hC hμt
+  have hνi := integrable_minPow_norm hn hn1 hC' hνt
+  refine ext_of_halfSpace (n + 1) (continuous_expRem n).measurable (expRem_zero n)
+    (fwdDiff_iter_expRem n) (integrable_expRem_comp hμi) (integrable_expRem_comp hνi) hμ0 hν0
+    (fun L => ?_) h
+  exact (measure_mono (setOf_one_lt_apply_subset L)).trans_lt ((hμt _ (by positivity)).trans_lt
+    (ENNReal.mul_lt_top ENNReal.ofReal_lt_top hC.lt_top))
+
+omit [FiniteDimensional ℝ E] in
+/-- The norm tail of a measure homogeneous of order `-α`. -/
+theorem measure_lt_norm_of_map_smul {α : ℝ}
+    (hhom : ∀ t > 0, μ.map (fun y => t • y) = ENNReal.ofReal (t ^ α) • μ) {t : ℝ} (ht : 0 < t) :
+    μ {y | t < ‖y‖} = ENNReal.ofReal (t ^ (-α)) * μ {y | 1 < ‖y‖} := by
+  have := congrArg (fun ρ : Measure E => ρ {y | 1 < ‖y‖}) (hhom t⁻¹ (inv_pos.2 ht))
+  simp only [Measure.map_apply (measurable_const_smul _)
+    (measurableSet_lt measurable_const continuous_norm.measurable), Measure.smul_apply,
+    smul_eq_mul] at this
+  rw [Real.inv_rpow ht.le, ← Real.rpow_neg ht.le] at this
+  rw [← this]
+  congr 1
+  ext y
+  exact (IsRegVarVector.setOf_one_lt_norm_smul ht y).symm
+
+/-- **Half-spaces determine a homogeneous measure of non-integer order** ([BDM02, Theorem 1.1 (i)],
+the uniqueness step). Two measures on a finite-dimensional real normed space, homogeneous of order
+`-α` (`μ (t⁻¹ · A) = t ^ α μ (A)`) with `α > 0` not an integer, without atom at the origin and
+finite on `{‖y‖ > 1}`, which agree on all half-spaces `{L > 1}`, are equal. -/
+theorem ext_of_halfSpace_of_map_smul {α : ℝ} (hα : 0 < α) (hαZ : ∀ k : ℤ, α ≠ k)
+    (hμhom : ∀ t > 0, μ.map (fun y => t • y) = ENNReal.ofReal (t ^ α) • μ)
+    (hνhom : ∀ t > 0, ν.map (fun y => t • y) = ENNReal.ofReal (t ^ α) • ν)
+    (hμ1 : μ {y | 1 < ‖y‖} ≠ ∞) (hν1 : ν {y | 1 < ‖y‖} ≠ ∞)
+    (hμ0 : μ {0} = 0) (hν0 : ν {0} = 0)
+    (h : ∀ L : StrongDual ℝ E, μ {y | 1 < L y} = ν {y | 1 < L y}) : μ = ν :=
+  ext_of_halfSpace_of_tail hα hαZ hμ1 hν1
+    (fun _ ht => (measure_lt_norm_of_map_smul hμhom ht).le)
+    (fun _ ht => (measure_lt_norm_of_map_smul hνhom ht).le) hμ0 hν0 h
+
 end CramerWold
+
+open CramerWold
+
+section RegVar
+
+variable {Ω Ω' E : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {P : Measure Ω} {P' : Measure Ω'} [IsFiniteMeasure P] [IsFiniteMeasure P']
+  [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E] [MeasurableSpace E]
+  [BorelSpace E] {X : Ω → E} {Y : Ω' → E} {α : ℝ} {μ ν : Measure E}
+
+/-- **The exponent measure is determined by the half-spaces** for non-integer `α`: if `X` and `Y`
+are regularly varying with the same non-integer index `α > 0` and exponent measures `μ`, `ν`
+with `μ {L > 1} = ν {L > 1}` for every continuous linear functional `L`, then `μ = ν`. -/
+theorem IsRegVarVector.eq_of_measureReal_halfSpace (hα : 0 < α) (hαZ : ∀ k : ℤ, α ≠ k)
+    (hX : Measurable X) (hY : Measurable Y) (h : IsRegVarVector P X α μ)
+    (h' : IsRegVarVector P' Y α ν)
+    (hL : ∀ L : StrongDual ℝ E, μ.real {y | 1 < L y} = ν.real {y | 1 < L y}) : μ = ν := by
+  have hfin : ∀ (ρ : Measure E), (∀ r > 0, ρ {y | r < ‖y‖} < ∞) →
+      ∀ L : StrongDual ℝ E, ρ {y | 1 < L y} ≠ ∞ := fun ρ hρ L =>
+    (measure_mono (setOf_one_lt_apply_subset L)).trans_lt (hρ _ (by positivity)) |>.ne
+  refine ext_of_halfSpace_of_tail hα hαZ ENNReal.one_ne_top ENNReal.one_ne_top
+    (fun t ht => by rw [h.measure_lt_norm hX ht, mul_one])
+    (fun t ht => by rw [h'.measure_lt_norm hY ht, mul_one]) h.measure_zero h'.measure_zero
+    fun L => ?_
+  exact (ENNReal.toReal_eq_toReal_iff' (hfin μ h.measure_lt_top L)
+    (hfin ν h'.measure_lt_top L)).1 (hL L)
+
+/-- **Uniqueness half of the converse Cramér–Wold device** ([BDM02, Theorem 1.1 (i)]): for a
+non-integer index `α > 0`, the exponent measure of a regularly varying vector is determined by
+the limits `w (L) = lim P(L X > x) / P(‖X‖ > x)` of the tails of its linear combinations. If `X`
+and `Y` are regularly varying with index `α` and these limits coincide for every continuous
+linear functional `L`, their exponent measures are equal. -/
+theorem IsRegVarVector.eq_of_tendsto_linear (hα : 0 < α) (hαZ : ∀ k : ℤ, α ≠ k)
+    (hX : Measurable X) (hY : Measurable Y) (h : IsRegVarVector P X α μ)
+    (h' : IsRegVarVector P' Y α ν) (w : StrongDual ℝ E → ℝ)
+    (hwX : ∀ L : StrongDual ℝ E,
+      Tendsto (fun x => P.real {ω | x < L (X ω)} / P.real {ω | x < ‖X ω‖}) atTop (𝓝 (w L)))
+    (hwY : ∀ L : StrongDual ℝ E,
+      Tendsto (fun x => P'.real {ω | x < L (Y ω)} / P'.real {ω | x < ‖Y ω‖}) atTop (𝓝 (w L))) :
+    μ = ν :=
+  h.eq_of_measureReal_halfSpace hα hαZ hX hY h' fun L =>
+    (tendsto_nhds_unique (h.tendsto_linear hX L) (hwX L)).trans
+      (tendsto_nhds_unique (h'.tendsto_linear hY L) (hwY L)).symm
+
+end RegVar
 
 end ExtremeValueTheory
