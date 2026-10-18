@@ -45,7 +45,7 @@ Kulik and Soulier, *Heavy-Tailed Time Series* (KS); Beirlant, Goegebeur, Segers 
 - [x] Linear processes, AR(1), ARMAX, Markov chains, tail chain
 - [ ] Point process of clusters (Davis–Hsing 1995): cluster point process convergence
 - [ ] Cluster functionals and their limit theory (KS ch. 6, 9)
-- [ ] Stochastic recurrence equations: Kesten–Goldie implicit renewal theorem; GARCH(1,1) tails
+- [~] Stochastic recurrence equations: stationary solution, uniqueness, tail index exactly `κ`, GARCH(1,1)/ARCH(1) done; sharp Kesten–Goldie `P(X > x) ~ c x^{−κ}` missing (needs the key renewal theorem)
 - [ ] Stochastic volatility models; regularly varying time series beyond linear (KS ch. 14–15)
 
 ## 6. Multivariate extremes

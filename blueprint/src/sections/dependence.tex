@@ -788,3 +788,50 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
   \leanok
   The mixing conditions follow from the geometric $\alpha$-mixing of the echo process.
 \end{proof}
+
+\section{Stochastic recurrence equations and GARCH}
+
+\begin{theorem}[Stationary solution of \texorpdfstring{$X = AX + B$}{X = AX + B}]
+  \label{thm:sre-stationary}
+  \lean{ExtremeValueTheory.SRE.perpetuity, ExtremeValueTheory.SRE.Contracting, ExtremeValueTheory.SRE.ae_contracting, ExtremeValueTheory.SRE.stationaryLaw, ExtremeValueTheory.SRE.map_affine_stationaryLaw,
+    ExtremeValueTheory.SRE.eq_stationaryLaw, ExtremeValueTheory.SRE.isStationary_chain, ExtremeValueTheory.SRE.solution, ExtremeValueTheory.SRE.solution_eq, ExtremeValueTheory.SRE.ae_eq_solution_of_tight}
+  \leanok
+  If $\log|A|$ is integrable with $\E\log|A| < 0$ and $\E\log^+|B| < \infty$, the perpetuity $\sum_k A_0\cdots A_{k-1}B_k$
+  converges almost surely; its law is the unique solution of $X \overset{d}{=} AX + B$, the chain started from it is stationary,
+  and for iid $(A_t, B_t)_{t \in \mathbb Z}$ every solution bounded in probability equals the backward series almost surely
+  [Buraczewski, Damek and Mikosch, Theorem~2.1.3].
+\end{theorem}
+\begin{proof}
+  \leanok
+  The strong law of large numbers for $\log|A_i|$ gives geometric decay of the products.
+\end{proof}
+
+\begin{theorem}[Moments and tail index of the stationary solution]
+  \label{thm:sre-tails}
+  \uses{thm:sre-stationary}
+  \lean{ExtremeValueTheory.SRE.lintegral_enorm_rpow_stationaryLaw_lt_top, ExtremeValueTheory.SRE.lintegral_enorm_rpow_stationaryLaw_lt_top_of_lt,
+    ExtremeValueTheory.SRE.lintegral_enorm_rpow_stationaryLaw_eq_top_of_lt, ExtremeValueTheory.SRE.exists_stationaryLaw_tail_le, ExtremeValueTheory.SRE.not_stationaryLaw_tail_le,
+    ExtremeValueTheory.SRE.exists_integral_abs_rpow_eq_one, ExtremeValueTheory.SRE.kesten_exponent_unique}
+  \leanok
+  Let $\kappa > 0$ solve $\E|A|^\kappa = 1$ (it exists and is unique under the stated conditions). Then $\E|X|^s < \infty$ for
+  $s < \kappa$ and, for $A, B \ge 0$, $\E X^s = \infty$ for $s > \kappa$; so $\PR(|X| > x) = O(x^{-s})$ for every $s < \kappa$ and
+  for no $s > \kappa$. The sharp Kesten--Goldie asymptotics $\PR(X > x) \sim c_+ x^{-\kappa}$ is not formalized: it needs the key
+  renewal theorem.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Minkowski's inequality on the backward iterates, strict convexity of $s \mapsto \E|A|^s$, and the layer-cake formula.
+\end{proof}
+
+\begin{theorem}[GARCH(1,1) and ARCH(1)]
+  \label{thm:garch}
+  \uses{thm:sre-tails}
+  \lean{ExtremeValueTheory.SRE.GARCH.coeff, ExtremeValueTheory.SRE.GARCH.isStationary, ExtremeValueTheory.SRE.GARCH.exists_tail_index, ExtremeValueTheory.SRE.GARCH.tail_bounds}
+  \leanok
+  The squared volatility $\sigma^2_{t+1} = \alpha_0 + (\alpha_1 Z_t^2 + \beta_1)\sigma^2_t$ has a unique stationary law when
+  $\E\log(\alpha_1 Z^2 + \beta_1) < 0$, and its tail index is the solution $\kappa$ of $\E(\alpha_1 Z^2 + \beta_1)^\kappa = 1$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Specialize the stochastic recurrence equation results to $A = \alpha_1 Z^2 + \beta_1$, $B = \alpha_0$.
+\end{proof}
