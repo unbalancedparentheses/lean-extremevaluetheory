@@ -24,6 +24,10 @@ standardization of `ν`.
 * `marginal_tailQuantile_eq`: `F_i(U_i(s)) = 1 - 1/s` for a continuous marginal.
 * `isMDAWith_of_tendsto`: the converse direction "⇐".
 * `isMDAWith_iff`: the characterization.
+* `tendsto_measureReal_Iic_frechetStandardization_lower`: `G(x)` is the limit of the standardized
+  distribution function along unit Fréchet points approaching the marginal values from below.
+* `IsMDAWith.exists_pow_eq`: multivariate extreme value distributions are max-stable,
+  `G(α x + β) ^ k = G(x)`.
 
 ## References
 
@@ -69,6 +73,43 @@ lemma frechetParam {v : ℝ} (h0 : 0 < v) (h1 : v < 1) :
 
 variable [Fintype ι] {μ ν : Measure (ι → ℝ)} [IsProbabilityMeasure μ]
   [IsProbabilityMeasure ν] {a b : ℕ → ι → ℝ}
+
+/-- **Approximation from below in the standardized scale**: if all marginal values
+`u_i = G_i(x_i)` are positive, then `G_0(y(r)) → G(x)` as `r ↑ 1`, where `y(r)_i = -1 / log (r u_i)`
+is the unit Fréchet point with `exp (-1 / y(r)_i) = r u_i`. -/
+theorem tendsto_measureReal_Iic_frechetStandardization_lower
+    (hcν : ∀ i, Continuous (marginal ν i)) {x : ι → ℝ} (hu0 : ∀ i, 0 < marginal ν i (x i)) :
+    Tendsto (fun r : ℝ ↦ (frechetStandardization ν).real
+      (Iic fun i ↦ -1 / Real.log (r * marginal ν i (x i)))) (𝓝[<] 1) (𝓝 (ν.real (Iic x))) := by
+  set u : ι → ℝ := fun i ↦ marginal ν i (x i)
+  have hu1 : ∀ i, u i ≤ 1 := fun i ↦ (marginal ν i).apply_le_one _
+  set d : ℝ := (Fintype.card ι : ℝ) with hd_def
+  set yl : ℝ → ι → ℝ := fun r i ↦ -1 / Real.log (r * u i)
+  have hyl : ∀ r ∈ Ioo (0 : ℝ) 1, ∀ i, 0 < yl r i ∧ Real.exp (-1 / yl r i) = r * u i :=
+    fun r hr i ↦ frechetParam (mul_pos hr.1 (hu0 i))
+      (lt_of_lt_of_le (mul_lt_of_lt_one_left (hu0 i) hr.2) (hu1 i))
+  have hbound : ∀ r ∈ Ioo (0 : ℝ) 1,
+      |(frechetStandardization ν).real (Iic (yl r)) - ν.real (Iic x)| ≤ d * (1 - r) := by
+    intro r hr
+    have hy : ∀ i, 0 < yl r i := fun i ↦ (hyl r hr i).1
+    rw [measureReal_Iic_frechetStandardization_eq hcν hy]
+    refine (abs_measureReal_Iic_sub_le (μ := ν) (frechetPoint ν (yl r)) x).trans ?_
+    have : ∀ i, |marginal ν i (frechetPoint ν (yl r) i) - marginal ν i (x i)| ≤ 1 - r :=
+      fun i ↦ by
+        rw [marginal_frechetPoint hcν hy, (hyl r hr i).2,
+          show r * u i - marginal ν i (x i) = -((1 - r) * u i) by ring, abs_neg,
+          abs_of_nonneg (mul_nonneg (by linarith [hr.2]) (hu0 i).le)]
+        nlinarith [hu1 i, hr.2]
+    calc ∑ i, |marginal ν i (frechetPoint ν (yl r) i) - marginal ν i (x i)|
+        ≤ ∑ _i : ι, (1 - r) := Finset.sum_le_sum fun i _ ↦ this i
+      _ = d * (1 - r) := by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+  refine tendsto_iff_dist_tendsto_zero.2 (squeeze_zero' (g := fun r ↦ d * (1 - r))
+    (Eventually.of_forall fun _ ↦ dist_nonneg) ?_ ?_)
+  · filter_upwards [Ioo_mem_nhdsLT (show (0 : ℝ) < 1 from one_pos)] with r hr
+    rw [Real.dist_eq]; exact hbound r hr
+  · have : Tendsto (fun r : ℝ ↦ d * (1 - r)) (𝓝 1) (𝓝 (d * (1 - 1))) :=
+      tendsto_const_nhds.mul (tendsto_const_nhds.sub tendsto_id)
+    simpa using this.mono_left nhdsWithin_le_nhds
 
 /-- **The converse** ([dHF, Theorem 6.2.1]; [Res87, Proposition 5.10]): for continuous marginals
 of `μ` and `ν`, if every marginal of `μ` is in the domain of attraction of the corresponding
@@ -150,15 +191,6 @@ theorem isMDAWith_of_tendsto (hcμ : ∀ i, Continuous (marginal μ i))
   have hyl : ∀ r ∈ Ioo (0 : ℝ) 1, ∀ i, 0 < yl r i ∧ Real.exp (-1 / yl r i) = r * u i :=
     fun r hr i ↦ frechetParam (mul_pos hr.1 (hu0 i))
       (lt_of_lt_of_le (mul_lt_of_lt_one_left (hu0 i) hr.2) (hu1 i))
-  have hyl_bound : ∀ r ∈ Ioo (0 : ℝ) 1, |ν₀.real (Iic (yl r)) - ν.real (Iic x)| ≤ d * (1 - r) := by
-    intro r hr
-    refine (hlip _ fun i ↦ (hyl r hr i).1).trans ?_
-    have : ∀ i, |Real.exp (-1 / yl r i) - u i| ≤ 1 - r := fun i ↦ by
-      rw [(hyl r hr i).2, show r * u i - u i = -((1 - r) * u i) by ring, abs_neg,
-        abs_of_nonneg (mul_nonneg (by linarith [hr.2]) (hu0 i).le)]
-      nlinarith [hu1 i, hr.2]
-    calc ∑ i, |Real.exp (-1 / yl r i) - u i| ≤ ∑ _i : ι, (1 - r) := Finset.sum_le_sum fun i _ ↦ this i
-      _ = d * (1 - r) := by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
   -- positivity of `G(x)`
   have hGpos : 0 < ν.real (Iic x) := by
     have hr : (1 / 2 : ℝ) ∈ Ioo (0 : ℝ) 1 := ⟨by norm_num, by norm_num⟩
@@ -199,14 +231,8 @@ theorem isMDAWith_of_tendsto (hcμ : ∀ i, Continuous (marginal μ i))
     calc ∑ i, |Real.exp (-1 / yh r i) - u i| ≤ ∑ _i : ι, r := Finset.sum_le_sum fun i _ ↦ this i
       _ = d * r := by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
   -- continuity of the bounds in the parameter
-  have hA : Tendsto (fun r ↦ maxStableExponent ν₀ (yl r)) (𝓝[<] 1) (𝓝 L) := by
-    refine hlogc.comp (tendsto_iff_dist_tendsto_zero.2 (squeeze_zero' (g := fun r ↦ d * (1 - r))
-      (Eventually.of_forall fun _ ↦ dist_nonneg) ?_ ?_))
-    · filter_upwards [Ioo_mem_nhdsLT (show (0 : ℝ) < 1 from one_pos)] with r hr
-      rw [Real.dist_eq]; exact hyl_bound r hr
-    · have : Tendsto (fun r : ℝ ↦ d * (1 - r)) (𝓝 1) (𝓝 (d * (1 - 1))) :=
-        tendsto_const_nhds.mul (tendsto_const_nhds.sub tendsto_id)
-      simpa using this.mono_left nhdsWithin_le_nhds
+  have hA : Tendsto (fun r ↦ maxStableExponent ν₀ (yl r)) (𝓝[<] 1) (𝓝 L) :=
+    hlogc.comp (tendsto_measureReal_Iic_frechetStandardization_lower hcν hu0)
   have hB : Tendsto (fun r ↦ maxStableExponent ν₀ (yh r) - ∑ i, c r i) (𝓝[>] 0) (𝓝 L) := by
     have h1 : Tendsto (fun r ↦ maxStableExponent ν₀ (yh r)) (𝓝[>] 0) (𝓝 L) := by
       refine hlogc.comp (tendsto_iff_dist_tendsto_zero.2 (squeeze_zero' (g := fun r ↦ d * r)
@@ -328,5 +354,66 @@ theorem isMDAWith_iff (hcμ : ∀ i, Continuous (marginal μ i))
   ⟨fun h ↦ ⟨fun i _ ↦ h.tendsto_marginal i (hcν i).continuousAt,
     fun _ hy ↦ h.tendsto_mul_one_sub_tailQuantile hcν hy⟩,
     fun h ↦ isMDAWith_of_tendsto hcμ hcν ha h.1 h.2⟩
+
+/-- **Multivariate extreme value distributions are max-stable** ([dHF, Theorem 6.1.1];
+[Res87, Proposition 5.9]): if `μ` is in the domain of attraction of `ν` and the marginals of `ν`
+are nondegenerate, then for every `k ≥ 1` there are `α > 0` and `β` (coordinatewise) with
+`G(α x + β) ^ k = G(x)` for all `x`. -/
+theorem IsMDAWith.exists_pow_eq (h : IsMDAWith μ ν a b) (hnd : ∀ i, ¬ (marginal ν i).IsDegenerate)
+    {k : ℕ} (hk : 1 ≤ k) :
+    ∃ α β : ι → ℝ, (∀ i, 0 < α i) ∧ ∀ x, ν.real (Iic (α * x + β)) ^ k = ν.real (Iic x) := by
+  have hcν : ∀ i, Continuous (marginal ν i) := fun i ↦ h.continuous_marginal (hnd i)
+  have hms := fun i ↦ ((h.isExtremeValueDistr_marginal (hnd i)).isMaxStable).2 k hk
+  choose α β hα hαβ using hms
+  refine ⟨α, β, hα, fun x ↦ ?_⟩
+  set x' : ι → ℝ := α * x + β
+  have hx' : ∀ i, marginal ν i (x' i) ^ k = marginal ν i (x i) := fun i ↦ hαβ i (x i)
+  by_cases h0 : ∃ i, marginal ν i (x i) = 0
+  · obtain ⟨i, hi⟩ := h0
+    have hi' : marginal ν i (x' i) = 0 := by
+      have := hx' i; rw [hi] at this; exact pow_eq_zero_iff (by omega) |>.1 this
+    have e1 : ν.real (Iic x) = 0 :=
+      le_antisymm (hi ▸ measureReal_Iic_le_marginal x i) measureReal_nonneg
+    have e2 : ν.real (Iic x') = 0 :=
+      le_antisymm (hi' ▸ measureReal_Iic_le_marginal x' i) measureReal_nonneg
+    rw [e1, e2, zero_pow (by omega)]
+  push Not at h0
+  have hu0 : ∀ i, 0 < marginal ν i (x i) := fun i ↦
+    lt_of_le_of_ne ((marginal ν i).apply_nonneg _) (h0 i).symm
+  have hu0' : ∀ i, 0 < marginal ν i (x' i) := fun i ↦ by
+    rcases ((marginal ν i).apply_nonneg (x' i)).lt_or_eq with hp | hp
+    · exact hp
+    · have := hx' i; rw [← hp, zero_pow (by omega)] at this; exact absurd this.symm (h0 i)
+  set ν₀ := frechetStandardization ν
+  have hms₀ := h.isSimpleMaxStable_frechetStandardization hcν
+  set w : ℝ → ι → ℝ := fun r i ↦ -1 / Real.log (r * marginal ν i (x' i))
+  set wx : ℝ → ι → ℝ := fun r i ↦ -1 / Real.log (r * marginal ν i (x i))
+  have hk0 : (k : ℝ) ≠ 0 := Nat.cast_ne_zero.2 (by omega)
+  -- the scaling identity `G_0(w(r)) ^ k = G_0(w_x(r ^ k))`
+  have hid : ∀ r ∈ Ioo (0 : ℝ) 1, ν₀.real (Iic (w r)) ^ k = ν₀.real (Iic (wx (r ^ k))) := by
+    intro r hr
+    have hw : ∀ i, 0 < w r i := fun i ↦ (frechetParam (mul_pos hr.1 (hu0' i))
+      (lt_of_lt_of_le (mul_lt_of_lt_one_left (hu0' i) hr.2)
+        ((marginal ν i).apply_le_one _))).1
+    rw [hms₀.measureReal_Iic_pow (by omega) hw]
+    congr 2
+    funext i
+    simp only [w, wx, Pi.smul_apply, smul_eq_mul]
+    rw [← hx' i, ← mul_pow, Real.log_pow]
+    have hl : Real.log (r * marginal ν i (x' i)) ≠ 0 :=
+      (Real.log_neg (mul_pos hr.1 (hu0' i)) (lt_of_lt_of_le
+        (mul_lt_of_lt_one_left (hu0' i) hr.2) ((marginal ν i).apply_le_one _))).ne
+    field_simp
+  have hL := ((tendsto_measureReal_Iic_frechetStandardization_lower hcν hu0').pow k)
+  have hpowk : Tendsto (fun r : ℝ ↦ r ^ k) (𝓝[<] 1) (𝓝[<] 1) := by
+    refine tendsto_nhdsWithin_iff.2 ⟨?_, ?_⟩
+    · have := ((continuous_pow k).tendsto (1 : ℝ)).mono_left (nhdsWithin_le_nhds (s := Iio 1))
+      simpa using this
+    · filter_upwards [Ioo_mem_nhdsLT (show (0 : ℝ) < 1 from one_pos)] with r hr
+      exact pow_lt_one₀ hr.1.le hr.2 (by omega)
+  have hR := (tendsto_measureReal_Iic_frechetStandardization_lower hcν hu0).comp hpowk
+  refine tendsto_nhds_unique (hL.congr' ?_) hR
+  filter_upwards [Ioo_mem_nhdsLT (show (0 : ℝ) < 1 from one_pos)] with r hr
+  exact hid r hr
 
 end ExtremeValueTheory
