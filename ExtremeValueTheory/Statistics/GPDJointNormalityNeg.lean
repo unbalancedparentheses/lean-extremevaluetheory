@@ -992,4 +992,95 @@ theorem eventually_quad_avg_segHess_le {lam : ℝ} (hlam : 0 < lam) {m₁₁ m�
 
 end Averages
 
+/-! ### Linear algebra of the linearized likelihood equations -/
+
+section LinAlg
+
+/-- The Fisher information is uniformly positive definite for `-1/2 < ξ < 0`:
+`tᵀ (-I) t ≤ -|t|²/(4 (1 + ξ)(1 + σ²))`. -/
+lemma gpdInfo_quad_le {ξ σ : ℝ} (hξ : -1 / 2 < ξ) (hξ' : ξ < 0) (hσ : 0 < σ) (t₁ t₂ : ℝ) :
+    t₁ ^ 2 * -(2 / ((1 + ξ) * (1 + 2 * ξ))) +
+        2 * t₁ * t₂ * -(1 / (σ * (1 + ξ) * (1 + 2 * ξ))) +
+        t₂ ^ 2 * -(1 / (σ ^ 2 * (1 + 2 * ξ))) ≤
+      -(1 / (4 * (1 + ξ) * (1 + σ ^ 2))) * (t₁ ^ 2 + t₂ ^ 2) := by
+  have ha : 0 < 1 + ξ := by linarith
+  have hb : 0 < 1 + 2 * ξ := by linarith
+  set s := t₂ / σ with hs
+  have ht₂ : t₂ = σ * s := by simp only [hs]; field_simp
+  have e : t₁ ^ 2 * -(2 / ((1 + ξ) * (1 + 2 * ξ))) +
+      2 * t₁ * t₂ * -(1 / (σ * (1 + ξ) * (1 + 2 * ξ))) +
+      t₂ ^ 2 * -(1 / (σ ^ 2 * (1 + 2 * ξ))) =
+      -((2 * t₁ ^ 2 + 2 * t₁ * s + (1 + ξ) * s ^ 2) / ((1 + ξ) * (1 + 2 * ξ))) := by
+    rw [ht₂]; field_simp; ring
+  rw [e]
+  have hQ : (1 + 2 * ξ) / 4 * (t₁ ^ 2 + s ^ 2) ≤ 2 * t₁ ^ 2 + 2 * t₁ * s + (1 + ξ) * s ^ 2 := by
+    have h_a : t₁ ^ 2 ≤ 2 * (t₁ + s / 2) ^ 2 + s ^ 2 / 2 := by nlinarith [sq_nonneg (t₁ + s)]
+    nlinarith [mul_le_mul_of_nonneg_left h_a (by linarith : (0 : ℝ) ≤ (1 + 2 * ξ) / 4),
+      mul_nonneg (by linarith : (0 : ℝ) ≤ -ξ) (sq_nonneg (t₁ + s / 2)),
+      mul_nonneg hb.le (sq_nonneg s), sq_nonneg (t₁ + s / 2)]
+  have hs2 : t₂ ^ 2 / (1 + σ ^ 2) ≤ s ^ 2 := by
+    rw [hs, div_pow, div_le_div_iff₀ (by positivity) (by positivity)]
+    nlinarith [sq_nonneg t₂, sq_nonneg σ]
+  have ht1 : t₁ ^ 2 / (1 + σ ^ 2) ≤ t₁ ^ 2 := div_le_self (sq_nonneg _) (by nlinarith)
+  have h1 : (t₁ ^ 2 + t₂ ^ 2) / (1 + σ ^ 2) ≤ t₁ ^ 2 + s ^ 2 := by rw [add_div]; linarith
+  have h2 : 1 / (4 * (1 + ξ) * (1 + σ ^ 2)) * (t₁ ^ 2 + t₂ ^ 2) =
+      (1 + 2 * ξ) / 4 * ((t₁ ^ 2 + t₂ ^ 2) / (1 + σ ^ 2)) / ((1 + ξ) * (1 + 2 * ξ)) := by
+    have : 1 + ξ * 2 ≠ 0 := by intro h; linarith
+    field_simp
+  have h3 : (1 + 2 * ξ) / 4 * ((t₁ ^ 2 + t₂ ^ 2) / (1 + σ ^ 2)) ≤
+      2 * t₁ ^ 2 + 2 * t₁ * s + (1 + ξ) * s ^ 2 :=
+    (mul_le_mul_of_nonneg_left h1 (by positivity)).trans hQ
+  have h4 := div_le_div_of_nonneg_right h3 (by positivity : (0 : ℝ) ≤ (1 + ξ) * (1 + 2 * ξ))
+  rw [neg_mul, h2]
+  linarith
+
+/-- If `S = -B T` with `tᵀ B t ≤ -(λ/2)|t|²`, then `|T₁| + |T₂| ≤ (4/λ)(|S₁| + |S₂|)`. -/
+lemma abs_add_abs_le_of_quad {B₁₁ B₁₂ B₂₂ S₁ S₂ T₁ T₂ lam : ℝ} (hlam : 0 < lam)
+    (hq : ∀ t₁ t₂ : ℝ, t₁ ^ 2 * B₁₁ + 2 * t₁ * t₂ * B₁₂ + t₂ ^ 2 * B₂₂ ≤
+      -(lam / 2) * (t₁ ^ 2 + t₂ ^ 2))
+    (hS₁ : S₁ = -(B₁₁ * T₁ + B₁₂ * T₂)) (hS₂ : S₂ = -(B₁₂ * T₁ + B₂₂ * T₂)) :
+    |T₁| + |T₂| ≤ 4 / lam * (|S₁| + |S₂|) := by
+  have h := hq T₁ T₂
+  have hTS : (lam / 2) * (T₁ ^ 2 + T₂ ^ 2) ≤ T₁ * S₁ + T₂ * S₂ := by
+    rw [hS₁, hS₂]; nlinarith
+  have hCS : T₁ * S₁ + T₂ * S₂ ≤ (|T₁| + |T₂|) * (|S₁| + |S₂|) := by
+    have a1 : T₁ * S₁ ≤ |T₁| * |S₁| := by rw [← abs_mul]; exact le_abs_self _
+    have a2 : T₂ * S₂ ≤ |T₂| * |S₂| := by rw [← abs_mul]; exact le_abs_self _
+    nlinarith [abs_nonneg T₁, abs_nonneg T₂, abs_nonneg S₁, abs_nonneg S₂]
+  have hsq : (|T₁| + |T₂|) ^ 2 ≤ 2 * (T₁ ^ 2 + T₂ ^ 2) := by
+    nlinarith [sq_abs T₁, sq_abs T₂, sq_nonneg (|T₁| - |T₂|)]
+  set u := |T₁| + |T₂|
+  set v := |S₁| + |S₂|
+  have hu : 0 ≤ u := by positivity
+  have hv : 0 ≤ v := by positivity
+  have key : lam / 4 * u ^ 2 ≤ u * v := by nlinarith
+  rw [div_mul_eq_mul_div, le_div_iff₀ hlam]
+  rcases hu.eq_or_lt with h0 | h0
+  · rw [← h0, zero_mul]; positivity
+  · nlinarith
+
+/-- If `tᵀ B t ≤ -(λ/2)|t|²`, then `det B > 0`. -/
+lemma det_pos_of_quad {B₁₁ B₁₂ B₂₂ lam : ℝ} (hlam : 0 < lam)
+    (hq : ∀ t₁ t₂ : ℝ, t₁ ^ 2 * B₁₁ + 2 * t₁ * t₂ * B₁₂ + t₂ ^ 2 * B₂₂ ≤
+      -(lam / 2) * (t₁ ^ 2 + t₂ ^ 2)) :
+    0 < B₁₁ * B₂₂ - B₁₂ ^ 2 := by
+  have h1 := hq 1 0
+  have h2 := hq B₁₂ (-B₁₁)
+  simp only [one_pow, one_mul, mul_zero, zero_mul, add_zero, ne_eq, OfNat.ofNat_ne_zero,
+    not_false_eq_true, zero_pow, mul_one] at h1
+  have hB : B₁₁ < 0 := by linarith
+  have e : B₁₂ ^ 2 * B₁₁ + 2 * B₁₂ * -B₁₁ * B₁₂ + (-B₁₁) ^ 2 * B₂₂ =
+      B₁₁ * (B₁₁ * B₂₂ - B₁₂ ^ 2) := by ring
+  rw [e] at h2
+  have hpos : 0 < lam / 2 * (B₁₂ ^ 2 + (-B₁₁) ^ 2) := by
+    have : 0 < (-B₁₁) ^ 2 := pow_pos (by linarith) 2
+    have := sq_nonneg B₁₂
+    positivity
+  have : B₁₁ * (B₁₁ * B₂₂ - B₁₂ ^ 2) < 0 := by linarith
+  by_contra hcon
+  have := mul_nonneg_of_nonpos_of_nonpos hB.le (not_lt.1 hcon)
+  linarith
+
+end LinAlg
+
 end ExtremeValueTheory
