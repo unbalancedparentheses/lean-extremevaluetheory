@@ -6,6 +6,8 @@ Authors: Federico Carrone
 import ExtremeValueTheory.Statistics.HillCluster
 import ExtremeValueTheory.Dependence.Mixing
 import ExtremeValueTheory.Statistics.Moment
+import ExtremeValueTheory.Dependence.EchoPhaseTransition
+import ExtremeValueTheory.Minimality.DependenceMixing
 
 /-!
 # Estimators of the extremal index: blocks and runs
@@ -1016,5 +1018,288 @@ theorem HasSpectralTailProcess.tendstoInMeasure_runsEstimator (hα : 0 < α)
   simpa using h.tendsto_runsRatio hα hX hΘm hu hr hAC
 
 end TailProcess
+
+/-! ### The echo process: blocks are consistent, short runs are not -/
+
+section Echo
+
+/-- `2 B / (2 r p) - 1 ≤ D / p` from `B ≤ r p + r D`. -/
+theorem two_mul_div_sub_one_le {B D p r : ℝ} (hp : 0 < p) (hr : 0 < r)
+    (h : B ≤ r * p + r * D) : 2 * (B / (2 * r * p)) - 1 ≤ D / p := by
+  rw [show 2 * (B / (2 * r * p)) - 1 = (B - r * p) / (r * p) by field_simp,
+    div_le_div_iff₀ (by positivity) hp]
+  nlinarith
+
+/-- `n² e^{-α rₙ} → 0` when `log n = o(rₙ)`. -/
+theorem tendsto_sq_mul_exp_neg_pow {α : ℝ} (hα : 0 < α) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hlog : Tendsto (fun n : ℕ => Real.log n / r n) atTop (𝓝 0)) :
+    Tendsto (fun n : ℕ => (n : ℝ) ^ 2 * Real.exp (-α) ^ r n) atTop (𝓝 0) := by
+  have hrR : Tendsto (fun n => (r n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hr
+  have hin : Tendsto (fun n : ℕ => 2 * (Real.log n / r n) - α) atTop (𝓝 (-α)) := by
+    simpa using (hlog.const_mul 2).sub_const α
+  have hbot := hrR.atTop_mul_neg (by linarith) hin
+  refine (Real.tendsto_exp_atBot.comp hbot).congr' ?_
+  filter_upwards [eventually_gt_atTop 0, hr.eventually_gt_atTop 0] with n hn hrn
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+  have hr' : (0 : ℝ) < r n := by exact_mod_cast hrn
+  simp only [Function.comp_apply]
+  rw [← Real.exp_nat_mul, ← Real.exp_log hn', ← Real.exp_nat_mul (Real.log n), Real.exp_log hn',
+    ← Real.exp_add]
+  congr 1
+  field_simp
+  push_cast
+  ring
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+  {α : ℝ} {Z : ℤ → Ω → ℝ}
+
+/-- The constant of the geometric mixing bound of the logarithmic echo process. -/
+noncomputable def echoMixConst (α : ℝ) : ℝ := 2 * (2 ^ α * Real.exp α / (1 - Real.exp (-α)))
+
+theorem echoMixConst_nonneg (hα : 0 < α) : 0 ≤ echoMixConst α := by
+  have : Real.exp (-α) < 1 := Real.exp_lt_one_iff.2 (by linarith)
+  unfold echoMixConst
+  have : 0 < 1 - Real.exp (-α) := by linarith
+  positivity
+
+/-- `a / n ≤ a / (n p)` for `0 < n p` and `p ≤ 1`. -/
+theorem div_le_div_mul_of_le_one {a : ℝ} {n : ℕ} {p : ℝ} (ha : 0 ≤ a) (hn : 0 < (n : ℝ) * p)
+    (hp1 : p ≤ 1) : a / n ≤ a / (n * p) := by
+  obtain ⟨hn0, hp0⟩ := pos_and_pos_of_mul_pos hn
+  exact div_le_div_of_nonneg_left ha hn (by nlinarith)
+
+/-- `n pₙ ≥ 1` gives `n pₙ² ≥ 1 / n`. -/
+theorem inv_le_mul_sq {n : ℕ} {p : ℝ} (hn : 1 ≤ (n : ℝ) * p) :
+    1 / (n : ℝ) ≤ n * p ^ 2 ∧ 1 / (n : ℝ) ≤ p := by
+  obtain ⟨hn0, hp0⟩ := pos_and_pos_of_mul_pos (lt_of_lt_of_le one_pos hn)
+  have h1 : 1 / (n : ℝ) ≤ p := by rw [div_le_iff₀ hn0]; linarith
+  refine ⟨?_, h1⟩
+  calc 1 / (n : ℝ) ≤ p := h1
+    _ = 1 * p := (one_mul p).symm
+    _ ≤ (n * p) * p := by gcongr
+    _ = n * p ^ 2 := by ring
+
+/-- **The mixing conditions hold for the logarithmic echo process** at every level with
+`n pₙ → ∞`, for gaps `sₙ` with `log n = o(sₙ)`: `∑_{sₙ < h < n} α(h) = o(n pₙ²)`. -/
+theorem logEcho_tendsto_sum_alphaMixing_div (hα : 0 < α) (hZ : ∀ t, Measurable (Z t)) (hind : iIndepFun Z P)
+    (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α) {u : ℕ → ℝ}
+    (hk : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess logLag Z (0 : ℕ) ω}) atTop
+      atTop)
+    {s : ℕ → ℕ} (hs : Tendsto s atTop atTop)
+    (hlog : Tendsto (fun n : ℕ => Real.log n / s n) atTop (𝓝 0)) :
+    Tendsto (fun n : ℕ => (∑ h ∈ Ico (s n + 1) n,
+      (alphaMixing (fun k : ℕ => echoProcess logLag Z k) P h).toReal) /
+        (n * P.real {ω | u n < echoProcess logLag Z (0 : ℕ) ω} ^ 2)) atTop (𝓝 0) := by
+  set q := Real.exp (-α)
+  have hq0 : 0 ≤ q := (Real.exp_pos _).le
+  have hq1 : q < 1 := Real.exp_lt_one_iff.2 (by linarith)
+  have hC := echoMixConst_nonneg hα
+  have hlim := (tendsto_sq_mul_exp_neg_pow hα hs hlog).const_mul (echoMixConst α / (1 - q))
+  rw [mul_zero] at hlim
+  refine squeeze_zero' (Eventually.of_forall fun n => div_nonneg
+    (Finset.sum_nonneg fun _ _ => ENNReal.toReal_nonneg) (by positivity)) ?_ hlim
+  filter_upwards [hk.eventually_ge_atTop 1] with n hn
+  set p := P.real {ω | u n < echoProcess logLag Z (0 : ℕ) ω}
+  obtain ⟨hn0, hp0⟩ := pos_and_pos_of_mul_pos (lt_of_lt_of_le one_pos hn)
+  have hn1 : (1 : ℝ) ≤ n := by
+    have : 0 < n := by exact_mod_cast hn0
+    exact_mod_cast this
+  obtain ⟨hden, -⟩ := inv_le_mul_sq hn
+  have hsum : ∑ h ∈ Ico (s n + 1) n,
+      (alphaMixing (fun k : ℕ => echoProcess logLag Z k) P h).toReal ≤
+        echoMixConst α / (1 - q) * q ^ s n := by
+    calc _ ≤ ∑ h ∈ Ico (s n + 1) n, echoMixConst α * q ^ h :=
+          Finset.sum_le_sum fun h hh => alphaMixing_logEchoProcess_le hα hZ hind hlaw
+            (by rw [Finset.mem_Ico] at hh; omega)
+      _ = echoMixConst α * ∑ h ∈ Ico (s n + 1) n, q ^ h := by rw [Finset.mul_sum]
+      _ ≤ echoMixConst α * (q ^ (s n + 1) / (1 - q)) := by
+          gcongr; exact geom_sum_Ico_le_of_lt_one hq0 hq1
+      _ ≤ echoMixConst α * (q ^ s n / (1 - q)) :=
+          mul_le_mul_of_nonneg_left (div_le_div_of_nonneg_right
+            (pow_le_pow_of_le_one hq0 hq1.le (Nat.le_succ _)) (by linarith)) hC
+      _ = _ := by ring
+  have hpos : 0 < (n : ℝ) * p ^ 2 := by positivity
+  rw [div_le_iff₀ hpos]
+  refine hsum.trans ?_
+  have h1q : 0 < 1 - q := by linarith
+  have hA : 0 ≤ echoMixConst α / (1 - q) * q ^ s n := by positivity
+  calc echoMixConst α / (1 - q) * q ^ s n
+      = echoMixConst α / (1 - q) * ((n : ℝ) ^ 2 * q ^ s n) * (1 / n) * (1 / n) := by
+        field_simp
+    _ ≤ echoMixConst α / (1 - q) * ((n : ℝ) ^ 2 * q ^ s n) * (1 / n) * (n * p ^ 2) := by
+        gcongr
+    _ ≤ echoMixConst α / (1 - q) * ((n : ℝ) ^ 2 * q ^ s n) * 1 * (n * p ^ 2) := by
+        have : 1 / (n : ℝ) ≤ 1 := by rw [div_le_one hn0]; exact hn1
+        gcongr
+    _ = _ := by ring
+
+/-- **The block mixing condition holds for the logarithmic echo process**:
+`α(rₙ + 1) = o((rₙ pₙ)²)` when `n pₙ → ∞` and `log n = o(rₙ)`. -/
+theorem logEcho_tendsto_alphaMixing_div (hα : 0 < α) (hZ : ∀ t, Measurable (Z t)) (hind : iIndepFun Z P)
+    (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α) {u : ℕ → ℝ}
+    (hk : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess logLag Z (0 : ℕ) ω}) atTop
+      atTop)
+    {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hlog : Tendsto (fun n : ℕ => Real.log n / r n) atTop (𝓝 0)) :
+    Tendsto (fun n => (alphaMixing (fun k : ℕ => echoProcess logLag Z k) P (r n + 1)).toReal /
+      (r n * P.real {ω | u n < echoProcess logLag Z (0 : ℕ) ω}) ^ 2) atTop (𝓝 0) := by
+  set q := Real.exp (-α)
+  have hq0 : 0 ≤ q := (Real.exp_pos _).le
+  have hq1 : q < 1 := Real.exp_lt_one_iff.2 (by linarith)
+  have hC := echoMixConst_nonneg hα
+  have hlim := (tendsto_sq_mul_exp_neg_pow hα hr hlog).const_mul (echoMixConst α)
+  rw [mul_zero] at hlim
+  refine squeeze_zero' (Eventually.of_forall fun n => div_nonneg ENNReal.toReal_nonneg
+    (by positivity)) ?_ hlim
+  filter_upwards [hk.eventually_ge_atTop 1, hr.eventually_ge_atTop 1] with n hn hr1
+  set p := P.real {ω | u n < echoProcess logLag Z (0 : ℕ) ω}
+  obtain ⟨hn0, hp0⟩ := pos_and_pos_of_mul_pos (lt_of_lt_of_le one_pos hn)
+  obtain ⟨-, hp⟩ := inv_le_mul_sq hn
+  have hr1' : (1 : ℝ) ≤ r n := by exact_mod_cast hr1
+  have hα1 := alphaMixing_logEchoProcess_le hα hZ hind hlaw (h := r n + 1) (by omega) (P := P)
+  have hpow : q ^ (r n + 1) ≤ q ^ r n := pow_le_pow_of_le_one hq0 hq1.le (Nat.le_succ _)
+  have hrp : 1 / (n : ℝ) ≤ r n * p := by nlinarith
+  have hrp0 : 0 < (r n : ℝ) * p := by positivity
+  rw [div_le_iff₀ (by positivity)]
+  calc (alphaMixing (fun k : ℕ => echoProcess logLag Z k) P (r n + 1)).toReal
+      ≤ echoMixConst α * q ^ r n := hα1.trans (by unfold echoMixConst at *; gcongr)
+    _ = echoMixConst α * ((n : ℝ) ^ 2 * q ^ r n) * (1 / n) ^ 2 := by field_simp
+    _ ≤ echoMixConst α * ((n : ℝ) ^ 2 * q ^ r n) * (r n * p) ^ 2 := by gcongr
+
+variable (hα : 0 < α) (hZ : ∀ t, Measurable (Z t)) (hind : iIndepFun Z P)
+  (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α) (hpos : ∀ t ω, 0 ≤ Z t ω)
+
+include hpos in
+theorem logEcho_eq_abs :
+    (fun k : ℕ => echoProcess logLag Z k) = fun k : ℕ => |echoProcess logLag Z k| := by
+  funext k ω
+  exact (abs_of_nonneg (echoProcess_nonneg hpos _ ω)).symm
+
+include hα hZ hind hlaw hpos in
+/-- **The blocks estimator is consistent for the logarithmic echo process** (where `θ = 1/2`,
+`ϑ = 1`): with intermediate levels `n pₙ → ∞`, block lengths `rₙ = o(n pₙ)` with
+`log n = o(rₙ)` (so that the echo of an exceedance lands in its block), `log uₙ = o(rₙ)` and
+`rₙ uₙ^(-α) → 0`, `θ̂ᴮ → 1/2 = θ` in probability. The mixing conditions are verified from the
+geometric strong mixing of the echo process. -/
+theorem logEcho_tendstoInMeasure_blocksEstimator {u : ℕ → ℝ} (hu : Tendsto u atTop atTop)
+    {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0))
+    (hlogu : Tendsto (fun n => Real.log (u n) / r n) atTop (𝓝 0))
+    (hlogn : Tendsto (fun n : ℕ => Real.log n / r n) atTop (𝓝 0))
+    (hk : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess logLag Z (0 : ℕ) ω}) atTop
+      atTop)
+    (hrk : Tendsto (fun n : ℕ => (r n : ℝ) /
+      (n * P.real {ω | u n < echoProcess logLag Z (0 : ℕ) ω})) atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n => blocksEstimator (fun k : ℕ => echoProcess logLag Z k) n (r n)
+      (u n)) atTop (fun _ => 1 / 2) := by
+  have hX : ∀ t : ℕ, Measurable ((fun k : ℕ => echoProcess logLag Z k) t) := fun t =>
+    measurable_echoProcess hZ measurable_logLag _
+  have hs : IsStationary (fun k : ℕ => echoProcess logLag Z k) P := by
+    rw [logEcho_eq_abs hpos]
+    exact (hasShiftInvariantWindows_echoProcess hZ hind hlaw measurable_logLag).isStationary_abs
+      (measurable_echoProcess hZ measurable_logLag)
+  have hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0) := by
+    refine squeeze_zero' (Eventually.of_forall fun n => by positivity) ?_ hrk
+    filter_upwards [hk.eventually_gt_atTop 0] with n hn
+    exact div_le_div_mul_of_le_one (r n).cast_nonneg hn measureReal_le_one
+  refine tendstoInMeasure_blocksEstimator hX hs (hr.eventually_gt_atTop 0) hrn hk ?_ r
+    (tendsto_sum_measureReal_lt_and_lt_div_of_div (X := fun k : ℕ => echoProcess logLag Z k) hrk)
+    (logEcho_tendsto_sum_alphaMixing_div hα hZ hind hlaw hk hr hlogn)
+    (logEcho_tendsto_alphaMixing_div hα hZ hind hlaw hk hr hlogn)
+  have h := (logEchoProcess_hasEscapeMass hα hZ hind hlaw hpos hu hr hrb hlogu).1
+  refine h.congr fun n => ?_
+  have eB : P.real (blockEvent (fun k : ℕ => echoProcess logLag Z k) (r n) 0 (u n)) =
+      P.real {ω | ∃ t ∈ Finset.Ico (0 : ℤ) (r n), u n < |echoProcess logLag Z t ω|} := by
+    rw [logEcho_eq_abs hpos, blockEvent_abs]
+  have eP : P.real {ω | u n < echoProcess logLag Z ((0 : ℕ) : ℤ) ω} =
+      P.real {ω | u n < |echoProcess logLag Z 0 ω|} := by
+    congr 1; ext ω; simp [abs_of_nonneg (echoProcess_nonneg hpos _ ω)]
+  rw [eB, eP]
+  rfl
+
+include hα hZ hind hlaw hpos in
+/-- **Short runs are inconsistent for the logarithmic echo process** (a verified practitioner
+warning). With intermediate levels `n pₙ → ∞` and run lengths `rₙ → ∞`, `rₙ = o(log uₙ)` (shorter
+than the echo lag of an exceedance), and auxiliary gaps `sₙ` with `log n = o(sₙ)` and
+`rₙ + sₙ = o(n pₙ)`, the runs estimator tends to `1 = ϑ`, not to the extremal index `θ = 1/2`:
+each echo is counted as a cluster of its own. -/
+theorem logEcho_tendstoInMeasure_runsEstimator {u : ℕ → ℝ} (hu : Tendsto u atTop atTop)
+    {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hrlog : Tendsto (fun n => (r n : ℝ) / Real.log (u n)) atTop (𝓝 0))
+    (hk : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess logLag Z (0 : ℕ) ω}) atTop
+      atTop)
+    {s : ℕ → ℕ} (hs' : Tendsto s atTop atTop)
+    (hlogn : Tendsto (fun n : ℕ => Real.log n / s n) atTop (𝓝 0))
+    (hrsk : Tendsto (fun n : ℕ => ((r n + s n : ℕ) : ℝ) /
+      (n * P.real {ω | u n < echoProcess logLag Z (0 : ℕ) ω})) atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n => runsEstimator (fun k : ℕ => echoProcess logLag Z k) n (r n)
+      (u n)) atTop (fun _ => 1) := by
+  have hX : ∀ t : ℕ, Measurable ((fun k : ℕ => echoProcess logLag Z k) t) := fun t =>
+    measurable_echoProcess hZ measurable_logLag _
+  have hstat := hasShiftInvariantWindows_echoProcess hZ hind hlaw measurable_logLag
+  have hXm : ∀ t, Measurable (echoProcess logLag Z t) := measurable_echoProcess hZ measurable_logLag
+  have hs : IsStationary (fun k : ℕ => echoProcess logLag Z k) P := by
+    rw [logEcho_eq_abs hpos]
+    exact hstat.isStationary_abs hXm
+  have hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0) := by
+    refine squeeze_zero' (Eventually.of_forall fun n => by positivity) ?_ hrsk
+    filter_upwards [hk.eventually_gt_atTop 0] with n hn
+    refine (div_le_div_mul_of_le_one (r n).cast_nonneg hn measureReal_le_one).trans ?_
+    gcongr
+    exact_mod_cast Nat.le_add_right _ _
+  refine tendstoInMeasure_runsEstimator hX hs hrn hk ?_ s
+    (tendsto_sum_measureReal_lt_and_lt_div_of_div (X := fun k : ℕ => echoProcess logLag Z k) hrsk)
+    (logEcho_tendsto_sum_alphaMixing_div hα hZ hind hlaw hk hs' hlogn)
+  -- the runs ratio tends to `1`: it lies between `2 CR(2 rₙ) - 1` and `1`
+  have h2 : Tendsto (fun n => ((2 * r n : ℕ) : ℝ) / Real.log (u n)) atTop (𝓝 0) := by
+    simpa [mul_div_assoc] using hrlog.const_mul 2
+  have hshort : ∀ᶠ n in atTop, ∀ z, u n < z → 2 * r n ≤ logLag z := by
+    filter_upwards [h2.eventually (gt_mem_nhds one_pos), hu.eventually_gt_atTop 1]
+      with n hn hun z hz
+    have hl : 0 < Real.log (u n) := Real.log_pos hun
+    rw [div_lt_one hl] at hn
+    have h1 : 2 * r n ≤ ⌊Real.log (u n)⌋₊ := Nat.le_floor hn.le
+    have h2 := logLag_mono (by linarith) hz.le
+    simp only [logLag] at h2 ⊢
+    omega
+  have hrb : Tendsto (fun n => ((2 * r n : ℕ) : ℝ) * u n ^ (-α)) atTop (𝓝 0) := by
+    have hlo := ((isLittleO_log_rpow_atTop hα).tendsto_div_nhds_zero).comp hu
+    refine squeeze_zero' ((hu.eventually_gt_atTop 0).mono fun n hn =>
+      mul_nonneg (Nat.cast_nonneg _) (Real.rpow_nonneg hn.le _)) ?_ hlo
+    filter_upwards [h2.eventually (gt_mem_nhds one_pos), hu.eventually_gt_atTop 1]
+      with n hn hun
+    have hl : 0 < Real.log (u n) := Real.log_pos hun
+    rw [div_lt_one hl] at hn
+    have hu0 : 0 < u n := by linarith
+    simp only [Function.comp_apply]
+    rw [Real.rpow_neg hu0.le, ← div_eq_mul_inv]
+    gcongr
+  have hCR := tendsto_clusterRatio_echoProcess_short hα hZ hind hlaw hpos measurable_logLag
+    one_le_logLag hu ((hr.eventually_gt_atTop 0).mono fun n hn => by omega) hrb hshort
+  have hlow := (hCR.const_mul 2).sub_const 1
+  norm_num at hlow
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' hlow tendsto_const_nhds ?_ ?_
+  · filter_upwards [hr.eventually_gt_atTop 0] with n hn
+    have hb := (hstat.runs_bounds hXm (r n) (u n)).2
+    have hp0 : 0 < P.real {ω | u n < |echoProcess logLag Z 0 ω|} :=
+      (hasSpectralTailProcess_echoProcess hα hZ hind hlaw hpos measurable_logLag one_le_logLag
+        tendsto_logLag).measureReal_lt_abs_pos (u n)
+    have hrR : (0 : ℝ) < r n := by exact_mod_cast hn
+    have eR : P.real (runEvent (fun k : ℕ => echoProcess logLag Z k) (r n) 0 (u n)) =
+        P.real {ω | u n < |echoProcess logLag Z 0 ω| ∧
+          ∀ t ∈ Finset.Ioc (0 : ℤ) (r n), |echoProcess logLag Z t ω| ≤ u n} := by
+      rw [logEcho_eq_abs hpos, runEvent_abs]
+    have eP : P.real {ω | u n < echoProcess logLag Z ((0 : ℕ) : ℤ) ω} =
+        P.real {ω | u n < |echoProcess logLag Z 0 ω|} := by
+      congr 1; ext ω; simp [abs_of_nonneg (echoProcess_nonneg hpos _ ω)]
+    rw [eR, eP]
+    simp only [clusterRatio]
+    have key := two_mul_div_sub_one_le hp0 hrR hb
+    convert key using 4
+    push_cast; ring
+  · filter_upwards with n
+    exact div_le_one_of_le₀ (measureReal_mono fun ω hω => hω.1) measureReal_nonneg
+
+end Echo
 
 end ExtremeValueTheory
