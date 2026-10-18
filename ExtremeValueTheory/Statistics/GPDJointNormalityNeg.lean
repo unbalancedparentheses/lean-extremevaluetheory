@@ -8,7 +8,38 @@ import ExtremeValueTheory.Statistics.GPDJointNormality
 /-!
 # Joint asymptotic normality of the GPD maximum likelihood estimator, `-1/2 < ξ₀ < 0`
 
-TODO
+Let `X₀, X₁, …` be iid `GPD(ξ₀, σ₀)` with `-1/2 < ξ₀ < 0` (the regular case of [Smith 1985]
+with a finite, parameter-dependent endpoint `e₀ = -σ₀/ξ₀`). For measurable, strongly consistent,
+admissible roots `θ̂ₙ` of the likelihood equations we prove
+`√n (θ̂ₙ - θ₀) ⇒ N(0, I(θ₀)⁻¹)` (`tendstoInDistribution_gpdJointMLE_neg`).
+
+## Proof
+
+The uniform Lipschitz control of the Hessian used for `ξ₀ > 0` fails: `w = x/(σ + ξ x)` blows
+up near the endpoint. It is replaced by:
+
+* *A one-sided bound* (`gpdHess_quad_le`, `segHess_quad_le_neg`): for `-1 < ξ < 0` and every `x`
+  in the support, `tᵀ H(θ, x) t ≤ C₁ |t|²` — the terms of order `w²` and the logarithm have the
+  good sign (the blow-up is a positive semidefinite rank-one term in the endpoint direction).
+* *Local uniform convergence on good sets* `{σ₀ + ξ₀ x ≥ c}` (`exists_delta_segHess_good`), by
+  uniform continuity on a compact set.
+* *Domination* where `σ + ξ x ≥ (σ₀ + ξ₀ x)/2` (`abs_segHess_le_gpdDom`) by the integrable
+  `gpdDom = 1 + w₀ + w₀² - log(1 + ξ₀ x/σ₀)`, whose tails have vanishing mean.
+
+From the one-sided bound the averaged observed information is eventually uniformly positive
+definite almost surely (`eventually_quad_avg_segHess_le`), which gives the rate
+`√n |θ̂ₙ - θ₀|₁ ≤ (4/λ)(|S₁| + |S₂|) = O_P(1)`. With the endpoint estimate
+`max_{i<n} 1/(σ₀ + ξ₀ Xᵢ) = o_P(√n)` (`tendstoInMeasure_runMax_div_sqrt`, using `-1/ξ₀ > 2`),
+`rₙ = (1 + e₀) |θ̂ₙ - θ₀|₁ max_i 1/(σ₀ + ξ₀ Xᵢ) → 0` in probability, and on `{rₙ < 1/2}` every
+observation satisfies `σ̂ₙ + ξ̂ₙ Xᵢ ≥ (σ₀ + ξ₀ Xᵢ)/2` (`half_le_of_endpoint`), so the
+two-sided convergence `Bₙ → -I(θ₀)` holds there (`eventually_abs_avg_segHess_sub_le`); a
+continuous cutoff in `rₙ` turns this into convergence in probability. The conclusion is then as
+for `ξ₀ > 0` (Slutsky with the score CLT).
+
+## References
+
+* R. L. Smith, *Maximum likelihood estimation in a class of nonregular cases*, Biometrika 72
+  (1985).
 -/
 
 open Filter Topology Set Real MeasureTheory ProbabilityTheory
