@@ -683,4 +683,126 @@ theorem tendstoInMeasure_runsEstimator (hX : ∀ t, Measurable (X t)) (hs : IsSt
 
 end Consistency
 
+/-! ### Sufficient conditions for the cluster and mixing conditions -/
+
+section Conditions
+
+variable [IsProbabilityMeasure P] {X : ℕ → Ω → ℝ}
+
+/-- **Short cluster windows need no cluster condition**: if `Sₙ = o(n pₙ)`, then
+`∑_{1 ≤ h ≤ Sₙ} P(X_0 > uₙ, X_h > uₙ) = o(n pₙ²)` (each term is at most `pₙ`). -/
+theorem tendsto_sum_measureReal_lt_and_lt_div_of_div {u : ℕ → ℝ} {S : ℕ → ℕ}
+    (hS : Tendsto (fun n : ℕ => (S n : ℝ) / (n * P.real {ω | u n < X 0 ω})) atTop (𝓝 0)) :
+    Tendsto (fun n : ℕ => (∑ h ∈ Icc 1 (S n), P.real {ω | u n < X 0 ω ∧ u n < X h ω}) /
+      (n * P.real {ω | u n < X 0 ω} ^ 2)) atTop (𝓝 0) := by
+  refine squeeze_zero (fun n => div_nonneg (Finset.sum_nonneg fun _ _ => measureReal_nonneg)
+    (by positivity)) (fun n => ?_) hS
+  set p := P.real {ω | u n < X 0 ω}
+  have hsum : ∑ h ∈ Icc 1 (S n), P.real {ω | u n < X 0 ω ∧ u n < X h ω} ≤ S n * p := by
+    calc _ ≤ ∑ h ∈ Icc 1 (S n), p := sum_le_sum fun h _ => measureReal_mono fun ω hω => hω.1
+      _ = _ := by rw [sum_const, Nat.card_Icc, nsmul_eq_mul]; simp
+  rcases (measureReal_nonneg (μ := P) (s := {ω | u n < X 0 ω})).lt_or_eq with hp | hp
+  · rcases (Nat.cast_nonneg (α := ℝ) n).lt_or_eq with hn | hn
+    · calc _ ≤ S n * p / (n * p ^ 2) := by gcongr
+        _ = _ := by field_simp
+    · rw [← hn]; simp
+  · have h0 : p = 0 := hp.symm
+    simp [h0]
+
+/-- For an `m`-dependent stationary sequence, joint exceedances at lags `h > m` factorize, so
+`∑_{1 ≤ h ≤ S} P(X_0 > u, X_h > u) ≤ m P(X_0 > u) + S P(X_0 > u)²`. -/
+theorem sum_measureReal_lt_and_lt_le_of_isMDependent (hX : ∀ t, Measurable (X t))
+    (hs : IsStationary X P) {m : ℕ} (hm : IsMDependent X m P) (S : ℕ) (u : ℝ) :
+    ∑ h ∈ Icc 1 S, P.real {ω | u < X 0 ω ∧ u < X h ω} ≤
+      m * P.real {ω | u < X 0 ω} + S * P.real {ω | u < X 0 ω} ^ 2 := by
+  set p := P.real {ω | u < X 0 ω}
+  have hp0 : 0 ≤ p := measureReal_nonneg
+  have hterm : ∀ h ∈ Icc 1 S, P.real {ω | u < X 0 ω ∧ u < X h ω} ≤
+      (if h ≤ m then p else 0) + p ^ 2 := by
+    intro h _
+    split_ifs with hh
+    · exact (measureReal_mono fun ω hω => hω.1).trans (le_add_of_nonneg_right (sq_nonneg _))
+    · have hind := (hm.indepFun (s := 0) (t := h) (by omega)).measure_inter_preimage_eq_mul
+        (Set.Ioi u) (Set.Ioi u) measurableSet_Ioi measurableSet_Ioi
+      have e : {ω | u < X 0 ω ∧ u < X h ω} = X 0 ⁻¹' Set.Ioi u ∩ X h ⁻¹' Set.Ioi u := rfl
+      rw [zero_add, e, measureReal_def, hind, ENNReal.toReal_mul, ← measureReal_def,
+        ← measureReal_def]
+      have : P.real (X h ⁻¹' Set.Ioi u) = p := hs.measureReal_lt_eq hX h u
+      have h0 : P.real (X 0 ⁻¹' Set.Ioi u) = p := rfl
+      rw [this, h0]
+      simp [sq]
+  refine (Finset.sum_le_sum hterm).trans ?_
+  rw [Finset.sum_add_distrib, sum_const, Nat.card_Icc, nsmul_eq_mul, Nat.add_sub_cancel,
+    ← Finset.sum_filter, sum_const, nsmul_eq_mul]
+  have hcard : ((Icc 1 S).filter (· ≤ m)).card ≤ m := by
+    refine (Finset.card_le_card (t := Icc 1 m) fun h hh => ?_).trans_eq (by simp)
+    simp only [Finset.mem_filter, Finset.mem_Icc] at hh ⊢; omega
+  have : (((Icc 1 S).filter (· ≤ m)).card : ℝ) ≤ m := by exact_mod_cast hcard
+  nlinarith
+
+/-- The cluster condition holds for `m`-dependent sequences with `n pₙ → ∞` and `Sₙ / n → 0`. -/
+theorem tendsto_sum_measureReal_lt_and_lt_div_of_isMDependent (hX : ∀ t, Measurable (X t))
+    (hs : IsStationary X P) {m : ℕ} (hm : IsMDependent X m P) {u : ℕ → ℝ} {S : ℕ → ℕ}
+    (hk : Tendsto (fun n : ℕ => n * P.real {ω | u n < X 0 ω}) atTop atTop)
+    (hS : Tendsto (fun n => (S n : ℝ) / n) atTop (𝓝 0)) :
+    Tendsto (fun n : ℕ => (∑ h ∈ Icc 1 (S n), P.real {ω | u n < X 0 ω ∧ u n < X h ω}) /
+      (n * P.real {ω | u n < X 0 ω} ^ 2)) atTop (𝓝 0) := by
+  have hlim := ((tendsto_inv_atTop_zero.comp hk).const_mul (m : ℝ)).add hS
+  simp only [mul_zero, zero_add] at hlim
+  refine squeeze_zero' (Eventually.of_forall fun n => div_nonneg
+    (Finset.sum_nonneg fun _ _ => measureReal_nonneg) (by positivity)) ?_ hlim
+  filter_upwards [hk.eventually_gt_atTop 0] with n hn
+  obtain ⟨hn0, hp0⟩ := pos_and_pos_of_mul_pos hn
+  have h := sum_measureReal_lt_and_lt_le_of_isMDependent hX hs hm (S n) (u n)
+  calc _ ≤ (m * P.real {ω | u n < X 0 ω} + S n * P.real {ω | u n < X 0 ω} ^ 2) /
+        (n * P.real {ω | u n < X 0 ω} ^ 2) := by gcongr
+    _ = _ := by simp only [Function.comp_apply]; field_simp
+
+omit [IsProbabilityMeasure P] in
+/-- The mixing condition holds trivially for `m`-dependent sequences once `sₙ ≥ m`. -/
+theorem tendsto_sum_alphaMixing_div_of_isMDependent {m : ℕ} (hm : IsMDependent X m P)
+    {s : ℕ → ℕ} (hs : ∀ᶠ n in atTop, m ≤ s n) (c : ℕ → ℝ) :
+    Tendsto (fun n : ℕ => (∑ h ∈ Ico (s n + 1) n, (alphaMixing X P h).toReal) / c n) atTop
+      (𝓝 0) := by
+  refine tendsto_const_nhds.congr' ?_
+  filter_upwards [hs] with n hn
+  rw [Finset.sum_eq_zero fun h hh => by
+    rw [hm.alphaMixing_eq_zero (by rw [Finset.mem_Ico] at hh; omega), ENNReal.toReal_zero],
+    zero_div]
+
+/-- **Consistency of the blocks estimator for `m`-dependent sequences.** For a stationary
+`m`-dependent sequence, `n pₙ → ∞`, `rₙ → ∞`, `rₙ / n → 0` and block cluster ratio
+`P(M_{rₙ} > uₙ) / (rₙ pₙ) → θ`, the blocks estimator tends to `θ` in probability. -/
+theorem tendstoInMeasure_blocksEstimator_of_isMDependent (hX : ∀ t, Measurable (X t))
+    (hs : IsStationary X P) {m : ℕ} (hm : IsMDependent X m P) {u : ℕ → ℝ} {r : ℕ → ℕ}
+    {θ : ℝ} (hr : Tendsto r atTop atTop) (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hk : Tendsto (fun n : ℕ => n * P.real {ω | u n < X 0 ω}) atTop atTop)
+    (hθ : Tendsto (fun n => P.real (blockEvent X (r n) 0 (u n)) /
+      (r n * P.real {ω | u n < X 0 ω})) atTop (𝓝 θ)) :
+    TendstoInMeasure P (fun n => blocksEstimator X n (r n) (u n)) atTop (fun _ => θ) := by
+  refine tendstoInMeasure_blocksEstimator hX hs (hr.eventually_gt_atTop 0) hrn hk hθ r
+    (tendsto_sum_measureReal_lt_and_lt_div_of_isMDependent hX hs hm hk hrn)
+    (tendsto_sum_alphaMixing_div_of_isMDependent hm (hr.eventually_ge_atTop m) _) ?_
+  refine tendsto_const_nhds.congr' ?_
+  filter_upwards [hr.eventually_ge_atTop m] with n hn
+  rw [hm.alphaMixing_eq_zero (by omega), ENNReal.toReal_zero, zero_div]
+
+/-- **Consistency of the runs estimator for `m`-dependent sequences.** For a stationary
+`m`-dependent sequence, `n pₙ → ∞`, `rₙ → ∞`, `rₙ / n → 0` and runs ratio
+`P(X_1, …, X_{rₙ} ≤ uₙ | X_0 > uₙ) → θ`, the runs estimator tends to `θ` in probability. -/
+theorem tendstoInMeasure_runsEstimator_of_isMDependent (hX : ∀ t, Measurable (X t))
+    (hs : IsStationary X P) {m : ℕ} (hm : IsMDependent X m P) {u : ℕ → ℝ} {r : ℕ → ℕ}
+    {θ : ℝ} (hr : Tendsto r atTop atTop) (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
+    (hk : Tendsto (fun n : ℕ => n * P.real {ω | u n < X 0 ω}) atTop atTop)
+    (hθ : Tendsto (fun n => P.real (runEvent X (r n) 0 (u n)) / P.real {ω | u n < X 0 ω})
+      atTop (𝓝 θ)) :
+    TendstoInMeasure P (fun n => runsEstimator X n (r n) (u n)) atTop (fun _ => θ) := by
+  have h2 : Tendsto (fun n => ((r n + r n : ℕ) : ℝ) / n) atTop (𝓝 0) := by
+    simpa [Nat.cast_add, add_div] using hrn.add hrn
+  exact tendstoInMeasure_runsEstimator hX hs hrn hk hθ r
+    (tendsto_sum_measureReal_lt_and_lt_div_of_isMDependent hX hs hm hk h2)
+    (tendsto_sum_alphaMixing_div_of_isMDependent hm (hr.eventually_ge_atTop m) _)
+
+end Conditions
+
 end ExtremeValueTheory
