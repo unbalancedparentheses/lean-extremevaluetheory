@@ -164,6 +164,45 @@ theorem lintegral_rpow_eq_top (hα₀ : 0 < α₀) {κ : ℝ} (hκ : 0 < κ)
   · rw [ae_coeffLaw_iff (measurableSet_eq_fun (by fun_prop) measurable_const)]
     simpa only [innov, abs_of_nonneg (coeff_nonneg hα₁ hβ₁ _)] using hnd
 
+/-- **Tail bounds for the GARCH(1,1) squared volatility**: `P(σ² > x) = O(x^{-s})` for every
+`s < κ`, but `P(σ² > x) ≠ O(x^{-s})` for every `s > κ`. -/
+theorem tail_bounds (hα₀ : 0 < α₀) {κ : ℝ} (hκ : 0 < κ)
+    (hκi : Integrable (fun z => coeff α₁ β₁ z ^ κ) ζ) (hκ1 : ∫ z, coeff α₁ β₁ z ^ κ ∂ζ = 1)
+    (hnd : ¬ ∀ᵐ z ∂ζ, coeff α₁ β₁ z = 1) :
+    (∀ s, 0 < s → s < κ → ∃ C : ℝ, 0 ≤ C ∧ ∀ x : ℝ, 0 < x →
+      stationaryLaw (coeffLaw α₀ α₁ β₁ ζ) {y | x < |y|} ≤ ENNReal.ofReal (C * x ^ (-s))) ∧
+    (∀ s, κ < s → ¬ ∃ C x₀ : ℝ, 0 ≤ C ∧ 0 < x₀ ∧ ∀ x, x₀ ≤ x →
+      stationaryLaw (coeffLaw α₀ α₁ β₁ ζ) {y | x < |y|} ≤ ENNReal.ofReal (C * x ^ (-s))) := by
+  refine ⟨fun s hs hsκ => exists_measure_lt_abs_le_of_lintegral_lt_top hs
+    (lintegral_rpow_lt_top hα₁ hβ₁ hlog hneg hκ hκi hκ1 hnd hs hsκ),
+    fun s hsκ ⟨C, x₀, hC, hx₀, h⟩ => ?_⟩
+  have hr : κ < (κ + s) / 2 := by linarith
+  have hfin := lintegral_lt_top_of_measure_lt_abs_le (r := (κ + s) / 2) (by linarith)
+    (by linarith) hC hx₀ h
+  rw [lintegral_rpow_eq_top hα₁ hβ₁ hlog hneg hα₀ hκ hκi hκ1 hnd hr] at hfin
+  exact lt_irrefl _ hfin
+
+omit hlog hneg in
+/-- **Existence of the GARCH(1,1) tail index** ([BDM16, Theorem 4.3.1]; [Mikosch–Stărică 2000]):
+if `α₁ Z² + β₁ ≠ 0` a.s., `E log(α₁ Z² + β₁) < 0`, and `E (α₁ Z² + β₁)^S > 1` for some `S > 0`
+with `E (α₁ Z² + β₁)^S < ∞` (for instance for Gaussian `Z` and `α₁ > 0`), then there is a
+`κ ∈ (0, S)` with `E (α₁ Z² + β₁)^κ = 1`; it is unique when `α₁ Z² + β₁` is not a.s. `1`
+(`kesten_exponent_unique`). -/
+theorem exists_tail_index (hlog : Integrable (fun z => log (coeff α₁ β₁ z)) ζ)
+    (hneg : ∫ z, log (coeff α₁ β₁ z) ∂ζ < 0) (hA0 : ∀ᵐ z ∂ζ, coeff α₁ β₁ z ≠ 0) {S : ℝ}
+    (hS : 0 < S) (hSi : Integrable (fun z => coeff α₁ β₁ z ^ S) ζ)
+    (hS1 : 1 < ∫ z, coeff α₁ β₁ z ^ S ∂ζ) :
+    ∃ κ ∈ Ioo 0 S, Integrable (fun z => coeff α₁ β₁ z ^ κ) ζ ∧
+      ∫ z, coeff α₁ β₁ z ^ κ ∂ζ = 1 := by
+  have habs : ∀ z, |coeff α₁ β₁ z| = coeff α₁ β₁ z := fun z => abs_of_nonneg (coeff_nonneg hα₁ hβ₁ z)
+  have hm := measurable_coeff α₁ β₁
+  obtain ⟨κ, hκ, hκ1⟩ := exists_integral_abs_rpow_eq_one hm hA0 (by simpa only [habs] using hlog)
+    (by simpa only [habs] using hneg) hS (by simpa only [habs] using hSi)
+    (by simpa only [habs] using hS1)
+  refine ⟨κ, hκ, ?_, by simpa only [habs] using hκ1⟩
+  simpa only [habs] using integrable_abs_rpow_of_le hm (by simpa only [habs] using hSi) hκ.1.le
+    hκ.2.le
+
 end Main
 
 end GARCH

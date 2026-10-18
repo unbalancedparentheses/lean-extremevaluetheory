@@ -121,6 +121,9 @@ import ExtremeValueTheory.Dependence.MarkovChain
 import ExtremeValueTheory.Dependence.ARMAX
 import ExtremeValueTheory.Dependence.MarkovTailChain
 import ExtremeValueTheory.Dependence.SRE
+import ExtremeValueTheory.Dependence.SREMoments
+import ExtremeValueTheory.Dependence.SREExponent
+import ExtremeValueTheory.Dependence.SREGarch
 import ExtremeValueTheory.Dependence.InfiniteMovingAverageTailProcess
 import ExtremeValueTheory.MaxStable.Basic
 import ExtremeValueTheory.MaxStable.Spectral
