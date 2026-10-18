@@ -149,6 +149,163 @@ theorem ae_contracting (hiid : iIndepFun V P)
     div_mul_cancel₀ _ hkpos.ne'] at this
   exact this.le
 
+/-! ### The perpetuity recursion -/
+
+/-- The shifted sequence `(v_{n+1})_n`. -/
+def shift (v : ℕ → ℝ × ℝ) : ℕ → ℝ × ℝ := fun n => v (n + 1)
+
+theorem measurable_shift : Measurable shift :=
+  Measurable.of_eval fun n => measurable_pi_apply (n + 1)
+
+theorem term_zero (v : ℕ → ℝ × ℝ) : term v 0 = (v 0).2 := by simp [term]
+
+theorem term_succ (v : ℕ → ℝ × ℝ) (k : ℕ) : term v (k + 1) = (v 0).1 * term (shift v) k := by
+  simp only [term, shift, Finset.prod_range_succ']
+  ring
+
+/-- **The perpetuity solves the fixed point equation** `Y = A_0 Y' + B_0`, where `Y'` is the
+perpetuity of the shifted sequence, whenever the series converges. -/
+theorem perpetuity_eq {v : ℕ → ℝ × ℝ} (h : Summable (term v)) :
+    perpetuity v = affine (perpetuity (shift v)) (v 0) := by
+  rw [perpetuity, h.tsum_eq_zero_add, term_zero, affine, perpetuity]
+  simp only [term_succ, tsum_mul_left]
+  ring
+
+/-- The backward iteration `f_{v_0} ∘ ⋯ ∘ f_{v_{n-1}} (x) = ∑_{k < n} a_0 ⋯ a_{k-1} b_k +
+a_0 ⋯ a_{n-1} x`. -/
+noncomputable def backward (x : ℝ) (v : ℕ → ℝ × ℝ) (n : ℕ) : ℝ :=
+  ∑ k ∈ Finset.range n, term v k + (∏ i ∈ Finset.range n, (v i).1) * x
+
+theorem backward_zero (x : ℝ) (v : ℕ → ℝ × ℝ) : backward x v 0 = x := by simp [backward]
+
+theorem backward_succ (x : ℝ) (v : ℕ → ℝ × ℝ) (n : ℕ) :
+    backward x v (n + 1) = affine (backward x (shift v) n) (v 0) := by
+  simp only [backward, affine, Finset.sum_range_succ', term_succ, term_zero,
+    Finset.prod_range_succ', ← Finset.mul_sum]
+  simp only [shift]
+  ring
+
+theorem measurable_backward (n : ℕ) :
+    Measurable fun p : ℝ × (ℕ → ℝ × ℝ) => backward p.1 p.2 n := by
+  unfold backward
+  refine (Finset.measurable_sum _ fun k _ => (measurable_term k).comp measurable_snd).add
+    ((Finset.measurable_prod _ fun i _ => ?_).mul measurable_fst)
+  exact (measurable_fst.comp (measurable_pi_apply (X := fun _ : ℕ => ℝ × ℝ) i)).comp measurable_snd
+
+/-- Under the contraction condition, the backward iteration converges to the perpetuity,
+whatever the starting point. -/
+theorem Contracting.tendsto_backward {c : ℝ} (hc : c < 0) {v : ℕ → ℝ × ℝ}
+    (h : Contracting c v) (x : ℝ) :
+    Tendsto (backward x v) atTop (𝓝 (perpetuity v)) := by
+  have h1 := (h.summable_term hc).hasSum.tendsto_sum_nat
+  have h2 := (h.tendsto_prod hc).mul_const x
+  rw [zero_mul] at h2
+  have h3 := h1.add h2
+  rw [add_zero] at h3
+  exact h3
+
+/-! ### The stationary law -/
+
+section StationaryLaw
+
+variable (ν : Measure (ℝ × ℝ)) [IsProbabilityMeasure ν]
+
+/-- The law `ν^⊗ℕ` of an iid sequence `(A_n, B_n)_n` with marginal law `ν`. -/
+noncomputable abbrev seqLaw : Measure (ℕ → ℝ × ℝ) := Measure.infinitePi fun _ : ℕ => ν
+
+/-- The **stationary law** of the stochastic recurrence: the law of the perpetuity
+`∑_{k ≥ 0} A_0 ⋯ A_{k-1} B_k` of an iid sequence with law `ν`. -/
+noncomputable def stationaryLaw : Measure ℝ := (seqLaw ν).map perpetuity
+
+instance : IsProbabilityMeasure (stationaryLaw ν) :=
+  by unfold stationaryLaw; infer_instance
+
+theorem iIndepFun_seqLaw : iIndepFun (fun n (v : ℕ → ℝ × ℝ) => v n) (seqLaw ν) :=
+  iIndepFun_infinitePi (X := fun _ => id) fun _ => measurable_id
+
+theorem identDistrib_seqLaw (n : ℕ) :
+    IdentDistrib (fun v : ℕ → ℝ × ℝ => v n) (fun v => v 0) (seqLaw ν) (seqLaw ν) :=
+  ⟨(measurable_pi_apply n).aemeasurable, (measurable_pi_apply 0).aemeasurable, by
+    rw [Measure.infinitePi_map_eval, Measure.infinitePi_map_eval]⟩
+
+theorem integral_seqLaw_coord {g : ℝ × ℝ → ℝ} (hg : Measurable g) :
+    ∫ v, g (v 0) ∂seqLaw ν = ∫ p, g p ∂ν := by
+  rw [← integral_map (measurable_pi_apply 0).aemeasurable hg.aestronglyMeasurable,
+    Measure.infinitePi_map_eval]
+
+theorem integrable_seqLaw_coord {g : ℝ × ℝ → ℝ} (hg : Measurable g) (hi : Integrable g ν) :
+    Integrable (fun v : ℕ → ℝ × ℝ => g (v 0)) (seqLaw ν) := by
+  rw [← Measure.infinitePi_map_eval (fun _ : ℕ => ν) 0] at hi
+  exact (integrable_map_measure hg.aestronglyMeasurable
+    (measurable_pi_apply 0).aemeasurable).1 hi
+
+variable {ν}
+
+/-- **Almost sure convergence of the perpetuity** ([BDM16, Theorem 2.1.3]; [Vervaat 1979]): if
+`E log |A| < 0` and `E log⁺ |B| < ∞`, then for `ν^⊗ℕ`-almost every sequence the contraction
+condition holds; in particular `∑_k A_0 ⋯ A_{k-1} B_k` converges absolutely
+(`Contracting.summable_abs_term`). -/
+theorem ae_contracting_seqLaw (hA : Integrable (fun p : ℝ × ℝ => log |p.1|) ν)
+    (hneg : ∫ p, log |p.1| ∂ν < 0) (hB : Integrable (fun p : ℝ × ℝ => posLog p.2) ν) :
+    ∀ᵐ v ∂seqLaw ν, Contracting ((∫ p, log |p.1| ∂ν) / 2) v := by
+  have hgA : Measurable fun p : ℝ × ℝ => log |p.1| := by fun_prop
+  have hgB : Measurable fun p : ℝ × ℝ => posLog p.2 :=
+    continuous_posLog.measurable.comp measurable_snd
+  have h := ae_contracting (iIndepFun_seqLaw ν) (identDistrib_seqLaw ν)
+    (integrable_seqLaw_coord ν hgA hA) (by rwa [integral_seqLaw_coord ν hgA])
+    (integrable_seqLaw_coord ν hgB hB)
+  rwa [integral_seqLaw_coord ν hgA] at h
+
+variable (ν) in
+/-- The shifted sequence of an iid sequence is again iid with the same law. -/
+theorem map_shift_seqLaw : (seqLaw ν).map shift = seqLaw ν :=
+  RandomIteration.map_path_eq_infinitePi (V := fun n (v : ℕ → ℝ × ℝ) => v (n + 1))
+    (fun n => measurable_pi_apply (n + 1))
+    ((iIndepFun_seqLaw ν).precomp (add_left_injective 1))
+    fun n => Measure.infinitePi_map_eval _ (n + 1)
+
+variable (ν) in
+/-- Splitting off the first coordinate: `ν^⊗ℕ` is the law of `(v_0, (v_{n+1})_n)` under
+`ν ⊗ ν^⊗ℕ`. -/
+theorem map_split_seqLaw :
+    (seqLaw ν).map (fun v => (v 0, shift v)) = ν.prod (seqLaw ν) := by
+  have h := RandomIteration.indepFun_zero_shift (V := fun n (v : ℕ → ℝ × ℝ) => v n)
+    (fun n => measurable_pi_apply n) (iIndepFun_seqLaw ν)
+  rw [(indepFun_iff_map_prod_eq_prod_map_map (measurable_pi_apply 0).aemeasurable
+    measurable_shift.aemeasurable).1 h, map_shift_seqLaw, Measure.infinitePi_map_eval]
+
+/-- **Invariance of the stationary law** ([BDM16, Theorem 2.1.3]): if `E log |A| < 0` and
+`E log⁺ |B| < ∞`, the law `π` of the perpetuity solves the distributional fixed point equation
+`X =ᵈ A X + B`, `X ⊥ (A, B)`: `(π ⊗ ν).map (x, (a, b) ↦ a x + b) = π`. -/
+theorem map_affine_stationaryLaw (hA : Integrable (fun p : ℝ × ℝ => log |p.1|) ν)
+    (hneg : ∫ p, log |p.1| ∂ν < 0) (hB : Integrable (fun p : ℝ × ℝ => posLog p.2) ν) :
+    ((stationaryLaw ν).prod ν).map (Function.uncurry affine) = stationaryLaw ν := by
+  have hc : (∫ p, log |p.1| ∂ν) / 2 < 0 := by linarith
+  set g : (ℝ × ℝ) × (ℕ → ℝ × ℝ) → ℝ := fun q => affine (perpetuity q.2) q.1
+  have hg : Measurable g :=
+    measurable_affine.comp ((measurable_perpetuity.comp measurable_snd).prodMk measurable_fst)
+  have hsplit : Measurable fun v : ℕ → ℝ × ℝ => (v 0, shift v) :=
+    (measurable_pi_apply 0).prodMk measurable_shift
+  have h1 : stationaryLaw ν = (ν.prod (seqLaw ν)).map g := by
+    rw [← map_split_seqLaw, Measure.map_map hg hsplit, stationaryLaw]
+    refine Measure.map_congr ?_
+    filter_upwards [ae_contracting_seqLaw hA hneg hB] with v hv
+    exact perpetuity_eq (hv.summable_term hc)
+  have hm : Measurable (Function.uncurry affine ∘ Prod.map perpetuity id) :=
+    measurable_affine.comp (measurable_perpetuity.prodMap measurable_id)
+  calc ((stationaryLaw ν).prod ν).map (Function.uncurry affine)
+      = (((seqLaw ν).prod ν).map (Prod.map perpetuity id)).map (Function.uncurry affine) := by
+        rw [← Measure.map_prod_map _ _ measurable_perpetuity measurable_id, Measure.map_id,
+          stationaryLaw]
+    _ = ((ν.prod (seqLaw ν)).map Prod.swap).map
+          (Function.uncurry affine ∘ Prod.map perpetuity id) := by
+        rw [Measure.map_map measurable_affine (measurable_perpetuity.prodMap measurable_id),
+          Measure.prod_swap]
+    _ = (ν.prod (seqLaw ν)).map g := by rw [Measure.map_map hm measurable_swap]; rfl
+    _ = stationaryLaw ν := h1.symm
+
+end StationaryLaw
+
 end SRE
 
 end ExtremeValueTheory
