@@ -71,7 +71,7 @@ theorem isProbabilityMeasure_ferroSegersLaw {θ : ℝ} (hθ0 : 0 < θ) (hθ1 : �
   simp
 
 /-- **Moments of the Ferro–Segers law**: `∫ x^j = θ · j! / θ^j` for `j ≥ 1`. -/
-theorem integral_pow_ferroSegersLaw {θ : ℝ} (hθ0 : 0 < θ) (hθ1 : θ ≤ 1) {j : ℕ} (hj : 1 ≤ j) :
+theorem integral_pow_ferroSegersLaw {θ : ℝ} (hθ0 : 0 < θ) {j : ℕ} (hj : 1 ≤ j) :
     ∫ x, x ^ j ∂(ferroSegersLaw θ) = θ * (Nat.factorial j / θ ^ j) := by
   have := isProbabilityMeasure_expMeasure (r := 1) one_pos
   have hmeas : Measurable fun x : ℝ => x / θ := by fun_prop
@@ -79,7 +79,7 @@ theorem integral_pow_ferroSegersLaw {θ : ℝ} (hθ0 : 0 < θ) (hθ1 : θ ≤ 1)
     rw [integrable_map_measure (by fun_prop) hmeas.aemeasurable]
     have := (integrable_pow_expMeasure j).div_const (θ ^ j)
     refine this.congr (Eventually.of_forall fun x => ?_)
-    simp [Function.comp_def, div_pow]
+    simp [div_pow]
   have hdirac : Integrable (fun x : ℝ => x ^ j) (Measure.dirac 0) :=
     integrable_dirac (by simp)
   rw [ferroSegersLaw, integral_add_measure (hdirac.smul_measure ENNReal.ofReal_ne_top)
@@ -90,23 +90,23 @@ theorem integral_pow_ferroSegersLaw {θ : ℝ} (hθ0 : 0 < θ) (hθ1 : θ ≤ 1)
     rw [integral_div, integral_pow_expMeasure]
   rw [this, zero_pow (by omega), smul_zero, zero_add, ENNReal.toReal_ofReal hθ0.le, smul_eq_mul]
 
-theorem integral_id_ferroSegersLaw {θ : ℝ} (hθ0 : 0 < θ) (hθ1 : θ ≤ 1) :
+theorem integral_id_ferroSegersLaw {θ : ℝ} (hθ0 : 0 < θ) :
     ∫ x, x ∂(ferroSegersLaw θ) = 1 := by
-  have := integral_pow_ferroSegersLaw hθ0 hθ1 (j := 1) le_rfl
+  have := integral_pow_ferroSegersLaw hθ0 (j := 1) le_rfl
   simp only [pow_one, Nat.factorial_one, Nat.cast_one] at this
   rw [this]; field_simp
 
-theorem integral_sq_ferroSegersLaw {θ : ℝ} (hθ0 : 0 < θ) (hθ1 : θ ≤ 1) :
+theorem integral_sq_ferroSegersLaw {θ : ℝ} (hθ0 : 0 < θ) :
     ∫ x, x ^ 2 ∂(ferroSegersLaw θ) = 2 / θ := by
-  rw [integral_pow_ferroSegersLaw hθ0 hθ1 (by norm_num)]
+  rw [integral_pow_ferroSegersLaw hθ0 (by norm_num)]
   simp only [Nat.factorial_two, Nat.cast_ofNat]
   field_simp
 
 /-- **The population identity of the intervals estimator**: for the Ferro–Segers law,
 `2 (E T)² / E T² = θ`. -/
-theorem ferroSegers_moment_ratio {θ : ℝ} (hθ0 : 0 < θ) (hθ1 : θ ≤ 1) :
+theorem ferroSegers_moment_ratio {θ : ℝ} (hθ0 : 0 < θ) :
     2 * (∫ x, x ∂(ferroSegersLaw θ)) ^ 2 / ∫ x, x ^ 2 ∂(ferroSegersLaw θ) = θ := by
-  rw [integral_id_ferroSegersLaw hθ0 hθ1, integral_sq_ferroSegersLaw hθ0 hθ1]
+  rw [integral_id_ferroSegersLaw hθ0, integral_sq_ferroSegersLaw hθ0]
   field_simp
 
 end Law
@@ -159,7 +159,7 @@ times `c n T n i` converge in probability to the moments `1` and `2 / θ` of the
 then `θ̂₁ → θ` in probability. -/
 theorem tendstoInMeasure_intervalsEstimator₁ {m : ℕ → ℕ} (hm : ∀ᶠ n in atTop, 0 < m n)
     {T : (n : ℕ) → Ω → Fin (m n) → ℝ} {c : ℕ → ℝ} (hc : ∀ᶠ n in atTop, c n ≠ 0)
-    {θ : ℝ} (hθ0 : 0 < θ) (hθ1 : θ ≤ 1)
+    {θ : ℝ} (hθ0 : 0 < θ)
     (h1 : TendstoInMeasure P (fun n ω => (∑ i, c n * T n ω i) / m n) atTop
       (fun _ => ∫ x, x ∂(ferroSegersLaw θ)))
     (h2 : TendstoInMeasure P (fun n ω => (∑ i, (c n * T n ω i) ^ 2) / m n) atTop
@@ -168,10 +168,10 @@ theorem tendstoInMeasure_intervalsEstimator₁ {m : ℕ → ℕ} (hm : ∀ᶠ n 
   have hφ : ContinuousAt (fun q : ℝ × ℝ => 2 * q.1 ^ 2 / q.2)
       ((∫ x, x ∂(ferroSegersLaw θ)), ∫ x, x ^ 2 ∂(ferroSegersLaw θ)) := by
     refine ((continuousAt_fst.pow 2).const_mul 2).div continuousAt_snd ?_
-    rw [integral_sq_ferroSegersLaw hθ0 hθ1]
+    rw [integral_sq_ferroSegersLaw hθ0]
     positivity
   have h := tendstoInMeasure_comp₂ h1 h2 hφ
-  simp only [ferroSegers_moment_ratio hθ0 hθ1] at h
+  simp only [ferroSegers_moment_ratio hθ0] at h
   refine tendstoInMeasure_of_eventuallyEq h ?_
   filter_upwards [hm, hc] with n hmn hcn ω
   rw [← intervalsEstimator₁_smul (T n ω) hcn, intervalsEstimator₁_eq hmn]

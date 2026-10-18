@@ -57,6 +57,23 @@ Standing hypotheses: `X` stationary (`IsStationary`) and measurable.
   `tendstoInMeasure_runsEstimator_of_isMDependent`: for `m`-dependent sequences the cluster and
   mixing conditions are automatic: only `n pₙ → ∞`, `rₙ → ∞`, `rₙ / n → 0` and the convergence
   of the population ratio remain.
+* `HasShiftInvariantWindows.runs_bounds`: `runs ratio(r) ≤ cluster ratio(r)` and
+  `runs ratio(r) ≥ 2 cluster ratio(2r) - 1` (stationarity only).
+* `HasSpectralTailProcess.tendsto_runsRatio`: under forward anticlustering the runs ratio tends
+  to the candidate extremal index `ϑ` (the cluster ratio does so by `tendsto_blockRatio`).
+* `HasSpectralTailProcess.tendstoInMeasure_blocksEstimator`,
+  `HasSpectralTailProcess.tendstoInMeasure_runsEstimator`: both estimators, applied to `|X|`,
+  converge to `ϑ` under anticlustering and the concentration conditions; `ϑ = θ` when the block
+  condition `𝒜(uₙ)` holds as well.
+* **The echo process** (`θ = 1/2`, `ϑ = 1`, geometrically strongly mixing, no anticlustering):
+  - `logEcho_tendstoInMeasure_blocksEstimator`: with `log n = o(rₙ)` (and `rₙ = o(n pₙ)`,
+    `log uₙ = o(rₙ)`, `rₙ uₙ^(-α) → 0`) the blocks estimator tends to `1/2 = θ`;
+  - `logEcho_tendstoInMeasure_runsEstimator`: with run lengths `rₙ = o(log uₙ)` the runs
+    estimator tends to `1 = ϑ`: **short runs are inconsistent** for `θ`.
+  The mixing conditions are verified from `alphaMixing_logEchoProcess_le`
+  (`logEcho_tendsto_sum_alphaMixing_div`, `logEcho_tendsto_alphaMixing_div`).
+
+The intervals estimator of Ferro and Segers is in `Statistics/ExtremalIndexEstimatorsIntervals.lean`.
 
 ## References
 
