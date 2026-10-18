@@ -8,13 +8,20 @@ name: Independent kernel check
 on:
   push:
     branches: [main]
+    paths:
+      - "ExtremeValueTheory/**"
+      - "ExtremeValueTheory.lean"
+      - "lakefile.lean"
+      - "lake-manifest.json"
+      - "lean-toolchain"
   workflow_dispatch:
   schedule:
-    - cron: "0 3 * * 1"
+    - cron: "0 3 * * *"
 
+# A running check is never cancelled; at most one newer run waits behind it.
 concurrency:
   group: kernel-check-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   con-leche:
