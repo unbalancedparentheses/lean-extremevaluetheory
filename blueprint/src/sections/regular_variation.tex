@@ -430,3 +430,24 @@ works additively, with $h(t) = \log f(e^t) - \rho t$.
   \leanok
   Joint exceedances of independent components are of order $\PR[\|X\| > x]^2$.
 \end{proof}
+
+\begin{theorem}[Converse Cram\'er--Wold device for non-integer $\alpha$]
+  \label{thm:cramer-wold-converse}
+  \uses{def:rv-vector, thm:rv-vector-linear}
+  \lean{ExtremeValueTheory.CramerWold.ext_of_halfSpace_of_tail, ExtremeValueTheory.CramerWold.ext_of_halfSpace_of_map_smul, ExtremeValueTheory.IsRegVarVector.eq_of_tendsto_linear,
+    ExtremeValueTheory.CramerWold.isRegVarVector_of_tendsto_linear, ExtremeValueTheory.CramerWold.isRegVarVector_of_tendsto_linear_of_antitone}
+  \leanok
+  Let $X$ take values in a finite-dimensional real normed space, $\alpha > 0$ not an integer, and $V \in RV_{-\alpha}$. If
+  $\PR[L(X) > x]/V(x) \to w(L)$ for every continuous linear functional $L$, with $w \not\equiv 0$, then $X$ is regularly varying
+  with index $\alpha$, and its exponent measure gives the half-space $\{L > 1\}$ mass proportional to $w(L)$
+  [Basrak, Davis and Mikosch 2002, Theorem~1.1(i)]. For integer $\alpha$ the statement fails in general [Hult and Lindskog
+  2006] (not formalized).
+\end{theorem}
+\begin{proof}
+  \leanok
+  Uniqueness: two measures with no atom at $0$ and tails $O(t^{-\alpha})$ that agree on all half-spaces are equal. With
+  $n = \lfloor \alpha \rfloor$ the kernel $e^{is} - \sum_{k \le n} (is)^k/k!$ is integrable exactly because $n < \alpha < n+1$; its
+  $2(n+1)$-th differences coincide with those of $e^{is}$, so the characteristic function of a weighted measure is determined
+  by the half-space values. Existence: tightness from Potter bounds, Prokhorov, and identification of every limit
+  point through the half-space values.
+\end{proof}

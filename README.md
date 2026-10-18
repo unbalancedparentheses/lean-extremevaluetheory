@@ -174,7 +174,9 @@ A Lean 4 / Mathlib formalization of extreme value theory and heavy-tailed probab
 - **Multivariate regular variation** (`RegularVariation/Multivariate.lean`): exponent measures on
   sets bounded away from 0, homogeneity, the polar decomposition `μ = α r^{−α−1}dr ⊗ S`
   (`isRegVarVector_iff`, `IsRegVarVector.eq_polarMeasure`), tails of linear combinations, and
-  asymptotic independence vs. full dependence examples.
+  asymptotic independence vs. full dependence examples. The converse Cramér–Wold device holds for non-integer `α`: if
+  every linear functional has tail `~ w(L)V(x)` with `V ∈ RV_{−α}`, then `X` is regularly varying
+  (`CramerWold.isRegVarVector_of_tendsto_linear`, Basrak–Davis–Mikosch 2002).
 - **Converse of the generalized CLT, symmetric case** (`StableLaws/GeneralizedCLTConverse.lean`): if
   `S_n/aₙ` converges to a non-degenerate limit, the truncated second moment is `RV_{2−α}` and (for
   `α < 2`) the tail is `RV_{−α}` (`GCLTConverse.exists_isRegularlyVarying_of_tendsto`); Feller's criterion

@@ -103,7 +103,8 @@ Progress on P1 (the gap θ < ϑ), 2026-10-17:
 
 - Hsing's (1993) null-variance conjecture for cluster-index estimators of linear models, proved by
   Buriticá–Wintenberger ([arXiv:2212.13521](https://arxiv.org/abs/2212.13521)).
-- The Basrak–Davis–Mikosch (2002) Cramér–Wold conjecture for nonnegative regularly varying vectors,
+- **Formalized:** the converse Cramér–Wold device of Basrak–Davis–Mikosch (2002), Thm 1.1(i), for every
+  non-integer `α` (`RegularVariation/CramerWoldConverse.lean`). Related: the Basrak–Davis–Mikosch (2002) Cramér–Wold conjecture for nonnegative regularly varying vectors,
   proved by Boman–Lindskog ([arXiv:0802.4373](https://arxiv.org/abs/0802.4373)). The device fails for
   integer `α` in general (Hult–Lindskog 2006).
 - Anticlustering is not essential for the tail-process limit (Planinić–Soulier,
