@@ -132,6 +132,7 @@ import ExtremeValueTheory.Multivariate.TailDependence
 import ExtremeValueTheory.Multivariate.PickandsEstimator
 import ExtremeValueTheory.Multivariate.DomainOfAttractionBasic
 import ExtremeValueTheory.Multivariate.DomainOfAttraction
+import ExtremeValueTheory.Multivariate.DomainOfAttractionStandardized
 import ExtremeValueTheory.MaxStable.Converse
 import ExtremeValueTheory.MaxStable.Uniqueness
 import ExtremeValueTheory.MaxStable.Simplex
