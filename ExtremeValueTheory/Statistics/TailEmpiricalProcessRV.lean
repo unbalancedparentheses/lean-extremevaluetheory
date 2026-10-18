@@ -1048,6 +1048,146 @@ lemma eventually_measureReal_osc_le (hU : ∀ i, Measurable (U i)) (hind : iInde
   rw [← hC]
   linarith
 
+/-- The Hill statistic of the exponential sample `-log (1 - U_i)`. -/
+noncomputable def meanExcessStat (U : ℕ → Ω → ℝ) (n k : ℕ) (ω : Ω) : ℝ :=
+  √(k : ℝ) * ((k : ℝ)⁻¹ * ∑ j ∈ range k,
+    (orderStat (fun i : Fin n ↦ -Real.log (1 - U i ω)) j -
+      orderStat (fun i : Fin n ↦ -Real.log (1 - U i ω)) k) - 1)
+
+omit [IsProbabilityMeasure P] in
+lemma measurable_meanExcessStat (hU : ∀ i, Measurable (U i)) (n k : ℕ) :
+    Measurable (meanExcessStat U n k) := by
+  have hv : ∀ i : Fin n, Measurable fun ω ↦ -Real.log (1 - U i ω) := fun i ↦
+    ((measurable_const.sub (hU i)).log).neg
+  unfold meanExcessStat
+  exact measurable_const.mul ((measurable_const.mul (Finset.measurable_sum _ fun j _ ↦
+    (measurable_orderStat hv j).sub (measurable_orderStat hv k))).sub measurable_const)
+
+/-- **The Hill statistic is asymptotically the truncated functional of the tail empirical
+process**: if `ε n → 0`, then
+`√k ((1/k) ∑_{j<k} (E_{(j+1)} - E_{(k+1)}) - 1) - (∫_{ε n}^1 W_n(t) dt / t - W_n(1)) → 0`
+in probability. The proof splits the difference into `∫_0^ε W_n / t` (small in `L¹`),
+`∫_1^T W_n / t` and `√k (T - 1) + W_n(1)`, where `T = (n/k)(1 - U_{(k+1)}) → 1`; the last two
+are controlled by the maximal inequality for `W_n` near `1`. -/
+theorem tendstoInMeasure_meanExcessStat_sub_sum_hillSummand (hU : ∀ i, Measurable (U i))
+    (hind : iIndepFun U P) (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))
+    {k : ℕ → ℕ} (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0))
+    {ε : ℕ → ℝ} (hε0 : ∀ n, 0 < ε n) (hε1 : ∀ n, ε n ≤ 1) (hεlim : Tendsto ε atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n ω ↦ meanExcessStat U n (k n) ω -
+      ∑ i ∈ range n, hillSummand n (k n) (ε n) (U i ω)) atTop 0 := by
+  rw [tendstoInMeasure_iff_measureReal_norm]
+  intro η hη
+  suffices key : ∀ θ > 0, ∀ᶠ n in atTop, P.real {ω | η ≤ ‖meanExcessStat U n (k n) ω -
+      ∑ i ∈ range n, hillSummand n (k n) (ε n) (U i ω) - (0 : Ω → ℝ) ω‖} ≤ θ by
+    refine tendsto_order.2 ⟨fun a ha ↦ Eventually.of_forall fun n ↦
+      ha.trans_le measureReal_nonneg, fun a ha ↦ ?_⟩
+    filter_upwards [key (a / 2) (half_pos ha)] with n hn
+    exact hn.trans_lt (half_lt_self ha)
+  intro θ hθ
+  -- the parameters
+  set lam : ℝ := η / 10 with hlamdef
+  have hlam : 0 < lam := by positivity
+  set K : ℝ := 10 / θ + 1 with hKdef
+  have hK1 : 1 ≤ K := by rw [hKdef]; linarith [show 0 < 10 / θ by positivity]
+  have hK : 1 / K ^ 2 ≤ θ / 10 := by
+    have h1 : 10 / θ ≤ K ^ 2 := by nlinarith
+    rw [div_le_iff₀ (by positivity)]
+    rw [div_le_iff₀ hθ] at h1
+    nlinarith
+  set δ : ℝ := min (1 / 2) (min (η / (4 * (K + 4 * lam))) (θ * lam ^ 4 / (3360 * 8 ^ 4)))
+    with hδdef
+  have hδ0 : 0 < δ := by
+    have : 0 < K + 4 * lam := by positivity
+    positivity
+  have hδ1 : δ ≤ 1 / 2 := min_le_left _ _
+  have hδη : δ ≤ η / (4 * (K + 4 * lam)) := (min_le_right _ _).trans (min_le_left _ _)
+  have hδθ : δ ≤ θ * lam ^ 4 / (3360 * 8 ^ 4) := (min_le_right _ _).trans (min_le_right _ _)
+  have hsum : lam + 2 * δ * (K + 4 * lam) + 4 * lam ≤ η := by
+    have hK4 : 0 < K + 4 * lam := by positivity
+    have : 2 * δ * (K + 4 * lam) ≤ η / 2 := by
+      have := mul_le_mul_of_nonneg_right hδη hK4.le
+      have e : η / (4 * (K + 4 * lam)) * (K + 4 * lam) = η / 4 := by field_simp
+      linarith
+    linarith
+  have hosc : 8 ^ 4 / lam ^ 4 * (84 * (2 * δ) ^ 2) ≤ θ / 10 := by
+    have hδ2 : δ ^ 2 ≤ δ := by nlinarith
+    have : 8 ^ 4 / lam ^ 4 * (84 * (2 * δ) ^ 2) ≤ 8 ^ 4 / lam ^ 4 * (336 * δ) := by
+      refine mul_le_mul_of_nonneg_left ?_ (by positivity); nlinarith
+    refine this.trans ?_
+    rw [div_mul_eq_mul_div, div_le_iff₀ (by positivity)]
+    rw [le_div_iff₀ (by positivity)] at hδθ
+    nlinarith
+  -- eventual conditions
+  have hkR : Tendsto (fun n ↦ (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hsqrt : Tendsto (fun n ↦ 2 * √(ε n) / lam) atTop (𝓝 0) := by
+    have := ((Real.continuous_sqrt.tendsto 0).comp hεlim).const_mul 2 |>.div_const lam
+    simpa using this
+  have hkδ : Tendsto (fun n ↦ 3 / ((k n : ℝ) * δ ^ 2)) atTop (𝓝 0) :=
+    tendsto_const_nhds.div_atTop (hkR.atTop_mul_const (by positivity))
+  filter_upwards [hk.eventually_gt_atTop 0, eventually_lt_of_tendsto_div hkn,
+    hkn.eventually (ge_mem_nhds (show (0 : ℝ) < 1 / 2 by norm_num)),
+    hsqrt.eventually (ge_mem_nhds (show 0 < θ / 10 by positivity)),
+    hkδ.eventually (ge_mem_nhds (show 0 < θ / 5 by positivity)),
+    eventually_measureReal_osc_le hU hind hlaw hk hkn hδ0 hδ1 hlam
+      (show 0 < θ / 10 by positivity)] with n hk0 hkn' hp hB1 hB23 hB4
+  have hn0 : 0 < n := hk0.trans hkn'
+  have hp0 : (0 : ℝ) ≤ k n / n := by positivity
+  have hpt (t : ℝ) (ht0 : 0 ≤ t) (ht : t ≤ 3 / 2) : (k n : ℝ) / n * t ≤ 1 := by nlinarith
+  set W := fun t ω ↦ tailEmpiricalProcess U n (k n) t ω with hWdef
+  -- the bad events
+  set G := {ω | ∃ i < n, 1 ≤ U i ω}
+  set B1 := {ω | ENNReal.ofReal lam ≤ ∫⁻ t in Set.Ioc 0 (ε n), ‖W t ω / t‖ₑ}
+  set B2 := {ω | √(k n : ℝ) * δ ≤ |W (1 - δ) ω|}
+  set B3 := {ω | √(k n : ℝ) * δ ≤ |W (1 + δ) ω|}
+  set B4 := {ω | ∃ u ∈ Set.Icc (1 - δ) (1 - δ + 2 * δ), 2 * lam < |W u ω - W (1 - δ) ω|}
+  set B5 := {ω | K ≤ |W 1 ω|}
+  have hsub : {ω | η ≤ ‖meanExcessStat U n (k n) ω -
+      ∑ i ∈ range n, hillSummand n (k n) (ε n) (U i ω) - (0 : Ω → ℝ) ω‖} ⊆
+      G ∪ B1 ∪ B2 ∪ B3 ∪ B4 ∪ B5 := by
+    intro ω hω
+    by_contra hcon
+    simp only [G, B1, B2, B3, B4, B5, Set.mem_union, Set.mem_ofPred_eq, not_or, not_exists,
+      not_and, not_le, not_lt] at hcon
+    obtain ⟨⟨⟨⟨⟨hG, h1⟩, h2⟩, h3⟩, h4⟩, h5⟩ := hcon
+    have := abs_meanExcess_sub_sum_hillSummand_lt (U := U) (ω := ω) hG hk0 hkn' (hε0 n) (hε1 n)
+      hδ0 hδ1 hlam h1 h2 h3 h4 h5 (K := K)
+    simp only [Set.mem_ofPred_eq, Pi.zero_apply, sub_zero, Real.norm_eq_abs] at hω
+    unfold meanExcessStat at hω
+    linarith
+  -- the probabilities
+  have hPG : P.real G = 0 := by
+    rw [measureReal_eq_zero_iff]; exact measure_exists_one_le_eq_zero hU hlaw n
+  have hP1 : P.real B1 ≤ θ / 10 :=
+    (measureReal_ofReal_le_lintegral_le hU hind hlaw hn0 hk0 (hε0 n).le
+      (hpt _ (hε0 n).le (by linarith [hε1 n])) hlam).trans hB1
+  have hsk : 0 < √(k n : ℝ) * δ := by
+    have : (0 : ℝ) < k n := Nat.cast_pos.2 hk0
+    positivity
+  have hsq : (√(k n : ℝ) * δ) ^ 2 = k n * δ ^ 2 := by
+    rw [mul_pow, Real.sq_sqrt (Nat.cast_nonneg _)]
+  have hP2 : P.real B2 ≤ 1 / (k n * δ ^ 2) := by
+    refine (measureReal_le_abs_tailEmpiricalProcess_le hU hind hlaw hn0 hk0 (by linarith)
+      (hpt _ (by linarith) (by linarith)) hsk).trans ?_
+    rw [hsq]
+    exact div_le_div_of_nonneg_right (by linarith) (by positivity)
+  have hP3 : P.real B3 ≤ 2 / (k n * δ ^ 2) := by
+    refine (measureReal_le_abs_tailEmpiricalProcess_le hU hind hlaw hn0 hk0 (by linarith)
+      (hpt _ (by linarith) (by linarith)) hsk).trans ?_
+    rw [hsq]
+    exact div_le_div_of_nonneg_right (by linarith) (by positivity)
+  have hP5 : P.real B5 ≤ θ / 10 := by
+    refine (measureReal_le_abs_tailEmpiricalProcess_le hU hind hlaw hn0 hk0 zero_le_one
+      (hpt _ zero_le_one (by norm_num)) (by linarith : (0 : ℝ) < K)).trans hK
+  have h23 : 1 / ((k n : ℝ) * δ ^ 2) + 2 / (k n * δ ^ 2) ≤ θ / 5 := by
+    rw [← add_div]; norm_num; exact hB23
+  have u1 := measureReal_union_le (μ := P) (G ∪ B1 ∪ B2 ∪ B3 ∪ B4) B5
+  have u2 := measureReal_union_le (μ := P) (G ∪ B1 ∪ B2 ∪ B3) B4
+  have u3 := measureReal_union_le (μ := P) (G ∪ B1 ∪ B2) B3
+  have u4 := measureReal_union_le (μ := P) (G ∪ B1) B2
+  have u5 := measureReal_union_le (μ := P) G B1
+  have hP4 := hB4
+  linarith [measureReal_mono (μ := P) hsub]
+
 end Remainder
 
 end ExtremeValueTheory
