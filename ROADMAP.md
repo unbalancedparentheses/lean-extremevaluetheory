@@ -31,7 +31,7 @@ Kulik and Soulier, *Heavy-Tailed Time Series* (KS); Beirlant, Goegebeur, Segers 
 - [ ] Bias-reduced estimators (second-order: Gomes et al., Feuerverger–Hall), and their normality
 - [ ] Asymptotic normality of the Pickands and moment estimators (dHF Thms 3.3.5, 3.5.4)
 - [ ] Confidence intervals and the delta method for tail functionals
-- [ ] Extremal-index estimators: blocks, runs, intervals (Ferro–Segers), consistency (KS ch. 10)
+- [~] Extremal-index estimators: blocks and runs consistent (general, m-dependent, via the tail process); intervals estimator consistent given Ferro–Segers Thm 1 (not proved)
 - [ ] Return levels and return periods for block maxima and POT, with normality
 
 ## 4. Heavy tails and stable laws

@@ -741,3 +741,50 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
   that no earlier shock echoes across it. Condition $\mathcal A$ needs blocks longer than the echo lag; anticlustering
   needs shorter ones.
 \end{proof}
+
+\section{Estimating the extremal index}
+
+\begin{theorem}[Blocks and runs estimators]
+  \label{thm:extremal-index-estimators}
+  \uses{thm:theta-eq-vartheta}
+  \lean{ExtremeValueTheory.blocksEstimator, ExtremeValueTheory.runsEstimator, ExtremeValueTheory.tendstoInMeasure_blocksEstimator, ExtremeValueTheory.tendstoInMeasure_runsEstimator,
+    ExtremeValueTheory.tendstoInMeasure_blocksEstimator_of_isMDependent, ExtremeValueTheory.tendstoInMeasure_runsEstimator_of_isMDependent,
+    ExtremeValueTheory.HasShiftInvariantWindows.runs_bounds, ExtremeValueTheory.HasSpectralTailProcess.tendsto_runsRatio,
+    ExtremeValueTheory.HasSpectralTailProcess.tendstoInMeasure_blocksEstimator, ExtremeValueTheory.HasSpectralTailProcess.tendstoInMeasure_runsEstimator}
+  \leanok
+  For a stationary sequence with $n p_n \to \infty$, $r_n/n \to 0$ and $\alpha$-mixing rate conditions, the blocks and runs
+  estimators converge in probability to their population targets; for $m$-dependent sequences the cluster and mixing
+  conditions are automatic. Under forward anticlustering both estimators applied to $|X|$ converge to the candidate
+  extremal index $\vartheta$, which equals $\theta$ under condition $\mathcal A$ [Kulik and Soulier, Chapter~10].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Chebyshev's inequality for the block and run counts, with covariances bounded by the mixing coefficients.
+\end{proof}
+
+\begin{theorem}[The intervals estimator]
+  \label{thm:intervals-estimator}
+  \lean{ExtremeValueTheory.ferroSegersLaw, ExtremeValueTheory.ferroSegers_moment_ratio, ExtremeValueTheory.intervalsEstimator₁, ExtremeValueTheory.intervalsEstimator₂, ExtremeValueTheory.intervalsEstimator,
+    ExtremeValueTheory.tendstoInMeasure_intervalsEstimator₁}
+  \leanok
+  For the limit law $(1-\theta)\delta_0 + \theta\,\mathrm{Exp}(\theta)$ of normalized inter-exceedance times, $2(\E T)^2/\E T^2 = \theta$;
+  the Ferro--Segers estimator is consistent whenever the first two empirical moments of the normalized times converge
+  to $1$ and $2/\theta$. The convergence of inter-exceedance times itself [Ferro and Segers 2003, Theorem~1] is assumed.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Direct computation of the moments and continuity of the ratio.
+\end{proof}
+
+\begin{theorem}[Block length matters: the echo process]
+  \label{thm:echo-estimators}
+  \uses{thm:extremal-index-estimators, thm:echo-beta-mixing}
+  \lean{ExtremeValueTheory.logEcho_tendstoInMeasure_blocksEstimator, ExtremeValueTheory.logEcho_tendstoInMeasure_runsEstimator}
+  \leanok
+  For the log-lag echo process the blocks estimator with $\log n = o(r_n)$ converges to $\theta = 1/2$, while the runs
+  estimator with $r_n = o(\log u_n)$ converges to $\vartheta = 1$: short runs are inconsistent for $\theta$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  The mixing conditions follow from the geometric $\alpha$-mixing of the echo process.
+\end{proof}
