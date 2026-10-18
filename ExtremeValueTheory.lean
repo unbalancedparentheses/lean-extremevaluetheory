@@ -150,6 +150,8 @@ import ExtremeValueTheory.Statistics.GPDJointNormality
 import ExtremeValueTheory.Statistics.GEVMLE
 import ExtremeValueTheory.Statistics.GEVMLEFisher
 import ExtremeValueTheory.Statistics.MeasurableArgmax
+import ExtremeValueTheory.Statistics.GPDJointNormalityNeg
+import ExtremeValueTheory.Statistics.GPDMLENormality
 import ExtremeValueTheory.ForMathlib.Probability.TriangularArrayCLT
 import ExtremeValueTheory.Statistics.TailEmpiricalProcess
 import ExtremeValueTheory.ForMathlib.Probability.FourthMoment
