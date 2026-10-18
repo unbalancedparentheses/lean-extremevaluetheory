@@ -12,9 +12,36 @@ import Mathlib.Analysis.SpecialFunctions.ImproperIntegrals
 import Mathlib.Analysis.SpecialFunctions.Pow.Integral
 
 /-!
-# Moments of the stationary solution of a stochastic recurrence equation
+# Moments and tails of the stationary solution of a stochastic recurrence equation
 
-skeleton
+For the stationary solution `X =ᵈ A X + B` of `Dependence/SRE.lean`:
+
+* if `E|A|^s < 1` and `E|B|^s < ∞` for some `s > 0`, then `E|X|^s < ∞` [Vervaat 1979,
+  Theorem 1.6; BDM16, Lemma 2.3.1]. Proof: the partial sums `Y_n` of the perpetuity satisfy
+  `E|Y_{n+1}|^s ≤ E|A|^s E|Y_n|^s + E|B|^s` (`s ≤ 1`) or Minkowski's
+  `‖Y_{n+1}‖_s ≤ ‖A‖_s ‖Y_n‖_s + ‖B‖_s` (`s ≥ 1`), so they are bounded in `L^s`; conclude
+  with Fatou.
+* **The Kesten–Goldie regime** `E|A|^κ = 1`, `κ > 0` (with `|A|` not a.s. `1`): by strict
+  Jensen, `E|A|^s < 1` for `0 < s < κ` and `E|A|^s > 1` for `s > κ`. Hence `E|X|^s < ∞` for
+  `s < κ` (given `E|B|^κ < ∞`), while for `A, B ≥ 0`, `B ≢ 0`, `E X^s = ∞` for `s > κ`: the
+  fixed point equation gives `E X^s ≥ E A^s · E X^s` [Goldie 1991, Theorem 4.1; BDM16, §2.4].
+* **Tail bounds**: `P(|X| > x) = O(x^{-s})` for every `s < κ`, and `P(X > x)` is not
+  `O(x^{-s})` for any `s > κ`. So the tail index of `X` is exactly `κ`.
+
+The precise Kesten–Goldie asymptotics `P(X > x) ~ c₊ x^{-κ}` (Goldie's implicit renewal theorem)
+needs the key renewal theorem for non-arithmetic random walks on `ℝ`, which is not available in
+Mathlib and is **not** formalized here.
+
+## Main results
+
+* `SRE.lintegral_enorm_rpow_stationaryLaw_lt_top`: `E|A|^s < 1`, `E|B|^s < ∞` ⇒ `E|X|^s < ∞`.
+* `SRE.lintegral_enorm_rpow_lt_one`, `SRE.one_lt_lintegral_enorm_rpow`: `E|A|^s` versus `1`
+  around the Kesten exponent.
+* `SRE.lintegral_enorm_rpow_stationaryLaw_lt_top_of_lt`,
+  `SRE.lintegral_enorm_rpow_stationaryLaw_eq_top_of_lt`: the moment index of `X` is `κ`.
+* `SRE.exists_stationaryLaw_tail_le`, `SRE.not_stationaryLaw_tail_le`: the tail bounds.
+* `SRE.exists_measure_lt_abs_le_of_lintegral_lt_top`,
+  `SRE.lintegral_lt_top_of_measure_lt_abs_le`: power tails versus moments, for any law on `ℝ`.
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Real
@@ -170,13 +197,16 @@ theorem lintegral_enorm_rpow_stationaryLaw_lt_top
 
 /-! ### The Kesten exponent: `E |A|^κ = 1` -/
 
+/-- `x^t ≤ 1 + x^S` for `x ≥ 0`, `0 ≤ t ≤ S`. -/
+theorem rpow_le_one_add_rpow {x t S : ℝ} (hx : 0 ≤ x) (ht : 0 ≤ t) (htS : t ≤ S) :
+    x ^ t ≤ 1 + x ^ S := by
+  rcases le_total x 1 with h | h
+  · linarith [Real.rpow_le_one hx h ht, Real.rpow_nonneg hx S]
+  · linarith [Real.rpow_le_rpow_of_exponent_le h htS]
+
 theorem rpow_le_one_add {x q : ℝ} (hx : 0 ≤ x) (hq0 : 0 ≤ q) (hq1 : q ≤ 1) :
     x ^ q ≤ 1 + x := by
-  rcases le_total x 1 with h | h
-  · linarith [Real.rpow_le_one hx h hq0]
-  · have := Real.rpow_le_rpow_of_exponent_le h hq1
-    rw [Real.rpow_one] at this
-    linarith
+  simpa using rpow_le_one_add_rpow hx hq0 hq1
 
 /-- **Strict Jensen for a power `q ∈ (0, 1)`**: if `F ≥ 0` has mean `1` and is not a.e. `1`, then
 `E F^q < 1`. -/

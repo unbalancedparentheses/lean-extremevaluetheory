@@ -9,9 +9,49 @@ import Mathlib.Analysis.SpecialFunctions.Log.PosLog
 import Mathlib.MeasureTheory.Measure.HasOuterApproxClosed
 
 /-!
-# Stochastic recurrence equations
+# Stochastic recurrence equations: the stationary solution
 
-skeleton
+The **stochastic recurrence equation** (random coefficient autoregression, random affine map)
+
+  `X_t = A_t X_{t-1} + B_t`, `(A_t, B_t)` iid with law `ν` on `ℝ × ℝ`,
+
+is the random iteration `X_{t+1} = f(X_t, V_t)` of `Dependence/MarkovChain.lean` with
+`f(x, (a, b)) = a x + b` (`SRE.affine`) [Kesten 1973; Vervaat 1979; Goldie 1991; BDM16, Ch. 2;
+EKM, §8.4]. Under the contraction condition `E log |A| < 0` and `E log⁺ |B| < ∞` its unique
+stationary law is the law of the **perpetuity**
+
+  `Y = ∑_{k ≥ 0} A_0 A_1 ⋯ A_{k-1} B_k`.
+
+Proof of convergence: by the strong law of large numbers, `k⁻¹ ∑_{i < k} log |A_i| → E log |A|`
+and `k⁻¹ log⁺ |B_k| → 0` almost surely, so `|A_0 ⋯ A_{k-1} B_k| ≤ exp(k E log |A| / 2)` for
+large `k` (`SRE.Contracting`). Uniqueness: if `π'` is invariant, the backward iterates
+`f_{V_0} ∘ ⋯ ∘ f_{V_{n-1}}(X₀)`, `X₀ ∼ π'`, all have law `π'` and converge almost surely to the
+perpetuity.
+
+Here `log` is Mathlib's `Real.log` (`log 0 = 0`), and the hypothesis `E log |A| < 0` is taken
+with `log |A|` integrable; when `P(A = 0) > 0` this is stronger than the textbook condition (which
+reads `log 0 = -∞`).
+
+## Main definitions
+
+* `SRE.affine`, `SRE.term`, `SRE.perpetuity`, `SRE.backward`: the recursion, the terms
+  `A_0 ⋯ A_{k-1} B_k`, the perpetuity and the backward iterates.
+* `SRE.Contracting c v`: the deterministic contraction condition on a sequence.
+* `SRE.seqLaw ν = ν^⊗ℕ`, `SRE.stationaryLaw ν`: the law of the perpetuity.
+
+## Main results
+
+* `SRE.ae_contracting`, `SRE.ae_contracting_seqLaw`: almost sure contraction, hence absolute
+  convergence of the perpetuity (`Contracting.summable_abs_term`) [BDM16, Theorem 2.1.3].
+* `SRE.map_affine_stationaryLaw`: the stationary law solves `X =ᵈ A X + B`, `X ⊥ (A, B)`.
+* `SRE.eq_stationaryLaw`: it is the unique such law.
+* `SRE.isStationary_chain`: the random iteration started from it is a stationary Markov chain.
+* `SRE.ae_summable_and_map_perpetuity`: on any probability space, the perpetuity of an iid
+  sequence converges almost surely and has law `stationaryLaw ν`.
+
+The pathwise (`ℤ`-indexed) solution is in `Dependence/SREPathwise.lean`, moments and tails in
+`Dependence/SREMoments.lean`, the Kesten exponent in `Dependence/SREExponent.lean`, GARCH(1,1)
+in `Dependence/SREGarch.lean`.
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Real
@@ -84,13 +124,10 @@ with `E log |A| < c` and `E log⁺ |B| < ∞` (`ae_contracting`). -/
 def Contracting (c : ℝ) (v : ℕ → ℝ × ℝ) : Prop :=
   ∀ᶠ k : ℕ in atTop, ∑ i ∈ Finset.range k, log |(v i).1| + posLog (v k).2 ≤ c * k
 
-theorem exp_mul_nat (c : ℝ) (k : ℕ) : exp (c * k) = exp c ^ k := by
-  rw [mul_comm, exp_nat_mul]
-
 theorem Contracting.abs_term_le {c : ℝ} {v : ℕ → ℝ × ℝ} (h : Contracting c v) :
     ∀ᶠ k : ℕ in atTop, |term v k| ≤ exp c ^ k := by
   filter_upwards [h] with k hk
-  exact (abs_term_le_exp v k).trans (by rw [← exp_mul_nat]; exact exp_le_exp.2 hk)
+  exact (abs_term_le_exp v k).trans (by rw [← exp_nat_mul, mul_comm]; exact exp_le_exp.2 hk)
 
 theorem Contracting.summable_abs_term {c : ℝ} (hc : c < 0) {v : ℕ → ℝ × ℝ}
     (h : Contracting c v) : Summable fun k => |term v k| :=
@@ -109,7 +146,7 @@ theorem Contracting.tendsto_prod {c : ℝ} (hc : c < 0) {v : ℕ → ℝ × ℝ}
   have hg := tendsto_pow_atTop_nhds_zero_of_lt_one (exp_pos c).le (Real.exp_lt_one_iff.2 hc)
   refine squeeze_zero_norm' ?_ hg
   filter_upwards [h] with k hk
-  rw [Real.norm_eq_abs, ← exp_mul_nat]
+  rw [Real.norm_eq_abs, ← exp_nat_mul, mul_comm]
   exact (abs_prod_le_exp v k).trans (exp_le_exp.2 (by linarith [posLog_nonneg (x := (v k).2)]))
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} {V : ℕ → Ω → ℝ × ℝ}

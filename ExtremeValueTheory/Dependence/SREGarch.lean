@@ -8,7 +8,27 @@ import ExtremeValueTheory.Dependence.SREExponent
 /-!
 # GARCH(1,1) and ARCH(1): the squared volatility as a stochastic recurrence
 
-skeleton
+In the GARCH(1,1) model `X_t = σ_t Z_t`, `σ_t² = α₀ + α₁ X_{t-1}² + β₁ σ_{t-1}²`, with iid
+innovations `Z_t ∼ ζ`, the squared volatility satisfies
+
+  `σ_{t+1}² = α₀ + (α₁ Z_t² + β₁) σ_t²`,
+
+a stochastic recurrence `X_{t+1} = A_t X_t + B_t` with `(A_t, B_t) = (α₁ Z_t² + β₁, α₀)`
+(`SRE.GARCH.affine_innov`) [Bollerslev 1986; Nelson 1990; Bougerol–Picard 1992;
+Mikosch–Stărică 2000; BDM16, §4.3; EKM, §8.4]. ARCH(1) is the case `β₁ = 0`.
+
+## Main results
+
+* `SRE.GARCH.isStationary`, `SRE.GARCH.eq_stationaryLaw'`: under `E log(α₁ Z² + β₁) < 0` the
+  squared volatility has a unique stationary law, and the chain started from it is stationary.
+* `SRE.GARCH.exists_tail_index`: existence of the **tail index** `κ > 0` solving
+  `E (α₁ Z² + β₁)^κ = 1` (unique by `SRE.kesten_exponent_unique`).
+* `SRE.GARCH.lintegral_rpow_lt_top`, `SRE.GARCH.lintegral_rpow_eq_top`,
+  `SRE.GARCH.tail_bounds`: `E σ^{2s} < ∞` for `s < κ`, `= ∞` for `s > κ`;
+  `P(σ² > x) = O(x^{-s})` for `s < κ` but not for `s > κ`.
+
+The sharp Kesten–Goldie asymptotics `P(σ² > x) ~ c x^{-κ}` would follow from Goldie's implicit
+renewal theorem, which is not formalized (see `Dependence/SREMoments.lean`).
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Real Set

@@ -11,7 +11,17 @@ import Mathlib.Topology.Order.IntermediateValue
 /-!
 # Existence and uniqueness of the Kesten exponent
 
-skeleton
+For a random variable `A` with `A ≠ 0` a.s., `E log |A| < 0` and `E|A|^S > 1` for some `S > 0`
+(`E|A|^S < ∞`), there is a `κ ∈ (0, S)` with `E|A|^κ = 1` [BDM16, §2.4; EKM, §8.4]. Proof: the
+right derivative of `t ↦ E|A|^t` at `0` is `E log |A| < 0` (dominated convergence for the
+slopes `(|A|^t - 1)/t`, which decrease to `log |A|` by convexity), so `E|A|^t < 1` for small
+`t > 0`; conclude by continuity and the intermediate value theorem. If `|A|` is not a.s. `1`,
+`κ` is unique (`SRE.kesten_exponent_unique`, from strict Jensen).
+
+## Main results
+
+* `SRE.exists_integral_abs_rpow_lt_one`, `SRE.exists_integral_abs_rpow_eq_one`,
+  `SRE.kesten_exponent_unique`.
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Real Set
@@ -42,12 +52,6 @@ theorem rpow_sub_one_div_le {a t S : ℝ} (ha : 0 < a) (ht : 0 < t) (htS : t ≤
     field_simp; ring
   rw [e2] at this
   nlinarith
-
-theorem rpow_le_one_add_rpow {x t S : ℝ} (hx : 0 ≤ x) (ht : 0 ≤ t) (htS : t ≤ S) :
-    x ^ t ≤ 1 + x ^ S := by
-  rcases le_total x 1 with h | h
-  · linarith [rpow_le_one hx h ht, rpow_nonneg hx S]
-  · linarith [rpow_le_rpow_of_exponent_le h htS]
 
 section Generic
 
