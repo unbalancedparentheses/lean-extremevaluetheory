@@ -6,13 +6,14 @@ Authors: Federico Carrone
 import ExtremeValueTheory.RegularVariation.Multivariate
 import Mathlib.MeasureTheory.Measure.CharacteristicFunction.Basic
 import Mathlib.NumberTheory.Real.Irrational
+import Mathlib.Algebra.Group.ForwardDiff
 
 /-!
 # Half-spaces determine homogeneous measures (converse Cramér–Wold, uniqueness part)
 -/
 
 open MeasureTheory Filter Topology Set Complex
-open scoped ENNReal NNReal
+open scoped ENNReal NNReal fwdDiff
 
 namespace ExtremeValueTheory
 
@@ -129,9 +130,10 @@ noncomputable def coordFamily (E : Type*) [NormedAddCommGroup E] [NormedSpace �
     [FiniteDimensional ℝ E] (p : Fin (Module.finrank ℝ E) × Bool) : StrongDual ℝ E :=
   (if p.2 then √2 else 1) • LinearMap.toContinuousLinearMap ((Module.finBasis ℝ E).coord p.1)
 
+
 omit [MeasurableSpace E] [BorelSpace E] in
-theorem exists_coordFamily_cos_ne_one {y : E} (hy : y ≠ 0) :
-    ∃ p, Real.cos (coordFamily E p y) ≠ 1 := by
+theorem exists_coordFamily_sin_ne_zero {y : E} (hy : y ≠ 0) :
+    ∃ p, Real.sin (coordFamily E p y / 2) ≠ 0 := by
   set b := Module.finBasis ℝ E
   have : b.repr y ≠ 0 := by
     rwa [Ne, LinearEquiv.map_eq_zero_iff]
@@ -139,82 +141,146 @@ theorem exists_coordFamily_cos_ne_one {y : E} (hy : y ≠ 0) :
   have hc : ∀ q : Bool, coordFamily E (i, q) y = (if q then √2 else 1) * b.repr y i := fun q => by
     simp only [coordFamily, b]
     split_ifs <;> simp [Module.Basis.coord_apply]
+  have hsin : ∀ t : ℝ, Real.sin (t / 2) = 0 → Real.cos t = 1 := fun t ht => by
+    have h1 := Real.cos_sq (t / 2)
+    have h2 := Real.sin_sq_add_cos_sq (t / 2)
+    rw [ht, show 2 * (t / 2) = t by ring] at *
+    linarith
   rcases cos_ne_one_or_cos_sqrt_two_ne_one hi with h1 | h2
-  · exact ⟨(i, false), by rw [hc]; simpa using h1⟩
-  · exact ⟨(i, true), by rw [hc]; simpa using h2⟩
+  · exact ⟨(i, false), fun h0 => h1 (by simpa [hc] using hsin _ h0)⟩
+  · exact ⟨(i, true), fun h0 => h2 (by simpa [hc] using hsin _ h0)⟩
+
+omit [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E] in
+/-- Iterated forward differences of the exponential `x ↦ e^{ix}`. -/
+theorem fwdDiff_iter_cexp (b a : ℝ) (N : ℕ) :
+    Δ_[b]^[N] (fun x : ℝ => cexp (x * I)) a = (cexp (b * I) - 1) ^ N * cexp (a * I) := by
+  have h1 : Δ_[b] (fun x : ℝ => cexp (x * I)) = (cexp (b * I) - 1) • fun x : ℝ => cexp (x * I) := by
+    funext x
+    simp only [fwdDiff, Pi.smul_apply, smul_eq_mul, ofReal_add, add_mul, Complex.exp_add]
+    ring
+  induction N generalizing a with
+  | zero => simp
+  | succ N ih =>
+    rw [Function.iterate_succ_apply, h1, fwdDiff_iter_const_smul, Pi.smul_apply, ih, smul_eq_mul]
+    ring
+
+omit [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E] in
+theorem cexp_sub_one_pow (b : ℝ) (m : ℕ) :
+    (cexp (b * I) - 1) ^ (2 * m) =
+      (-4 : ℂ) ^ m * ((Real.sin (b / 2) ^ (2 * m) : ℝ) : ℂ) * cexp ((m * b : ℝ) * I) := by
+  have hsin : cexp (b * I) - 1 = 2 * I * Complex.sin (b / 2) * cexp ((b / 2 : ℝ) * I) := by
+    have e1 : cexp (b * I) = cexp ((b / 2 : ℝ) * I) * cexp ((b / 2 : ℝ) * I) := by
+      rw [← Complex.exp_add]; congr 1; push_cast; ring
+    have e2 : cexp (-((b / 2 : ℝ) : ℂ) * I) * cexp ((b / 2 : ℝ) * I) = 1 := by
+      rw [← Complex.exp_add]; simp
+    rw [Complex.sin, e1]
+    push_cast at e2 ⊢
+    linear_combination (-(I ^ 2)) * e2 + (cexp (↑b / 2 * I) ^ 2 - 1) * I_sq
+  have hm : cexp ((m * b : ℝ) * I) = cexp ((b / 2 : ℝ) * I) ^ (2 * m) := by
+    rw [← Complex.exp_nat_mul]; congr 1; push_cast; ring
+  rw [hsin, hm, mul_pow, mul_pow, pow_mul, show (2 * I) ^ 2 = (-4 : ℂ) by
+    rw [mul_pow, I_sq]; norm_num]
+  push_cast
+  ring
+
+
 
 /-- **Half-spaces determine a measure** (abstract form). Let `g : ℝ → ℂ` be measurable with
-`g 0 = 0` and `e^{ia} (1 - cos b) = g a - g (a + b) / 2 - g (a - b) / 2`, and suppose
-`g ∘ M` is integrable for `μ` and `ν` for every continuous linear `M`. If `μ` and `ν` have no
-atom at the origin and agree (with finite values) on all half-spaces `{L > 1}`, then `μ = ν`.
+`g 0 = 0` whose `2m`-th forward differences coincide with those of `x ↦ e^{ix}` (for instance
+`g (x) = e^{ix} - P (x)` with `P` a polynomial of degree `< 2m`), and suppose `g ∘ M` is
+integrable for `μ` and `ν` for every continuous linear `M`. If `μ` and `ν` have no atom at the
+origin and agree (with finite values) on all half-spaces `{L > 1}`, then `μ = ν`.
 
-The proof: the integrals `∫ g (M y)` agree (`integral_comp_eq`), hence the characteristic
-functions of the finite measures `(1 - cos (v y)) μ(dy)` and `(1 - cos (v y)) ν(dy)` agree, so
-these measures are equal; `μ` and `ν` therefore agree on `{cos (v y) ≠ 1}` for every `v`, and
-finitely many such sets cover `E \ {0}`. -/
-theorem ext_of_halfSpace {g : ℝ → ℂ} (hgm : Measurable g) (hg0 : g 0 = 0)
-    (hid : ∀ a b : ℝ, cexp (a * I) * ((1 - Real.cos b : ℝ) : ℂ) =
-      g a - g (a + b) / 2 - g (a - b) / 2)
+The proof: the integrals `∫ g (M y)` agree (`integral_comp_eq`). Since
+`Δ_b^{2m} e^{i·} (a) = (-4)^m sin (b / 2) ^ {2m} e^{i (a + m b)}`, the characteristic functions of
+the finite measures `sin (v y / 2) ^ {2m} μ(dy)` and `sin (v y / 2) ^ {2m} ν(dy)` are finite
+combinations of such integrals, so these measures are equal; `μ` and `ν` therefore agree on
+`{sin (v y / 2) ≠ 0}` for every `v`, and finitely many such sets cover `E \ {0}`. -/
+theorem ext_of_halfSpace {g : ℝ → ℂ} (m : ℕ) (hgm : Measurable g) (hg0 : g 0 = 0)
+    (hid : ∀ a b : ℝ, Δ_[b]^[2 * m] g a = Δ_[b]^[2 * m] (fun x : ℝ => cexp (x * I)) a)
     (hμg : ∀ M : StrongDual ℝ E, Integrable (fun y => g (M y)) μ)
     (hνg : ∀ M : StrongDual ℝ E, Integrable (fun y => g (M y)) ν)
     (hμ0 : μ {0} = 0) (hν0 : ν {0} = 0)
     (hfin : ∀ L : StrongDual ℝ E, μ {y | 1 < L y} < ∞)
     (h : ∀ L : StrongDual ℝ E, μ {y | 1 < L y} = ν {y | 1 < L y}) : μ = ν := by
-  let w : StrongDual ℝ E → E → ℝ≥0 := fun v y => Real.toNNReal (1 - Real.cos (v y))
+  -- the combination of values of `g`
+  let c : ℕ → ℤ := fun k => (-1 : ℤ) ^ ((2 * m) - k) * ((2 * m).choose k : ℤ)
+  let Mk : StrongDual ℝ E → StrongDual ℝ E → ℕ → StrongDual ℝ E :=
+    fun L v k => L + ((k : ℝ) - m) • v
+  let S : StrongDual ℝ E → StrongDual ℝ E → E → ℂ :=
+    fun L v y => ∑ k ∈ Finset.range ((2 * m) + 1), c k • g (Mk L v k y)
+  have hpt : ∀ L v : StrongDual ℝ E, ∀ y : E,
+      cexp (L y * I) * ((Real.sin (v y / 2) ^ (2 * m) : ℝ) : ℂ) = ((-4 : ℂ) ^ m)⁻¹ * S L v y := by
+    intro L v y
+    have h1 := hid (L y - m * v y) (v y)
+    rw [fwdDiff_iter_cexp, cexp_sub_one_pow, fwdDiff_iter_eq_sum_shift] at h1
+    have h4 : ((-4 : ℂ) ^ m) ≠ 0 := pow_ne_zero _ (by norm_num)
+    have hS : S L v y = ∑ k ∈ Finset.range ((2 * m) + 1),
+        ((-1 : ℤ) ^ ((2 * m) - k) * ((2 * m).choose k : ℤ)) • g (L y - m * v y + k • v y) := by
+      refine Finset.sum_congr rfl fun k _ => ?_
+      congr 2
+      simp only [Mk, add_apply, smul_apply, smul_eq_mul, nsmul_eq_mul]
+      ring
+    have he : cexp ((m * v y : ℝ) * I) * cexp ((L y - m * v y : ℝ) * I) = cexp (L y * I) := by
+      rw [← Complex.exp_add]; congr 1; push_cast; ring
+    rw [hS, h1, show (-4 : ℂ) ^ m * ((Real.sin (v y / 2) ^ (2 * m) : ℝ) : ℂ) *
+        cexp ((m * v y : ℝ) * I) * cexp ((L y - m * v y : ℝ) * I) =
+        (-4 : ℂ) ^ m * (cexp (L y * I) * ((Real.sin (v y / 2) ^ (2 * m) : ℝ) : ℂ)) by
+      rw [← he]; ring, ← mul_assoc, inv_mul_cancel₀ h4, one_mul]
+  have hSint : ∀ ρ : Measure E, (∀ M : StrongDual ℝ E, Integrable (fun y => g (M y)) ρ) →
+      ∀ L v, Integrable (S L v) ρ := fun ρ hρ L v =>
+    integrable_finsetSum _ fun k _ => (hρ (Mk L v k)).smul (c k : ℂ) |>.congr
+      (Eventually.of_forall fun y => by simp [zsmul_eq_mul])
+  have hSeq : ∀ L v, ∫ y, S L v y ∂μ = ∫ y, S L v y ∂ν := fun L v => by
+    simp only [S]
+    rw [integral_finsetSum _ fun k _ => (hμg (Mk L v k)).smul (c k : ℂ) |>.congr
+        (Eventually.of_forall fun y => by simp [zsmul_eq_mul]),
+      integral_finsetSum _ fun k _ => (hνg (Mk L v k)).smul (c k : ℂ) |>.congr
+        (Eventually.of_forall fun y => by simp [zsmul_eq_mul])]
+    refine Finset.sum_congr rfl fun k _ => ?_
+    simp only [zsmul_eq_mul]
+    rw [integral_const_mul, integral_const_mul,
+      integral_comp_eq hfin h _ hgm hg0 (hμg _) (hνg _)]
+  let w : StrongDual ℝ E → E → ℝ≥0 := fun v y => Real.toNNReal (Real.sin (v y / 2) ^ (2 * m))
   have hw_meas : ∀ v, Measurable (w v) := fun v =>
-    (continuous_real_toNNReal.comp (continuous_const.sub
-      (Real.continuous_cos.comp v.continuous))).measurable
-  have hcos : ∀ b : ℝ, ((1 - Real.cos b : ℝ) : ℂ) = -(g b / 2) - g (-b) / 2 := fun b => by
-    have := hid 0 b
-    simp only [ofReal_zero, zero_mul, Complex.exp_zero, one_mul, zero_add, zero_sub, hg0] at this
-    rw [this]
-  have hcos_int : ∀ ρ : Measure E, (∀ M : StrongDual ℝ E, Integrable (fun y => g (M y)) ρ) →
-      ∀ v : StrongDual ℝ E, Integrable (fun y => 1 - Real.cos (v y)) ρ := fun ρ hρ v => by
-    have hC : Integrable (fun y => -(g (v y) / 2) - g ((-v) y) / 2) ρ :=
-      ((hρ v).div_const 2).neg.sub ((hρ (-v)).div_const 2)
-    refine (hC.re).congr (Eventually.of_forall fun y => ?_)
-    simp only [neg_apply]
-    rw [← hcos]; simp [Complex.cos_ofReal_re]
+    (continuous_real_toNNReal.comp ((Real.continuous_sin.comp
+      (v.continuous.div_const 2)).pow (2 * m))).measurable
+  have hwnn : ∀ (v : StrongDual ℝ E) (y : E), 0 ≤ Real.sin (v y / 2) ^ (2 * m) := fun v y => by
+    simp only [pow_mul]; positivity
+  have hw_int : ∀ ρ : Measure E, (∀ M : StrongDual ℝ E, Integrable (fun y => g (M y)) ρ) →
+      ∀ v : StrongDual ℝ E, Integrable (fun y => Real.sin (v y / 2) ^ (2 * m)) ρ := fun ρ hρ v => by
+    refine ((hSint ρ hρ 0 v).const_mul ((-4 : ℂ) ^ m)⁻¹).re.congr
+      (Eventually.of_forall fun y => ?_)
+    simp only
+    rw [← hpt 0 v y]
+    simp only [zero_apply, ofReal_zero, zero_mul, Complex.exp_zero, one_mul]
+    exact RCLike.ofReal_re _
   have hfinite : ∀ ρ : Measure E, (∀ M : StrongDual ℝ E, Integrable (fun y => g (M y)) ρ) →
       ∀ v, IsFiniteMeasure (ρ.withDensity fun y => (w v y : ℝ≥0∞)) := fun ρ hρ v =>
-    isFiniteMeasure_withDensity_ofReal (hcos_int ρ hρ v).2
-  have hchar : ∀ ρ : Measure E, ∀ v L : StrongDual ℝ E,
-      charFunDual (ρ.withDensity fun y => (w v y : ℝ≥0∞)) L =
-        ∫ y, (g (L y) - g ((L + v) y) / 2 - g ((L - v) y) / 2) ∂ρ := fun ρ v L => by
-    rw [charFunDual_apply, integral_withDensity_eq_integral_smul (hw_meas v)]
+    isFiniteMeasure_withDensity_ofReal (hw_int ρ hρ v).2
+  have hchar : ∀ ρ : Measure E, (∀ M : StrongDual ℝ E, Integrable (fun y => g (M y)) ρ) →
+      ∀ v L : StrongDual ℝ E, charFunDual (ρ.withDensity fun y => (w v y : ℝ≥0∞)) L =
+        ((-4 : ℂ) ^ m)⁻¹ * ∫ y, S L v y ∂ρ := fun ρ hρ v L => by
+    rw [charFunDual_apply, integral_withDensity_eq_integral_smul (hw_meas v), ← integral_const_mul]
     congr 1
     funext y
-    have hnn : 0 ≤ 1 - Real.cos (v y) := sub_nonneg.2 (Real.cos_le_one _)
-    simp only [w, add_apply, sub_apply]
-    rw [NNReal.smul_def, Real.coe_toNNReal _ hnn, Complex.real_smul, mul_comm, hid]
-  have hint_eq : ∀ v L : StrongDual ℝ E,
-      ∫ y, (g (L y) - g ((L + v) y) / 2 - g ((L - v) y) / 2) ∂μ =
-        ∫ y, (g (L y) - g ((L + v) y) / 2 - g ((L - v) y) / 2) ∂ν := fun v L => by
-    have hI : ∀ ρ : Measure E, (∀ M : StrongDual ℝ E, Integrable (fun y => g (M y)) ρ) →
-        ∫ y, (g (L y) - g ((L + v) y) / 2 - g ((L - v) y) / 2) ∂ρ =
-          ∫ y, g (L y) ∂ρ - (∫ y, g ((L + v) y) ∂ρ) / 2 - (∫ y, g ((L - v) y) ∂ρ) / 2 :=
-      fun ρ hρ => by
-        rw [integral_sub (f := fun y => g (L y) - g ((L + v) y) / 2)
-          (g := fun y => g ((L - v) y) / 2) ((hρ L).sub ((hρ _).div_const 2))
-          ((hρ _).div_const 2), integral_sub (f := fun y => g (L y))
-          (g := fun y => g ((L + v) y) / 2) (hρ L) ((hρ _).div_const 2), integral_div,
-          integral_div]
-    rw [hI μ hμg, hI ν hνg]
-    simp only [fun M => integral_comp_eq hfin h M hgm hg0 (hμg M) (hνg M)]
+    simp only [w]
+    rw [NNReal.smul_def, Real.coe_toNNReal _ (hwnn v y), Complex.real_smul, mul_comm, hpt]
   have hdens : ∀ v : StrongDual ℝ E, μ.restrict {y | (w v y : ℝ≥0∞) ≠ 0} =
       ν.restrict {y | (w v y : ℝ≥0∞) ≠ 0} := fun v => by
     have := hfinite μ hμg v
     have := hfinite ν hνg v
     refine restrict_ne_zero_eq_of_withDensity_eq (hw_meas v).coe_nnreal_ennreal
       (fun y => ENNReal.coe_ne_top) (Measure.ext_of_charFunDual (funext fun L => ?_))
-    rw [hchar, hchar, hint_eq]
+    rw [hchar μ hμg, hchar ν hνg, hSeq]
   set U : Set E := ⋃ p, {y | (w (coordFamily E p) y : ℝ≥0∞) ≠ 0}
   have hU : Uᶜ ⊆ {0} := fun y hy => by
     by_contra hy0
-    obtain ⟨p, hp⟩ := exists_coordFamily_cos_ne_one hy0
+    obtain ⟨p, hp⟩ := exists_coordFamily_sin_ne_zero hy0
     simp only [U, mem_compl_iff, mem_iUnion, not_exists, mem_ofPred_eq, not_not,
-      ENNReal.coe_eq_zero, w, Real.toNNReal_eq_zero, tsub_le_iff_right] at hy
-    exact hp (le_antisymm (Real.cos_le_one _) (by linarith [hy p]))
+      ENNReal.coe_eq_zero, w, Real.toNNReal_eq_zero] at hy
+    have := le_antisymm (hy p) (hwnn _ y)
+    exact hp (eq_zero_of_pow_eq_zero this)
   have hself : ∀ ρ : Measure E, ρ {0} = 0 → ρ.restrict U = ρ := fun ρ hρ =>
     Measure.restrict_eq_self_of_ae_mem (measure_mono_null (fun y hy => hU hy) hρ)
   rw [← hself μ hμ0, ← hself ν hν0, Measure.restrict_iUnion_congr]
