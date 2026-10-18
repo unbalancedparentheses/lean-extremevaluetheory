@@ -342,4 +342,195 @@ theorem echoBlockMass_powLag_bounds (hα : 0 < α) (hγ : 0 < γ) (hγα : γ < 
 
 end PowLag
 
+/-! ### Polynomial scales -/
+
+section Scales
+
+/-- If `a_n ≥ 0` and `log a_n / log n → c > 0`, then `a_n → ∞`. -/
+theorem tendsto_atTop_of_log_div_log {a : ℕ → ℝ} (ha : ∀ n, 0 ≤ a n) {c : ℝ} (hc : 0 < c)
+    (h : Tendsto (fun n : ℕ => Real.log (a n) / Real.log n) atTop (𝓝 c)) :
+    Tendsto a atTop atTop := by
+  have hL : Tendsto (fun n : ℕ => Real.log n) atTop atTop :=
+    Real.tendsto_log_atTop.comp tendsto_natCast_atTop_atTop
+  have hlog : Tendsto (fun n => Real.log (a n)) atTop atTop := by
+    refine (h.pos_mul_atTop hc hL).congr' ?_
+    filter_upwards [hL.eventually_gt_atTop 0] with n hn
+    field_simp
+  refine (Real.tendsto_exp_atTop.comp hlog).congr' ?_
+  filter_upwards [hlog.eventually_gt_atTop 0] with n hn
+  have : a n ≠ 0 := fun h0 => by simp [h0] at hn
+  exact Real.exp_log ((ha n).lt_of_ne' this)
+
+/-- If `a_n > 0` and `log a_n / log n → c < 0`, then `a_n → 0`. -/
+theorem tendsto_zero_of_log_div_log {a : ℕ → ℝ} (ha : ∀ᶠ n in atTop, 0 < a n) {c : ℝ}
+    (hc : c < 0) (h : Tendsto (fun n : ℕ => Real.log (a n) / Real.log n) atTop (𝓝 c)) :
+    Tendsto a atTop (𝓝 0) := by
+  have hL : Tendsto (fun n : ℕ => Real.log n) atTop atTop :=
+    Real.tendsto_log_atTop.comp tendsto_natCast_atTop_atTop
+  have hlog : Tendsto (fun n => Real.log (a n)) atTop atBot := by
+    refine (h.neg_mul_atTop hc hL).congr' ?_
+    filter_upwards [hL.eventually_gt_atTop 0] with n hn
+    field_simp
+  refine (Real.tendsto_exp_atBot.comp hlog).congr' ?_
+  filter_upwards [ha] with n hn
+  exact Real.exp_log hn
+
+/-- **The polynomial block regimes.** Let `uₙ → ∞` with `log uₙ / log n → 1 / α` and
+`log rₙ / log n → ρ ∈ (0, 1)`. Then `rₙ → ∞`, `rₙ uₙ^(-α) → 0`, and
+`log(uₙ^γ / rₙ) / log n → γ / α - ρ`. -/
+theorem polyBlocks_scales {α γ ρ : ℝ} (hα : 0 < α) {u : ℕ → ℝ} (hu : Tendsto u atTop atTop)
+    (hlu : Tendsto (fun n : ℕ => Real.log (u n) / Real.log n) atTop (𝓝 (1 / α)))
+    {r : ℕ → ℕ} (hρ0 : 0 < ρ) (hρ1 : ρ < 1)
+    (hr : Tendsto (fun n : ℕ => Real.log (r n) / Real.log n) atTop (𝓝 ρ)) :
+    Tendsto r atTop atTop ∧ Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0) ∧
+      Tendsto (fun n : ℕ => Real.log (u n ^ γ / r n) / Real.log n) atTop (𝓝 (γ / α - ρ)) := by
+  have hrR : Tendsto (fun n => (r n : ℝ)) atTop atTop :=
+    tendsto_atTop_of_log_div_log (fun n => Nat.cast_nonneg _) hρ0 hr
+  have hrpos : ∀ᶠ n in atTop, (0 : ℝ) < r n := hrR.eventually_gt_atTop 0
+  have hupos : ∀ᶠ n in atTop, 0 < u n := hu.eventually_gt_atTop 0
+  refine ⟨tendsto_natCast_atTop_iff.1 hrR, ?_, ?_⟩
+  · refine tendsto_zero_of_log_div_log ?_ (c := ρ - α * (1 / α)) (by field_simp; linarith) ?_
+    · filter_upwards [hrpos, hupos] with n h1 h2
+      exact mul_pos h1 (Real.rpow_pos_of_pos h2 _)
+    · refine (hr.sub (hlu.const_mul α)).congr' ?_
+      filter_upwards [hrpos, hupos, eventually_gt_atTop 1] with n h1 h2 hn
+      have hn' : (1 : ℝ) < n := by exact_mod_cast hn
+      have hl : Real.log n ≠ 0 := (Real.log_pos hn').ne'
+      rw [Real.log_mul h1.ne' (Real.rpow_pos_of_pos h2 _).ne', Real.log_rpow h2]
+      field_simp
+      ring
+  · have := (hlu.const_mul γ).sub hr
+    rw [show γ * (1 / α) = γ / α by ring] at this
+    refine this.congr' ?_
+    filter_upwards [hrpos, hupos, eventually_gt_atTop 1] with n h1 h2 hn
+    have hn' : (1 : ℝ) < n := by exact_mod_cast hn
+    have hl : Real.log n ≠ 0 := (Real.log_pos hn').ne'
+    rw [Real.log_div (Real.rpow_pos_of_pos h2 _).ne' h1.ne', Real.log_rpow h2]
+    field_simp
+
+end Scales
+
+/-! ### The power-lag echo process -/
+
+section PowEcho
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+  {α γ : ℝ} {Z : ℤ → Ω → ℝ}
+  (hα : 0 < α) (hZ : ∀ t, Measurable (Z t)) (hind : iIndepFun Z P)
+  (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α) (hpos : ∀ t ω, 0 ≤ Z t ω)
+
+include hα hZ hind hlaw hpos in
+/-- **The power-lag echo process has `θ = 1/2 < 1 = ϑ`** (`0 < γ < α`): it is stationary, its
+spectral tail process is `Θ_t = 1{t = 0}`, and its extremal index is `1/2`. -/
+theorem powEchoProcess_theta_lt_vartheta (hγ : 0 < γ) (hγα : γ < α) :
+    HasShiftInvariantWindows P (echoProcess (powLag γ) Z) ∧
+      HasSpectralTailProcess P (echoProcess (powLag γ) Z) α (Measure.dirac ()) unitSpectral ∧
+      (candidateExtremalIndex (Measure.dirac ()) unitSpectral α).toReal = 1 ∧
+      HasExtremalIndex (fun k : ℕ => echoProcess (powLag γ) Z k) P (1 / 2) :=
+  echoProcess_theta_lt_vartheta hα hZ hind hlaw hpos (measurable_powLag γ) (one_le_powLag γ)
+    (tendsto_powLag hγ) (summable_powLag hα hγ hγα)
+
+include hα hZ hind hlaw hpos in
+/-- **The cluster ratio of the power-lag echo process at every block length**: with
+`κₙ = uₙ^γ / rₙ` (echo lag of an exceedance over block length),
+`clusterRatio - (1 + φ_{α/γ}(κₙ)) / 2 → 0`, for `uₙ → ∞`, `rₙ → ∞`, `rₙ uₙ^(-α) → 0`. -/
+theorem tendsto_clusterRatio_sub_powEchoProcess (hγ : 0 < γ) (hγα : γ < α) {u : ℕ → ℝ}
+    (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0)) :
+    Tendsto (fun n => clusterRatio P (echoProcess (powLag γ) Z) u r n -
+      (1 + echoShape (α / γ) (u n ^ γ / r n)) / 2) atTop (𝓝 0) := by
+  have h := tendsto_clusterRatio_sub_echoProcess hα hZ hind hlaw hpos (measurable_powLag γ)
+    (one_le_powLag γ) hu (hr.eventually_gt_atTop 0) hrb
+  set d : ℕ → ℝ := fun n => echoBlockMass α (powLag γ) (u n) (r n) / (r n * u n ^ (-α)) -
+    echoShape (α / γ) (u n ^ γ / r n)
+  have hrinv : Tendsto (fun n => (1 : ℝ) / r n) atTop (𝓝 0) :=
+    tendsto_const_nhds.div_atTop (tendsto_natCast_atTop_iff.2 hr)
+  have hd : Tendsto d atTop (𝓝 0) := by
+    refine squeeze_zero' ?_ ?_ hrinv
+    all_goals
+      filter_upwards [hu.eventually_ge_atTop 1, hr.eventually_gt_atTop 0] with n hn hrn
+      have hR : (0 : ℝ) < r n := by exact_mod_cast hrn
+      have hb : 0 < u n ^ (-α) := Real.rpow_pos_of_pos (by linarith) _
+      obtain ⟨h1, h2⟩ := echoBlockMass_powLag_bounds hα hγ hγα hn hrn
+      simp only [d]
+    · rw [sub_nonneg, le_div_iff₀ (mul_pos hR hb)]
+      linarith
+    · rw [sub_le_iff_le_add, div_le_iff₀ (mul_pos hR hb)]
+      have e : (1 / (r n : ℝ) + echoShape (α / γ) (u n ^ γ / r n)) * (r n * u n ^ (-α)) =
+          r n * u n ^ (-α) * echoShape (α / γ) (u n ^ γ / r n) + u n ^ (-α) := by
+        field_simp
+        ring
+      rw [e]
+      exact h2
+  have := h.add (hd.div_const 2)
+  rw [zero_div, add_zero] at this
+  refine this.congr fun n => ?_
+  simp only [d]
+  ring
+
+include hα hZ hind hlaw hpos in
+/-- **The cluster ratio along a critical sequence**: if `uₙ^γ / rₙ → κ ≥ 0`, the cluster ratio
+tends to `(1 + φ_{α/γ}(κ)) / 2`. -/
+theorem tendsto_clusterRatio_powEchoProcess (hγ : 0 < γ) (hγα : γ < α) {u : ℕ → ℝ}
+    (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0)) {κ : ℝ}
+    (hκ : Tendsto (fun n => u n ^ γ / r n) atTop (𝓝 κ)) :
+    Tendsto (clusterRatio P (echoProcess (powLag γ) Z) u r) atTop
+      (𝓝 ((1 + echoShape (α / γ) κ) / 2)) := by
+  have h := tendsto_clusterRatio_sub_powEchoProcess hα hZ hind hlaw hpos hγ hγα hu hr hrb
+  have hφ : Tendsto (fun n => (1 + echoShape (α / γ) (u n ^ γ / r n)) / 2) atTop
+      (𝓝 ((1 + echoShape (α / γ) κ) / 2)) :=
+    ((((continuous_echoShape ((one_lt_div hγ).2 hγα)).tendsto κ).comp hκ).const_add 1).div_const 2
+  have := h.add hφ
+  rw [zero_add] at this
+  exact this.congr fun n => by ring
+
+include hα hZ hind hlaw hpos in
+/-- If `uₙ^γ / rₙ → ∞` (blocks shorter than the echo lag), the cluster ratio tends to `1 = ϑ`. -/
+theorem tendsto_clusterRatio_powEchoProcess_short (hγ : 0 < γ) (hγα : γ < α) {u : ℕ → ℝ}
+    (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
+    (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0))
+    (hκ : Tendsto (fun n => u n ^ γ / r n) atTop atTop) :
+    Tendsto (clusterRatio P (echoProcess (powLag γ) Z) u r) atTop (𝓝 1) := by
+  have h := (tendsto_clusterRatio_sub_powEchoProcess hα hZ hind hlaw hpos hγ hγα hu hr
+    hrb).add_const 1
+  rw [zero_add] at h
+  refine h.congr' ?_
+  filter_upwards [hκ.eventually_ge_atTop 1] with n hn
+  rw [echoShape_of_one_le ((one_lt_div hγ).2 hγα) hn]
+  ring
+
+include hα hZ hind hlaw hpos in
+/-- **Anticlustering fails when the cluster ratio does not tend to `ϑ = 1`.** For the power-lag
+echo process, forward anticlustering along `uₙ → ∞`, `rₙ → ∞` would force the escape mass to
+vanish and hence the cluster ratio to tend to `ϑ = 1`. -/
+theorem not_forwardAntiClusteringAt_powEchoProcess (hγ : 0 < γ) {u : ℕ → ℝ}
+    (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop) {ℓ : ℝ} (hℓ : ℓ ≠ 1)
+    (hlim : Tendsto (clusterRatio P (echoProcess (powLag γ) Z) u r) atTop (𝓝 ℓ)) :
+    ¬ ForwardAntiClusteringAt P (echoProcess (powLag γ) Z) u r := fun hAC => by
+  have h := (hasSpectralTailProcess_echoProcess hα hZ hind hlaw hpos (measurable_powLag γ)
+    (one_le_powLag γ) (tendsto_powLag hγ)).tendsto_clusterRatio_iff hα
+    (measurable_echoProcess hZ (measurable_powLag γ)) measurable_unitSpectral
+    (hasShiftInvariantWindows_echoProcess hZ hind hlaw (measurable_powLag γ)) hu hr ℓ
+  rw [candidateExtremalIndex_unitSpectral hα] at h
+  have := (h.1 hlim).unique (hAC.hasEscapeMass_zero hr)
+  simp only [ENNReal.toReal_one] at this
+  exact hℓ (by linarith)
+
+include hα hZ hind hlaw hpos in
+/-- **Anticlustering holds for blocks shorter than the echo lag**: if eventually
+`rₙ ≤ uₙ^γ`, `uₙ → ∞` and `rₙ uₙ^(-α) → 0`, then `AC` holds along `uₙ`, `rₙ`. -/
+theorem antiClusteringAt_powEchoProcess (hγ : 0 ≤ γ) {u : ℕ → ℝ} (hu : Tendsto u atTop atTop)
+    {r : ℕ → ℕ} (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0))
+    (hshort : ∀ᶠ n in atTop, (r n : ℝ) ≤ u n ^ γ) :
+    AntiClusteringAt P (echoProcess (powLag γ) Z) u r := by
+  refine antiClusteringAt_echoProcess hα hZ hind hlaw hpos (measurable_powLag γ)
+    (one_le_powLag γ) hu hrb ?_
+  filter_upwards [hshort, hu.eventually_gt_atTop 0] with n hn hu0 z hz
+  have := rpow_lt_powLag γ z
+  have h2 : u n ^ γ ≤ z ^ γ := Real.rpow_le_rpow hu0.le hz hγ
+  exact_mod_cast hn.trans_lt (h2.trans_lt this)
+
+end PowEcho
+
 end ExtremeValueTheory
