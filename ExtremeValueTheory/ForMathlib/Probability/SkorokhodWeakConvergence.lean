@@ -6,7 +6,7 @@ Authors: Federico Carrone
 module
 
 public import ExtremeValueTheory.ForMathlib.Probability.SkorokhodLaw
-public import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.Complete
+public import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.ModulusCompact
 public import Mathlib.MeasureTheory.Measure.Prokhorov
 public import Mathlib.MeasureTheory.Measure.LevyProkhorovMetric
 public import Mathlib.Topology.Algebra.Module.Cardinality
@@ -32,6 +32,10 @@ finite-dimensional distributions on it determine the law (`SkorokhodSpace.ext_of
 
 * `unitInterval.dense_compl_of_countable`: a countable subset of `[0, 1]` has dense complement.
 * `SkorokhodSpace.tendsto_of_tendsto_map_restrict_of_isTight`: **Billingsley, Theorem 13.1**.
+* `SkorokhodSpace.exists_tendsto_of_tendsto_map_restrict_of_isTight`: the existence form: tightness
+  and convergence of the finite-dimensional distributions give a weak limit.
+* `SkorokhodSpace.isTightMeasureSet_of_cadlagModulus`: **Billingsley, Theorem 13.2**
+  (sufficiency): tightness from the boundedness condition and the càdlàg modulus `w'`.
 
 ## References
 
@@ -195,5 +199,123 @@ theorem exists_tendsto_of_tendsto_map_restrict_of_isTight
     exact hT.union (countable_compl_continuityTimes _)
   refine ⟨μ, tendsto_of_tendsto_map_restrict_of_isTight hc ⟨h1, one_mem_continuityTimes _⟩
     (fun J hJ ↦ (hρ J hJ) ▸ hfdd J fun t ht ↦ (hJ ht).1) htight, hρ⟩
+
+/-! ### Tightness via the càdlàg modulus -/
+
+section Tight
+
+variable [CompleteSpace E]
+
+omit [MeasurableSpace E] [BorelSpace E] in
+/-- A single finite measure on the Skorokhod space is tight (the space is Polish). -/
+lemma exists_isCompact_measure_compl_le (μ : Measure (SkorokhodSpace E)) [IsFiniteMeasure μ]
+    {η : ℝ≥0∞} (hη : 0 < η) : ∃ K : Set (SkorokhodSpace E), IsCompact K ∧ μ Kᶜ ≤ η := by
+  obtain ⟨K, hK, h⟩ := isTightMeasureSet_iff_exists_isCompact_measure_compl_le.1
+    (isTightMeasureSet_singleton (μ := μ)) η hη
+  exact ⟨K, hK, h μ rfl⟩
+
+omit [MeasurableSpace E] [BorelSpace E] in
+lemma exists_totallyBounded_measure_le (μ : Measure (SkorokhodSpace E)) [IsFiniteMeasure μ]
+    {η : ℝ≥0∞} (hη : 0 < η) :
+    ∃ C : Set E, TotallyBounded C ∧ μ {x | ∃ t, x t ∉ C} ≤ η := by
+  obtain ⟨K, hK, hμK⟩ := exists_isCompact_measure_compl_le μ hη
+  obtain ⟨C, hC, hKC⟩ := exists_totallyBounded_of_isCompact hK
+  refine ⟨C, hC, (measure_mono (show {x : SkorokhodSpace E | ∃ t, x t ∉ C} ⊆ Kᶜ from
+    fun x hx hxK ↦ hx.elim fun t ht ↦ ht (hKC x hxK t))).trans hμK⟩
+
+omit [MeasurableSpace E] [BorelSpace E] in
+lemma exists_cadlagModulus_measure_le (μ : Measure (SkorokhodSpace E)) [IsFiniteMeasure μ]
+    {ε : ℝ≥0∞} (hε : 0 < ε) {η : ℝ≥0∞} (hη : 0 < η) :
+    ∃ δ > 0, μ {x | ε ≤ cadlagModulus (⇑x) δ} ≤ η := by
+  obtain ⟨K, hK, hμK⟩ := exists_isCompact_measure_compl_le μ hη
+  obtain ⟨δ, hδ, hKδ⟩ := exists_forall_cadlagModulus_lt_of_isCompact hK hε
+  exact ⟨δ, hδ, (measure_mono fun x hx hxK ↦ not_le.2 (hKδ x hxK) hx).trans hμK⟩
+
+omit [MeasurableSpace E] [BorelSpace E] in
+/-- **Billingsley, Theorem 13.2** (sufficiency). A sequence of probability measures `μ_n` on the
+Skorokhod space `D([0, 1], E)` is tight if
+1. for every `η > 0` there is a totally bounded `C ⊆ E` such that eventually
+   `μ_n {x | ∃ t, x t ∉ C} ≤ η`, and
+2. for all `ε, η > 0` there is `δ > 0` such that eventually `μ_n {x | ε ≤ w'_x(δ)} ≤ η`,
+where `w'` is the càdlàg modulus `cadlagModulus`. (No measurability of the sets involved is
+needed: the measures are applied as outer measures.) -/
+theorem isTightMeasureSet_of_cadlagModulus {μs : ℕ → Measure (SkorokhodSpace E)}
+    [∀ n, IsProbabilityMeasure (μs n)]
+    (hbdd : ∀ η : ℝ≥0∞, 0 < η → ∃ C : Set E, TotallyBounded C ∧
+      ∀ᶠ n in atTop, μs n {x | ∃ t, x t ∉ C} ≤ η)
+    (hmod : ∀ ε : ℝ≥0∞, 0 < ε → ∀ η : ℝ≥0∞, 0 < η → ∃ δ > 0,
+      ∀ᶠ n in atTop, μs n {x | ε ≤ cadlagModulus (⇑x) δ} ≤ η) :
+    IsTightMeasureSet (range μs) := by
+  classical
+  -- upgrade the eventual bounds to bounds for every `n`, using the tightness of each `μ_n`
+  have hbdd' : ∀ η : ℝ≥0∞, 0 < η → ∃ C : Set E, TotallyBounded C ∧
+      ∀ n, μs n {x | ∃ t, x t ∉ C} ≤ η := by
+    intro η hη
+    obtain ⟨C₀, hC₀, hev⟩ := hbdd η hη
+    obtain ⟨N, hN⟩ := eventually_atTop.1 hev
+    choose C hC hμC using fun n ↦ exists_totallyBounded_measure_le (μs n) hη
+    refine ⟨C₀ ∪ ⋃ n ∈ Finset.range N, C n, hC₀.union
+      (totallyBounded_biUnion (Finset.range N).finite_toSet |>.2 fun n _ ↦ hC n), fun n ↦ ?_⟩
+    rcases lt_or_ge n N with hn | hn
+    · refine (measure_mono fun x hx ↦ hx.imp fun t ht h ↦ ht ?_).trans (hμC n)
+      exact Or.inr (mem_biUnion (Finset.mem_coe.2 (Finset.mem_range.2 hn)) h)
+    · exact (measure_mono fun x hx ↦ hx.imp fun t ht h ↦ ht (Or.inl h)).trans (hN n hn)
+  have hmod' : ∀ ε : ℝ≥0∞, 0 < ε → ∀ η : ℝ≥0∞, 0 < η → ∃ δ > 0,
+      ∀ n, μs n {x | ε ≤ cadlagModulus (⇑x) δ} ≤ η := by
+    intro ε hε η hη
+    obtain ⟨δ₀, hδ₀, hev⟩ := hmod ε hε η hη
+    obtain ⟨N, hN⟩ := eventually_atTop.1 hev
+    choose δ' hδ' hμδ using fun n ↦ exists_cadlagModulus_measure_le (μs n) hε hη
+    set S : Finset ℝ := insert δ₀ ((Finset.range N).image δ')
+    have hSne : S.Nonempty := Finset.insert_nonempty _ _
+    refine ⟨S.min' hSne, (Finset.lt_min'_iff _ _).2 fun r hr ↦ ?_, fun n ↦ ?_⟩
+    · rcases Finset.mem_insert.1 hr with rfl | hr
+      · exact hδ₀
+      · obtain ⟨n, -, rfl⟩ := Finset.mem_image.1 hr
+        exact hδ' n
+    · rcases lt_or_ge n N with hn | hn
+      · refine (measure_mono fun x hx ↦ hx.trans (cadlagModulus_mono _ (S.min'_le _ ?_))).trans
+          (hμδ n)
+        exact Finset.mem_insert_of_mem (Finset.mem_image_of_mem _ (Finset.mem_range.2 hn))
+      · exact (measure_mono fun x hx ↦ hx.trans (cadlagModulus_mono _ (S.min'_le _
+          (Finset.mem_insert_self _ _)))).trans (hN n hn)
+  rw [isTightMeasureSet_iff_exists_isCompact_measure_compl_le]
+  intro η hη
+  have hη2 : 0 < η / 2 := ENNReal.half_pos hη.ne'
+  obtain ⟨C, hC, hμC⟩ := hbdd' (η / 2) hη2
+  have hηj (j : ℕ) : 0 < η / 2 / 2 * 2⁻¹ ^ j :=
+    ENNReal.mul_pos (ENNReal.half_pos hη2.ne').ne' (pow_ne_zero _ (by simp))
+  have hεj (j : ℕ) : 0 < ((j : ℝ≥0∞) + 1)⁻¹ := ENNReal.inv_pos.2 (by simp)
+  choose δ hδ hμδ using fun j ↦ hmod' _ (hεj j) _ (hηj j)
+  set K : Set (SkorokhodSpace E) := {x | ∀ t, x t ∈ C} ∩
+    ⋂ j : ℕ, {x | cadlagModulus (⇑x) (δ j) < ((j : ℝ≥0∞) + 1)⁻¹} with hKdef
+  have hKc : IsCompact (closure K) := by
+    refine isCompact_closure_of_cadlagModulus hC (fun x hx ↦ hx.1) fun ε hε ↦ ?_
+    obtain ⟨j, hj⟩ := ENNReal.exists_inv_nat_lt hε.ne'
+    refine ⟨δ j, hδ j, fun x hx ↦ (mem_iInter.1 hx.2 j).trans_le ?_⟩
+    exact (ENNReal.inv_le_inv.2 le_self_add).trans hj.le
+  refine ⟨closure K, hKc, ?_⟩
+  rintro _ ⟨n, rfl⟩
+  have hsub : (closure K)ᶜ ⊆ {x | ∃ t, x t ∉ C} ∪
+      ⋃ j : ℕ, {x | ((j : ℝ≥0∞) + 1)⁻¹ ≤ cadlagModulus (⇑x) (δ j)} := by
+    intro x hx
+    have hxK : x ∉ K := fun h ↦ hx (subset_closure h)
+    simp only [hKdef, mem_inter_iff, mem_ofPred_eq, mem_iInter, not_and_or, not_forall,
+      not_lt] at hxK
+    rcases hxK with ⟨t, ht⟩ | ⟨j, hj⟩
+    · exact Or.inl ⟨t, ht⟩
+    · exact Or.inr (mem_iUnion.2 ⟨j, hj⟩)
+  calc μs n (closure K)ᶜ
+      ≤ μs n {x | ∃ t, x t ∉ C} +
+        ∑' j : ℕ, μs n {x | ((j : ℝ≥0∞) + 1)⁻¹ ≤ cadlagModulus (⇑x) (δ j)} :=
+        (measure_mono hsub).trans ((measure_union_le _ _).trans
+          (add_le_add le_rfl (measure_iUnion_le _)))
+    _ ≤ η / 2 + ∑' j : ℕ, η / 2 / 2 * 2⁻¹ ^ j :=
+        add_le_add (hμC n) (ENNReal.tsum_le_tsum fun j ↦ hμδ j n)
+    _ = η := by
+        rw [ENNReal.tsum_mul_left, ENNReal.tsum_geometric_two,
+          ENNReal.div_mul_cancel two_ne_zero ENNReal.ofNat_ne_top, ENNReal.add_halves]
+
+end Tight
 
 end SkorokhodSpace
