@@ -1611,6 +1611,66 @@ lemma measureReal_block_weighted_le (hU : ∀ i, Measurable (U i)) (hind : iInde
           rw [e1, e2, e3, hkk]
           ring
 
+lemma sum_range_mul_two_pow_rpow {s : ℝ} (hs : 0 < s) (γ : ℝ) (J : ℕ) :
+    ∑ i ∈ range J, (s * 2 ^ i) ^ γ = s ^ γ * ∑ i ∈ range J, ((2 : ℝ) ^ γ) ^ i := by
+  rw [Finset.mul_sum]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  rw [Real.mul_rpow hs.le (by positivity), ← Real.rpow_natCast (2 : ℝ) i,
+    ← Real.rpow_mul zero_le_two, mul_comm (i : ℝ) γ, Real.rpow_mul zero_le_two,
+    Real.rpow_natCast]
+
+lemma sum_range_mul_two_pow_rpow_le_of_neg {s : ℝ} (hs : 0 < s) {γ : ℝ} (hγ : γ < 0) (J : ℕ) :
+    ∑ i ∈ range J, (s * 2 ^ i) ^ γ ≤ s ^ γ / (1 - 2 ^ γ) := by
+  have hr : (2 : ℝ) ^ γ < 1 := Real.rpow_lt_one_of_one_lt_of_neg one_lt_two hγ
+  rw [sum_range_mul_two_pow_rpow hs, div_eq_mul_inv]
+  exact mul_le_mul_of_nonneg_left
+    (sum_range_geom_le_of_lt_one (by positivity) hr J) (by positivity)
+
+lemma sum_range_mul_two_pow_rpow_le_of_pos {s : ℝ} (hs : 0 < s) {γ : ℝ} (hγ : 0 < γ) (J : ℕ) :
+    ∑ i ∈ range J, (s * 2 ^ i) ^ γ ≤ (s * 2 ^ J) ^ γ / (2 ^ γ - 1) := by
+  have hr : 1 < (2 : ℝ) ^ γ := Real.one_lt_rpow one_lt_two hγ
+  have hr' : 0 < (2 : ℝ) ^ γ - 1 := by linarith
+  have e : (s * 2 ^ J) ^ γ = s ^ γ * ((2 : ℝ) ^ γ) ^ J := by
+    rw [Real.mul_rpow hs.le (by positivity), ← Real.rpow_natCast (2 : ℝ) J,
+      ← Real.rpow_mul zero_le_two, mul_comm (J : ℝ) γ, Real.rpow_mul zero_le_two,
+      Real.rpow_natCast]
+  rw [sum_range_mul_two_pow_rpow hs, geom_sum_eq hr.ne', e, mul_div_assoc]
+  refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+  exact div_le_div_of_nonneg_right (by linarith) hr'.le
+
+/-- Dyadic blocks `[s 2^i, s 2^{i+1}]`, `i < M`, cover `(s, s 2^M]`. -/
+lemma exists_mem_dyadic_block {s t : ℝ} (hs : 0 < s) (M : ℕ) (hst : s < t)
+    (ht : t ≤ s * 2 ^ M) : ∃ i < M, t ∈ Set.Icc (s * 2 ^ i) (2 * (s * 2 ^ i)) := by
+  induction M with
+  | zero => simp at ht; linarith
+  | succ M ih =>
+    by_cases h : t ≤ s * 2 ^ M
+    · obtain ⟨i, hi, hti⟩ := ih h
+      exact ⟨i, by omega, hti⟩
+    · refine ⟨M, by omega, (not_le.1 h).le, ?_⟩
+      rw [pow_succ] at ht
+      linarith
+
+/-- The probability that some observation exceeds `1 - (k/n) s` is at most `k s`. -/
+lemma measureReal_exists_one_sub_le (hU : ∀ i, Measurable (U i))
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1)) {n k : ℕ} (hn : 0 < n) {s : ℝ}
+    (hs : 0 ≤ s) (hps : (k : ℝ) / n * s ≤ 1) :
+    P.real {ω | ∃ i < n, 1 - k / n * s ≤ U i ω} ≤ k * s := by
+  have hsub : {ω | ∃ i < n, 1 - k / n * s ≤ U i ω} ⊆
+      ⋃ i ∈ range n, U i ⁻¹' Set.Ici (1 - k / n * s) := by
+    rintro ω ⟨i, hi, h⟩
+    exact Set.mem_biUnion (Finset.mem_coe.2 (Finset.mem_range.2 hi)) h
+  refine (measureReal_mono hsub (measure_ne_top _ _)).trans
+    ((measureReal_biUnion_finset_le _ _).trans ?_)
+  have h (i : ℕ) : P.real (U i ⁻¹' Set.Ici (1 - k / n * s)) = k / n * s := by
+    rw [← map_measureReal_apply (hU i) measurableSet_Ici, hlaw i]
+    exact measureReal_uniform_Ici (by positivity) hps
+  simp_rw [h]
+  rw [Finset.sum_const, card_range, nsmul_eq_mul]
+  have : (n : ℝ) ≠ 0 := by exact_mod_cast hn.ne'
+  field_simp
+  rfl
+
 end Weighted
 
 end ExtremeValueTheory
