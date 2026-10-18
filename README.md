@@ -2,6 +2,8 @@
 
 [![Build](https://github.com/unbalancedparentheses/lean-extremevaluetheory/actions/workflows/build.yml/badge.svg)](https://github.com/unbalancedparentheses/lean-extremevaluetheory/actions/workflows/build.yml)
 [![Blueprint](https://github.com/unbalancedparentheses/lean-extremevaluetheory/actions/workflows/blueprint.yml/badge.svg)](https://unbalancedparentheses.github.io/lean-extremevaluetheory/blueprint/)
+[![Kernel check](https://github.com/unbalancedparentheses/lean-extremevaluetheory/actions/workflows/kernel-check.yml/badge.svg)](https://github.com/unbalancedparentheses/lean-extremevaluetheory/actions/workflows/kernel-check.yml)
+[![Nix](https://github.com/unbalancedparentheses/lean-extremevaluetheory/actions/workflows/nix.yml/badge.svg)](https://github.com/unbalancedparentheses/lean-extremevaluetheory/actions/workflows/nix.yml)
 
 A machine-checked library of extreme value theory and heavy-tailed probability, written in Lean 4
 on top of Mathlib. It covers the classical theory of maxima and tails, the statistics of extremes,
@@ -10,6 +12,9 @@ Skorokhod space, and it contains new results on the extremal index.
 
 - **About 80,000 lines, no `sorry`.** Every main theorem depends only on Lean's standard axioms
   (`propext`, `Classical.choice`, `Quot.sound`).
+- **Proofs are checked twice.** Lean's kernel checks every proof at build time, and CI re-checks the
+  whole environment with [`con-leche`](.github/workflows/kernel-check.yml), an independent kernel
+  checker that comes with a machine-checked proof that it never accepts a proof of `False`.
 - **Statements are audited.** Six independent faithfulness audits compared each formal statement
   with its textbook source; the results, including every known deviation, are in
   [`FAITHFULNESS.md`](FAITHFULNESS.md).
@@ -101,6 +106,8 @@ Formalizing the extremal index forced every hypothesis into the open. A literatu
 lake exe cache get
 lake build
 ```
+
+With Nix, `nix develop` gives a shell with `elan` and the other tools used by the scripts and CI.
 
 ## Guides
 

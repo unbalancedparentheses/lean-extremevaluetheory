@@ -1,0 +1,34 @@
+name: Independent kernel check
+
+# Re-checks every declaration of the library (and everything it depends on in Mathlib) with
+# con-leche, an independent Lean kernel checker shipped with the toolchain. In --verified mode
+# con-leche comes with a machine-checked theorem that it never accepts a proof of False
+# (ConLeche.no_False_declaration). The environment is exported to NDJSON with leanexport.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1"
+
+concurrency:
+  group: kernel-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  con-leche:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: leanprover/lean-action@v1
+      - name: Export the environment
+        run: |
+          BIN="$(dirname "$(elan which lean)")"
+          lake env "$BIN/leanexport" ExtremeValueTheory > export.ndjson
+          ls -lh export.ndjson
+      - name: Check every declaration with con-leche (verified mode)
+        run: |
+          BIN="$(dirname "$(elan which lean)")"
+          "$BIN/con-leche" --verified --jobs="$(nproc)" --progress=1000000 export.ndjson
