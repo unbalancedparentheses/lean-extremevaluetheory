@@ -304,4 +304,310 @@ theorem tendsto_mul_wfun_of_lindeberg (ha : ∀ n, 0 < a n) (hatop : Tendsto a a
 
 end Lindeberg
 
+section GaussianLimit
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a : ℕ → ℝ}
+
+/-- **Central limit theorem under the Lindeberg-type conditions.** If `aₙ → ∞`,
+`n P(|X| > ε aₙ) → 0` for every `ε > 0` and `n Var (clip (X / aₙ)) → σ²`, then
+`(Sₙ - n aₙ τₙ) / aₙ → N(0, σ²)`, `τₙ = E[clip (X / aₙ)]`. -/
+theorem tendsto_map_convPow_gaussianReal_of_lindeberg (ha : ∀ n, 0 < a n)
+    (hatop : Tendsto a atTop atTop)
+    (hT : ∀ ε > 0, Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n * ε)) atTop (𝓝 0))
+    {σ2 : ℝ} (hV : Tendsto (fun n : ℕ => (n : ℝ) * clipVar μ a n) atTop (𝓝 σ2)) :
+    Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - n * a n * ctr μ a n)), inferInstance⟩) atTop
+      (𝓝 ⟨gaussianReal 0 σ2.toNNReal, inferInstance⟩) := by
+  have hσ : 0 ≤ σ2 :=
+    ge_of_tendsto' hV fun n => mul_nonneg (Nat.cast_nonneg _) (clipVar_nonneg n)
+  refine ProbabilityMeasure.tendsto_iff_tendsto_charFun.2 fun t => ?_
+  simp only [ProbabilityMeasure.coe_mk]
+  have hw := tendsto_mul_wfun_of_lindeberg ha hatop hT hV t
+  set L : ℂ := ((-(σ2 * t ^ 2 / 2) : ℝ) : ℂ)
+  have hC : ∀ᶠ n : ℕ in atTop, ‖(n : ℂ) * wfun μ a n t‖ ≤ ‖L‖ + 1 := by
+    filter_upwards [(Metric.tendsto_nhds.1 hw) 1 one_pos] with n hn
+    rw [dist_eq_norm] at hn
+    have := norm_sub_norm_le ((n : ℂ) * wfun μ a n t) L
+    linarith
+  have h3 := (tendsto_one_add_pow_sub_exp hC).add ((Complex.continuous_exp.tendsto _).comp hw)
+  rw [zero_add] at h3
+  have hL : Complex.exp L = charFun (gaussianReal 0 σ2.toNNReal) t := by
+    rw [charFun_gaussianReal]
+    congr 1
+    simp only [L, Real.coe_toNNReal _ hσ]
+    push_cast; ring
+  rw [← hL]
+  refine h3.congr fun n => ?_
+  simp only [Function.comp]
+  have hs := charFun_sum_eq (μ := μ) (a := a) (b := fun n : ℕ => (n : ℝ) * a n * ctr μ a n) n t
+  rw [hs]
+  have hz : t * (n * ctr μ a n - (a n)⁻¹ * (n * a n * ctr μ a n)) = 0 := by
+    field_simp [(ha n).ne']; ring
+  rw [hz]
+  simp
+
+/-- **Identification of a Gaussian limit.** Under the Lindeberg-type conditions, any weak limit
+of `(Sₙ - bₙ) / aₙ` is a Gaussian law `N(m, σ²)`. -/
+theorem exists_eq_gaussianReal_of_lindeberg (ha : ∀ n, 0 < a n)
+    (hatop : Tendsto a atTop atTop)
+    (hT : ∀ ε > 0, Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n * ε)) atTop (𝓝 0))
+    {σ2 : ℝ} (hV : Tendsto (fun n : ℕ => (n : ℝ) * clipVar μ a n) atTop (𝓝 σ2))
+    {b : ℕ → ℝ} {ν : ProbabilityMeasure ℝ}
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν)) :
+    ∃ m : ℝ, (ν : Measure ℝ) = gaussianReal m σ2.toNNReal := by
+  have h := tendsto_map_convPow_gaussianReal_of_lindeberg ha hatop hT hV
+  have hc : ∀ n : ℕ, (⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩ :
+      ProbabilityMeasure ℝ) = ⟨(((⟨(convPow μ n).map (fun x => (a n)⁻¹ *
+        (x - n * a n * ctr μ a n)), inferInstance⟩ : ProbabilityMeasure ℝ) : Measure ℝ)).map
+        (· + (a n)⁻¹ * (n * a n * ctr μ a n - b n)), inferInstance⟩ := by
+    intro n
+    apply Subtype.ext
+    simp only
+    rw [Measure.map_map (measurable_add_const _) (by fun_prop)]
+    congr 1
+    funext x
+    simp only [Function.comp]
+    ring
+  obtain ⟨c₀, hc₀⟩ := exists_map_add_eq_of_tendsto h (hconv.congr hc)
+  refine ⟨c₀, ?_⟩
+  rw [← hc₀]
+  simp only [ProbabilityMeasure.coe_mk]
+  rw [gaussianReal_map_add_const, zero_add]
+
+end GaussianLimit
+
+section Necessity
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a : ℕ → ℝ}
+
+/-- `3 P(|Z| > 2y) ≤ 4 E[min (1, Z² / (2y)²)] - E[min (1, Z² / y²)]`. -/
+theorem absTail_two_mul_le (ρ : Measure ℝ) [IsProbabilityMeasure ρ] {y : ℝ} (hy : 0 < y) :
+    3 * absTail ρ (2 * y) ≤ 4 * sqRatio ρ (2 * y) - sqRatio ρ y := by
+  rw [sqRatio_eq_integral_min' (μ := ρ) (by positivity : (2 * y) ≠ 0),
+    sqRatio_eq_integral_min' (μ := ρ) hy.ne', ← integral_indicator_one, ← integral_const_mul,
+    ← integral_const_mul, ← integral_sub]
+  · refine integral_mono ((integrable_indicator_one _).const_mul _)
+      (((integrable_min_one_sq_mul ρ _).const_mul _).sub (integrable_min_one_sq_mul ρ _))
+      fun z => ?_
+    by_cases hz : 2 * y < |z|
+    · rw [Set.indicator_of_mem (show z ∈ {x : ℝ | 2 * y < |x|} from hz)]
+      have h1 : 1 ≤ ((2 * y)⁻¹ * z) ^ 2 := by
+        rw [mul_pow, ← sq_abs z, inv_pow, inv_mul_eq_div, one_le_div (by positivity)]
+        nlinarith [abs_nonneg z]
+      have h2 : 1 ≤ (y⁻¹ * z) ^ 2 := by
+        rw [mul_pow, ← sq_abs z, inv_pow, inv_mul_eq_div, one_le_div (by positivity)]
+        nlinarith [abs_nonneg z]
+      rw [min_eq_left h1, min_eq_left h2]; norm_num
+    · rw [Set.indicator_of_notMem (show z ∉ {x : ℝ | 2 * y < |x|} from hz), mul_zero]
+      have h1 : ((2 * y)⁻¹ * z) ^ 2 ≤ 1 := by
+        rw [mul_pow, ← sq_abs z, inv_pow, inv_mul_eq_div, div_le_one (by positivity)]
+        have := not_lt.1 hz
+        nlinarith [abs_nonneg z]
+      rw [min_eq_right h1]
+      have : 4 * ((2 * y)⁻¹ * z) ^ 2 = (y⁻¹ * z) ^ 2 := by field_simp; ring
+      rw [this]
+      linarith [min_le_right 1 ((y⁻¹ * z) ^ 2)]
+  all_goals first
+    | exact (integrable_min_one_sq_mul ρ _).const_mul _
+    | exact integrable_min_one_sq_mul ρ _
+
+/-- The symmetrized scaling limit with index `2` makes `n P(|X - X'| > aₙ x) → 0`. -/
+theorem tendsto_mul_absTail_symmLaw_of_two {K : ℝ}
+    (hL : ∀ x : ℝ, 0 < x → Tendsto (fun n : ℕ => (n : ℝ) * sqRatio (symmLaw μ) (a n * x)) atTop
+      (𝓝 (K * x ^ (-(2 : ℝ))))) (ha : ∀ n, 0 < a n) {x : ℝ} (hx : 0 < x) :
+    Tendsto (fun n : ℕ => (n : ℝ) * absTail (symmLaw μ) (a n * x)) atTop (𝓝 0) := by
+  have hup := (((hL x hx).const_mul 4).sub (hL (x / 2) (by positivity))).div_const 3
+  have he : (4 * (K * x ^ (-(2 : ℝ))) - K * (x / 2) ^ (-(2 : ℝ))) / 3 = 0 := by
+    rw [Real.rpow_neg hx.le, Real.rpow_neg (by positivity), Real.rpow_two, Real.rpow_two]
+    field_simp; ring
+  rw [he] at hup
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hup
+    (fun n => mul_nonneg (Nat.cast_nonneg _) measureReal_nonneg) fun n => ?_
+  have h := absTail_two_mul_le (symmLaw μ) (mul_pos (ha n) (half_pos hx))
+  rw [show 2 * (a n * (x / 2)) = a n * x by ring] at h
+  have hn : (0 : ℝ) ≤ n := Nat.cast_nonneg n
+  simp only
+  nlinarith [mul_le_mul_of_nonneg_left h hn]
+
+/-- The variance of `clip (X / a)` through the symmetrization:
+`|2 Var (clip (X / a)) - 4 E[min (1, (X - X')² / (2a)²)]| ≤ 8 P(|X| > a)`. -/
+theorem abs_two_mul_clipVar_sub_le (n : ℕ) (ha : 0 < a n) :
+    |2 * clipVar μ a n - 4 * sqRatio (symmLaw μ) (a n * 2)| ≤ 8 * absTail μ (a n * 1) := by
+  set f : ℝ → ℝ := fun x => clip ((a n)⁻¹ * x) with hfdef
+  set τ := ctr μ a n
+  have hτf : ∫ x, f x ∂μ = τ := rfl
+  have hfc : Continuous f := continuous_clip.comp (continuous_const.mul continuous_id)
+  have hfb : ∀ x, |f x| ≤ 1 := fun x => abs_clip_le _
+  have hfi : Integrable f μ := integrable_clip n
+  have hf2 : Integrable (fun x => f x ^ 2) μ :=
+    Integrable.of_bound (hfc.pow 2).aestronglyMeasurable 1 (ae_of_all _ fun x => by
+      rw [Real.norm_eq_abs, abs_pow]; nlinarith [hfb x, abs_nonneg (f x)])
+  have hP : ∀ (g : ℝ × ℝ → ℝ), Continuous g → (∀ p, |g p| ≤ 4) → Integrable g (μ.prod μ) :=
+    fun g hg hb => Integrable.of_bound hg.aestronglyMeasurable 4
+      (ae_of_all _ fun p => by rw [Real.norm_eq_abs]; exact hb p)
+  have hd2 : ∀ p : ℝ × ℝ, |f p.1 - f p.2| ≤ 2 := fun p =>
+    (abs_sub _ _).trans (by linarith [hfb p.1, hfb p.2])
+  have hd4 : ∀ p : ℝ × ℝ, (f p.1 - f p.2) ^ 2 ≤ 4 := fun p => by
+    rw [← sq_abs]; nlinarith [abs_nonneg (f p.1 - f p.2), hd2 p]
+  -- `∫∫ (f x - f y)² = 2 Var f`
+  have hvar : ∫ p : ℝ × ℝ, (f p.1 - f p.2) ^ 2 ∂(μ.prod μ) = 2 * clipVar μ a n := by
+    have e : ∀ p : ℝ × ℝ, (f p.1 - f p.2) ^ 2 =
+        f p.1 ^ 2 + f p.2 ^ 2 - 2 * (f p.1 * f p.2) := by
+      intro p; ring
+    have hi1 : Integrable (fun p : ℝ × ℝ => f p.1 ^ 2) (μ.prod μ) := hf2.comp_fst μ
+    have hi2 : Integrable (fun p : ℝ × ℝ => f p.2 ^ 2) (μ.prod μ) := hf2.comp_snd μ
+    have hi3 : Integrable (fun p : ℝ × ℝ => f p.1 * f p.2) (μ.prod μ) := hfi.mul_prod hfi
+    have hi12 : Integrable (fun p : ℝ × ℝ => f p.1 ^ 2 + f p.2 ^ 2) (μ.prod μ) := hi1.add hi2
+    have hi3' : Integrable (fun p : ℝ × ℝ => 2 * (f p.1 * f p.2)) (μ.prod μ) := hi3.const_mul 2
+    simp_rw [e]
+    rw [integral_sub hi12 hi3', integral_add hi1 hi2, integral_const_mul,
+      integral_fun_fst (fun x => f x ^ 2), integral_fun_snd (fun x => f x ^ 2),
+      integral_prod_mul f f]
+    simp only [probReal_univ, one_smul]
+    have hc : clipVar μ a n = ∫ x, f x ^ 2 ∂μ - τ ^ 2 := by
+      have e2 : ∀ x, (f x - τ) ^ 2 = f x ^ 2 - 2 * τ * f x + τ ^ 2 := fun x => by ring
+      have hA : Integrable (fun x => f x ^ 2 - 2 * τ * f x) μ := hf2.sub (hfi.const_mul _)
+      have hcv : clipVar μ a n = ∫ x, (f x - τ) ^ 2 ∂μ := rfl
+      rw [hcv]
+      simp_rw [e2]
+      rw [integral_add hA (integrable_const _), integral_sub hf2 (hfi.const_mul _),
+        integral_const_mul, integral_const, probReal_univ, one_smul, hτf]
+      ring
+    rw [hc, hτf]; ring
+  -- `E min (1, (Z / 2a)²)` as an integral over the product
+  have hS : sqRatio (symmLaw μ) (a n * 2) =
+      ∫ p : ℝ × ℝ, min 1 (((a n * 2)⁻¹ * (p.1 - p.2)) ^ 2) ∂(μ.prod μ) := by
+    rw [sqRatio_eq_integral_min' (by have := ha; positivity), symmLaw,
+      integral_map measurable_fst_sub_snd.aemeasurable (by fun_prop)]
+  set I : ℝ → ℝ := {y : ℝ | a n * 1 < |y|}.indicator (fun _ => (1 : ℝ)) with hIdef
+  have hI0 : ∀ y, 0 ≤ I y := fun y => Set.indicator_nonneg (fun _ _ => zero_le_one) _
+  have hIi : Integrable I μ := integrable_indicator_one _
+  have hA : ∫ p : ℝ × ℝ, (I p.1 + I p.2) ∂(μ.prod μ) = 2 * absTail μ (a n * 1) := by
+    rw [integral_add (hIi.comp_fst μ) (hIi.comp_snd μ), integral_fun_fst I, integral_fun_snd I]
+    simp only [probReal_univ, one_smul, hIdef, integral_indicator_one]
+    ring
+  have hg1 : Integrable (fun p : ℝ × ℝ => (f p.1 - f p.2) ^ 2) (μ.prod μ) :=
+    hP _ (by fun_prop) fun p => by
+      rw [abs_of_nonneg (sq_nonneg _)]; exact hd4 p
+  have hg2 : Integrable (fun p : ℝ × ℝ => 4 * min 1 (((a n * 2)⁻¹ * (p.1 - p.2)) ^ 2))
+      (μ.prod μ) :=
+    hP _ (by fun_prop) fun p => by
+      rw [abs_of_nonneg (by positivity)]
+      linarith [min_le_left 1 (((a n * 2)⁻¹ * (p.1 - p.2)) ^ 2)]
+  have hg3 : Integrable (fun p : ℝ × ℝ => I p.1 + I p.2) (μ.prod μ) :=
+    (hIi.comp_fst μ).add (hIi.comp_snd μ)
+  have hg12 : Integrable (fun p : ℝ × ℝ => (f p.1 - f p.2) ^ 2 -
+      4 * min 1 (((a n * 2)⁻¹ * (p.1 - p.2)) ^ 2)) (μ.prod μ) := hg1.sub hg2
+  rw [← hvar, hS, ← integral_const_mul, ← integral_sub hg1 hg2]
+  refine (abs_integral_le_integral_abs).trans ?_
+  rw [show 8 * absTail μ (a n * 1) = 4 * (2 * absTail μ (a n * 1)) by ring, ← hA,
+    ← integral_const_mul]
+  refine integral_mono hg12.abs (hg3.const_mul 4) fun p => ?_
+  have h3 := min_le_left 1 (((a n * 2)⁻¹ * (p.1 - p.2)) ^ 2)
+  have h4 : 0 ≤ min 1 (((a n * 2)⁻¹ * (p.1 - p.2)) ^ 2) := le_min zero_le_one (sq_nonneg _)
+  have h2 := hd4 p
+  have h0 := sq_nonneg (f p.1 - f p.2)
+  by_cases hx : a n * 1 < |p.1|
+  · have : I p.1 = 1 := Set.indicator_of_mem (show p.1 ∈ {y : ℝ | a n * 1 < |y|} from hx) _
+    have := hI0 p.2
+    rw [abs_le]; constructor <;> nlinarith
+  · by_cases hy : a n * 1 < |p.2|
+    · have : I p.2 = 1 := Set.indicator_of_mem (show p.2 ∈ {y : ℝ | a n * 1 < |y|} from hy) _
+      have := hI0 p.1
+      rw [abs_le]; constructor <;> nlinarith
+    · have e1 : I p.1 = 0 :=
+        Set.indicator_of_notMem (show p.1 ∉ {y : ℝ | a n * 1 < |y|} from hx) _
+      have e2 : I p.2 = 0 :=
+        Set.indicator_of_notMem (show p.2 ∉ {y : ℝ | a n * 1 < |y|} from hy) _
+      rw [e1, e2]
+      have hx' : |(a n)⁻¹ * p.1| ≤ 1 := by
+        rw [abs_mul, abs_inv, abs_of_pos ha, inv_mul_le_iff₀ ha]; linarith [not_lt.1 hx]
+      have hy' : |(a n)⁻¹ * p.2| ≤ 1 := by
+        rw [abs_mul, abs_inv, abs_of_pos ha, inv_mul_le_iff₀ ha]; linarith [not_lt.1 hy]
+      have hf1 : f p.1 = (a n)⁻¹ * p.1 := clip_eq_of_abs_le hx'
+      have hf2' : f p.2 = (a n)⁻¹ * p.2 := clip_eq_of_abs_le hy'
+      have e : (a n * 2)⁻¹ * (p.1 - p.2) = ((a n)⁻¹ * p.1 - (a n)⁻¹ * p.2) / 2 := by
+        field_simp
+      have hm : ((a n * 2)⁻¹ * (p.1 - p.2)) ^ 2 ≤ 1 := by
+        have : |(a n * 2)⁻¹ * (p.1 - p.2)| ≤ 1 := by
+          rw [e, abs_div, abs_two, div_le_one two_pos]
+          exact (abs_sub _ _).trans (by linarith)
+        rw [← sq_abs]; nlinarith [abs_nonneg ((a n * 2)⁻¹ * (p.1 - p.2))]
+      simp only
+      rw [min_eq_right hm, hf1, hf2', e]
+      have : ((a n)⁻¹ * p.1 - (a n)⁻¹ * p.2) ^ 2 - 4 * (((a n)⁻¹ * p.1 - (a n)⁻¹ * p.2) / 2) ^ 2
+          = 0 := by ring
+      rw [this, abs_zero]; norm_num
+
+/-- **The Lindeberg conditions from the converse with index `2`.** If
+`n E[min (1, (X - X')² / (aₙ x)²)] → K x⁻²` for every `x > 0`, then `aₙ → ∞`,
+`n P(|X| > ε aₙ) → 0` for every `ε > 0`, and `n Var (clip (X / aₙ)) → K / 2`. -/
+theorem lindeberg_of_tendsto_mul_sqRatio_two (ha : ∀ n, 0 < a n) {K : ℝ} (hK : 0 < K)
+    (hL : ∀ x : ℝ, 0 < x → Tendsto (fun n : ℕ => (n : ℝ) * sqRatio (symmLaw μ) (a n * x)) atTop
+      (𝓝 (K * x ^ (-(2 : ℝ))))) :
+    Tendsto a atTop atTop ∧
+      (∀ ε > 0, Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n * ε)) atTop (𝓝 0)) ∧
+      Tendsto (fun n : ℕ => (n : ℝ) * clipVar μ a n) atTop (𝓝 (K / 2)) := by
+  have hL1 : Tendsto (fun n : ℕ => (n : ℝ) * sqRatio (symmLaw μ) (a n)) atTop (𝓝 K) := by
+    simpa using hL 1 one_pos
+  have hTpos : ∀ x, 0 < x → 0 < sqRatio (symmLaw μ) x := by
+    obtain ⟨n, hn⟩ := ((tendsto_order.1 hL1).1 0 hK).exists
+    have h1 : 0 < sqRatio (symmLaw μ) (a n) := by
+      by_contra hc
+      have : sqRatio (symmLaw μ) (a n) = 0 := le_antisymm (not_lt.1 hc) (sqRatio_nonneg _)
+      rw [this, mul_zero] at hn
+      exact lt_irrefl _ hn
+    exact fun x hx => sqRatio_pos_of_pos (ha n) h1 hx
+  have hatop : Tendsto a atTop atTop :=
+    tendsto_atTop_of_tendsto_mul_comp (T := sqRatio (symmLaw μ)) (L := fun _ => K)
+      sqRatio_antitoneOn hTpos ha hL1
+  -- tails of `X` from tails of `X - X'`
+  obtain ⟨u₀, hu₀⟩ := (eventually_atTop.1 ((tendsto_order.1 (tendsto_absTail_zero (μ := μ))).2
+    (1 / 2) (by norm_num)))
+  set u := max u₀ 0
+  have hu : absTail μ u ≤ 1 / 2 := (hu₀ u (le_max_left _ _)).le
+  have hcmp : ∀ s, 0 ≤ s → absTail μ (s + u) ≤ absTail (symmLaw μ) s := by
+    intro s hs
+    have h := two_mul_absTail_mul_le_absTail_symmLaw (μ := μ) (u := u) hs
+    have h0 : 0 ≤ absTail μ (s + u) := measureReal_nonneg
+    nlinarith
+  have hT : ∀ ε > 0, Tendsto (fun n : ℕ => (n : ℝ) * absTail μ (a n * ε)) atTop (𝓝 0) := by
+    intro ε hε
+    have h := tendsto_mul_absTail_symmLaw_of_two hL ha (half_pos hε)
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds h
+      (Eventually.of_forall fun n => mul_nonneg (Nat.cast_nonneg _) measureReal_nonneg) ?_
+    filter_upwards [hatop.eventually_ge_atTop (2 * u / ε)] with n hn
+    refine mul_le_mul_of_nonneg_left ?_ (Nat.cast_nonneg _)
+    have hle : a n * (ε / 2) + u ≤ a n * ε := by
+      rw [div_le_iff₀ hε] at hn; nlinarith
+    exact (absTail_antitone hle).trans (hcmp _ (mul_pos (ha n) (half_pos hε)).le)
+  refine ⟨hatop, hT, ?_⟩
+  -- the variance
+  have h4 : Tendsto (fun n : ℕ => 4 * ((n : ℝ) * sqRatio (symmLaw μ) (a n * 2))) atTop
+      (𝓝 K) := by
+    have := (hL 2 two_pos).const_mul 4
+    convert this using 2
+    rw [Real.rpow_neg two_pos.le, Real.rpow_two]; ring
+  have h8 := (hT 1 one_pos).const_mul 8
+  rw [mul_zero] at h8
+  have hdiff : Tendsto (fun n : ℕ => 2 * ((n : ℝ) * clipVar μ a n) -
+      4 * ((n : ℝ) * sqRatio (symmLaw μ) (a n * 2))) atTop (𝓝 0) := by
+    refine squeeze_zero_norm (fun n => ?_) h8
+    rw [Real.norm_eq_abs]
+    have := abs_two_mul_clipVar_sub_le (μ := μ) n (ha n)
+    have hn : (0 : ℝ) ≤ n := Nat.cast_nonneg n
+    calc |2 * ((n : ℝ) * clipVar μ a n) - 4 * ((n : ℝ) * sqRatio (symmLaw μ) (a n * 2))|
+        = |(n : ℝ) * (2 * clipVar μ a n - 4 * sqRatio (symmLaw μ) (a n * 2))| := by ring_nf
+      _ = (n : ℝ) * |2 * clipVar μ a n - 4 * sqRatio (symmLaw μ) (a n * 2)| := by
+          rw [abs_mul, abs_of_nonneg hn]
+      _ ≤ (n : ℝ) * (8 * absTail μ (a n * 1)) := mul_le_mul_of_nonneg_left this hn
+      _ = 8 * ((n : ℝ) * absTail μ (a n * 1)) := by ring
+  have := (hdiff.add h4).div_const 2
+  rw [zero_add] at this
+  refine this.congr fun n => ?_
+  ring
+
+end Necessity
+
 end ExtremeValueTheory
