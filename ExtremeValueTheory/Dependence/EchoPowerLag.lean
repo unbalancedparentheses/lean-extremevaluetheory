@@ -1,5 +1,55 @@
+/-
+Copyright (c) 2026 Federico Carrone.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Federico Carrone
+-/
 import ExtremeValueTheory.Dependence.EchoPhaseTransition
 
+/-!
+# The power-lag echo process: anticlustering exactly for blocks shorter than `n^(γ/α)`
+
+The echo process `X_t = max(Z_t, max {Z_s : s < t, s + L(Z_s) = t})` of
+`Dependence/EchoProcess.lean` (iid Pareto(`α`) shocks, each repeated once after the echo lag
+`L(Z)`) with the **power lag** `L(z) = ⌊z^γ⌋₊ + 1`, `0 < γ < α`. Since `E[L(Z)] < ∞` and
+`L → ∞`, it has `ϑ = 1` and `θ = 1/2` (`powEchoProcess_theta_lt_vartheta`). In the standard
+normalization `n P(X_0 > uₙ) → τ`, `uₙ ≈ n^(1/α)`, so the echo lag of an exceedance is
+`≈ uₙ^γ ≈ n^(γ/α)`: a *polynomial* scale, unlike the `log n` scale of the logarithmic lag.
+
+This answers the second question of Bai, Kulik and Wang (arXiv:2409.17966, §1): are there
+models where anticlustering holds with `lim log rₙ / log n = ρ` only for `ρ` up to some
+`ρ₀ < 1`? Yes, for every `ρ₀ ∈ (0, 1)`: take `γ = ρ₀ α`.
+
+## Main definitions
+
+* `echoShape β κ = (β min(κ, 1) - min(κ, 1)^β) / (β - 1)` (`= E[min(κ V, 1)]`, `V` Pareto(`β`)).
+* `powLag γ z = ⌊z^γ⌋₊ + 1`.
+
+## Main results
+
+Hypotheses throughout: `α > 0`, iid Pareto(`α`) innovations `Z ≥ 0` (`hZ`, `hind`, `hlaw`,
+`hpos`).
+* `setIntegral_min_rpow_pareto`: `E[min(Z^γ, r); Z > u] = r u^(-α) φ_{α/γ}(u^γ / r)` (`u ≥ 1`,
+  `r > 0`, `0 < γ < α`).
+* `antiClusteringAt_echoProcess` (any measurable lag `L ≥ 1`): if `uₙ → ∞`, `rₙ uₙ^(-α) → 0` and
+  eventually `L(z) > rₙ` for all `z ≥ uₙ`, two-sided anticlustering holds (with `m = 1`).
+* `tendsto_clusterRatio_sub_powEchoProcess`: the cluster ratio is
+  `(1 + φ_{α/γ}(uₙ^γ / rₙ)) / 2 + o(1)` for `uₙ → ∞`, `rₙ → ∞`, `rₙ uₙ^(-α) → 0`.
+* `powEchoProcess_polyBlocks`: with `n P(X_0 > uₙ) → τ > 0` and `log rₙ / log n → ρ ∈ (0, 1)`:
+  for `ρ < γ / α` the cluster ratio tends to `1 = ϑ` and anticlustering holds; for `ρ > γ / α` it
+  tends to `1/2 = θ` and forward anticlustering fails.
+* `powEchoProcess_antiClustering_iff`: for `ρ ∈ (0, 1)`, `ρ ≠ γ / α`, the anticlustering
+  condition `AC(rₙ)` (all levels `aₙ x`, `n P(X_0 > aₙ) → τ > 0`) holds **iff** `ρ < γ / α`.
+* `powEchoProcess_critical`: for `rₙ / n^(γ/α) → c > 0`, the cluster ratio tends to
+  `(1 + φ_{α/γ}(κ)) / 2` with `κ = (2/τ)^(γ/α) / c`, the escape mass is `(1 - φ_{α/γ}(κ)) / 2`;
+  forward anticlustering fails when `κ < 1` and anticlustering holds when `κ > 1`.
+
+## Remarks
+
+* At `ρ = γ / α` the answer depends on constants: with `rₙ ~ c n^(γ/α)`, `AC` fails for
+  `c > (2/τ)^(γ/α)` and holds for `c < (2/τ)^(γ/α)`; the boundary case is not decided here.
+* The `β`-mixing of the echo process and the incompatibility of anticlustering with the block
+  condition `A(uₙ)` are in `Dependence/EchoMixing.lean`.
+-/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set
 open scoped ENNReal NNReal
@@ -662,7 +712,7 @@ include hα hZ hind hlaw hpos in
 `rₙ / n^(γ/α) → c > 0`, the echo lag over block length is `uₙ^γ / rₙ → κ = (2/τ)^(γ/α) / c`, the
 cluster ratio tends to `(1 + φ_{α/γ}(κ)) / 2` and the escape mass is `(1 - φ_{α/γ}(κ)) / 2`.
 For `κ < 1` (i.e. `c > (2/τ)^(γ/α)`) this lies strictly between `θ = 1/2` and `ϑ = 1`, and
-forward anticlustering fails. -/
+forward anticlustering fails; for `κ > 1` anticlustering holds. -/
 theorem powEchoProcess_critical (hγ : 0 < γ) (hγα : γ < α) {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
     (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess (powLag γ) Z 0 ω}) atTop (𝓝 τ))
     {r : ℕ → ℕ} {c : ℝ} (hc : 0 < c)
@@ -672,7 +722,8 @@ theorem powEchoProcess_critical (hγ : 0 < γ) (hγα : γ < α) {u : ℕ → �
       HasEscapeMass P (echoProcess (powLag γ) Z) u r
         ((1 - echoShape (α / γ) ((2 / τ) ^ (γ / α) / c)) / 2) ∧
       ((2 / τ) ^ (γ / α) / c < 1 →
-        ¬ ForwardAntiClusteringAt P (echoProcess (powLag γ) Z) u r) := by
+        ¬ ForwardAntiClusteringAt P (echoProcess (powLag γ) Z) u r) ∧
+      (1 < (2 / τ) ^ (γ / α) / c → AntiClusteringAt P (echoProcess (powLag γ) Z) u r) := by
   obtain ⟨hu, hnb, hlu⟩ := echoProcess_levels hα hZ hind hlaw hpos (measurable_powLag γ)
     (one_le_powLag γ) (tendsto_powLag hγ) hτ0 hτ
   set ρ := γ / α
@@ -722,13 +773,18 @@ theorem powEchoProcess_critical (hγ : 0 < γ) (hγα : γ < α) {u : ℕ → �
     (hasShiftInvariantWindows_echoProcess hZ hind hlaw (measurable_powLag γ)) hu hrr
       ((1 + echoShape (α / γ) ((2 / τ) ^ ρ / c)) / 2)
   rw [candidateExtremalIndex_unitSpectral hα] at h
-  refine ⟨hlim, ?_, fun hκ1 => ?_⟩
+  refine ⟨hlim, ?_, fun hκ1 => ?_, ?_⟩
   · convert h.1 hlim using 1
     simp only [ENNReal.toReal_one]
     ring
   · refine not_forwardAntiClusteringAt_powEchoProcess hα hZ hind hlaw hpos hγ hu hrr ?_ hlim
     have := echoShape_lt_one ((one_lt_div hγ).2 hγα) (by positivity) hκ1
     linarith
+  · intro hκ1
+    refine antiClusteringAt_powEchoProcess hα hZ hind hlaw hpos hγ.le hu hrb ?_
+    filter_upwards [hκ.eventually (lt_mem_nhds hκ1), hrr.eventually_gt_atTop 0] with n hn hrn
+    have hR : (0 : ℝ) < r n := by exact_mod_cast hrn
+    exact (one_le_div hR).1 hn.le
 
 end PowEchoPoly
 

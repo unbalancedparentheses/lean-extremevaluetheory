@@ -136,6 +136,7 @@ import ExtremeValueTheory.MaxStable.Simplex
 import ExtremeValueTheory.MaxStable.RegularVariation
 import ExtremeValueTheory.Dependence.EchoPhaseTransition
 import ExtremeValueTheory.Dependence.EchoConditionA
+import ExtremeValueTheory.Dependence.EchoPowerLag
 import ExtremeValueTheory.Dependence.MixtureProcess
 import ExtremeValueTheory.Statistics.Density
 import ExtremeValueTheory.Statistics.GPDLikelihood
@@ -175,3 +176,4 @@ import ExtremeValueTheory.Minimality.ClassicalGeneralizedCLT
 import ExtremeValueTheory.Minimality.ClassicalBreiman
 import ExtremeValueTheory.Minimality.ClassicalHill
 import ExtremeValueTheory.Minimality.ClassicalSummary
+import ExtremeValueTheory.Dependence.EchoMixing
