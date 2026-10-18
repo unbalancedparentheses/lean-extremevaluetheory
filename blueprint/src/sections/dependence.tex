@@ -699,3 +699,45 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
   \leanok
   Their marginal tails are regularly varying, so Theorem~\ref{thm:strict-extremal-index} applies.
 \end{proof}
+
+\section{The power-lag echo process}
+
+\begin{theorem}[Anticlustering holds exactly below a prescribed block exponent]
+  \label{thm:power-lag-echo}
+  \uses{thm:echo-process, thm:echo-phase-transition}
+  \lean{ExtremeValueTheory.powLag, ExtremeValueTheory.powEchoProcess_theta_lt_vartheta, ExtremeValueTheory.echoShape, ExtremeValueTheory.setIntegral_min_rpow_pareto,
+    ExtremeValueTheory.antiClusteringAt_echoProcess, ExtremeValueTheory.tendsto_clusterRatio_sub_powEchoProcess, ExtremeValueTheory.powEchoProcess_polyBlocks,
+    ExtremeValueTheory.powEchoProcess_antiClustering_iff, ExtremeValueTheory.powEchoProcess_critical}
+  \leanok
+  Let $Z_t$ be iid Pareto($\alpha$) and $0 < \gamma < \alpha$, and let each shock $Z_s$ reappear once after the lag
+  $\lfloor Z_s^\gamma \rfloor + 1$. Then $\theta = 1/2 < \vartheta = 1$, and for block lengths with $\log r_n/\log n \to \rho \in (0,1)$,
+  $\rho \ne \gamma/\alpha$, anticlustering holds if and only if $\rho < \gamma/\alpha$; the cluster ratio tends to $1$ for
+  $\rho < \gamma/\alpha$ and to $1/2$ for $\rho > \gamma/\alpha$, with an explicit interpolating value at the critical scale.
+  Choosing $\gamma = \rho_0 \alpha$ gives, for every $\rho_0 \in (0,1)$, a regularly varying stationary sequence for which
+  anticlustering holds exactly for $\rho < \rho_0$, answering a question of Bai, Kulik and Wang (2024).
+\end{theorem}
+\begin{proof}
+  \leanok
+  An exceeding shock's echo lag is of order $n^{\gamma/\alpha}$. The cluster ratio is computed exactly through
+  $\E[\min(Z^\gamma, r); Z > u] = r u^{-\alpha} \varphi_{\alpha/\gamma}(u^\gamma/r)$, and anticlustering for blocks shorter than every echo lag of
+  an exceeding shock holds already with $m = 1$.
+\end{proof}
+
+\begin{theorem}[Mixing does not give $\theta = \vartheta$]
+  \label{thm:echo-beta-mixing}
+  \uses{thm:power-lag-echo, def:mixing}
+  \lean{ExtremeValueTheory.betaMixing_echoProcess_le, ExtremeValueTheory.isBetaMixing_echoProcess, ExtremeValueTheory.betaMixing_logEchoProcess_le,
+    ExtremeValueTheory.powEchoProcess_not_conditionA, ExtremeValueTheory.powEchoProcess_not_conditionA_and_antiClustering,
+    ExtremeValueTheory.logEchoProcess_antiClusteringAt_short, ExtremeValueTheory.logEchoProcess_betaMixing_incompatible}
+  \leanok
+  Every echo process whose lag has finite mean is $\beta$-mixing, and the log-lag echo process is geometrically
+  $\beta$-mixing. Yet $\theta = 1/2 \ne \vartheta = 1$ although the tail process is that of an iid sequence: on every block scale,
+  anticlustering and the block condition $\mathcal A$ fail to hold simultaneously. So strong mixing together with a
+  vanishing tail process does not imply $\theta = \vartheta$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  $\beta(h) \le 2\sum_{m \ge 0} \PR[L(Z) \ge h + m]$ by coupling the future with the innovations after the gap, on the event
+  that no earlier shock echoes across it. Condition $\mathcal A$ needs blocks longer than the echo lag; anticlustering
+  needs shorter ones.
+\end{proof}

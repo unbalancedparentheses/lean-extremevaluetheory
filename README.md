@@ -79,6 +79,11 @@ Formalizing the extremal index forced every hypothesis into the open. A literatu
   after a lag that grows with its size. The cluster ratio has a block-length phase transition at
   `rₙ ≍ log n` (`logEchoProcess_phase_transition`). It appears to be only the second known mechanism
   with `θ < ϑ`, and far simpler than the first (Bai and Wang).
+- **An answer to a question of Bai, Kulik and Wang (2024).** With an echo lag of order `size^γ`, the
+  power-lag echo process satisfies anticlustering exactly for block lengths `n^ρ` with `ρ < γ/α`
+  (`powEchoProcess_antiClustering_iff`), so every cutoff `ρ₀ ∈ (0,1)` is attained. The same processes are
+  β-mixing (geometrically for the log lag), showing that strong mixing plus a vanishing tail process does
+  not imply `θ = ϑ` (`logEchoProcess_betaMixing_incompatible`).
 - **An exact gap formula (partly known).** `θ = ϑ − η`, where `η` is the mass of cluster returns at
   lags that grow with the threshold (`HasSpectralTailProcess.lt_candidateExtremalIndex_iff`). The
   underlying identity is close to classical results of O'Brien and Segers; the two-sided statement is

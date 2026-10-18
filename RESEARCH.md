@@ -97,6 +97,21 @@ to "mixing plus a vanishing tail process implies `θ = ϑ`". Recommended write-u
 centred on the echo process (title suggestion: "An echo process: a simple regularly varying sequence
 whose extremal index is invisible to its tail process").
 
+### Answer to Bai–Kulik–Wang's question (`Dependence/EchoPowerLag.lean`, `Dependence/EchoMixing.lean`)
+
+Bai, Kulik and Wang (2024, arXiv:2409.17966, §1) ask whether there are regularly varying processes for
+which anticlustering holds with `lim log rₙ / log n = ρ` only for `ρ` up to some `ρ₀ < 1`. The power-lag
+echo process (lag `⌊Z^γ⌋ + 1`, `0 < γ < α`, iid Pareto(α) shocks) gives a positive answer for every
+`ρ₀ ∈ (0,1)`: `powEchoProcess_antiClustering_iff` proves that anticlustering at the normalizing levels holds
+iff `ρ < γ/α` (for `ρ ≠ γ/α`), and `powEchoProcess_polyBlocks` that the cluster ratio tends to `1` below and
+to `1/2 = θ` above the cutoff, with an explicit critical-scale value (`powEchoProcess_critical`; only the
+boundary case `κ = 1` there is open). The process has `θ = 1/2`, `ϑ = 1`, and is β-mixing
+(`isBetaMixing_echoProcess`; geometric for the log lag, `betaMixing_logEchoProcess_le`), and on every block
+scale anticlustering and condition `𝒜` fail to hold together (`powEchoProcess_not_conditionA_and_antiClustering`,
+`logEchoProcess_betaMixing_incompatible`). Novelty: not yet checked against the literature beyond the
+earlier search (which found no example of this kind); Bai–Kulik–Wang's own model gives a linear rather
+than a step transition.
+
 ### Minimal hypotheses: classical and statistics results (`Minimality/Classical*.lean`, namespace `ExtremeValueTheory.Minimality`)
 
 | Theorem | Hypothesis | Status | Witness |
