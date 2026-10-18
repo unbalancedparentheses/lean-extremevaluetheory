@@ -592,6 +592,105 @@ theorem integral_lin3_gevScore_sq (a b c : ℝ) :
   field_simp
   ring
 
+/-- The combinations of the three scores are square integrable. -/
+lemma memLp_lin3_gevScore (a b c : ℝ) :
+    MemLp (fun x => a * gevScoreMu ξ μ σ x + b * gevScoreSigma ξ μ σ x +
+      c * gevScoreXi ξ μ σ x) 2 (gevLocScaleCDF ξ μ hσ).measure := by
+  have hm : Measurable fun x =>
+      a * gevScoreMu ξ μ σ x + b * gevScoreSigma ξ μ σ x + c * gevScoreXi ξ μ σ x := by
+    have := measurable_gevScoreMu ξ μ σ; have := measurable_gevScoreSigma ξ μ σ
+    have := measurable_gevScoreXi ξ μ σ; fun_prop
+  rw [memLp_two_iff_integrable_sq hm.aestronglyMeasurable]
+  exact integrable_gevLocScaleCDF_of_logPoly hξ hσ (hm.pow_const 2)
+    (fun t ht => sq_lin3_gevScore_transform hσ hξ0 hξ a b c ht)
+
 end Information
+
+/-! ### The score vector and its covariance -/
+
+section Covariance
+
+open Matrix
+
+variable {ξ μ σ : ℝ}
+
+/-- The score `(∂_μ ℓ, ∂_σ ℓ, ∂_ξ ℓ)` of one observation, as a function `Fin 3 → ℝ`. -/
+noncomputable def gevScore (ξ μ σ x : ℝ) : Fin 3 → ℝ :=
+  ![gevScoreMu ξ μ σ x, gevScoreSigma ξ μ σ x, gevScoreXi ξ μ σ x]
+
+lemma dotProduct_gevScore (u : Fin 3 → ℝ) (x : ℝ) :
+    u ⬝ᵥ gevScore ξ μ σ x =
+      u 0 * gevScoreMu ξ μ σ x + u 1 * gevScoreSigma ξ μ σ x + u 2 * gevScoreXi ξ μ σ x := by
+  simp [gevScore, dotProduct, Fin.sum_univ_three]
+
+lemma measurable_dotProduct_gevScore (u : Fin 3 → ℝ) :
+    Measurable fun x => u ⬝ᵥ gevScore ξ μ σ x := by
+  simp_rw [dotProduct_gevScore]
+  have := measurable_gevScoreMu ξ μ σ; have := measurable_gevScoreSigma ξ μ σ
+  have := measurable_gevScoreXi ξ μ σ; fun_prop
+
+lemma eq_vec_three (u : Fin 3 → ℝ) : u = ![u 0, u 1, u 2] := by
+  ext i; fin_cases i <;> rfl
+
+variable (hσ : 0 < σ) (hξ0 : ξ ≠ 0) (hξ : -1 / 2 < ξ)
+include hσ hξ0 hξ
+
+lemma memLp_dotProduct_gevScore (u : Fin 3 → ℝ) :
+    MemLp (fun x => u ⬝ᵥ gevScore ξ μ σ x) 2 (gevLocScaleCDF ξ μ hσ).measure := by
+  simp_rw [dotProduct_gevScore]
+  exact memLp_lin3_gevScore hσ hξ0 hξ _ _ _
+
+theorem integral_dotProduct_gevScore (u : Fin 3 → ℝ) :
+    ∫ x, u ⬝ᵥ gevScore ξ μ σ x ∂(gevLocScaleCDF ξ μ hσ).measure = 0 := by
+  simp_rw [dotProduct_gevScore]
+  exact integral_lin3_gevScore hσ hξ0 hξ _ _ _
+
+theorem integral_dotProduct_gevScore_sq (u : Fin 3 → ℝ) :
+    ∫ x, (u ⬝ᵥ gevScore ξ μ σ x) ^ 2 ∂(gevLocScaleCDF ξ μ hσ).measure =
+      u ⬝ᵥ (gevFisherInfo ξ σ *ᵥ u) := by
+  simp_rw [dotProduct_gevScore]
+  rw [integral_lin3_gevScore_sq hσ hξ0 hξ, ← eq_vec_three]
+
+/-- **The covariance of the score is the Fisher information**:
+`E[(u · ∇ℓ)(w · ∇ℓ)] = uᵀ I w`. -/
+theorem integral_dotProduct_gevScore_mul (u w : Fin 3 → ℝ) :
+    ∫ x, (u ⬝ᵥ gevScore ξ μ σ x) * (w ⬝ᵥ gevScore ξ μ σ x) ∂(gevLocScaleCDF ξ μ hσ).measure =
+      u ⬝ᵥ (gevFisherInfo ξ σ *ᵥ w) := by
+  have iuw := (memLp_dotProduct_gevScore (μ := μ) hσ hξ0 hξ (u + w)).integrable_sq
+  have iu := (memLp_dotProduct_gevScore (μ := μ) hσ hξ0 hξ u).integrable_sq
+  have iw := (memLp_dotProduct_gevScore (μ := μ) hσ hξ0 hξ w).integrable_sq
+  have e : (fun x => (u ⬝ᵥ gevScore ξ μ σ x) * (w ⬝ᵥ gevScore ξ μ σ x)) = fun x =>
+      (((u + w) ⬝ᵥ gevScore ξ μ σ x) ^ 2 - (u ⬝ᵥ gevScore ξ μ σ x) ^ 2 -
+        (w ⬝ᵥ gevScore ξ μ σ x) ^ 2) / 2 := by
+    funext x; rw [add_dotProduct]; ring
+  have i2 : Integrable (fun x => ((u + w) ⬝ᵥ gevScore ξ μ σ x) ^ 2 -
+      (u ⬝ᵥ gevScore ξ μ σ x) ^ 2) (gevLocScaleCDF ξ μ hσ).measure := iuw.sub iu
+  rw [e, integral_div, integral_sub i2 iw, integral_sub iuw iu,
+    integral_dotProduct_gevScore_sq hσ hξ0 hξ, integral_dotProduct_gevScore_sq hσ hξ0 hξ,
+    integral_dotProduct_gevScore_sq hσ hξ0 hξ]
+  have hsym : w ⬝ᵥ (gevFisherInfo ξ σ *ᵥ u) = u ⬝ᵥ (gevFisherInfo ξ σ *ᵥ w) := by
+    rw [dotProduct_mulVec, dotProduct_comm, ← mulVec_transpose, gevFisherInfo_isSymm.eq]
+  simp only [mulVec_add, dotProduct_add, add_dotProduct]
+  rw [hsym]
+  ring
+
+/-- **The Fisher information entries**: `E[∂_i ℓ ∂_j ℓ] = I_{ij}`. -/
+theorem integral_gevScore_mul_gevScore (i j : Fin 3) :
+    ∫ x, gevScore ξ μ σ x i * gevScore ξ μ σ x j ∂(gevLocScaleCDF ξ μ hσ).measure =
+      gevFisherInfo ξ σ i j := by
+  have := integral_dotProduct_gevScore_mul (μ := μ) hσ hξ0 hξ (Pi.single i 1) (Pi.single j 1)
+  simpa [single_dotProduct, mulVec_single] using this
+
+/-- **Each score has mean zero.** -/
+theorem integral_gevScore (i : Fin 3) :
+    ∫ x, gevScore ξ μ σ x i ∂(gevLocScaleCDF ξ μ hσ).measure = 0 := by
+  have := integral_dotProduct_gevScore (μ := μ) hσ hξ0 hξ (Pi.single i 1)
+  simpa [single_dotProduct] using this
+
+/-- **The shape score has mean zero.** -/
+theorem integral_gevScoreXi : ∫ x, gevScoreXi ξ μ σ x ∂(gevLocScaleCDF ξ μ hσ).measure = 0 := by
+  simpa [gevScore] using integral_gevScore (μ := μ) hσ hξ0 hξ 2
+
+end Covariance
 
 end ExtremeValueTheory
