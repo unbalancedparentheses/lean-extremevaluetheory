@@ -610,4 +610,127 @@ theorem lindeberg_of_tendsto_mul_sqRatio_two (ha : ∀ n, 0 < a n) {K : ℝ} (hK
 
 end Necessity
 
+section Identification
+
+theorem IsRegularlyVarying.index_eq {f : ℝ → ℝ} {ρ σ : ℝ} (h1 : IsRegularlyVarying f ρ)
+    (h2 : IsRegularlyVarying f σ) : ρ = σ := by
+  have h := tendsto_nhds_unique (h1.2 2 two_pos) (h2.2 2 two_pos)
+  have hl := congrArg Real.log h
+  rw [Real.log_rpow two_pos, Real.log_rpow two_pos] at hl
+  exact mul_right_cancel₀ (Real.log_pos one_lt_two).ne' hl
+
+theorem norm_charFun_gaussianReal (m : ℝ) (v : ℝ≥0) (t : ℝ) :
+    ‖charFun (gaussianReal m v) t‖ = Real.exp (-((v : ℝ) / 2 * |t| ^ (2 : ℝ))) := by
+  rw [charFun_gaussianReal, Complex.norm_exp, Real.rpow_two, sq_abs]
+  congr 1
+  simp only [Complex.sub_re, Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.I_re, Complex.I_im, Complex.div_re]
+  norm_num
+  rw [show ((t : ℂ) ^ 2) = ((t ^ 2 : ℝ) : ℂ) by push_cast; ring, Complex.ofReal_re]
+  ring
+
+/-- Non-degenerate Gaussian laws are stable with index `2`. -/
+theorem isStableIndex_two_gaussianReal (m : ℝ) {v : ℝ≥0} (hv : v ≠ 0) :
+    IsStableIndex 2 (gaussianReal m v) :=
+  (isStable_gaussianReal m hv).isStableIndex_of_norm_charFun two_pos
+    (div_pos (by positivity) two_pos) (norm_charFun_gaussianReal m v)
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {a b : ℕ → ℝ}
+
+/-- **The Gaussian case of the converse GCLT.** If `(Sₙ - bₙ) / aₙ → ν` and the symmetrized
+scaling limit has index `2`, `n E[min (1, (X - X')² / (aₙ x)²)] → K x⁻²`, then `ν` is the
+Gaussian law `N(m, K / 2)` for some `m`. -/
+theorem exists_eq_gaussianReal_of_tendsto_mul_sqRatio_two (ha : ∀ n, 0 < a n)
+    {ν : ProbabilityMeasure ℝ}
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν))
+    {K : ℝ} (hK : 0 < K)
+    (hL : ∀ x : ℝ, 0 < x → Tendsto (fun n : ℕ => (n : ℝ) * sqRatio (symmLaw μ) (a n * x)) atTop
+      (𝓝 (K * x ^ (-(2 : ℝ))))) :
+    ∃ m : ℝ, (ν : Measure ℝ) = gaussianReal m (K / 2).toNNReal := by
+  obtain ⟨hatop, hT, hV⟩ := lindeberg_of_tendsto_mul_sqRatio_two ha hK hL
+  exact exists_eq_gaussianReal_of_lindeberg ha hatop hT hV hconv
+
+/-- **Dichotomy for limits of normalized sums.** If `(Sₙ - bₙ) / aₙ → ν`, `ν` not a Dirac mass,
+then either the converse index is `α < 2` and `ν` is stable with index `α`, or the index is `2`,
+`U(x) = E[X² 1{|X| ≤ x}]` is slowly varying and `ν` is Gaussian. -/
+theorem exists_isStableIndex_or_gaussian_of_tendsto (ha : ∀ n, 0 < a n)
+    {ν : ProbabilityMeasure ℝ} (hnd : ∀ x, (ν : Measure ℝ) ≠ Measure.dirac x)
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν)) :
+    (∃ α, 0 < α ∧ α < 2 ∧ IsRegularlyVarying (truncSecondMoment μ) (2 - α) ∧
+        IsStableIndex α ν) ∨
+      (IsRegularlyVarying (truncSecondMoment μ) 0 ∧
+        ∃ m : ℝ, ∃ v : ℝ≥0, v ≠ 0 ∧ (ν : Measure ℝ) = gaussianReal m v) := by
+  obtain ⟨α, hα0, hα2, K, hK, hL⟩ := exists_tendsto_mul_sqRatio_symmLaw ha hnd hconv
+  have hZs := isRegularlyVarying_minSqMoment_of_tendsto_mul_sqRatio ha hK hL
+  rcases lt_or_eq_of_le hα2 with hlt | rfl
+  · left
+    have hGs := isRegularlyVarying_absTail_of_minSqMoment (by linarith) hZs
+    rw [show 2 - α - 2 = -α by ring] at hGs
+    have hG := isRegularlyVarying_absTail_of_symmLaw hGs
+    refine ⟨α, hα0, hlt, isRegularlyVarying_truncSecondMoment_of_absTail hα0 hlt hG, ?_⟩
+    obtain ⟨-, B, hB0, -, p, -, -, -, m, hm1, hm2⟩ :=
+      identify_of_tendsto_mul_sqRatio ha hconv hα0 hlt hK hL
+    rcases eq_or_ne α 1 with h1 | h1
+    · subst h1
+      exact ((hm2 rfl).isStableIndex
+        (mul_pos hB0 (stableConst_pos one_pos (by norm_num)))).of_map_add_const
+    · exact ((hm1 h1).isStableIndex hα0 (mul_pos hB0 (stableConst_pos hα0 hlt))).of_map_add_const
+  · right
+    rw [sub_self] at hZs
+    refine ⟨isRegularlyVarying_truncSecondMoment_of_minSqMoment (by norm_num)
+      (isRegularlyVarying_minSqMoment_of_symmLaw hZs), ?_⟩
+    obtain ⟨m, hm⟩ := exists_eq_gaussianReal_of_tendsto_mul_sqRatio_two ha hconv hK hL
+    refine ⟨m, (K / 2).toNNReal, ?_, hm⟩
+    rw [Ne, Real.toNNReal_eq_zero, not_le]
+    positivity
+
+/-- **Every non-degenerate limit of normalized sums is stable** ([Feller, Vol. II, §VI.1,
+Theorem 1 and §XVII.5], [GK, §33]). -/
+theorem isStable_of_tendsto (ha : ∀ n, 0 < a n)
+    {ν : ProbabilityMeasure ℝ} (hnd : ∀ x, (ν : Measure ℝ) ≠ Measure.dirac x)
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν)) :
+    IsStable (ν : Measure ℝ) := by
+  rcases exists_isStableIndex_or_gaussian_of_tendsto ha hnd hconv with
+    ⟨α, -, -, -, h⟩ | ⟨-, m, v, hv, h⟩
+  · exact h.1
+  · rw [h]; exact isStable_gaussianReal m hv
+
+/-- **The Gaussian limit in the converse** ([Feller, Vol. II, §IX.8 and §XVII.5],
+[GK, §35]). If `(Sₙ - bₙ) / aₙ → ν`, `ν` not a Dirac mass, and the truncated second moment
+`U(x) = E[X² 1{|X| ≤ x}]` is slowly varying (the converse index is `2`), then `ν` is a
+non-degenerate Gaussian law. -/
+theorem exists_eq_gaussianReal_of_isRegularlyVarying_truncSecondMoment (ha : ∀ n, 0 < a n)
+    {ν : ProbabilityMeasure ℝ} (hnd : ∀ x, (ν : Measure ℝ) ≠ Measure.dirac x)
+    (hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν))
+    (hU : IsRegularlyVarying (truncSecondMoment μ) 0) :
+    ∃ m : ℝ, ∃ v : ℝ≥0, v ≠ 0 ∧ (ν : Measure ℝ) = gaussianReal m v := by
+  rcases exists_isStableIndex_or_gaussian_of_tendsto ha hnd hconv with
+    ⟨α, -, hlt, hU', -⟩ | ⟨-, h⟩
+  · have := hU'.index_eq hU
+    linarith
+  · exact h
+
+/-- **Stable laws of index `2` are Gaussian.** -/
+theorem IsStableIndex.exists_eq_gaussianReal {ν : Measure ℝ} (h : IsStableIndex 2 ν) :
+    ∃ m : ℝ, ∃ v : ℝ≥0, v ≠ 0 ∧ ν = gaussianReal m v := by
+  have := h.1.isProbabilityMeasure
+  obtain ⟨a, b, ha, hconv⟩ := h.1.exists_tendsto_self
+  rcases exists_isStableIndex_or_gaussian_of_tendsto (μ := ν) (ν := ⟨ν, inferInstance⟩) ha
+      h.1.ne_dirac hconv with
+    ⟨α, -, hlt, -, hα⟩ | ⟨-, hg⟩
+  · have := hα.index_eq h
+    linarith
+  · exact hg
+
+/-- `IsStableIndex 2 ν` iff `ν` is a non-degenerate Gaussian law. -/
+theorem isStableIndex_two_iff {ν : Measure ℝ} :
+    IsStableIndex 2 ν ↔ ∃ m : ℝ, ∃ v : ℝ≥0, v ≠ 0 ∧ ν = gaussianReal m v :=
+  ⟨fun h => h.exists_eq_gaussianReal, fun ⟨m, _, hv, h⟩ => h ▸ isStableIndex_two_gaussianReal m hv⟩
+
+end Identification
+
 end ExtremeValueTheory
