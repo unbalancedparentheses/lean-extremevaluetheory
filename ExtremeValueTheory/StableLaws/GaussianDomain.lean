@@ -733,4 +733,188 @@ theorem isStableIndex_two_iff {ν : Measure ℝ} :
 
 end Identification
 
+section Sufficiency
+
+variable {ν : Measure ℝ} [IsProbabilityMeasure ν]
+
+/-- `E[min (x², Z²)] > 0` for `x > 0` unless `Z = 0` a.s. -/
+theorem minSqMoment_pos_of_ne_dirac_zero (h : ν ≠ Measure.dirac 0) {x : ℝ} (hx : 0 < x) :
+    0 < minSqMoment ν x := by
+  rw [minSqMoment]
+  refine (integral_pos_iff_support_of_nonneg (fun y => le_min (sq_nonneg _) (sq_nonneg _))
+    (integrable_min_sq x)).2 ?_
+  have hs : Function.support (fun y : ℝ => min (x ^ 2) (y ^ 2)) = {0}ᶜ := by
+    ext y
+    simp only [Function.mem_support, mem_compl_iff, mem_singleton_iff]
+    constructor
+    · rintro h rfl; simp at h; exact absurd h (not_lt.2 (sq_nonneg x))
+    · intro hy
+      exact (lt_min (by positivity) (by positivity)).ne'
+  rw [hs]
+  by_contra h0
+  have hx' : ν {0}ᶜ = 0 := le_antisymm (not_lt.1 h0) zero_le
+  apply h
+  have h1 : ν {0} = 1 := (prob_compl_eq_zero_iff (measurableSet_singleton 0)).1 hx'
+  rw [← Measure.restrict_eq_self_of_ae_mem (μ := ν) (s := {0}) (by
+    rw [ae_iff]; convert hx' using 2), Measure.restrict_singleton, h1, one_smul]
+
+theorem min_sq_le_two_mul_min_sq_sub (x y z : ℝ) :
+    min (x ^ 2) (z ^ 2) ≤ 2 * min (x ^ 2) ((z - y) ^ 2) + 2 * y ^ 2 := by
+  rcases le_total ((z - y) ^ 2) (x ^ 2) with h | h
+  · rw [min_eq_right h]
+    nlinarith [min_le_right (x ^ 2) (z ^ 2), sq_nonneg (z - 2 * y)]
+  · rw [min_eq_left h]
+    nlinarith [min_le_left (x ^ 2) (z ^ 2), sq_nonneg y, sq_nonneg x]
+
+/-- **Truncated second moments through the symmetrization**: if `P(|X| > u) ≤ 1 / 2` then
+`E[min (x², X²)] ≤ 4 E[min (x², (X - X')²)] + 4 u²`. -/
+theorem minSqMoment_le_symmLaw {μ : Measure ℝ} [IsProbabilityMeasure μ] {u : ℝ}
+    (hu : absTail μ u ≤ 1 / 2) (x : ℝ) :
+    minSqMoment μ x ≤ 4 * minSqMoment (symmLaw μ) x + 4 * u ^ 2 := by
+  set B := {y : ℝ | |y| ≤ u}
+  have hB : MeasurableSet B := measurableSet_abs_le' u
+  have hBc : μ.real B = 1 - absTail μ u := by
+    have : B = {y : ℝ | u < |y|}ᶜ := by ext y; simp [B]
+    rw [this, probReal_compl_eq_one_sub (measurableSet_abs_gt u)]; rfl
+  set g : ℝ → ℝ := B.indicator (fun _ => (1 : ℝ))
+  have hg : ∫ y, g y ∂μ = μ.real B := by
+    rw [integral_indicator_const _ hB, smul_eq_mul, mul_one]
+  have hi : ∀ (f : ℝ × ℝ → ℝ), Measurable f →
+      Integrable (fun p : ℝ × ℝ => min (x ^ 2) (f p ^ 2)) (μ.prod μ) := by
+    intro f hf
+    refine (integrable_const (x ^ 2)).mono' (by fun_prop) (ae_of_all _ fun p => ?_)
+    rw [Real.norm_eq_abs, abs_of_nonneg (le_min (sq_nonneg _) (sq_nonneg _))]
+    exact min_le_left _ _
+  have hlhs : ∫ p : ℝ × ℝ, min (x ^ 2) (p.1 ^ 2) * g p.2 ∂(μ.prod μ) =
+      minSqMoment μ x * μ.real B := by
+    rw [integral_prod_mul (fun y => min (x ^ 2) (y ^ 2)) g, hg, minSqMoment]
+  have hrhs : ∫ p : ℝ × ℝ, (2 * min (x ^ 2) ((p.1 - p.2) ^ 2) + 2 * u ^ 2) ∂(μ.prod μ) =
+      2 * minSqMoment (symmLaw μ) x + 2 * u ^ 2 := by
+    rw [integral_add ((hi _ measurable_fst_sub_snd).const_mul 2) (integrable_const _),
+      integral_const_mul, integral_const, probReal_univ, one_smul, minSqMoment, symmLaw,
+      integral_map measurable_fst_sub_snd.aemeasurable (by fun_prop)]
+  have hgi : Integrable (fun p : ℝ × ℝ => min (x ^ 2) (p.1 ^ 2) * g p.2) (μ.prod μ) := by
+    refine Integrable.of_bound (((by fun_prop : Measurable fun p : ℝ × ℝ =>
+      min (x ^ 2) (p.1 ^ 2)).mul ((measurable_const.indicator hB).comp
+        measurable_snd)).aestronglyMeasurable) (x ^ 2) (ae_of_all _ fun p => ?_)
+    simp only [g, Real.norm_eq_abs]
+    have h0 : 0 ≤ min (x ^ 2) (p.1 ^ 2) := le_min (sq_nonneg _) (sq_nonneg _)
+    have h1 := min_le_left (x ^ 2) (p.1 ^ 2)
+    by_cases h : p.2 ∈ B
+    · rw [Set.indicator_of_mem h, mul_one, abs_of_nonneg h0]; exact h1
+    · rw [Set.indicator_of_notMem h, mul_zero, abs_zero]; positivity
+  have hle : ∫ p : ℝ × ℝ, min (x ^ 2) (p.1 ^ 2) * g p.2 ∂(μ.prod μ) ≤
+      ∫ p : ℝ × ℝ, (2 * min (x ^ 2) ((p.1 - p.2) ^ 2) + 2 * u ^ 2) ∂(μ.prod μ) := by
+    refine integral_mono hgi (((hi _ measurable_fst_sub_snd).const_mul 2).add
+      (integrable_const _)) fun p => ?_
+    simp only [g]
+    by_cases h : p.2 ∈ B
+    · rw [Set.indicator_of_mem h, mul_one]
+      have h1 := min_sq_le_two_mul_min_sq_sub x p.2 p.1
+      have h2 : p.2 ^ 2 ≤ u ^ 2 := by
+        have : |p.2| ≤ u := h
+        rw [← sq_abs]; exact pow_le_pow_left₀ (abs_nonneg _) this 2
+      linarith
+    · rw [Set.indicator_of_notMem h, mul_zero]
+      positivity
+  rw [hlhs, hrhs, hBc] at hle
+  have hZ := minSqMoment_nonneg (μ := μ) x
+  nlinarith
+
+/-- The elementary Tauberian step in the slowly varying case: if `x² P(|X| > x) / Z(x) → 0`
+then `Z(x) = E[min (x², X²)]` is slowly varying. -/
+theorem isRegularlyVarying_minSqMoment_zero (hZpos : ∀ᶠ x in atTop, 0 < minSqMoment ν x)
+    (hr : Tendsto (fun x => x ^ 2 * absTail ν x / minSqMoment ν x) atTop (𝓝 0)) :
+    IsRegularlyVarying (minSqMoment ν) 0 := by
+  have hge : ∀ l : ℝ, 1 ≤ l →
+      Tendsto (fun x => minSqMoment ν (l * x) / minSqMoment ν x) atTop (𝓝 1) := by
+    intro l hl
+    have hup : Tendsto (fun x => 1 + (l ^ 2 - 1) * (x ^ 2 * absTail ν x / minSqMoment ν x))
+        atTop (𝓝 (1 + (l ^ 2 - 1) * 0)) := (hr.const_mul _).const_add 1
+    rw [mul_zero, add_zero] at hup
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hup ?_ ?_
+    · filter_upwards [hZpos, eventually_ge_atTop 0] with x hx hx0
+      rw [le_div_iff₀ hx, one_mul]
+      exact minSqMoment_mono hx0 (le_mul_of_one_le_left hx0 hl)
+    · filter_upwards [hZpos, eventually_ge_atTop 0] with x hx hx0
+      have := minSqMoment_sub_le (μ := ν) hx0 hl
+      rw [div_le_iff₀ hx, add_mul, one_mul, mul_assoc, div_mul_cancel₀ _ hx.ne']
+      nlinarith
+  refine ⟨hZpos, fun l hl => ?_⟩
+  rw [Real.rpow_zero]
+  rcases le_total 1 l with h1 | h1
+  · exact hge l h1
+  · have h := (hge l⁻¹ (one_le_inv₀ hl |>.2 h1)).comp (tendsto_id.const_mul_atTop hl)
+    have h' := h.inv₀ one_ne_zero
+    rw [inv_one] at h'
+    refine h'.congr' ?_
+    filter_upwards with x
+    simp only [Function.comp, id, inv_div]
+    rw [← mul_assoc, inv_mul_cancel₀ hl.ne', one_mul]
+
+/-- **Slow variation passes to the symmetrization**: if `μ` is not a Dirac mass and
+`U(x) = E[X² 1{|X| ≤ x}]` is slowly varying, then so is `E[min (x², (X - X')²)]`. -/
+theorem isRegularlyVarying_minSqMoment_symmLaw {μ : Measure ℝ} [IsProbabilityMeasure μ]
+    (hnd : ∀ x, μ ≠ Measure.dirac x) (hU : IsRegularlyVarying (truncSecondMoment μ) 0) :
+    IsRegularlyVarying (minSqMoment (symmLaw μ)) 0 := by
+  have hZ : IsRegularlyVarying (minSqMoment μ) 0 :=
+    hU.of_tendsto_div (tendsto_minSqMoment_div_truncSecondMoment (by norm_num) hU)
+      (by norm_num)
+  have hr := tendsto_sq_mul_absTail_div_minSqMoment hZ
+  rw [zero_div] at hr
+  have hρpos : ∀ x, 0 < x → 0 < minSqMoment (symmLaw μ) x :=
+    fun x hx => minSqMoment_pos_of_ne_dirac_zero (symmLaw_ne_dirac hnd) hx
+  obtain ⟨u₀, hu₀⟩ := (eventually_atTop.1 ((tendsto_order.1 (tendsto_absTail_zero (μ := μ))).2
+    (1 / 2) (by norm_num)))
+  have hu : absTail μ u₀ ≤ 1 / 2 := (hu₀ u₀ le_rfl).le
+  set c₀ := minSqMoment (symmLaw μ) 1
+  have hc₀ : 0 < c₀ := hρpos 1 one_pos
+  set C := 4 + 4 * u₀ ^ 2 / c₀
+  have hC : 0 < C := by positivity
+  have hcomp : ∀ x, 1 ≤ x → minSqMoment μ x ≤ C * minSqMoment (symmLaw μ) x := by
+    intro x hx
+    have h1 := minSqMoment_le_symmLaw hu x
+    have h2 : c₀ ≤ minSqMoment (symmLaw μ) x := minSqMoment_mono zero_le_one hx
+    have h3 : 4 * u₀ ^ 2 ≤ 4 * u₀ ^ 2 / c₀ * minSqMoment (symmLaw μ) x := by
+      rw [div_mul_eq_mul_div, le_div_iff₀ hc₀]
+      exact mul_le_mul_of_nonneg_left h2 (by positivity)
+    simp only [C]; nlinarith
+  have hZρpos : ∀ᶠ x in atTop, 0 < minSqMoment (symmLaw μ) x :=
+    (eventually_gt_atTop 0).mono fun x hx => hρpos x hx
+  refine isRegularlyVarying_minSqMoment_zero hZρpos ?_
+  have hhalf : Tendsto (fun x : ℝ => x / 2) atTop atTop :=
+    tendsto_id.atTop_div_const (by norm_num : (0 : ℝ) < 2)
+  have hr2 := (hr.comp hhalf).const_mul (12 * C)
+  rw [mul_zero] at hr2
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hr2 ?_ ?_
+  · filter_upwards [hZρpos] with x hx
+    exact div_nonneg (mul_nonneg (sq_nonneg _) measureReal_nonneg) hx.le
+  · filter_upwards [eventually_ge_atTop 2, hhalf.eventually hZ.1, hZρpos] with x hx hZh hZr
+    simp only [Function.comp]
+    set A := absTail μ (x / 2)
+    set Zh := minSqMoment μ (x / 2)
+    set Zr := minSqMoment (symmLaw μ) x
+    have hA0 : 0 ≤ A := measureReal_nonneg
+    have hA1 : A ≤ 1 := absTail_le_one _
+    have hTr : absTail (symmLaw μ) x ≤ 3 * A := by
+      have h := absTail_symmLaw_le (μ := μ) (s := x / 2) (u := x / 2)
+      rw [add_halves] at h
+      nlinarith
+    have hZle : Zh ≤ C * Zr :=
+      (minSqMoment_mono (by linarith) (by linarith)).trans (hcomp x (by linarith))
+    rw [div_le_iff₀ hZr]
+    have hq : (x / 2) ^ 2 * A / Zh * Zr ≥ (x / 2) ^ 2 * A / C := by
+      rw [div_mul_eq_mul_div, ge_iff_le, div_le_div_iff₀ hC hZh]
+      have := mul_le_mul_of_nonneg_left hZle (mul_nonneg (sq_nonneg (x / 2)) hA0)
+      nlinarith
+    have hq' : 12 * C * ((x / 2) ^ 2 * A / Zh) * Zr ≥ 3 * x ^ 2 * A := by
+      have : 12 * C * ((x / 2) ^ 2 * A / Zh) * Zr = 12 * C * ((x / 2) ^ 2 * A / Zh * Zr) := by
+        ring
+      rw [this]
+      have h12 : 12 * C * ((x / 2) ^ 2 * A / C) = 3 * x ^ 2 * A := by field_simp; ring
+      nlinarith
+    nlinarith [mul_le_mul_of_nonneg_left hTr (sq_nonneg x)]
+
+end Sufficiency
+
 end ExtremeValueTheory
