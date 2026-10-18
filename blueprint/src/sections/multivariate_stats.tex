@@ -83,3 +83,38 @@ Values}, Springer (2001), Ch.~8.
   \leanok
   $\PR[\xi \ge s] = e^{-s A(t)}$ and the strong law of large numbers.
 \end{proof}
+
+\section{Multivariate domains of attraction and peaks over threshold}
+
+\begin{theorem}[Multivariate domain of attraction]
+  \label{thm:multivariate-mda}
+  \uses{thm:max-stable-converse, thm:three-types-of-extr-val-distr}
+  \lean{ExtremeValueTheory.IsMDAWith, ExtremeValueTheory.IsInMultivariateMDA, ExtremeValueTheory.IsMDAWith.tendsto_marginal, ExtremeValueTheory.IsMDAWith.exists_pow_eq,
+    ExtremeValueTheory.IsMDAWith.tendsto_mul_one_sub_tailQuantile, ExtremeValueTheory.isSimpleMaxStable_frechetStandardization, ExtremeValueTheory.isMDAWith_iff}
+  \leanok
+  If $F^n(a_n x + b_n) \to G(x)$ coordinatewise-affinely with non-degenerate marginal limits, then each margin of $G$ is a
+  univariate extreme value distribution, each margin of $F$ is in its domain of attraction, $G$ is max-stable, and
+  $n(1 - F(U_1(n y_1), \dots, U_d(n y_d))) \to -\log G_0(y)$ for the simple max-stable standardization $G_0$ of $G$. For
+  continuous margins the converse holds, so $F \in \mathrm{MDA}(G)$ if and only if the margins converge and the standardized
+  limit holds [dHF, Theorems~6.1.1 and~6.2.1], [Resnick, Proposition~5.10].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Margins by projection; max-stability from the limit along $nk$; standardization through the marginal tail quantile
+  functions, with a Lipschitz bound and a Bonferroni bound for joint distribution functions.
+\end{proof}
+
+\begin{theorem}[Multivariate generalized Pareto distributions]
+  \label{thm:mgpd}
+  \uses{thm:multivariate-mda}
+  \lean{ExtremeValueTheory.IsMDAWith.tendsto_conditionalExcessCDF, ExtremeValueTheory.tendsto_conditionalExcess_tailQuantile,
+    ExtremeValueTheory.IsSimpleMaxStable.standardMGPD_threshold_stable}
+  \leanok
+  Under the domain-of-attraction condition, the law of $(X - b_n)/a_n$ given that some coordinate exceeds its threshold
+  converges to $(\log G(x \wedge 0) - \log G(x))/\log G(0)$ [Rootz\'en and Tajvidi 2006, Theorem~2.1]. On the unit Fr\'echet
+  scale the limit $H_0(y) = (V(y \wedge 1) - V(y))/V(1)$ is threshold stable.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Write the conditional probability as a ratio of exceedance probabilities and use the domain-of-attraction limit.
+\end{proof}

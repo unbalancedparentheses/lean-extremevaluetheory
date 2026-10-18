@@ -62,6 +62,7 @@ of variables. So every limit law of normalized maxima is, up to type, Gumbel, Fr
 | Dependence | Leadbetter's theorem and the extremal index | `tendsto_measureReal_partialMax_le_exp`, `HasExtremalIndex` |
 | | Tail process, time-change formula, `θ = ϑ` under anticlustering | `HasSpectralTailProcess.lintegral_timeChange`, `HasSpectralTailProcess.hasExtremalIndex_abs` |
 | Multivariate | Regular variation, polar decomposition, converse Cramér–Wold (non-integer `α`) | `isRegVarVector_iff`, `CramerWold.isRegVarVector_of_tendsto_linear` |
+| | Multivariate domains of attraction and the multivariate GPD | `isMDAWith_iff`, `IsMDAWith.tendsto_conditionalExcessCDF` |
 | | Max-stable spectral representation, existence and uniqueness | `IsSimpleMaxStable.existsUnique_hasSpectralMeasure` |
 | Processes | Poisson random measures; exceedances converge to a Poisson process | `ProbabilityTheory.exists_isPoissonRandomMeasure`, `tendsto_measureReal_sumDiracRange_timeSpace_eq` |
 | | Skorokhod space `D[0,1]` is Polish; tail empirical process ⇒ Brownian motion | `SkorokhodSpace.instPolishSpace`, `tendstoInDistribution_tailEmpiricalPath` |

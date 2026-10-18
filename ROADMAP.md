@@ -51,8 +51,8 @@ Kulik and Soulier, *Heavy-Tailed Time Series* (KS); Beirlant, Goegebeur, Segers 
 ## 6. Multivariate extremes
 - [x] Multivariate regular variation, polar decomposition, converse Cramér–Wold (non-integer `α`)
 - [x] Max-stable vectors: spectral representation (existence, uniqueness), Pickands function
-- [ ] Multivariate domains of attraction (dHF ch. 6.2: `F ∈ MDA(G)` ⇔ margins + exponent measure)
-- [ ] Multivariate POT and the multivariate GPD (Rootzén–Tajvidi)
+- [x] Multivariate domains of attraction (dHF ch. 6.2: `F ∈ MDA(G)` ⇔ margins + exponent measure)
+- [x] Multivariate POT and the multivariate GPD (Rootzén–Tajvidi; sequence thresholds, pointwise)
 - [ ] Nonparametric estimation: empirical tail dependence function / stable tail dependence
       function, CFG and Pickands estimators with estimated margins, and their consistency
 - [ ] Hidden regular variation and asymptotic independence (Resnick 2002, Ledford–Tawn)
