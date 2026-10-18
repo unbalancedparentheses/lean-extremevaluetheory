@@ -97,6 +97,19 @@ to "mixing plus a vanishing tail process implies `θ = ϑ`". Recommended write-u
 centred on the echo process (title suggestion: "An echo process: a simple regularly varying sequence
 whose extremal index is invisible to its tail process").
 
+### Minimal hypotheses: classical and statistics results (`Minimality/Classical*.lean`, namespace `ExtremeValueTheory.Minimality`)
+
+| Theorem | Hypothesis | Status | Witness |
+|---|---|---|---|
+| Karamata (`tendsto_integral_Ioi_div`) | `α > 1` | needed: fails for every `F` when `α < 1`; ratio → ∞ when `α = 1` | `not_tendsto_integral_Ioi_div_of_lt_one`, `tendsto_integral_Ioi_div_atTop_of_neg_one` |
+| Karamata | `F` antitone | dropped (measurable and locally bounded suffice) | `tendsto_integral_Ioi_div_of_measurable` |
+| Breiman | `E Y^{α+ε} < ∞` | cannot be weakened to `E Y^α < ∞` | `breiman_counterexample` |
+| Breiman | same, when `x^α P(X > x) → c > 0` | dropped to `E Y^α < ∞` | `tendsto_measure_mul_div_measure_of_tendsto_rpow_mul` |
+| Gumbel von Mises, finite endpoint | no atom at `x_F` | needed | `atomCDF_vonMises_counterexample` |
+| Generalized CLT, asymmetric | tail balance | needed for any non-degenerate limit | `not_tendsto_of_not_tailBalance` |
+| Hill consistency | `k → ∞` | needed, even for exact Pareto (and sufficient there) | `tendstoInMeasure_hill_pareto_iff` |
+| Hill consistency | `k/n → 0` | needed | `not_tendstoInMeasure_hill_of_le_mul` |
+
 ### Minimal hypotheses: dependence results (`Minimality/Dependence*.lean`)
 
 | Theorem | Hypothesis | Status | Witness |
