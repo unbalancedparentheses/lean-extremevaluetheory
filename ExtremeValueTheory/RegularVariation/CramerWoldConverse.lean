@@ -929,6 +929,34 @@ theorem isRegVarVector_of_tendsto_linear_of_antitone [IsProbabilityMeasure P]
   · rw [Measure.smul_apply, smul_eq_mul, hμhalf L 1 one_pos, Real.one_rpow, mul_one,
       ← ENNReal.ofReal_mul (inv_nonneg.2 hκ.le), inv_mul_eq_div]
 
+/-- **The converse Cramér–Wold device for non-integer indices** ([BDM02, Theorem 1.1 (i)];
+[BL09]). Let `X` be a random vector in a finite-dimensional real normed space and suppose that
+for some function `V` regularly varying with index `-α`, `α > 0` **not an integer**, the tails of
+all linear combinations satisfy `P(L X > x) / V(x) → w(L)` for every continuous linear functional
+`L`, with `w` not identically zero. Then `X` is multivariate regularly varying with index `α`.
+For integer `α` the statement fails ([HL06]). -/
+theorem isRegVarVector_of_tendsto_linear [IsProbabilityMeasure P] [FiniteDimensional ℝ E]
+    (hX : Measurable X) {α : ℝ} (hα : 0 < α) (hαZ : ∀ k : ℤ, α ≠ k)
+    {V : ℝ → ℝ} (hV : IsRegularlyVarying V (-α)) {w : StrongDual ℝ E → ℝ}
+    (hw : ∀ L : StrongDual ℝ E,
+      Tendsto (fun x => P.real {ω | x < L (X ω)} / V x) atTop (𝓝 (w L)))
+    (hw0 : ∃ L, w L ≠ 0) : ∃ μ : Measure E, IsRegVarVector P X α μ := by
+  obtain ⟨L₀, hL₀⟩ := hw0
+  have hpos : 0 < w L₀ := lt_of_le_of_ne (limit_nonneg hV hw L₀) (Ne.symm hL₀)
+  set V₀ : ℝ → ℝ := fun x => P.real {ω | x < L₀ (X ω)}
+  have hV₀a : Antitone V₀ := fun x y hxy =>
+    measureReal_mono fun ω (hω : y < L₀ (X ω)) => lt_of_le_of_lt hxy hω
+  have hV₀ : IsRegularlyVarying V₀ (-α) := IsRegularlyVarying.of_tendsto_div hV (hw L₀) hpos
+  have hw₀ : ∀ L : StrongDual ℝ E,
+      Tendsto (fun x => P.real {ω | x < L (X ω)} / V₀ x) atTop (𝓝 (w L / w L₀)) := fun L => by
+    refine ((hw L).div (hw L₀) hpos.ne').congr' ?_
+    filter_upwards [hV.eventually_pos] with x hVx
+    simp only [V₀, Pi.div_apply]
+    rw [div_div_div_cancel_right₀ hVx.ne']
+  obtain ⟨μ, -, -, hμ, -⟩ := isRegVarVector_of_tendsto_linear_of_antitone hX hα hαZ hV₀a hV₀ hw₀
+    (L₀ := L₀) (by rw [div_self hpos.ne']; exact one_ne_zero)
+  exact ⟨μ, hμ⟩
+
 end Converse
 
 end CramerWold
