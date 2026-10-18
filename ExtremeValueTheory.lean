@@ -155,3 +155,5 @@ import ExtremeValueTheory.ForMathlib.Probability.DyadicChaining
 import ExtremeValueTheory.ForMathlib.Probability.SkorokhodLaw
 import ExtremeValueTheory.ForMathlib.Probability.SkorokhodWeakConvergence
 import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.ModulusCompact
+import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.BlockOscillation
+import ExtremeValueTheory.ForMathlib.Probability.SkorokhodBlockTightness

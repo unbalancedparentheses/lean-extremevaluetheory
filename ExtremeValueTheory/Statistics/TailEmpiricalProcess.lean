@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.ForMathlib.Probability.TriangularArrayCLT
+import ExtremeValueTheory.ForMathlib.Probability.FourthMoment
 import Mathlib.Probability.BrownianMotion.Basic
 
 /-!
@@ -394,5 +395,151 @@ theorem tendstoInDistribution_tailEmpiricalProcess_fdd_of_isPreBrownianReal
   simp only [Measure.map_id] at h'
   simp only [(hB.hasLaw I).map_eq]
   exact h'
+
+/-! ### Moments of the increments -/
+
+/-- The summand of the row sum representing an increment `W_n(t) - W_n(s)`. -/
+noncomputable def tailIncrement (n k : ℕ) (s t u : ℝ) : ℝ :=
+  (√(k : ℝ))⁻¹ * ((Set.Ici (1 - k / n * t)).indicator 1 u -
+    (Set.Ici (1 - k / n * s)).indicator 1 u - k / n * (t - s))
+
+lemma measurable_tailIncrement (n k : ℕ) (s t : ℝ) : Measurable (tailIncrement n k s t) := by
+  unfold tailIncrement
+  refine Measurable.const_mul (Measurable.sub_const (Measurable.sub ?_ ?_) _) _ <;>
+    exact measurable_one.indicator measurableSet_Ici
+
+lemma tailEmpiricalProcess_sub_eq_sum (U : ℕ → Ω → ℝ) {n : ℕ} (hn : n ≠ 0) (k : ℕ) (s t : ℝ)
+    (ω : Ω) : tailEmpiricalProcess U n k t ω - tailEmpiricalProcess U n k s ω =
+      ∑ i ∈ range n, tailIncrement n k s t (U i ω) := by
+  unfold tailEmpiricalProcess tailIncrement
+  rw [sqrt_mul_inv_sub_eq hn, sqrt_mul_inv_sub_eq hn, ← Finset.mul_sum, ← mul_sub]
+  congr 1
+  simp only [Finset.sum_sub_distrib, Finset.sum_const, card_range, nsmul_eq_mul]
+  ring
+
+/-- The indicator increment `1{u ≥ 1 - p t} - 1{u ≥ 1 - p s}` lies in `[0, 1]` for `s ≤ t`. -/
+lemma indicator_Ici_sub_mem_Icc {p s t : ℝ} (hp : 0 ≤ p) (hst : s ≤ t) (u : ℝ) :
+    (Set.Ici (1 - p * t)).indicator (1 : ℝ → ℝ) u - (Set.Ici (1 - p * s)).indicator 1 u ∈
+      Set.Icc (0 : ℝ) 1 := by
+  have hsub : Set.Ici (1 - p * s) ⊆ Set.Ici (1 - p * t) := Set.Ici_subset_Ici.2 (by nlinarith)
+  by_cases h1 : u ∈ Set.Ici (1 - p * s)
+  · simp [h1, hsub h1]
+  · by_cases h2 : u ∈ Set.Ici (1 - p * t) <;> simp [h1, h2]
+
+lemma abs_tailIncrement_le {n k : ℕ} {s t : ℝ} (hst : s ≤ t) (ht : (k : ℝ) / n * t ≤ 1)
+    (hs : 0 ≤ s) (u : ℝ) : |tailIncrement n k s t u| ≤ (√(k : ℝ))⁻¹ := by
+  have hp : (0 : ℝ) ≤ k / n := by positivity
+  have hD := indicator_Ici_sub_mem_Icc hp hst u
+  have hq0 : 0 ≤ (k : ℝ) / n * (t - s) := mul_nonneg hp (by linarith)
+  have hq1 : (k : ℝ) / n * (t - s) ≤ 1 := by nlinarith
+  unfold tailIncrement
+  rw [abs_mul, abs_of_nonneg (by positivity)]
+  refine mul_le_of_le_one_right (by positivity) (abs_le.2 ⟨?_, ?_⟩) <;> linarith [hD.1, hD.2]
+
+lemma integral_tailIncrement {n k : ℕ} {s t : ℝ} (hs : 0 ≤ s) (hst : s ≤ t)
+    (ht : (k : ℝ) / n * t ≤ 1) : ∫ u, tailIncrement n k s t u ∂μU = 0 := by
+  have hp : (0 : ℝ) ≤ k / n := by positivity
+  unfold tailIncrement
+  have i1 := integrable_uniform_indicator_Ici (1 - k / n * t)
+  have i2 := integrable_uniform_indicator_Ici (1 - k / n * s)
+  rw [integral_const_mul, integral_sub (by exact i1.sub i2) (integrable_const _),
+    integral_sub (by exact i1) (by exact i2),
+    integral_uniform_indicator_Ici (mul_nonneg hp (hs.trans hst)) ht,
+    integral_uniform_indicator_Ici (mul_nonneg hp hs) (by nlinarith)]
+  simp only [integral_const, probReal_univ, one_smul]
+  ring
+
+lemma integral_tailIncrement_sq_le {n k : ℕ} {s t : ℝ} (hs : 0 ≤ s) (hst : s ≤ t)
+    (ht : (k : ℝ) / n * t ≤ 1) :
+    ∫ u, tailIncrement n k s t u ^ 2 ∂μU ≤ 2 * (k / n * (t - s)) / k := by
+  have hp : (0 : ℝ) ≤ k / n := by positivity
+  set q : ℝ := k / n * (t - s) with hq
+  have hq0 : 0 ≤ q := mul_nonneg hp (by linarith)
+  have hq1 : q ≤ 1 := by nlinarith
+  set D : ℝ → ℝ := fun u ↦ (Set.Ici (1 - k / n * t)).indicator (1 : ℝ → ℝ) u -
+    (Set.Ici (1 - k / n * s)).indicator 1 u with hD
+  have hDi : Integrable D μU :=
+    (integrable_uniform_indicator_Ici _).sub (integrable_uniform_indicator_Ici _)
+  have hbound (u : ℝ) : tailIncrement n k s t u ^ 2 ≤ (k : ℝ)⁻¹ * (D u + q) := by
+    have hDu := indicator_Ici_sub_mem_Icc hp hst u
+    unfold tailIncrement
+    rw [mul_pow, inv_pow, Real.sq_sqrt (Nat.cast_nonneg _)]
+    refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+    simp only [hD] at hDu ⊢
+    nlinarith [hDu.1, hDu.2]
+  have hint : Integrable (fun u ↦ (k : ℝ)⁻¹ * (D u + q)) μU :=
+    (hDi.add (integrable_const _)).const_mul _
+  refine (integral_mono_of_nonneg (Eventually.of_forall fun u ↦ sq_nonneg _) hint
+    (Eventually.of_forall hbound)).trans_eq ?_
+  rw [integral_const_mul, integral_add hDi (integrable_const _), hD]
+  simp only
+  rw [integral_sub (integrable_uniform_indicator_Ici _) (integrable_uniform_indicator_Ici _),
+    integral_uniform_indicator_Ici (mul_nonneg hp (hs.trans hst)) ht,
+    integral_uniform_indicator_Ici (mul_nonneg hp hs) (by nlinarith)]
+  simp only [integral_const, probReal_univ, one_smul, hq]
+  ring
+
+/-- **Fourth moment of the increments of the tail empirical process**:
+`E (W_n(t) - W_n(s)) ^ 4 ≤ 12 (t - s) ^ 2 + 2 (t - s) / k` for `0 ≤ s ≤ t ≤ n / k`. -/
+theorem integral_tailEmpiricalProcess_sub_pow_four_le [IsProbabilityMeasure P]
+    (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1)) {n k : ℕ} (hn : n ≠ 0)
+    {s t : ℝ} (hs : 0 ≤ s) (hst : s ≤ t) (ht : (k : ℝ) / n * t ≤ 1) :
+    ∫ ω, (tailEmpiricalProcess U n k t ω - tailEmpiricalProcess U n k s ω) ^ 4 ∂P ≤
+      12 * (t - s) ^ 2 + 2 * (t - s) / k := by
+  rcases Nat.eq_zero_or_pos k with hk | hk
+  · subst hk
+    simp only [tailEmpiricalProcess, Nat.cast_zero, Real.sqrt_zero, zero_mul, sub_self]
+    simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, integral_zero,
+      div_zero, add_zero]
+    positivity
+  set X : ℕ → Ω → ℝ := fun i ω ↦ tailIncrement n k s t (U i ω) with hX
+  have hXm (i : ℕ) : Measurable (X i) := (measurable_tailIncrement n k s t).comp (hU i)
+  have hXind : iIndepFun X P := hind.comp (fun _ ↦ tailIncrement n k s t)
+    (fun _ ↦ measurable_tailIncrement n k s t)
+  have hXC (i : ℕ) (ω : Ω) : |X i ω| ≤ (√(k : ℝ))⁻¹ := abs_tailIncrement_le hst ht hs _
+  have hmap (i : ℕ) (j : ℕ) : ∫ ω, X i ω ^ j ∂P = ∫ u, tailIncrement n k s t u ^ j ∂μU := by
+    rw [show μU = P.map (U i) from (hlaw i).symm, integral_map (hU i).aemeasurable (by
+      exact ((measurable_tailIncrement n k s t).pow_const j).aestronglyMeasurable)]
+  have hX0 (i : ℕ) : ∫ ω, X i ω ∂P = 0 := by
+    have := hmap i 1
+    simp only [pow_one] at this
+    rw [this, integral_tailIncrement hs hst ht]
+  have hp : (0 : ℝ) ≤ k / n := by positivity
+  have h2 (i : ℕ) : ∫ ω, X i ω ^ 2 ∂P ≤ 2 * (k / n * (t - s)) / k := by
+    rw [hmap]; exact integral_tailIncrement_sq_le hs hst ht
+  have h4 (i : ℕ) : ∫ ω, X i ω ^ 4 ∂P ≤ (k : ℝ)⁻¹ * (2 * (k / n * (t - s)) / k) := by
+    have hle : ∀ ω, X i ω ^ 4 ≤ (k : ℝ)⁻¹ * X i ω ^ 2 := fun ω ↦ by
+      have hx := hXC i ω
+      have hx2 : X i ω ^ 2 ≤ (k : ℝ)⁻¹ := by
+        rw [← Real.sq_sqrt (inv_nonneg.2 (Nat.cast_nonneg k : (0 : ℝ) ≤ k)), Real.sqrt_inv,
+          ← sq_abs]
+        exact pow_le_pow_left₀ (abs_nonneg _) hx 2
+      nlinarith [sq_nonneg (X i ω)]
+    refine (integral_mono (integrable_pow_of_abs_le (hXm i) (hXC i) 4)
+      ((integrable_pow_of_abs_le (hXm i) (hXC i) 2).const_mul _) hle).trans ?_
+    rw [integral_const_mul]
+    exact mul_le_mul_of_nonneg_left (h2 i) (by positivity)
+  have hsum (ω : Ω) : tailEmpiricalProcess U n k t ω - tailEmpiricalProcess U n k s ω =
+      ∑ i ∈ range n, X i ω := tailEmpiricalProcess_sub_eq_sum U hn k s t ω
+  simp_rw [hsum]
+  refine (integral_sum_range_pow_four_le hXm hXind hXC hX0 n).trans ?_
+  have hS4 : ∑ i ∈ range n, ∫ ω, X i ω ^ 4 ∂P ≤ n * ((k : ℝ)⁻¹ * (2 * (k / n * (t - s)) / k)) := by
+    simpa using Finset.sum_le_sum fun i (_ : i ∈ range n) ↦ h4 i
+  have hS2 : ∑ i ∈ range n, ∫ ω, X i ω ^ 2 ∂P ≤ n * (2 * (k / n * (t - s)) / k) := by
+    simpa using Finset.sum_le_sum fun i (_ : i ∈ range n) ↦ h2 i
+  have hS2' : 0 ≤ ∑ i ∈ range n, ∫ ω, X i ω ^ 2 ∂P :=
+    Finset.sum_nonneg fun i _ ↦ integral_nonneg fun ω ↦ sq_nonneg _
+  have hn' : (n : ℝ) ≠ 0 := Nat.cast_ne_zero.2 hn
+  have hk' : (0 : ℝ) < k := Nat.cast_pos.2 hk
+  have e1 : (n : ℝ) * ((k : ℝ)⁻¹ * (2 * (k / n * (t - s)) / k)) = 2 * (t - s) / k := by
+    field_simp
+  have e2 : (n : ℝ) * (2 * (k / n * (t - s)) / k) = 2 * (t - s) := by
+    field_simp
+  rw [e1] at hS4
+  rw [e2] at hS2
+  have : (∑ i ∈ range n, ∫ ω, X i ω ^ 2 ∂P) ^ 2 ≤ (2 * (t - s)) ^ 2 :=
+    pow_le_pow_left₀ hS2' hS2 2
+  nlinarith
 
 end ExtremeValueTheory
