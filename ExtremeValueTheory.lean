@@ -169,11 +169,6 @@ import ExtremeValueTheory.Minimality.DependenceLeadbetter
 import ExtremeValueTheory.Minimality.DependenceScaleMixture
 import ExtremeValueTheory.Minimality.DependenceHill
 import ExtremeValueTheory.Minimality.DependenceMixing
-import ExtremeValueTheory.Minimality.Karamata
-import ExtremeValueTheory.Minimality.VonMises
-import ExtremeValueTheory.Minimality.GeneralizedCLT
-import ExtremeValueTheory.Minimality.Breiman
-import ExtremeValueTheory.Minimality.Hill
 import ExtremeValueTheory.Minimality.ClassicalKaramata
 import ExtremeValueTheory.Minimality.ClassicalVonMises
 import ExtremeValueTheory.Minimality.ClassicalGeneralizedCLT

@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.StableLaws.GeneralizedCLTConverseAsymmetric
+import ExtremeValueTheory.StableLaws.GaussianDomain
 import Mathlib.MeasureTheory.Function.Floor
 
 /-!
@@ -42,14 +43,6 @@ namespace ExtremeValueTheory.Minimality
 
 open Subexp
 
-/-- The regular variation index is unique. -/
-theorem IsRegularlyVarying.index_unique {f : ℝ → ℝ} {ρ σ : ℝ} (hρ : IsRegularlyVarying f ρ)
-    (hσ : IsRegularlyVarying f σ) : ρ = σ := by
-  have h := tendsto_nhds_unique (hρ.2 2 two_pos) (hσ.2 2 two_pos)
-  have := congrArg Real.log h
-  rw [Real.log_rpow two_pos, Real.log_rpow two_pos] at this
-  exact mul_right_cancel₀ (Real.log_pos one_lt_two).ne' this
-
 /-- **Tail balance is necessary for the generalized CLT.** If `P(|X| > x)` is regularly varying
 with index `-α`, `0 < α < 2`, and `P(X > x) / P(|X| > x)` has no limit, then for no `aₙ > 0`,
 `bₙ` and non-degenerate `ν` do the laws of `(X₁ + ⋯ + Xₙ - bₙ) / aₙ` converge to `ν`. -/
@@ -64,7 +57,7 @@ theorem not_tendsto_of_not_tailBalance {μ : Measure ℝ} [IsProbabilityMeasure 
   obtain ⟨α', _, _, hU, hbal⟩ :=
     GCLTConverse.exists_isRegularlyVarying_tailBalance_of_tendsto ha hnd hconv
   have hU' := GCLTConverse.isRegularlyVarying_truncSecondMoment_of_absTail hα0 hα2 hRV
-  have hαα : α' = α := by linarith [IsRegularlyVarying.index_unique hU hU']
+  have hαα : α' = α := by linarith [hU.index_eq hU']
   obtain ⟨-, -, p, -, -, hp⟩ := hbal (hαα ▸ hα2)
   exact hnb ⟨p, hp⟩
 

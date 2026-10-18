@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.RegularVariation.Breiman
+import ExtremeValueTheory.HeavyTails.LinearProcessSeries
 import ExtremeValueTheory.Minimality.ClassicalKaramata
 import ExtremeValueTheory.CumulativeDistributionFunction
 import Mathlib.MeasureTheory.Integral.Layercake
@@ -35,12 +36,19 @@ So the conclusion of Breiman's lemma fails although every hypothesis but the `α
 holds, with `E[Y^α] < ∞` (`breiman_counterexample`). By Breiman's lemma itself,
 `E[Y ^ (α + ε)] = ∞` for every `ε > 0` (`not_integrable_breimanY_rpow`).
 
+## A positive result
+
+When the slowly varying factor converges, `x ^ α P(X > x) → c > 0`, the `ε` can be dropped:
+`E[Y ^ α] < ∞` suffices (`tendsto_measure_mul_div_measure_of_tendsto_rpow_mul`). The domination
+is then `F̄(x / y) / F̄(x) ≤ K y ^ α`, without Potter bounds.
+
 ## Summary
 
 | hypothesis | status |
 |---|---|
-| `E[Y ^ (α + ε)] < ∞` for some `ε > 0` | cannot be weakened to `E[Y ^ α] < ∞`: `breiman_counterexample` |
-| sharp condition (Denisov–Zwart: `P(Y > x) = o(P(X > x))` plus `E Y^α < ∞`) | open (not formalized) |
+| `E[Y ^ (α + ε)] < ∞` for some `ε > 0` | cannot be weakened to `E[Y ^ α] < ∞` in general: `breiman_counterexample` |
+| same, when `x ^ α P(X > x) → c > 0` | dropped to `E[Y ^ α] < ∞`: `tendsto_measure_mul_div_measure_of_tendsto_rpow_mul` |
+| general Denisov–Zwart condition (`P(Y > x) = o(P(X > x))` plus `E Y^α < ∞`) | open (not formalized) |
 -/
 
 open Filter Topology Set Real MeasureTheory ProbabilityTheory
@@ -48,18 +56,6 @@ open Filter Topology Set Real MeasureTheory ProbabilityTheory
 namespace ExtremeValueTheory.Minimality
 
 variable {α : ℝ}
-
-/-- Composition with a power: if `f` is regularly varying with index `ρ` and `α > 0`, then
-`x ↦ f (x ^ α)` is regularly varying with index `ρ * α`. -/
-theorem isRegularlyVarying_comp_rpow {f : ℝ → ℝ} {ρ : ℝ} (hf : IsRegularlyVarying f ρ)
-    (hα : 0 < α) : IsRegularlyVarying (fun x => f (x ^ α)) (ρ * α) := by
-  have ht : Tendsto (fun x : ℝ => x ^ α) atTop atTop := tendsto_rpow_atTop hα
-  refine ⟨ht.eventually hf.1, fun c hc => ?_⟩
-  have h := (hf.2 (c ^ α) (rpow_pos_of_pos hc α)).comp ht
-  rw [← rpow_mul hc.le, mul_comm α ρ] at h
-  refine h.congr' ?_
-  filter_upwards [eventually_ge_atTop 0] with x hx
-  simp only [Function.comp_apply, mul_rpow hc.le hx]
 
 /-! ### The laws with survival function `logTail a` -/
 
@@ -147,7 +143,7 @@ theorem breimanY_tail (hα : 0 < α) {x : ℝ} (hx : 0 < x) :
 /-- The tail of `X` is regularly varying with index `-α`. -/
 theorem isRegularlyVarying_breimanX (hα : 0 < α) :
     IsRegularlyVarying (fun x => (breimanP {ω | x < breimanX α ω}).toReal) (-α) := by
-  have h := isRegularlyVarying_comp_rpow (isRegularlyVarying_logTail 3) hα
+  have h := (isRegularlyVarying_logTail 3).comp_rpow hα
   rw [neg_one_mul] at h
   refine h.congr ?_
   filter_upwards [eventually_gt_atTop 0,
@@ -227,5 +223,153 @@ theorem not_integrable_breimanY_rpow (hα : 0 < α) {ε : ℝ} (hε : 0 < ε) :
     (tendsto_measure_mul_div_measure (measurable_breimanX α) (measurable_breimanY α)
       indepFun_breimanX_breimanY (ae_of_all _ breimanY_nonneg) hα hε
       (isRegularlyVarying_breimanX hα) hmom)
+
+/-! ### Dropping `ε` when the slowly varying factor converges -/
+
+/-- Analytic core of Breiman's lemma **without the extra `ε`**, for tails `F x ∼ c x^{-α}`:
+if `F` is antitone, `x ^ α * F x → c > 0`, and `μ` is a finite measure on `[0, ∞)` with
+`∫ y ^ α dμ < ∞`, then `(∫ y, (if 0 < y then F (x / y) else 0) ∂μ) / F x → ∫ y, y ^ α ∂μ`. -/
+theorem tendsto_integral_div_of_tendsto_rpow_mul {F : ℝ → ℝ} (hF : Antitone F) (hα : 0 < α)
+    {c : ℝ} (hc : 0 < c) (hpar : Tendsto (fun x => x ^ α * F x) atTop (𝓝 c))
+    {μ : Measure ℝ} [IsFiniteMeasure μ] (hμ : ∀ᵐ y ∂μ, 0 ≤ y)
+    (hint : Integrable (fun y => y ^ α) μ) :
+    Tendsto (fun x => (∫ y, (if 0 < y then F (x / y) else 0) ∂μ) / F x) atTop
+      (𝓝 (∫ y, y ^ α ∂μ)) := by
+  obtain ⟨x₀, hx₀⟩ := eventually_atTop.1
+    (hpar.eventually (Icc_mem_nhds (by linarith : c / 2 < c) (by linarith : c < 2 * c)))
+  set x₁ := max x₀ 1 with hx₁
+  have hx₁0 : 0 < x₁ := lt_of_lt_of_le one_pos (le_max_right _ _)
+  have hB : ∀ x ≥ x₁, c / 2 ≤ x ^ α * F x ∧ x ^ α * F x ≤ 2 * c := fun x hx =>
+    hx₀ x ((le_max_left _ _).trans hx)
+  have hFpos : ∀ t, 0 < F t := by
+    intro t
+    set s := max t x₁
+    have hs0 : 0 < s := hx₁0.trans_le (le_max_right _ _)
+    have h1 := (hB s (le_max_right _ _)).1
+    have : 0 < F s := by
+      by_contra h
+      push Not at h
+      have := mul_nonpos_of_nonneg_of_nonpos (rpow_pos_of_pos hs0 α).le h
+      linarith
+    exact this.trans_le (hF (le_max_left _ _))
+  -- the key identity
+  have hid : ∀ x > 0, ∀ y > 0, F (x / y) / F x =
+      ((x / y) ^ α * F (x / y)) / (x ^ α * F x) * y ^ α := by
+    intro x hx y hy
+    have := hFpos x
+    have := hFpos (x / y)
+    rw [div_rpow hx.le hy.le]
+    have : 0 < x ^ α := rpow_pos_of_pos hx α
+    have : 0 < y ^ α := rpow_pos_of_pos hy α
+    field_simp
+  set K := max 4 (2 * F 0 * x₁ ^ α / c) with hK
+  rw [show (fun x => (∫ y, (if 0 < y then F (x / y) else 0) ∂μ) / F x) =
+      fun x => ∫ y, (if 0 < y then F (x / y) else 0) / F x ∂μ from
+    funext fun x => (integral_div _ _).symm]
+  refine tendsto_integral_filter_of_dominated_convergence (fun y => K * y ^ α) ?_ ?_
+    (hint.const_mul K) ?_
+  · refine Eventually.of_forall fun x => ?_
+    exact ((Measurable.ite measurableSet_Ioi (hF.measurable.comp
+      (measurable_const.div measurable_id)) measurable_const).div_const _).aestronglyMeasurable
+  · filter_upwards [eventually_ge_atTop x₁] with x hx
+    filter_upwards [hμ] with y hy
+    have hx0 : 0 < x := hx₁0.trans_le hx
+    rcases hy.eq_or_lt with h0 | hy0
+    · subst h0
+      simp only [lt_irrefl, ↓reduceIte, zero_div, norm_zero]
+      exact mul_nonneg ((le_max_left _ _).trans' (by norm_num)) (rpow_nonneg le_rfl _)
+    simp only [hy0, ↓reduceIte]
+    rw [Real.norm_eq_abs, abs_of_pos (div_pos (hFpos _) (hFpos _))]
+    have hyα : 0 < y ^ α := rpow_pos_of_pos hy0 α
+    have hBx := hB x hx
+    rcases le_or_gt x₁ (x / y) with hxy | hxy
+    · have hA := (hB (x / y) hxy).2
+      rw [hid x hx0 y hy0]
+      have : ((x / y) ^ α * F (x / y)) / (x ^ α * F x) ≤ 4 := by
+        rw [div_le_iff₀ (by linarith)]; linarith
+      calc ((x / y) ^ α * F (x / y)) / (x ^ α * F x) * y ^ α ≤ 4 * y ^ α :=
+            mul_le_mul_of_nonneg_right this hyα.le
+        _ ≤ K * y ^ α := mul_le_mul_of_nonneg_right (le_max_left _ _) hyα.le
+    · have hF0 : F (x / y) ≤ F 0 := hF (div_pos hx0 hy0).le
+      have hxle : x ≤ x₁ * y := by rw [div_lt_iff₀ hy0] at hxy; linarith
+      have hxα : x ^ α ≤ x₁ ^ α * y ^ α := by
+        rw [← mul_rpow hx₁0.le hy0.le]; exact rpow_le_rpow hx0.le hxle hα.le
+      have hFx : c / 2 ≤ x ^ α * F x := hBx.1
+      have hxα0 : 0 < x ^ α := rpow_pos_of_pos hx0 α
+      have h1 : F (x / y) / F x ≤ F 0 / F x := div_le_div_of_nonneg_right hF0 (hFpos x).le
+      have h2 : F 0 / F x ≤ 2 * F 0 * x ^ α / c := by
+        rw [div_le_div_iff₀ (hFpos x) hc]
+        have := hFpos 0
+        nlinarith
+      have h3 : 2 * F 0 * x ^ α / c ≤ 2 * F 0 * x₁ ^ α / c * y ^ α := by
+        rw [div_mul_eq_mul_div, div_le_div_iff_of_pos_right hc, mul_assoc (2 * F 0)]
+        exact mul_le_mul_of_nonneg_left hxα (by have := hFpos 0; positivity)
+      calc F (x / y) / F x ≤ 2 * F 0 * x₁ ^ α / c * y ^ α := h1.trans (h2.trans h3)
+        _ ≤ K * y ^ α := mul_le_mul_of_nonneg_right (le_max_right _ _) hyα.le
+  · filter_upwards [hμ] with y hy
+    rcases hy.eq_or_lt with h0 | hy0
+    · subst h0
+      simp only [lt_irrefl, ↓reduceIte, zero_div, zero_rpow hα.ne']
+      exact tendsto_const_nhds
+    simp only [hy0, ↓reduceIte]
+    have hlim : Tendsto (fun x => ((x / y) ^ α * F (x / y)) / (x ^ α * F x) * y ^ α) atTop
+        (𝓝 (c / c * y ^ α)) :=
+      ((hpar.comp (tendsto_id.atTop_div_const hy0)).div hpar hc.ne').mul_const _
+    rw [div_self hc.ne', one_mul] at hlim
+    refine hlim.congr' ?_
+    filter_upwards [eventually_gt_atTop 0] with x hx
+    exact (hid x hx y hy0).symm
+
+/-- **Breiman's lemma with `E[Y ^ α] < ∞` only, for asymptotically Pareto tails.** If `X`, `Y`
+are independent, `Y ≥ 0`, `x ^ α P(X > x) → c > 0` and `E[Y ^ α] < ∞`, then
+`P(XY > x) / P(X > x) → E[Y ^ α]`. Together with `breiman_counterexample` (where
+`x ^ α P(X > x) → 0`), this locates the role of the extra `ε` in
+`tendsto_measure_mul_div_measure`: it compensates for a non-convergent slowly varying factor. -/
+theorem tendsto_measure_mul_div_measure_of_tendsto_rpow_mul {Ω : Type*} [MeasurableSpace Ω]
+    {P : Measure Ω} [IsProbabilityMeasure P] {X Y : Ω → ℝ} (hX : Measurable X)
+    (hY : Measurable Y) (hXY : IndepFun X Y P) (hY0 : ∀ᵐ ω ∂P, 0 ≤ Y ω) (hα : 0 < α) {c : ℝ}
+    (hc : 0 < c) (hpar : Tendsto (fun x => x ^ α * (P {ω | x < X ω}).toReal) atTop (𝓝 c))
+    (hmom : Integrable (fun ω => Y ω ^ α) P) :
+    Tendsto (fun x => (P {ω | x < X ω * Y ω}).toReal / (P {ω | x < X ω}).toReal) atTop
+      (𝓝 (∫ ω, Y ω ^ α ∂P)) := by
+  set F : ℝ → ℝ := fun x => (P {ω | x < X ω}).toReal with hF_def
+  have hFanti : Antitone F := by
+    intro a b hab
+    refine ENNReal.toReal_mono (measure_ne_top _ _) (measure_mono fun ω hω => ?_)
+    exact lt_of_le_of_lt hab hω
+  set μ := P.map Y with hμ_def
+  have hμ : ∀ᵐ y ∂μ, 0 ≤ y := (ae_map_iff hY.aemeasurable measurableSet_Ici).2 hY0
+  have hint : Integrable (fun y => y ^ α) μ :=
+    (integrable_map_measure (continuous_id.rpow_const fun _ => Or.inr hα.le
+      ).measurable.aestronglyMeasurable hY.aemeasurable).2 hmom
+  have hcore := tendsto_integral_div_of_tendsto_rpow_mul hFanti hα hc hpar hμ hint
+  have hlim : ∫ y, y ^ α ∂μ = ∫ ω, Y ω ^ α ∂P :=
+    integral_map hY.aemeasurable (continuous_id.rpow_const fun _ => Or.inr hα.le
+      ).measurable.aestronglyMeasurable
+  rw [hlim] at hcore
+  refine hcore.congr' ?_
+  filter_upwards [eventually_gt_atTop 0] with x hx
+  congr 1
+  -- Conditioning on `Y` (as in `tendsto_measure_mul_div_measure`).
+  set S : Set (ℝ × ℝ) := {p | x < p.1 * p.2} with hS_def
+  have hS : MeasurableSet S := measurableSet_lt measurable_const (measurable_fst.mul measurable_snd)
+  have hprod := (indepFun_iff_map_prod_eq_prod_map_map hX.aemeasurable hY.aemeasurable).1 hXY
+  have h1 : P {ω | x < X ω * Y ω} = ∫⁻ y, (P.map X) ((fun a => (a, y)) ⁻¹' S) ∂μ := by
+    rw [← Measure.prod_apply_symm hS, ← hprod, Measure.map_apply (hX.prodMk hY) hS]
+    rfl
+  rw [h1, ← integral_toReal (measurable_measure_prodMk_right hS).aemeasurable
+    (Eventually.of_forall fun _ => measure_lt_top _ _)]
+  refine integral_congr_ae ?_
+  filter_upwards [hμ] with y hy
+  rcases hy.eq_or_lt with h0 | hy0
+  · subst h0
+    have : (fun a : ℝ => (a, (0 : ℝ))) ⁻¹' S = ∅ := by
+      ext a; simp [hS_def, hx.not_gt]
+    simp [this]
+  · have : (fun a : ℝ => (a, y)) ⁻¹' S = Ioi (x / y) := by
+      ext a; simp [hS_def, div_lt_iff₀ hy0]
+    simp only [hy0, ↓reduceIte]
+    rw [this, Measure.map_apply hX measurableSet_Ioi]
+    rfl
 
 end ExtremeValueTheory.Minimality
