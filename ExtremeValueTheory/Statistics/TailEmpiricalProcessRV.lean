@@ -444,4 +444,178 @@ theorem tendstoInDistribution_sum_hillSummand [IsProbabilityMeasure P] {U : ℕ 
 
 end Summand
 
+/-! ### The Hill statistic as an integral of the tail empirical process -/
+
+section Representation
+
+variable {n : ℕ}
+
+/-- The sum of the top `k` excesses over the `(k+1)`-th largest observation is the sum of the
+positive parts of all excesses. -/
+lemma sum_range_orderStat_sub_eq (x : Fin n → ℝ) {k : ℕ} (hk : k < n) :
+    ∑ j ∈ range k, (orderStat x j - orderStat x k) = ∑ i, max (x i - orderStat x k) 0 := by
+  rw [← sum_orderStat x (fun z ↦ max (z - orderStat x k) 0),
+    ← Finset.sum_range_add_sum_Ico _ hk.le]
+  rw [Finset.sum_eq_zero (s := Ico k n), add_zero]
+  · refine Finset.sum_congr rfl fun j hj ↦ ?_
+    rw [max_eq_left (sub_nonneg.2 (orderStat_anti x (mem_range.1 hj).le hk))]
+  · intro j hj
+    rw [Finset.mem_Ico] at hj
+    exact max_eq_right (sub_nonpos.2 (orderStat_anti x hj.1 hj.2))
+
+/-- At least `k + 1` observations are at least the `(k+1)`-th largest one. -/
+lemma succ_le_card_orderStat_le (x : Fin n → ℝ) {k : ℕ} (hk : k < n) :
+    k + 1 ≤ #{i | orderStat x k ≤ x i} := by
+  obtain ⟨σ, hσ⟩ := orderStat_perm x
+  have hn : 0 < n := (Nat.zero_le k).trans_lt hk
+  set f : ℕ → Fin n := fun j ↦ if h : j < n then σ ⟨j, h⟩ else σ ⟨0, hn⟩ with hf
+  have h := Finset.card_le_card_of_injOn (s := range (k + 1))
+    (t := ({i | orderStat x k ≤ x i} : Finset (Fin n))) f ?_ ?_
+  · simpa using h
+  · intro j hj
+    have hj' : j < n := (Nat.lt_succ_iff.1 (mem_range.1 hj)).trans_lt hk
+    simp only [Finset.coe_filter, Finset.mem_univ, true_and, Set.mem_ofPred_eq, hf, hj',
+      dite_true]
+    rw [← hσ ⟨j, hj'⟩]
+    exact orderStat_anti x (Nat.lt_succ_iff.1 (mem_range.1 hj)) hk
+  · intro i hi j hj hij
+    have hi' : i < n := (Nat.lt_succ_iff.1 (mem_range.1 hi)).trans_lt hk
+    have hj' : j < n := (Nat.lt_succ_iff.1 (mem_range.1 hj)).trans_lt hk
+    simp only [hf, hi', hj', dite_true] at hij
+    simpa using σ.injective hij
+
+lemma sum_range_indicator_eq_card {Ω : Type*} (U : ℕ → Ω → ℝ) (ω : Ω) (a : ℝ) :
+    ∑ i ∈ range n, (Set.Ici a).indicator (1 : ℝ → ℝ) (U i ω) =
+      (#{i : Fin n | a ≤ U i ω} : ℝ) := by
+  rw [← Fin.sum_univ_eq_sum_range (fun i ↦ (Set.Ici a).indicator (1 : ℝ → ℝ) (U i ω)) n,
+    Finset.natCast_card_filter]
+  simp [Set.indicator_apply]
+
+variable {Ω : Type*}
+
+lemma sqrt_mul_tailEmpiricalProcess (U : ℕ → Ω → ℝ) (n : ℕ) {k : ℕ} (hk : 0 < k) (t : ℝ)
+    (ω : Ω) : √(k : ℝ) * tailEmpiricalProcess U n k t ω =
+      ∑ i ∈ range n, (Set.Ici (1 - k / n * t)).indicator 1 (U i ω) - k * t := by
+  unfold tailEmpiricalProcess
+  have hk' : (0 : ℝ) < k := Nat.cast_pos.2 hk
+  rw [← mul_assoc, Real.mul_self_sqrt hk'.le, mul_sub, ← mul_assoc, mul_inv_cancel₀ hk'.ne',
+    one_mul]
+
+lemma measurable_tailEmpiricalProcess_time (U : ℕ → Ω → ℝ) (n k : ℕ) (ω : Ω) :
+    Measurable fun t ↦ tailEmpiricalProcess U n k t ω := by
+  unfold tailEmpiricalProcess
+  refine Measurable.const_mul (Measurable.sub (Measurable.const_mul (Finset.measurable_sum _
+    fun i _ ↦ ?_) _) measurable_id) _
+  simp only [Set.indicator_apply, Set.mem_Ici, Pi.one_apply]
+  exact Measurable.ite (measurableSet_le (by fun_prop) measurable_const) measurable_const
+    measurable_const
+
+lemma abs_indicator_Ici_inv_le {c : ℝ} (hc : 0 < c) (t : ℝ) :
+    |(Set.Ici c).indicator (fun t : ℝ ↦ t⁻¹) t| ≤ c⁻¹ := by
+  by_cases h : c ≤ t
+  · simp only [Set.indicator, Set.mem_Ici, h, ite_true]
+    rw [abs_of_pos (inv_pos.2 (hc.trans_le h))]
+    exact inv_anti₀ hc h
+  · simp [Set.indicator, h, hc.le]
+
+/-- The counting function divided by `t` as a sum of truncated inverses. -/
+lemma sum_range_indicator_div (U : ℕ → Ω → ℝ) {n k : ℕ} (hp : (0 : ℝ) < k / n) (ω : Ω) (t : ℝ) :
+    (∑ i ∈ range n, (Set.Ici (1 - k / n * t)).indicator (1 : ℝ → ℝ) (U i ω)) / t =
+      ∑ i : Fin n, (Set.Ici ((1 - U i ω) / (k / n))).indicator (fun t : ℝ ↦ t⁻¹) t := by
+  rw [Finset.sum_div, ← Fin.sum_univ_eq_sum_range
+    (fun i ↦ (Set.Ici (1 - k / n * t)).indicator (1 : ℝ → ℝ) (U i ω) / t) n]
+  exact Finset.sum_congr rfl fun i _ ↦ indicator_Ici_one_sub_div hp _ t
+
+/-- If no observation equals `1`, then `W_n(t) / t` is bounded. -/
+lemma abs_tailEmpiricalProcess_div_le {U : ℕ → Ω → ℝ} {ω : Ω} {n k : ℕ}
+    (hx : ∀ i < n, U i ω < 1) (hn : 0 < n) (hk : 0 < k) (t : ℝ) :
+    |tailEmpiricalProcess U n k t ω / t| ≤
+      (√(k : ℝ))⁻¹ * (∑ i : Fin n, ((1 - U i ω) / (k / n))⁻¹ + k) := by
+  have hp : (0 : ℝ) < k / n := by positivity
+  have hc (i : Fin n) : 0 < (1 - U i ω) / (k / n) := div_pos (by linarith [hx i i.2]) hp
+  have hk' : (0 : ℝ) < √(k : ℝ) := Real.sqrt_pos.2 (Nat.cast_pos.2 hk)
+  have hR : 0 ≤ (√(k : ℝ))⁻¹ * (∑ i : Fin n, ((1 - U i ω) / (k / n))⁻¹ + k) :=
+    mul_nonneg (inv_nonneg.2 hk'.le) (add_nonneg (Finset.sum_nonneg fun i _ ↦ (inv_pos.2
+      (hc i)).le) (Nat.cast_nonneg _))
+  rcases eq_or_ne t 0 with ht | ht
+  · simpa [ht] using hR
+  have e : tailEmpiricalProcess U n k t ω / t = (√(k : ℝ))⁻¹ *
+      ((∑ i ∈ range n, (Set.Ici (1 - k / n * t)).indicator (1 : ℝ → ℝ) (U i ω)) / t - k) := by
+    have hW : tailEmpiricalProcess U n k t ω = (√(k : ℝ))⁻¹ *
+        (∑ i ∈ range n, (Set.Ici (1 - k / n * t)).indicator (1 : ℝ → ℝ) (U i ω) - k * t) := by
+      rw [← sqrt_mul_tailEmpiricalProcess U n hk t ω]; field_simp
+    rw [hW]
+    field_simp
+  rw [e, sum_range_indicator_div U hp ω t, abs_mul, abs_of_pos (inv_pos.2 hk')]
+  refine mul_le_mul_of_nonneg_left ((abs_sub _ _).trans (add_le_add ?_ (by simp)))
+    (inv_nonneg.2 hk'.le)
+  exact (Finset.abs_sum_le_sum_abs _ _).trans (Finset.sum_le_sum fun i _ ↦
+    abs_indicator_Ici_inv_le (hc i) t)
+
+lemma intervalIntegrable_tailEmpiricalProcess_div {U : ℕ → Ω → ℝ} {ω : Ω} {n k : ℕ}
+    (hx : ∀ i < n, U i ω < 1) (hn : 0 < n) (hk : 0 < k) (a b : ℝ) :
+    IntervalIntegrable (fun t ↦ tailEmpiricalProcess U n k t ω / t) volume a b :=
+  intervalIntegrable_of_abs_le ((measurable_tailEmpiricalProcess_time U n k ω).div measurable_id)
+    (abs_tailEmpiricalProcess_div_le hx hn hk) a b
+
+/-- **The Hill statistic of the exponential sample `-log (1 - U_i)` as an integral of the tail
+empirical process.** If no `U_i` equals `1` and `0 < k < n`, then with
+`T = (n / k) (1 - U_{(k+1)})`,
+`√k ((1/k) ∑_{j<k} (E_{(j+1)} - E_{(k+1)}) - 1) = ∫_0^T W_n(t) dt / t + √k (T - 1)`,
+where `E_i = -log (1 - U_i)`. -/
+theorem meanExcess_eq_integral_tailEmpiricalProcess {U : ℕ → Ω → ℝ} {ω : Ω} {n k : ℕ}
+    (hx : ∀ i < n, U i ω < 1) (hk : 0 < k) (hkn : k < n) :
+    √(k : ℝ) * ((k : ℝ)⁻¹ * ∑ j ∈ range k,
+        (orderStat (fun i : Fin n ↦ -Real.log (1 - U i ω)) j -
+          orderStat (fun i : Fin n ↦ -Real.log (1 - U i ω)) k) - 1) =
+      (∫ t in (0 : ℝ)..((1 - orderStat (fun i : Fin n ↦ U i ω) k) / (k / n)),
+        tailEmpiricalProcess U n k t ω / t) +
+        √(k : ℝ) * ((1 - orderStat (fun i : Fin n ↦ U i ω) k) / (k / n) - 1) := by
+  have hn : 0 < n := hk.trans hkn
+  have hp : (0 : ℝ) < k / n := by positivity
+  have hk' : (0 : ℝ) < k := Nat.cast_pos.2 hk
+  set x : Fin n → ℝ := fun i ↦ U i ω with hxdef
+  set c := orderStat x k with hcdef
+  set T := (1 - c) / (k / n) with hT
+  have hxi (i : Fin n) : x i < 1 := hx i i.2
+  have hc1 : c < 1 := by rw [hcdef, orderStat_of_lt x hkn]; exact hxi _
+  have hT0 : 0 ≤ T := div_nonneg (by linarith) hp.le
+  have hmono : MonotoneOn (fun u : ℝ ↦ -Real.log (1 - u)) (Set.Iio 1) := by
+    intro u hu v hv huv
+    exact neg_le_neg (Real.log_le_log (by simp only [Set.mem_Iio] at hv; linarith) (by linarith))
+  have hy : (fun i : Fin n ↦ -Real.log (1 - U i ω)) = (fun u : ℝ ↦ -Real.log (1 - u)) ∘ x := rfl
+  have hyk : orderStat (fun i : Fin n ↦ -Real.log (1 - U i ω)) k = -Real.log (1 - c) := by
+    rw [hy, orderStat_comp_monotoneOn hmono (fun i ↦ hxi i) hkn]
+  have hci (i : Fin n) : 0 < (1 - x i) / (k / n) := div_pos (by linarith [hxi i]) hp
+  -- the sum of excesses as an integral of the counting function
+  have hsum : ∑ j ∈ range k, (orderStat (fun i : Fin n ↦ -Real.log (1 - U i ω)) j -
+      orderStat (fun i : Fin n ↦ -Real.log (1 - U i ω)) k) =
+      ∫ t in (0 : ℝ)..T, (∑ i ∈ range n,
+        (Set.Ici (1 - k / n * t)).indicator (1 : ℝ → ℝ) (U i ω)) / t := by
+    rw [sum_range_orderStat_sub_eq _ hkn, hyk]
+    simp_rw [sum_range_indicator_div U hp ω]
+    rw [intervalIntegral.integral_finsetSum fun i _ ↦ intervalIntegrable_of_abs_le
+      (measurable_inv.indicator measurableSet_Ici) (abs_indicator_Ici_inv_le (hci i)) _ _]
+    refine Finset.sum_congr rfl fun i _ ↦ ?_
+    rw [integral_zero_indicator_Ici_inv hT0 (hci i)]
+    congr 1
+    rw [hT, div_div_div_cancel_right₀ hp.ne', Real.log_div (by linarith) (by linarith [hxi i])]
+    ring
+  have hint := intervalIntegrable_tailEmpiricalProcess_div hx hn hk 0 T
+  have hcount : ∫ t in (0 : ℝ)..T, (∑ i ∈ range n,
+      (Set.Ici (1 - k / n * t)).indicator (1 : ℝ → ℝ) (U i ω)) / t =
+      ∫ t in (0 : ℝ)..T, ((k : ℝ) + √(k : ℝ) * (tailEmpiricalProcess U n k t ω / t)) := by
+    refine intervalIntegral.integral_congr_ae ?_
+    filter_upwards [Measure.ae_ne volume 0] with t ht _
+    rw [← mul_div_assoc, sqrt_mul_tailEmpiricalProcess U n hk t ω]
+    field_simp
+    ring
+  rw [hsum, hcount, intervalIntegral.integral_add intervalIntegrable_const (hint.const_mul _),
+    intervalIntegral.integral_const, intervalIntegral.integral_const_mul, smul_eq_mul, sub_zero]
+  have hs : √(k : ℝ) * √(k : ℝ) = k := Real.mul_self_sqrt hk'.le
+  field_simp
+  linear_combination (∫ t in (0 : ℝ)..T, tailEmpiricalProcess U n k t ω / t) * hs
+
+end Representation
+
 end ExtremeValueTheory
