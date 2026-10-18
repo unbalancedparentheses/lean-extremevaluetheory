@@ -108,9 +108,17 @@ to `1/2 = θ` above the cutoff, with an explicit critical-scale value (`powEchoP
 boundary case `κ = 1` there is open). The process has `θ = 1/2`, `ϑ = 1`, and is β-mixing
 (`isBetaMixing_echoProcess`; geometric for the log lag, `betaMixing_logEchoProcess_le`), and on every block
 scale anticlustering and condition `𝒜` fail to hold together (`powEchoProcess_not_conditionA_and_antiClustering`,
-`logEchoProcess_betaMixing_incompatible`). Novelty: not yet checked against the literature beyond the
-earlier search (which found no example of this kind); Bai–Kulik–Wang's own model gives a linear rather
-than a step transition.
+`logEchoProcess_betaMixing_incompatible`). Novelty (literature check 2026-10-18, [`docs/NOVELTY2.md`](docs/NOVELTY2.md)): **new, answering
+Bai–Kulik–Wang's second question as stated** (arXiv:2409.17966v2, §1.4), medium-high confidence; no earlier
+example of an anticlustering cutoff inside `(0,1)` was found. Their own model has, in effect, `ρ₀ = 0` and a
+linear rather than a step transition. The β-mixing result is **likely new as an explicit example** (Bai–Wang
+note their `θ < ϑ` model is not strongly mixing); the underlying principle, that anticlustering and mixing
+must hold at a common block length, is classical (Basrak–Segers; Kulik–Soulier ch. 7), so it should be
+presented as showing that hypothesis cannot be dropped. Suggested claim: "for every `ρ₀ ∈ (0,1)` the
+power-lag echo with `γ = ρ₀α` is stationary, regularly varying and β-mixing, with `θ = 1/2`, and
+anticlustering holds iff `ρ < ρ₀` (`ρ ≠ ρ₀`)." Remaining checks before claiming priority: Weissman–Cohen
+(1995, moving maxima with random translations), the Kulik–Soulier examples (ch. 6–7, 14–15), and the
+published wording of Bai–Kulik–Wang.
 
 ### Minimal hypotheses: classical and statistics results (`Minimality/Classical*.lean`, namespace `ExtremeValueTheory.Minimality`)
 
