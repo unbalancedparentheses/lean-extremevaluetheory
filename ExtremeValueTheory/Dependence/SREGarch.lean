@@ -98,6 +98,74 @@ theorem integrable_posLog_coeffLaw :
     (measurable_innov α₀ α₁ β₁).aemeasurable]
   exact integrable_const (posLog α₀)
 
+/-! ### Stationarity -/
+
+section Main
+
+variable (hα₁ : 0 ≤ α₁) (hβ₁ : 0 ≤ β₁)
+  (hlog : Integrable (fun z => log (coeff α₁ β₁ z)) ζ)
+  (hneg : ∫ z, log (coeff α₁ β₁ z) ∂ζ < 0)
+
+include hlog hneg
+
+/-- **Strict stationarity of GARCH(1,1)** ([Nelson 1990]; [Bougerol–Picard 1992];
+[BDM16, §4.3]): if `E log(α₁ Z² + β₁) < 0`, the squared volatility recursion
+`σ²_{t+1} = α₀ + (α₁ Z_t² + β₁) σ²_t`, started from the law of
+`σ² = α₀ ∑_{k ≥ 0} ∏_{i < k} (α₁ Z_i² + β₁)` independently of the iid innovations `Z_t ∼ ζ`, is a
+strictly stationary Markov chain. -/
+theorem isStationary :
+    IsStationary (RandomIteration.chain affine Prod.fst fun n (p : ℝ × (ℕ → ℝ × ℝ)) => p.2 n)
+      (RandomIteration.canonicalMeasure (stationaryLaw (coeffLaw α₀ α₁ β₁ ζ))
+        (coeffLaw α₀ α₁ β₁ ζ)) :=
+  isStationary_chain (integrable_log_coeffLaw hlog) (by rwa [integral_log_coeffLaw])
+    integrable_posLog_coeffLaw
+
+/-- **Uniqueness of the stationary GARCH(1,1) volatility law**: under `E log(α₁ Z² + β₁) < 0`,
+any law `π'` with `σ² =ᵈ α₀ + (α₁ Z² + β₁) σ²`, `σ² ⊥ Z`, is the stationary law. -/
+theorem eq_stationaryLaw' (π' : Measure ℝ) [IsProbabilityMeasure π']
+    (hinv : (π'.prod (coeffLaw α₀ α₁ β₁ ζ)).map (Function.uncurry affine) = π') :
+    π' = stationaryLaw (coeffLaw α₀ α₁ β₁ ζ) :=
+  eq_stationaryLaw (integrable_log_coeffLaw hlog) (by rwa [integral_log_coeffLaw])
+    integrable_posLog_coeffLaw π' hinv
+
+include hα₁ hβ₁
+
+/-- **Moments of the GARCH(1,1) squared volatility below the tail index** ([BDM16, Theorem
+4.3.1]; [EKM, §8.4]): if `E (α₁ Z² + β₁)^κ = 1` for `κ > 0` (with `α₁ Z² + β₁` not a.s. `1`),
+then the stationary squared volatility has `E σ^{2s} < ∞` for every `0 < s < κ`. -/
+theorem lintegral_rpow_lt_top {κ : ℝ} (hκ : 0 < κ)
+    (hκi : Integrable (fun z => coeff α₁ β₁ z ^ κ) ζ) (hκ1 : ∫ z, coeff α₁ β₁ z ^ κ ∂ζ = 1)
+    (hnd : ¬ ∀ᵐ z ∂ζ, coeff α₁ β₁ z = 1) {s : ℝ} (hs : 0 < s) (hsκ : s < κ) :
+    ∫⁻ x, ‖x‖ₑ ^ s ∂stationaryLaw (coeffLaw α₀ α₁ β₁ ζ) < ∞ := by
+  refine lintegral_enorm_rpow_stationaryLaw_lt_top_of_lt (integrable_log_coeffLaw hlog)
+    (by rwa [integral_log_coeffLaw]) integrable_posLog_coeffLaw hκ ?_ ?_ ?_ hs hsκ
+  · rw [lintegral_rpow_coeffLaw hα₁ hβ₁ hκ.le hκi, hκ1, ENNReal.ofReal_one]
+  · rw [ae_coeffLaw_iff (measurableSet_eq_fun (by fun_prop) measurable_const)]
+    simpa only [innov, abs_of_nonneg (coeff_nonneg hα₁ hβ₁ _)] using hnd
+  · rw [coeffLaw, lintegral_map (by fun_prop) (measurable_innov α₀ α₁ β₁)]
+    simpa [innov] using ENNReal.rpow_lt_top_of_nonneg hκ.le enorm_ne_top
+
+/-- **Infinite moments of the GARCH(1,1) squared volatility above the tail index**: with
+`α₀ > 0` and `κ` as in `lintegral_rpow_lt_top`, `E σ^{2s} = ∞` for every `s > κ`. Hence the
+tail index of `σ²` is exactly the solution `κ` of `E (α₁ Z² + β₁)^κ = 1`. -/
+theorem lintegral_rpow_eq_top (hα₀ : 0 < α₀) {κ : ℝ} (hκ : 0 < κ)
+    (hκi : Integrable (fun z => coeff α₁ β₁ z ^ κ) ζ) (hκ1 : ∫ z, coeff α₁ β₁ z ^ κ ∂ζ = 1)
+    (hnd : ¬ ∀ᵐ z ∂ζ, coeff α₁ β₁ z = 1) {s : ℝ} (hsκ : κ < s) :
+    ∫⁻ x, ‖x‖ₑ ^ s ∂stationaryLaw (coeffLaw α₀ α₁ β₁ ζ) = ∞ := by
+  refine lintegral_enorm_rpow_stationaryLaw_eq_top_of_lt (integrable_log_coeffLaw hlog)
+    (by rwa [integral_log_coeffLaw]) integrable_posLog_coeffLaw ?_ ?_ ?_ hκ ?_ ?_ hsκ
+  · rw [ae_coeffLaw_iff (measurableSet_le measurable_const measurable_fst)]
+    exact ae_of_all _ fun z => coeff_nonneg hα₁ hβ₁ z
+  · rw [ae_coeffLaw_iff (measurableSet_le measurable_const measurable_snd)]
+    exact ae_of_all _ fun z => hα₀.le
+  · rw [ae_coeffLaw_iff (measurableSet_eq_fun measurable_snd measurable_const)]
+    simpa [innov, hα₀.ne'] using IsProbabilityMeasure.ne_zero ζ
+  · rw [lintegral_rpow_coeffLaw hα₁ hβ₁ hκ.le hκi, hκ1, ENNReal.ofReal_one]
+  · rw [ae_coeffLaw_iff (measurableSet_eq_fun (by fun_prop) measurable_const)]
+    simpa only [innov, abs_of_nonneg (coeff_nonneg hα₁ hβ₁ _)] using hnd
+
+end Main
+
 end GARCH
 
 end SRE

@@ -49,48 +49,51 @@ theorem rpow_le_one_add_rpow {x t S : ℝ} (hx : 0 ≤ x) (ht : 0 ≤ t) (htS : 
   · linarith [rpow_le_one hx h ht, rpow_nonneg hx S]
   · linarith [rpow_le_rpow_of_exponent_le h htS]
 
-variable {ν : Measure (ℝ × ℝ)} [IsProbabilityMeasure ν]
+section Generic
 
-theorem integrable_abs_rpow_of_le {S : ℝ} (hSi : Integrable (fun p : ℝ × ℝ => |p.1| ^ S) ν)
-    {t : ℝ} (ht : 0 ≤ t) (htS : t ≤ S) : Integrable (fun p : ℝ × ℝ => |p.1| ^ t) ν :=
+variable {α : Type*} {mα : MeasurableSpace α} {μ : Measure α} [IsProbabilityMeasure μ]
+  {A : α → ℝ}
+
+theorem integrable_abs_rpow_of_le (hAm : Measurable A) {S : ℝ} (hSi : Integrable (fun p => |A p| ^ S) μ)
+    {t : ℝ} (ht : 0 ≤ t) (htS : t ≤ S) : Integrable (fun p => |A p| ^ t) μ :=
   ((integrable_const 1).add hSi).mono' (by fun_prop) (ae_of_all _ fun p => by
     rw [Real.norm_eq_abs, abs_of_nonneg (rpow_nonneg (abs_nonneg _) _)]
     exact rpow_le_one_add_rpow (abs_nonneg _) ht htS)
 
 /-- If `E log |A| < 0` (and `A ≠ 0` a.s.), then `E|A|^t < 1` for some small `t > 0`: the right
 derivative of `t ↦ E|A|^t` at `0` is `E log |A|`. -/
-theorem exists_integral_abs_rpow_lt_one (hA0 : ∀ᵐ p ∂ν, p.1 ≠ 0)
-    (hA : Integrable (fun p : ℝ × ℝ => log |p.1|) ν) (hneg : ∫ p, log |p.1| ∂ν < 0)
-    {S : ℝ} (hS : 0 < S) (hSi : Integrable (fun p : ℝ × ℝ => |p.1| ^ S) ν) :
-    ∃ t ∈ Ioo 0 S, ∫ p, |p.1| ^ t ∂ν < 1 := by
-  set F : ℝ → ℝ × ℝ → ℝ := fun t p => (|p.1| ^ t - 1) / t
-  have hFS : Integrable (F S) ν := ((hSi.sub (integrable_const 1)).div_const S)
-  have hlim : Tendsto (fun t => ∫ p, F t p ∂ν) (𝓝[>] 0) (𝓝 (∫ p, log |p.1| ∂ν)) := by
-    refine tendsto_integral_filter_of_dominated_convergence (fun p => abs (log |p.1|) + abs (F S p))
+theorem exists_integral_abs_rpow_lt_one (hAm : Measurable A) (hA0 : ∀ᵐ p ∂μ, A p ≠ 0)
+    (hA : Integrable (fun p => log |A p|) μ) (hneg : ∫ p, log |A p| ∂μ < 0)
+    {S : ℝ} (hS : 0 < S) (hSi : Integrable (fun p => |A p| ^ S) μ) :
+    ∃ t ∈ Ioo 0 S, ∫ p, |A p| ^ t ∂μ < 1 := by
+  set F : ℝ → α → ℝ := fun t p => (|A p| ^ t - 1) / t
+  have hFS : Integrable (F S) μ := ((hSi.sub (integrable_const 1)).div_const S)
+  have hlim : Tendsto (fun t => ∫ p, F t p ∂μ) (𝓝[>] 0) (𝓝 (∫ p, log |A p| ∂μ)) := by
+    refine tendsto_integral_filter_of_dominated_convergence (fun p => abs (log |A p|) + abs (F S p))
       (Eventually.of_forall fun t =>
-      ((((continuous_abs.measurable.comp measurable_fst :
-        Measurable fun p : ℝ × ℝ => |p.1|).pow_const t).sub_const 1).div_const t).aestronglyMeasurable) ?_ (hA.abs.add hFS.abs) ?_
+      ((((continuous_abs.measurable.comp hAm :
+        Measurable fun p => |A p|).pow_const t).sub_const 1).div_const t).aestronglyMeasurable) ?_ (hA.abs.add hFS.abs) ?_
     · filter_upwards [Ioo_mem_nhdsGT hS] with t ht
       filter_upwards [hA0] with p hp
-      have hp' : 0 < |p.1| := abs_pos.2 hp
+      have hp' : 0 < |A p| := abs_pos.2 hp
       have h1 := log_le_rpow_sub_one_div hp' ht.1
       have h2 := rpow_sub_one_div_le hp' ht.1 ht.2.le
       rw [Real.norm_eq_abs, abs_le]
-      constructor <;> [linarith [neg_abs_le (log |p.1|), abs_nonneg (F S p)];
-        linarith [le_abs_self (F S p), abs_nonneg (log |p.1|)]]
+      constructor <;> [linarith [neg_abs_le (log |A p|), abs_nonneg (F S p)];
+        linarith [le_abs_self (F S p), abs_nonneg (log |A p|)]]
     · filter_upwards [hA0] with p hp
-      have hp' : 0 < |p.1| := abs_pos.2 hp
-      have hd : HasDerivAt (fun t => exp (log |p.1| * t)) (exp (log |p.1| * 0) * (log |p.1| * 1)) 0 :=
-        ((hasDerivAt_id 0).const_mul (log |p.1|)).exp
+      have hp' : 0 < |A p| := abs_pos.2 hp
+      have hd : HasDerivAt (fun t => exp (log |A p| * t)) (exp (log |A p| * 0) * (log |A p| * 1)) 0 :=
+        ((hasDerivAt_id 0).const_mul (log |A p|)).exp
       simp only [mul_zero, exp_zero, mul_one, one_mul] at hd
       refine hd.tendsto_slope_zero_right.congr fun t => ?_
       simp only [F, zero_add, smul_eq_mul, mul_zero, exp_zero, rpow_def_of_pos hp']
       ring
-  have hev : ∀ᶠ t in 𝓝[>] (0 : ℝ), ∫ p, F t p ∂ν < 0 := hlim.eventually (gt_mem_nhds hneg)
+  have hev : ∀ᶠ t in 𝓝[>] (0 : ℝ), ∫ p, F t p ∂μ < 0 := hlim.eventually (gt_mem_nhds hneg)
   obtain ⟨t, h1, h2⟩ := (hev.and (Ioo_mem_nhdsGT hS)).exists
   refine ⟨t, h2, ?_⟩
-  have hti := integrable_abs_rpow_of_le hSi h2.1.le h2.2.le
-  have : ∫ p, F t p ∂ν = ((∫ p, |p.1| ^ t ∂ν) - 1) / t := by
+  have hti := integrable_abs_rpow_of_le hAm hSi h2.1.le h2.2.le
+  have : ∫ p, F t p ∂μ = ((∫ p, |A p| ^ t ∂μ) - 1) / t := by
     simp only [F]
     rw [integral_div, integral_sub hti (integrable_const 1), integral_const, probReal_univ,
       one_smul]
@@ -100,12 +103,12 @@ theorem exists_integral_abs_rpow_lt_one (hA0 : ∀ᵐ p ∂ν, p.1 ≠ 0)
   · linarith [h.1]
 
 /-- `t ↦ E|A|^t` is continuous on `[t₀, S]`, `t₀ > 0`, when `E|A|^S < ∞`. -/
-theorem continuousOn_integral_abs_rpow {S t₀ : ℝ} (ht₀ : 0 < t₀)
-    (hSi : Integrable (fun p : ℝ × ℝ => |p.1| ^ S) ν) :
-    ContinuousOn (fun t => ∫ p, |p.1| ^ t ∂ν) (Icc t₀ S) := by
-  refine continuousOn_of_dominated (bound := fun p => 1 + |p.1| ^ S)
-    (fun t _ => (((continuous_abs.measurable.comp measurable_fst :
-      Measurable fun p : ℝ × ℝ => |p.1|).pow_const t).aestronglyMeasurable))
+theorem continuousOn_integral_abs_rpow (hAm : Measurable A) {S t₀ : ℝ} (ht₀ : 0 < t₀)
+    (hSi : Integrable (fun p => |A p| ^ S) μ) :
+    ContinuousOn (fun t => ∫ p, |A p| ^ t ∂μ) (Icc t₀ S) := by
+  refine continuousOn_of_dominated (bound := fun p => 1 + |A p| ^ S)
+    (fun t _ => (((continuous_abs.measurable.comp hAm :
+      Measurable fun p => |A p|).pow_const t).aestronglyMeasurable))
     (fun t ht => ae_of_all _ fun p => ?_) ((integrable_const 1).add hSi)
     (ae_of_all _ fun p => fun t ht => ?_)
   · rw [Real.norm_eq_abs, abs_of_nonneg (rpow_nonneg (abs_nonneg _) _)]
@@ -115,17 +118,21 @@ theorem continuousOn_integral_abs_rpow {S t₀ : ℝ} (ht₀ : 0 < t₀)
 /-- **Existence of the Kesten exponent** ([BDM16, §2.4]; [EKM, §8.4]): if `A ≠ 0` a.s.,
 `E log |A| < 0` and `E|A|^S > 1` for some `S > 0` with `E|A|^S < ∞`, then `E|A|^κ = 1` for some
 `κ ∈ (0, S)`. -/
-theorem exists_integral_abs_rpow_eq_one (hA0 : ∀ᵐ p ∂ν, p.1 ≠ 0)
-    (hA : Integrable (fun p : ℝ × ℝ => log |p.1|) ν) (hneg : ∫ p, log |p.1| ∂ν < 0)
-    {S : ℝ} (hS : 0 < S) (hSi : Integrable (fun p : ℝ × ℝ => |p.1| ^ S) ν)
-    (hS1 : 1 < ∫ p, |p.1| ^ S ∂ν) :
-    ∃ κ ∈ Ioo 0 S, ∫ p, |p.1| ^ κ ∂ν = 1 := by
-  obtain ⟨t, ht, ht1⟩ := exists_integral_abs_rpow_lt_one hA0 hA hneg hS hSi
+theorem exists_integral_abs_rpow_eq_one (hAm : Measurable A) (hA0 : ∀ᵐ p ∂μ, A p ≠ 0)
+    (hA : Integrable (fun p => log |A p|) μ) (hneg : ∫ p, log |A p| ∂μ < 0)
+    {S : ℝ} (hS : 0 < S) (hSi : Integrable (fun p => |A p| ^ S) μ)
+    (hS1 : 1 < ∫ p, |A p| ^ S ∂μ) :
+    ∃ κ ∈ Ioo 0 S, ∫ p, |A p| ^ κ ∂μ = 1 := by
+  obtain ⟨t, ht, ht1⟩ := exists_integral_abs_rpow_lt_one hAm hA0 hA hneg hS hSi
   obtain ⟨κ, hκ, hκ1⟩ := intermediate_value_Icc ht.2.le
-    (continuousOn_integral_abs_rpow ht.1 hSi) ⟨ht1.le, hS1.le⟩
+    (continuousOn_integral_abs_rpow hAm ht.1 hSi) ⟨ht1.le, hS1.le⟩
   refine ⟨κ, ⟨ht.1.trans_le hκ.1, lt_of_le_of_ne hκ.2 ?_⟩, hκ1⟩
   rintro rfl
   linarith
+
+end Generic
+
+variable {ν : Measure (ℝ × ℝ)} [IsProbabilityMeasure ν]
 
 omit [IsProbabilityMeasure ν] in
 /-- The `ℝ≥0∞`-valued moment `∫⁻ ‖A‖ₑ^κ` equals `1` when the real one does. -/
