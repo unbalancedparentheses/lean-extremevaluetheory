@@ -120,6 +120,14 @@ anticlustering holds iff `ρ < ρ₀` (`ρ ≠ ρ₀`)." Remaining checks before
 (1995, moving maxima with random translations), the Kulik–Soulier examples (ch. 6–7, 14–15), and the
 published wording of Bai–Kulik–Wang.
 
+### Practical open problems
+
+A literature survey of open problems that practitioners care about and that this library can reach
+(block and run lengths for extremal-index estimators, sliding blocks without β-mixing, block maxima
+versus peaks over threshold, GEV likelihood on the whole parameter space, annual maxima with a varying
+seasonal bound, threshold selection) is in [`docs/PRACTICAL_OPEN_PROBLEMS.md`](docs/PRACTICAL_OPEN_PROBLEMS.md),
+with sources, exact quotes and feasibility.
+
 ### Minimal hypotheses: classical and statistics results (`Minimality/Classical*.lean`, namespace `ExtremeValueTheory.Minimality`)
 
 | Theorem | Hypothesis | Status | Witness |
