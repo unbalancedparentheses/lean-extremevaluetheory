@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this library, please cite it as below."
+title: "Extreme Value Theory in Lean"
+type: software
+authors:
+  - family-names: Carrone
+    given-names: Federico
+repository-code: "https://github.com/unbalancedparentheses/lean-extremevaluetheory"
+url: "https://unbalancedparentheses.github.io/lean-extremevaluetheory/"
+license: Apache-2.0
+keywords:
+  - extreme value theory
+  - Lean 4
+  - Mathlib
+  - formal verification
+  - heavy tails
+  - regular variation
