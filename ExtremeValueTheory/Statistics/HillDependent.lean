@@ -122,6 +122,41 @@ theorem integral_tailCount [IsFiniteMeasure P] (hX : ∀ i, Measurable (X i))
     rw [← integral_ite_lt' (hX 0), ← h, integral_ite_lt' (hX i)]
   simp [this]
 
+/-- **Chebyshev's weak law along a sequence.** If `E[S_n] / b_n → c` and `Var(S_n) / b_n² → 0`,
+then `S_n / b_n → c` in probability. No independence is assumed. -/
+theorem tendsto_measure_abs_div_sub_of_variance [IsProbabilityMeasure P] {S : ℕ → Ω → ℝ}
+    (hS : ∀ n, MemLp (S n) 2 P) {b : ℕ → ℝ} {c : ℝ} (hb : ∀ᶠ n in atTop, 0 < b n)
+    (hmean : Tendsto (fun n => P[S n] / b n) atTop (𝓝 c))
+    (hvar : Tendsto (fun n => variance (S n) P / b n ^ 2) atTop (𝓝 0))
+    {ε : ℝ} (hε : 0 < ε) :
+    Tendsto (fun n => P {ω | ε ≤ |S n ω / b n - c|}) atTop (𝓝 0) := by
+  have hlim : Tendsto (fun n : ℕ => ENNReal.ofReal (4 / ε ^ 2 *
+      (variance (S n) P / b n ^ 2))) atTop (𝓝 0) := by
+    rw [← ENNReal.ofReal_zero]
+    refine ENNReal.tendsto_ofReal ?_
+    simpa using hvar.const_mul (4 / ε ^ 2)
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hlim
+    (Eventually.of_forall fun _ => bot_le) ?_
+  have hmean' := (Metric.tendsto_nhds.1 hmean) (ε / 2) (half_pos hε)
+  filter_upwards [hb, hmean'] with n hbn hmn
+  set T := S n with hT
+  rw [Real.dist_eq] at hmn
+  have hsub : {ω | ε ≤ |T ω / b n - c|} ⊆ {ω | ε * b n / 2 ≤ |T ω - P[T]|} := by
+    intro ω hω
+    simp only [mem_ofPred_eq] at hω ⊢
+    have h1 : T ω / b n - c = (T ω - P[T]) / b n + (P[T] / b n - c) := by
+      field_simp; ring
+    rw [h1] at hω
+    have h2 := (abs_add_le _ _).trans' hω
+    rw [abs_div, abs_of_pos hbn] at h2
+    have h3 : ε / 2 ≤ |T ω - P[T]| / b n := by linarith
+    rw [le_div_iff₀ hbn] at h3
+    linarith
+  refine (measure_mono hsub).trans ?_
+  refine (meas_ge_le_variance_div_sq (hS n) (by positivity)).trans ?_
+  refine ENNReal.ofReal_le_ofReal (le_of_eq ?_)
+  field_simp; ring
+
 /-- **Chebyshev for exceedance counts.** If the marginals are identically distributed,
 `n F̄(u_n) / b_n → c` and `Var(∑_{i<n} 1{X_i > u_n}) / b_n² → 0`, then
 `(1/b_n) ∑_{i<n} 1{X_i > u_n} → c` in probability. No dependence assumption is made beyond the
@@ -132,36 +167,9 @@ theorem tendsto_measure_abs_tailCount_div_sub [IsProbabilityMeasure P]
     (hmean : Tendsto (fun n : ℕ => n * survival P (X 0) (u n) / b n) atTop (𝓝 c))
     (hvar : Tendsto (fun n => variance (tailCount X n (u n)) P / b n ^ 2) atTop (𝓝 0))
     {ε : ℝ} (hε : 0 < ε) :
-    Tendsto (fun n => P {ω | ε ≤ |tailCount X n (u n) ω / b n - c|}) atTop (𝓝 0) := by
-  have hlim : Tendsto (fun n : ℕ => ENNReal.ofReal (4 / ε ^ 2 *
-      (variance (tailCount X n (u n)) P / b n ^ 2))) atTop (𝓝 0) := by
-    rw [← ENNReal.ofReal_zero]
-    refine ENNReal.tendsto_ofReal ?_
-    simpa using hvar.const_mul (4 / ε ^ 2)
-  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hlim
-    (Eventually.of_forall fun _ => bot_le) ?_
-  have hmean' := (Metric.tendsto_nhds.1 hmean) (ε / 2) (half_pos hε)
-  filter_upwards [hb, hmean'] with n hbn hmn
-  set T := tailCount X n (u n) with hT
-  have hET : P[T] = n * survival P (X 0) (u n) := integral_tailCount hX hident n (u n)
-  rw [Real.dist_eq] at hmn
-  have hsub : {ω | ε ≤ |T ω / b n - c|} ⊆ {ω | ε * b n / 2 ≤ |T ω - P[T]|} := by
-    intro ω hω
-    simp only [mem_ofPred_eq] at hω ⊢
-    rw [hET]
-    have h1 : T ω / b n - c = (T ω - n * survival P (X 0) (u n)) / b n +
-        (n * survival P (X 0) (u n) / b n - c) := by
-      field_simp; ring
-    rw [h1] at hω
-    have h2 := (abs_add_le _ _).trans' hω
-    rw [abs_div, abs_of_pos hbn] at h2
-    have h3 : ε / 2 ≤ |T ω - n * survival P (X 0) (u n)| / b n := by linarith
-    rw [le_div_iff₀ hbn] at h3
-    linarith
-  refine (measure_mono hsub).trans ?_
-  refine (meas_ge_le_variance_div_sq (memLp_tailCount hX n (u n) 2) (by positivity)).trans ?_
-  refine ENNReal.ofReal_le_ofReal (le_of_eq ?_)
-  field_simp; ring
+    Tendsto (fun n => P {ω | ε ≤ |tailCount X n (u n) ω / b n - c|}) atTop (𝓝 0) :=
+  tendsto_measure_abs_div_sub_of_variance (fun n => memLp_tailCount hX n (u n) 2) hb
+    (hmean.congr fun n => by rw [integral_tailCount hX hident n (u n)]) hvar hε
 
 end TailCount
 
@@ -741,19 +749,29 @@ theorem sum_sum_dist_le {b : ℕ → ℝ} (hb : ∀ h, 0 ≤ b h) (n : ℕ) :
 
 variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
 
+open scoped Classical in
+/-- The covariance of the indicators of two events: `cov(1_A, 1_B) = P(A ∩ B) - P(A) P(B)`. -/
+theorem covariance_ite_mem {A B : Set Ω} (hA : MeasurableSet A) (hB : MeasurableSet B) :
+    cov[fun ω => if ω ∈ A then (1 : ℝ) else 0, fun ω => if ω ∈ B then (1 : ℝ) else 0; P] =
+      P.real (A ∩ B) - P.real A * P.real B := by
+  have hi : ∀ {C : Set Ω}, (fun ω => if ω ∈ C then (1 : ℝ) else 0) = C.indicator 1 := by
+    intro C; ext ω; simp [Set.indicator]
+  have hL : ∀ {C : Set Ω}, MeasurableSet C → MemLp (C.indicator (1 : Ω → ℝ)) 2 P :=
+    fun hC => (memLp_const (1 : ℝ)).indicator hC.nullMeasurableSet
+  rw [hi, hi, covariance_eq_sub (hL hA) (hL hB)]
+  have e : A.indicator (1 : Ω → ℝ) * B.indicator 1 = (A ∩ B).indicator 1 := by
+    ext ω
+    simp only [Pi.mul_apply, Set.indicator, Set.mem_inter_iff, Pi.one_apply]
+    split_ifs <;> simp_all
+  rw [e, integral_indicator_one (hA.inter hB), integral_indicator_one hA,
+    integral_indicator_one hB]
+
 /-- The covariance of two exceedance indicators. -/
 theorem covariance_ite_lt {Y Z : Ω → ℝ} (hY : Measurable Y) (hZ : Measurable Z) (u : ℝ) :
     cov[fun ω => if u < Y ω then (1 : ℝ) else 0, fun ω => if u < Z ω then (1 : ℝ) else 0; P] =
-      P.real ({ω | u < Y ω} ∩ {ω | u < Z ω}) - P.real {ω | u < Y ω} * P.real {ω | u < Z ω} := by
-  rw [covariance_eq_sub (memLp_ite_lt hY u 2) (memLp_ite_lt hZ u 2)]
-  have e : (fun ω => if u < Y ω then (1 : ℝ) else 0) * (fun ω => if u < Z ω then (1 : ℝ) else 0)
-      = ({ω | u < Y ω} ∩ {ω | u < Z ω}).indicator 1 := by
-    ext ω
-    simp only [Pi.mul_apply, Set.indicator, Set.mem_inter_iff, Set.mem_ofPred_eq, Pi.one_apply]
-    split_ifs <;> simp_all
-  rw [e, integral_indicator_one ((measurableSet_lt measurable_const hY).inter
-    (measurableSet_lt measurable_const hZ)), integral_ite_lt' hY, integral_ite_lt' hZ]
-  rfl
+      P.real ({ω | u < Y ω} ∩ {ω | u < Z ω}) - P.real {ω | u < Y ω} * P.real {ω | u < Z ω} :=
+  covariance_ite_mem (A := {ω | u < Y ω}) (B := {ω | u < Z ω})
+    (measurableSet_lt measurable_const hY) (measurableSet_lt measurable_const hZ)
 
 /-- **Variance of exceedance counts of a stationary strongly mixing sequence.** For every
 `r`, `Var(∑_{i<n} 1{X_i > u}) ≤ n (F̄(u) + 2 ∑_{1 ≤ h ≤ r} P(X_0 > u, X_h > u) +
