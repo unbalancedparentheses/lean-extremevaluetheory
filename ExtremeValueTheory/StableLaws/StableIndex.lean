@@ -326,6 +326,31 @@ theorem IsStable.isStableIndex_of_norm_charFun (h : IsStable μ) {β c : ℝ} (h
     rw [← haβ, Real.rpow_rpow_inv ha.le hβ.ne']
   exact ⟨b, by rw [hab, hae]⟩
 
+/-- **A stable law is in its own domain of attraction**: there are `aₙ > 0` and `bₙ` with
+`(Sₙ - bₙ) / aₙ ∼ μ` for every `n ≥ 1`. -/
+theorem IsStable.exists_tendsto_self [IsProbabilityMeasure μ] (h : IsStable μ) :
+    ∃ a b : ℕ → ℝ, (∀ n, 0 < a n) ∧ Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
+      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop
+      (𝓝 ⟨μ, inferInstance⟩) := by
+  have hex : ∀ n : ℕ, ∃ a b : ℝ, 0 < a ∧ (1 ≤ n → convPow μ n = μ.map (fun x => a * x + b)) := by
+    intro n
+    rcases Nat.eq_zero_or_pos n with rfl | hn
+    · exact ⟨1, 0, one_pos, fun h => absurd h (by norm_num)⟩
+    · obtain ⟨a, b, ha, hab⟩ := h.exists_affine n hn
+      exact ⟨a, b, ha, fun _ => hab⟩
+  choose a b ha hab using hex
+  refine ⟨a, b, ha, tendsto_const_nhds.congr' ?_⟩
+  filter_upwards [eventually_ge_atTop 1] with n hn
+  apply Subtype.ext
+  change μ = (convPow μ n).map (fun x => (a n)⁻¹ * (x - b n))
+  rw [hab n hn, Measure.map_map (by fun_prop) (by fun_prop)]
+  have : ((fun x => (a n)⁻¹ * (x - b n)) ∘ fun x => a n * x + b n) = id := by
+    funext x
+    simp only [Function.comp, id]
+    field_simp [(ha n).ne']
+    ring
+  rw [this, Measure.map_id]
+
 /-- **Feller, Vol. II, §VI.1, Theorem 1 (modulus form).** The characteristic function of a
 stable law has modulus `exp (-c |t|^α)` for some `0 < α ≤ 2`, `c > 0`.
 
@@ -336,27 +361,8 @@ symmetrized scaling limit. For `α < 2` the explicit identification of the limit
 theorem IsStable.exists_norm_charFun (h : IsStable μ) :
     ∃ α c : ℝ, 0 < α ∧ α ≤ 2 ∧ 0 < c ∧ ∀ t, ‖charFun μ t‖ = Real.exp (-(c * |t| ^ α)) := by
   have := h.isProbabilityMeasure
-  have hex : ∀ n : ℕ, ∃ a b : ℝ, 0 < a ∧ (1 ≤ n → convPow μ n = μ.map (fun x => a * x + b)) := by
-    intro n
-    rcases Nat.eq_zero_or_pos n with rfl | hn
-    · exact ⟨1, 0, one_pos, fun h => absurd h (by norm_num)⟩
-    · obtain ⟨a, b, ha, hab⟩ := h.exists_affine n hn
-      exact ⟨a, b, ha, fun _ => hab⟩
-  choose a b ha hab using hex
+  obtain ⟨a, b, ha, hconv⟩ := h.exists_tendsto_self
   set ν : ProbabilityMeasure ℝ := ⟨μ, inferInstance⟩
-  have hconv : Tendsto (β := ProbabilityMeasure ℝ) (fun n : ℕ =>
-      ⟨(convPow μ n).map (fun x => (a n)⁻¹ * (x - b n)), inferInstance⟩) atTop (𝓝 ν) := by
-    refine tendsto_const_nhds.congr' ?_
-    filter_upwards [eventually_ge_atTop 1] with n hn
-    apply Subtype.ext
-    change μ = (convPow μ n).map (fun x => (a n)⁻¹ * (x - b n))
-    rw [hab n hn, Measure.map_map (by fun_prop) (by fun_prop)]
-    have : ((fun x => (a n)⁻¹ * (x - b n)) ∘ fun x => a n * x + b n) = id := by
-      funext x
-      simp only [Function.comp, id]
-      field_simp [(ha n).ne']
-      ring
-    rw [this, Measure.map_id]
   obtain ⟨α, hα0, hα2, K, hK, hL⟩ :=
     exists_tendsto_mul_sqRatio_symmLaw ha (ν := ν) h.ne_dirac hconv
   rcases lt_or_eq_of_le hα2 with hlt | rfl
