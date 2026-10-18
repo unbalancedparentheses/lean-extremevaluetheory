@@ -1,4 +1,5 @@
 import ExtremeValueTheory.RegularVariation.CramerWold
+import Mathlib.MeasureTheory.Measure.Prokhorov
 
 open MeasureTheory ProbabilityTheory Filter Topology Set BoundedContinuousFunction
 open scoped ENNReal NNReal
@@ -431,6 +432,145 @@ theorem scaledLaw_norm_lt_le (hX : Measurable X) {V : ℝ → ℝ} {x₁ K α : 
       ≤ (V x)⁻¹ * (K * max (t ^ (-α + α / 2)) (t ^ (-α - α / 2)) * V x) :=
         mul_le_mul_of_nonneg_left (hT x hx t ht hxt) (inv_nonneg.2 hVx.le)
     _ = K * max (t ^ (-α + α / 2)) (t ^ (-α - α / 2)) := by field_simp
+
+/-- **Existence of limit points** (compactness): along every sequence `u n → ∞` there is a
+subsequence along which the normalized laws `P(X / x ∈ ·) / V(x)` converge on sets bounded away
+from the origin to a measure `μ` with no atom at the origin and finite away from it. The proof
+applies Prokhorov's theorem to the normalized weighted laws
+`min (1, ‖y‖) ^ (2 α) P(X / x ∈ dy) / V(x)`. -/
+theorem exists_subseq_tendsto [IsProbabilityMeasure P] [FiniteDimensional ℝ E]
+    (hX : Measurable X) {α : ℝ} {V : ℝ → ℝ}
+    (hα : 0 < α) (hVa : Antitone V) (hV : IsRegularlyVarying V (-α)) {w : StrongDual ℝ E → ℝ}
+    (hw : ∀ L : StrongDual ℝ E,
+      Tendsto (fun x => P.real {ω | x < L (X ω)} / V x) atTop (𝓝 (w L)))
+    {L₀ : StrongDual ℝ E} (hL₀ : w L₀ ≠ 0) {u : ℕ → ℝ} (hu : Tendsto u atTop atTop) :
+    ∃ (φ : ℕ → ℕ) (μ : Measure E), StrictMono φ ∧ μ {0} = 0 ∧
+      (∀ r > 0, μ {y | r < ‖y‖} < ∞) ∧
+      ∀ f : E →ᵇ ℝ, VanishesNearZero f →
+        Tendsto (fun n => ∫ y, f y ∂scaledLaw P X V (u (φ n))) atTop (𝓝 (∫ y, f y ∂μ)) := by
+  obtain ⟨C, hC, x₂, hx₂, hmass⟩ := exists_weightedLaw_univ_le hX hα hVa hV hw
+  obtain ⟨c, hc, hlow⟩ := exists_le_weightedLaw_univ (α := α) hX hV hw hL₀
+  obtain ⟨x₁, K, hx₁, hK, hVpos, -, hT⟩ := exists_tail_bound (X := X) hα hVa hV hw
+  obtain ⟨x₃, hx₃⟩ := eventually_atTop.1 hlow
+  set x₀ := max (max x₁ x₂) x₃
+  obtain ⟨N, hN⟩ := eventually_atTop.1 (hu.eventually_ge_atTop x₀)
+  set v : ℕ → ℝ := fun n => u (n + N)
+  have hv : ∀ n, x₀ ≤ v n := fun n => hN _ (Nat.le_add_left N n)
+  have hv1 : ∀ n, x₁ ≤ v n := fun n => (le_max_left _ _).trans ((le_max_left _ _).trans (hv n))
+  have hv2 : ∀ n, x₂ ≤ v n := fun n => (le_max_right _ _).trans ((le_max_left _ _).trans (hv n))
+  have hv3 : ∀ n, x₃ ≤ v n := fun n => (le_max_right _ _).trans (hv n)
+  have hv0 : ∀ n, 0 < v n := fun n => hx₁.trans_le (hv1 n)
+  have hfin := fun n => isFiniteMeasure_weightedLaw (P := P) (X := X) hα V (v n)
+  let π : ℕ → FiniteMeasure E := fun n => ⟨weightedLaw P X α V (v n), hfin n⟩
+  have hπ : ∀ n, ((π n : FiniteMeasure E) : Measure E) = weightedLaw P X α V (v n) :=
+    fun n => rfl
+  set Cn : ℝ≥0 := C.toNNReal
+  set cn : ℝ≥0 := c.toNNReal
+  have hcn : 0 < cn := Real.toNNReal_pos.2 hc
+  have hmass_le : ∀ n, (π n).mass ≤ Cn := fun n => by
+    rw [← ENNReal.coe_le_coe, FiniteMeasure.ennreal_mass, hπ, ENNReal.coe_toNNReal hC]
+    exact hmass _ (hv2 n)
+  have hmass_ge : ∀ n, cn ≤ (π n).mass := fun n => by
+    rw [← ENNReal.coe_le_coe, FiniteMeasure.ennreal_mass, hπ]
+    exact hx₃ _ (hv3 n)
+  have hne : ∀ n, π n ≠ 0 := fun n =>
+    (FiniteMeasure.mass_nonzero_iff _).1 (hcn.trans_le (hmass_ge n)).ne'
+  let Q : ℕ → ProbabilityMeasure E := fun n => (π n).normalize
+  -- tightness of the normalized weighted laws
+  have hQle : ∀ n (R : ℝ), 1 ≤ R → ((Q n : ProbabilityMeasure E) : Measure E) {y | R < ‖y‖} ≤
+      (cn : ℝ≥0∞)⁻¹ * ENNReal.ofReal (K * R ^ (-α + α / 2)) := fun n R hR => by
+    rw [FiniteMeasure.toMeasure_normalize_eq_of_nonzero _ (hne n), Measure.smul_apply,
+      ENNReal.smul_def, smul_eq_mul,
+      ENNReal.coe_inv (FiniteMeasure.mass_nonzero_iff _ |>.2 (hne n)), hπ]
+    gcongr
+    · exact hmass_ge n
+    · refine (weightedLaw_le hα V _ _).trans ?_
+      have h := scaledLaw_norm_lt_le hX hVpos hT (hv1 n) (hv0 n) (one_pos.trans_le hR)
+        ((hv1 n).trans (le_mul_of_one_le_right (hv0 n).le hR))
+      rwa [max_rpow_eq_of_one_le hα hR] at h
+  have htight : IsTightMeasureSet
+      {((μ : ProbabilityMeasure E) : Measure E) | μ ∈ range Q} := by
+    rw [isTightMeasureSet_iff_exists_isCompact_measure_compl_le]
+    intro ε hε
+    have hlim : Tendsto (fun R : ℝ => (cn : ℝ≥0∞)⁻¹ * ENNReal.ofReal (K * R ^ (-α + α / 2)))
+        atTop (𝓝 0) := by
+      have h1 : Tendsto (fun R : ℝ => K * R ^ (-α + α / 2)) atTop (𝓝 0) := by
+        simpa using (tendsto_rpow_neg_atTop (show 0 < α - α / 2 by linarith)).const_mul K
+          |>.congr' (by
+            filter_upwards [eventually_gt_atTop 0] with R hR
+            congr 1; ring_nf)
+      have h2 := ENNReal.Tendsto.const_mul (a := (cn : ℝ≥0∞)⁻¹) (ENNReal.tendsto_ofReal h1)
+        (Or.inr (ENNReal.inv_ne_top.2 (by exact_mod_cast hcn.ne')))
+      simpa [ENNReal.ofReal_zero] using h2
+    obtain ⟨R, hR⟩ := eventually_atTop.1 ((hlim.eventually (gt_mem_nhds hε)).and
+      (eventually_ge_atTop 1))
+    refine ⟨Metric.closedBall 0 R, isCompact_closedBall 0 R, ?_⟩
+    rintro _ ⟨μ, ⟨n, rfl⟩, rfl⟩
+    have hcompl : (Metric.closedBall (0 : E) R)ᶜ = {y | R < ‖y‖} := by
+      ext y; simp
+    rw [hcompl]
+    exact (hQle n R (hR R le_rfl).2).trans (hR R le_rfl).1.le
+  have hcomp : IsCompact (Icc cn Cn ×ˢ closure (range Q)) :=
+    isCompact_Icc.prod (isCompact_closure_of_isTightMeasureSet htight)
+  have hmem : ∀ n, ((π n).mass, Q n) ∈ Icc cn Cn ×ˢ closure (range Q) := fun n =>
+    ⟨⟨hmass_ge n, hmass_le n⟩, subset_closure ⟨n, rfl⟩⟩
+  obtain ⟨⟨m, Qlim⟩, hmQ, ψ, hψ, hlim⟩ := hcomp.tendsto_subseq hmem
+  have hm_lim : Tendsto (fun n => (π (ψ n)).mass) atTop (𝓝 m) :=
+    ((continuous_fst.tendsto _).comp hlim)
+  have hQ_lim : Tendsto (fun n => Q (ψ n)) atTop (𝓝 Qlim) :=
+    ((continuous_snd.tendsto _).comp hlim)
+  set ρ : Measure E := m • (Qlim : Measure E)
+  set μ : Measure E :=
+    (ρ.restrict {0}ᶜ).withDensity fun y => ENNReal.ofReal (weight α y)⁻¹
+  refine ⟨fun n => ψ n + N, μ, hψ.add_const N, ?_, ?_, ?_⟩
+  · rw [withDensity_apply _ (measurableSet_singleton 0), Measure.restrict_restrict
+      (measurableSet_singleton 0), inter_compl_self, Measure.restrict_empty, lintegral_zero_measure]
+  · intro r hr
+    have hm : MeasurableSet {y : E | r < ‖y‖} :=
+      measurableSet_lt measurable_const continuous_norm.measurable
+    rw [withDensity_apply _ hm]
+    have hb : ∀ y ∈ {y : E | r < ‖y‖},
+        ENNReal.ofReal (weight α y)⁻¹ ≤ ENNReal.ofReal ((min 1 r ^ (2 * α))⁻¹) := fun y hy => by
+      refine ENNReal.ofReal_le_ofReal (inv_anti₀ (Real.rpow_pos_of_pos (lt_min one_pos hr) _) ?_)
+      exact Real.rpow_le_rpow (lt_min one_pos hr).le (min_le_min le_rfl (le_of_lt hy))
+        (by positivity)
+    calc ∫⁻ y in {y | r < ‖y‖}, ENNReal.ofReal (weight α y)⁻¹ ∂ρ.restrict {0}ᶜ
+        ≤ ∫⁻ _ in {y | r < ‖y‖}, ENNReal.ofReal ((min 1 r ^ (2 * α))⁻¹) ∂ρ.restrict {0}ᶜ :=
+          setLIntegral_mono measurable_const hb
+      _ < ∞ := by
+          rw [setLIntegral_const]
+          exact ENNReal.mul_lt_top ENNReal.ofReal_lt_top (measure_lt_top _ _)
+  · intro f hf
+    obtain ⟨h, hwh, hhw, h0⟩ := exists_bcf_div_weight hα f hf
+    have hseq : ∀ n, ∫ y, f y ∂scaledLaw P X V (u (ψ n + N)) =
+        (π (ψ n)).mass * ∫ y, h y ∂(Q (ψ n) : Measure E) := fun n => by
+      have e1 : ∫ y, f y ∂scaledLaw P X V (u (ψ n + N)) =
+          ∫ y, h y ∂(π (ψ n) : Measure E) := by
+        rw [hπ, integral_weightedLaw]
+        simp_rw [hwh]
+        rfl
+      rw [e1]
+      conv_lhs => rw [FiniteMeasure.self_eq_mass_smul_normalize (π (ψ n))]
+      rw [FiniteMeasure.toMeasure_smul, integral_smul_nnreal_measure, NNReal.smul_def,
+        smul_eq_mul]
+      rfl
+    have hlimit : ∫ y, f y ∂μ = m * ∫ y, h y ∂(Qlim : Measure E) := by
+      have hmeas : Measurable fun y : E => ((weight α y)⁻¹).toNNReal :=
+        ((continuous_weight hα).measurable.inv).real_toNNReal
+      rw [show μ = (ρ.restrict {0}ᶜ).withDensity
+          (fun y => (((weight α y)⁻¹).toNNReal : ℝ≥0∞)) from rfl,
+        integral_withDensity_eq_integral_smul hmeas]
+      have e2 : ∫ y in {0}ᶜ, ((weight α y)⁻¹).toNNReal • f y ∂ρ = ∫ y in {0}ᶜ, h y ∂ρ := by
+        refine setIntegral_congr_fun (measurableSet_singleton 0).compl fun y hy => ?_
+        rw [NNReal.smul_def, Real.coe_toNNReal _ (inv_nonneg.2 (weight_nonneg α y)), smul_eq_mul,
+          hhw y hy]
+      rw [e2, setIntegral_eq_integral_of_forall_compl_eq_zero fun y hy => by
+        simp only [mem_compl_iff, mem_singleton_iff, not_not] at hy
+        rw [hy, h0]]
+      rw [integral_smul_nnreal_measure, NNReal.smul_def, smul_eq_mul]
+    rw [hlimit]
+    refine (((NNReal.continuous_coe.tendsto _).comp hm_lim).mul ?_).congr fun n => (hseq n).symm
+    exact (ProbabilityMeasure.tendsto_iff_forall_integral_tendsto.1 hQ_lim) h
 
 end Converse
 
