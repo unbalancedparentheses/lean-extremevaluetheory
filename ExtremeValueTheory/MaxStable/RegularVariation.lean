@@ -336,4 +336,286 @@ theorem measureReal_exceedSet [IsFiniteMeasure H] (hH : ∀ᵐ w ∂H, ⨆ i, w 
 
 end Tails
 
+/-! ### The exponent measure in real coordinates and the scaled laws -/
+
+section Exponent
+
+variable [Fintype ι] {H : Measure (ι → ℝ≥0∞)}
+
+/-- The closed nonnegative orthant of `ℝ^ι`. -/
+def posOrthant : Set (ι → ℝ) := {y | ∀ i, 0 ≤ y i}
+
+lemma measurableSet_posOrthant : MeasurableSet (posOrthant (ι := ι)) := by
+  have : posOrthant (ι := ι) = ⋂ i, {y | 0 ≤ y i} := by ext; simp [posOrthant]
+  rw [this]
+  exact MeasurableSet.iInter fun i ↦ measurableSet_le measurable_const (measurable_pi_apply i)
+
+/-- The exponent measure `ν_H` of a spectral measure, in real coordinates. -/
+noncomputable def spectralExponentMeasureReal (H : Measure (ι → ℝ≥0∞)) : Measure (ι → ℝ) :=
+  (spectralExponentMeasure H).map toRealVec
+
+lemma measurableSet_forall_ne_top : MeasurableSet {x : ι → ℝ≥0∞ | ∀ i, x i ≠ ∞} := by
+  have : {x : ι → ℝ≥0∞ | ∀ i, x i ≠ ∞} = ⋂ i, (fun x : ι → ℝ≥0∞ ↦ x i) ⁻¹' {∞}ᶜ := by
+    ext; simp
+  rw [this]
+  exact MeasurableSet.iInter fun i ↦ (measurableSet_singleton ∞).compl.preimage
+    (measurable_pi_apply i)
+
+lemma ae_spectralExponentMeasure_ne_top [SFinite H] (hH : ∀ᵐ w ∂H, ∀ i, w i ≠ ∞) :
+    ∀ᵐ x ∂spectralExponentMeasure H, ∀ i, x i ≠ ∞ := by
+  rw [spectralExponentMeasure, ae_map_iff measurable_coneMap.aemeasurable
+    measurableSet_forall_ne_top]
+  filter_upwards [Measure.quasiMeasurePreserving_snd.ae hH] with p hp i
+  exact ENNReal.mul_ne_top ENNReal.ofReal_ne_top (hp i)
+
+lemma map_ofRealVec_spectralExponentMeasureReal [SFinite H] (hH : ∀ᵐ w ∂H, ∀ i, w i ≠ ∞) :
+    (spectralExponentMeasureReal H).map ofRealVec = spectralExponentMeasure H := by
+  rw [spectralExponentMeasureReal, Measure.map_map measurable_ofRealVec measurable_toRealVec]
+  conv_rhs => rw [← Measure.map_id (μ := spectralExponentMeasure H)]
+  exact Measure.map_congr ((ae_spectralExponentMeasure_ne_top hH).mono fun x hx ↦
+    ofRealVec_toRealVec hx)
+
+lemma spectralExponentMeasureReal_preimage [SFinite H] (hH : ∀ᵐ w ∂H, ∀ i, w i ≠ ∞)
+    {A : Set (ι → ℝ≥0∞)} (hA : MeasurableSet A) :
+    spectralExponentMeasureReal H (ofRealVec ⁻¹' A) = spectralExponentMeasure H A := by
+  rw [← Measure.map_apply measurable_ofRealVec hA, map_ofRealVec_spectralExponentMeasureReal hH]
+
+lemma spectralExponentMeasureReal_compl_posOrthant :
+    spectralExponentMeasureReal H posOrthantᶜ = 0 := by
+  rw [spectralExponentMeasureReal, Measure.map_apply measurable_toRealVec
+    measurableSet_posOrthant.compl]
+  convert measure_empty (μ := spectralExponentMeasure H)
+  ext x
+  simp [posOrthant, toRealVec]
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} {X : Ω → ι → ℝ}
+
+/-- The scaled law `x P(X / x ∈ ·)`. -/
+noncomputable def scaledLaw (P : Measure Ω) (X : Ω → ι → ℝ) (x : ℝ) : Measure (ι → ℝ) :=
+  ENNReal.ofReal x • P.map fun ω ↦ x⁻¹ • X ω
+
+instance [IsFiniteMeasure P] (x : ℝ) : IsFiniteMeasure (scaledLaw P X x) :=
+  ⟨by
+    rw [scaledLaw, Measure.smul_apply, smul_eq_mul]
+    exact ENNReal.mul_lt_top ENNReal.ofReal_lt_top (measure_lt_top _ _)⟩
+
+lemma scaledLaw_apply (hX : Measurable X) (x : ℝ) {A : Set (ι → ℝ)} (hA : MeasurableSet A) :
+    scaledLaw P X x A = ENNReal.ofReal x * P {ω | x⁻¹ • X ω ∈ A} := by
+  have hXs : Measurable fun ω ↦ x⁻¹ • X ω := hX.const_smul x⁻¹
+  rw [scaledLaw, Measure.smul_apply, Measure.map_apply hXs hA, smul_eq_mul]
+  rfl
+
+lemma scaledLaw_real_preimage (hX : Measurable X) {x : ℝ} (hx : 0 ≤ x) {A : Set (ι → ℝ≥0∞)}
+    (hA : MeasurableSet A) :
+    (scaledLaw P X x).real (ofRealVec ⁻¹' A) = x * P.real {ω | ofRealVec (x⁻¹ • X ω) ∈ A} := by
+  rw [measureReal_def, scaledLaw_apply hX x (measurable_ofRealVec hA), ENNReal.toReal_mul,
+    ENNReal.toReal_ofReal hx]
+  rfl
+
+lemma scaledLaw_compl_posOrthant (hX : Measurable X) (h : IsSimpleMaxStable (P.map X)) {x : ℝ}
+    (hx : 0 < x) : scaledLaw P X x posOrthantᶜ = 0 := by
+  rw [scaledLaw_apply hX x measurableSet_posOrthant.compl]
+  have hpos := ae_of_ae_map hX.aemeasurable h.ae_forall_pos
+  have : P {ω | x⁻¹ • X ω ∈ posOrthantᶜ} = 0 := by
+    rw [measure_eq_zero_iff_ae_notMem]
+    filter_upwards [hpos] with ω hω
+    simp only [mem_ofPred_eq, mem_compl_iff, posOrthant, Pi.smul_apply, smul_eq_mul, not_not]
+    exact fun i ↦ mul_nonneg (inv_nonneg.2 hx.le) (hω i).le
+  rw [this, mul_zero]
+
+variable [IsProbabilityMeasure P] (hX : Measurable X) (hS : HasSpectralMeasure (P.map X) H)
+include hX hS
+
+/-- **The scaled laws converge on lower-orthant complements**:
+`x P(∃ i, X i / x > d i) → ν_H {x | ∃ i, x i > d i}`. -/
+theorem tendsto_scaledLaw_exceedSet [IsFiniteMeasure H] (hH : ∀ᵐ w ∂H, ⨆ i, w i = 1)
+    {d : ι → ℝ≥0∞} (hd0 : ∀ i, d i ≠ 0) :
+    Tendsto (fun x ↦ ((scaledLaw P X x).map ofRealVec).real (exceedSet d)) atTop
+      (𝓝 ((spectralExponentMeasure H).real (exceedSet d))) := by
+  rw [measureReal_def, spectralExponentMeasure_exceedSet hd0]
+  refine (tendsto_mul_one_sub_exp ENNReal.toReal_nonneg).congr' ?_
+  filter_upwards [eventually_gt_atTop 0] with x hx
+  rw [map_measureReal_apply measurable_ofRealVec (measurableSet_exceedSet d),
+    scaledLaw_real_preimage hX hx.le (measurableSet_exceedSet d),
+    measureReal_exceedSet hX hS hH hx hd0]
+
+end Exponent
+
+/-! ### Open sets are exhausted by rational boxes -/
+
+section Geometry
+
+/-- The box with rational lower corner `p.1` and upper corner `p.2` (lower coordinates `≤ 0` are
+unconstrained), intersected with `{x | ∃ i, δ i < x i}`. -/
+noncomputable def ratBox (δ : ι → ℝ≥0∞) (p : (ι → ℚ) × (ι → ℚ)) : Set (ι → ℝ≥0∞) :=
+  boxSet δ (fun i ↦ ENNReal.ofReal (p.1 i)) (fun i ↦ ENNReal.ofReal (p.2 i))
+
+variable [Fintype ι]
+
+/-- Every point of an open set `G` in the nonnegative orthant lies in a rational box whose trace on
+the orthant is contained in `G`. -/
+lemma exists_ratBox {G : Set (ι → ℝ)} (hG : IsOpen G) (δ : ι → ℝ≥0∞) {y : ι → ℝ} (hyG : y ∈ G)
+    (hyQ : y ∈ posOrthant) (hyO : ofRealVec y ∈ exceedSet δ) :
+    ∃ p : (ι → ℚ) × (ι → ℚ), (∀ i, 0 < (p.2 i : ℝ)) ∧ ofRealVec y ∈ ratBox δ p ∧
+      ∀ z ∈ posOrthant, ofRealVec z ∈ ratBox δ p → z ∈ G := by
+  obtain ⟨ε, hε, hball⟩ := Metric.isOpen_iff.1 hG y hyG
+  choose q₁ hq₁ using fun i ↦ exists_rat_btwn (show y i - ε / 2 < y i by linarith)
+  choose q₂ hq₂ using fun i ↦ exists_rat_btwn (show y i < y i + ε / 2 by linarith)
+  have hq₂pos : ∀ i, 0 < (q₂ i : ℝ) := fun i ↦ (hyQ i).trans_lt (hq₂ i).1
+  refine ⟨(q₁, q₂), hq₂pos, ⟨⟨fun i hi ↦ ?_, fun i ↦ ?_⟩, hyO⟩, ?_⟩
+  · have hq : 0 < (q₁ i : ℝ) := ENNReal.ofReal_pos.1 (pos_iff_ne_zero.2 hi)
+    exact (ENNReal.ofReal_lt_ofReal_iff (hq.trans (hq₁ i).2)).2 (hq₁ i).2
+  · exact ENNReal.ofReal_le_ofReal (hq₂ i).1.le
+  · rintro z hzQ ⟨⟨hzU, hzL⟩, -⟩
+    apply hball
+    rw [Metric.mem_ball, dist_pi_lt_iff hε]
+    intro i
+    rw [Real.dist_eq, abs_lt]
+    have hup : z i ≤ q₂ i := (ENNReal.ofReal_le_ofReal_iff (hq₂pos i).le).1 (hzL i)
+    have hlow : (q₁ i : ℝ) ≤ z i := by
+      by_cases hq : 0 < (q₁ i : ℝ)
+      · exact (ENNReal.ofReal_lt_ofReal_iff'.1 (hzU i (ENNReal.ofReal_pos.2 hq).ne')).1.le
+      · exact (not_lt.1 hq).trans (hzQ i)
+    constructor <;> linarith [(hq₁ i).1, (hq₂ i).2]
+
+end Geometry
+
+/-! ### Weak convergence of the scaled laws -/
+
+section Weak
+
+variable [Fintype ι] {H : Measure (ι → ℝ≥0∞)} [IsFiniteMeasure H]
+  {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+  {X : Ω → ι → ℝ}
+
+/-- `b⁻¹ a = (a / b)` as a real ratio, for `a ≤ b < ∞`. -/
+lemma inv_mul_eq_ofReal_div {a b : ℝ≥0∞} (hab : a ≤ b) (hb : b ≠ ∞) :
+    b⁻¹ * a = ENNReal.ofReal (a.toReal / b.toReal) := by
+  rcases eq_or_ne b 0 with rfl | hb0
+  · simp [nonpos_iff_eq_zero.1 hab]
+  rw [ENNReal.ofReal_div_of_pos (ENNReal.toReal_pos hb0 hb),
+    ENNReal.ofReal_toReal (ne_top_of_le_ne_top hb hab), ENNReal.ofReal_toReal hb, div_eq_mul_inv,
+    mul_comm]
+
+variable (hX : Measurable X) (hS : HasSpectralMeasure (P.map X) H)
+  (h : IsSimpleMaxStable (P.map X)) (hH : ∀ᵐ w ∂H, ⨆ i, w i = 1)
+include hX hS h hH
+
+/-- **The liminf condition on open sets** for the scaled laws conditioned on
+`O = {x | ∃ i, δ i < x i}`: `ν_H(G | O) ≤ liminf_x P(X / x ∈ G | X / x ∈ O)`. -/
+theorem le_liminf_cond_scaledLaw {δ : ι → ℝ≥0∞} (hδ : ∀ i, δ i ≠ 0) {G : Set (ι → ℝ)}
+    (hG : IsOpen G) :
+    (spectralExponentMeasureReal H (ofRealVec ⁻¹' exceedSet δ))⁻¹ *
+        spectralExponentMeasureReal H (ofRealVec ⁻¹' exceedSet δ ∩ G) ≤
+      liminf (fun x ↦ (scaledLaw P X x (ofRealVec ⁻¹' exceedSet δ))⁻¹ *
+        scaledLaw P X x (ofRealVec ⁻¹' exceedSet δ ∩ G)) atTop := by
+  have hle := ae_le_one_of_ae_iSup_eq_one hH
+  have hnt := ae_ne_top_of_ae_le_one hle
+  set ν := spectralExponentMeasure H with hν
+  set νE := spectralExponentMeasureReal H with hνE
+  set O := ofRealVec ⁻¹' exceedSet δ with hO
+  have hνfin : ∀ d : ι → ℝ≥0∞, (∀ i, d i ≠ 0) → ν (exceedSet d) ≠ ∞ :=
+    fun d hd ↦ spectralExponentMeasure_exceedSet_ne_top hle hd
+  have hνEO : νE O ≠ ∞ := by
+    rw [hO, spectralExponentMeasureReal_preimage hnt (measurableSet_exceedSet δ)]
+    exact hνfin δ hδ
+  rcases eq_or_ne (νE O) 0 with h0 | hνEO0'
+  · rw [measure_mono_null inter_subset_left h0, mul_zero]
+    exact zero_le
+  have hνEO0 : νE.real O ≠ 0 := (ENNReal.toReal_pos hνEO0' hνEO).ne'
+  -- the countable family of rational boxes inside `G`
+  set T : Set ((ι → ℚ) × (ι → ℚ)) := {p | (∀ i, 0 < (p.2 i : ℝ)) ∧
+    ∀ z ∈ posOrthant, ofRealVec z ∈ ratBox δ p → z ∈ G} with hT
+  have hcover : ∀ y ∈ O ∩ G, y ∈ posOrthant → ∃ p ∈ T, ofRealVec y ∈ ratBox δ p := by
+    rintro y ⟨hyO, hyG⟩ hyQ
+    obtain ⟨p, hp, hyp, hpG⟩ := exists_ratBox hG δ hyG hyQ hyO
+    exact ⟨p, ⟨hp, hpG⟩, hyp⟩
+  rcases T.eq_empty_or_nonempty with hTe | hTne
+  · have : νE (O ∩ G) = 0 := by
+      refine measure_mono_null (t := posOrthantᶜ) ?_ spectralExponentMeasureReal_compl_posOrthant
+      intro y hy hyQ
+      obtain ⟨p, hp, -⟩ := hcover y hy hyQ
+      rw [hTe] at hp
+      exact hp
+    rw [this, mul_zero]
+    exact zero_le
+  obtain ⟨e, he⟩ := (Set.to_countable T).exists_eq_range hTne
+  have heT : ∀ k, e k ∈ T := fun k ↦ he ▸ mem_range_self k
+  set s : ℕ → (ι → ℝ≥0∞) × (ι → ℝ≥0∞) :=
+    fun k ↦ (fun i ↦ ENNReal.ofReal ((e k).1 i), fun i ↦ ENNReal.ofReal ((e k).2 i)) with hs_def
+  have hs : ∀ k i, (s k).2 i ≠ 0 := fun k i ↦ (ENNReal.ofReal_pos.2 ((heT k).1 i)).ne'
+  set F : ℕ → Set (ι → ℝ≥0∞) := fun n ↦ ⋃ k ∈ Finset.range n, boxSet δ (s k).1 (s k).2
+    with hF
+  have hFm : ∀ n, MeasurableSet (F n) := fun n ↦
+    Finset.measurableSet_biUnion _ fun k _ ↦ measurableSet_boxSet _ _ _
+  set FE : ℕ → Set (ι → ℝ) := fun n ↦ ofRealVec ⁻¹' F n with hFE
+  have hFEm : ∀ n, MeasurableSet (FE n) := fun n ↦ measurable_ofRealVec (hFm n)
+  have hFE_O : ∀ n, FE n ⊆ O := fun n y hy ↦ by
+    simp only [hFE, hF, mem_preimage, mem_iUnion] at hy
+    obtain ⟨k, -, hk⟩ := hy
+    exact hk.2
+  have hFE_G : ∀ n, FE n ∩ posOrthant ⊆ O ∩ G := fun n y ⟨hy, hyQ⟩ ↦ by
+    refine ⟨hFE_O n hy, ?_⟩
+    simp only [hFE, hF, mem_preimage, mem_iUnion] at hy
+    obtain ⟨k, -, hk⟩ := hy
+    exact (heT k).2 y hyQ hk
+  have hmono : Monotone fun n ↦ FE n ∩ posOrthant := by
+    intro m n hmn y ⟨hy, hyQ⟩
+    refine ⟨?_, hyQ⟩
+    simp only [hFE, hF, mem_preimage, mem_iUnion, Finset.mem_range] at hy ⊢
+    obtain ⟨k, hk, hk'⟩ := hy
+    exact ⟨k, hk.trans_le hmn, hk'⟩
+  have hunion : ⋃ n, FE n ∩ posOrthant = O ∩ G ∩ posOrthant := by
+    refine subset_antisymm (iUnion_subset fun n ↦ subset_inter (hFE_G n) inter_subset_right) ?_
+    rintro y ⟨hy, hyQ⟩
+    obtain ⟨p, hp, hyp⟩ := hcover y hy hyQ
+    obtain ⟨k, rfl⟩ := he ▸ hp
+    refine mem_iUnion.2 ⟨k + 1, ?_, hyQ⟩
+    simp only [hFE, hF, mem_preimage, mem_iUnion]
+    exact ⟨k, Finset.mem_range.2 k.lt_succ_self, hyp⟩
+  have hνsup : νE (O ∩ G) = ⨆ n, νE (FE n) := by
+    rw [← measure_inter_conull (t := posOrthant) (by
+      simpa using spectralExponentMeasureReal_compl_posOrthant (H := H)), ← hunion,
+      hmono.measure_iUnion]
+    exact iSup_congr fun n ↦ measure_inter_conull (by
+      simpa using spectralExponentMeasureReal_compl_posOrthant (H := H))
+  rw [hνsup, ENNReal.mul_iSup]
+  refine iSup_le fun n ↦ ?_
+  -- convergence of the conditional mass of `FE n`
+  set μs : ℝ → Measure (ι → ℝ≥0∞) := fun x ↦ (scaledLaw P X x).map ofRealVec with hμs
+  have hμsfin : ∀ x (d : ι → ℝ≥0∞), (∀ i, d i ≠ 0) → μs x (exceedSet d) ≠ ∞ :=
+    fun x d _ ↦ measure_ne_top _ _
+  have hconv := fun d hd ↦ tendsto_scaledLaw_exceedSet hX hS hH (d := d) hd
+  have hR1 : Tendsto (fun x ↦ (scaledLaw P X x).real (FE n)) atTop (𝓝 (νE.real (FE n))) := by
+    have hlim : νE.real (FE n) = ν.real (F n) := by
+      rw [measureReal_def, measureReal_def, hFE, spectralExponentMeasureReal_preimage hnt (hFm n)]
+    rw [hlim]
+    refine (tendsto_measureReal_iUnion_boxSet (μs := μs) hμsfin hνfin hconv hδ s hs n).congr
+      fun x ↦ ?_
+    simp only [hμs]
+    exact map_measureReal_apply measurable_ofRealVec (hFm n)
+  have hR2 : Tendsto (fun x ↦ (scaledLaw P X x).real O) atTop (𝓝 (νE.real O)) := by
+    have hlim : νE.real O = ν.real (exceedSet δ) := by
+      rw [measureReal_def, measureReal_def, hO,
+        spectralExponentMeasureReal_preimage hnt (measurableSet_exceedSet δ)]
+    rw [hlim]
+    refine (hconv δ hδ).congr fun x ↦ ?_
+    exact map_measureReal_apply measurable_ofRealVec (measurableSet_exceedSet δ)
+
+  have htend : Tendsto (fun x ↦ (scaledLaw P X x O)⁻¹ * scaledLaw P X x (FE n)) atTop
+      (𝓝 ((νE O)⁻¹ * νE (FE n))) := by
+    rw [inv_mul_eq_ofReal_div (measure_mono (hFE_O n)) hνEO]
+    refine (ENNReal.tendsto_ofReal (hR1.div hR2 hνEO0)).congr fun x ↦ ?_
+    rw [inv_mul_eq_ofReal_div (measure_mono (hFE_O n)) (measure_ne_top _ _)]
+    rfl
+  rw [← htend.liminf_eq]
+  refine liminf_le_liminf ?_
+  filter_upwards [eventually_gt_atTop 0] with x hx
+  refine mul_le_mul_of_nonneg_left ?_ zero_le
+  calc scaledLaw P X x (FE n) = scaledLaw P X x (FE n ∩ posOrthant) :=
+        (measure_inter_conull (by simpa using scaledLaw_compl_posOrthant hX h hx)).symm
+    _ ≤ _ := measure_mono (hFE_G n)
+
+end Weak
+
 end ExtremeValueTheory
