@@ -937,4 +937,117 @@ theorem lintegral_lintegral_tailEmpiricalProcess_div_le (hU : ∀ i, Measurable 
 
 end Moments
 
+/-! ### The remainder is negligible -/
+
+section Remainder
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+  {U : ℕ → Ω → ℝ}
+
+omit [IsProbabilityMeasure P] in
+lemma measure_exists_one_le_eq_zero (hU : ∀ i, Measurable (U i))
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1)) (n : ℕ) :
+    P {ω | ∃ i < n, 1 ≤ U i ω} = 0 := by
+  have hnull (i : ℕ) : P {ω | 1 ≤ U i ω} = 0 := by
+    have h := measureReal_uniform_Ici (x := 0) le_rfl zero_le_one
+    rw [sub_zero, measureReal_eq_zero_iff] at h
+    rw [show {ω | 1 ≤ U i ω} = U i ⁻¹' Set.Ici 1 from rfl, ← Measure.map_apply (hU i)
+      measurableSet_Ici, hlaw i]
+    exact h
+  refine measure_mono_null (fun ω hω ↦ ?_) ((measure_biUnion_null_iff
+    (Finset.range n).countable_toSet).2 fun i _ ↦ hnull i)
+  obtain ⟨i, hi, h⟩ := hω
+  exact Set.mem_biUnion (Finset.mem_coe.2 (Finset.mem_range.2 hi)) h
+
+lemma measureReal_le_abs_tailEmpiricalProcess_le (hU : ∀ i, Measurable (U i))
+    (hind : iIndepFun U P) (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1)) {n k : ℕ}
+    (hn : 0 < n) (hk : 0 < k) {t : ℝ} (ht : 0 ≤ t) (htp : (k : ℝ) / n * t ≤ 1) {a : ℝ}
+    (ha : 0 < a) :
+    P.real {ω | a ≤ |tailEmpiricalProcess U n k t ω|} ≤ t / a ^ 2 :=
+  (measureReal_le_abs_le_integral_sq_div (integrable_tailEmpiricalProcess_pow hU n k t 2) ha).trans
+    (div_le_div_of_nonneg_right (integral_tailEmpiricalProcess_sq_le hU hind hlaw hn hk ht htp)
+      (sq_nonneg _))
+
+lemma measureReal_ofReal_le_lintegral_le (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1)) {n k : ℕ}
+    (hn : 0 < n) (hk : 0 < k) {ε : ℝ} (hε : 0 ≤ ε) (hεp : (k : ℝ) / n * ε ≤ 1) {lam : ℝ}
+    (hlam : 0 < lam) :
+    P.real {ω | ENNReal.ofReal lam ≤
+      ∫⁻ t in Set.Ioc 0 ε, ‖tailEmpiricalProcess U n k t ω / t‖ₑ} ≤ 2 * √ε / lam := by
+  have hm : Measurable fun ω ↦ ∫⁻ t in Set.Ioc 0 ε, ‖tailEmpiricalProcess U n k t ω / t‖ₑ :=
+    Measurable.lintegral_prod_right' (f := fun q : Ω × ℝ ↦ ‖tailEmpiricalProcess U n k q.2 q.1 /
+      q.2‖ₑ) ((measurable_tailEmpiricalProcess_uncurry hU n k).div measurable_snd).enorm
+  have h := meas_ge_le_lintegral_div hm.aemeasurable (ENNReal.ofReal_pos.2 hlam).ne'
+    ENNReal.ofReal_ne_top (μ := P)
+  refine ENNReal.toReal_le_of_le_ofReal (by positivity) (h.trans ?_)
+  rw [ENNReal.ofReal_div_of_pos hlam]
+  exact ENNReal.div_le_div_right
+    (lintegral_lintegral_tailEmpiricalProcess_div_le hU hind hlaw hn hk hε hεp) _
+
+/-- The oscillation of `W_n` on `[1 - δ, 1 + δ]` is small, up to a term `O(δ²)`. -/
+lemma eventually_measureReal_osc_le (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1)) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0))
+    {δ lam θ : ℝ} (hδ0 : 0 < δ) (hδ1 : δ ≤ 1 / 2) (hlam : 0 < lam) (hθ : 0 < θ) :
+    ∀ᶠ n in atTop, P.real {ω | ∃ u ∈ Set.Icc (1 - δ) (1 - δ + 2 * δ),
+      2 * lam < |tailEmpiricalProcess U n (k n) u ω - tailEmpiricalProcess U n (k n) (1 - δ) ω|} ≤
+      8 ^ 4 / lam ^ 4 * (84 * (2 * δ) ^ 2) + θ := by
+  set C : ℝ := 8 ^ 4 / lam ^ 4 with hC
+  have hC0 : 0 < C := by positivity
+  have hq (n : ℕ) : ∃ q : ℕ, √(k n : ℝ) * (2 * δ) / lam ≤ 2 ^ q ∧
+      (2 : ℝ) ^ q ≤ 2 * (1 + √(k n : ℝ) * (2 * δ) / lam) := by
+    obtain ⟨q₀, h1, h2⟩ := exists_nat_pow_near (le_max_left 1 (√(k n : ℝ) * (2 * δ) / lam))
+      (one_lt_two : (1 : ℝ) < 2)
+    refine ⟨q₀ + 1, (le_max_right _ _).trans h2.le, ?_⟩
+    rw [pow_succ]
+    have : max 1 (√(k n : ℝ) * (2 * δ) / lam) ≤ 1 + √(k n : ℝ) * (2 * δ) / lam :=
+      max_le (by linarith [show 0 ≤ √(k n : ℝ) * (2 * δ) / lam by positivity]) (by linarith)
+    linarith
+  choose q hq1 hq2 using hq
+  have hkR : Tendsto (fun n ↦ (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hsmall : Tendsto (fun n ↦ C * (8 * (1 + √(k n : ℝ) * (2 * δ) / lam) * (2 * δ) / k n))
+      atTop (𝓝 0) := by
+    have h1 : Tendsto (fun n ↦ (k n : ℝ)⁻¹) atTop (𝓝 0) := tendsto_inv_atTop_zero.comp hkR
+    have h2 : Tendsto (fun n ↦ (√(k n : ℝ))⁻¹) atTop (𝓝 0) :=
+      tendsto_inv_atTop_zero.comp (Real.tendsto_sqrt_atTop.comp hkR)
+    have h3 : Tendsto (fun n ↦ C * (8 * (2 * δ) * ((k n : ℝ)⁻¹ +
+        (√(k n : ℝ))⁻¹ * (2 * δ) / lam))) atTop
+        (𝓝 (C * (8 * (2 * δ) * (0 + 0 * (2 * δ) / lam)))) :=
+      ((h1.add ((h2.mul_const _).div_const _)).const_mul _).const_mul _
+    simp only [zero_mul, zero_div, add_zero, mul_zero] at h3
+    refine h3.congr' ?_
+    filter_upwards [hk.eventually_gt_atTop 0] with n hn
+    have hk' : (0 : ℝ) < k n := Nat.cast_pos.2 hn
+    have hs : √(k n : ℝ) * √(k n : ℝ) = k n := Real.mul_self_sqrt hk'.le
+    have hs0 : √(k n : ℝ) ≠ 0 := (Real.sqrt_pos.2 hk').ne'
+    field_simp
+    linear_combination (-(2 * δ)) * hs
+  have hkn1 : ∀ᶠ n in atTop, (k n : ℝ) / n ≤ 1 / 2 :=
+    hkn.eventually (ge_mem_nhds (by norm_num))
+  filter_upwards [hsmall.eventually (ge_mem_nhds hθ), hkn1, eventually_gt_atTop 0,
+    hk.eventually_gt_atTop 0] with n hn hkn' hn0 hk0
+  have hqn : √(k n : ℝ) * (2 * δ / 2 ^ q n) ≤ lam := by
+    have h1 := hq1 n
+    rw [div_le_iff₀ hlam] at h1
+    rw [mul_div_assoc', div_le_iff₀ (by positivity)]
+    linarith
+  have hp : (k n : ℝ) / n * (1 - δ + 2 * δ) ≤ 1 := by
+    have : 1 - δ + 2 * δ ≤ 3 / 2 := by linarith
+    have h0 : (0 : ℝ) ≤ k n / n := by positivity
+    nlinarith
+  have hPE := measureReal_exists_abs_tailEmpiricalProcess_sub_gt_le hU hind hlaw hn0.ne'
+    (a := 1 - δ) (L := 2 * δ) (by linarith) (by linarith) hp hlam (q n) hqn
+  refine hPE.trans ?_
+  rw [mul_add]
+  have h2 : (2 : ℝ) ^ (q n + 2) * (2 * δ) / k n ≤ 8 * (1 + √(k n : ℝ) * (2 * δ) / lam) *
+      (2 * δ) / k n := by
+    refine div_le_div_of_nonneg_right ?_ (Nat.cast_nonneg _)
+    rw [pow_add]
+    nlinarith [hq2 n]
+  have := (mul_le_mul_of_nonneg_left h2 hC0.le).trans hn
+  rw [← hC]
+  linarith
+
+end Remainder
+
 end ExtremeValueTheory
