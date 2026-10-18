@@ -72,6 +72,31 @@ Progress on P1 (the gap θ < ϑ), 2026-10-17:
   converge to `p + (1−p)e^{−τ}`). So `η = 0` is strictly weaker than anticlustering and does not imply
   that `θ` exists.
 
+### Novelty assessment (literature check, 2026-10-18; full report in [`docs/NOVELTY.md`](docs/NOVELTY.md))
+
+- **`θ ≤ ϑ`: known** (Kulik–Soulier 2020, Lemma 7.5.4, cited by Bai–Kulik–Wang as "always holds"; the
+  argument goes back to O'Brien 1987 and Segers 2006). Our contribution is a machine-checked proof
+  with minimal hypotheses; the exact hypotheses of Lemma 7.5.4 remain unverified.
+- **Gap formula: partly known.** Close to a reformulation of the O'Brien/Segers averaging identity;
+  the named two-sided statement was not found in the literature. The name "escape of mass" is used by
+  Abadi–Freitas–Freitas for a different phenomenon, so ours should be renamed (e.g. "late-return
+  mass") or explicitly distinguished.
+- **Echo process: likely new.** Bai–Wang (2023) know of no other example with `θ < ϑ`; Bai–Kulik–Wang
+  call their model qualitatively different from all known examples. The echo process would be the
+  second mechanism, and the first with a trivial spectral tail process. Still to check: the examples
+  and exercises of Kulik–Soulier (2020) in a physical copy, or with an expert.
+- **Block-length phase transition: type known (Bai–Kulik–Wang, polynomial scale), ours likely new**
+  (logarithmic scale, kink at `c = 1/α`).
+- **Mixture: known** (non-ergodic mixtures; Leadbetter 1983).
+
+**Next opportunity.** A power lag `L(z) = ⌈z^γ⌉`, `γ < α`, is already covered by the Lean echo theorem
+(`θ = 1/2`, `ϑ = 1`). Heuristically, anticlustering then holds exactly for blocks shorter than
+`n^{γ/α}`, which would answer Bai–Kulik–Wang's second open question for every exponent in `(0,1)`.
+Also unformalized: the echo process should be geometrically β-mixing, giving a sharp counterexample
+to "mixing plus a vanishing tail process implies `θ = ϑ`". Recommended write-up: a short arXiv note
+centred on the echo process (title suggestion: "An echo process: a simple regularly varying sequence
+whose extremal index is invisible to its tail process").
+
 ## Open problems
 
 1. **The gap between `θ` and `ϑ`, and phase transitions.** Bai, Kulik, Wang (2024),
