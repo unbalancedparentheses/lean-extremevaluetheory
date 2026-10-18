@@ -215,6 +215,24 @@ junk-value audit ([`Test/JUNK_VALUES.md`](Test/JUNK_VALUES.md)). The audit found
 trivial by a junk value: `HasSpectralMeasure.measure_univ_toReal` held for an infinite measure as
 `0 = 0` (`ENNReal.toReal ∞ = 0`); it now assumes `IsFiniteMeasure H`.
 
+Points the non-vacuity and known-answer tests surfaced (no statement is false; these are scope notes
+for readers):
+
+- **Pointwise sign hypotheses.** The moving-maximum, echo and linear-process theorems and
+  `isRegVarVector_diag` assume `0 ≤ Z t ω` for every `ω`, not almost surely. Satisfiable (take `|Z|`),
+  but formally stronger than the textbook.
+- **Multivariate GPD.** `IsMDAWith.tendsto_conditionalExcessCDF` needs `G(x ∧ 0) > 0`, i.e. mass of the
+  limit below the threshold. It applies with Gumbel-type normalizations (as in Rootzén–Tajvidi) but not
+  to unit-Fréchet-standardized limits, which have no mass on the negative orthant; for those use
+  `IsMDAWith.tendsto_conditionalExcess_tailQuantile`.
+- **Hypotheses only checkable in simple cases.** Hill/Weissman normality need a genuine second-order
+  term (plain Pareto does not qualify); the dependent-data Hill theorem and the intervals estimator were
+  only instantiated with iid data; the Brownian motion required by the tail empirical process theorem is
+  available only through the library's own existence result.
+- **Index conventions.** `orderStat x j` is the `(j+1)`-th largest value, so `hill x k` uses the top
+  `k+1` order statistics and Pickands uses `X_(k+1), X_(2k+1), X_(4k+1)` where EKM writes
+  `X_(k), X_(2k), X_(4k)`. `gpdSurvival` is meaningful only for `ξ ≥ 0` (use `gpdSurvival'` for `ξ < 0`).
+
 ## Independent kernel check
 
 Besides Lean's own kernel at build time, CI re-checks the whole exported environment (the library
