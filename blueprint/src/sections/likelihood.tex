@@ -138,3 +138,38 @@ We follow Smith, \emph{Maximum likelihood estimation in a class of nonregular ca
   An exact integral form of the mean-value expansion, a Lipschitz bound on the Hessian near $\theta_0$ (uses $\xi_0 > 0$), the strong
   law for the averaged observed information, Cram\'er--Wold for the score, and Slutsky.
 \end{proof}
+
+\begin{theorem}[Consistency of the GEV maximum likelihood estimator]
+  \label{thm:gev-mle}
+  \uses{thm:wald-ereal, thm:gpd-gev-density}
+  \lean{ExtremeValueTheory.gevLogDensityE, ExtremeValueTheory.gevLogLikE, ExtremeValueTheory.gevDensity_eq_exp, ExtremeValueTheory.continuousAt_gevDensity,
+    ExtremeValueTheory.continuousOn_gevLogDensityE, ExtremeValueTheory.gevLogDensityE_le, ExtremeValueTheory.measure_gevLocScaleCDF_eq_withDensity,
+    ExtremeValueTheory.gev_params_eq_of_measure_eq, ExtremeValueTheory.integral_log_gevLocScaleDensity_lt, ExtremeValueTheory.exists_isMaxOn_gevLogLikE,
+    ExtremeValueTheory.ae_tendsto_gevMLE}
+  \leanok
+  The GEV log-density ($-\infty$ off the support) is continuous in $(\xi, \mu, \sigma)$ on $\{\sigma > 0, \xi > -1\}$, including across
+  $\xi = 0$; the three-parameter family is identifiable; and approximate maximizers of the likelihood over a compact subset
+  of $\{\xi > -1, \sigma > 0\}$ are strongly consistent [Smith 1985], [B\"ucher and Segers 2017].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Write the density as $\exp(-(1+\xi)s - e^{-s})$ with $s = z\log(1+\xi z)/(\xi z)$; the envelope $-\log\sigma + (1+\xi)^2$;
+  identifiability from the derivative of $-\log(-\log F)$ near $\mu$; the extended-real Wald theorem.
+\end{proof}
+
+\begin{theorem}[GEV Fisher information for location and scale]
+  \label{thm:gev-fisher}
+  \uses{thm:gev-mle, thm:gev-moments}
+  \lean{ExtremeValueTheory.gevScoreMu, ExtremeValueTheory.gevScoreSigma, ExtremeValueTheory.integral_gevPoly, ExtremeValueTheory.gevFisherInfoMuSigma,
+    ExtremeValueTheory.integral_lin_gevScore_sq, ExtremeValueTheory.Gamma_one_add_sq_lt, ExtremeValueTheory.posDef_gevFisherInfoMuSigma,
+    ExtremeValueTheory.tendstoInDistribution_gevScoreVec, ExtremeValueTheory.tendstoInDistribution_lin_gevScore}
+  \leanok
+  For known shape $\xi > -1/2$, $\xi \ne 0$, with $p = (1+\xi)^2\Gamma(1+2\xi)$: $I_{\mu\mu} = p/\sigma^2$,
+  $I_{\mu\sigma} = (\Gamma(2+\xi) - p)/(\xi\sigma^2)$, $I_{\sigma\sigma} = (1 - 2\Gamma(2+\xi) + p)/(\xi^2\sigma^2)$ [Prescott and Walden 1980];
+  this matrix is positive definite and the normalized $(\mu, \sigma)$ score is asymptotically $N(0, I)$. The shape row (which
+  involves digamma values), the Gumbel case, and joint normality of the GEV MLE are not formalized.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Moments $\E[T^k (T^\xi)^j] = \Gamma(k + j\xi + 1)$ for $T$ standard exponential; $\Gamma(1+\xi)^2 < \Gamma(1+2\xi)$; Cram\'er--Wold.
+\end{proof}
