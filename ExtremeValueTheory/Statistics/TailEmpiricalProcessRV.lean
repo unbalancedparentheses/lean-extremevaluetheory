@@ -288,18 +288,12 @@ lemma measurable_hillSummand (n k : ℕ) (ε : ℝ) : Measurable (hillSummand n 
   exact ((((measurable_logTruncExcess _ ε).comp (measurable_const.sub measurable_id)).add
     measurable_const).const_mul _)
 
-lemma abs_hillSummand_le {n k : ℕ} (hkn : k ≤ n) {ε : ℝ} (hε0 : 0 < ε) (hε1 : ε ≤ 1) (u : ℝ) :
-    |hillSummand n k ε u| ≤ (√(k : ℝ))⁻¹ * (-Real.log ε + 2) := by
+lemma abs_hillSummand_le (n k : ℕ) {ε : ℝ} (hε0 : 0 < ε) (hε1 : ε ≤ 1) (u : ℝ) :
+    |hillSummand n k ε u| ≤ (√(k : ℝ))⁻¹ * (-Real.log ε + 1 + k / n * ε) := by
   unfold hillSummand
   rw [abs_mul, abs_of_nonneg (by positivity)]
   refine mul_le_mul_of_nonneg_left ((abs_add_le _ _).trans ?_) (by positivity)
-  have hp : (k : ℝ) / n ≤ 1 := by
-    rcases Nat.eq_zero_or_pos n with h | h
-    · simp [h]
-    · exact (div_le_one (by exact_mod_cast h)).2 (by exact_mod_cast hkn)
-  have : |(k : ℝ) / n * ε| ≤ 1 := by
-    rw [abs_of_nonneg (by positivity)]
-    nlinarith
+  rw [abs_of_nonneg (show (0 : ℝ) ≤ k / n * ε by positivity)]
   linarith [abs_logTruncExcess_le (p := (k : ℝ) / n) hε0 hε1 (1 - u)]
 
 lemma integral_hillSummand {n k : ℕ} (hk : 0 < k) (hkn : k ≤ n) {ε : ℝ} (hε0 : 0 < ε)
@@ -344,6 +338,109 @@ lemma mul_integral_hillSummand_sq {n k : ℕ} (hk : 0 < k) (hkn : k ≤ n) {ε :
   have hnp : (n : ℝ) * (k : ℝ)⁻¹ * p = 1 := by rw [hpdef]; field_simp
   simp only [smul_eq_mul, sub_zero, one_mul]
   linear_combination (1 + 2 * ε * Real.log ε - p * ε ^ 2) * hnp
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
+
+/-- The truncated Hill functional of the tail empirical process,
+`∫_ε^1 W_n(t) dt / t = k^{-1/2} ∑_{i<n} (logTrunc (k/n) ε (1 - U_i) - (k/n) (1 - ε))`. -/
+lemma integral_tailEmpiricalProcess_div (U : ℕ → Ω → ℝ) (ω : Ω) {n k : ℕ} (hn : 0 < n)
+    (hk : 0 < k) {ε : ℝ} (hε0 : 0 < ε) (hε1 : ε ≤ 1) :
+    ∫ t in ε..1, tailEmpiricalProcess U n k t ω / t =
+      (√(k : ℝ))⁻¹ * ∑ i ∈ range n, (logTrunc (k / n) ε (1 - U i ω) - k / n * (1 - ε)) := by
+  have hp : (0 : ℝ) < k / n := by positivity
+  have h (t : ℝ) : tailEmpiricalProcess U n k t ω / t = ∑ i ∈ range n, (√(k : ℝ))⁻¹ *
+      (((Set.Ici (1 - k / n * t)).indicator 1 (U i ω) - k / n * t) / t) := by
+    unfold tailEmpiricalProcess
+    rw [sqrt_mul_inv_sub_eq hn.ne', ← Finset.mul_sum, ← Finset.sum_div, Finset.sum_sub_distrib,
+      Finset.sum_const, card_range, nsmul_eq_mul, mul_div_assoc]
+  simp_rw [h]
+  have hint (i : ℕ) : IntervalIntegrable (fun t ↦ (√(k : ℝ))⁻¹ *
+      (((Set.Ici (1 - k / n * t)).indicator 1 (U i ω) - k / n * t) / t)) volume ε 1 := by
+    refine IntervalIntegrable.const_mul ?_ _
+    refine (intervalIntegrable_congr fun t ht ↦ ?_).1
+      ((intervalIntegrable_indicator_Ici_inv hε0 hε1 ((1 - U i ω) / (k / n))).sub
+        (intervalIntegrable_const (c := (k : ℝ) / n)))
+    rw [Set.uIoc_of_le hε1] at ht
+    have ht0 : 0 < t := hε0.trans ht.1
+    rw [show ((Set.Ici (1 - (k : ℝ) / n * t)).indicator 1 (U i ω) - k / n * t) / t =
+      (Set.Ici (1 - (k : ℝ) / n * t)).indicator 1 (U i ω) / t - k / n by field_simp,
+      indicator_Ici_one_sub_div hp]
+  rw [intervalIntegral.integral_finsetSum fun i _ ↦ hint i, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
+  rw [intervalIntegral.integral_const_mul, integral_indicator_sub_div hp hε0 hε1]
+
+/-- **The truncated Hill functional as a row sum**:
+`∫_ε^1 W_n(t) dt / t - W_n(1) = ∑_{i<n} hillSummand n k ε (U_i)`. -/
+lemma sum_hillSummand_eq (U : ℕ → Ω → ℝ) (ω : Ω) {n k : ℕ} (hn : 0 < n) (hk : 0 < k) {ε : ℝ}
+    (hε0 : 0 < ε) (hε1 : ε ≤ 1) :
+    ∑ i ∈ range n, hillSummand n k ε (U i ω) =
+      (∫ t in ε..1, tailEmpiricalProcess U n k t ω / t) - tailEmpiricalProcess U n k 1 ω := by
+  rw [integral_tailEmpiricalProcess_div U ω hn hk hε0 hε1]
+  unfold tailEmpiricalProcess
+  rw [sqrt_mul_inv_sub_eq hn.ne', ← mul_sub]
+  unfold hillSummand
+  rw [← Finset.mul_sum]
+  congr 1
+  have hind (u : ℝ) : (Set.Iic ((k : ℝ) / n)).indicator 1 (1 - u) =
+      (Set.Ici (1 - (k : ℝ) / n * 1)).indicator (1 : ℝ → ℝ) u := by
+    rw [mul_one]
+    by_cases h : 1 - u ≤ (k : ℝ) / n
+    · simp [Set.indicator, h, show 1 - (k : ℝ) / n ≤ u by linarith]
+    · simp [Set.indicator, h, show ¬ (1 - (k : ℝ) / n ≤ u) by intro h'; apply h; linarith]
+  simp only [logTruncExcess, hind, Finset.sum_add_distrib, Finset.sum_sub_distrib, Finset.sum_const,
+    card_range, nsmul_eq_mul]
+  ring
+
+/-- **Central limit theorem for the truncated Hill functional of the tail empirical process**.
+If `k n → ∞`, `k n / n → 0`, and the truncation levels `ε n ∈ (0, 1]` satisfy `ε n → ε₀` and
+`log (ε n) / √(k n) → 0`, then `∑_{i<n} hillSummand n (k n) (ε n) (U_i)`, i.e.
+`∫_{ε n}^1 W_n(t) dt / t - W_n(1)`, converges in distribution to `N(0, 1 + 2 ε₀ log ε₀)`. -/
+theorem tendstoInDistribution_sum_hillSummand [IsProbabilityMeasure P] {U : ℕ → Ω → ℝ}
+    (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
+    (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1)) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0))
+    {ε : ℕ → ℝ} (hε0 : ∀ n, 0 < ε n) (hε1 : ∀ n, ε n ≤ 1) {ε₀ : ℝ}
+    (hεlim : Tendsto ε atTop (𝓝 ε₀))
+    (hlog : Tendsto (fun n ↦ Real.log (ε n) / √(k n : ℝ)) atTop (𝓝 0)) :
+    TendstoInDistribution (fun n ω ↦ ∑ i ∈ range n, hillSummand n (k n) (ε n) (U i ω)) atTop id
+      (fun _ ↦ P) (gaussianReal 0 (1 + 2 * ε₀ * Real.log ε₀).toNNReal) := by
+  have hkR : Tendsto (fun n ↦ (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
+  have hsq : Tendsto (fun n ↦ (√(k n : ℝ))⁻¹) atTop (𝓝 0) :=
+    tendsto_inv_atTop_zero.comp (Real.tendsto_sqrt_atTop.comp hkR)
+  have hkn1 : ∀ᶠ n in atTop, k n ≤ n := by
+    filter_upwards [hkn.eventually (gt_mem_nhds zero_lt_one), eventually_gt_atTop 0] with n hn hn0
+    have hn' : (0 : ℝ) < n := Nat.cast_pos.2 hn0
+    rw [div_lt_one hn'] at hn
+    exact_mod_cast hn.le
+  have hvar : Tendsto (fun n : ℕ ↦ n * ∫ u, hillSummand n (k n) (ε n) u ^ 2 ∂μU) atTop
+      (𝓝 (1 + 2 * ε₀ * Real.log ε₀)) := by
+    have h1 : Tendsto (fun n ↦ 1 + 2 * (ε n * Real.log (ε n)) - k n / n * ε n ^ 2) atTop
+        (𝓝 (1 + 2 * (ε₀ * Real.log ε₀) - 0 * ε₀ ^ 2)) :=
+      (tendsto_const_nhds.add
+        ((Real.continuous_mul_log.tendsto ε₀).comp hεlim |>.const_mul 2)).sub
+        (hkn.mul (hεlim.pow 2))
+    rw [zero_mul, sub_zero, ← mul_assoc] at h1
+    refine h1.congr' ?_
+    filter_upwards [hkn1, hk.eventually_gt_atTop 0] with n hn hk0
+    rw [mul_integral_hillSummand_sq hk0 hn (hε0 n) (hε1 n)]
+    ring
+  have hv0 : 0 ≤ 1 + 2 * ε₀ * Real.log ε₀ := by
+    refine ge_of_tendsto hvar (Eventually.of_forall fun n ↦ ?_)
+    exact mul_nonneg (Nat.cast_nonneg _) (integral_nonneg fun u ↦ sq_nonneg _)
+  refine tendstoInDistribution_sum_range_of_bounded hU hind hlaw
+    (fun n ↦ measurable_hillSummand n (k n) (ε n))
+    (M := fun n ↦ (√(k n : ℝ))⁻¹ * (-Real.log (ε n) + 1 + k n / n * ε n)) ?_
+    (fun n u ↦ abs_hillSummand_le n (k n) (hε0 n) (hε1 n) u) ?_ ?_
+  · have h2 : Tendsto (fun n ↦ -(Real.log (ε n) / √(k n : ℝ)) + (√(k n : ℝ))⁻¹ * (1 + k n / n * ε n))
+        atTop (𝓝 (-0 + 0 * (1 + 0 * ε₀))) :=
+      hlog.neg.add (hsq.mul (tendsto_const_nhds.add (hkn.mul hεlim)))
+    simp only [neg_zero, zero_mul, add_zero] at h2
+    refine h2.congr fun n ↦ ?_
+    rw [div_eq_inv_mul]
+    ring
+  · filter_upwards [hkn1, hk.eventually_gt_atTop 0] with n hn hk0
+    exact integral_hillSummand hk0 hn (hε0 n) (hε1 n)
+  · rwa [Real.coe_toNNReal _ hv0]
 
 end Summand
 
