@@ -305,4 +305,338 @@ theorem exists_gpdCoef_bound :
 
 end Constants
 
+/-! ### The dominating function -/
+
+section Dom
+
+variable {ξ₀ σ₀ ξ σ x : ℝ}
+
+/-- The integrable function `1 + w₀ + w₀² - log(1 + ξ₀ x/σ₀)`, `w₀ = x/(σ₀ + ξ₀ x)`, which
+dominates the Hessian near `θ₀` away from the moving endpoint. -/
+noncomputable def gpdDom (ξ₀ σ₀ x : ℝ) : ℝ :=
+  1 + x / (σ₀ + ξ₀ * x) + (x / (σ₀ + ξ₀ * x)) ^ 2 - log (1 + ξ₀ * x / σ₀)
+
+lemma measurable_gpdDom (ξ₀ σ₀ : ℝ) : Measurable (gpdDom ξ₀ σ₀) := by
+  unfold gpdDom; fun_prop
+
+lemma one_le_gpdDom (hξ₀' : ξ₀ < 0) (hσ₀ : 0 < σ₀) (hx : 0 ≤ x) (h0 : 0 < σ₀ + ξ₀ * x) :
+    1 ≤ gpdDom ξ₀ σ₀ x := by
+  have hw : 0 ≤ x / (σ₀ + ξ₀ * x) := div_nonneg hx h0.le
+  have hL : log (1 + ξ₀ * x / σ₀) ≤ 0 := by
+    refine log_nonpos (one_add_mul_div_pos hσ₀ h0).le ?_
+    have : ξ₀ * x / σ₀ ≤ 0 := div_nonpos_of_nonpos_of_nonneg
+      (mul_nonpos_of_nonpos_of_nonneg hξ₀'.le hx) hσ₀.le
+    linarith
+  unfold gpdDom
+  nlinarith [sq_nonneg (x / (σ₀ + ξ₀ * x))]
+
+lemma integrable_gpdDom (hξ₀ : -1 / 2 < ξ₀) (hξ₀' : ξ₀ < 0) (hσ₀ : 0 < σ₀) :
+    Integrable (gpdDom ξ₀ σ₀) (gpdMeasure ξ₀ σ₀) :=
+  integrable_gpdMeasure_of_poly hξ₀ (measurable_gpdDom ξ₀ σ₀) (1 + 1 / ξ₀ + 1 / ξ₀ ^ 2) (-ξ₀) 0
+    (-(1 / ξ₀) - 2 / ξ₀ ^ 2) (1 / ξ₀ ^ 2) 0 fun t => by
+    unfold gpdDom
+    rw [gpdTransform_div hσ₀ hξ₀'.ne, log_one_add_mul_gpdTransform hσ₀ hξ₀'.ne]
+    have := hξ₀'.ne
+    field_simp
+    ring
+
+/-- Where `σ + ξ x ≥ (σ₀ + ξ₀ x)/2`, the polynomial controlling the Hessian at `(ξ, σ)` is at
+most `4 gpdDom`. -/
+lemma le_gpdDom_of_half (hξ₀' : ξ₀ < 0) (hσ₀ : 0 < σ₀) (hθ : (ξ, σ) ∈ gpdNbhdNeg ξ₀ σ₀)
+    (hx : 0 ≤ x) (h0 : 0 < σ₀ + ξ₀ * x) (hh : (σ₀ + ξ₀ * x) / 2 ≤ σ + ξ * x) :
+    |log (1 + ξ * x / σ)| + x / (σ + ξ * x) + (x / (σ + ξ * x)) ^ 2 + 1 ≤
+      4 * gpdDom ξ₀ σ₀ x := by
+  obtain ⟨-, h2, h3, h4⟩ := bounds_of_mem_gpdNbhdNeg hθ
+  simp only at h2 h3 h4
+  have hξ : ξ < 0 := by linarith
+  have hσ : 0 < σ := by linarith
+  have hu : 0 < σ + ξ * x := by linarith
+  have hw₀ : 0 ≤ x / (σ₀ + ξ₀ * x) := div_nonneg hx h0.le
+  -- `w ≤ 2 w₀`
+  have hw : x / (σ + ξ * x) ≤ 2 * (x / (σ₀ + ξ₀ * x)) := by
+    rw [div_le_iff₀ hu]
+    rw [show 2 * (x / (σ₀ + ξ₀ * x)) * (σ + ξ * x) =
+      x * (2 * (σ + ξ * x) / (σ₀ + ξ₀ * x)) by ring]
+    have : 1 ≤ 2 * (σ + ξ * x) / (σ₀ + ξ₀ * x) := by rw [le_div_iff₀ h0]; linarith
+    nlinarith
+  have hw0 : 0 ≤ x / (σ + ξ * x) := div_nonneg hx hu.le
+  -- the logarithms
+  have hA := one_add_mul_div_pos hσ₀ h0
+  have hB := one_add_mul_div_pos hσ hu
+  have hL : log (1 + ξ * x / σ) ≤ 0 := by
+    refine log_nonpos hB.le ?_
+    have : ξ * x / σ ≤ 0 := div_nonpos_of_nonpos_of_nonneg
+      (mul_nonpos_of_nonpos_of_nonneg hξ.le hx) hσ.le
+    linarith
+  have hL₀ : log (1 + ξ₀ * x / σ₀) ≤ 0 := by
+    refine log_nonpos hA.le ?_
+    have : ξ₀ * x / σ₀ ≤ 0 := div_nonpos_of_nonpos_of_nonneg
+      (mul_nonpos_of_nonpos_of_nonneg hξ₀'.le hx) hσ₀.le
+    linarith
+  have hratio : (1 + ξ₀ * x / σ₀) / (1 + ξ * x / σ) ≤ 9 / 4 := by
+    rw [div_le_iff₀ hB]
+    have e1 : 1 + ξ₀ * x / σ₀ = (σ₀ + ξ₀ * x) / σ₀ := by field_simp
+    have e2 : 1 + ξ * x / σ = (σ + ξ * x) / σ := by field_simp
+    rw [e1, e2, div_le_iff₀ hσ₀]
+    rw [show 9 / 4 * ((σ + ξ * x) / σ) * σ₀ = (σ + ξ * x) * (9 * σ₀ / (4 * σ)) by
+      field_simp]
+    have : 2 ≤ 9 * σ₀ / (4 * σ) := by rw [le_div_iff₀ (by positivity)]; linarith
+    nlinarith
+  have hdiff : log (1 + ξ₀ * x / σ₀) - log (1 + ξ * x / σ) ≤ 2 := by
+    rw [← log_div hA.ne' hB.ne']
+    have := log_le_sub_one_of_pos (div_pos hA hB)
+    linarith
+  rw [abs_of_nonpos hL]
+  unfold gpdDom
+  nlinarith [mul_le_mul hw hw hw0 (by positivity)]
+
+end Dom
+
+/-! ### The score along a segment from `θ₀`, for a negative shape -/
+
+section SegmentNeg
+
+variable {ξ₀ σ₀ : ℝ}
+
+lemma seg_support_eq (θ : ℝ × ℝ) (x s : ℝ) :
+    (σ₀ + s * (θ.2 - σ₀)) + (ξ₀ + s * (θ.1 - ξ₀)) * x =
+      (1 - s) * (σ₀ + ξ₀ * x) + s * (θ.2 + θ.1 * x) := by ring
+
+lemma seg_support_pos {θ : ℝ × ℝ} {x : ℝ} (h0 : 0 < σ₀ + ξ₀ * x) (h1 : 0 < θ.2 + θ.1 * x)
+    {s : ℝ} (hs : s ∈ Icc (0 : ℝ) 1) :
+    0 < (σ₀ + s * (θ.2 - σ₀)) + (ξ₀ + s * (θ.1 - ξ₀)) * x := by
+  rw [seg_support_eq]
+  have hm := lt_min h0 h1
+  nlinarith [mul_le_mul_of_nonneg_left (min_le_left (σ₀ + ξ₀ * x) (θ.2 + θ.1 * x))
+    (sub_nonneg.2 hs.2), mul_le_mul_of_nonneg_left (min_le_right (σ₀ + ξ₀ * x) (θ.2 + θ.1 * x))
+    hs.1]
+
+lemma seg_support_half {θ : ℝ × ℝ} {x : ℝ} (h0 : 0 < σ₀ + ξ₀ * x)
+    (h1 : (σ₀ + ξ₀ * x) / 2 ≤ θ.2 + θ.1 * x) {s : ℝ} (hs : s ∈ Icc (0 : ℝ) 1) :
+    (σ₀ + ξ₀ * x) / 2 ≤ (σ₀ + s * (θ.2 - σ₀)) + (ξ₀ + s * (θ.1 - ξ₀)) * x := by
+  rw [seg_support_eq]
+  nlinarith [mul_le_mul_of_nonneg_left h1 hs.1, mul_nonneg (sub_nonneg.2 hs.2) h0.le]
+
+variable (hξ₀ : -1 / 2 < ξ₀) (hξ₀' : ξ₀ < 0) (hσ₀ : 0 < σ₀)
+include hξ₀ hξ₀' hσ₀
+
+lemma seg_params {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhdNeg ξ₀ σ₀) {s : ℝ} (hs : s ∈ Icc (0 : ℝ) 1) :
+    -9 / 16 < ξ₀ + s * (θ.1 - ξ₀) ∧ ξ₀ + s * (θ.1 - ξ₀) < 0 ∧ 0 < σ₀ + s * (θ.2 - σ₀) :=
+  param_bounds_of_mem_gpdNbhdNeg hξ₀' hσ₀ hξ₀ (segment_mem_gpdNbhdNeg hξ₀' hσ₀ hθ hs)
+
+lemma continuousOn_seg {H : ℝ → ℝ → ℝ → ℝ}
+    (hH : ∀ q : ℝ × ℝ × ℝ, q.1 ≠ 0 → 0 < q.2.1 → 0 < q.2.1 + q.1 * q.2.2 →
+      ContinuousAt (fun q : ℝ × ℝ × ℝ => H q.1 q.2.1 q.2.2) q)
+    {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhdNeg ξ₀ σ₀) {x : ℝ} (h0 : 0 < σ₀ + ξ₀ * x)
+    (h1 : 0 < θ.2 + θ.1 * x) :
+    ContinuousOn (fun s => H (ξ₀ + s * (θ.1 - ξ₀)) (σ₀ + s * (θ.2 - σ₀)) x) (Icc 0 1) := by
+  intro s hs
+  obtain ⟨-, hp1, hp2⟩ := seg_params hξ₀ hξ₀' hσ₀ hθ hs
+  have hpos := seg_support_pos h0 h1 hs
+  exact ((hH (ξ₀ + s * (θ.1 - ξ₀), σ₀ + s * (θ.2 - σ₀), x) hp1.ne hp2 hpos).comp
+    (f := fun s => (ξ₀ + s * (θ.1 - ξ₀), σ₀ + s * (θ.2 - σ₀), x))
+    (by fun_prop)).continuousWithinAt
+
+lemma intervalIntegrable_seg {H : ℝ → ℝ → ℝ → ℝ}
+    (hH : ∀ q : ℝ × ℝ × ℝ, q.1 ≠ 0 → 0 < q.2.1 → 0 < q.2.1 + q.1 * q.2.2 →
+      ContinuousAt (fun q : ℝ × ℝ × ℝ => H q.1 q.2.1 q.2.2) q)
+    {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhdNeg ξ₀ σ₀) {x : ℝ} (h0 : 0 < σ₀ + ξ₀ * x)
+    (h1 : 0 < θ.2 + θ.1 * x) :
+    IntervalIntegrable (fun s => H (ξ₀ + s * (θ.1 - ξ₀)) (σ₀ + s * (θ.2 - σ₀)) x) volume 0 1 :=
+  ContinuousOn.intervalIntegrable (by
+    rw [uIcc_of_le zero_le_one]; exact continuousOn_seg hξ₀ hξ₀' hσ₀ hH hθ h0 h1)
+
+lemma intervalIntegrable_seg_XX {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhdNeg ξ₀ σ₀) {x : ℝ}
+    (h0 : 0 < σ₀ + ξ₀ * x) (h1 : 0 < θ.2 + θ.1 * x) :
+    IntervalIntegrable (fun s => gpdHessXiXi (ξ₀ + s * (θ.1 - ξ₀)) (σ₀ + s * (θ.2 - σ₀)) x)
+      volume 0 1 :=
+  intervalIntegrable_seg hξ₀ hξ₀' hσ₀ (fun _ h1 h2 h3 => continuousAt_gpdHessXiXi₃ h1 h2 h3)
+    hθ h0 h1
+
+lemma intervalIntegrable_seg_XS {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhdNeg ξ₀ σ₀) {x : ℝ}
+    (h0 : 0 < σ₀ + ξ₀ * x) (h1 : 0 < θ.2 + θ.1 * x) :
+    IntervalIntegrable (fun s => gpdHessXiSigma (ξ₀ + s * (θ.1 - ξ₀)) (σ₀ + s * (θ.2 - σ₀)) x)
+      volume 0 1 :=
+  intervalIntegrable_seg hξ₀ hξ₀' hσ₀ (fun _ _ h2 h3 => continuousAt_gpdHessXiSigma₃ h2 h3)
+    hθ h0 h1
+
+lemma intervalIntegrable_seg_SS {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhdNeg ξ₀ σ₀) {x : ℝ}
+    (h0 : 0 < σ₀ + ξ₀ * x) (h1 : 0 < θ.2 + θ.1 * x) :
+    IntervalIntegrable
+      (fun s => gpdHessSigmaSigma (ξ₀ + s * (θ.1 - ξ₀)) (σ₀ + s * (θ.2 - σ₀)) x) volume 0 1 :=
+  intervalIntegrable_seg hξ₀ hξ₀' hσ₀ (fun _ _ h2 h3 => continuousAt_gpdHessSigmaSigma₃ h2 h3)
+    hθ h0 h1
+
+/-- **The exact expansion of the score, negative shape.** For `θ` in the neighbourhood and an
+observation `x` in the support of both `θ₀` and `θ`,
+`∇ℓ(θ, x) - ∇ℓ(θ₀, x) = H̄(θ, x) (θ - θ₀)`. -/
+theorem gpdScore_sub_eq_segHess_neg {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhdNeg ξ₀ σ₀) {x : ℝ}
+    (h0 : 0 < σ₀ + ξ₀ * x) (h1 : 0 < θ.2 + θ.1 * x) :
+    gpdScoreXi θ.1 θ.2 x - gpdScoreXi ξ₀ σ₀ x =
+        (θ.1 - ξ₀) * segHess gpdHessXiXi ξ₀ σ₀ θ x +
+          (θ.2 - σ₀) * segHess gpdHessXiSigma ξ₀ σ₀ θ x ∧
+    gpdScoreSigma θ.1 θ.2 x - gpdScoreSigma ξ₀ σ₀ x =
+        (θ.1 - ξ₀) * segHess gpdHessXiSigma ξ₀ σ₀ θ x +
+          (θ.2 - σ₀) * segHess gpdHessSigmaSigma ξ₀ σ₀ θ x := by
+  set a := θ.1 - ξ₀
+  set b := θ.2 - σ₀
+  have iXX := intervalIntegrable_seg_XX hξ₀ hξ₀' hσ₀ hθ h0 h1
+  have iXS := intervalIntegrable_seg_XS hξ₀ hξ₀' hσ₀ hθ h0 h1
+  have iSS := intervalIntegrable_seg_SS hξ₀ hξ₀' hσ₀ hθ h0 h1
+  have hpos : ∀ s ∈ uIcc (0 : ℝ) 1, ξ₀ + s * a ≠ 0 ∧ 0 < σ₀ + s * b ∧
+      0 < (σ₀ + s * b) + (ξ₀ + s * a) * x := fun s hs => by
+    rw [uIcc_of_le zero_le_one] at hs
+    obtain ⟨-, hp1, hp2⟩ := seg_params hξ₀ hξ₀' hσ₀ hθ hs
+    exact ⟨hp1.ne, hp2, seg_support_pos h0 h1 hs⟩
+  have e1 : ξ₀ + 1 * a = θ.1 := by simp [a]
+  have e2 : σ₀ + 1 * b = θ.2 := by simp [b]
+  refine ⟨?_, ?_⟩
+  · have hftc := intervalIntegral.integral_eq_sub_of_hasDerivAt
+      (f := fun s => gpdScoreXi (ξ₀ + s * a) (σ₀ + s * b) x)
+      (fun s hs => hasDerivAt_gpdScoreXi_line (hpos s hs).1 (hpos s hs).2.1 (hpos s hs).2.2)
+      ((iXX.const_mul a).add (iXS.const_mul b))
+    rw [intervalIntegral.integral_add (iXX.const_mul a) (iXS.const_mul b),
+      intervalIntegral.integral_const_mul, intervalIntegral.integral_const_mul] at hftc
+    simp only [e1, e2, zero_mul, add_zero] at hftc
+    rw [← hftc]
+    rfl
+  · have hftc := intervalIntegral.integral_eq_sub_of_hasDerivAt
+      (f := fun s => gpdScoreSigma (ξ₀ + s * a) (σ₀ + s * b) x)
+      (fun s hs => hasDerivAt_gpdScoreSigma_line (hpos s hs).2.1 (hpos s hs).2.2)
+      ((iXS.const_mul a).add (iSS.const_mul b))
+    rw [intervalIntegral.integral_add (iXS.const_mul a) (iSS.const_mul b),
+      intervalIntegral.integral_const_mul, intervalIntegral.integral_const_mul] at hftc
+    simp only [e1, e2, zero_mul, add_zero] at hftc
+    rw [← hftc]
+    rfl
+
+/-- **The one-sided bound along the segment**: the segment-averaged Hessian quadratic form is at
+most `C₁ |t|²`, whatever the position of the observation relative to the endpoints. -/
+theorem segHess_quad_le_neg {C₁ : ℝ} (hC : ∀ θ ∈ gpdNbhdNeg ξ₀ σ₀, gpdQuadCoef θ ≤ C₁)
+    {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhdNeg ξ₀ σ₀) {x : ℝ} (hx : 0 ≤ x) (h0 : 0 < σ₀ + ξ₀ * x)
+    (h1 : 0 < θ.2 + θ.1 * x) (t₁ t₂ : ℝ) :
+    t₁ ^ 2 * segHess gpdHessXiXi ξ₀ σ₀ θ x + 2 * t₁ * t₂ * segHess gpdHessXiSigma ξ₀ σ₀ θ x +
+        t₂ ^ 2 * segHess gpdHessSigmaSigma ξ₀ σ₀ θ x ≤ C₁ * (t₁ ^ 2 + t₂ ^ 2) := by
+  have iXX := (intervalIntegrable_seg_XX hξ₀ hξ₀' hσ₀ hθ h0 h1).const_mul (t₁ ^ 2)
+  have iXS := (intervalIntegrable_seg_XS hξ₀ hξ₀' hσ₀ hθ h0 h1).const_mul (2 * t₁ * t₂)
+  have iSS := (intervalIntegrable_seg_SS hξ₀ hξ₀' hσ₀ hθ h0 h1).const_mul (t₂ ^ 2)
+  unfold segHess
+  rw [← intervalIntegral.integral_const_mul, ← intervalIntegral.integral_const_mul,
+    ← intervalIntegral.integral_const_mul, ← intervalIntegral.integral_add iXX iXS,
+    ← intervalIntegral.integral_add (iXX.add iXS) iSS]
+  have hle := intervalIntegral.integral_mono_on zero_le_one ((iXX.add iXS).add iSS)
+    (intervalIntegrable_const (c := C₁ * (t₁ ^ 2 + t₂ ^ 2))) (fun s hs => by
+      obtain ⟨hp0, hp1, hp2⟩ := seg_params hξ₀ hξ₀' hσ₀ hθ hs
+      have hb := gpdHess_quad_le_coef (by linarith) hp1 hp2 hx (seg_support_pos h0 h1 hs) t₁ t₂
+      have hc := hC _ (segment_mem_gpdNbhdNeg hξ₀' hσ₀ hθ hs)
+      exact hb.trans (mul_le_mul_of_nonneg_right hc (by positivity)))
+  simpa using hle
+
+omit hξ₀ in
+/-- **Domination along the segment**: if `σ + ξ x ≥ (σ₀ + ξ₀ x)/2`, the segment average of a
+Hessian entry is at most `4 Kc gpdDom(x)`. -/
+theorem abs_segHess_le_gpdDom {H : ℝ → ℝ → ℝ → ℝ}
+    (hHm : Measurable fun q : ℝ × ℝ × ℝ => H q.1 q.2.1 q.2.2)
+    (hHb : ∀ ξ σ x, 0 ≤ x → 0 < σ + ξ * x → |H ξ σ x| ≤ gpdHessCoef (ξ, σ) *
+      (|log (1 + ξ * x / σ)| + x / (σ + ξ * x) + (x / (σ + ξ * x)) ^ 2 + 1))
+    {Kc : ℝ} (hK : ∀ θ ∈ gpdNbhdNeg ξ₀ σ₀, gpdHessCoef θ ≤ Kc)
+    {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhdNeg ξ₀ σ₀) {x : ℝ} (hx : 0 ≤ x) (h0 : 0 < σ₀ + ξ₀ * x)
+    (hh : (σ₀ + ξ₀ * x) / 2 ≤ θ.2 + θ.1 * x) :
+    |segHess H ξ₀ σ₀ θ x| ≤ 4 * Kc * gpdDom ξ₀ σ₀ x := by
+  have hb : ∀ s ∈ Icc (0 : ℝ) 1,
+      |H (ξ₀ + s * (θ.1 - ξ₀)) (σ₀ + s * (θ.2 - σ₀)) x - 0| ≤ 4 * Kc * gpdDom ξ₀ σ₀ x :=
+    fun s hs => by
+      rw [sub_zero]
+      have hmem := segment_mem_gpdNbhdNeg hξ₀' hσ₀ hθ hs
+      have hhalf := seg_support_half h0 hh hs
+      have hpos : 0 < (σ₀ + s * (θ.2 - σ₀)) + (ξ₀ + s * (θ.1 - ξ₀)) * x := by linarith
+      have h1 := hHb _ _ x hx hpos
+      have h2 := le_gpdDom_of_half hξ₀' hσ₀ hmem hx h0 hhalf
+      have h3 := hK _ hmem
+      have hc0 : 0 ≤ gpdHessCoef (ξ₀ + s * (θ.1 - ξ₀), σ₀ + s * (θ.2 - σ₀)) := by
+        unfold gpdHessCoef; positivity
+      have hP : 0 ≤ |log (1 + (ξ₀ + s * (θ.1 - ξ₀)) * x / (σ₀ + s * (θ.2 - σ₀)))| +
+          x / ((σ₀ + s * (θ.2 - σ₀)) + (ξ₀ + s * (θ.1 - ξ₀)) * x) +
+          (x / ((σ₀ + s * (θ.2 - σ₀)) + (ξ₀ + s * (θ.1 - ξ₀)) * x)) ^ 2 + 1 := by
+        have := div_nonneg hx hpos.le; positivity
+      calc _ ≤ _ := h1
+        _ ≤ Kc * (4 * gpdDom ξ₀ σ₀ x) := mul_le_mul h3 h2 hP (hc0.trans h3)
+        _ = 4 * Kc * gpdDom ξ₀ σ₀ x := by ring
+  have := (intervalIntegrable_and_abs_integral_sub_le (c := 0)
+    (hHm.comp (f := fun s => (ξ₀ + s * (θ.1 - ξ₀), σ₀ + s * (θ.2 - σ₀), x)) (by fun_prop))
+    hb).2
+  rw [sub_zero] at this
+  exact this
+
+/-- **Uniform convergence on a good set** `{σ₀ + ξ₀ x ≥ c}`, away from the endpoint: for every
+`ε > 0` there is `δ > 0` with `|H̄(θ, x) - H(θ₀, x)| ≤ ε` whenever `|θ - θ₀|₁ ≤ δ` and
+`σ₀ + ξ₀ x ≥ c`. -/
+theorem exists_delta_segHess_good {H : ℝ → ℝ → ℝ → ℝ}
+    (hHm : Measurable fun q : ℝ × ℝ × ℝ => H q.1 q.2.1 q.2.2)
+    (hH : ∀ q : ℝ × ℝ × ℝ, q.1 ≠ 0 → 0 < q.2.1 → 0 < q.2.1 + q.1 * q.2.2 →
+      ContinuousAt (fun q : ℝ × ℝ × ℝ => H q.1 q.2.1 q.2.2) q)
+    {c : ℝ} (hc : 0 < c) {ε : ℝ} (hε : 0 < ε) :
+    ∃ δ > 0, ∀ θ : ℝ × ℝ, gpdDist ξ₀ σ₀ θ ≤ δ → ∀ x, 0 ≤ x → c ≤ σ₀ + ξ₀ * x →
+      |segHess H ξ₀ σ₀ θ x - H ξ₀ σ₀ x| ≤ ε := by
+  set xc := (c - σ₀) / ξ₀ with hxc
+  have hgood : ∀ x, c ≤ σ₀ + ξ₀ * x → x ≤ xc := fun x hx => by
+    rw [hxc, le_div_iff_of_neg hξ₀']; linarith
+  have hxcξ : ξ₀ * xc = c - σ₀ := mul_div_cancel₀ _ hξ₀'.ne
+  set η := min (min (-ξ₀ / 8) (σ₀ / 8)) (c / (2 * (1 + |xc|))) with hη
+  have hη0 : 0 < η := lt_min (lt_min (by linarith) (by linarith)) (by positivity)
+  have hη1 : η ≤ -ξ₀ / 8 := (min_le_left _ _).trans (min_le_left _ _)
+  have hη2 : η ≤ σ₀ / 8 := (min_le_left _ _).trans (min_le_right _ _)
+  have hη3 : η * (1 + |xc|) ≤ c / 2 := by
+    have := min_le_right (min (-ξ₀ / 8) (σ₀ / 8)) (c / (2 * (1 + |xc|)))
+    rw [← hη] at this
+    have h1 : 0 < 1 + |xc| := by positivity
+    calc η * (1 + |xc|) ≤ c / (2 * (1 + |xc|)) * (1 + |xc|) := by gcongr
+      _ = c / 2 := by field_simp
+  set S : Set (ℝ × ℝ × ℝ) :=
+    Icc (ξ₀ - η) (ξ₀ + η) ×ˢ (Icc (σ₀ - η) (σ₀ + η) ×ˢ Icc 0 xc) with hS
+  have hSc : IsCompact S := isCompact_Icc.prod (isCompact_Icc.prod isCompact_Icc)
+  have hSpos : ∀ q ∈ S, q.1 ≠ 0 ∧ 0 < q.2.1 ∧ 0 < q.2.1 + q.1 * q.2.2 := fun q hq => by
+    obtain ⟨⟨h1, h2⟩, ⟨h3, h4⟩, h5, h6⟩ := hq
+    refine ⟨by intro h; linarith, by linarith, ?_⟩
+    have hx0 : xc = |xc| := (abs_of_nonneg (h5.trans h6)).symm
+    have e : q.2.1 + q.1 * q.2.2 = (σ₀ + ξ₀ * xc) + ξ₀ * (q.2.2 - xc) + (q.2.1 - σ₀) +
+        (q.1 - ξ₀) * q.2.2 := by ring
+    have hA : 0 ≤ ξ₀ * (q.2.2 - xc) := mul_nonneg_of_nonpos_of_nonpos hξ₀'.le (by linarith)
+    have hB : -η * xc ≤ (q.1 - ξ₀) * q.2.2 := by nlinarith
+    rw [e, hxcξ]
+    nlinarith
+  have hcont : ContinuousOn (fun q : ℝ × ℝ × ℝ => H q.1 q.2.1 q.2.2) S := fun q hq =>
+    (hH q (hSpos q hq).1 (hSpos q hq).2.1 (hSpos q hq).2.2).continuousWithinAt
+  obtain ⟨δ₁, hδ₁, hδ⟩ := Metric.uniformContinuousOn_iff.1
+    (hSc.uniformContinuousOn_of_continuous hcont) ε hε
+  refine ⟨min η (δ₁ / 2), lt_min hη0 (by linarith), fun θ hθ x hx hcx => ?_⟩
+  have hρ1 : gpdDist ξ₀ σ₀ θ ≤ η := hθ.trans (min_le_left _ _)
+  have hρ2 : gpdDist ξ₀ σ₀ θ ≤ δ₁ / 2 := hθ.trans (min_le_right _ _)
+  have hxx := hgood x hcx
+  have hb : ∀ s ∈ Icc (0 : ℝ) 1,
+      |H (ξ₀ + s * (θ.1 - ξ₀)) (σ₀ + s * (θ.2 - σ₀)) x - H ξ₀ σ₀ x| ≤ ε := fun s hs => by
+    have hd := gpdDist_segment (ξ₀ := ξ₀) (σ₀ := σ₀) θ hs
+    have hd1 : |ξ₀ + s * (θ.1 - ξ₀) - ξ₀| + |σ₀ + s * (θ.2 - σ₀) - σ₀| ≤ gpdDist ξ₀ σ₀ θ :=
+      hd
+    have ha1 := abs_le.1 (show |ξ₀ + s * (θ.1 - ξ₀) - ξ₀| ≤ η by
+      linarith [abs_nonneg (σ₀ + s * (θ.2 - σ₀) - σ₀)])
+    have ha2 := abs_le.1 (show |σ₀ + s * (θ.2 - σ₀) - σ₀| ≤ η by
+      linarith [abs_nonneg (ξ₀ + s * (θ.1 - ξ₀) - ξ₀)])
+    have hmemA : (ξ₀ + s * (θ.1 - ξ₀), σ₀ + s * (θ.2 - σ₀), x) ∈ S :=
+      ⟨⟨by linarith, by linarith⟩, ⟨by linarith, by linarith⟩, hx, hxx⟩
+    have hmemB : (ξ₀, σ₀, x) ∈ S :=
+      ⟨⟨by linarith, by linarith⟩, ⟨by linarith, by linarith⟩, hx, hxx⟩
+    have hdist : dist (ξ₀ + s * (θ.1 - ξ₀), σ₀ + s * (θ.2 - σ₀), x) (ξ₀, σ₀, x) < δ₁ := by
+      have := dist_triple_le (ξ₀ + s * (θ.1 - ξ₀), σ₀ + s * (θ.2 - σ₀), x) (ξ₀, σ₀, x)
+      simp only [sub_self, abs_zero, add_zero] at this
+      linarith
+    have := hδ _ hmemA _ hmemB hdist
+    rw [Real.dist_eq] at this
+    exact this.le
+  exact (intervalIntegrable_and_abs_integral_sub_le
+    (hHm.comp (f := fun s => (ξ₀ + s * (θ.1 - ξ₀), σ₀ + s * (θ.2 - σ₀), x)) (by fun_prop))
+    hb).2
+
+end SegmentNeg
+
 end ExtremeValueTheory
