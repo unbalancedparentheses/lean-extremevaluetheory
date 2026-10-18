@@ -13,7 +13,7 @@ PLACEHOLDER
 -/
 
 open MeasureTheory ProbabilityTheory Filter Set Topology
-open scoped ENNReal NNReal
+open scoped ENNReal NNReal BoundedContinuousFunction
 
 namespace ExtremeValueTheory
 
@@ -617,5 +617,121 @@ theorem le_liminf_cond_scaledLaw {δ : ι → ℝ≥0∞} (hδ : ∀ i, δ i ≠
     _ ≤ _ := measure_mono (hFE_G n)
 
 end Weak
+
+/-! ### Convergence of integrals -/
+
+section Integrals
+
+variable [Fintype ι] {H : Measure (ι → ℝ≥0∞)}
+
+/-- `∫ f dm = m(O) ∫ f dm[|O]` when `m` lives on the orthant and `f` vanishes on the orthant
+outside `O`. -/
+lemma integral_eq_measureReal_mul_integral_cond {m : Measure (ι → ℝ)} {O : Set (ι → ℝ)}
+    (hO : MeasurableSet O) (hOfin : m O ≠ ∞) (hm : m posOrthantᶜ = 0) {f : (ι → ℝ) → ℝ}
+    (hf : ∀ y ∈ posOrthant, y ∉ O → f y = 0) :
+    ∫ y, f y ∂m = m.real O * ∫ y, f y ∂m[|O] := by
+  have hae : ∀ᵐ y ∂m, y ∈ posOrthant :=
+    (measure_eq_zero_iff_ae_notMem.1 hm).mono fun y hy ↦ not_not.1 hy
+  have h1 : ∫ y in O, f y ∂m = ∫ y, f y ∂m :=
+    setIntegral_eq_integral_of_ae_compl_eq_zero (hae.mono fun y hy hyO ↦ hf y hy hyO)
+  rw [← h1, ProbabilityTheory.cond, integral_smul_measure, smul_eq_mul, ← mul_assoc,
+    ENNReal.toReal_inv]
+  rcases eq_or_ne (m O) 0 with h0 | h0
+  · simp [Measure.restrict_eq_zero.2 h0]
+  · rw [measureReal_def, mul_inv_cancel₀ (ENNReal.toReal_pos h0 hOfin).ne', one_mul]
+
+/-- The exponent measure of `{x | ∃ i, c < x i}` is `H(univ) / c` for `H` on the sphere. -/
+lemma spectralExponentMeasure_exceedSet_const [Countable ι] [SFinite H]
+    (hH : ∀ᵐ w ∂H, ⨆ i, w i = 1) {c : ℝ≥0∞} (hc0 : c ≠ 0) :
+    spectralExponentMeasure H (exceedSet fun _ ↦ c) = c⁻¹ * H univ := by
+  rw [spectralExponentMeasure_exceedSet fun _ ↦ hc0, ← lintegral_const]
+  exact lintegral_congr_ae (hH.mono fun w hw ↦ by dsimp only; rw [← ENNReal.iSup_div, hw, one_div])
+
+lemma measure_univ_ne_zero_of_hasSpectralMeasure [Nonempty ι] {μ : Measure (ι → ℝ)}
+    (h : IsSimpleMaxStable μ) (hS : HasSpectralMeasure μ H) (hH : ∀ᵐ w ∂H, ⨆ i, w i = 1) :
+    H univ ≠ 0 := by
+  intro h0
+  have := hS.measure_univ_toReal hH
+  rw [h0, ENNReal.toReal_zero] at this
+  linarith [h.one_le_extremalCoefficient]
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+  {X : Ω → ι → ℝ} [IsFiniteMeasure H]
+  (hX : Measurable X) (hS : HasSpectralMeasure (P.map X) H)
+  (h : IsSimpleMaxStable (P.map X)) (hH : ∀ᵐ w ∂H, ⨆ i, w i = 1)
+include hX hS h hH
+
+/-- **Vague convergence of the scaled laws to the exponent measure**: `∫ f d(x P(X / x ∈ ·)) →
+∫ f dν_H` for every bounded continuous `f` vanishing near the origin. -/
+theorem tendsto_integral_scaledLaw [Nonempty ι] {f : (ι → ℝ) →ᵇ ℝ} (hf : VanishesNearZero f) :
+    Tendsto (fun x ↦ ∫ y, f y ∂scaledLaw P X x) atTop
+      (𝓝 (∫ y, f y ∂spectralExponentMeasureReal H)) := by
+  have hle := ae_le_one_of_ae_iSup_eq_one hH
+  have hnt := ae_ne_top_of_ae_le_one hle
+  obtain ⟨r, hr, hfr⟩ := hf
+  set δ : ι → ℝ≥0∞ := fun _ ↦ ENNReal.ofReal (r / 2) with hδdef
+  have hδ0 : ENNReal.ofReal (r / 2) ≠ 0 := (ENNReal.ofReal_pos.2 (half_pos hr)).ne'
+  have hδ : ∀ i, δ i ≠ 0 := fun _ ↦ hδ0
+  set O := ofRealVec ⁻¹' exceedSet δ with hO
+  have hOm : MeasurableSet O := measurable_ofRealVec (measurableSet_exceedSet δ)
+  set νE := spectralExponentMeasureReal H with hνE
+  have hνEOeq : νE O = spectralExponentMeasure H (exceedSet δ) :=
+    spectralExponentMeasureReal_preimage hnt (measurableSet_exceedSet δ)
+  have hνEO : νE O ≠ ∞ := hνEOeq ▸ spectralExponentMeasure_exceedSet_ne_top hle hδ
+  have hνEO0 : νE O ≠ 0 := by
+    rw [hνEOeq, spectralExponentMeasure_exceedSet_const hH hδ0]
+    exact mul_ne_zero (ENNReal.inv_ne_zero.2 ENNReal.ofReal_ne_top)
+      (measure_univ_ne_zero_of_hasSpectralMeasure h hS hH)
+  have hf0 : ∀ y ∈ posOrthant, y ∉ O → f y = 0 := by
+    intro y hyQ hyO
+    refine hfr y ?_
+    have hy : ∀ i, y i ≤ r / 2 := fun i ↦ by
+      by_contra hc
+      exact hyO ⟨i, (ENNReal.ofReal_lt_ofReal_iff (by linarith [not_le.1 hc])).2 (not_le.1 hc)⟩
+    calc ‖y‖ ≤ r / 2 := (pi_norm_le_iff_of_nonneg (by linarith)).2 fun i ↦ by
+          rw [Real.norm_eq_abs, abs_of_nonneg (hyQ i)]; exact hy i
+      _ < r := half_lt_self hr
+  -- the masses of `O`
+  have hR2 : Tendsto (fun x ↦ (scaledLaw P X x).real O) atTop (𝓝 (νE.real O)) := by
+    have hlim : νE.real O = (spectralExponentMeasure H).real (exceedSet δ) := by
+      rw [measureReal_def, measureReal_def, hνEOeq]
+    rw [hlim]
+    refine (tendsto_scaledLaw_exceedSet hX hS hH hδ).congr fun x ↦ ?_
+    exact map_measureReal_apply measurable_ofRealVec (measurableSet_exceedSet δ)
+  have hev : ∀ᶠ x in atTop, scaledLaw P X x O ≠ 0 := by
+    filter_upwards [hR2.eventually (lt_mem_nhds (ENNReal.toReal_pos hνEO0 hνEO))] with x hx
+    exact fun h0 ↦ by simp [measureReal_def, h0] at hx
+  -- weak convergence of the conditional laws
+  let PM : ℝ → ProbabilityMeasure (ι → ℝ) := fun x ↦
+    if hx : scaledLaw P X x O ≠ 0 then ⟨(scaledLaw P X x)[|O], cond_isProbabilityMeasure hx⟩
+    else ⟨Measure.dirac 0, inferInstance⟩
+  let PMlim : ProbabilityMeasure (ι → ℝ) :=
+    ⟨νE[|O], cond_isProbabilityMeasure_of_finite hνEO0 hνEO⟩
+  have hPMeq : ∀ᶠ x in atTop, (PM x : Measure (ι → ℝ)) = (scaledLaw P X x)[|O] :=
+    hev.mono fun x hx ↦ by simp [PM, hx]
+  have hT : Tendsto PM atTop (𝓝 PMlim) := by
+    refine tendsto_of_forall_isOpen_le_liminf' fun G hG ↦ ?_
+    have key := le_liminf_cond_scaledLaw hX hS h hH hδ hG
+    have e1 : ((PMlim : ProbabilityMeasure (ι → ℝ)) : Measure (ι → ℝ)) G =
+        (νE O)⁻¹ * νE (O ∩ G) := cond_apply hOm _ G
+    rw [e1]
+    refine key.trans (le_of_eq (liminf_congr ?_))
+    filter_upwards [hPMeq] with x hx
+    rw [hx, cond_apply hOm]
+  have hI := ProbabilityMeasure.tendsto_iff_forall_integral_tendsto.1 hT f
+  rw [integral_eq_measureReal_mul_integral_cond hOm hνEO
+    spectralExponentMeasureReal_compl_posOrthant hf0]
+  have hI' : Tendsto (fun x ↦ ∫ y, f y ∂(scaledLaw P X x)[|O]) atTop
+      (𝓝 (∫ y, f y ∂νE[|O])) := by
+    refine hI.congr' ?_
+    filter_upwards [hPMeq] with x hx
+    rw [hx]
+  refine (hR2.mul hI').congr' ?_
+  · filter_upwards
+ [eventually_gt_atTop 0] with x hx
+    exact (integral_eq_measureReal_mul_integral_cond hOm (measure_ne_top _ _)
+      (scaledLaw_compl_posOrthant hX h hx) hf0).symm
+
+end Integrals
 
 end ExtremeValueTheory
