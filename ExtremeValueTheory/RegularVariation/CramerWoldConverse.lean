@@ -765,6 +765,170 @@ theorem limit_halfSpace [IsProbabilityMeasure P] (hX : Measurable X) {α : ℝ} 
     rw [← hval k]
     exact measure_mono fun y (hy : _ < _) => lt_trans (ht k).1 hy
 
+/-- Spheres are null for a measure homogeneous of order `-α` and finite away from the origin. -/
+theorem measure_norm_eq_zero_of_map_smul {μ : Measure E} {α : ℝ}
+    (hhom : ∀ t > 0, μ.map (fun y => t • y) = ENNReal.ofReal (t ^ α) • μ)
+    (hμ : ∀ r > 0, μ {y | r < ‖y‖} < ∞) {c : ℝ} (hc : 0 < c) : μ {y | ‖y‖ = c} = 0 := by
+  have hr : 0 < c / 4 := by positivity
+  have hfin : IsFiniteMeasure (μ.restrict {y | c / 4 < ‖y‖}) :=
+    isFiniteMeasure_restrict.2 (hμ _ hr).ne
+  have hcount := Measure.countable_meas_level_set_pos (μ := μ.restrict {y | c / 4 < ‖y‖})
+    (continuous_norm.measurable (α := E))
+  obtain ⟨t, ht, hct⟩ := (hcount.dense_compl ℝ).exists_between (show c / 2 < c by linarith)
+  have ht0 : 0 < t := lt_trans (half_pos hc) hct.1
+  have hνt : μ.restrict {y | c / 4 < ‖y‖} {y | ‖y‖ = t} = 0 := by
+    simpa using ht
+  have hμt : μ {y | ‖y‖ = t} = 0 := by
+    rw [Measure.restrict_apply (measurableSet_eq_fun continuous_norm.measurable
+      measurable_const)] at hνt
+    rwa [inter_eq_left.2 (show {y : E | ‖y‖ = t} ⊆ {y | c / 4 < ‖y‖} from
+      fun y (hy : ‖y‖ = t) => (show c / 4 < ‖y‖ by rw [hy]; linarith [hct.1]))] at hνt
+  have hpre : {y : E | ‖y‖ = c} = (fun y => (t / c) • y) ⁻¹' {y | ‖y‖ = t} := by
+    ext y
+    simp only [mem_ofPred_eq, mem_preimage, norm_smul, Real.norm_eq_abs,
+      abs_of_pos (div_pos ht0 hc)]
+    rw [div_mul_eq_mul_div, div_eq_iff hc.ne']
+    exact ⟨fun hy => by rw [hy], fun hy => mul_left_cancel₀ ht0.ne' hy⟩
+  have := congrArg (fun ν : Measure E => ν {y | ‖y‖ = t}) (hhom _ (div_pos ht0 hc))
+  simp only [Measure.map_apply (measurable_const_smul _)
+    (measurableSet_eq_fun continuous_norm.measurable measurable_const), Measure.smul_apply,
+    smul_eq_mul, hμt, mul_zero] at this
+  rw [hpre, this]
+
+/-- **The converse Cramér–Wold device for non-integer indices**, normalized form
+([BDM02, Theorem 1.1 (i)]). Let `X` be a random vector in a finite-dimensional real normed space
+and `V` an antitone function regularly varying with index `-α`, `α > 0` not an integer, such that
+`P(L X > x) / V(x) → w(L)` for every continuous linear functional `L`, with `w(L₀) ≠ 0` for some
+`L₀`. Then `X` is regularly varying with index `α`; moreover
+`P(‖X‖ > x) / V(x) → κ > 0` and the exponent measure gives mass `w(L) / κ` to `{L > 1}`. -/
+theorem isRegVarVector_of_tendsto_linear_of_antitone [IsProbabilityMeasure P]
+    [FiniteDimensional ℝ E] (hX : Measurable X) {α : ℝ} (hα : 0 < α) (hαZ : ∀ k : ℤ, α ≠ k)
+    {V : ℝ → ℝ} (hVa : Antitone V) (hV : IsRegularlyVarying V (-α)) {w : StrongDual ℝ E → ℝ}
+    (hw : ∀ L : StrongDual ℝ E,
+      Tendsto (fun x => P.real {ω | x < L (X ω)} / V x) atTop (𝓝 (w L)))
+    {L₀ : StrongDual ℝ E} (hL₀ : w L₀ ≠ 0) :
+    ∃ (μ : Measure E) (κ : ℝ), 0 < κ ∧ IsRegVarVector P X α μ ∧
+      Tendsto (fun x => P.real {ω | x < ‖X ω‖} / V x) atTop (𝓝 κ) ∧
+      ∀ L : StrongDual ℝ E, μ {y | 1 < L y} = ENNReal.ofReal (w L / κ) := by
+  obtain ⟨W, hW, htail⟩ := exists_limit_tail_le hX hV hw
+  -- any two limit points coincide
+  have huniq : ∀ {u u' : ℕ → ℝ}, Tendsto u atTop atTop → Tendsto u' atTop atTop →
+      ∀ {μ μ' : Measure E}, μ {0} = 0 → μ' {0} = 0 →
+      (∀ r > 0, μ {y | r < ‖y‖} < ∞) → (∀ r > 0, μ' {y | r < ‖y‖} < ∞) →
+      (∀ f : E →ᵇ ℝ, VanishesNearZero f →
+        Tendsto (fun n => ∫ y, f y ∂scaledLaw P X V (u n)) atTop (𝓝 (∫ y, f y ∂μ))) →
+      (∀ f : E →ᵇ ℝ, VanishesNearZero f →
+        Tendsto (fun n => ∫ y, f y ∂scaledLaw P X V (u' n)) atTop (𝓝 (∫ y, f y ∂μ'))) →
+      μ = μ' := by
+    intro u u' hu hu' μ μ' h0 h0' hfin hfin' hc hc'
+    refine ext_of_halfSpace_of_tail hα hαZ hW hW (htail hu hfin hc) (htail hu' hfin' hc') h0 h0'
+      fun L => ?_
+    rw [limit_halfSpace hX hα hV hw hu hfin hc L one_pos,
+      limit_halfSpace hX hα hV hw hu' hfin' hc' L one_pos]
+  -- a limit point along `n ↦ n`
+  have hnat : Tendsto (fun n : ℕ => (n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop
+  obtain ⟨φ, μ, hφ, hμ0, hμfin, hμconv⟩ :=
+    exists_subseq_tendsto hX hα hVa hV hw hL₀ hnat
+  have hφu : Tendsto (fun n => ((φ n : ℕ) : ℝ)) atTop atTop := hnat.comp hφ.tendsto_atTop
+  -- full convergence
+  have hconv : ∀ f : E →ᵇ ℝ, VanishesNearZero f →
+      Tendsto (fun x => ∫ y, f y ∂scaledLaw P X V x) atTop (𝓝 (∫ y, f y ∂μ)) := by
+    intro f hf
+    refine tendsto_of_subseq_tendsto fun ns hns => ?_
+    obtain ⟨ψ, μ', hψ, hμ'0, hμ'fin, hμ'conv⟩ :=
+      exists_subseq_tendsto hX hα hVa hV hw hL₀ hns
+    have : μ' = μ := huniq (hns.comp hψ.tendsto_atTop) hφu hμ'0 hμ0 hμ'fin hμfin hμ'conv hμconv
+    exact ⟨ψ, this ▸ hμ'conv f hf⟩
+  have hμhalf : ∀ L : StrongDual ℝ E, ∀ s > 0, μ {y | s < L y} = ENNReal.ofReal (w L * s ^ (-α)) :=
+    fun L s hs => limit_halfSpace hX hα hV hw hφu hμfin hμconv L hs
+  have hμt := htail hφu hμfin hμconv
+  -- homogeneity
+  have hhom : ∀ t > 0, μ.map (fun y => t • y) = ENNReal.ofReal (t ^ α) • μ := by
+    intro t ht
+    have hsm : Measurable fun y : E => t • y := measurable_const_smul t
+    have hpre : ∀ s : ℝ, (fun y : E => t • y) ⁻¹' {y | s < ‖y‖} = {y | s / t < ‖y‖} := fun s => by
+      ext y
+      simp only [mem_preimage, mem_ofPred_eq, norm_smul, Real.norm_eq_abs, abs_of_pos ht]
+      rw [div_lt_iff₀ ht, mul_comm]
+    refine ext_of_halfSpace_of_tail hα hαZ (C := ENNReal.ofReal (t ^ α) * W)
+      (C' := ENNReal.ofReal (t ^ α) * W) (ENNReal.mul_ne_top ENNReal.ofReal_ne_top hW)
+      (ENNReal.mul_ne_top ENNReal.ofReal_ne_top hW) (fun s hs => ?_) (fun s hs => ?_) ?_ ?_
+      fun L => ?_
+    · rw [Measure.map_apply hsm (measurableSet_lt measurable_const continuous_norm.measurable),
+        hpre]
+      refine (hμt _ (div_pos hs ht)).trans_eq ?_
+      rw [← mul_assoc, ← ENNReal.ofReal_mul (Real.rpow_nonneg hs.le _)]
+      congr 2
+      rw [Real.div_rpow hs.le ht.le, Real.rpow_neg ht.le, div_inv_eq_mul]
+    · rw [Measure.smul_apply, smul_eq_mul, mul_comm (ENNReal.ofReal (s ^ (-α))), mul_assoc]
+      exact mul_le_mul_right (by rw [mul_comm]; exact hμt s hs) _
+    · rw [Measure.map_apply hsm (measurableSet_singleton 0)]
+      convert hμ0 using 2
+      ext y; simp [ht.ne']
+    · rw [Measure.smul_apply, hμ0, smul_zero]
+    · have hpre' : (fun y : E => t • y) ⁻¹' {y | 1 < L y} = {y | t⁻¹ < L y} := by
+        ext y
+        simp only [mem_preimage, mem_ofPred_eq, map_smul, smul_eq_mul]
+        rw [inv_lt_iff_one_lt_mul₀' ht]
+      rw [Measure.map_apply hsm (measurableSet_lt measurable_const L.measurable), hpre',
+        hμhalf L _ (inv_pos.2 ht), Measure.smul_apply, smul_eq_mul,
+        hμhalf L 1 one_pos, Real.one_rpow, mul_one, ← ENNReal.ofReal_mul
+          (Real.rpow_nonneg ht.le _), Real.inv_rpow ht.le, Real.rpow_neg ht.le, inv_inv,
+        mul_comm]
+  -- the norm tail
+  have hsphere : μ {y | ‖y‖ = 1} = 0 := measure_norm_eq_zero_of_map_smul hhom hμfin one_pos
+  have hA : MeasurableSet {y : E | 1 < ‖y‖} :=
+    measurableSet_lt measurable_const continuous_norm.measurable
+  have hfr : μ (frontier {y : E | 1 < ‖y‖}) = 0 :=
+    measure_mono_null ((frontier_lt_subset_eq continuous_const continuous_norm).trans
+      fun y (hy : 1 = ‖y‖) => (show ‖y‖ = 1 from hy.symm)) hsphere
+  set κ := μ.real {y | 1 < ‖y‖}
+  have hκlim : Tendsto (fun x => P.real {ω | x < ‖X ω‖} / V x) atTop (𝓝 κ) := by
+    have key := tendsto_measureReal_of_vanishesNearZero (μs := fun x => scaledLaw P X V x)
+      (fun x => inferInstance) hμfin hconv hA one_pos (fun y (hy : 1 < ‖y‖) => hy.le) hfr
+    refine key.congr' ?_
+    filter_upwards [hV.eventually_pos, eventually_gt_atTop 0] with x hVx hx
+    rw [scaledLaw_real_norm_lt hX hx hVx.le, mul_one, inv_mul_eq_div]
+  set a : ℝ := (‖L₀‖ + 1)⁻¹
+  have ha : 0 < a := by positivity
+  have hwL : 0 < w (a • L₀) := by
+    rw [limit_smul hV hw L₀ ha]
+    exact mul_pos (Real.rpow_pos_of_pos ha _)
+      (lt_of_le_of_ne (limit_nonneg hV hw L₀) (Ne.symm hL₀))
+  have hLn : ‖a • L₀‖ ≤ 1 := by
+    rw [norm_smul, Real.norm_eq_abs, abs_of_pos ha, inv_mul_le_iff₀ (by positivity)]
+    linarith
+  have hsub : {y : E | 1 < (a • L₀) y} ⊆ {y | 1 < ‖y‖} := fun y (hy : 1 < (a • L₀) y) => by
+    show 1 < ‖y‖
+    calc 1 < (a • L₀) y := hy
+      _ ≤ ‖a • L₀‖ * ‖y‖ := (le_abs_self _).trans (by simpa using (a • L₀).le_opNorm y)
+      _ ≤ 1 * ‖y‖ := mul_le_mul_of_nonneg_right hLn (norm_nonneg _)
+      _ = ‖y‖ := one_mul _
+  have hκ : 0 < κ := by
+    have h1 : ENNReal.ofReal (w (a • L₀)) ≤ μ {y | 1 < ‖y‖} := by
+      have := hμhalf (a • L₀) 1 one_pos
+      rw [Real.one_rpow, mul_one] at this
+      rw [← this]
+      exact measure_mono hsub
+    have h2 := ENNReal.toReal_mono (hμfin 1 one_pos).ne h1
+    rw [ENNReal.toReal_ofReal hwL.le] at h2
+    exact hwL.trans_le h2
+  have hRV : IsRegularlyVarying (fun x => P.real {ω | x < ‖X ω‖}) (-α) :=
+    IsRegularlyVarying.of_tendsto_div hV hκlim hκ
+  refine ⟨ENNReal.ofReal κ⁻¹ • μ, κ, hκ, ⟨hRV, by rw [Measure.smul_apply, hμ0, smul_zero],
+    fun r hr => by
+      rw [Measure.smul_apply, smul_eq_mul]
+      exact ENNReal.mul_lt_top ENNReal.ofReal_lt_top (hμfin r hr), fun f hf => ?_⟩, hκlim,
+    fun L => ?_⟩
+  · rw [integral_smul_measure, ENNReal.toReal_ofReal (inv_nonneg.2 hκ.le), smul_eq_mul]
+    have hinv := hκlim.inv₀ hκ.ne'
+    refine (hinv.mul (hconv f hf)).congr' ?_
+    filter_upwards [hV.eventually_pos, hRV.eventually_pos] with x hVx hPx
+    rw [integral_scaledLaw hX hVx.le f.continuous.measurable, inv_div]
+    field_simp
+  · rw [Measure.smul_apply, smul_eq_mul, hμhalf L 1 one_pos, Real.one_rpow, mul_one,
+      ← ENNReal.ofReal_mul (inv_nonneg.2 hκ.le), inv_mul_eq_div]
+
 end Converse
 
 end CramerWold
