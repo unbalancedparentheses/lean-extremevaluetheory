@@ -28,7 +28,7 @@ We show that the hypothesis `α > 1` cannot be weakened.
   (`logTail_two_karamata_counterexample`), with `(∫_x^∞ logTail 2) / (x logTail 2 x) = log x`.
 
 The function `logTail a` (`= 1` on `(-∞, e)`, `= 1 / (x (log x)^a)` on `[e, ∞)`) is reused in
-`ExtremeValueTheory.Minimality.Breiman`.
+`ExtremeValueTheory.Minimality.ClassicalBreiman`.
 
 ## Summary
 

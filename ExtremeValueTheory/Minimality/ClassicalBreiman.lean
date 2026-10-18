@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.RegularVariation.Breiman
-import ExtremeValueTheory.Minimality.Karamata
+import ExtremeValueTheory.Minimality.ClassicalKaramata
 import ExtremeValueTheory.CumulativeDistributionFunction
 import Mathlib.MeasureTheory.Integral.Layercake
 import Mathlib.Probability.Independence.Basic
