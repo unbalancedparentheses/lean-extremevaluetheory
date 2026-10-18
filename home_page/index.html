@@ -1,0 +1,299 @@
+---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extreme Value Theory in Lean</title>
+<meta name="description" content="A machine-checked library of extreme value theory and heavy-tailed probability in Lean 4 and Mathlib.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/landing.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="hero">
+  <div class="column">
+    <h1>Extreme Value Theory in Lean</h1>
+    <p class="lede">A machine-checked library of the mathematics of rare events: limits of maxima,
+    heavy tails, the statistics of extremes, and extremes of dependent sequences, written in Lean&nbsp;4
+    on top of Mathlib.</p>
+    <nav class="actions" aria-label="Primary">
+      <a class="button primary" href="blueprint/">Read the blueprint</a>
+      <a class="button" href="docs/">API documentation</a>
+      <a class="button" href="https://github.com/unbalancedparentheses/lean-extremevaluetheory">Source on GitHub</a>
+    </nav>
+  </div>
+  <figure class="plot">
+    <svg class="hero-plot" viewBox="0 0 1200 300" role="img" aria-labelledby="plot-title plot-desc" preserveAspectRatio="none">
+<defs><clipPath id="reveal"><rect class="reveal" x="0" y="0" width="1200" height="300"/></clipPath></defs>
+<title id="plot-title">A heavy-tailed sample path</title>
+<desc id="plot-desc">180 independent Pareto observations with tail index 1.6. Most are small; a few are very large. The dashed line is a high threshold, observations above it are marked in red, and the stepped line is the running maximum.</desc>
+<line class="obs" x1="3.3" y1="294" x2="3.3" y2="271.5"/>
+<line class="obs" x1="10.0" y1="294" x2="10.0" y2="263.4"/>
+<line class="obs" x1="16.7" y1="294" x2="16.7" y2="197.7"/>
+<line class="obs" x1="23.3" y1="294" x2="23.3" y2="270.6"/>
+<line class="obs" x1="30.0" y1="294" x2="30.0" y2="267.5"/>
+<line class="obs" x1="36.7" y1="294" x2="36.7" y2="261.0"/>
+<line class="obs" x1="43.3" y1="294" x2="43.3" y2="286.4"/>
+<line class="obs" x1="50.0" y1="294" x2="50.0" y2="267.2"/>
+<line class="obs" x1="56.7" y1="294" x2="56.7" y2="256.9"/>
+<line class="obs" x1="63.3" y1="294" x2="63.3" y2="235.2"/>
+<line class="obs" x1="70.0" y1="294" x2="70.0" y2="290.3"/>
+<line class="obs" x1="76.7" y1="294" x2="76.7" y2="280.5"/>
+<line class="obs" x1="83.3" y1="294" x2="83.3" y2="290.5"/>
+<line class="obs" x1="90.0" y1="294" x2="90.0" y2="232.1"/>
+<line class="obs" x1="96.7" y1="294" x2="96.7" y2="249.9"/>
+<line class="obs" x1="103.3" y1="294" x2="103.3" y2="292.4"/>
+<line class="obs exc" x1="110.0" y1="294" x2="110.0" y2="143.7"/>
+<line class="obs exc" x1="116.7" y1="294" x2="116.7" y2="169.2"/>
+<line class="obs" x1="123.3" y1="294" x2="123.3" y2="254.4"/>
+<line class="obs" x1="130.0" y1="294" x2="130.0" y2="258.3"/>
+<line class="obs" x1="136.7" y1="294" x2="136.7" y2="287.6"/>
+<line class="obs" x1="143.3" y1="294" x2="143.3" y2="293.4"/>
+<line class="obs" x1="150.0" y1="294" x2="150.0" y2="266.0"/>
+<line class="obs" x1="156.7" y1="294" x2="156.7" y2="291.7"/>
+<line class="obs" x1="163.3" y1="294" x2="163.3" y2="286.1"/>
+<line class="obs" x1="170.0" y1="294" x2="170.0" y2="283.7"/>
+<line class="obs" x1="176.7" y1="294" x2="176.7" y2="292.9"/>
+<line class="obs" x1="183.3" y1="294" x2="183.3" y2="270.7"/>
+<line class="obs" x1="190.0" y1="294" x2="190.0" y2="272.3"/>
+<line class="obs" x1="196.7" y1="294" x2="196.7" y2="225.0"/>
+<line class="obs" x1="203.3" y1="294" x2="203.3" y2="266.7"/>
+<line class="obs" x1="210.0" y1="294" x2="210.0" y2="255.8"/>
+<line class="obs" x1="216.7" y1="294" x2="216.7" y2="268.2"/>
+<line class="obs" x1="223.3" y1="294" x2="223.3" y2="253.5"/>
+<line class="obs" x1="230.0" y1="294" x2="230.0" y2="271.2"/>
+<line class="obs" x1="236.7" y1="294" x2="236.7" y2="281.8"/>
+<line class="obs exc" x1="243.3" y1="294" x2="243.3" y2="68.0"/>
+<line class="obs exc" x1="250.0" y1="294" x2="250.0" y2="90.7"/>
+<line class="obs" x1="256.7" y1="294" x2="256.7" y2="225.6"/>
+<line class="obs" x1="263.3" y1="294" x2="263.3" y2="248.1"/>
+<line class="obs" x1="270.0" y1="294" x2="270.0" y2="279.9"/>
+<line class="obs" x1="276.7" y1="294" x2="276.7" y2="284.3"/>
+<line class="obs" x1="283.3" y1="294" x2="283.3" y2="281.3"/>
+<line class="obs" x1="290.0" y1="294" x2="290.0" y2="291.3"/>
+<line class="obs" x1="296.7" y1="294" x2="296.7" y2="239.8"/>
+<line class="obs" x1="303.3" y1="294" x2="303.3" y2="274.9"/>
+<line class="obs" x1="310.0" y1="294" x2="310.0" y2="224.0"/>
+<line class="obs" x1="316.7" y1="294" x2="316.7" y2="275.8"/>
+<line class="obs exc" x1="323.3" y1="294" x2="323.3" y2="175.7"/>
+<line class="obs" x1="330.0" y1="294" x2="330.0" y2="223.9"/>
+<line class="obs" x1="336.7" y1="294" x2="336.7" y2="294.0"/>
+<line class="obs" x1="343.3" y1="294" x2="343.3" y2="285.2"/>
+<line class="obs" x1="350.0" y1="294" x2="350.0" y2="204.0"/>
+<line class="obs" x1="356.7" y1="294" x2="356.7" y2="270.3"/>
+<line class="obs exc" x1="363.3" y1="294" x2="363.3" y2="147.3"/>
+<line class="obs" x1="370.0" y1="294" x2="370.0" y2="275.1"/>
+<line class="obs" x1="376.7" y1="294" x2="376.7" y2="291.2"/>
+<line class="obs" x1="383.3" y1="294" x2="383.3" y2="257.0"/>
+<line class="obs" x1="390.0" y1="294" x2="390.0" y2="237.8"/>
+<line class="obs" x1="396.7" y1="294" x2="396.7" y2="282.3"/>
+<line class="obs" x1="403.3" y1="294" x2="403.3" y2="290.6"/>
+<line class="obs" x1="410.0" y1="294" x2="410.0" y2="278.9"/>
+<line class="obs exc" x1="416.7" y1="294" x2="416.7" y2="169.9"/>
+<line class="obs" x1="423.3" y1="294" x2="423.3" y2="241.0"/>
+<line class="obs" x1="430.0" y1="294" x2="430.0" y2="289.3"/>
+<line class="obs" x1="436.7" y1="294" x2="436.7" y2="283.4"/>
+<line class="obs" x1="443.3" y1="294" x2="443.3" y2="290.0"/>
+<line class="obs" x1="450.0" y1="294" x2="450.0" y2="291.7"/>
+<line class="obs" x1="456.7" y1="294" x2="456.7" y2="234.5"/>
+<line class="obs" x1="463.3" y1="294" x2="463.3" y2="286.7"/>
+<line class="obs" x1="470.0" y1="294" x2="470.0" y2="263.4"/>
+<line class="obs" x1="476.7" y1="294" x2="476.7" y2="271.9"/>
+<line class="obs" x1="483.3" y1="294" x2="483.3" y2="286.1"/>
+<line class="obs" x1="490.0" y1="294" x2="490.0" y2="244.9"/>
+<line class="obs" x1="496.7" y1="294" x2="496.7" y2="288.8"/>
+<line class="obs" x1="503.3" y1="294" x2="503.3" y2="255.5"/>
+<line class="obs" x1="510.0" y1="294" x2="510.0" y2="289.4"/>
+<line class="obs" x1="516.7" y1="294" x2="516.7" y2="273.6"/>
+<line class="obs" x1="523.3" y1="294" x2="523.3" y2="285.1"/>
+<line class="obs" x1="530.0" y1="294" x2="530.0" y2="282.3"/>
+<line class="obs exc" x1="536.7" y1="294" x2="536.7" y2="162.0"/>
+<line class="obs" x1="543.3" y1="294" x2="543.3" y2="233.3"/>
+<line class="obs" x1="550.0" y1="294" x2="550.0" y2="280.5"/>
+<line class="obs" x1="556.7" y1="294" x2="556.7" y2="213.3"/>
+<line class="obs" x1="563.3" y1="294" x2="563.3" y2="285.2"/>
+<line class="obs" x1="570.0" y1="294" x2="570.0" y2="275.3"/>
+<line class="obs" x1="576.7" y1="294" x2="576.7" y2="222.1"/>
+<line class="obs" x1="583.3" y1="294" x2="583.3" y2="255.7"/>
+<line class="obs" x1="590.0" y1="294" x2="590.0" y2="290.1"/>
+<line class="obs exc" x1="596.7" y1="294" x2="596.7" y2="124.7"/>
+<line class="obs" x1="603.3" y1="294" x2="603.3" y2="285.1"/>
+<line class="obs" x1="610.0" y1="294" x2="610.0" y2="282.9"/>
+<line class="obs" x1="616.7" y1="294" x2="616.7" y2="238.7"/>
+<line class="obs" x1="623.3" y1="294" x2="623.3" y2="279.1"/>
+<line class="obs" x1="630.0" y1="294" x2="630.0" y2="280.9"/>
+<line class="obs" x1="636.7" y1="294" x2="636.7" y2="291.2"/>
+<line class="obs" x1="643.3" y1="294" x2="643.3" y2="290.5"/>
+<line class="obs" x1="650.0" y1="294" x2="650.0" y2="261.4"/>
+<line class="obs" x1="656.7" y1="294" x2="656.7" y2="283.6"/>
+<line class="obs" x1="663.3" y1="294" x2="663.3" y2="259.7"/>
+<line class="obs" x1="670.0" y1="294" x2="670.0" y2="276.7"/>
+<line class="obs" x1="676.7" y1="294" x2="676.7" y2="271.5"/>
+<line class="obs exc" x1="683.3" y1="294" x2="683.3" y2="174.7"/>
+<line class="obs" x1="690.0" y1="294" x2="690.0" y2="269.3"/>
+<line class="obs" x1="696.7" y1="294" x2="696.7" y2="262.1"/>
+<line class="obs" x1="703.3" y1="294" x2="703.3" y2="218.9"/>
+<line class="obs" x1="710.0" y1="294" x2="710.0" y2="286.5"/>
+<line class="obs" x1="716.7" y1="294" x2="716.7" y2="287.8"/>
+<line class="obs" x1="723.3" y1="294" x2="723.3" y2="204.8"/>
+<line class="obs" x1="730.0" y1="294" x2="730.0" y2="230.5"/>
+<line class="obs" x1="736.7" y1="294" x2="736.7" y2="283.3"/>
+<line class="obs" x1="743.3" y1="294" x2="743.3" y2="286.1"/>
+<line class="obs" x1="750.0" y1="294" x2="750.0" y2="243.8"/>
+<line class="obs" x1="756.7" y1="294" x2="756.7" y2="188.8"/>
+<line class="obs" x1="763.3" y1="294" x2="763.3" y2="285.8"/>
+<line class="obs" x1="770.0" y1="294" x2="770.0" y2="182.1"/>
+<line class="obs" x1="776.7" y1="294" x2="776.7" y2="214.2"/>
+<line class="obs" x1="783.3" y1="294" x2="783.3" y2="259.5"/>
+<line class="obs" x1="790.0" y1="294" x2="790.0" y2="273.6"/>
+<line class="obs" x1="796.7" y1="294" x2="796.7" y2="289.9"/>
+<line class="obs" x1="803.3" y1="294" x2="803.3" y2="292.5"/>
+<line class="obs exc" x1="810.0" y1="294" x2="810.0" y2="171.3"/>
+<line class="obs" x1="816.7" y1="294" x2="816.7" y2="283.8"/>
+<line class="obs" x1="823.3" y1="294" x2="823.3" y2="248.5"/>
+<line class="obs" x1="830.0" y1="294" x2="830.0" y2="282.9"/>
+<line class="obs" x1="836.7" y1="294" x2="836.7" y2="229.2"/>
+<line class="obs" x1="843.3" y1="294" x2="843.3" y2="260.1"/>
+<line class="obs" x1="850.0" y1="294" x2="850.0" y2="281.0"/>
+<line class="obs" x1="856.7" y1="294" x2="856.7" y2="286.8"/>
+<line class="obs" x1="863.3" y1="294" x2="863.3" y2="246.5"/>
+<line class="obs" x1="870.0" y1="294" x2="870.0" y2="291.3"/>
+<line class="obs" x1="876.7" y1="294" x2="876.7" y2="284.3"/>
+<line class="obs" x1="883.3" y1="294" x2="883.3" y2="263.4"/>
+<line class="obs" x1="890.0" y1="294" x2="890.0" y2="222.6"/>
+<line class="obs" x1="896.7" y1="294" x2="896.7" y2="258.4"/>
+<line class="obs" x1="903.3" y1="294" x2="903.3" y2="281.7"/>
+<line class="obs" x1="910.0" y1="294" x2="910.0" y2="201.0"/>
+<line class="obs" x1="916.7" y1="294" x2="916.7" y2="285.5"/>
+<line class="obs" x1="923.3" y1="294" x2="923.3" y2="293.4"/>
+<line class="obs" x1="930.0" y1="294" x2="930.0" y2="282.3"/>
+<line class="obs" x1="936.7" y1="294" x2="936.7" y2="272.0"/>
+<line class="obs" x1="943.3" y1="294" x2="943.3" y2="291.7"/>
+<line class="obs" x1="950.0" y1="294" x2="950.0" y2="286.8"/>
+<line class="obs" x1="956.7" y1="294" x2="956.7" y2="276.8"/>
+<line class="obs" x1="963.3" y1="294" x2="963.3" y2="262.3"/>
+<line class="obs" x1="970.0" y1="294" x2="970.0" y2="288.7"/>
+<line class="obs" x1="976.7" y1="294" x2="976.7" y2="277.2"/>
+<line class="obs" x1="983.3" y1="294" x2="983.3" y2="211.3"/>
+<line class="obs exc" x1="990.0" y1="294" x2="990.0" y2="147.1"/>
+<line class="obs" x1="996.7" y1="294" x2="996.7" y2="254.1"/>
+<line class="obs" x1="1003.3" y1="294" x2="1003.3" y2="250.1"/>
+<line class="obs" x1="1010.0" y1="294" x2="1010.0" y2="261.2"/>
+<line class="obs" x1="1016.7" y1="294" x2="1016.7" y2="288.4"/>
+<line class="obs" x1="1023.3" y1="294" x2="1023.3" y2="292.7"/>
+<line class="obs" x1="1030.0" y1="294" x2="1030.0" y2="293.3"/>
+<line class="obs" x1="1036.7" y1="294" x2="1036.7" y2="204.1"/>
+<line class="obs" x1="1043.3" y1="294" x2="1043.3" y2="249.0"/>
+<line class="obs exc" x1="1050.0" y1="294" x2="1050.0" y2="171.2"/>
+<line class="obs" x1="1056.7" y1="294" x2="1056.7" y2="293.2"/>
+<line class="obs" x1="1063.3" y1="294" x2="1063.3" y2="256.3"/>
+<line class="obs" x1="1070.0" y1="294" x2="1070.0" y2="269.4"/>
+<line class="obs" x1="1076.7" y1="294" x2="1076.7" y2="245.1"/>
+<line class="obs" x1="1083.3" y1="294" x2="1083.3" y2="279.7"/>
+<line class="obs exc" x1="1090.0" y1="294" x2="1090.0" y2="19.7"/>
+<line class="obs" x1="1096.7" y1="294" x2="1096.7" y2="291.1"/>
+<line class="obs" x1="1103.3" y1="294" x2="1103.3" y2="264.5"/>
+<line class="obs" x1="1110.0" y1="294" x2="1110.0" y2="244.2"/>
+<line class="obs" x1="1116.7" y1="294" x2="1116.7" y2="208.0"/>
+<line class="obs" x1="1123.3" y1="294" x2="1123.3" y2="244.1"/>
+<line class="obs" x1="1130.0" y1="294" x2="1130.0" y2="248.6"/>
+<line class="obs" x1="1136.7" y1="294" x2="1136.7" y2="235.2"/>
+<line class="obs" x1="1143.3" y1="294" x2="1143.3" y2="202.0"/>
+<line class="obs" x1="1150.0" y1="294" x2="1150.0" y2="277.8"/>
+<line class="obs" x1="1156.7" y1="294" x2="1156.7" y2="250.9"/>
+<line class="obs" x1="1163.3" y1="294" x2="1163.3" y2="207.8"/>
+<line class="obs" x1="1170.0" y1="294" x2="1170.0" y2="217.5"/>
+<line class="obs" x1="1176.7" y1="294" x2="1176.7" y2="273.9"/>
+<line class="obs" x1="1183.3" y1="294" x2="1183.3" y2="235.7"/>
+<line class="obs" x1="1190.0" y1="294" x2="1190.0" y2="219.7"/>
+<line class="obs" x1="1196.7" y1="294" x2="1196.7" y2="262.3"/>
+<line class="threshold" x1="0" y1="182.1" x2="1200" y2="182.1"/>
+<path class="runmax" d="M0.0,271.5 L6.7,271.5 L6.7,263.4 L13.3,263.4 L13.3,197.7 L20.0,197.7 L20.0,197.7 L26.7,197.7 L26.7,197.7 L33.3,197.7 L33.3,197.7 L40.0,197.7 L40.0,197.7 L46.7,197.7 L46.7,197.7 L53.3,197.7 L53.3,197.7 L60.0,197.7 L60.0,197.7 L66.7,197.7 L66.7,197.7 L73.3,197.7 L73.3,197.7 L80.0,197.7 L80.0,197.7 L86.7,197.7 L86.7,197.7 L93.3,197.7 L93.3,197.7 L100.0,197.7 L100.0,197.7 L106.7,197.7 L106.7,143.7 L113.3,143.7 L113.3,143.7 L120.0,143.7 L120.0,143.7 L126.7,143.7 L126.7,143.7 L133.3,143.7 L133.3,143.7 L140.0,143.7 L140.0,143.7 L146.7,143.7 L146.7,143.7 L153.3,143.7 L153.3,143.7 L160.0,143.7 L160.0,143.7 L166.7,143.7 L166.7,143.7 L173.3,143.7 L173.3,143.7 L180.0,143.7 L180.0,143.7 L186.7,143.7 L186.7,143.7 L193.3,143.7 L193.3,143.7 L200.0,143.7 L200.0,143.7 L206.7,143.7 L206.7,143.7 L213.3,143.7 L213.3,143.7 L220.0,143.7 L220.0,143.7 L226.7,143.7 L226.7,143.7 L233.3,143.7 L233.3,143.7 L240.0,143.7 L240.0,68.0 L246.7,68.0 L246.7,68.0 L253.3,68.0 L253.3,68.0 L260.0,68.0 L260.0,68.0 L266.7,68.0 L266.7,68.0 L273.3,68.0 L273.3,68.0 L280.0,68.0 L280.0,68.0 L286.7,68.0 L286.7,68.0 L293.3,68.0 L293.3,68.0 L300.0,68.0 L300.0,68.0 L306.7,68.0 L306.7,68.0 L313.3,68.0 L313.3,68.0 L320.0,68.0 L320.0,68.0 L326.7,68.0 L326.7,68.0 L333.3,68.0 L333.3,68.0 L340.0,68.0 L340.0,68.0 L346.7,68.0 L346.7,68.0 L353.3,68.0 L353.3,68.0 L360.0,68.0 L360.0,68.0 L366.7,68.0 L366.7,68.0 L373.3,68.0 L373.3,68.0 L380.0,68.0 L380.0,68.0 L386.7,68.0 L386.7,68.0 L393.3,68.0 L393.3,68.0 L400.0,68.0 L400.0,68.0 L406.7,68.0 L406.7,68.0 L413.3,68.0 L413.3,68.0 L420.0,68.0 L420.0,68.0 L426.7,68.0 L426.7,68.0 L433.3,68.0 L433.3,68.0 L440.0,68.0 L440.0,68.0 L446.7,68.0 L446.7,68.0 L453.3,68.0 L453.3,68.0 L460.0,68.0 L460.0,68.0 L466.7,68.0 L466.7,68.0 L473.3,68.0 L473.3,68.0 L480.0,68.0 L480.0,68.0 L486.7,68.0 L486.7,68.0 L493.3,68.0 L493.3,68.0 L500.0,68.0 L500.0,68.0 L506.7,68.0 L506.7,68.0 L513.3,68.0 L513.3,68.0 L520.0,68.0 L520.0,68.0 L526.7,68.0 L526.7,68.0 L533.3,68.0 L533.3,68.0 L540.0,68.0 L540.0,68.0 L546.7,68.0 L546.7,68.0 L553.3,68.0 L553.3,68.0 L560.0,68.0 L560.0,68.0 L566.7,68.0 L566.7,68.0 L573.3,68.0 L573.3,68.0 L580.0,68.0 L580.0,68.0 L586.7,68.0 L586.7,68.0 L593.3,68.0 L593.3,68.0 L600.0,68.0 L600.0,68.0 L606.7,68.0 L606.7,68.0 L613.3,68.0 L613.3,68.0 L620.0,68.0 L620.0,68.0 L626.7,68.0 L626.7,68.0 L633.3,68.0 L633.3,68.0 L640.0,68.0 L640.0,68.0 L646.7,68.0 L646.7,68.0 L653.3,68.0 L653.3,68.0 L660.0,68.0 L660.0,68.0 L666.7,68.0 L666.7,68.0 L673.3,68.0 L673.3,68.0 L680.0,68.0 L680.0,68.0 L686.7,68.0 L686.7,68.0 L693.3,68.0 L693.3,68.0 L700.0,68.0 L700.0,68.0 L706.7,68.0 L706.7,68.0 L713.3,68.0 L713.3,68.0 L720.0,68.0 L720.0,68.0 L726.7,68.0 L726.7,68.0 L733.3,68.0 L733.3,68.0 L740.0,68.0 L740.0,68.0 L746.7,68.0 L746.7,68.0 L753.3,68.0 L753.3,68.0 L760.0,68.0 L760.0,68.0 L766.7,68.0 L766.7,68.0 L773.3,68.0 L773.3,68.0 L780.0,68.0 L780.0,68.0 L786.7,68.0 L786.7,68.0 L793.3,68.0 L793.3,68.0 L800.0,68.0 L800.0,68.0 L806.7,68.0 L806.7,68.0 L813.3,68.0 L813.3,68.0 L820.0,68.0 L820.0,68.0 L826.7,68.0 L826.7,68.0 L833.3,68.0 L833.3,68.0 L840.0,68.0 L840.0,68.0 L846.7,68.0 L846.7,68.0 L853.3,68.0 L853.3,68.0 L860.0,68.0 L860.0,68.0 L866.7,68.0 L866.7,68.0 L873.3,68.0 L873.3,68.0 L880.0,68.0 L880.0,68.0 L886.7,68.0 L886.7,68.0 L893.3,68.0 L893.3,68.0 L900.0,68.0 L900.0,68.0 L906.7,68.0 L906.7,68.0 L913.3,68.0 L913.3,68.0 L920.0,68.0 L920.0,68.0 L926.7,68.0 L926.7,68.0 L933.3,68.0 L933.3,68.0 L940.0,68.0 L940.0,68.0 L946.7,68.0 L946.7,68.0 L953.3,68.0 L953.3,68.0 L960.0,68.0 L960.0,68.0 L966.7,68.0 L966.7,68.0 L973.3,68.0 L973.3,68.0 L980.0,68.0 L980.0,68.0 L986.7,68.0 L986.7,68.0 L993.3,68.0 L993.3,68.0 L1000.0,68.0 L1000.0,68.0 L1006.7,68.0 L1006.7,68.0 L1013.3,68.0 L1013.3,68.0 L1020.0,68.0 L1020.0,68.0 L1026.7,68.0 L1026.7,68.0 L1033.3,68.0 L1033.3,68.0 L1040.0,68.0 L1040.0,68.0 L1046.7,68.0 L1046.7,68.0 L1053.3,68.0 L1053.3,68.0 L1060.0,68.0 L1060.0,68.0 L1066.7,68.0 L1066.7,68.0 L1073.3,68.0 L1073.3,68.0 L1080.0,68.0 L1080.0,68.0 L1086.7,68.0 L1086.7,19.7 L1093.3,19.7 L1093.3,19.7 L1100.0,19.7 L1100.0,19.7 L1106.7,19.7 L1106.7,19.7 L1113.3,19.7 L1113.3,19.7 L1120.0,19.7 L1120.0,19.7 L1126.7,19.7 L1126.7,19.7 L1133.3,19.7 L1133.3,19.7 L1140.0,19.7 L1140.0,19.7 L1146.7,19.7 L1146.7,19.7 L1153.3,19.7 L1153.3,19.7 L1160.0,19.7 L1160.0,19.7 L1166.7,19.7 L1166.7,19.7 L1173.3,19.7 L1173.3,19.7 L1180.0,19.7 L1180.0,19.7 L1186.7,19.7 L1186.7,19.7 L1193.3,19.7 L1193.3,19.7 L1200.0,19.7" clip-path="url(#reveal)"/>
+</svg>
+    <figcaption class="column">One hundred and eighty Pareto observations. Most are small; a few are huge.
+    Observations above the dashed threshold are <span class="exc-key">marked in red</span>, and the stepped
+    line is the running maximum. Every theorem here is, in the end, about curves like these.</figcaption>
+  </figure>
+</header>
+
+<main id="main" class="column">
+
+<section aria-labelledby="trust">
+  <h2 id="trust">Why you can trust it</h2>
+  <dl class="facts">
+    <dt>Every proof is checked twice</dt>
+    <dd>Lean’s kernel checks each proof at build time, and every night the whole library is re-checked by
+    <em>con-leche</em>, an independent kernel checker that itself comes with a machine-checked proof that it
+    never accepts a proof of <code>False</code>.</dd>
+    <dt>No gaps, no extra axioms</dt>
+    <dd>About 80,000 lines with no <code>sorry</code>; the main theorems use only Lean’s three standard axioms.</dd>
+    <dt>Statements are compared with the literature</dt>
+    <dd>Six independent audits compared each formal statement with its textbook source. Every known
+    difference is recorded in <a href="https://github.com/unbalancedparentheses/lean-extremevaluetheory/blob/main/FAITHFULNESS.md">the faithfulness report</a>.</dd>
+  </dl>
+</section>
+
+<section aria-labelledby="statement">
+  <h2 id="statement">What a theorem looks like</h2>
+  <p>The Fisher–Tippett–Gnedenko theorem: if suitably normalized maxima of independent observations
+  converge to a non-degenerate law, that law is Gumbel, Fréchet or Weibull, up to a change of location
+  and scale.</p>
+<pre><code>theorem IsExtremeValueDistr.classification
+    {G : CumulativeDistributionFunction}
+    (hG : G.IsExtremeValueDistr) :
+    (∃ A, A • G = standardGumbelCDF) ∨
+      (∃ A ξ, ∃ (hξ : 0 &lt; ξ), A • G = standardFrechetCDF hξ) ∨
+      (∃ A ξ, ∃ (hξ : 0 &lt; ξ), A • G = standardWeibullCDF hξ)</code></pre>
+</section>
+
+<section aria-labelledby="covered">
+  <h2 id="covered">What is proved</h2>
+  <dl class="areas">
+    <dt>Limits of maxima</dt><dd>Fisher–Tippett–Gnedenko, max-stability, the GEV family and its moments, block maxima.</dd>
+    <dt>Domains of attraction</dt><dd>Fréchet, Weibull and Gumbel characterizations, von Mises conditions, the quantile form.</dd>
+    <dt>Peaks over threshold</dt><dd>Pickands–Balkema–de Haan as an equivalence for every shape.</dd>
+    <dt>Regular variation</dt><dd>Uniform convergence, representation, Potter bounds, Karamata, Breiman, extended and second-order variation, the multivariate theory and the converse Cramér–Wold device.</dd>
+    <dt>Stable laws</dt><dd>The generalized central limit theorem for every index, its converse, and the domains of attraction of stable and normal laws.</dd>
+    <dt>Heavy tails</dt><dd>Subexponential laws, random sums, ruin probabilities, linear processes.</dd>
+    <dt>Statistics</dt><dd>Hill, Pickands, moment and Weissman estimators; consistency, asymptotic normality, dependent data; GPD and GEV maximum likelihood.</dd>
+    <dt>Dependence</dt><dd>Leadbetter’s theorem, the extremal index, the tail process, mixing, Markov chains and moving averages.</dd>
+    <dt>Multivariate</dt><dd>Max-stable vectors and their spectral measures, the Pickands dependence function, tail dependence.</dd>
+    <dt>Processes</dt><dd>Poisson random measures, exceedance point processes, the Skorokhod space, the tail empirical process converging to Brownian motion.</dd>
+  </dl>
+  <p><a href="https://github.com/unbalancedparentheses/lean-extremevaluetheory/blob/main/THEOREMS.md">The full catalogue</a> lists every result with its Lean name.</p>
+</section>
+
+<section aria-labelledby="new">
+  <h2 id="new">Something new</h2>
+  <p>Making every hypothesis explicit turned up a simple stationary sequence, the <em>echo process</em>,
+  in which each large shock reappears once after a lag that grows with its size. Its tail process looks
+  exactly like that of independent data, yet its extremal index is ½ rather than 1. As far as we can tell
+  it is only the second known mechanism of this kind. <a href="https://github.com/unbalancedparentheses/lean-extremevaluetheory/blob/main/RESEARCH.md">Research notes</a>.</p>
+</section>
+
+<section aria-labelledby="use">
+  <h2 id="use">Use it</h2>
+  <ul class="links">
+    <li><a href="https://github.com/unbalancedparentheses/lean-extremevaluetheory/blob/main/docs/PRACTITIONERS.md">For users of R and Python packages</a>: which theorem stands behind each estimator in <code>evd</code>, <code>ismev</code>, <code>extRemes</code>, <code>POT</code>, <code>pyextremes</code> and <code>scipy.stats</code>, and under which assumptions.</li>
+    <li><a href="https://github.com/unbalancedparentheses/lean-extremevaluetheory/blob/main/docs/REVIEW.md">For extreme value theorists</a>: a guide to checking the formal statements without knowing Lean.</li>
+    <li><a href="blueprint.pdf">The blueprint as a PDF</a>, and its <a href="blueprint/dep_graph_document.html">dependency graph</a>.</li>
+  </ul>
+<pre><code>lake exe cache get
+lake build</code></pre>
+</section>
+
+</main>
+
+<footer class="column">
+  <p>Apache 2.0. Builds on <a href="https://github.com/kkytola/ExtremeValueProject">ExtremeValueProject</a> by
+  Kalle Kytölä and the participants of the Aalto course MS-EV0029.
+  <a href="https://github.com/unbalancedparentheses/lean-extremevaluetheory/blob/main/CITATION.cff">How to cite</a>.</p>
+</footer>
+</body>
+</html>
