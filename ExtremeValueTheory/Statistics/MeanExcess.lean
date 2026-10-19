@@ -28,10 +28,16 @@ computation).
   `eₙ(u) = ∑_{i<n} (Xᵢ - u)⁺ / #{i < n : Xᵢ > u}` is strongly consistent for every fixed `u`
   with `P(X > u) > 0`, provided `E X⁺ < ∞`.
 
+* `eq_gpdSurvival'_of_meanExcess_eq_linear`: **the converse**: if `P(X > u) > 0` for all
+  `u ≥ 0` and `e(u) = a + b u` on `[0, ∞)` with `a > 0`, `b ≥ 0`, then
+  `P(X > u) = P(X > 0) Ḡ_{ξ,σ}(u)` with `ξ = b/(1 + b)`, `σ = a/(1 + b)`. The proof shows that
+  `I(u) = ∫_u^∞ F̄` solves `I' = -I/(a + b u)` (so `F̄ = I/e` is continuous) and that
+  `I(u)(a + b u)^{1/b}` (`I(u) e^{u/a}` if `b = 0`) is constant.
+
 ## Scope
 
-The converse characterization (a linear mean excess function forces a GPD tail) is not
-formalized here.
+The converse is proved for unbounded support (`ξ ∈ [0, 1)`); the case of a finite right
+endpoint (`b < 0`, `ξ < 0`) is not formalized.
 
 ## References
 
@@ -222,5 +228,152 @@ theorem ae_tendsto_empMeanExcess_gpd {ξ σ : ℝ} (hσ : 0 < σ) (hξ : ξ < 1)
   exact ae_tendsto_empMeanExcess hX hind hpos hS
 
 end Empirical
+
+/-! ### Converse: a linear mean excess function forces a GPD tail -/
+
+section Converse
+
+/-- The integrating factor `(a + b v)^{1/b}` (`e^{v/a}` for `b = 0`) of the linear equation
+`I' = -I/(a + b v)` satisfied by `I(v) = ∫_v^∞ F̄`. -/
+private noncomputable def meWeight (a b v : ℝ) : ℝ :=
+  if b = 0 then exp (v / a) else (a + b * v) ^ (1 / b)
+
+private lemma hasDerivAt_meWeight {a b v : ℝ} (ha : 0 < a) (hb : 0 ≤ b) (hv : 0 ≤ v) :
+    HasDerivAt (meWeight a b) (meWeight a b v / (a + b * v)) v := by
+  by_cases hb0 : b = 0
+  · subst hb0
+    have e : meWeight a 0 = fun v ↦ exp (v / a) := funext fun v ↦ by simp [meWeight]
+    rw [e]
+    convert ((hasDerivAt_id v).div_const a).exp using 1
+    · rfl
+    · simp [div_eq_mul_inv]
+  · have hbpos : 0 < b := lt_of_le_of_ne hb (Ne.symm hb0)
+    have hc : 0 < a + b * v := by positivity
+    have e : meWeight a b = fun v ↦ (a + b * v) ^ (1 / b) := funext fun v ↦ by simp [meWeight, hb0]
+    rw [e]
+    convert (((hasDerivAt_id v).const_mul b).const_add a).rpow_const (p := 1 / b)
+      (Or.inl hc.ne') using 1
+    · rfl
+    · show (a + b * v) ^ (1 / b) / (a + b * v) = b * 1 * (1 / b) * (a + b * v) ^ (1 / b - 1)
+      rw [rpow_sub_one hc.ne']
+      field_simp
+
+private lemma meWeight_pos {a b v : ℝ} (ha : 0 < a) (hb : 0 ≤ b) (hv : 0 ≤ v) :
+    0 < meWeight a b v := by
+  unfold meWeight
+  split_ifs
+  · exact exp_pos _
+  · exact rpow_pos_of_pos (by positivity) _
+
+variable {μ : Measure ℝ} [IsProbabilityMeasure μ]
+
+/-- **A linear mean excess function characterizes the GPD** ([EKM, Theorem 3.4.13(e)],
+converse part, for an unbounded support). Let `F̄(t) = P(X > t)` be positive on `[0, ∞)` and
+suppose the mean excess function is linear, `e(u) = a + b u` for `u ≥ 0`, with `a > 0`,
+`b ≥ 0`. Then the tail beyond `0` is generalized Pareto:
+`F̄(u) = F̄(0) Ḡ_{ξ,σ}(u)` for `u ≥ 0`, with `ξ = b/(1 + b) ∈ [0, 1)` and `σ = a/(1 + b)`.
+(Integrability of `F̄` is not assumed: it follows from `e(0) = a > 0`.) -/
+theorem eq_gpdSurvival'_of_meanExcess_eq_linear {a b : ℝ} (ha : 0 < a) (hb : 0 ≤ b)
+    (hS : ∀ u, 0 ≤ u → 0 < μ.real (Ioi u))
+    (he : ∀ u, 0 ≤ u → meanExcess (fun t ↦ μ.real (Ioi t)) u = a + b * u) {u : ℝ}
+    (hu : 0 ≤ u) :
+    μ.real (Ioi u) = μ.real (Ioi 0) * gpdSurvival' (b / (1 + b)) (a / (1 + b)) u := by
+  set S : ℝ → ℝ := fun t ↦ μ.real (Ioi t) with hSdef
+  have hanti : Antitone S := fun s t hst ↦ measureReal_mono (Ioi_subset_Ioi hst)
+  have hmeas : Measurable S := hanti.measurable
+  have hii : ∀ x y, IntervalIntegrable S volume x y := fun x y ↦ hanti.intervalIntegrable
+  have hI : ∀ v, 0 ≤ v → ∫ t in Ioi v, S t = S v * (a + b * v) := by
+    intro v hv
+    have := he v hv
+    rw [meanExcess, div_eq_iff (hS v hv).ne'] at this
+    rw [this]; ring
+  have hint : IntegrableOn S (Ioi 0) := by
+    by_contra h
+    have h1 := hI 0 le_rfl
+    rw [integral_undef h] at h1
+    have h2 := hS 0 le_rfl
+    simp only [mul_zero, add_zero] at h1
+    nlinarith
+  set I0 := ∫ t in Ioi 0, S t with hI0
+  set F : ℝ → ℝ := fun v ↦ ∫ t in (0 : ℝ)..v, S t with hFdef
+  have hsplit : ∀ v, 0 ≤ v → ∫ t in Ioi v, S t = I0 - F v := by
+    intro v hv
+    have hU := Ioc_union_Ioi_eq_Ioi hv
+    simp only [hI0, hFdef]
+    rw [intervalIntegral.integral_of_le hv, ← hU, setIntegral_union (Ioc_disjoint_Ioi le_rfl)
+      measurableSet_Ioi (hint.mono_set (hU ▸ subset_union_left))
+      (hint.mono_set (Ioi_subset_Ioi hv))]
+    ring
+  have hFc : Continuous F := intervalIntegral.continuous_primitive hii 0
+  have hSeq : ∀ v, 0 ≤ v → S v = (I0 - F v) / (a + b * v) := by
+    intro v hv
+    have hpos : 0 < a + b * v := by positivity
+    rw [← hsplit v hv, hI v hv]
+    field_simp
+  have hScont : ∀ v, 0 < v → ContinuousAt S v := by
+    intro v hv
+    have hev : (fun w ↦ (I0 - F w) / (a + b * w)) =ᶠ[𝓝 v] S :=
+      (eventually_gt_nhds hv).mono fun w hw ↦ (hSeq w hw.le).symm
+    refine ContinuousAt.congr ?_ hev
+    have hpos : 0 < a + b * v := by positivity
+    exact ((continuous_const.sub hFc).continuousAt).div (by fun_prop) hpos.ne'
+  have hFd : ∀ v, 0 < v → HasDerivAt F (S v) v := fun v hv ↦
+    intervalIntegral.integral_hasDerivAt_right (hii 0 v)
+      hmeas.stronglyMeasurable.stronglyMeasurableAtFilter (hScont v hv)
+  set Ψ : ℝ → ℝ := fun v ↦ (I0 - F v) * meWeight a b v with hΨ
+  have hΨd : ∀ v, 0 < v → HasDerivAt Ψ 0 v := by
+    intro v hv
+    have h := ((hasDerivAt_const v I0).sub (hFd v hv)).mul (hasDerivAt_meWeight ha hb hv.le)
+    convert h using 1
+    have hpos : 0 < a + b * v := by positivity
+    rw [hSeq v hv.le]
+    simp only [Pi.sub_apply]
+    field_simp
+    ring
+  have hΨc : ContinuousOn Ψ (Icc 0 u) :=
+    (continuous_const.sub hFc).continuousOn.mul fun v hv ↦
+      (hasDerivAt_meWeight ha hb hv.1).continuousAt.continuousWithinAt
+  have hΨu : Ψ u = Ψ 0 := by
+    rcases hu.eq_or_lt with h0 | hu'
+    · rw [h0]
+    obtain ⟨c, _, hc'⟩ := exists_hasDerivAt_eq_slope Ψ (fun _ ↦ 0) hu' hΨc
+      (fun v hv ↦ hΨd v hv.1)
+    have hne : u - 0 ≠ 0 := by linarith
+    rw [eq_comm, div_eq_zero_iff, or_iff_left hne, sub_eq_zero] at hc'
+    exact hc'
+  have hF0 : F 0 = 0 := intervalIntegral.integral_same
+  have hwu := meWeight_pos ha hb hu
+  have hc : 0 < a + b * u := by positivity
+  have hS0 : S 0 = I0 / a := by rw [hSeq 0 le_rfl, hF0]; simp
+  have hSu : S u = I0 * meWeight a b 0 / (meWeight a b u * (a + b * u)) := by
+    rw [hSeq u hu]
+    have : I0 - F u = I0 * meWeight a b 0 / meWeight a b u := by
+      rw [eq_div_iff hwu.ne']
+      have := hΨu
+      simp only [hΨ, hF0, sub_zero] at this
+      exact this
+    rw [this, div_div]
+  change S u = S 0 * _
+  rw [hSu, hS0]
+  by_cases hb0 : b = 0
+  · subst hb0
+    simp only [meWeight, ↓reduceIte, zero_div, exp_zero, mul_one, zero_mul, add_zero,
+      gpdSurvival'_zero_left, div_one]
+    field_simp
+    rw [mul_assoc, ← exp_add]
+    simp
+  · have hbpos : 0 < b := lt_of_le_of_ne hb (Ne.symm hb0)
+    have hξ : b / (1 + b) ≠ 0 := by positivity
+    simp only [meWeight, hb0, ↓reduceIte, mul_zero, add_zero, gpdSurvival', hξ]
+    have e1 : 1 + b / (1 + b) * u / (a / (1 + b)) = (a + b * u) / a := by
+      field_simp
+    have e2 : -(1 / (b / (1 + b))) = -(1 / b + 1) := by field_simp
+    rw [e1, max_eq_left (by positivity), e2, rpow_neg (by positivity),
+      rpow_add_one (by positivity), div_rpow hc.le ha.le]
+    have h1 := rpow_pos_of_pos ha (1 / b)
+    have h2 := rpow_pos_of_pos hc (1 / b)
+    field_simp
+
+end Converse
 
 end ExtremeValueTheory
