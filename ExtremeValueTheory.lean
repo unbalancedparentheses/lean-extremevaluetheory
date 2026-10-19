@@ -161,6 +161,7 @@ import ExtremeValueTheory.Statistics.GPDJointNormality
 import ExtremeValueTheory.Statistics.GEVMLE
 import ExtremeValueTheory.Statistics.GEVMLEFisher
 import ExtremeValueTheory.Statistics.GEVFisherInformation
+import ExtremeValueTheory.Statistics.GEVHessian
 import ExtremeValueTheory.Statistics.MeasurableArgmax
 import ExtremeValueTheory.Statistics.GPDJointNormalityNeg
 import ExtremeValueTheory.Statistics.GPDMLENormality
