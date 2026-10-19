@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.MaxStable.Basic
+import ExtremeValueTheory.CDFBridge
 import ExtremeValueTheory.DomainOfAttraction.Quantile
 
 /-!
@@ -45,10 +46,8 @@ section Marginals
 /-- The `i`-th marginal distribution function `t ↦ μ {x | x i ≤ t}` of a probability law on
 `ι → ℝ`: the c.d.f. of the image of `μ` under the `i`-th coordinate. -/
 noncomputable def marginal (μ : Measure (ι → ℝ)) [IsProbabilityMeasure μ] (i : ι) :
-    CumulativeDistributionFunction where
-  toStieltjesFunction := cdf (μ.map fun x ↦ x i)
-  tendsto_atTop := tendsto_cdf_atTop _
-  tendsto_atBot := tendsto_cdf_atBot _
+    CumulativeDistributionFunction :=
+  CumulativeDistributionFunction.ofMeasure (μ.map fun x ↦ x i)
 
 variable {μ : Measure (ι → ℝ)} [IsProbabilityMeasure μ]
 

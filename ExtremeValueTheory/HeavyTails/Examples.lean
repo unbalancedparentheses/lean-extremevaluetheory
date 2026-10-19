@@ -16,8 +16,9 @@ statements are not vacuous ([EKM, Table 1.4.3/1.4.4]).
 
 ## Main definitions
 
-* `ExtremeValueTheory.lawOfCDF F`: the Lebesgue–Stieltjes probability measure of a Stieltjes
-  function `F` with `F(-∞) = 0`, `F(∞) = 1`; its tail is `1 - F`.
+* `tail_stieltjesFunction_measure`: the tail of the Lebesgue–Stieltjes measure `F.measure` of a
+  Stieltjes function with `F(∞) = 1` is `1 - F` (formerly stated for `lawOfCDF F`, now
+  deprecated in favour of Mathlib's `F.measure`).
 * `ExtremeValueTheory.weibullTailLaw τ hτ`: the Weibull law with `F̄(x) = exp(-x^τ)` on
   `[0, ∞)`, `τ > 0` (built from the c.d.f. `1 - exp(-(max x 0)^τ)`).
 
@@ -41,32 +42,51 @@ namespace ExtremeValueTheory
 
 open Subexp
 
-/-! ### Laws from c.d.f.s -/
+/-! ### Laws from c.d.f.s
+
+The law of a Stieltjes function `F` with `F(-∞) = 0`, `F(∞) = 1` is Mathlib's Lebesgue–Stieltjes
+measure `F.measure` (a probability measure by `StieltjesFunction.isProbabilityMeasure`); see
+`ExtremeValueTheory/CDFBridge.lean` for the bridge between laws and c.d.f.s. -/
 
 section LawOfCDF
 
-variable (F : StieltjesFunction ℝ)
+variable {F : StieltjesFunction ℝ}
 
-/-- The probability measure with c.d.f. `F` (the Lebesgue–Stieltjes measure of `F`). -/
-noncomputable def lawOfCDF : Measure ℝ := F.measure
+/-- The tail of the Lebesgue–Stieltjes measure of `F` is `1 - F`. -/
+theorem tail_stieltjesFunction_measure (htop : Tendsto F atTop (𝓝 1)) (x : ℝ) :
+    tail F.measure x = 1 - F x := by
+  have h01 : F x ≤ 1 := F.mono.ge_of_tendsto htop x
+  rw [tail, measureReal_def, F.measure_Ioi htop, ENNReal.toReal_ofReal (by linarith)]
 
-variable {F}
+/-- The Lebesgue–Stieltjes measure of `F` is concentrated on `[0, ∞)` when `F` vanishes on
+`(-∞, 0]`. -/
+theorem stieltjesFunction_measure_Iio_zero (hbot : Tendsto F atBot (𝓝 0))
+    (h0 : ∀ x, x ≤ 0 → F x = 0) : F.measure (Iio 0) = 0 := by
+  refine measure_mono_null Iio_subset_Iic_self ?_
+  rw [F.measure_Iic hbot, h0 0 le_rfl, sub_zero, ENNReal.ofReal_zero]
 
+/-- The probability measure with c.d.f. `F`. Deprecated: this is `F.measure`
+(`StieltjesFunction.measure`). -/
+@[deprecated StieltjesFunction.measure +typeChanged (since := "2026-10-19")]
+noncomputable def lawOfCDF (F : StieltjesFunction ℝ) : Measure ℝ := F.measure
+
+set_option linter.deprecated false in
+@[deprecated StieltjesFunction.isProbabilityMeasure +typeChanged (since := "2026-10-19")]
 theorem isProbabilityMeasure_lawOfCDF (hbot : Tendsto F atBot (𝓝 0))
     (htop : Tendsto F atTop (𝓝 1)) : IsProbabilityMeasure (lawOfCDF F) :=
   F.isProbabilityMeasure hbot htop
 
-/-- The tail of `lawOfCDF F` is `1 - F`. -/
+set_option linter.deprecated false in
+@[deprecated tail_stieltjesFunction_measure (since := "2026-10-19")]
 theorem tail_lawOfCDF (htop : Tendsto F atTop (𝓝 1)) (x : ℝ) :
-    tail (lawOfCDF F) x = 1 - F x := by
-  have h01 : F x ≤ 1 := F.mono.ge_of_tendsto htop x
-  rw [tail, measureReal_def, lawOfCDF, F.measure_Ioi htop, ENNReal.toReal_ofReal (by linarith)]
+    tail (lawOfCDF F) x = 1 - F x :=
+  tail_stieltjesFunction_measure htop x
 
-/-- `lawOfCDF F` is concentrated on `[0, ∞)` when `F` vanishes on `(-∞, 0]`. -/
+set_option linter.deprecated false in
+@[deprecated stieltjesFunction_measure_Iio_zero (since := "2026-10-19")]
 theorem lawOfCDF_Iio_zero (hbot : Tendsto F atBot (𝓝 0)) (h0 : ∀ x, x ≤ 0 → F x = 0) :
-    lawOfCDF F (Iio 0) = 0 := by
-  refine measure_mono_null Iio_subset_Iic_self ?_
-  rw [lawOfCDF, F.measure_Iic hbot, h0 0 le_rfl, sub_zero, ENNReal.ofReal_zero]
+    lawOfCDF F (Iio 0) = 0 :=
+  stieltjesFunction_measure_Iio_zero hbot h0
 
 end LawOfCDF
 
@@ -107,20 +127,20 @@ theorem tendsto_weibullCDF_atTop (hτ : 0 < τ) : Tendsto (weibullCDF τ hτ) at
   rw [weibullCDF_apply, max_eq_left hx]
 
 /-- The **Weibull law** with tail `F̄(x) = exp(-x^τ)` on `[0, ∞)`, `τ > 0`. -/
-noncomputable def weibullTailLaw (τ : ℝ) (hτ : 0 < τ) : Measure ℝ := lawOfCDF (weibullCDF τ hτ)
+noncomputable def weibullTailLaw (τ : ℝ) (hτ : 0 < τ) : Measure ℝ := (weibullCDF τ hτ).measure
 
 instance isProbabilityMeasure_weibullTailLaw (hτ : 0 < τ) :
     IsProbabilityMeasure (weibullTailLaw τ hτ) :=
-  isProbabilityMeasure_lawOfCDF (tendsto_weibullCDF_atBot hτ) (tendsto_weibullCDF_atTop hτ)
+  (weibullCDF τ hτ).isProbabilityMeasure (tendsto_weibullCDF_atBot hτ) (tendsto_weibullCDF_atTop hτ)
 
 theorem weibullTailLaw_Iio_zero (hτ : 0 < τ) : weibullTailLaw τ hτ (Iio 0) = 0 :=
-  lawOfCDF_Iio_zero (tendsto_weibullCDF_atBot hτ) fun x hx => by
+  stieltjesFunction_measure_Iio_zero (tendsto_weibullCDF_atBot hτ) fun x hx => by
     rw [weibullCDF_apply, max_eq_right hx, zero_rpow hτ.ne', neg_zero, exp_zero, sub_self]
 
 /-- The Weibull law has tail `F̄(x) = exp(-x^τ)` for `x ≥ 0`. -/
 theorem tail_weibullTailLaw (hτ : 0 < τ) {x : ℝ} (hx : 0 ≤ x) :
     tail (weibullTailLaw τ hτ) x = exp (-x ^ τ) := by
-  rw [weibullTailLaw, tail_lawOfCDF (tendsto_weibullCDF_atTop hτ),
+  rw [weibullTailLaw, tail_stieltjesFunction_measure (tendsto_weibullCDF_atTop hτ),
     weibullCDF_apply, max_eq_left hx, sub_sub_cancel]
 
 /-- **Weibull laws with shape `0 < τ < 1` are subexponential** ([EKM, Example 1.4.3 and

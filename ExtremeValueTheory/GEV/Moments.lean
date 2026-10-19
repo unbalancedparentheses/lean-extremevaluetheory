@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.GEV.Family
+import ExtremeValueTheory.CDFBridge
 import Mathlib.NumberTheory.Harmonic.GammaDeriv
 import Mathlib.Probability.Moments.Variance
 
@@ -32,8 +33,8 @@ representation turns every moment of `H_ξ` into an Euler integral, and gives ([
 * `ExtremeValueTheory.gevTransform ξ t`: the map `t ↦ (t ^ (-ξ) - 1) / ξ` (`-log t` at `ξ = 0`).
 * `measure_gevCDF_eq_map`: `H_ξ` is the image of the standard exponential law under
   `gevTransform ξ`.
-* `CumulativeDistributionFunction.measure_smul_eq_map`: the law of `A • F` is the image of the
-  law of `F` under `A`.
+* `CumulativeDistributionFunction.measure_smul_eq_map` (proved in `CDFBridge`): the law of
+  `A • F` is the image of the law of `F` under `A`.
 * `integral_id_gevCDF_zero`: `∫ x dΛ(x) = γ`.
 * `integrable_id_gevCDF`, `integral_id_gevCDF`: `∫ x dH_ξ(x) = (Γ(1 - ξ) - 1) / ξ`.
 * `integral_sq_gevCDF`, `variance_id_gevCDF`: second moment and variance for `ξ < 1/2`.
@@ -53,27 +54,6 @@ representation turns every moment of `H_ξ` into an Euler integral, and gives ([
 open Filter Topology Real MeasureTheory Set CumulativeDistributionFunction ProbabilityTheory
 
 namespace CumulativeDistributionFunction
-
-/-- The law of `A • F` is the image of the law of `F` under the affine map
-`x ↦ a x + b`, `(a, b) = A.coefs`. -/
-theorem measure_smul_eq_map (F : CumulativeDistributionFunction) (A : AffineIncrEquiv) :
-    (A • F).measure = F.measure.map (fun x ↦ A.coefs.1 * x + A.coefs.2) := by
-  have ha := A.coefs_fst_pos
-  have hm : Measurable (fun x : ℝ ↦ A.coefs.1 * x + A.coefs.2) := by fun_prop
-  refine Measure.ext_of_Iic _ _ fun x ↦ ?_
-  rw [Measure.map_apply hm measurableSet_Iic,
-    StieltjesFunction.measure_Iic _ (A • F).tendsto_atBot]
-  have hpre : (fun x : ℝ ↦ A.coefs.1 * x + A.coefs.2) ⁻¹' Iic x =
-      Iic (A.coefs.1⁻¹ * x + -A.coefs.1⁻¹ * A.coefs.2) := by
-    ext y
-    simp only [mem_preimage, mem_Iic]
-    rw [show A.coefs.1⁻¹ * x + -A.coefs.1⁻¹ * A.coefs.2 = (x - A.coefs.2) / A.coefs.1 by
-      field_simp; ring, le_div_iff₀ ha]
-    constructor <;> intro h <;> linarith
-  rw [hpre, StieltjesFunction.measure_Iic _ F.tendsto_atBot, sub_zero, sub_zero]
-  congr 1
-  change F (A⁻¹ x) = _
-  simp
 
 /-- First moment of an affine transform: `∫ x d(A • F) = a ∫ x dF + b`. -/
 theorem integral_id_smul (F : CumulativeDistributionFunction) (A : AffineIncrEquiv)

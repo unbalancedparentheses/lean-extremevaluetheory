@@ -2,6 +2,7 @@
 import ExtremeValueTheory.AffineTransformation
 import ExtremeValueTheory.ClassificationCalculation
 import ExtremeValueTheory.CumulativeDistributionFunction
+import ExtremeValueTheory.CDFBridge
 import ExtremeValueTheory.DegenerateCDF
 import ExtremeValueTheory.ExtremeValueDistribution
 import ExtremeValueTheory.LimitRelationManipulation
