@@ -5,28 +5,38 @@
 [![Kernel check](https://github.com/unbalancedparentheses/lean-extremevaluetheory/actions/workflows/kernel-check.yml/badge.svg)](https://github.com/unbalancedparentheses/lean-extremevaluetheory/actions/workflows/kernel-check.yml)
 [![Nix](https://github.com/unbalancedparentheses/lean-extremevaluetheory/actions/workflows/nix.yml/badge.svg)](https://github.com/unbalancedparentheses/lean-extremevaluetheory/actions/workflows/nix.yml)
 
-A machine-checked library of extreme value theory and heavy-tailed probability, written in Lean 4
-on top of Mathlib. It covers the classical theory of maxima and tails, the statistics of extremes,
-stable laws, extremes of dependent sequences, multivariate extremes, point processes and the
-Skorokhod space, and it contains new results on the extremal index.
+**The mathematics of rare events, machine-checked.** This is a Lean 4 library, built on Mathlib, that
+proves the theory behind floods, heat waves, market crashes and insurance catastrophes: how maxima
+behave, how heavy tails look, how to estimate them from data, and how extremes cluster in time.
 
-- **About 80,000 lines, no `sorry`.** Every main theorem depends only on Lean's standard axioms
-  (`propext`, `Classical.choice`, `Quot.sound`).
-- **Proofs are checked twice.** Lean's kernel checks every proof at build time, and CI re-checks the
-  whole environment with [`con-leche`](.github/workflows/kernel-check.yml), an independent kernel
-  checker that comes with a machine-checked proof that it never accepts a proof of `False`. The
-  first full run accepted all 718,274 declarations of the library and the parts of Mathlib it uses.
-- **Statements are audited.** Six independent faithfulness audits compared each formal statement
-  with its textbook source; the results, including every known deviation, are in
-  [`FAITHFULNESS.md`](FAITHFULNESS.md).
-- **Documented.** A [blueprint](https://unbalancedparentheses.github.io/lean-extremevaluetheory/blueprint/)
-  explains each result and links it to the Lean code, and the
-  [API documentation](https://unbalancedparentheses.github.io/lean-extremevaluetheory/docs/) lists
-  every declaration.
+- **Broad.** The classical theory of maxima and regular variation, peaks over threshold, the
+  statistics of extremes (estimators, likelihood, return levels, confidence intervals), stable laws
+  and heavy tails, extremes of dependent sequences, multivariate extremes, point processes and the
+  Skorokhod space. About 94,000 lines and 3,900 theorems, with no `sorry`.
+- **Checked twice.** Lean's kernel checks every proof, and CI re-checks all 718,274 declarations
+  with an independent checker.
+- **Tested against the textbooks.** Proving a theorem is not enough: it has to *state* the right
+  thing. About 250 specification tests and six audits check that it does.
+- **New mathematics.** Formalizing forced every hypothesis into the open, and that led to new
+  results, including an answer to an open question of Bai, Kulik and Wang (2024).
+
+[Website](https://unbalancedparentheses.github.io/lean-extremevaluetheory/) ·
+[Blueprint](https://unbalancedparentheses.github.io/lean-extremevaluetheory/blueprint/) ·
+[API documentation](https://unbalancedparentheses.github.io/lean-extremevaluetheory/docs/) ·
+[Roadmap](ROADMAP.md)
+
+## Start here
+
+| If you are… | Read |
+|---|---|
+| **A practitioner** using `evd`, `ismev`, `extRemes`, `POT`, `ReIns`, `pyextremes` or `scipy.stats` | [`docs/PRACTITIONERS.md`](docs/PRACTITIONERS.md): which theorem justifies each function, under which assumptions, and the conventions that trip people up (scipy's GEV shape is `c = −ξ`) |
+| **An extreme value theorist** who wants to know whether the formal statements are right | [`docs/REVIEW.md`](docs/REVIEW.md), written for readers who do not use Lean, and [`FAITHFULNESS.md`](FAITHFULNESS.md) |
+| **A researcher** looking for new results or open problems | [`RESEARCH.md`](RESEARCH.md) and [`docs/PRACTICAL_OPEN_PROBLEMS.md`](docs/PRACTICAL_OPEN_PROBLEMS.md) |
+| **A Lean or Mathlib user** | The [blueprint](https://unbalancedparentheses.github.io/lean-extremevaluetheory/blueprint/), [`THEOREMS.md`](THEOREMS.md), and [`ForMathlib/`](ExtremeValueTheory/ForMathlib/UPSTREAMING.md), the general results written for Mathlib |
 
 ## What a theorem looks like
 
-Fisher–Tippett–Gnedenko, as stated in the library:
+The Fisher–Tippett–Gnedenko theorem, as stated in the library:
 
 ```lean
 theorem CumulativeDistributionFunction.IsExtremeValueDistr.classification
@@ -40,58 +50,84 @@ theorem CumulativeDistributionFunction.IsExtremeValueDistr.classification
 distribution function `F` and affine normalizations; `A • G` is `G` after an increasing affine change
 of variables. So every limit law of normalized maxima is, up to type, Gumbel, Fréchet or Weibull.
 
-## Headline theorems
+And one a hydrologist would recognize: the usual confidence interval for a peaks-over-threshold
+return level ("the 100-year flood is 8.2 m ± 0.9") has the coverage it claims, asymptotically
+(`tendsto_measure_mem_gpdReturnLevelInterval`).
 
-| Area | Theorem | Lean name |
+## Why you can trust it
+
+A formal proof guarantees that the conclusion follows from the hypotheses. It does not guarantee
+that the statement says what the textbook says. The library checks both.
+
+| Check | What it rules out | Result |
 |---|---|---|
-| Limits of maxima | Fisher–Tippett–Gnedenko: the only non-degenerate limits of normalized maxima are Gumbel, Fréchet and Weibull | `CumulativeDistributionFunction.IsExtremeValueDistr.classification` |
-| | Max-stable laws are exactly the extreme value laws | `isMaxStable_iff_isExtremeValueDistr` |
-| Domains of attraction | Fréchet ⇔ regularly varying tail | `isInMDAFrechet_iff` |
-| | Weibull ⇔ finite endpoint with regularly varying tail | `isInMDAWeibull_iff` |
-| | Gumbel ⇔ auxiliary function (de Haan) | `isInMDAGumbel_iff` |
-| | Quantile form: `MDA(H_γ)` ⇔ `U` extended regularly varying | `isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile` |
+| Lean's kernel, at every build | a wrong proof | every proof checked |
+| [`con-leche`](.github/workflows/kernel-check.yml), an independent kernel with a machine-checked proof that it never accepts `False` | a bug in Lean's kernel | all 718,274 declarations accepted |
+| `#print axioms` | hidden assumptions | only `propext`, `Classical.choice`, `Quot.sound` |
+| [Non-vacuity tests](Test/README.md) | hypotheses that can never hold together | 92 tests: every headline theorem applied to a concrete object |
+| [Known-answer tests](Test/README.md) | sign and parametrization slips in definitions | 158 tests against textbook values (Gumbel moments, Smith's Fisher information, extremal indices, …) |
+| [Junk-value audit](Test/JUNK_VALUES.md) | statements true only because `x/0 = 0` or `log 0 = 0` | 3,718 theorems scanned; one such statement found and fixed |
+| [Mutation checks](Test/MUTATION.md) | statements proved "too easily" | 323 perturbed statements; none reveals a weakness |
+| [Faithfulness audits](FAITHFULNESS.md) | statements that differ from the literature | six audits; every known deviation recorded |
+
+What is still missing is review by human experts: the audits and tests were written with AI
+assistance, so an independent reader is the remaining safeguard. [`docs/REVIEW.md`](docs/REVIEW.md) is
+written for that reader, and corrections are very welcome.
+
+## What is proved
+
+| Area | Highlights | Lean names |
+|---|---|---|
+| Limits of maxima | Fisher–Tippett–Gnedenko; max-stable laws are exactly the extreme value laws | `CumulativeDistributionFunction.IsExtremeValueDistr.classification`, `isMaxStable_iff_isExtremeValueDistr` |
+| Domains of attraction | Fréchet, Weibull and Gumbel characterizations; the quantile form | `isInMDAFrechet_iff`, `isInMDAWeibull_iff`, `isInMDAGumbel_iff`, `isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile` |
 | Peaks over threshold | Pickands–Balkema–de Haan, as an equivalence for every shape | `isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival` |
 | Regular variation | Karamata (both halves), Potter bounds, representation theorem, Breiman's lemma | `IsRegularlyVarying.tendsto_integral_Ioi_div`, `tendsto_measure_mul_div_measure` |
-| Stable laws | Generalized CLT for every `0 < α < 2`, with textbook constants | `tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt'` |
-| | Domain of attraction of an `α`-stable law ⇔ regularly varying tail + tail balance | `domainOfAttraction_isStableIndex_iff` |
-| | Every stable law has a unique index (Feller VI.1); normal domain of attraction | `IsStable.existsUnique_isStableIndex`, `domainOfAttraction_gaussianReal_iff` |
+| Stable laws | Generalized CLT for every `0 < α < 2` with textbook constants; domains of attraction; uniqueness of the index | `tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt'`, `domainOfAttraction_isStableIndex_iff`, `IsStable.existsUnique_isStableIndex` |
 | Heavy tails | Subexponential laws, random sums, Embrechts–Veraverbeke ruin asymptotics | `IsSubexponential.tendsto_tail_compound_div`, `tendsto_pkRuin_div_mul_tail` |
-| Statistics | Hill estimator: consistency, asymptotic normality, dependent data | `tendstoInMeasure_hill`, `tendstoInDistribution_hill`, `tendstoInMeasure_hill_of_alphaMixing_rate` |
-| | Pickands and moment estimators, Weissman extreme quantiles | `tendstoInMeasure_pickands`, `tendstoInMeasure_momentEstimator_of_isInMDAGEV'`, `tendstoInDistribution_weissman` |
-| | GPD/GEV maximum likelihood: consistency, Fisher information, joint normality | `ae_tendsto_gpdMLE'`, `exists_gpdMLE_tendstoInDistribution`, `ae_tendsto_gevMLE` |
-| | Return levels: asymptotic normality and Wald intervals with correct coverage | `tendstoInDistribution_gpdReturnLevel`, `tendsto_measure_mem_gpdReturnLevelInterval` |
-| Dependence | Leadbetter's theorem and the extremal index | `tendsto_measureReal_partialMax_le_exp`, `HasExtremalIndex` |
-| | Tail process, time-change formula, `θ = ϑ` under anticlustering | `HasSpectralTailProcess.lintegral_timeChange`, `HasSpectralTailProcess.hasExtremalIndex_abs` |
-| Multivariate | Regular variation, polar decomposition, converse Cramér–Wold (non-integer `α`) | `isRegVarVector_iff`, `CramerWold.isRegVarVector_of_tendsto_linear` |
-| | Multivariate domains of attraction and the multivariate GPD | `isMDAWith_iff`, `IsMDAWith.tendsto_conditionalExcessCDF` |
-| | Max-stable spectral representation, existence and uniqueness | `IsSimpleMaxStable.existsUnique_hasSpectralMeasure` |
-| Processes | Poisson random measures; exceedances converge to a Poisson process | `ProbabilityTheory.exists_isPoissonRandomMeasure`, `tendsto_measureReal_sumDiracRange_timeSpace_eq` |
-| | Skorokhod space `D[0,1]` is Polish; tail empirical process ⇒ Brownian motion | `SkorokhodSpace.instPolishSpace`, `tendstoInDistribution_tailEmpiricalPath` |
+| Estimators | Hill (consistency, normality, dependent data), Pickands, moment, Weissman | `tendstoInMeasure_hill`, `tendstoInDistribution_hill`, `tendstoInMeasure_pickands`, `tendstoInDistribution_weissman` |
+| Likelihood | GPD and GEV maximum likelihood: consistency, Fisher information, joint normality | `ae_tendsto_gpdMLE'`, `exists_gpdMLE_tendstoInDistribution`, `ae_tendsto_gevMLE` |
+| Return levels | Asymptotic normality; Wald intervals with correct coverage; the delta method | `tendstoInDistribution_gpdReturnLevel`, `tendsto_measure_mem_gpdReturnLevelInterval`, `TendstoInDistribution.delta_method_gaussian` |
+| Dependence | Leadbetter's theorem; extremal index; tail process; `θ = ϑ` under anticlustering | `tendsto_measureReal_partialMax_le_exp`, `HasSpectralTailProcess.hasExtremalIndex_abs` |
+| Clustering estimators | Blocks and runs estimators of the extremal index are consistent | `tendstoInMeasure_blocksEstimator`, `tendstoInMeasure_runsEstimator` |
+| Time series | AR(1), ARMAX, linear processes, Markov chains; `X = AX + B` and GARCH(1,1) tails | `SRE.eq_stationaryLaw`, `SRE.GARCH.exists_tail_index` |
+| Multivariate | Regular variation, converse Cramér–Wold, max-stable spectral representation, domains of attraction, the multivariate GPD | `isRegVarVector_iff`, `IsSimpleMaxStable.existsUnique_hasSpectralMeasure`, `isMDAWith_iff`, `IsMDAWith.tendsto_conditionalExcessCDF` |
+| Processes | Poisson random measures; exceedances converge to a Poisson process; `D[0,1]` is Polish; tail empirical process ⇒ Brownian motion | `ProbabilityTheory.exists_isPoissonRandomMeasure`, `SkorokhodSpace.instPolishSpace`, `tendstoInDistribution_tailEmpiricalPath` |
 
-The full list is in [`THEOREMS.md`](THEOREMS.md).
+Every result, with its source: [`THEOREMS.md`](THEOREMS.md). What is not proved yet: [`ROADMAP.md`](ROADMAP.md).
 
-## Research results
+## New results
 
-Formalizing the extremal index forced every hypothesis into the open. A literature check (see
-[`RESEARCH.md`](RESEARCH.md)) classifies the results as follows:
+Formalizing the extremal index forced every hypothesis into the open. The results below were found
+that way; their novelty has been checked against the literature
+([`docs/NOVELTY.md`](docs/NOVELTY.md), [`docs/NOVELTY2.md`](docs/NOVELTY2.md)) but not yet by experts.
 
-- **The echo process (likely new).** An explicit stationary, regularly varying sequence whose tail
-  process is that of an iid sequence (`ϑ = 1`, so the tail process sees no clustering) but whose
-  extremal index is `θ = 1/2` (`logEchoProcess_theta_lt_vartheta`). Each large shock reappears once,
-  after a lag that grows with its size. The cluster ratio has a block-length phase transition at
-  `rₙ ≍ log n` (`logEchoProcess_phase_transition`). It appears to be only the second known mechanism
-  with `θ < ϑ`, and far simpler than the first (Bai and Wang).
-- **An answer to a question of Bai, Kulik and Wang (2024).** With an echo lag of order `size^γ`, the
-  power-lag echo process satisfies anticlustering exactly for block lengths `n^ρ` with `ρ < γ/α`
-  (`powEchoProcess_antiClustering_iff`), so every cutoff `ρ₀ ∈ (0,1)` is attained. The same processes are
-  β-mixing (geometrically for the log lag), showing that strong mixing plus a vanishing tail process does
-  not imply `θ = ϑ` (`logEchoProcess_betaMixing_incompatible`).
-- **An exact gap formula (partly known).** `θ = ϑ − η`, where `η` is the mass of cluster returns at
-  lags that grow with the threshold (`HasSpectralTailProcess.lt_candidateExtremalIndex_iff`). The
-  underlying identity is close to classical results of O'Brien and Segers; the two-sided statement is
-  formalized here.
-- **`θ ≤ ϑ` (known, Kulik–Soulier Lemma 7.5.4)**, proved here assuming only stationarity and a
-  spectral tail process (`HasSpectralTailProcess.le_candidateExtremalIndex'`).
+- **An answer to a question of Bai, Kulik and Wang (2024).** They asked whether some process
+  satisfies the anticlustering condition only for block lengths up to `n^{ρ₀}` with `ρ₀ < 1`. The
+  *power-lag echo process* (each large shock reappears once, after a delay that grows with its size)
+  does so for every `ρ₀ ∈ (0,1)` (`powEchoProcess_antiClustering_iff`).
+- **Mixing does not give `θ = ϑ`.** The same processes are β-mixing, yet their extremal index
+  `θ = 1/2` differs from the value `ϑ = 1` read off the tail process
+  (`logEchoProcess_betaMixing_incompatible`).
+- **The echo process.** A simple stationary sequence with `θ < ϑ`, apparently only the second known
+  mechanism after Bai and Wang's (`logEchoProcess_theta_lt_vartheta`), with a phase transition in the
+  block length (`logEchoProcess_phase_transition`).
+- **A warning for practitioners, proved.** On the echo process, the runs estimator with short runs
+  converges to `ϑ`, not to the extremal index `θ` (`logEcho_tendstoInMeasure_runsEstimator`).
+- **Which hypotheses are needed.** Counterexamples show that the hypotheses of Karamata's theorem,
+  Breiman's lemma, the von Mises condition, the generalized CLT and Hill consistency cannot be dropped;
+  some others can be weakened (`ExtremeValueTheory/Minimality/`).
+- **Known results, proved under weaker hypotheses:** `θ ≤ ϑ` (Kulik–Soulier Lemma 7.5.4) and an exact
+  formula for the gap `ϑ − θ`.
+
+## Build
+
+```sh
+lake exe cache get
+lake build          # the library
+lake build Test     # the specification tests
+```
+
+With Nix, `nix develop` gives a shell with `elan` and the other tools used by the scripts and CI.
 
 ## Layout
 
@@ -100,40 +136,24 @@ Formalizing the extremal index forced every hypothesis into the open. A literatu
 | top level, `GEV/` | distribution functions, types, Fisher–Tippett–Gnedenko, max-stability, the GEV family |
 | `RegularVariation/` | slow, regular, extended and second-order variation; Karamata; Breiman; multivariate |
 | `DomainOfAttraction/`, `PeaksOverThreshold/` | the three domains, von Mises conditions, Pickands–Balkema–de Haan |
-| `StableLaws/` | stable laws, the generalized CLT and its converse |
-| `HeavyTails/` | subexponential laws, random sums, ruin, linear processes |
-| `Statistics/` | order statistics, records, Hill, Pickands, moment, Weissman, block maxima, likelihood |
-| `Dependence/` | stationary sequences, extremal index, tail process, mixing, Markov chains, the echo process |
-| `Multivariate/`, `MaxStable/` | dependence functions, tail dependence, max-stable vectors and processes |
+| `StableLaws/`, `HeavyTails/` | stable laws, the generalized CLT; subexponential laws, random sums, ruin |
+| `Statistics/` | order statistics, estimators, likelihood, return levels, confidence intervals, extremal-index estimators |
+| `Dependence/` | extremal index, tail process, mixing, Markov chains, linear processes, `X = AX + B`, GARCH, the echo processes |
+| `Multivariate/`, `MaxStable/` | multivariate regular variation and domains of attraction, the multivariate GPD, max-stable vectors and processes |
 | `PointProcess/` | exceedance point processes |
-| `ForMathlib/` | general results (vague convergence, Poisson random measures, mixing, Skorokhod space, …) written for upstreaming to Mathlib; see [`UPSTREAMING.md`](ExtremeValueTheory/ForMathlib/UPSTREAMING.md) |
-
-## Build
-
-```sh
-lake exe cache get
-lake build
-```
-
-With Nix, `nix develop` gives a shell with `elan` and the other tools used by the scripts and CI.
-
-## Guides
-
-- [`docs/PRACTITIONERS.md`](docs/PRACTITIONERS.md): for users of the R and Python packages (`evd`,
-  `ismev`, `extRemes`, `POT`, `ReIns`, `pyextremes`, `scipy.stats`, …). Which estimator each function
-  computes, which theorem guarantees it, under which assumptions, and what is not covered, with a
-  cheat-sheet of sign and parametrization conventions.
-- [`docs/REVIEW.md`](docs/REVIEW.md): a guide for extreme value theorists reviewing whether the formal
-  statements say what the textbook theorems say, written for readers who do not use Lean.
-- [`FAITHFULNESS.md`](FAITHFULNESS.md): statement-by-statement comparison with the literature and the
-  results of six audits.
-- [`THEOREMS.md`](THEOREMS.md): the full catalogue of results.
+| `Minimality/` | counterexamples showing which hypotheses are needed |
+| `ForMathlib/` | general results written for Mathlib (vague convergence, Poisson random measures, mixing, Skorokhod space, delta method, …); see [`UPSTREAMING.md`](ExtremeValueTheory/ForMathlib/UPSTREAMING.md) |
+| `Test/` | specification tests: non-vacuity, known answers, junk values, mutation checks |
 
 ## Contributing
 
-Corrections to statements are especially welcome: if a formal statement does not say what its
-textbook counterpart says, please open an issue. Open problems with precise formal targets are
-listed in [`RESEARCH.md`](RESEARCH.md).
+The most useful contribution is a correction: if a formal statement does not say what its textbook
+counterpart says, please open an issue. Open problems with precise targets are listed in
+[`ROADMAP.md`](ROADMAP.md) and [`RESEARCH.md`](RESEARCH.md).
+
+## Citing
+
+See [`CITATION.cff`](CITATION.cff), or use GitHub's "Cite this repository" button.
 
 ## Credits
 
