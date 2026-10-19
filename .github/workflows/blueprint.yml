@@ -34,7 +34,7 @@ jobs:
         run: ~/.elan/bin/lake exe cache get || true
 
       - name: Build project
-        run: ~/.elan/bin/lake build ExtremeValueTheory
+        run: ~/.elan/bin/lake build ExtremeValueTheory Test  # checkdecls loads every library of the package
 
       - name: Cache mathlib API docs
         uses: actions/cache@v4
