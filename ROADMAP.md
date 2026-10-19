@@ -38,8 +38,12 @@ Regular Variation and Point Processes* (1987) and *Heavy-Tail Phenomena* (2007);
 ### 2. Peaks over threshold and likelihood
 - [x] Pickands–Balkema–de Haan (equivalence, every shape)
 - [x] GPD / GEV densities, Wald consistency, Fisher information, joint normality (GPD `ξ ≠ 0`)
-- [>] GEV: full 3×3 Fisher information (digamma), joint normality of the 3-parameter MLE
-- [>] Likelihood at `ξ = 0` (GPD and GEV; continuous extension of score and Hessian)
+- [x] GEV: full 3×3 Fisher information (digamma), positive definite, `E[∇²ℓ] = −I`, trivariate score CLT
+- [ ] GEV: joint normality of the 3-parameter MLE (missing: Hessian domination near a moving endpoint,
+      a preliminary √n rate, a 3×3 Slutsky step); then GEV return-level normality becomes unconditional
+- [~] Likelihood at `ξ = 0`: GEV/GPD log-densities and scores continuous at 0 and true derivatives there;
+      Gumbel (μ, σ) Fisher information and score CLT. Missing: the σξ and ξξ entries at 0 (need
+      `ψ''(1) = −2ζ(3)`, not in Mathlib), Hessian continuity, MLE normality at `ξ = 0`
 - [x] Probability-weighted moments and L-moments: GPD and GEV closed forms (Hosking's `k = −ξ`), strong
       consistency of the sample PWMs and of the Hosking–Wallis GPD estimator (continuous `F`)
 - [x] Mean excess: GPD linearity, the converse for unbounded support (EKM 3.4.13(e)), empirical consistency

@@ -287,3 +287,39 @@ We follow Smith, \emph{Maximum likelihood estimation in a class of nonregular ca
   \leanok
   Layer cake, threshold stability of the GPD, and the strong law of large numbers.
 \end{proof}
+
+\section{The full GEV likelihood}
+
+\begin{theorem}[Fisher information of the three-parameter GEV]
+  \label{thm:gev-fisher-3}
+  \lean{ExtremeValueTheory.gevFisherInfo, ExtremeValueTheory.gevScoreXi, ExtremeValueTheory.hasDerivAt_log_gevLocScaleDensity_xi, ExtremeValueTheory.integral_gevScoreXi,
+    ExtremeValueTheory.integral_gevScore_mul_gevScore, ExtremeValueTheory.gevFisherInfo_submatrix_castLE, ExtremeValueTheory.posDef_gevFisherInfo,
+    ExtremeValueTheory.tendstoInDistribution_gevScoreVec3, ExtremeValueTheory.integral_gevHess_eq_neg_gevFisherInfo}
+  \leanok
+  For $\sigma > 0$, $\xi > -1/2$, $\xi \ne 0$, the scores of the GEV$(\mu, \sigma, \xi)$ log-density have mean zero, their covariance is the
+  closed-form $3 \times 3$ Fisher information (in terms of $\Gamma$, the digamma function and Euler's constant), which is positive
+  definite and equals minus the expected Hessian, and the normalized score sum is asymptotically $N(0, I)$
+  [Prescott and Walden 1980; Smith 1985].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Substitute $t = (1 + \xi z)^{-1/\xi}$ and evaluate moments of $t^a (\log t)^b e^{-t}$ through derivatives of $\Gamma$. Positive
+  definiteness: $(t-1)\log t$ is not a combination of $1, t, t^\xi, t^{\xi+1}$ on $(0,\infty)$.
+\end{proof}
+
+\begin{theorem}[The Gumbel case \texorpdfstring{$\xi = 0$}{xi = 0}]
+  \label{thm:gev-gumbel-limit}
+  \uses{thm:gev-fisher-3}
+  \lean{ExtremeValueTheory.tendsto_gevScoreMu_zero, ExtremeValueTheory.tendsto_gevScoreSigma_zero, ExtremeValueTheory.tendsto_gevScoreXi_zero,
+    ExtremeValueTheory.continuousAt_log_gevLocScaleDensity_xi_zero, ExtremeValueTheory.hasDerivAt_log_gevLocScaleDensity_xi_zero,
+    ExtremeValueTheory.tendsto_gpdScoreXi_zero, ExtremeValueTheory.hasDerivAt_log_gpdDensity_xi_zero, ExtremeValueTheory.gumbelFisherInfo, ExtremeValueTheory.posDef_gumbelFisherInfo,
+    ExtremeValueTheory.tendstoInDistribution_gumbelScoreVec}
+  \leanok
+  The GEV and GPD log-densities and scores extend continuously to $\xi = 0$, where the extended scores are the true derivatives
+  (the shape score of the Gumbel law is $-z + z^2(1 - e^{-z})/2$). The Gumbel Fisher information in $(\mu, \sigma)$ is
+  $\sigma^{-2}\begin{pmatrix} 1 & -(1-\gamma) \ -(1-\gamma) & \pi^2/6 + (1-\gamma)^2 \end{pmatrix}$, positive definite.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Second-order expansions of $\log(1 + \xi z)$ in $\xi$.
+\end{proof}
