@@ -642,8 +642,8 @@ theorem tendstoInDistribution_momentEstimator_comp_exp {E : ℕ → Ω → ℝ}
       {ω | γ ^ 2 / 2 ≤ dist (M2 n ω - M1 n ω ^ 2) (γ ^ 2)}) ∪
       {ω | γ ^ 2 ≤ dist (M2 n ω) (2 * γ ^ 2)}) ?_).trans ?_
   swap
-  · refine (measure_union_le _ _).trans (add_le_add_right ((measure_union_le _ _).trans
-      (add_le_add_right ((measure_union_le _ _).trans (by rw [hnull n])) _)) _)
+  · refine (measure_union_le _ _).trans (add_le_add ((measure_union_le _ _).trans
+      (add_le_add ((measure_union_le _ _).trans (by rw [hnull n])) le_rfl)) le_rfl)
   intro ω hω
   simp only [mem_ofPred_eq, mem_union] at hω ⊢
   by_contra hcon
@@ -676,24 +676,38 @@ theorem tendstoInDistribution_momentEstimator_comp_exp {E : ℕ → Ω → ℝ}
   have hlm2 : logMoment (fun i : Fin n => U (exp (E i ω))) (k n) 2 = M2 n ω := by
     rw [hlm]
     simp only [hM2def, hm2def, hW2def, hW3def, excessMean]
-    rw [show ∀ x : ℕ → ℝ, ∀ y : ℕ → ℝ, ∀ z : ℕ → ℝ, ∀ m : ℕ,
+    rw [show ∀ x : ℕ → ℝ, ∀ y : ℕ → ℝ, ∀ m : ℕ,
         (∑ i ∈ Finset.range m, (γ * x i + Bs n ω * y i) ^ 2) =
         γ ^ 2 * ∑ i ∈ Finset.range m, x i ^ 2 + 2 * γ * Bs n ω * ∑ i ∈ Finset.range m,
           x i * y i + Bs n ω * Bs n ω * ∑ i ∈ Finset.range m, y i ^ 2 by
-      intro x y z m
+      intro x y m
       simp only [Finset.mul_sum, ← Finset.sum_add_distrib]
       exact Finset.sum_congr rfl fun i _ => by ring]
     ring
   have hgm : excessMean (fun u _ => (γ - 2) * u + u ^ 2 / 2) (fun i : Fin n => E i ω) (k n) =
       (γ - 2) * m1 n ω + 1 / 2 * m2 n ω := by
-    simp only [hm1def, hm2def, excessMean, Finset.sum_add_distrib, ← Finset.mul_sum]
-    ring
-  simp only [Pi.sub_apply, Pi.add_apply, Function.comp_apply]
+    rw [show (fun u (_ : ℝ) => (γ - 2) * u + u ^ 2 / 2) =
+      fun u s => (γ - 2) * (fun u (_ : ℝ) => u) u s + 1 / 2 * (fun u (_ : ℝ) => u ^ 2) u s by
+        funext u s; ring]
+    exact excessMean_lin _ _ _ _ _ _
+  have hgm' : ((k n : ℕ) : ℝ)⁻¹ * ∑ i ∈ Finset.range (k n),
+      ((γ - 2) * (orderStat (fun i : Fin n => E i ω) i - orderStat (fun i : Fin n => E i ω) (k n))
+        + (orderStat (fun i : Fin n => E i ω) i -
+          orderStat (fun i : Fin n => E i ω) (k n)) ^ 2 / 2) =
+      (γ - 2) * m1 n ω + 1 / 2 * m2 n ω := hgm
+  simp only [Pi.sub_apply, Pi.add_apply]
   rw [sub_eq_zero]
   unfold momentEstimator
-  rw [hlm1, hlm2, momentEstimator_expansion hγ0 hM2ne hDne]
-  trace_state
-  sorry
+  rw [hlm1, hlm2, momentEstimator_expansion hγ0 hM2ne hDne, hgm']
+  have e1 : M1 n ω = γ * m1 n ω + Bs n ω * W1 n ω := rfl
+  have e2 : M2 n ω = γ ^ 2 * m2 n ω + 2 * γ * Bs n ω * W2 n ω + Bs n ω * Bs n ω * W3 n ω := rfl
+  simp only [hRdef]
+  linear_combination (norm := skip) (√(k n : ℝ) * ((1 - 2 / γ) +
+      (2 / γ - (M1 n ω + γ) / (M2 n ω - M1 n ω ^ 2)))) * e1 +
+    (√(k n : ℝ) * (1 / (2 * γ ^ 2) +
+      (1 / (2 * (M2 n ω - M1 n ω ^ 2)) - 1 / (2 * γ ^ 2)))) * e2
+  field_simp
+  ring
 
 end General
 
