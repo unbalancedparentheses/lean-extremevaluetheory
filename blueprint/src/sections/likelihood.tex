@@ -242,3 +242,48 @@ We follow Smith, \emph{Maximum likelihood estimation in a class of nonregular ca
   \leanok
   Slutsky's lemma and the portmanteau theorem.
 \end{proof}
+
+\section{Probability-weighted moments, L-moments and the mean excess function}
+
+\begin{theorem}[L-moments of the GPD and GEV]
+  \label{thm:l-moments}
+  \lean{ExtremeValueTheory.pwm, ExtremeValueTheory.pwmSurv, ExtremeValueTheory.lMoment1, ExtremeValueTheory.lMoment2, ExtremeValueTheory.lMoment3, ExtremeValueTheory.lSkewness, ExtremeValueTheory.pwmSurv_gpdMeasure,
+    ExtremeValueTheory.lSkewness_gpdMeasure, ExtremeValueTheory.gpdPWMShape_lMoment, ExtremeValueTheory.gpdPWMScale_lMoment, ExtremeValueTheory.lSkewness_gevCDF_hosking}
+  \leanok
+  For the GPD with $\xi < 1$, $\alpha_r = \E[X(1-F(X))^r] = \sigma/((r+1)(r+1-\xi))$, $\lambda_1 = \sigma/(1-\xi)$,
+  $\lambda_2 = \sigma/((1-\xi)(2-\xi))$ and $\tau_3 = (1+\xi)/(3-\xi)$, so $\xi = 2 - \lambda_1/\lambda_2$ and $\sigma = \lambda_1(\lambda_1/\lambda_2 - 1)$.
+  For the GEV with $\xi < 1$, $\xi \ne 0$, $\lambda_2 = (2^\xi - 1)\Gamma(1-\xi)/\xi$ and $\tau_3 = (2 \cdot 3^\xi - 3 \cdot 2^\xi + 1)/(2^\xi - 1)$
+  [Hosking, Wallis and Wood 1985; Hosking 1990, with $k = -\xi$].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Direct integration against the GPD survival function and the GEV distribution function.
+\end{proof}
+
+\begin{theorem}[Consistency of the PWM estimators]
+  \label{thm:pwm-consistency}
+  \uses{thm:l-moments}
+  \lean{ExtremeValueTheory.samplePWM, ExtremeValueTheory.ae_glivenkoCantelli, ExtremeValueTheory.ae_tendsto_samplePWM, ExtremeValueTheory.ae_tendsto_sampleLSkewness,
+    ExtremeValueTheory.ae_tendsto_gpdPWMShapeEst, ExtremeValueTheory.ae_tendsto_gpdPWMScaleEst, ExtremeValueTheory.ae_tendsto_sampleLSkewness_gev}
+  \leanok
+  For iid data with a continuous distribution function and $\E|X| < \infty$, the unbiased sample PWMs $b_r$ converge almost
+  surely to $\beta_r$, and the Hosking--Wallis PWM estimator of the GPD parameters is strongly consistent for $\xi < 1$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Glivenko--Cantelli and a deterministic bound of $b_r$ by the empirical average of $X F(X)^r$.
+\end{proof}
+
+\begin{theorem}[The mean excess function]
+  \label{thm:mean-excess}
+  \lean{ExtremeValueTheory.meanExcess_measure_eq, ExtremeValueTheory.meanExcess_gpdMeasure, ExtremeValueTheory.empMeanExcess, ExtremeValueTheory.ae_tendsto_empMeanExcess,
+    ExtremeValueTheory.eq_gpdSurvival'_of_meanExcess_eq_linear}
+  \leanok
+  The GPD mean excess function is linear, $e(u) = (\sigma + \xi u)/(1-\xi)$; conversely a distribution with unbounded support whose
+  mean excess function is $a + bu$ on $[0,\infty)$ has a GPD tail [EKM, Theorem~3.4.13(e)]. The empirical mean excess function
+  converges almost surely for each fixed threshold.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Layer cake, threshold stability of the GPD, and the strong law of large numbers.
+\end{proof}

@@ -40,9 +40,11 @@ Regular Variation and Point Processes* (1987) and *Heavy-Tail Phenomena* (2007);
 - [x] GPD / GEV densities, Wald consistency, Fisher information, joint normality (GPD `ξ ≠ 0`)
 - [>] GEV: full 3×3 Fisher information (digamma), joint normality of the 3-parameter MLE
 - [>] Likelihood at `ξ = 0` (GPD and GEV; continuous extension of score and Hessian)
-- [>] Probability-weighted-moment / L-moment estimators (Hosking–Wallis) and their consistency
-      (PWMs, L-moments and GPD/GEV closed forms done)
-- [>] Mean excess function: empirical version and consistency (EKM §6.2)
+- [x] Probability-weighted moments and L-moments: GPD and GEV closed forms (Hosking's `k = −ξ`), strong
+      consistency of the sample PWMs and of the Hosking–Wallis GPD estimator (continuous `F`)
+- [x] Mean excess: GPD linearity, the converse for unbounded support (EKM 3.4.13(e)), empirical consistency
+- [ ] L-moments follow-ups: unbiasedness of `b_r`; asymptotic normality of PWMs and the PWM estimator
+      (`ξ < 1/2`); ties/atoms; GEV `(ξ, μ, σ)` by solving `τ₃(ξ̂) = t₃`; mean-excess converse for `ξ < 0`
 - [ ] GEV maximum likelihood over the whole parameter space, not a compact set (Carl–Padoan–Rizzelli
       2025); removes the compact-set caveat of the current theorems
 - [ ] Number of exceedances modelled as random in peaks over threshold
