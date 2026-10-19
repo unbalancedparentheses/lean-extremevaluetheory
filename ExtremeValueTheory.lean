@@ -31,6 +31,7 @@ import ExtremeValueTheory.HeavyTails.Lognormal
 import ExtremeValueTheory.HeavyTails.ConvolutionRoots
 import ExtremeValueTheory.DomainOfAttraction.Gumbel
 import ExtremeValueTheory.Statistics.OrderStatistics
+import ExtremeValueTheory.Statistics.OrderStatisticsSorted
 import ExtremeValueTheory.Statistics.Hill
 import ExtremeValueTheory.DomainOfAttraction.GumbelNecessity
 import ExtremeValueTheory.PeaksOverThreshold.Balkema
@@ -80,6 +81,7 @@ import ExtremeValueTheory.Statistics.Renyi
 import ExtremeValueTheory.Statistics.HillNormality
 import ExtremeValueTheory.RegularVariation.Extended
 import ExtremeValueTheory.DomainOfAttraction.Quantile
+import ExtremeValueTheory.DomainOfAttraction.GEVDomain
 import ExtremeValueTheory.Statistics.MomentGeneral
 import ExtremeValueTheory.ForMathlib.Probability.PoissonLimit
 import ExtremeValueTheory.ForMathlib.Probability.PointProcessConvergence
@@ -189,6 +191,8 @@ import ExtremeValueTheory.Minimality.ClassicalSummary
 import ExtremeValueTheory.Dependence.EchoMixing
 import ExtremeValueTheory.Statistics.ExtremalIndexEstimators
 import ExtremeValueTheory.Statistics.ExtremalIndexEstimatorsIntervals
+import ExtremeValueTheory.Statistics.ExtremalIndexEstimatorsIid
+import ExtremeValueTheory.Statistics.FerroSegersLaw
 import ExtremeValueTheory.ForMathlib.Probability.DeltaMethod
 import ExtremeValueTheory.ForMathlib.Probability.WaldInterval
 import ExtremeValueTheory.Statistics.ReturnLevelNormality

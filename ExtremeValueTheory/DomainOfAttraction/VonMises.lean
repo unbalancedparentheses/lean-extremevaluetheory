@@ -168,6 +168,16 @@ lemma paretoCDF_apply_of_one_le {α : ℝ} (hα : 0 < α) {x : ℝ} (hx : 1 ≤ 
   change 1 - (max x 1) ^ (-α) = _
   rw [max_eq_left hx]
 
+lemma paretoCDF_apply_of_le_one {α : ℝ} (hα : 0 < α) {x : ℝ} (hx : x ≤ 1) :
+    paretoCDF hα x = 0 := by
+  change 1 - (max x 1) ^ (-α) = _
+  rw [max_eq_right hx, Real.one_rpow, sub_self]
+
+/-- The Pareto tail: `1 - F(x) = x^(-α)` for `x ≥ 1`. -/
+lemma one_sub_paretoCDF_of_one_le {α : ℝ} (hα : 0 < α) {x : ℝ} (hx : 1 ≤ x) :
+    1 - paretoCDF hα x = x ^ (-α) := by
+  rw [paretoCDF_apply_of_one_le hα hx, sub_sub_cancel]
+
 /-- The Pareto distribution with index `α` is in the Fréchet domain of attraction `MDA(Φ_α)`,
 via the von Mises condition: `x F'(x) / (1 - F(x)) = α` for `x > 1`. -/
 theorem isInMDAFrechet_paretoCDF {α : ℝ} (hα : 0 < α) : (paretoCDF hα).IsInMDAFrechet hα := by
@@ -211,6 +221,16 @@ lemma powerCDF_apply_of_mem_Icc {α : ℝ} (hα : 0 < α) {x : ℝ} (hx : x ∈ 
     powerCDF hα x = 1 - (1 - x) ^ α := by
   change 1 - (min 1 (max (1 - x) 0)) ^ α = _
   rw [max_eq_left (by linarith [hx.2]), min_eq_right (by linarith [hx.1])]
+
+lemma powerCDF_apply_of_nonpos {α : ℝ} (hα : 0 < α) {x : ℝ} (hx : x ≤ 0) :
+    powerCDF hα x = 0 := by
+  change 1 - (min 1 (max (1 - x) 0)) ^ α = _
+  rw [max_eq_left (by linarith), min_eq_left (by linarith), Real.one_rpow, sub_self]
+
+lemma powerCDF_apply_of_one_le {α : ℝ} (hα : 0 < α) {x : ℝ} (hx : 1 ≤ x) :
+    powerCDF hα x = 1 := by
+  change 1 - (min 1 (max (1 - x) 0)) ^ α = _
+  rw [max_eq_right (by linarith), min_eq_right zero_le_one, Real.zero_rpow hα.ne', sub_zero]
 
 /-- The distribution `1 - (1 - x) ^ α` on `[0, 1]` (in particular the uniform distribution,
 `α = 1`) is in the Weibull domain of attraction `MDA(Ψ_α)`, via the von Mises condition:

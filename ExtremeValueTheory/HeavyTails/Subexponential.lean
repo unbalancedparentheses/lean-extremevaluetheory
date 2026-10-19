@@ -197,6 +197,15 @@ noncomputable def convPow (μ : Measure ℝ) : ℕ → Measure ℝ
 
 theorem convPow_succ (μ : Measure ℝ) (n : ℕ) : convPow μ (n + 1) = μ ∗ convPow μ n := rfl
 
+/-- The convolution powers of a point mass: `δₓ^{*n} = δ_{n x}`, the law of a sum of `n` copies
+of the constant `x`. -/
+theorem convPow_dirac (x : ℝ) (n : ℕ) : convPow (Measure.dirac x) n = Measure.dirac (n * x) := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [convPow_succ, ih, Measure.dirac_conv_dirac]
+    push_cast; ring_nf
+
 instance isProbabilityMeasure_convPow (μ : Measure ℝ) [IsProbabilityMeasure μ] (n : ℕ) :
     IsProbabilityMeasure (convPow μ n) := by
   induction n with

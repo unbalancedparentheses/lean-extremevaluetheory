@@ -37,6 +37,8 @@ This is the condition that controls the bias of tail estimators such as the Hill
 * `IsSecondOrderRegularlyVarying.exists_bound`: the **uniform bound**
   `|log U(xt) - log U(t) - γ log x| ≤ C |A(t)| x^δ` for `t ≥ t₀`, `x ≥ 1` (a one-sided form of
   [dHF, Theorem 2.3.9]), for measurable `U` and `A`.
+* `isSecondOrderRegularlyVarying_add_const`: `U(t) = t + c` is second-order regularly varying
+  with `γ = 1`, `ρ = -1`.
 * `IsSecondOrderRegularlyVarying.exists_bound_of_neg`: for `ρ < 0`, the bound
   `|log U(xt) - log U(t) - γ log x| ≤ C |A(t)|` uniformly in `x ≥ 1`.
 
@@ -531,5 +533,52 @@ theorem exists_bound_of_neg (h : IsSecondOrderRegularlyVarying U γ ρ A) (hU : 
     _ = 2 * M / (1 - r) * |a s| := by ring
 
 end IsSecondOrderRegularlyVarying
+
+/-! ### Example: a shifted identity -/
+
+/-- **A shifted identity is second-order regularly varying** ([dHF, §2.3]; a member of
+Hall's class): if `U(t) = t + c` eventually, with `c > 0`, then `U` is of second-order regular
+variation with `γ = 1`, `ρ = -1` and `A(t) = -c / (t + c)`, since
+`(U(xt) / U(t) - x) / A(t) = x - 1 = x · h_{-1}(x)`. For instance `U` is the tail quantile function
+of `Y + c` with `Y ∼ Pareto(1, 1)`. -/
+theorem isSecondOrderRegularlyVarying_add_const {U : ℝ → ℝ} {c : ℝ} (hc : 0 < c)
+    (hU : ∀ᶠ t in atTop, U t = t + c) :
+    IsSecondOrderRegularlyVarying U 1 (-1) (fun t => -(c / (t + c))) := by
+  have hden : Tendsto (fun t : ℝ => t + c) atTop atTop := tendsto_atTop_add_const_right _ c tendsto_id
+  refine ⟨?_, by norm_num, ?_, Or.inr ?_, ⟨?_, fun l hl => ?_⟩, fun x hx => ?_⟩
+  · filter_upwards [hU, eventually_gt_atTop 0] with t h ht
+    rw [h]; linarith
+  · simpa using ((tendsto_const_nhds (x := c)).div_atTop hden).neg
+  · filter_upwards [eventually_gt_atTop 0] with t ht
+    have : 0 < c / (t + c) := by positivity
+    linarith
+  · filter_upwards [eventually_gt_atTop 0] with t ht
+    have : 0 < c / (t + c) := by positivity
+    rw [abs_neg]; exact abs_pos.2 this.ne'
+  · -- `|A(lt)| / |A(t)| = (t + c) / (l t + c) → l⁻¹`
+    have h : Tendsto (fun t : ℝ => (1 + c * t⁻¹) / (l + c * t⁻¹)) atTop
+        (𝓝 ((1 + c * 0) / (l + c * 0))) :=
+      ((tendsto_const_nhds.add (tendsto_inv_atTop_zero.const_mul c))).div
+        (tendsto_const_nhds.add (tendsto_inv_atTop_zero.const_mul c)) (by simp [hl.ne'])
+    rw [mul_zero, add_zero, add_zero, one_div, ← rpow_neg_one] at h
+    refine h.congr' ?_
+    filter_upwards [eventually_gt_atTop 0] with t ht
+    have h1 : 0 < l * t + c := by positivity
+    have h2 : 0 < t + c := by positivity
+    rw [abs_neg, abs_neg, abs_of_pos (div_pos hc h1), abs_of_pos (div_pos hc h2)]
+    field_simp
+  · have hlim : x ^ (1 : ℝ) * boxCox (-1) x = x - 1 := by
+      rw [boxCox_of_ne (by norm_num), rpow_one, rpow_neg_one]
+      field_simp
+      ring
+    rw [hlim]
+    refine tendsto_const_nhds.congr' ?_
+    filter_upwards [hU, (tendsto_id.const_mul_atTop hx).eventually hU, eventually_gt_atTop 0]
+      with t ht hxt htpos
+    simp only [id] at hxt
+    rw [ht, hxt, rpow_one]
+    have : t + c ≠ 0 := by linarith
+    field_simp
+    ring
 
 end ExtremeValueTheory

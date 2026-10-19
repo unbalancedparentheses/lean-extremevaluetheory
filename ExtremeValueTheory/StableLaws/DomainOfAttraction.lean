@@ -558,6 +558,29 @@ theorem tendsto_mul_absTail (hα0 : 0 < α) :
   rw [absTail_eq hα0 (one_le_rpow hn (inv_nonneg.2 hα0.le)), ← rpow_mul (by linarith),
     show α⁻¹ * -α = -1 by field_simp, rpow_neg_one, div_eq_mul_inv]
 
+/-- The right tail of the symmetrized Pareto law: `P(X > x) = x^(-α) / 2` for `x ≥ 1`. -/
+theorem measureReal_Ioi (hα0 : 0 < α) {x : ℝ} (hx : 1 ≤ x) :
+    (law α).real (Ioi x) = 2⁻¹ * x ^ (-α) := by
+  have hneg : (fun y : ℝ => -y) ⁻¹' Ioi x = Iio (-x) := by ext y; simp
+  have h0 : paretoMeasure 1 α (Iio (-x)) = 0 :=
+    measure_mono_null (Iio_subset_Iio (by linarith)) pareto_Iio_one
+  rw [measureReal_def, law, Measure.smul_apply, Measure.add_apply,
+    Measure.map_apply measurable_neg measurableSet_Ioi, hneg, h0, add_zero, pareto_Ioi hα0 hx,
+    smul_eq_mul, ENNReal.toReal_mul, ENNReal.toReal_inv, ENNReal.toReal_ofReal
+      (rpow_pos_of_pos (one_pos.trans_le hx) _).le]
+  simp
+
+/-- **Tail balance of the symmetrized Pareto law** with `p = 1/2`:
+`P(X > x) / P(|X| > x) → 1/2`, the balance condition of the generalized central limit theorem
+([Feller, Vol. II, §XVII.5, Theorem 2]); here the ratio is exactly `1/2` for `x ≥ 1`. -/
+theorem tendsto_measureReal_Ioi_div_absTail (hα0 : 0 < α) :
+    Tendsto (fun x => (law α).real (Ioi x) / absTail (law α) x) atTop (𝓝 (1 / 2)) := by
+  refine tendsto_const_nhds.congr' ?_
+  filter_upwards [eventually_ge_atTop 1] with x hx
+  rw [measureReal_Ioi hα0 hx, absTail_eq hα0 hx]
+  have : 0 < x ^ (-α) := rpow_pos_of_pos (one_pos.trans_le hx) _
+  field_simp
+
 end SymmPareto
 
 

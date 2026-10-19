@@ -303,6 +303,13 @@ lemma standardGumbelCDF_apply_eq (x : ℝ) :
     standardGumbelCDF x = Real.exp (-Real.exp (-x)) :=
   rfl
 
+/-- The Gumbel c.d.f. is positive everywhere: its support is all of `ℝ`. -/
+lemma standardGumbelCDF_pos (x : ℝ) : 0 < standardGumbelCDF x := Real.exp_pos _
+
+/-- The Gumbel c.d.f. is `< 1` everywhere: its right endpoint is `+∞`. -/
+lemma standardGumbelCDF_lt_one (x : ℝ) : standardGumbelCDF x < 1 :=
+  Real.exp_lt_one_iff.2 (neg_lt_zero.2 (Real.exp_pos _))
+
 noncomputable def standardFrechetAux (α : ℝ) (x : ℝ) :=
   if x ≤ 0 then 0 else Real.exp (-(Real.rpow x (-α)))
 
