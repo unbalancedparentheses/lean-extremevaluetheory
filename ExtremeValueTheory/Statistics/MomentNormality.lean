@@ -7,6 +7,58 @@ import ExtremeValueTheory.Statistics.ExtremeQuantileSecondOrder
 
 /-!
 # Asymptotic normality of the moment estimator, `γ > 0`
+
+Let `X_0, X_1, …` be iid with tail quantile function `U(t) = F̄^←(1/t)` of second-order regular
+variation (`ExtremeValueTheory.IsSecondOrderRegularlyVarying`) with indices `γ > 0`, `ρ ≤ 0` and
+auxiliary function `A`, and let `k → ∞`, `k / n → 0`, `√k A(n/k) → λ`. The moment estimator
+of Dekkers, Einmahl and de Haan, `γ̂_M = M^{(1)} + 1 - (1/2) (1 - (M^{(1)})² / M^{(2)})⁻¹`
+(`ExtremeValueTheory.momentEstimator`), satisfies ([dHF, Theorem 3.5.4], case `γ > 0`)
+
+  `√k (γ̂_M - γ) ⇒ N(λ (γ - γρ + ρ) / (γ (1 - ρ)²), 1 + γ²)`.
+
+## Main results
+
+* `tendstoInDistribution_momentEstimator`: the theorem above (`momentBias γ ρ` is the factor
+  `(γ - γρ + ρ) / (γ (1 - ρ)²)`).
+* `tendstoInDistribution_momentEstimator_of_tendsto_zero`: the unbiased case `λ = 0`.
+* `tendstoInDistribution_momentEstimator_comp_exp`: the same statement for the samples
+  `U(e^{E_i})`, `E_i` iid standard exponential.
+* `tendstoInDistribution_meanExcess_fun`: the central limit theorem
+  `√k ((1/k) ∑_{i<k} g(E_{(i+1)} - E_{(k+1)}) - E g(E_0)) ⇒ N(0, Var g(E_0))` for
+  `g ∈ L²(Exp(1))`, via the Rényi representation.
+
+## Proof
+
+With `Y_i = E_{(i+1)} - E_{(k+1)}`, `s = E_{(k+1)}` and the second-order remainder
+`R_i = log U(e^{Y_i + s}) - log U(e^s) - γ Y_i = B(e^s) φ(Y_i, s)`
+(`logMoment_comp_exp_eq`),
+
+  `M^{(1)} = γ m₁ + B(e^s) W₁`, `M^{(2)} = γ² m₂ + 2γ B(e^s) W₂ + B(e^s)² W₃`,
+
+where `m_j` is the mean of `Y_i ^ j` and `W₁, W₂, W₃` are the means of `φ`, `Y φ`, `φ²`. The
+conditional law of large numbers (`tendstoInMeasure_meanExcess_fun`) gives `m₁ → 1`, `m₂ → 2`,
+`W₁ → 1/(1-ρ)`, `W₂ → (2-ρ)/(1-ρ)²` (`integral_mul_boxCox_exp`) and `W₃ → ∫ h_ρ(e^u)² dExp`,
+and `√k B(e^s) → λ`. The algebraic expansion `momentEstimator_expansion` of `γ̂_M` around
+`(γ, 2γ²)` gives
+
+  `√k (γ̂_M - γ) = √k (mean of g(Y_i) - (γ - 1)) + bias + o_P(1)`, `g(u) = (γ - 2) u + u²/2`,
+
+whose first term is asymptotically `N(0, Var g(E_0)) = N(0, 1 + γ²)`
+(`variance_momentScore_expMeasure`) and whose bias tends to
+`(1 - 2/γ) λ/(1-ρ) + λ (2-ρ) / (γ (1-ρ)²) = λ (γ - γρ + ρ) / (γ (1-ρ)²)`. The remainder
+consists of products of the tight sequences `√k (m_j - j!)` with factors tending to `0` in
+probability. Slutsky's lemma and the quantile transform conclude.
+
+## Scope
+
+The case `γ ≤ 0` of [dHF, Theorem 3.5.4] needs the second-order condition for `U` itself (not
+for `log U`) and the tail quantile process; it is not covered here.
+
+## References
+
+* [dHF] L. de Haan, A. Ferreira, *Extreme Value Theory: An Introduction*, Springer, 2006.
+* A. L. M. Dekkers, J. H. J. Einmahl, L. de Haan, *A moment estimator for the index of an
+  extreme-value distribution*, Ann. Statist. 17 (1989).
 -/
 
 open Filter Topology Set Real MeasureTheory ProbabilityTheory
@@ -710,5 +762,60 @@ theorem tendstoInDistribution_momentEstimator_comp_exp {E : ℕ → Ω → ℝ}
   ring
 
 end General
+
+/-! ### Asymptotic normality of the moment estimator -/
+
+section Normality
+
+variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'} [IsProbabilityMeasure P']
+
+/-- **Asymptotic normality of the moment estimator, `γ > 0`** ([dHF, Theorem 3.5.4], case
+`γ > 0`; Dekkers, Einmahl and de Haan 1989). Let `X_0, X_1, …` be iid real random variables
+whose tail quantile function `U(t) = F̄^←(1/t)` is of second-order regular variation with
+first-order index `γ > 0`, second-order index `ρ ≤ 0` and auxiliary function `A`. If
+`k = k(n) → ∞`, `k / n → 0` and `√k A(n / k) → λ`, then
+
+  `√k (γ̂_M - γ) ⇒ N(λ (γ - γρ + ρ) / (γ (1 - ρ)²), 1 + γ²)`. -/
+theorem tendstoInDistribution_momentEstimator {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
+    (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ}
+    {A : ℝ → ℝ} (hγ : 0 < γ)
+    (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {Z : Ω' → ℝ}
+    (hZ : HasLaw Z (gaussianReal (lam * momentBias γ ρ) (1 + γ ^ 2).toNNReal) P') :
+    TendstoInDistribution (fun n ω =>
+        √(k n : ℝ) * (momentEstimator (fun i : Fin n => X i ω) (k n) - γ))
+      atTop Z (fun _ => P) P' := by
+  obtain ⟨Ω₀, _, P₀, E, hEm, hE, hind, hP₀⟩ := exists_iid ℕ (expMeasure 1)
+  have hUm := measurable_tailQuantile (survival_anti (P := P) (X 0))
+    (continuousWithinAt_survival (P := P) (hX 0)) (tendsto_survival_atTop (P := P) (hX 0))
+    (tendsto_survival_atBot (P := P) (hX 0))
+  have hUmono := monotoneOn_tailQuantile (survival_anti (P := P) (X 0))
+    (continuousWithinAt_survival (P := P) (hX 0)) (tendsto_survival_atTop (P := P) (hX 0))
+    (tendsto_survival_atBot (P := P) (hX 0))
+  have hB := tendstoInDistribution_momentEstimator_comp_exp hEm hE hind hγ hUm hUmono h2 hk hkn
+    hlam hZ
+  refine hB.of_map_eq (fun n => ?_) (Eventually.of_forall fun n => ?_)
+  · exact (measurable_const.mul (((measurable_momentEstimator_pi (k n)).comp
+      (measurable_pi_iff.2 fun i => hX i)).sub_const _)).aemeasurable
+  exact map_statistic_eq_map_statistic_comp_exp hX hindep hident hE hind n
+    (measurable_const.mul ((measurable_momentEstimator_pi (k n)).sub_const _))
+
+/-- **Asymptotic normality of the moment estimator without bias**, `γ > 0`: if
+`√k A(n / k) → 0`, then `√k (γ̂_M - γ) ⇒ N(0, 1 + γ²)`. -/
+theorem tendstoInDistribution_momentEstimator_of_tendsto_zero {X : ℕ → Ω → ℝ}
+    (hX : ∀ i, Measurable (X i)) (hindep : iIndepFun X P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ : ℝ} {A : ℝ → ℝ} (hγ : 0 < γ)
+    (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hA : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 0)) {Z : Ω' → ℝ}
+    (hZ : HasLaw Z (gaussianReal 0 (1 + γ ^ 2).toNNReal) P') :
+    TendstoInDistribution (fun n ω =>
+        √(k n : ℝ) * (momentEstimator (fun i : Fin n => X i ω) (k n) - γ))
+      atTop Z (fun _ => P) P' :=
+  tendstoInDistribution_momentEstimator hX hindep hident hγ h2 hk hkn hA (by rwa [zero_mul])
+
+end Normality
 
 end ExtremeValueTheory
