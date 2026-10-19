@@ -194,3 +194,4 @@ import ExtremeValueTheory.ForMathlib.Probability.WaldInterval
 import ExtremeValueTheory.Statistics.ReturnLevelNormality
 import ExtremeValueTheory.Statistics.ConfidenceIntervals
 import ExtremeValueTheory.Statistics.LMoments
+import ExtremeValueTheory.Statistics.LMomentsEstimators
