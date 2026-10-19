@@ -239,4 +239,98 @@ theorem tendstoInMeasure_sqrt_mul_sub_tailTime (hU : ∀ i, Measurable (U i))
 
 end TailOrderStat
 
+/-! ### Joint convergence of finitely many intermediate order statistics -/
+
+section Joint
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
+
+omit [IsProbabilityMeasure P] in
+/-- Convergence in probability to `0` in `ℝ^ι` follows from convergence of the coordinates. -/
+theorem tendstoInMeasure_euclideanSpace_zero {ι : Type*} [Fintype ι]
+    {f : ℕ → Ω → EuclideanSpace ℝ ι}
+    (h : ∀ i, TendstoInMeasure P (fun n ω => f n ω i) atTop (fun _ => 0)) :
+    TendstoInMeasure P f atTop (fun _ => 0) := by
+  rw [tendstoInMeasure_iff_norm]
+  intro ε hε
+  set c : ℝ := (Fintype.card ι : ℝ) + 1 with hc
+  have hc1 : 1 ≤ c := by rw [hc]; linarith [(Nat.cast_nonneg (Fintype.card ι) : (0 : ℝ) ≤ _)]
+  have hη : 0 < ε / c := by positivity
+  have hi := fun i => (tendstoInMeasure_iff_norm.1 (h i)) (ε / c) hη
+  have hsum := tendsto_finset_sum (Finset.univ : Finset ι) fun i _ => hi i
+  simp only [Finset.sum_const_zero] at hsum
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hsum
+    (fun _ => bot_le) fun n => ?_
+  refine (measure_mono fun ω hω => ?_).trans (measure_iUnion_fintype_le P _)
+  simp only [mem_iUnion, mem_ofPred_eq, sub_zero] at hω ⊢
+  by_contra hcon
+  push Not at hcon
+  have hsq : ‖f n ω‖ ^ 2 < ε ^ 2 := by
+    rw [EuclideanSpace.real_norm_sq_eq]
+    calc ∑ i, f n ω i ^ 2 ≤ ∑ _i : ι, (ε / c) ^ 2 := by
+          refine Finset.sum_le_sum fun i _ => ?_
+          have := hcon i
+          rw [Real.norm_eq_abs] at this
+          rw [← sq_abs]
+          exact pow_le_pow_left₀ (abs_nonneg _) this.le 2
+      _ = (Fintype.card ι : ℝ) * (ε / c) ^ 2 := by simp
+      _ < ε ^ 2 := by
+          rw [div_pow, mul_div_assoc', div_lt_iff₀ (by positivity)]
+          have : (Fintype.card ι : ℝ) < c ^ 2 := by rw [hc]; nlinarith
+          have hε2 : 0 < ε ^ 2 := by positivity
+          nlinarith [mul_lt_mul_of_pos_right this hε2]
+  have := lt_of_pow_lt_pow_left₀ 2 hε.le hsq
+  linarith
+
+variable {U : ℕ → Ω → ℝ} {k : ℕ → ℕ}
+
+theorem measurable_tailTime (hU : ∀ i, Measurable (U i)) (n k j : ℕ) :
+    Measurable (tailTime U n k j) :=
+  ((measurable_const.sub (measurable_orderStat (X := fun i : Fin n => U i)
+    (fun i => hU i) j)).div_const _)
+
+/-- **Joint asymptotic normality of intermediate uniform order statistics** ([dHF, Theorem 2.4.8]
+at finitely many times): for integers `τ_i ≥ 1`, the vector
+`(√k (τ_i - (n/k)(1 - U_{(τ_i k + 1)})))_i` converges in distribution to the centered Gaussian
+vector with covariance `min τ_i τ_j` (Brownian motion at the times `τ_i`). -/
+theorem tendstoInDistribution_sqrt_smul_tailTime (hU : ∀ i, Measurable (U i))
+    (hind : iIndepFun U P) (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    {ι : Type*} [Fintype ι] [DecidableEq ι] (τ : ι → ℕ) (hτ : ∀ i, 0 < τ i) :
+    TendstoInDistribution (fun n ω => √(k n : ℝ) •
+        (WithLp.toLp 2 (fun i => -tailTime U n (k n) (τ i * k n) ω) -
+          WithLp.toLp 2 (fun i => -(τ i : ℝ)) : EuclideanSpace ℝ ι))
+      atTop id (fun _ => P) (multivariateGaussian 0 (brownianCovMatrix fun i => (τ i : ℝ≥0))) := by
+  have hfdd := tendstoInDistribution_tailEmpiricalProcess_comp hU hind hlaw hk hkn
+    (fun i => (τ i : ℝ≥0))
+  have hV := hfdd.continuous_comp (PiLp.continuous_toLp 2 (fun _ : ι => ℝ))
+  have hV' : TendstoInDistribution (fun n => WithLp.toLp 2 ∘ fun ω (i : ι) =>
+      tailEmpiricalProcess U n (k n) (τ i : ℝ≥0) ω) atTop
+      (id : EuclideanSpace ℝ ι → EuclideanSpace ℝ ι) (fun _ => P)
+      (multivariateGaussian 0 (brownianCovMatrix fun i => (τ i : ℝ≥0))) := by
+    refine ⟨hV.forall_aemeasurable, aemeasurable_id, ?_⟩
+    have e : (⟨(multivariateGaussian 0 (brownianCovMatrix fun i => (τ i : ℝ≥0))).map id,
+        inferInstance⟩ : ProbabilityMeasure (EuclideanSpace ℝ ι)) =
+        ⟨(brownianFdd fun i => (τ i : ℝ≥0)).map (WithLp.toLp 2 ∘ id), inferInstance⟩ := by
+      refine Subtype.ext ?_
+      change _ = Measure.map _ (Measure.map WithLp.ofLp _)
+      rw [Measure.map_map (by fun_prop) (by fun_prop)]
+      rfl
+    rw [e]
+    exact hV.tendsto
+  refine tendstoInDistribution_of_tendstoInMeasure_sub _ id hV' ?_ (fun n => ?_)
+  · refine tendstoInMeasure_euclideanSpace_zero fun i => ?_
+    have hB := tendstoInMeasure_sqrt_mul_sub_tailTime hU hind hlaw hk hkn (hτ i)
+    refine tendstoInMeasure_of_eventuallyEq hB (Eventually.of_forall fun n ω => ?_)
+    simp only [Pi.sub_apply, Function.comp_apply, PiLp.sub_apply, PiLp.smul_apply,
+      smul_eq_mul, NNReal.coe_natCast]
+    ring
+  · have hm : Measurable (fun ω => (WithLp.toLp 2
+        (fun i => -tailTime U n (k n) (τ i * k n) ω) : EuclideanSpace ℝ ι)) :=
+      (WithLp.measurable_toLp 2 _).comp (measurable_pi_iff.2
+        fun i => (measurable_tailTime hU n (k n) _).neg)
+    exact ((measurable_const (a := √(k n : ℝ))).smul (hm.sub_const _)).aemeasurable
+
+end Joint
+
 end ExtremeValueTheory
