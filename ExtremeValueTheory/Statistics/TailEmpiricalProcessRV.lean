@@ -655,29 +655,30 @@ theorem meanExcess_eq_integral_tailEmpiricalProcess {U : ℕ → Ω → ℝ} {ω
   field_simp
   linear_combination (∫ t in (0 : ℝ)..T, tailEmpiricalProcess U n k t ω / t) * hs
 
-/-- Below the random threshold `T = (n/k) (1 - U_{(k+1)})` at most `k` observations exceed
+/-- Below the random threshold `T = (n/k) (1 - U_{(j+1)})` at most `j` observations exceed
 `1 - (k/n) t`. -/
-lemma sum_range_indicator_le_of_lt {U : ℕ → Ω → ℝ} {ω : Ω} {n k : ℕ} (hkn : k < n) {t : ℝ}
-    (ht : (k : ℝ) / n * t < 1 - orderStat (fun i : Fin n ↦ U i ω) k) :
-    ∑ i ∈ range n, (Set.Ici (1 - k / n * t)).indicator (1 : ℝ → ℝ) (U i ω) ≤ k := by
+lemma sum_range_indicator_le_of_lt {U : ℕ → Ω → ℝ} {ω : Ω} {n k j : ℕ} (hjn : j < n) {t : ℝ}
+    (ht : (k : ℝ) / n * t < 1 - orderStat (fun i : Fin n ↦ U i ω) j) :
+    ∑ i ∈ range n, (Set.Ici (1 - k / n * t)).indicator (1 : ℝ → ℝ) (U i ω) ≤ j := by
   rw [sum_range_indicator_eq_card]
-  have h1 := (orderStat_le_iff (fun i : Fin n ↦ U i ω) hkn
-    (orderStat (fun i : Fin n ↦ U i ω) k)).1 le_rfl
+  have h1 := (orderStat_le_iff (fun i : Fin n ↦ U i ω) hjn
+    (orderStat (fun i : Fin n ↦ U i ω) j)).1 le_rfl
   have h2 : #{i : Fin n | 1 - k / n * t ≤ U i ω} ≤ exceedCount (fun i : Fin n ↦ U i ω)
-      (orderStat (fun i : Fin n ↦ U i ω) k) := by
+      (orderStat (fun i : Fin n ↦ U i ω) j) := by
     unfold exceedCount
     exact Finset.card_le_card fun i hi ↦ by
       simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
       linarith
   exact_mod_cast h2.trans h1
 
-/-- Above the random threshold at least `k + 1` observations exceed `1 - (k/n) t`. -/
-lemma le_sum_range_indicator_of_le {U : ℕ → Ω → ℝ} {ω : Ω} {n k : ℕ} (hkn : k < n) {t : ℝ}
-    (ht : 1 - orderStat (fun i : Fin n ↦ U i ω) k ≤ (k : ℝ) / n * t) :
-    (k : ℝ) + 1 ≤ ∑ i ∈ range n, (Set.Ici (1 - k / n * t)).indicator (1 : ℝ → ℝ) (U i ω) := by
+/-- Above the random threshold `(n/k) (1 - U_{(j+1)})` at least `j + 1` observations exceed
+`1 - (k/n) t`. -/
+lemma le_sum_range_indicator_of_le {U : ℕ → Ω → ℝ} {ω : Ω} {n k j : ℕ} (hjn : j < n) {t : ℝ}
+    (ht : 1 - orderStat (fun i : Fin n ↦ U i ω) j ≤ (k : ℝ) / n * t) :
+    (j : ℝ) + 1 ≤ ∑ i ∈ range n, (Set.Ici (1 - k / n * t)).indicator (1 : ℝ → ℝ) (U i ω) := by
   rw [sum_range_indicator_eq_card]
-  have h1 := succ_le_card_orderStat_le (fun i : Fin n ↦ U i ω) hkn
-  have h2 : #{i : Fin n | orderStat (fun i : Fin n ↦ U i ω) k ≤ U i ω} ≤
+  have h1 := succ_le_card_orderStat_le (fun i : Fin n ↦ U i ω) hjn
+  have h2 : #{i : Fin n | orderStat (fun i : Fin n ↦ U i ω) j ≤ U i ω} ≤
       #{i : Fin n | 1 - k / n * t ≤ U i ω} :=
     Finset.card_le_card fun i hi ↦ by
       simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
@@ -711,14 +712,14 @@ theorem abs_meanExcess_sub_sum_hillSummand_lt {U : ℕ → Ω → ℝ} {ω : Ω}
   -- `√k W(t) = N(t) - k t`
   have hNW (t : ℝ) := sqrt_mul_tailEmpiricalProcess U n hk t ω
   have hlt (t : ℝ) (ht : t < T) : √(k : ℝ) * (t - 1) ≤ -W t := by
-    have := sum_range_indicator_le_of_lt (U := U) (ω := ω) hkn (t := t)
+    have := sum_range_indicator_le_of_lt (U := U) (ω := ω) (k := k) hkn (t := t)
       (by rw [hT, lt_div_iff₀ hp] at ht; linarith)
     have e := hNW t
     have : √(k : ℝ) * (√(k : ℝ) * (t - 1) + W t) ≤ 0 := by
       rw [mul_add, ← mul_assoc, Real.mul_self_sqrt hk'.le]; simp only [hWdef]; linarith
     nlinarith
   have hge (t : ℝ) (ht : T ≤ t) : -W t + (√(k : ℝ))⁻¹ ≤ √(k : ℝ) * (t - 1) := by
-    have := le_sum_range_indicator_of_le (U := U) (ω := ω) hkn (t := t)
+    have := le_sum_range_indicator_of_le (U := U) (ω := ω) (k := k) hkn (t := t)
       (by rw [hT, div_le_iff₀ hp] at ht; linarith)
     have e := hNW t
     have hs2 : √(k : ℝ) * √(k : ℝ) = k := Real.mul_self_sqrt hk'.le
