@@ -195,3 +195,4 @@ import ExtremeValueTheory.Statistics.ReturnLevelNormality
 import ExtremeValueTheory.Statistics.ConfidenceIntervals
 import ExtremeValueTheory.Statistics.LMoments
 import ExtremeValueTheory.Statistics.LMomentsEstimators
+import ExtremeValueTheory.Statistics.MeanExcess
