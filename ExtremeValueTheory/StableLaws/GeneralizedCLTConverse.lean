@@ -69,6 +69,20 @@ of `tendsto_map_convPow_of_isRegularlyVarying` (in
 5. *Regular variation*: `T` is monotone, so `T(l x) / T(x) → L(l) / L(1) = l ^ (-α)`; then the
    elementary Tauberian step transfers this to `U` and to the tail. With `ν = SαS(c)` the
    scaling `aₙ ↦ r aₙ` identifies `α` (`isRegularlyVarying_of_tendsto_isSymmStable`).
+
+## File layout
+
+This file holds the final part of the development (the index-derived converse and Feller's
+criterion) and imports the others:
+
+* `ExtremeValueTheory.StableLaws.GeneralizedCLTConverse.Tauberian`: truncated moments, the
+  Tauberian step and the passage from sequences to functions.
+* `ExtremeValueTheory.StableLaws.GeneralizedCLTConverse.CharFun`: steps 1 and 2 (tightness and
+  logarithms of characteristic functions).
+* `ExtremeValueTheory.StableLaws.GeneralizedCLTConverse.CanonicalMeasure`: steps 3 and 4
+  (canonical measures and Lévy's continuity theorem).
+* `ExtremeValueTheory.StableLaws.GeneralizedCLTConverse.IndexGiven`: step 5 for a given symmetric
+  stable limit, and the power form of the scaling limit.
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Set Real
