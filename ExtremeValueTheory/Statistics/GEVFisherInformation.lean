@@ -9,7 +9,46 @@ import ExtremeValueTheory.ForMathlib.Analysis.SpecialFunctions.Gamma.Trigamma
 /-!
 # The full Fisher information of the GEV family
 
-TODO
+For a shape `ξ ≠ 0`, the shape score of the GEV log-density is (`gevScoreXi`,
+`hasDerivAt_log_gevLocScaleDensity_xi`)
+
+  `∂_ξ ℓ = log u/ξ² - (1/ξ + 1) z/u - u^{-1/ξ}(log u/ξ² - z/(ξ u))`, `z = (x - μ)/σ`,
+  `u = 1 + ξ z`,
+
+which on the exponential scale `x = μ + σ (t^{-ξ} - 1)/ξ` is
+`(t - 1) log t/ξ + (t - 1 - ξ)(1 - t^ξ)/ξ²`. Its moments involve `E[T^a log T] = Γ'(a + 1)` and
+`E[T^k (log T)²] = Γ''(k + 1)`, with `Γ''(1) = γ² + π²/6` (`Real.integral_log_sq_mul_exp_neg`).
+For `ξ > -1/2`, `ξ ≠ 0`, we obtain the full `3 × 3` **Fisher information of Prescott–Walden
+(1980)** in the parametrization `(μ, σ, ξ)` (`gevFisherInfo`): with `p = (1 + ξ)² Γ(1 + 2ξ)`,
+`q = Γ(2 + ξ)(ψ(1 + ξ) + (1 + ξ)/ξ)`, `ψ = Γ'/Γ` (`realDigamma`) and Euler's constant `γ`,
+
+* `I_μμ = p/σ²`, `I_μσ = (Γ(2 + ξ) - p)/(ξ σ²)`, `I_σσ = (1 - 2Γ(2 + ξ) + p)/(ξ² σ²)`,
+* `I_μξ = -(q - p/ξ)/(σ ξ)`, `I_σξ = -(1 - γ + (1 - Γ(2 + ξ))/ξ - q + p/ξ)/(σ ξ²)`,
+* `I_ξξ = (π²/6 + (1 - γ + 1/ξ)² - 2q/ξ + p/ξ²)/ξ²`.
+
+## Main results
+
+* `Complex.deriv_deriv_Gamma_two`, `Complex.deriv_deriv_Gamma_three`; `integral_logRow`,
+  `integral_logSqRow`, `integral_gevLogPoly`: logarithmic Gamma moments.
+* `integral_gevScore`, `integral_gevScoreXi`: the scores have mean zero.
+* `integral_lin3_gevScore_sq`, `integral_dotProduct_gevScore_mul`,
+  `integral_gevScore_mul_gevScore`: **the covariance of the score is `gevFisherInfo ξ σ`**.
+* `gevFisherInfo_submatrix_castLE`: its location-scale block is `gevFisherInfoMuSigma`.
+* `posDef_gevFisherInfo`: **the information matrix is positive definite**. The proof: a null
+  combination of the scores would make `(t - 1) log t` a combination of `1, t, t^ξ, t^{ξ + 1}` on
+  `(0, ∞)`, impossible by comparing growth at `0⁺` (`ξ > 0`) or `∞` (`ξ < 0`)
+  (`exists_logComb_ne_zero`).
+* `tendstoInDistribution_gevScoreVec3`: **the trivariate score CLT**
+  `n^{-1/2} ∑_{i<n} ∇ℓ(Xᵢ) ⇒ N(0, I(μ, σ, ξ))`.
+
+The Hessian and the information identity are in `ExtremeValueTheory.Statistics.GEVHessian`.
+
+## References
+
+* D. Prescott and A. T. Walden, *Maximum likelihood estimation of the parameters of the
+  generalized extreme-value distribution*, Biometrika 67 (1980).
+* R. L. Smith, *Maximum likelihood estimation in a class of nonregular cases*, Biometrika 72
+  (1985).
 -/
 
 open Filter Topology Set Real MeasureTheory ProbabilityTheory
