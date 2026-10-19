@@ -172,6 +172,13 @@ From the survey in [`docs/PRACTICAL_OPEN_PROBLEMS.md`](docs/PRACTICAL_OPEN_PROBL
 - [ ] Promote helper lemmas from the test files into the library (e.g. the exponential law is not
       subexponential; uniqueness of the regular-variation index)
 
+- [>] Design pass (running): one representation of laws with a complete bridge; one definition
+      per concept; names and namespaces; oversized files split (outside `Statistics/`); test helpers
+      promoted; conventions in `docs/DESIGN.md`
+- [ ] **Afterwards:** split the oversized `Statistics/` files (deferred while statistics agents edit
+      them); migrate remaining uses off the `@[deprecated]` aliases and then delete the aliases; rebase
+      the in-flight agent branches onto the new names
+
 ### Documentation
 - [ ] `THEOREMS.md` and the website's "What is proved" list: add the newest results
 - [ ] Every new file has a blueprint entry
