@@ -119,6 +119,30 @@ that way; their novelty has been checked against the literature
 - **Known results, proved under weaker hypotheses:** `θ ≤ ϑ` (Kulik–Soulier Lemma 7.5.4) and an exact
   formula for the gap `ϑ − θ`.
 
+## Status and what's next
+
+The theory taught in the standard textbooks is essentially complete. What is left to make this the
+best extreme value theory library, in order (details in [`ROADMAP.md`](ROADMAP.md)):
+
+1. **A consistent design.** A pass in progress unifies how laws are represented, removes duplicate
+   definitions, fixes names and namespaces, and splits oversized files; the conventions will be written up
+   in `docs/DESIGN.md`.
+2. **Keeping up with Mathlib.** The library is pinned to Mathlib v4.35.0; it needs a bump and regular
+   automated bumps, with tagged releases.
+3. **Review by human experts**, the one check independent of the AI that helped write the statements.
+4. **A paper** on the new results.
+5. **The remaining textbook gaps people notice first:** three-parameter GEV maximum likelihood
+   normality, profile-likelihood intervals, the parametric stable family, cluster point processes,
+   Brown–Resnick processes, nonparametric tail-dependence estimation.
+6. **Usability:** a tutorial, worked examples for the standard distributions, a stable API with a
+   changelog.
+7. **Outreach:** an announcement on the Lean Zulip and upstreaming the general results to Mathlib.
+8. **Open problems**, practical ones first: how to choose block and run lengths for clustering
+   estimators, sliding-block estimators, block maxima versus peaks over threshold
+   ([`docs/PRACTICAL_OPEN_PROBLEMS.md`](docs/PRACTICAL_OPEN_PROBLEMS.md)).
+9. **A link to real software:** executable reference versions of the estimators, cross-checked against
+   R and Python packages to catch convention bugs.
+
 ## Build
 
 ```sh
