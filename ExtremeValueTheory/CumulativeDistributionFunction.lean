@@ -80,6 +80,8 @@ def MeasureTheory.FiniteMeasure.cdf (μ : FiniteMeasure ℝ) : StieltjesFunction
   mono' := fun _ _ h ↦ apply_mono _ (Iic_subset_Iic.mpr h)
   right_continuous' := MeasureTheory.FiniteMeasure.right_continuous_cdf μ
 
+namespace ExtremeValueTheory
+
 /-- The type of cumulative distribution functions of Borel probability measures on ℝ. -/
 @[ext] structure CumulativeDistributionFunction extends StieltjesFunction ℝ where
   tendsto_atTop : Tendsto toFun atTop (𝓝 (1 : ℝ))
@@ -246,5 +248,7 @@ lemma eq_of_forall_dense_eq {S : Set ℝ} (S_dense : Dense S) (F G : CumulativeD
   use x', x'_mem_S, le_of_lt x'_mem_Ioo.1, Ico_subset_s (mem_Ico_of_Ioo x'_mem_Ioo)
 
 end CumulativeDistributionFunction
+
+end ExtremeValueTheory
 
 end cdf_def

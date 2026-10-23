@@ -21,6 +21,8 @@ lemma ENNReal.ofReal_log_eq_toENNReal_log_ofReal {x : ℝ} (x_pos : 0 < x) :
 end auxiliary_log
 
 
+namespace ExtremeValueTheory
+
 section extend_cdf
 
 namespace CumulativeDistributionFunction
@@ -490,3 +492,5 @@ end equivalent_ev
 
 
 end transform_cdf
+
+end ExtremeValueTheory

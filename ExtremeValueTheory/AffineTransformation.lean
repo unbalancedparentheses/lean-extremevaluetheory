@@ -218,6 +218,14 @@ lemma AffineEquiv.isOrientationPreserving_iff_mono (A : ℝ ≃ᵃ[ℝ] ℝ) :
     have a_nonzero : a ≠ 0 := by exact coefs_of_field_fst_ne_zero A
     exact lt_of_le_of_ne' key a_nonzero
 
+end affine
+
+namespace ExtremeValueTheory
+
+section affine_incr
+
+open Topology Filter Set
+
 -- TODO: Generalize to canonically linearly ordered fields?
 /-- The subgroup of affine isomorphishs ℝ → ℝ which are orientation preserving. -/
 noncomputable def orientationPreservingAffineEquiv : Subgroup (ℝ ≃ᵃ[ℝ] ℝ) where
@@ -531,7 +539,7 @@ instance AffineIncrEquiv.metrizableSpace :
     TopologicalSpace.MetrizableSpace AffineIncrEquiv :=
   homeomorph_prod.isEmbedding.metrizableSpace
 
-end affine
+end affine_incr
 
 
 
@@ -639,7 +647,7 @@ end CumulativeDistributionFunction
 section extend
 
 /-- Extend an affine map `ℝ → ℝ` to `[-∞,+∞] → [-∞,+∞]`. -/
-noncomputable def AffineMap.extend (A : ℝ →ᵃ[ℝ] ℝ) (x : EReal) : EReal :=
+noncomputable def _root_.AffineMap.extend (A : ℝ →ᵃ[ℝ] ℝ) (x : EReal) : EReal :=
   match x with
   | ⊥ => if A.coefs_of_field.1 > 0 then ⊥
       else if A.coefs_of_field.1 < 0 then ⊤
@@ -650,7 +658,7 @@ noncomputable def AffineMap.extend (A : ℝ →ᵃ[ℝ] ℝ) (x : EReal) : EReal
   | some (some ξ) => A ξ
 
 /-- An affine map `ℝ → ℝ` with nonnegative slope is monotone. -/
-lemma AffineMap.monotone_of_coefs_fst_nonneg (A : ℝ →ᵃ[ℝ] ℝ) (hA : 0 ≤ A.coefs_of_field.1) :
+lemma _root_.AffineMap.monotone_of_coefs_fst_nonneg (A : ℝ →ᵃ[ℝ] ℝ) (hA : 0 ≤ A.coefs_of_field.1) :
     Monotone A := by
   intro x y hxy
   rw [A.apply_eq_of_field x, A.apply_eq_of_field y]
@@ -658,56 +666,56 @@ lemma AffineMap.monotone_of_coefs_fst_nonneg (A : ℝ →ᵃ[ℝ] ℝ) (hA : 0 �
 
 -- Corrected from upstream, where these were stated for all affine maps: an affine map with
 -- negative slope reverses the order and is not order-continuous (e.g. `A = -id`, `s = {0, 1}`).
-lemma AffineMap.leftOrdContinuous (A : ℝ →ᵃ[ℝ] ℝ) (hA : 0 ≤ A.coefs_of_field.1) :
+lemma _root_.AffineMap.leftOrdContinuous (A : ℝ →ᵃ[ℝ] ℝ) (hA : 0 ≤ A.coefs_of_field.1) :
     LeftOrdContinuous A := by
   intro s x hs hx
   exact hx.isLUB_of_tendsto ((A.monotone_of_coefs_fst_nonneg hA).monotoneOn _) hs
     ((A.continuous_of_finiteDimensional.tendsto x).mono_left nhdsWithin_le_nhds)
 
-lemma AffineMap.rightOrdContinuous (A : ℝ →ᵃ[ℝ] ℝ) (hA : 0 ≤ A.coefs_of_field.1) :
+lemma _root_.AffineMap.rightOrdContinuous (A : ℝ →ᵃ[ℝ] ℝ) (hA : 0 ≤ A.coefs_of_field.1) :
     RightOrdContinuous A := by
   intro s x hs hx
   exact hx.isGLB_of_tendsto ((A.monotone_of_coefs_fst_nonneg hA).monotoneOn _) hs
     ((A.continuous_of_finiteDimensional.tendsto x).mono_left nhdsWithin_le_nhds)
 
-lemma AffineEquiv.extend_bot' (A : ℝ ≃ᵃ[ℝ] ℝ) :
+lemma _root_.AffineEquiv.extend_bot' (A : ℝ ≃ᵃ[ℝ] ℝ) :
     A.toAffineMap.extend ⊥ =
       if 0 < A.toAffineMap.coefs_of_field.1 then ⊥ else ⊤ := by
   have obs : A.toAffineMap.coefs_of_field.1 ≠ 0 :=
-    coefs_of_field_fst_ne_zero A
+    AffineEquiv.coefs_of_field_fst_ne_zero A
   by_cases hA : 0 < A.toAffineMap.coefs_of_field.1
   · simp [AffineMap.extend, hA]; rfl
   · simp only [ne_eq, not_lt] at *
     have hA' : A.toAffineMap.coefs_of_field.1 < 0 := lt_of_le_of_ne hA obs
     simp [AffineMap.extend, hA']; rfl
 
-lemma AffineEquiv.extend_top' (A : ℝ ≃ᵃ[ℝ] ℝ) :
+lemma _root_.AffineEquiv.extend_top' (A : ℝ ≃ᵃ[ℝ] ℝ) :
     A.toAffineMap.extend ⊤ =
       if 0 < A.toAffineMap.coefs_of_field.1 then ⊤ else ⊥ := by
   have obs : A.toAffineMap.coefs_of_field.1 ≠ 0 :=
-    coefs_of_field_fst_ne_zero A
+    AffineEquiv.coefs_of_field_fst_ne_zero A
   by_cases hA : 0 < A.toAffineMap.coefs_of_field.1
   · simp [AffineMap.extend, hA]; rfl
   · simp only [ne_eq, not_lt] at *
     have hA' : A.toAffineMap.coefs_of_field.1 < 0 := lt_of_le_of_ne hA obs
     simp [AffineMap.extend, hA']; rfl
 
-lemma AffineEquiv.extend_symm_cancel (A : ℝ ≃ᵃ[ℝ] ℝ) (x : EReal) :
+lemma _root_.AffineEquiv.extend_symm_cancel (A : ℝ ≃ᵃ[ℝ] ℝ) (x : EReal) :
     A.symm.toAffineMap.extend (A.toAffineMap.extend x) = x := by
   simp [AffineMap.extend]
   by_cases hA : 0 < A.toAffineMap.coefs_of_field.1
   case' pos =>
     have : 0 < A.symm.toAffineMap.coefs_of_field.1 := by
-      rw [show A.symm = A⁻¹ from rfl, inv_coefs_of_field_fst, inv_pos]
+      rw [show A.symm = A⁻¹ from rfl, AffineEquiv.inv_coefs_of_field_fst, inv_pos]
       exact hA
     simp [hA, this]
   case' neg =>
     rw [not_lt] at hA
     have obs : A.toAffineMap.coefs_of_field.1 ≠ 0 :=
-      coefs_of_field_fst_ne_zero A
+      AffineEquiv.coefs_of_field_fst_ne_zero A
     have hA' : A.toAffineMap.coefs_of_field.1 < 0 := lt_of_le_of_ne hA obs
     have : A.symm.toAffineMap.coefs_of_field.1 < 0 := by
-      rw [show A.symm = A⁻¹ from rfl, inv_coefs_of_field_fst, inv_neg'']
+      rw [show A.symm = A⁻¹ from rfl, AffineEquiv.inv_coefs_of_field_fst, inv_neg'']
       exact hA'
     simp [hA', this, lt_asymm]
   all_goals split
@@ -715,29 +723,29 @@ lemma AffineEquiv.extend_symm_cancel (A : ℝ ≃ᵃ[ℝ] ℝ) (x : EReal) :
   rename_i h
   split at h <;> first | rfl | cases h
   all_goals
-  rw [symm_apply_apply]
+  rw [AffineEquiv.symm_apply_apply]
   rfl
 
 /-- Extend an affine equivalence `ℝ → ℝ` to an equivalence `[-∞,+∞] → [-∞,+∞]`. -/
-noncomputable def AffineEquiv.extend (A : ℝ ≃ᵃ[ℝ] ℝ) : EReal ≃ EReal where
+noncomputable def _root_.AffineEquiv.extend (A : ℝ ≃ᵃ[ℝ] ℝ) : EReal ≃ EReal where
   toFun := A.toAffineMap.extend
   invFun := A.symm.toAffineMap.extend
-  left_inv := extend_symm_cancel A
-  right_inv := extend_symm_cancel A.symm
+  left_inv := AffineEquiv.extend_symm_cancel A
+  right_inv := AffineEquiv.extend_symm_cancel A.symm
 
-@[simp] lemma AffineEquiv.extend_bot (A : ℝ ≃ᵃ[ℝ] ℝ) :
+@[simp] lemma _root_.AffineEquiv.extend_bot (A : ℝ ≃ᵃ[ℝ] ℝ) :
     A.extend ⊥ = if 0 < A.toAffineMap.coefs_of_field.1 then ⊥ else ⊤ :=
   AffineEquiv.extend_bot' A
 
-@[simp] lemma AffineEquiv.extend_top (A : ℝ ≃ᵃ[ℝ] ℝ) :
+@[simp] lemma _root_.AffineEquiv.extend_top (A : ℝ ≃ᵃ[ℝ] ℝ) :
     A.extend ⊤ = if 0 < A.toAffineMap.coefs_of_field.1 then ⊤ else ⊥ :=
   AffineEquiv.extend_top' A
 
-@[simp] lemma AffineEquiv.extend_ofReal (A : ℝ ≃ᵃ[ℝ] ℝ) (x : ℝ) :
+@[simp] lemma _root_.AffineEquiv.extend_ofReal (A : ℝ ≃ᵃ[ℝ] ℝ) (x : ℝ) :
     A.extend x = A x :=
   rfl
 
-@[simp] lemma AffineEquiv.extend_symm (A : ℝ ≃ᵃ[ℝ] ℝ) :
+@[simp] lemma _root_.AffineEquiv.extend_symm (A : ℝ ≃ᵃ[ℝ] ℝ) :
     A.extend.symm = A.symm.extend := by
   rfl
 
@@ -788,3 +796,5 @@ lemma AffineIncrEquiv.rightOrdContinuous_extend (A : AffineIncrEquiv) :
 end extend
 
 end affine_transform_of_cdf
+
+end ExtremeValueTheory

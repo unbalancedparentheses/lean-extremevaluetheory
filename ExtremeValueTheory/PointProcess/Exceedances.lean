@@ -59,7 +59,7 @@ variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasur
   {X : ℕ → Ω → ℝ} {F : CumulativeDistributionFunction}
 
 /-- An orientation preserving affine map is measurable. -/
-lemma _root_.AffineIncrEquiv.measurable (A : AffineIncrEquiv) : Measurable A :=
+lemma AffineIncrEquiv.measurable (A : AffineIncrEquiv) : Measurable A :=
   A.mono.measurable
 
 /-- `P(x < A (X i)) = 1 - (A • F) x`. -/

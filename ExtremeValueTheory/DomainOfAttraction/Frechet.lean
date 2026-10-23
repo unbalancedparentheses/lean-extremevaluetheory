@@ -471,7 +471,7 @@ end Frechet
 
 end ExtremeValueTheory
 
-namespace CumulativeDistributionFunction
+namespace ExtremeValueTheory.CumulativeDistributionFunction
 
 open ExtremeValueTheory
 
@@ -553,4 +553,4 @@ theorem isInMDAFrechet_iff (F : CumulativeDistributionFunction) {α : ℝ} (hα 
     F.IsInMDAFrechet hα ↔ IsRegularlyVarying (fun x ↦ 1 - F x) (-α) :=
   ⟨F.isRegularlyVarying_of_isInMDAFrechet hα, F.isInMDAFrechet_of_isRegularlyVarying hα⟩
 
-end CumulativeDistributionFunction
+end ExtremeValueTheory.CumulativeDistributionFunction

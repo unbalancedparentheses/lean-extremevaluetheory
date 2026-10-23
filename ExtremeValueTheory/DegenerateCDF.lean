@@ -10,6 +10,8 @@ import Mathlib.MeasureTheory.Measure.DiracProba
 
 
 
+namespace ExtremeValueTheory
+
 section degenerate_cdf
 
 open MeasureTheory Topology Filter Set ENNReal NNReal
@@ -149,3 +151,5 @@ lemma eq_diracProba_of_isDegenerate (μ : ProbabilityMeasure ℝ) (degen : μ.cd
 end CumulativeDistributionFunction
 
 end degenerate_cdf
+
+end ExtremeValueTheory

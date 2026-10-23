@@ -50,9 +50,9 @@ representation turns every moment of `H_ξ` into an Euler integral, and gives ([
   §3.1 [Coles].
 -/
 
-open Filter Topology Real MeasureTheory Set CumulativeDistributionFunction ProbabilityTheory
+open Filter Topology Real MeasureTheory Set ExtremeValueTheory.CumulativeDistributionFunction ProbabilityTheory
 
-namespace CumulativeDistributionFunction
+namespace ExtremeValueTheory.CumulativeDistributionFunction
 
 /-- The law of `A • F` is the image of the law of `F` under the affine map
 `x ↦ a x + b`, `(a, b) = A.coefs`. -/
@@ -90,7 +90,7 @@ lemma integrable_id_smul (F : CumulativeDistributionFunction) (A : AffineIncrEqu
     (by fun_prop)]
   exact (hF.const_mul _).add (integrable_const _)
 
-end CumulativeDistributionFunction
+end ExtremeValueTheory.CumulativeDistributionFunction
 
 namespace ExtremeValueTheory
 

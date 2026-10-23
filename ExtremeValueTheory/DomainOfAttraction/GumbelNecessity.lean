@@ -194,7 +194,7 @@ end Gumbel
 
 end ExtremeValueTheory
 
-namespace CumulativeDistributionFunction
+namespace ExtremeValueTheory.CumulativeDistributionFunction
 
 open ExtremeValueTheory
 
@@ -343,4 +343,4 @@ theorem isInMDAGumbel_iff (F : CumulativeDistributionFunction) :
     · exact (F.isInMDAGumbel_iff_atTop hF).2 hex
     · exact (F.isInMDAGumbel_iff_nhdsLT hlt heq).2 hex
 
-end CumulativeDistributionFunction
+end ExtremeValueTheory.CumulativeDistributionFunction

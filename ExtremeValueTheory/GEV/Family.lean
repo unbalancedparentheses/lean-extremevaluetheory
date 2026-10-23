@@ -47,7 +47,7 @@ unifies the three standard extreme value laws by explicit affine maps ([EKM, p. 
   §3.1 [Coles].
 -/
 
-open Filter Topology Real CumulativeDistributionFunction
+open Filter Topology Real ExtremeValueTheory.CumulativeDistributionFunction
 
 namespace ExtremeValueTheory
 
@@ -169,7 +169,7 @@ private lemma standardWeibullCDF_congr {α β : ℝ} (hα : 0 < α) (hβ : 0 < �
 
 /-- **Fisher–Tippett–Gnedenko theorem, Jenkinson–von Mises form** ([EKM, Theorem 3.4.5];
 [dHF, Theorem 1.1.3]): every extreme value distribution is of the type of a GEV law `H_ξ`. -/
-theorem _root_.CumulativeDistributionFunction.IsExtremeValueDistr.exists_smul_eq_gevCDF
+theorem CumulativeDistributionFunction.IsExtremeValueDistr.exists_smul_eq_gevCDF
     {G : CumulativeDistributionFunction} (hG : G.IsExtremeValueDistr) :
     ∃ (A : AffineIncrEquiv) (ξ : ℝ), A • G = gevCDF ξ := by
   rcases hG.classification with ⟨A, hA⟩ | ⟨A, α, hα, hA⟩ | ⟨A, α, hα, hA⟩

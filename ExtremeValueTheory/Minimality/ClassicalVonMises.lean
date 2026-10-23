@@ -35,7 +35,7 @@ open Filter Topology Set Real
 
 namespace ExtremeValueTheory.Minimality
 
-open CumulativeDistributionFunction
+open ExtremeValueTheory.CumulativeDistributionFunction
 
 /-- If the values of `F` avoid `(c, 1)` with `c < 1`, then `F^n` evaluated along any affine
 normalization cannot converge to a value in `(0, 1)`. -/

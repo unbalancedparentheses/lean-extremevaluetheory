@@ -229,7 +229,7 @@ end Weibull
 
 end ExtremeValueTheory
 
-namespace CumulativeDistributionFunction
+namespace ExtremeValueTheory.CumulativeDistributionFunction
 
 open ExtremeValueTheory
 
@@ -448,4 +448,4 @@ theorem isInMDAWeibull_iff (F : CumulativeDistributionFunction) {α : ℝ} (hα 
   ⟨F.exists_endpoint_of_isInMDAWeibull hα, fun ⟨_, h1, _, hRV⟩ ↦
     F.isInMDAWeibull_of_isRegularlyVarying hα h1 hRV⟩
 
-end CumulativeDistributionFunction
+end ExtremeValueTheory.CumulativeDistributionFunction

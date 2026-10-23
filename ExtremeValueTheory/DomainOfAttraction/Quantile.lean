@@ -74,7 +74,7 @@ theorem gpdSurvivalInv_inv {ξ x : ℝ} (hx : 0 < x) : gpdSurvivalInv ξ x⁻¹ 
 
 end ExtremeValueTheory
 
-namespace CumulativeDistributionFunction
+namespace ExtremeValueTheory.CumulativeDistributionFunction
 
 open ExtremeValueTheory
 
@@ -702,4 +702,4 @@ theorem isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile (γ : ℝ)
   ⟨F.isExtendedRegularlyVarying_tailQuantile, fun ⟨_, ha⟩ =>
     F.isInMDAGEV_of_isExtendedRegularlyVarying_tailQuantile ha⟩
 
-end CumulativeDistributionFunction
+end ExtremeValueTheory.CumulativeDistributionFunction

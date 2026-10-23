@@ -44,7 +44,7 @@ index `-α`, and Gnedenko's theorem (`isInMDAFrechet_iff`, `isInMDAWeibull_iff`)
 
 open Filter Topology Set
 
-namespace CumulativeDistributionFunction
+namespace ExtremeValueTheory.CumulativeDistributionFunction
 
 open ExtremeValueTheory
 
@@ -236,4 +236,4 @@ theorem isInMDAWeibull_powerCDF {α : ℝ} (hα : 0 < α) : (powerCDF hα).IsInM
     have := Real.rpow_pos_of_pos hx0 α
     field_simp
 
-end CumulativeDistributionFunction
+end ExtremeValueTheory.CumulativeDistributionFunction

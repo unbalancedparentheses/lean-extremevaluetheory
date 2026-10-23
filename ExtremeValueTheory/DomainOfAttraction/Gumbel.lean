@@ -152,7 +152,7 @@ end Gumbel
 
 end ExtremeValueTheory
 
-namespace CumulativeDistributionFunction
+namespace ExtremeValueTheory.CumulativeDistributionFunction
 
 open ExtremeValueTheory
 
@@ -884,4 +884,4 @@ theorem isInMDAGumbel_expNegInvCDF : expNegInvCDF.IsInMDAGumbel := by
     field_simp
     ring
 
-end CumulativeDistributionFunction
+end ExtremeValueTheory.CumulativeDistributionFunction

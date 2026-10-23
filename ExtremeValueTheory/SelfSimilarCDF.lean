@@ -10,6 +10,8 @@ import ExtremeValueTheory.OneParameterAffine
 import ExtremeValueTheory.OrderContinuity
 import ExtremeValueTheory.ExtremeValueDistribution
 
+namespace ExtremeValueTheory
+
 section self_similar_cdf
 
 noncomputable def CumulativeDistributionFunction.comp_rightOrdContinuous
@@ -41,7 +43,7 @@ noncomputable def CumulativeDistributionFunction.comp_rightOrdContinuous
     rwa [‹φ 0 = 0›] at this
 
 open Set Topology in
-lemma Real.rightOrdContinuous_indicator_Ici_rpow {t : ℝ} (t_nn : 0 < t) :
+lemma _root_.Real.rightOrdContinuous_indicator_Ici_rpow {t : ℝ} (t_nn : 0 < t) :
     RightOrdContinuous (indicator (Ici 0) (fun p ↦ Real.rpow p t)) := by
   -- This is a bad proof. Should just prove continuity.
   refine Monotone.rightOrdContinuous_of_forall_continuousWithinAt_Ici ?_ ?_
@@ -191,7 +193,7 @@ lemma CumulativeDistributionFunction.selfSimilar_apply_of_ratio_pos
   rw [e1, div_mul_cancel₀ _ hxc, sub_add_cancel] at h
   rw [h, rpow_def_of_pos hxy, mul_comm]
 
-lemma Real.rpow_rpow_eq_exp_aux {g a α : ℝ} (g0 : 0 < g) (g1 : g < 1) (α_ne : α ≠ 0)
+lemma _root_.Real.rpow_rpow_eq_exp_aux {g a α : ℝ} (g0 : 0 < g) (g1 : g < 1) (α_ne : α ≠ 0)
     (a_nn : 0 ≤ a) :
     g ^ (a ^ (-α⁻¹)) = exp (-((a / (-(log g)) ^ α) ^ (-α⁻¹))) := by
   have L_pos : 0 < -log g := neg_pos.mpr (log_neg g0 g1)
@@ -1109,3 +1111,5 @@ theorem classification {G : CumulativeDistributionFunction}
 end CumulativeDistributionFunction.IsExtremeValueDistr
 
 end self_simiarity_of_extreme_value_distributions
+
+end ExtremeValueTheory

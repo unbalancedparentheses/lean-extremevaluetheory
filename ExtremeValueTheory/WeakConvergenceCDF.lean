@@ -9,6 +9,8 @@ import ExtremeValueTheory.CumulativeDistributionFunction
 import ExtremeValueTheory.AffineTransformation
 import Mathlib
 
+namespace ExtremeValueTheory
+
 section weak_convergence_cdf
 
 open Filter Topology NNReal ENNReal Set
@@ -332,3 +334,5 @@ lemma continuous_mulAction :
 end CumulativeDistributionFunction
 
 end continuous_mulAction
+
+end ExtremeValueTheory

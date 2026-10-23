@@ -55,7 +55,7 @@ For the three standard types the norming constants are explicit:
 
 open Filter Topology Real
 
-namespace CumulativeDistributionFunction
+namespace ExtremeValueTheory.CumulativeDistributionFunction
 
 /-- A c.d.f. `G` is **max-stable** if it is nondegenerate and for all `n ≥ 1` there are
 `a_n > 0` and `b_n` with `G(a_n x + b_n) ^ n = G(x)` for all `x` ([EKM, Definition 3.2.1]). -/
@@ -220,4 +220,4 @@ lemma isMaxStable_of_classification {G : CumulativeDistributionFunction}
   · exact key A _ hA (isMaxStable_standardFrechetCDF hα)
   · exact key A _ hA (isMaxStable_standardWeibullCDF hα)
 
-end CumulativeDistributionFunction
+end ExtremeValueTheory.CumulativeDistributionFunction

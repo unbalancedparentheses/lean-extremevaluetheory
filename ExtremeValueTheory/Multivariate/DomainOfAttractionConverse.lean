@@ -45,7 +45,7 @@ variable {ι : Type*}
 
 /-- For a continuous c.d.f., the tail quantile function inverts the tail exactly:
 `F(U(s)) = 1 - 1/s` for `s > 1`. -/
-theorem _root_.CumulativeDistributionFunction.apply_tailQuantile_eq
+theorem CumulativeDistributionFunction.apply_tailQuantile_eq
     {F : CumulativeDistributionFunction} (hc : Continuous F) {s : ℝ} (hs : 1 < s) :
     F (F.tailQuantile s) = 1 - 1 / s := by
   have hspec := F.tailQuantile_spec hs
@@ -56,7 +56,7 @@ theorem _root_.CumulativeDistributionFunction.apply_tailQuantile_eq
     linarith [hspec.2 y hy])
 
 /-- `U(s) ≤ z` as soon as `1 - F(z) ≤ 1/s`. -/
-theorem _root_.CumulativeDistributionFunction.tailQuantile_le
+theorem CumulativeDistributionFunction.tailQuantile_le
     (F : CumulativeDistributionFunction) {s z : ℝ} (hs : 1 < s) (hz : 1 - F z ≤ 1 / s) :
     F.tailQuantile s ≤ z := by
   by_contra hcon

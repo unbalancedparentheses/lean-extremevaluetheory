@@ -36,6 +36,8 @@ lemma NormedSpace.tendsto_iff_sub_const_isLittleO_one {ι : Type*} {L : Filter �
 end generalities
 
 
+namespace ExtremeValueTheory
+
 section limit_relation_manipulation_lemmas
 
 lemma eventually_mul_norm_lt_of_tendsto_smul_of_norm_lt {ι : Type*} {L : Filter ι}
@@ -366,3 +368,5 @@ theorem tfae_ev_limit_relation {F G : CumulativeDistributionFunction}
   tfae_finish
 
 end actual_limit_relation_manipulation
+
+end ExtremeValueTheory

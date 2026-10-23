@@ -43,7 +43,7 @@ continuous (`HasExtremalIndex.strict_of_continuous`).
 
 open MeasureTheory ProbabilityTheory Filter Topology Finset
 
-namespace CumulativeDistributionFunction
+namespace ExtremeValueTheory.CumulativeDistributionFunction
 
 /-- **Extreme value distributions are continuous**: by the Fisher–Tippett–Gnedenko classification
 they are affine images of the (continuous) standard Gumbel, Fréchet and Weibull laws. -/
@@ -70,7 +70,7 @@ theorem IsExtremeValueDistr.continuous {G : CumulativeDistributionFunction}
     exact Real.continuous_exp.comp ((Real.continuous_rpow_const hξ.le).comp
       (continuous_neg.max continuous_const)).neg
 
-end CumulativeDistributionFunction
+end ExtremeValueTheory.CumulativeDistributionFunction
 
 namespace ExtremeValueTheory
 

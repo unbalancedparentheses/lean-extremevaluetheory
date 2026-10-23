@@ -8,6 +8,8 @@ ported to Lean/Mathlib v4.35.0 and renamed `ExtremeValueProject` to `ExtremeValu
 import ExtremeValueTheory.AffineTransformation
 import Mathlib.Analysis.SpecialFunctions.SmoothTransition
 
+namespace ExtremeValueTheory
+
 section ExtremeValueDistribution
 
 open Filter Topology NNReal ENNReal
@@ -483,3 +485,5 @@ lemma isExtremeValueDistr_standardWeibullCDF {ξ : ℝ} (ξ_pos : 0 < ξ) :
 end three_evds
 
 end ExtremeValueDistribution
+
+end ExtremeValueTheory

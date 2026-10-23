@@ -211,7 +211,7 @@ theorem TendstoUniformlyOn.tendsto_sub_comp {ι κ : Type*} {L : Filter ι} {l :
 
 end ExtremeValueTheory
 
-namespace CumulativeDistributionFunction
+namespace ExtremeValueTheory.CumulativeDistributionFunction
 
 open ExtremeValueTheory
 
@@ -811,4 +811,4 @@ theorem isInMDAGEV_iff_exists_tendsto_sup_excessSurvival (ξ : ℝ) :
 end Main
 
 
-end CumulativeDistributionFunction
+end ExtremeValueTheory.CumulativeDistributionFunction

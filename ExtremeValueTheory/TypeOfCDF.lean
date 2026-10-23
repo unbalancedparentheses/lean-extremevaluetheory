@@ -11,6 +11,8 @@ import ExtremeValueTheory.AffineTransformation
 
 import ExtremeValueTheory.WeakConvergenceCDF
 
+namespace ExtremeValueTheory
+
 section preliminaries_for_type_of_cdf
 
 open Topology Filter
@@ -384,3 +386,5 @@ end preliminaries_for_type_of_cdf
 section type_of_cdf
 
 end type_of_cdf
+
+end ExtremeValueTheory

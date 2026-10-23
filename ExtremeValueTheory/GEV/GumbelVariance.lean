@@ -34,9 +34,9 @@ probability-weighted moments of Hosking, Wallis and Wood,
   distribution by the method of probability-weighted moments*, Technometrics 27 (1985).
 -/
 
-open Filter Topology Real MeasureTheory Set CumulativeDistributionFunction ProbabilityTheory
+open Filter Topology Real MeasureTheory Set ExtremeValueTheory.CumulativeDistributionFunction ProbabilityTheory
 
-namespace CumulativeDistributionFunction
+namespace ExtremeValueTheory.CumulativeDistributionFunction
 
 /-- Variance of an affine transform: `Var (A • F) = a² Var F`, `a = A.coefs.1`. -/
 theorem variance_id_smul (F : CumulativeDistributionFunction) (A : AffineIncrEquiv) :
@@ -45,7 +45,7 @@ theorem variance_id_smul (F : CumulativeDistributionFunction) (A : AffineIncrEqu
   change variance (fun x ↦ A.coefs.1 * x + A.coefs.2) F.measure = _
   rw [variance_add_const (by fun_prop), variance_const_mul]
 
-end CumulativeDistributionFunction
+end ExtremeValueTheory.CumulativeDistributionFunction
 
 namespace ExtremeValueTheory
 

@@ -519,6 +519,8 @@ lemma eq_const_mul_one_sub_exp_of_multiplicative_with_scaling_of_measurable
 end cauchy_hamel_functional_equation
 
 
+namespace ExtremeValueTheory
+
 section one_parameter_subgroups_of_affine_transformations
 
 /-- The homomorphism `ℝ → AffineIncrEquiv` given by `s ↦ Aₛ`, where `Aₛ x = x + β * s`.
@@ -892,3 +894,5 @@ theorem AffineIncrEquiv.homomorphism_from_Real_characterization_of_nontrivial
     simp [h, maybe_zero]
 
 end one_parameter_subgroups_of_affine_transformations
+
+end ExtremeValueTheory

@@ -299,7 +299,7 @@ end GPD
 
 end ExtremeValueTheory
 
-namespace CumulativeDistributionFunction
+namespace ExtremeValueTheory.CumulativeDistributionFunction
 
 open ExtremeValueTheory
 
@@ -656,4 +656,4 @@ theorem exists_tendstoUniformlyOn_excessSurvival_of_isInMDAGEV' {ξ : ℝ} (hF :
   subst hξ
   exact F.exists_auxiliary_upperEndpointFilter_of_isInMDAGumbel (by simpa [IsInMDAGEV] using hF)
 
-end CumulativeDistributionFunction
+end ExtremeValueTheory.CumulativeDistributionFunction
