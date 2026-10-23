@@ -17,14 +17,6 @@ namespace Test.KnownAnswers.HeavyTails
 
 /-! ### Regular variation ([BGT, §1.4]) -/
 
-/-- Uniqueness of the index of regular variation. -/
-theorem rv_index_unique {f : ℝ → ℝ} {ρ σ : ℝ} (hρ : IsRegularlyVarying f ρ)
-    (hσ : IsRegularlyVarying f σ) : ρ = σ := by
-  have h := tendsto_nhds_unique (hρ.tendsto two_pos) (hσ.tendsto two_pos)
-  have hlog := congrArg log h
-  rw [log_rpow two_pos, log_rpow two_pos] at hlog
-  exact mul_right_cancel₀ (log_pos one_lt_two).ne' hlog
-
 /-- `x^α log x` is regularly varying with index `α` ([BGT, §1.4]: `x^α L(x)` with `L` slowly
 varying). -/
 theorem test_rpow_mul_log_rv (α : ℝ) : IsRegularlyVarying (fun x ↦ x ^ α * log x) α := by
@@ -34,12 +26,13 @@ theorem test_rpow_mul_log_rv (α : ℝ) : IsRegularlyVarying (fun x ↦ x ^ α *
 theorem test_rpow_neg_index {α : ℝ} (hα : α ≠ 0) :
     IsRegularlyVarying (fun x ↦ x ^ (-α)) (-α) ∧ ¬ IsRegularlyVarying (fun x ↦ x ^ (-α)) α :=
   ⟨IsRegularlyVarying.rpow_id (-α), fun h ↦ hα (by
-    have := rv_index_unique (IsRegularlyVarying.rpow_id (-α)) h; linarith)⟩
+    have := IsRegularlyVarying.index_eq (IsRegularlyVarying.rpow_id (-α)) h; linarith)⟩
 
 /-- `log` is slowly varying ([BGT, §1.2]) and hence has index `0`, not `1`. -/
 theorem test_log_slowlyVarying :
     IsSlowlyVarying log ∧ ¬ IsRegularlyVarying log 1 :=
-  ⟨isSlowlyVarying_log, fun h ↦ one_ne_zero (rv_index_unique h isSlowlyVarying_log.isRegularlyVarying)⟩
+  ⟨isSlowlyVarying_log, fun h ↦
+    one_ne_zero (IsRegularlyVarying.index_eq h isSlowlyVarying_log.isRegularlyVarying)⟩
 
 /-- `exp` is not regularly varying with any index: `e^{2x}/e^x = e^x → ∞` ([BGT, §1.4]). -/
 theorem test_exp_not_rv (ρ : ℝ) : ¬ IsRegularlyVarying exp ρ := by
@@ -192,45 +185,15 @@ theorem test_lognormal_subexponential : IsSubexponential (lognormal 0 1) :=
 /-- **The exponential law is not subexponential** ([EKM, §1.3]): it is not long-tailed,
 `F̄(x - 1)/F̄(x) = e ≠ 1`. -/
 theorem test_exponential_not_subexponential :
-    ¬ IsSubexponential (weibullTailLaw 1 one_pos) := by
-  intro h
-  have h1 := h.tendsto_tail_sub_div 1
-  have he : Tendsto (fun x ↦ tail (weibullTailLaw 1 one_pos) (x - 1) /
-      tail (weibullTailLaw 1 one_pos) x) atTop (𝓝 (exp 1)) := by
-    refine tendsto_const_nhds.congr' ?_
-    filter_upwards [eventually_ge_atTop 1] with x hx
-    rw [tail_weibullTailLaw one_pos (by linarith), tail_weibullTailLaw one_pos (by linarith),
-      rpow_one, rpow_one, ← exp_sub]
-    ring_nf
-  have := tendsto_nhds_unique he h1
-  rw [exp_eq_one_iff] at this
-  norm_num at this
+    ¬ IsSubexponential (weibullTailLaw 1 one_pos) :=
+  not_isSubexponential_weibullTailLaw one_pos le_rfl
 
 /-- The Weibull law with shape `τ = 2` (lighter than exponential) is not subexponential. -/
 theorem test_weibull_two_not_subexponential :
-    ¬ IsSubexponential (weibullTailLaw 2 two_pos) := by
-  intro h
-  have h1 := h.tendsto_tail_sub_div 1
-  have he : Tendsto (fun x ↦ tail (weibullTailLaw 2 two_pos) (x - 1) /
-      tail (weibullTailLaw 2 two_pos) x) atTop atTop := by
-    refine (tendsto_exp_atTop.comp (tendsto_atTop_add_const_right _ (-1)
-      (tendsto_id.const_mul_atTop two_pos))).congr' ?_
-    filter_upwards [eventually_ge_atTop 1] with x hx
-    rw [tail_weibullTailLaw two_pos (by linarith), tail_weibullTailLaw two_pos (by linarith),
-      ← exp_sub, rpow_two, rpow_two]
-    simp only [Function.comp, id]
-    ring_nf
-  exact not_tendsto_nhds_of_tendsto_atTop he _ h1
+    ¬ IsSubexponential (weibullTailLaw 2 two_pos) :=
+  not_isSubexponential_weibullTailLaw two_pos one_le_two
 
 /-! ### Ruin ([EKM, §1.2]) -/
-
-private theorem convPow_dirac_one (n : ℕ) : Subexp.convPow (Measure.dirac (1 : ℝ)) n =
-    Measure.dirac (n : ℝ) := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [Subexp.convPow_succ, ih, Measure.dirac_conv_dirac]
-    push_cast; ring_nf
 
 /-- **Ruin with zero initial capital**: `ψ(0) = 1/(1 + ρ)` ([EKM, Theorem 1.2.2 and (1.13)];
 the value does not depend on the claim law, here the integrated tail law is `δ₁`). Fails if
@@ -243,7 +206,8 @@ theorem test_pkRuin_zero {ρ : ℝ} (hρ : 0 < ρ) :
   have htail : ∀ n : ℕ, tail (Subexp.convPow (Measure.dirac (1 : ℝ)) n) 0 =
       if n = 0 then 0 else 1 := by
     intro n
-    rw [convPow_dirac_one, tail, measureReal_def, Measure.dirac_apply' _ measurableSet_Ioi]
+    rw [Subexp.convPow_dirac, mul_one, tail, measureReal_def,
+      Measure.dirac_apply' _ measurableSet_Ioi]
     rcases Nat.eq_zero_or_pos n with rfl | hn
     · simp
     · have : (0 : ℝ) < n := by exact_mod_cast hn
@@ -278,32 +242,19 @@ theorem test_ruin_pareto :
 
 /-! ### Stable laws ([Feller, §VI.1, §XVII]; [ST, §1.1]) -/
 
-/-- A symmetric `α`-stable law has stable index `α` (norming constants `n^{1/α}`). -/
-theorem isStableIndex_of_isSymmStable {α c : ℝ} {μ : Measure ℝ} (h : IsSymmStable α c μ)
-    (hα : 0 < α) (hc : 0 < c) : IsStableIndex α μ := by
-  refine ⟨h.isStable hα hc, fun n hn ↦ ⟨0, ?_⟩⟩
-  have := h.1
-  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
-  have e : (n : ℝ) * c = c * |(n : ℝ) ^ α⁻¹| ^ α := by
-    rw [abs_of_pos (rpow_pos_of_pos hn' _), rpow_inv_rpow hn'.le hα.ne']
-    ring
-  have h2 := (e ▸ h.convPow n).unique (h.map_mul ((n : ℝ) ^ α⁻¹))
-  simpa using h2
-
 /-- **The normal law is `2`-stable** ([Feller, §VI.1]): `stableIndex N(0, v) = 2`, with
 characteristic function `exp(-v t²/2)`, i.e. `c = v/2`. -/
 theorem test_gaussian_stableIndex {v : ℝ≥0} (hv : v ≠ 0) :
     stableIndex (gaussianReal 0 v) = 2 :=
-  (isStableIndex_of_isSymmStable (isSymmStable_gaussianReal v) two_pos
+  (isSymmStable_gaussianReal v).stableIndex_eq two_pos
     (by have : (0 : ℝ) < v := lt_of_le_of_ne v.2 (by exact_mod_cast hv.symm); positivity)
-    ).stableIndex_eq
 
 /-- **The Cauchy law is `1`-stable** ([Feller, §VI.1]): `stableIndex Cauchy(0, γ) = 1`, with
 characteristic function `exp(-γ |t|)`. -/
 theorem test_cauchy_stableIndex {γ : ℝ≥0} (hγ : γ ≠ 0) :
     stableIndex (cauchyMeasure 0 γ) = 1 :=
-  (isStableIndex_of_isSymmStable (isSymmStable_cauchyMeasure γ) one_pos
-    (lt_of_le_of_ne γ.2 (by exact_mod_cast hγ.symm))).stableIndex_eq
+  (isSymmStable_cauchyMeasure γ).stableIndex_eq one_pos
+    (lt_of_le_of_ne γ.2 (by exact_mod_cast hγ.symm))
 
 /-- The Gaussian law is not `1`-stable. -/
 theorem test_gaussian_not_index_one : ¬ IsStableIndex 1 (gaussianReal 0 1) := fun h ↦ by

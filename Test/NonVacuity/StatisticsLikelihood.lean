@@ -13,15 +13,18 @@ open MeasureTheory ProbabilityTheory Filter Topology Set
 namespace ExtremeValueTheory.Test.NonVacuity
 
 /-- The compact parameter set `K = [-1/2, 1/2] × [1, 2]` for `(ξ, σ)`. -/
-def gpdK : Set (ℝ × ℝ) := Icc (-1 / 2 : ℝ) (1 / 2) ×ˢ Icc (1 : ℝ) 2
+private def gpdK : Set (ℝ × ℝ) := Icc (-1 / 2 : ℝ) (1 / 2) ×ˢ Icc (1 : ℝ) 2
 
-theorem isCompact_gpdK : IsCompact gpdK := isCompact_Icc.prod isCompact_Icc
+/-- Test-specific: `gpdK` is compact. -/
+private theorem isCompact_gpdK : IsCompact gpdK := isCompact_Icc.prod isCompact_Icc
 
-theorem gpdK_sub : ∀ p ∈ gpdK, -1 < p.1 ∧ 0 < p.2 := by
+/-- Test-specific: `gpdK` lies in the admissible region `ξ > -1`, `σ > 0`. -/
+private theorem gpdK_sub : ∀ p ∈ gpdK, -1 < p.1 ∧ 0 < p.2 := by
   rintro ⟨a, b⟩ ⟨⟨ha, -⟩, ⟨hb, -⟩⟩
   exact ⟨by simp only at ha ⊢; linarith, by simp only at hb ⊢; linarith⟩
 
-theorem mem_interior_gpdK : ((1 / 4 : ℝ), (3 / 2 : ℝ)) ∈ interior gpdK := by
+/-- Test-specific: The true parameter `(1/4, 3/2)` is interior to `gpdK`. -/
+private theorem mem_interior_gpdK : ((1 / 4 : ℝ), (3 / 2 : ℝ)) ∈ interior gpdK := by
   rw [gpdK, interior_prod_eq, interior_Icc, interior_Icc]
   exact ⟨⟨by norm_num, by norm_num⟩, ⟨by norm_num, by norm_num⟩⟩
 
@@ -76,7 +79,7 @@ theorem test_nonvacuous_tendstoInDistribution_gpdScaleMLE' :
     HasLaw.id
 
 /-- The compact parameter set `[-1/2, 1/2] × [0, 1] × [1, 2]` for `(ξ, μ, σ)`. -/
-def gevK : Set (ℝ × ℝ × ℝ) := Icc (-1 / 2 : ℝ) (1 / 2) ×ˢ (Icc (0 : ℝ) 1 ×ˢ Icc (1 : ℝ) 2)
+private def gevK : Set (ℝ × ℝ × ℝ) := Icc (-1 / 2 : ℝ) (1 / 2) ×ˢ (Icc (0 : ℝ) 1 ×ˢ Icc (1 : ℝ) 2)
 
 /-- Exercises `ae_tendsto_gevMLE` (strong consistency of the 3-parameter GEV MLE): iid
 `GEV(ξ = 1/4, μ = 1/2, σ = 3/2)` samples, `K = [-1/2, 1/2] × [0, 1] × [1, 2]`. All hypotheses

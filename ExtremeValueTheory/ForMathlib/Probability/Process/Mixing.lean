@@ -46,7 +46,8 @@ the past `σ(X t : t ≤ s)` and the future `σ(X t : t ≥ s + h)`.
 * `ProbabilityTheory.IsMDependent.indepFun`: `X s` and `X t` are independent for `t > s + m`.
 * `ProbabilityTheory.IsMDependent.comp`: `m`-dependence is preserved by measurable maps applied
   coordinatewise.
-* `ProbabilityTheory.iIndepFun.isMDependent_zero`, `ProbabilityTheory.iIndepFun.alphaMixing_eq_zero`,
+* `ProbabilityTheory.iIndepFun.isMDependent_zero`,
+  `ProbabilityTheory.iIndepFun.alphaMixing_eq_zero`,
   `ProbabilityTheory.iIndepFun.betaMixing_eq_zero`: an independent sequence is `0`-dependent and
   its mixing coefficients vanish at positive lags.
 

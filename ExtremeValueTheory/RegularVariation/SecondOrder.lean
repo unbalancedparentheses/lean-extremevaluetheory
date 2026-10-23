@@ -544,7 +544,8 @@ of `Y + c` with `Y ∼ Pareto(1, 1)`. -/
 theorem isSecondOrderRegularlyVarying_add_const {U : ℝ → ℝ} {c : ℝ} (hc : 0 < c)
     (hU : ∀ᶠ t in atTop, U t = t + c) :
     IsSecondOrderRegularlyVarying U 1 (-1) (fun t => -(c / (t + c))) := by
-  have hden : Tendsto (fun t : ℝ => t + c) atTop atTop := tendsto_atTop_add_const_right _ c tendsto_id
+  have hden : Tendsto (fun t : ℝ => t + c) atTop atTop :=
+    tendsto_atTop_add_const_right _ c tendsto_id
   refine ⟨?_, by norm_num, ?_, Or.inr ?_, ⟨?_, fun l hl => ?_⟩, fun x hx => ?_⟩
   · filter_upwards [hU, eventually_gt_atTop 0] with t h ht
     rw [h]; linarith

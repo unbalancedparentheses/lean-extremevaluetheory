@@ -20,7 +20,8 @@ open CumulativeDistributionFunction ExtremeValueTheory Subexp
 /-- The standard Gumbel law is an extreme value law *because* it is the limit of normalized maxima
 of iid standard exponential variables (`isInMDAGumbel_standardExponentialCDF`), not by its own
 max-stability. -/
-theorem gumbel_isExtremeValueDistr_of_exponential_maxima : standardGumbelCDF.IsExtremeValueDistr := by
+private theorem gumbel_isExtremeValueDistr_of_exponential_maxima :
+    standardGumbelCDF.IsExtremeValueDistr := by
   obtain ⟨As, hAs⟩ := isInMDAGumbel_standardExponentialCDF
   exact ⟨isExtremeValueDistr_standardGumbelCDF.1, standardExponentialCDF, As, fun x _ => hAs x⟩
 
@@ -66,15 +67,6 @@ theorem test_nonvacuous_isInMDAGumbel_iff :
           (1 - standardExponentialCDF t)) (𝓝[<] xF) (𝓝 (Real.exp (-x))) :=
   (isInMDAGumbel_iff _).1 isInMDAGumbel_standardExponentialCDF
 
-theorem isInMDAGEV_zero_standardExponentialCDF : standardExponentialCDF.IsInMDAGEV 0 := by
-  simpa [IsInMDAGEV] using isInMDAGumbel_standardExponentialCDF
-
-theorem isInMDAGEV_paretoCDF : (paretoCDF (two_pos : (0 : ℝ) < 2)).IsInMDAGEV (1 / 2) := by
-  have h : (0 : ℝ) < 1 / 2 := by norm_num
-  rw [IsInMDAGEV, dite_eq_left_of_eq_true (eq_true h)]
-  convert isInMDAFrechet_paretoCDF (two_pos : (0 : ℝ) < 2) using 2
-  norm_num
-
 /-- Exercises `isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile` on the standard
 exponential law (`γ = 0`) and on the Pareto law with `γ = 1/2`. -/
 theorem test_nonvacuous_isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile :
@@ -82,9 +74,9 @@ theorem test_nonvacuous_isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQua
       ∃ a : ℝ → ℝ, IsExtendedRegularlyVarying (paretoCDF (two_pos : (0 : ℝ) < 2)).tailQuantile
         (1 / 2) a :=
   ⟨(isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile _ 0).1
-      isInMDAGEV_zero_standardExponentialCDF,
+      isInMDAGEV_standardExponentialCDF,
     (isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile _ (1 / 2)).1
-      isInMDAGEV_paretoCDF⟩
+      (isInMDAGEV_paretoCDF two_pos)⟩
 
 /-! ### Peaks over threshold -/
 
@@ -102,8 +94,9 @@ theorem test_nonvacuous_isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival 
         (gpdSurvival' (1 / 2) 1) (paretoCDF (two_pos : (0 : ℝ) < 2)).upperEndpointFilter
         (Ici 0)) :=
   ⟨(isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival _ 0).1
-      isInMDAGEV_zero_standardExponentialCDF,
-    (isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival _ (1 / 2)).1 isInMDAGEV_paretoCDF⟩
+      isInMDAGEV_standardExponentialCDF,
+    (isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival _ (1 / 2)).1
+      (isInMDAGEV_paretoCDF two_pos)⟩
 
 /-! ### Regular variation -/
 
@@ -116,10 +109,6 @@ theorem test_nonvacuous_tendsto_integral_Ioi_div :
     (fun _ _ h => sub_le_sub_left ((paretoCDF two_pos).mono' h) 1)
     test_nonvacuous_isInMDAFrechet_iff (by norm_num)
 
-/-- The Pareto tail `x^{-2}` on `x ≥ 1`. -/
-theorem paretoTail_eq {x : ℝ} (hx : 1 ≤ x) : 1 - paretoCDF (two_pos : (0 : ℝ) < 2) x = x ^ (-2 : ℝ) := by
-  rw [paretoCDF_apply_of_one_le _ hx]; ring
-
 /-- Exercises `IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi` (the converse half of
 Karamata's theorem) on the Pareto tail `x^{-2}`; the hypothesis `x F̄(x) / ∫ₓ^∞ F̄ → 1` is obtained
 from the direct half. -/
@@ -128,7 +117,7 @@ theorem test_nonvacuous_of_tendsto_mul_div_integral_Ioi :
   refine IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi (a := 1)
     (fun _ _ h => sub_le_sub_left ((paretoCDF two_pos).mono' h) 1) ?_ (by norm_num : (1 : ℝ) < 2) ?_
   · exact (integrableOn_Ioi_rpow_of_lt (by norm_num : (-2 : ℝ) < -1) one_pos).congr_fun
-      (fun t ht => (paretoTail_eq (le_of_lt ht)).symm) measurableSet_Ioi
+      (fun t ht => (one_sub_paretoCDF_of_one_le two_pos (le_of_lt ht)).symm) measurableSet_Ioi
   · have h := test_nonvacuous_tendsto_integral_Ioi_div.inv₀ (by norm_num)
     norm_num at h ⊢
     exact h
@@ -153,13 +142,13 @@ theorem test_nonvacuous_isSlowlyVarying_iff_exists_representation :
       ∀ x ≥ a, Real.log x = c x * exp (∫ t in a..x, ε t / t) :=
   (isSlowlyVarying_iff_exists_representation measurable_log).1 isSlowlyVarying_log
 
-/-- A bounded multiplier for Breiman's lemma: `Y = min (max V₂ 0) 1 ∈ [0, 1]`. -/
-noncomputable def breimanY' (ω : ℝ × ℝ) : ℝ := min (max ω.2 0) 1
+/-- Test-specific: a bounded multiplier for Breiman's lemma, `Y = min (max V₂ 0) 1 ∈ [0, 1]`. -/
+private noncomputable def breimanY' (ω : ℝ × ℝ) : ℝ := min (max ω.2 0) 1
 
-theorem breimanY'_nonneg (ω : ℝ × ℝ) : 0 ≤ breimanY' ω :=
+private theorem breimanY'_nonneg (ω : ℝ × ℝ) : 0 ≤ breimanY' ω :=
   le_min (le_max_right _ _) zero_le_one
 
-theorem breimanY'_le_one (ω : ℝ × ℝ) : breimanY' ω ≤ 1 := min_le_right _ _
+private theorem breimanY'_le_one (ω : ℝ × ℝ) : breimanY' ω ≤ 1 := min_le_right _ _
 
 /-- Exercises `tendsto_measure_mul_div_measure` (Breiman's lemma) with
 `X = Minimality.breimanX 2` (tail `≍ (log x)/x²`, regularly varying with index `-2`) and an
@@ -185,26 +174,6 @@ section Stable
 
 open SymmPareto
 
-theorem symmPareto_Ioi {α : ℝ} (hα : 0 < α) {x : ℝ} (hx : 1 ≤ x) :
-    (law α).real (Ioi x) = 2⁻¹ * x ^ (-α) := by
-  have hneg : (fun y : ℝ => -y) ⁻¹' Ioi x = Iio (-x) := by ext y; simp
-  have h0 : paretoMeasure 1 α (Iio (-x)) = 0 :=
-    measure_mono_null (Iio_subset_Iio (by linarith)) pareto_Iio_one
-  rw [measureReal_def, law, Measure.smul_apply, Measure.add_apply,
-    Measure.map_apply measurable_neg measurableSet_Ioi, hneg, h0, add_zero, pareto_Ioi hα hx,
-    smul_eq_mul, ENNReal.toReal_mul, ENNReal.toReal_inv, ENNReal.toReal_ofReal
-      (rpow_pos_of_pos (one_pos.trans_le hx) _).le]
-  simp
-
-/-- Tail balance of the symmetrized Pareto law, `p = 1/2`. -/
-theorem symmPareto_tailBalance {α : ℝ} (hα : 0 < α) :
-    Tendsto (fun x => (law α).real (Ioi x) / absTail (law α) x) atTop (𝓝 (1 / 2)) := by
-  refine tendsto_const_nhds.congr' ?_
-  filter_upwards [eventually_ge_atTop 1] with x hx
-  rw [symmPareto_Ioi hα hx, absTail_eq hα hx]
-  have : 0 < x ^ (-α) := rpow_pos_of_pos (one_pos.trans_le hx) _
-  field_simp
-
 /-- Exercises `tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt'` (generalized CLT,
 textbook constants) on the symmetrized Pareto law with `α = 3/2`, `p = 1/2`,
 `aₙ = (n + 1)^{2/3}`. -/
@@ -222,7 +191,7 @@ theorem test_nonvacuous_tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt'
   have hα : (0 : ℝ) < 3 / 2 := by norm_num
   have := isProbabilityMeasure hα
   exact tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt' (by norm_num) (by norm_num)
-    (isRegularlyVarying hα) (symmPareto_tailBalance hα)
+    (isRegularlyVarying hα) (tendsto_measureReal_Ioi_div_absTail hα)
     (fun n => rpow_pos_of_pos (by positivity) _) (tendsto_mul_absTail hα)
 
 /-- Exercises `tendsto_map_convPow_of_isRegularlyVarying_of_lt_one'` (generalized CLT, `α < 1`)
@@ -236,7 +205,7 @@ theorem test_nonvacuous_tendsto_map_convPow_of_isRegularlyVarying_of_lt_one' :
   have hα : (0 : ℝ) < 1 / 2 := by norm_num
   have := isProbabilityMeasure hα
   obtain ⟨ν, hν, -⟩ := tendsto_map_convPow_of_isRegularlyVarying_of_lt_one' hα (by norm_num)
-    (isRegularlyVarying hα) (symmPareto_tailBalance hα)
+    (isRegularlyVarying hα) (tendsto_measureReal_Ioi_div_absTail hα)
     (fun n => rpow_pos_of_pos (by positivity) _) (tendsto_mul_absTail hα)
   exact ⟨ν, hν⟩
 
@@ -247,7 +216,8 @@ theorem test_nonvacuous_tendsto_map_convPow_sub_of_isRegularlyVarying_one' :
       HasStableOneCharFun (Real.pi / 2) (2 * (1 / 2) - 1) StableIntegral.stableLogConst (ν : Measure ℝ) := by
   have := isProbabilityMeasure (α := 1) one_pos
   obtain ⟨ν, hν, -⟩ := tendsto_map_convPow_sub_of_isRegularlyVarying_one'
-    (by simpa using isRegularlyVarying (α := 1) one_pos) (symmPareto_tailBalance one_pos)
+    (by simpa using isRegularlyVarying (α := 1) one_pos)
+    (tendsto_measureReal_Ioi_div_absTail one_pos)
     (fun n => rpow_pos_of_pos (by positivity) _) (tendsto_mul_absTail one_pos)
   exact ⟨ν, hν⟩
 
@@ -273,7 +243,7 @@ theorem test_nonvacuous_domainOfAttraction_isStableIndex_iff :
   have hα : (0 : ℝ) < 3 / 2 := by norm_num
   have := isProbabilityMeasure hα
   exact (domainOfAttraction_isStableIndex_iff hα (by norm_num)).2
-    ⟨isRegularlyVarying hα, 1 / 2, by norm_num, by norm_num, symmPareto_tailBalance hα⟩
+    ⟨isRegularlyVarying hα, 1 / 2, by norm_num, by norm_num, tendsto_measureReal_Ioi_div_absTail hα⟩
 
 end Stable
 

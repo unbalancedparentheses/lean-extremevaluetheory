@@ -45,7 +45,8 @@ example (i : Fin 2) : ∫⁻ w, w i ∂independentSpectralMeasure = 1 ∧
 
 /-! ### Laws with these spectral measures -/
 
-lemma measurable_iSup_div (c : Fin 2 → ℝ≥0∞) :
+/-- Test-specific: Measurability of the integrand `w ↦ max_i w_i / c_i` of the exponent function. -/
+private lemma measurable_iSup_div (c : Fin 2 → ℝ≥0∞) :
     Measurable fun w : Fin 2 → ℝ≥0∞ => ⨆ i, w i / c i :=
   Measurable.iSup fun i => (measurable_pi_apply i).div_const _
 

@@ -24,10 +24,10 @@ infinite measure `∞ • δ₁` is a "spectral measure" of the point mass `δ�
 this pair and read `0 = 0`. It now assumes `[IsFiniteMeasure H]`. -/
 
 /-- An infinite measure concentrated on the sup-norm sphere. -/
-noncomputable def Hinf : Measure (Fin 2 → ℝ≥0∞) := (∞ : ℝ≥0∞) • Measure.dirac (fun _ ↦ 1)
+private noncomputable def Hinf : Measure (Fin 2 → ℝ≥0∞) := (∞ : ℝ≥0∞) • Measure.dirac (fun _ ↦ 1)
 
 /-- The point mass at the origin; it is not max-stable. -/
-noncomputable def ν0 : Measure (Fin 2 → ℝ) := Measure.dirac 0
+private noncomputable def ν0 : Measure (Fin 2 → ℝ) := Measure.dirac 0
 
 /-- Junk: the infinite `Hinf` satisfies `HasSpectralMeasure ν0`, since `exp (-(∞).toReal) = 1`. -/
 theorem test_hasSpectralMeasure_infinite : HasSpectralMeasure ν0 Hinf := by
@@ -94,9 +94,7 @@ identity is still consistent, and its only user `tendsto_tail_compound_div` assu
 
 theorem test_convPow_dirac_zero (n : ℕ) :
     Subexp.convPow (Measure.dirac (0 : ℝ)) n = Measure.dirac 0 := by
-  induction n with
-  | zero => rfl
-  | succ n ih => rw [Subexp.convPow_succ, ih]; simp
+  simpa using Subexp.convPow_dirac 0 n
 
 /-- Junk: the tail of the infinite-mass compound measure at `-1` is `0` (textbook: `∞`). -/
 theorem test_tail_compound_nonsummable :
