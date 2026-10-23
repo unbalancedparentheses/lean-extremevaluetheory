@@ -388,16 +388,16 @@ variable {ξ σ ξ₀ σ₀ x : ℝ}
 
 /-- The cumulative hazard `-log S(x)` of the GPD has derivative `1 / (σ + ξ x)` inside the
 support, for every shape. -/
-lemma hasDerivAt_neg_log_gpdSurvival' (hσ : 0 < σ) (hu : 0 < 1 + ξ * x / σ) :
-    HasDerivAt (fun y => -log (gpdSurvival' ξ σ y)) (1 / (σ + ξ * x)) x := by
+lemma hasDerivAt_neg_log_gpdSurvival (hσ : 0 < σ) (hu : 0 < 1 + ξ * x / σ) :
+    HasDerivAt (fun y => -log (gpdSurvival ξ σ y)) (1 / (σ + ξ * x)) x := by
   rcases eq_or_ne ξ 0 with rfl | hξ
-  · simp only [gpdSurvival'_zero_left, log_exp, neg_div, neg_neg, zero_mul, add_zero]
+  · simp only [gpdSurvival_of_eq_zero, log_exp, neg_div, neg_neg, zero_mul, add_zero]
     exact (hasDerivAt_id x).div_const σ
   have hcu : ContinuousAt (fun y => 1 + ξ * y / σ) x := by fun_prop
   have heq : (fun y => (1 / ξ) * log (1 + ξ * y / σ)) =ᶠ[𝓝 x]
-      fun y => -log (gpdSurvival' ξ σ y) := by
+      fun y => -log (gpdSurvival ξ σ y) := by
     filter_upwards [hcu.eventually (lt_mem_nhds hu)] with y hy
-    simp only [gpdSurvival', hξ, ↓reduceIte, max_eq_left hy.le]
+    simp only [gpdSurvival, hξ, ↓reduceIte, max_eq_left hy.le]
     rw [log_rpow hy]
     ring
   refine HasDerivAt.congr_of_eventuallyEq ?_ heq.symm
@@ -428,22 +428,22 @@ private lemma one_add_pos_of_lt_div (hσ : 0 < σ) (hx : 0 ≤ x) (hxδ : x < σ
 `1 / (σ + ξ x)`. -/
 theorem gpd_params_eq_of_gpdMeasure_eq' (hσ : 0 < σ) (hσ₀ : 0 < σ₀)
     (h : gpdMeasure ξ σ = gpdMeasure ξ₀ σ₀) : ξ = ξ₀ ∧ σ = σ₀ := by
-  have hS : ∀ x, 0 ≤ x → gpdSurvival' ξ σ x = gpdSurvival' ξ₀ σ₀ x := fun x hx => by
+  have hS : ∀ x, 0 ≤ x → gpdSurvival ξ σ x = gpdSurvival ξ₀ σ₀ x := fun x hx => by
     have := gpdMeasure_Ioi (ξ := ξ) hσ hx
     rw [h, gpdMeasure_Ioi hσ₀ hx] at this
-    exact ((ENNReal.ofReal_eq_ofReal_iff (gpdSurvival'_nonneg _ _ _)
-      (gpdSurvival'_nonneg _ _ _)).1 this).symm
+    exact ((ENNReal.ofReal_eq_ofReal_iff (gpdSurvival_nonneg _ _ _)
+      (gpdSurvival_nonneg _ _ _)).1 this).symm
   set δ := min (σ / (|ξ| + 1)) (σ₀ / (|ξ₀| + 1))
   have hδ : 0 < δ := lt_min (by positivity) (by positivity)
   have heq : ∀ x, 0 < x → x < δ → 1 / (σ + ξ * x) = 1 / (σ₀ + ξ₀ * x) := fun x hx hxδ => by
     have hu := one_add_pos_of_lt_div hσ hx.le (hxδ.trans_le (min_le_left _ _))
     have hu₀ := one_add_pos_of_lt_div hσ₀ hx.le (hxδ.trans_le (min_le_right _ _))
-    have hev : (fun y => -log (gpdSurvival' ξ σ y)) =ᶠ[𝓝 x]
-        fun y => -log (gpdSurvival' ξ₀ σ₀ y) := by
+    have hev : (fun y => -log (gpdSurvival ξ σ y)) =ᶠ[𝓝 x]
+        fun y => -log (gpdSurvival ξ₀ σ₀ y) := by
       filter_upwards [lt_mem_nhds hx] with y hy
       rw [hS y hy.le]
-    exact (hasDerivAt_neg_log_gpdSurvival' hσ hu).unique
-      ((hasDerivAt_neg_log_gpdSurvival' hσ₀ hu₀).congr_of_eventuallyEq hev)
+    exact (hasDerivAt_neg_log_gpdSurvival hσ hu).unique
+      ((hasDerivAt_neg_log_gpdSurvival hσ₀ hu₀).congr_of_eventuallyEq hev)
   have hpos : ∀ x, 0 < x → x < δ → 0 < σ + ξ * x ∧ 0 < σ₀ + ξ₀ * x := fun x hx hxδ => by
     have hu := one_add_pos_of_lt_div hσ hx.le (hxδ.trans_le (min_le_left _ _))
     have hu₀ := one_add_pos_of_lt_div hσ₀ hx.le (hxδ.trans_le (min_le_right _ _))
@@ -581,5 +581,9 @@ theorem ae_tendsto_gpdMLE' (hK : IsCompact K) (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0
   exact (continuous_subtype_val.tendsto _).comp this
 
 end JointMLE
+
+/-! Deprecated names from when the all-shape GPD survival function was `gpdSurvival'`. -/
+
+@[deprecated (since := "2026-10-19")] alias hasDerivAt_neg_log_gpdSurvival' := hasDerivAt_neg_log_gpdSurvival
 
 end ExtremeValueTheory

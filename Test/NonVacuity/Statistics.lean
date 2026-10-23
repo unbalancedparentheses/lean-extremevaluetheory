@@ -348,7 +348,7 @@ theorem test_nonvacuous_tendstoInDistribution_weissman :
       TendstoInDistribution (fun n ω =>
         √(Nat.sqrt n : ℝ) / Real.log ((Nat.sqrt n : ℝ) / (n * (1 / n : ℝ))) *
           (weissman (fun i : Fin n => X i ω) (Nat.sqrt n) (1 / n) /
-            tailQuantile P (X 0) (1 / n) - 1))
+            upperQuantile (survival P (X 0)) (1 / n) - 1))
         atTop id (fun _ => P) hillLimit := by
   obtain ⟨Ω, _, P, X, hP, hXm, hind, hid, hlaw⟩ := exists_iid_seq spar
   have := hP

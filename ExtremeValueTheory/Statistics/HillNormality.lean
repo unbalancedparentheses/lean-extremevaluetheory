@@ -39,7 +39,7 @@ with law `gaussianReal (λ / (1 - ρ)) γ²`.
   `√k ((1/k) ∑_{i<k} (E_{(i+1)} - E_{(k+1)}) - 1) ⇒ N(0, 1)` for iid standard exponentials.
 * `ExtremeValueTheory.tendstoInMeasure_meanExcess_fun`: a conditional law of large numbers for
   functions of the top exponential excesses and of `E_{(k+1)}`.
-* `ExtremeValueTheory.tailQuantile`, `map_eq_expMeasure_map_tailQuantile`: the tail quantile
+* `ExtremeValueTheory.tailQuantile`, `map_eq_expMeasure_map_survivalQuantile`: the tail quantile
   function and the quantile transform `X =ᵈ U(e^E)`, `E` standard exponential.
 
 ## Proof
@@ -1092,23 +1092,21 @@ end General
 
 section TailQuantile
 
-/-- The **tail quantile function** `U(t) = (1 / (1 - F))^←(t) = inf {x | F̄(x) ≤ 1/t}` of a
-survival function `F̄`, for `t > 1` ([dHF, §1.1.2]); we set `U(t) = 0` for `t ≤ 1`. -/
-noncomputable def survivalQuantile (F : ℝ → ℝ) (t : ℝ) : ℝ :=
-  if 1 < t then sInf {x | F x ≤ t⁻¹} else 0
+/-! The tail quantile function `survivalQuantile` is defined in
+`ExtremeValueTheory/UpperQuantile.lean`. -/
 
 variable {F : ℝ → ℝ}
 
 /-- The Galois connection of the tail quantile function: for `t > 1`,
 `U(t) ≤ x ↔ F̄(x) ≤ 1/t`. -/
-theorem tailQuantile_le_iff (hF : Antitone F) (hrc : ∀ x, ContinuousWithinAt F (Ici x) x)
+theorem survivalQuantile_le_iff (hF : Antitone F) (hrc : ∀ x, ContinuousWithinAt F (Ici x) x)
     (h0 : Tendsto F atTop (𝓝 0)) (h1 : Tendsto F atBot (𝓝 1)) {t : ℝ} (ht : 1 < t) (x : ℝ) :
     survivalQuantile F t ≤ x ↔ F x ≤ t⁻¹ := by
   have hp : 0 < t⁻¹ := inv_pos.2 (one_pos.trans ht)
   have hp1 : t⁻¹ < 1 := inv_lt_one_of_one_lt₀ ht
   obtain ⟨M, hM⟩ := (h1.eventually (lt_mem_nhds hp1)).exists
   obtain ⟨hU1, hU2, -⟩ := threshold_spec hF hrc h0 hp hM
-  simp only [survivalQuantile, ht, ↓reduceIte]
+  rw [survivalQuantile_of_one_lt ht, upperQuantile_def]
   constructor
   · intro hx
     exact (hF hx).trans hU1
@@ -1116,20 +1114,20 @@ theorem tailQuantile_le_iff (hF : Antitone F) (hrc : ∀ x, ContinuousWithinAt F
     by_contra hcon
     exact absurd hx (not_le.2 (hU2 x (not_le.1 hcon)))
 
-theorem monotoneOn_tailQuantile (hF : Antitone F) (hrc : ∀ x, ContinuousWithinAt F (Ici x) x)
+theorem monotoneOn_survivalQuantile (hF : Antitone F) (hrc : ∀ x, ContinuousWithinAt F (Ici x) x)
     (h0 : Tendsto F atTop (𝓝 0)) (h1 : Tendsto F atBot (𝓝 1)) :
     MonotoneOn (survivalQuantile F) (Ioi 1) := by
   intro t ht t' ht' htt'
-  rw [tailQuantile_le_iff hF hrc h0 h1 ht]
-  have := (tailQuantile_le_iff hF hrc h0 h1 ht' (survivalQuantile F t')).1 le_rfl
+  rw [survivalQuantile_le_iff hF hrc h0 h1 ht]
+  have := (survivalQuantile_le_iff hF hrc h0 h1 ht' (survivalQuantile F t')).1 le_rfl
   exact this.trans (inv_anti₀ (one_pos.trans ht) htt')
 
-theorem measurable_tailQuantile (hF : Antitone F) (hrc : ∀ x, ContinuousWithinAt F (Ici x) x)
+theorem measurable_survivalQuantile (hF : Antitone F) (hrc : ∀ x, ContinuousWithinAt F (Ici x) x)
     (h0 : Tendsto F atTop (𝓝 0)) (h1 : Tendsto F atBot (𝓝 1)) :
     Measurable (survivalQuantile F) := by
   refine measurable_of_restrict_of_restrict_compl (s := Ioi 1) measurableSet_Ioi ?_ ?_
   · have : Monotone ((Ioi (1 : ℝ)).domRestrict (survivalQuantile F)) := fun a b hab =>
-      monotoneOn_tailQuantile hF hrc h0 h1 a.2 b.2 hab
+      monotoneOn_survivalQuantile hF hrc h0 h1 a.2 b.2 hab
     exact this.measurable
   · have : (Ioi (1 : ℝ))ᶜ.domRestrict (survivalQuantile F) = fun _ => 0 := by
       ext ⟨t, ht⟩
@@ -1148,7 +1146,7 @@ theorem tendsto_survival_atBot {Y : Ω → ℝ} (hY : Measurable Y) :
 
 /-- **The quantile transform**: if `E` is standard exponential, then `U(e^E)` has the law of `Y`,
 where `U` is the tail quantile function of the survival function of `Y`. -/
-theorem map_eq_expMeasure_map_tailQuantile {Y : Ω → ℝ} (hY : Measurable Y) :
+theorem map_eq_expMeasure_map_survivalQuantile {Y : Ω → ℝ} (hY : Measurable Y) :
     P.map Y = (expMeasure 1).map (fun e => survivalQuantile (survival P Y) (exp e)) := by
   set F := survival P Y with hFdef
   have hF := survival_anti (P := P) Y
@@ -1156,7 +1154,7 @@ theorem map_eq_expMeasure_map_tailQuantile {Y : Ω → ℝ} (hY : Measurable Y) 
   have h0 := tendsto_survival_atTop (P := P) hY
   have h1 := tendsto_survival_atBot (P := P) hY
   have hVm : Measurable fun e => survivalQuantile F (exp e) :=
-    (measurable_tailQuantile hF hrc h0 h1).comp measurable_exp
+    (measurable_survivalQuantile hF hrc h0 h1).comp measurable_exp
   refine measure_eq_of_Ioi fun a => ?_
   rw [Measure.map_apply hY measurableSet_Ioi, Measure.map_apply hVm measurableSet_Ioi]
   have hPa : P (Y ⁻¹' Ioi a) = ENNReal.ofReal (F a) := by
@@ -1173,13 +1171,13 @@ theorem map_eq_expMeasure_map_tailQuantile {Y : Ω → ℝ} (hY : Measurable Y) 
     constructor
     · rintro ⟨h, he⟩
       refine ⟨?_, he⟩
-      have := mt (tailQuantile_le_iff hF hrc h0 h1 (one_lt_exp_iff.2 he) a).2 (not_le.2 h)
+      have := mt (survivalQuantile_le_iff hF hrc h0 h1 (one_lt_exp_iff.2 he) a).2 (not_le.2 h)
       rw [not_le, ← exp_neg] at this
       exact this
     · rintro ⟨h, he⟩
       refine ⟨?_, he⟩
       by_contra hcon
-      rw [not_lt, tailQuantile_le_iff hF hrc h0 h1 (one_lt_exp_iff.2 he), ← exp_neg] at hcon
+      rw [not_lt, survivalQuantile_le_iff hF hrc h0 h1 (one_lt_exp_iff.2 he), ← exp_neg] at hcon
       exact absurd h (not_lt.2 hcon)
   rw [hset]
   rcases (survival_nonneg (P := P) (Y := Y) a).lt_or_eq with hpos | hzero
@@ -1233,8 +1231,8 @@ theorem tendstoInDistribution_hill {X : ℕ → Ω → ℝ} (hX : ∀ i, Measura
   have hrc := continuousWithinAt_survival (P := P) (hX 0)
   have h0 := tendsto_survival_atTop (P := P) (hX 0)
   have h1 := tendsto_survival_atBot (P := P) (hX 0)
-  have hUm := measurable_tailQuantile hF hrc h0 h1
-  have hUmono := monotoneOn_tailQuantile hF hrc h0 h1
+  have hUm := measurable_survivalQuantile hF hrc h0 h1
+  have hUmono := monotoneOn_survivalQuantile hF hrc h0 h1
   have hB := tendstoInDistribution_hill_comp_exp hEm hE hind hγ hUm hUmono h2 hk hkn hlam hZ
   have hV : Measurable fun e => U (exp e) := hUm.comp measurable_exp
   refine hB.of_map_eq (fun n => ?_) (Eventually.of_forall fun n => ?_)
@@ -1247,7 +1245,7 @@ theorem tendstoInDistribution_hill {X : ℕ → Ω → ℝ} (hX : ∀ i, Measura
     refine (hindep.precomp (g := (Fin.val : Fin n → ℕ)) Fin.val_injective).hasLaw_pi
       (fun i => ⟨(hX i).aemeasurable, ?_⟩)
     rw [(hident i).map_eq]
-    exact map_eq_expMeasure_map_tailQuantile (hX 0)
+    exact map_eq_expMeasure_map_survivalQuantile (hX 0)
   have e1 : P.map (fun ω => √(k n : ℝ) * (hill (fun i : Fin n => X i ω) (k n) - γ)) =
       (Measure.pi fun _ : Fin n => (expMeasure 1).map fun e => U (exp e)).map
         (fun y : Fin n → ℝ => √(k n : ℝ) * (hill y (k n) - γ)) :=
@@ -1277,5 +1275,12 @@ theorem tendstoInDistribution_hill_of_tendsto_zero {X : ℕ → Ω → ℝ} (hX 
   tendstoInDistribution_hill hX hindep hident hγ h2 hk hkn hA (by rwa [zero_div])
 
 end Normality
+
+/-! Deprecated names: these lemmas are about `survivalQuantile` (the return-period form `U(t)`). -/
+
+@[deprecated (since := "2026-10-19")] alias tailQuantile_le_iff := survivalQuantile_le_iff
+@[deprecated (since := "2026-10-19")] alias monotoneOn_tailQuantile := monotoneOn_survivalQuantile
+@[deprecated (since := "2026-10-19")] alias measurable_tailQuantile := measurable_survivalQuantile
+@[deprecated (since := "2026-10-19")] alias map_eq_expMeasure_map_tailQuantile := map_eq_expMeasure_map_survivalQuantile
 
 end ExtremeValueTheory

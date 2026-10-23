@@ -5,6 +5,7 @@ Authors: Federico Carrone
 -/
 import ExtremeValueTheory.RegularVariation.Extended
 import ExtremeValueTheory.PeaksOverThreshold.Converse
+import ExtremeValueTheory.UpperQuantile
 
 /-!
 # The quantile form of the domain of attraction condition
@@ -81,9 +82,22 @@ open ExtremeValueTheory
 variable (F : CumulativeDistributionFunction)
 
 /-- The **tail quantile function** `U(t) = F^←(1 - 1/t) = inf {y | 1 - F y ≤ 1/t}` (meaningful
-for `t > 1`). -/
+for `t > 1`): the canonical upper quantile `upperQuantile` of the survival function `1 - F` at
+level `1/t`, i.e. the return-period form of it on a distribution function. It agrees with
+`survivalQuantile (1 - F)` for `t > 1` (`tailQuantile_eq_survivalQuantile`). -/
 noncomputable def tailQuantile (t : ℝ) : ℝ :=
-  sInf {y | 1 - F y ≤ 1 / t}
+  upperQuantile (fun y => 1 - F y) (1 / t)
+
+theorem tailQuantile_def (t : ℝ) : F.tailQuantile t = sInf {y | 1 - F y ≤ 1 / t} := rfl
+
+theorem tailQuantile_eq_upperQuantile (t : ℝ) :
+    F.tailQuantile t = upperQuantile (fun y => 1 - F y) t⁻¹ := by
+  rw [tailQuantile, one_div]
+
+/-- On a distribution function, `tailQuantile` is `survivalQuantile` of `1 - F` for `t > 1`. -/
+theorem tailQuantile_eq_survivalQuantile {t : ℝ} (ht : 1 < t) :
+    F.tailQuantile t = survivalQuantile (fun y => 1 - F y) t := by
+  rw [survivalQuantile_of_one_lt ht, tailQuantile_eq_upperQuantile]
 
 /-- The tail quantile function is monotone on `(1, ∞)`. -/
 theorem tailQuantile_mono {s t : ℝ} (hs : 1 < s) (hst : s ≤ t) :
@@ -157,7 +171,7 @@ theorem isExtendedRegularlyVarying_tailQuantile {γ : ℝ} (hF : F.IsInMDAGEV γ
     obtain ⟨h0, -, -, h3⟩ := ht
     change (1 - F (U (x * t))) / (1 / (x * t)) / ((1 - F (U t)) / (1 / t)) * x⁻¹ = _
     field_simp
-  have hGz : Tendsto (fun t => gpdSurvival' γ 1 (z t)) atTop (𝓝 x⁻¹) := by
+  have hGz : Tendsto (fun t => gpdSurvival γ 1 (z t)) atTop (𝓝 x⁻¹) := by
     have := hratio.sub (hU.tendsto_sub_comp hUlim hz0)
     rw [sub_zero] at this
     refine this.congr' ?_
@@ -170,7 +184,7 @@ theorem isExtendedRegularlyVarying_tailQuantile {γ : ℝ} (hF : F.IsInMDAGEV γ
   rw [← gpdSurvivalInv_inv hx0]
   refine ((continuousAt_gpdSurvivalInv hxi).tendsto.comp hGz).congr' ?_
   filter_upwards [hGz.eventually (lt_mem_nhds hxi)] with t ht
-  exact gpdSurvivalInv_gpdSurvival' ht
+  exact gpdSurvivalInv_gpdSurvival ht
 
 /-- The tail quantile function, made globally monotone: `U(max t 2)`. -/
 private lemma monotone_tailQuantile_max : Monotone fun t => F.tailQuantile (max t 2) :=
@@ -283,10 +297,10 @@ theorem tendsto_mul_one_sub_exp_log_tailQuantile {ρ : ℝ} (hρ : ρ ≤ 0) {q 
     (hV : IsExtendedRegularlyVarying (fun t => Real.log (F.tailQuantile t)) ρ q)
     (hU : ∀ᶠ t in atTop, 0 < F.tailQuantile t) (x : ℝ) :
     Tendsto (fun t => t * (1 - F (Real.exp (Real.log (F.tailQuantile t) + q t * x)))) atTop
-      (𝓝 (gpdSurvival' ρ 1 x)) := by
+      (𝓝 (gpdSurvival ρ 1 x)) := by
   set U := F.tailQuantile with hU_def
-  set L := gpdSurvival' ρ 1 x with hL_def
-  have hL0 : 0 ≤ L := gpdSurvival'_nonneg _ _ _
+  set L := gpdSurvival ρ 1 x with hL_def
+  have hL0 : 0 ≤ L := gpdSurvival_nonneg _ _ _
   have hlim : ∀ v : ℝ, 0 < v → Tendsto (fun t => (Real.log (U (v⁻¹ * t)) - Real.log (U t)) / q t)
       atTop (𝓝 (gpdSurvivalInv ρ v)) := by
     intro v hv
@@ -339,7 +353,7 @@ theorem tendsto_mul_one_sub_exp_log_tailQuantile {ρ : ℝ} (hρ : ρ ≤ 0) {q 
     have hv0 : 0 < v := by rw [hv]; linarith
     have hvL : v < L := by rw [hv]; linarith
     have hbv : b < v := by rw [hv]; linarith
-    have hΛ : gpdSurvivalInv ρ L = x := gpdSurvivalInv_gpdSurvival' hLpos
+    have hΛ : gpdSurvivalInv ρ L = x := gpdSurvivalInv_gpdSurvival hLpos
     have := gpdSurvivalInv_lt_gpdSurvivalInv (ξ := ρ) hv0 hvL
     filter_upwards [hlow v hv0 (by rw [← hΛ]; exact this)] with t ht
     exact hbv.trans ht
@@ -349,7 +363,7 @@ theorem tendsto_mul_one_sub_exp_log_tailQuantile {ρ : ℝ} (hρ : ρ ≤ 0) {q 
       have hv0 : 0 < v := by rw [hv]; linarith
       have hLv : L < v := by rw [hv]; linarith
       have hvb : v < b := by rw [hv]; linarith
-      have hΛ : gpdSurvivalInv ρ L = x := gpdSurvivalInv_gpdSurvival' hLpos
+      have hΛ : gpdSurvivalInv ρ L = x := gpdSurvivalInv_gpdSurvival hLpos
       have := gpdSurvivalInv_lt_gpdSurvivalInv (ξ := ρ) hLpos hLv
       filter_upwards [hup v hv0 (by rw [← hΛ]; exact this)] with t ht
       exact ht.trans_lt hvb
@@ -368,9 +382,9 @@ theorem tendsto_mul_one_sub_exp_log_tailQuantile {ρ : ℝ} (hρ : ρ ≤ 0) {q 
         have hx0 : 0 ≤ x := by
           by_contra hx0
           push Not at hx0
-          have : 0 < gpdSurvival' ρ 1 x := by
+          have : 0 < gpdSurvival ρ 1 x := by
             rcases hρ.lt_or_eq with hρ' | hρ'
-            · rw [gpdSurvival'_one_of_ne hρ'.ne]
+            · rw [gpdSurvival_one_of_ne hρ'.ne]
               have : 0 < 1 + ρ * x := by nlinarith
               rw [max_eq_left this.le]
               exact rpow_pos_of_pos this _
@@ -378,9 +392,9 @@ theorem tendsto_mul_one_sub_exp_log_tailQuantile {ρ : ℝ} (hρ : ρ ≤ 0) {q 
               simp [Real.exp_pos]
           rw [← hL_def] at this
           linarith
-        have h1 := gpdSurvival'_antitoneOn (ξ := ρ) one_pos (mem_Ici.2 hx0)
+        have h1 := gpdSurvival_antitoneOn (ξ := ρ) one_pos (mem_Ici.2 hx0)
           (mem_Ici.2 (hx0.trans hcon)) hcon
-        rw [gpdSurvival'_gpdSurvivalInv hv0, ← hL_def, ← hLzero] at h1
+        rw [gpdSurvival_gpdSurvivalInv hv0, ← hL_def, ← hLzero] at h1
         linarith
       filter_upwards [hup v hv0 hx] with t ht
       exact ht.trans_lt hvb
@@ -466,10 +480,10 @@ theorem tendsto_mul_one_sub_of_tendsto_div {γ : ℝ} {a : ℝ → ℝ}
     (hU : IsExtendedRegularlyVarying F.tailQuantile γ a) {ι : Type*} {L : Filter ι}
     {τ w : ι → ℝ} (hτ : Tendsto τ L atTop) {x : ℝ} (hx : 0 ≤ x)
     (hw : Tendsto (fun i => (w i - F.tailQuantile (τ i)) / a (τ i)) L (𝓝 x)) :
-    Tendsto (fun i => τ i * (1 - F (w i))) L (𝓝 (gpdSurvival' γ 1 x)) := by
+    Tendsto (fun i => τ i * (1 - F (w i))) L (𝓝 (gpdSurvival γ 1 x)) := by
   set U := F.tailQuantile with hU_def
-  set G := gpdSurvival' γ 1 x with hG_def
-  have hG0 : 0 ≤ G := gpdSurvival'_nonneg _ _ _
+  set G := gpdSurvival γ 1 x with hG_def
+  have hG0 : 0 ≤ G := gpdSurvival_nonneg _ _ _
   have hlim : ∀ v : ℝ, 0 < v → Tendsto (fun i => (U (v⁻¹ * τ i) - U (τ i)) / a (τ i)) L
       (𝓝 (gpdSurvivalInv γ v)) := by
     intro v hv
@@ -520,7 +534,7 @@ theorem tendsto_mul_one_sub_of_tendsto_div {γ : ℝ} {a : ℝ → ℝ}
     have hv0 : 0 < v := by rw [hv]; linarith
     have hvG : v < G := by rw [hv]; linarith
     have hbv : b < v := by rw [hv]; linarith
-    have hΛ : gpdSurvivalInv γ G = x := gpdSurvivalInv_gpdSurvival' hGpos
+    have hΛ : gpdSurvivalInv γ G = x := gpdSurvivalInv_gpdSurvival hGpos
     have := gpdSurvivalInv_lt_gpdSurvivalInv (ξ := γ) hv0 hvG
     filter_upwards [hlow v hv0 (by rw [← hΛ]; exact this)] with i hi
     exact hbv.trans hi
@@ -529,7 +543,7 @@ theorem tendsto_mul_one_sub_of_tendsto_div {γ : ℝ} {a : ℝ → ℝ}
       have hv0 : 0 < v := by rw [hv]; linarith
       have hGv : G < v := by rw [hv]; linarith
       have hvb : v < b := by rw [hv]; linarith
-      have hΛ : gpdSurvivalInv γ G = x := gpdSurvivalInv_gpdSurvival' hGpos
+      have hΛ : gpdSurvivalInv γ G = x := gpdSurvivalInv_gpdSurvival hGpos
       have := gpdSurvivalInv_lt_gpdSurvivalInv (ξ := γ) hGpos hGv
       filter_upwards [hup v hv0 (by rw [← hΛ]; exact this)] with i hi
       exact hi.trans_lt hvb
@@ -539,14 +553,14 @@ theorem tendsto_mul_one_sub_of_tendsto_div {γ : ℝ} {a : ℝ → ℝ}
       have hvb : v < b := lt_of_le_of_lt (min_le_left _ _) (half_lt_self hb0)
       have hx0 : x ≠ 0 := by
         rintro rfl
-        rw [hG_def, gpdSurvival'_zero_right] at hGzero
+        rw [hG_def, gpdSurvival_zero] at hGzero
         exact one_ne_zero hGzero.symm
       have hx : gpdSurvivalInv γ v < x := by
         by_contra hcon
         push Not at hcon
-        have h1 := gpdSurvival'_antitoneOn (ξ := γ) one_pos (mem_Ici.2 hx)
+        have h1 := gpdSurvival_antitoneOn (ξ := γ) one_pos (mem_Ici.2 hx)
           (mem_Ici.2 (hx.trans hcon)) hcon
-        rw [gpdSurvival'_gpdSurvivalInv hv0, ← hG_def, ← hGzero] at h1
+        rw [gpdSurvival_gpdSurvivalInv hv0, ← hG_def, ← hGzero] at h1
         linarith
       filter_upwards [hup v hv0 hx] with i hi
       exact hi.trans_lt hvb
@@ -588,7 +602,7 @@ theorem tendsto_one_sub_upperEndpointFilter_of_isExtendedRegularlyVarying {γ : 
       positivity
   have heq : ∀ᶠ t in atTop, F.tailQuantile (2 * t) - F.tailQuantile t = 0 := by
     filter_upwards [eventually_gt_atTop (1 / ε), eventually_gt_atTop 0] with t ht ht0
-    simp only [tailQuantile]
+    simp only [tailQuantile, upperQuantile]
     rw [hset t ht, hset (2 * t) (by linarith), sub_self]
   have h2 := hU.2 2 two_pos
   have h0 : Tendsto (fun t => (F.tailQuantile (2 * t) - F.tailQuantile t) / a t) atTop (𝓝 0) := by
@@ -660,7 +674,7 @@ theorem isInMDAGEV_of_isExtendedRegularlyVarying_tailQuantile {γ : ℝ} {a : �
       linarith
   -- pointwise convergence of the excess distribution
   have hpt : ∀ x ∈ Ici (0 : ℝ), Tendsto (fun u => excessSurvival (fun y ↦ 1 - F y) u (β u * x))
-      F.upperEndpointFilter (𝓝 (gpdSurvival' γ 1 x)) := by
+      F.upperEndpointFilter (𝓝 (gpdSurvival γ 1 x)) := by
     intro x hx
     have hw : Tendsto (fun u => (u + β u * x - U (τ u)) / a (τ u)) F.upperEndpointFilter
         (𝓝 x) := by
@@ -682,8 +696,8 @@ theorem isInMDAGEV_of_isExtendedRegularlyVarying_tailQuantile {γ : ℝ} {a : �
       linarith
     field_simp
   refine isInMDAGEV_of_tendstoUniformlyOn_excessSurvival hβ ?_
-  refine tendstoUniformlyOn_Ici_of_antitoneOn (c := 0) ?_ ?_ (gpdSurvival'_antitoneOn one_pos)
-    (gpdSurvival'_continuousOn one_pos) (gpdSurvival'_tendsto_atTop one_pos) hpt
+  refine tendstoUniformlyOn_Ici_of_antitoneOn (c := 0) ?_ ?_ (gpdSurvival_antitoneOn one_pos)
+    (gpdSurvival_continuousOn one_pos) (gpdSurvival_tendsto_atTop one_pos) hpt
   · filter_upwards [hβ] with u hu
     intro x hx y hy hxy
     simp only [excessSurvival]

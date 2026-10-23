@@ -13,7 +13,7 @@ import ExtremeValueTheory.PeaksOverThreshold.Balkema
 
 The **generalized Pareto law** `GPD(ξ, σ)` (`gpdMeasure`) is defined through its exponential
 representation `X = σ (e^{ξ E} - 1)/ξ` (`X = σ E` for `ξ = 0`), `E` standard exponential. Its
-survival function is `gpdSurvival' ξ σ` (`PeaksOverThreshold/Balkema.lean`) and its density is
+survival function is `gpdSurvival ξ σ` (`PeaksOverThreshold/Balkema.lean`) and its density is
 
   `g_{ξ,σ}(x) = σ⁻¹ (1 + ξ x / σ) ^ (-1/ξ - 1)` on `{x ≥ 0, 1 + ξ x / σ > 0}`
   (`σ⁻¹ e^{-x/σ}` for `ξ = 0`).
@@ -110,13 +110,13 @@ noncomputable def gpdTransform (ξ σ t : ℝ) : ℝ :=
   if ξ = 0 then σ * t else σ * (exp (ξ * t) - 1) / ξ
 
 /-- The **generalized Pareto law** `GPD(ξ, σ)`, defined as the law of `σ (e^{ξ E} - 1) / ξ`
-for a standard exponential `E`. Its survival function is `gpdSurvival' ξ σ`
+for a standard exponential `E`. Its survival function is `gpdSurvival ξ σ`
 (`gpdMeasure_Ioi`) and its density is `gpdDensity ξ σ` (`gpdMeasure_eq_withDensity`). -/
 noncomputable def gpdMeasure (ξ σ : ℝ) : Measure ℝ := stdExpMeasure.map (gpdTransform ξ σ)
 
-/-- The distribution function of `GPD(ξ, σ)`: `1 - gpdSurvival' ξ σ x` for `x ≥ 0`, and `0`
+/-- The distribution function of `GPD(ξ, σ)`: `1 - gpdSurvival ξ σ x` for `x ≥ 0`, and `0`
 for `x < 0`. -/
-noncomputable def gpdCDF (ξ σ x : ℝ) : ℝ := 1 - gpdSurvival' ξ σ (max x 0)
+noncomputable def gpdCDF (ξ σ x : ℝ) : ℝ := 1 - gpdSurvival ξ σ (max x 0)
 
 /-- The **density of the generalized Pareto law**:
 `g_{ξ,σ}(x) = σ⁻¹ (1 + ξ x / σ) ^ (-1/ξ - 1)` (`σ⁻¹ e^{-x/σ}` for `ξ = 0`) on the support
@@ -156,9 +156,9 @@ lemma one_add_mul_gpdTransform (hσ : 0 < σ) (hξ : ξ ≠ 0) (t : ℝ) :
   field_simp
   ring
 
-/-- **Survival function of the GPD**: `P(X > x) = gpdSurvival' ξ σ x` for `x ≥ 0`. -/
+/-- **Survival function of the GPD**: `P(X > x) = gpdSurvival ξ σ x` for `x ≥ 0`. -/
 theorem gpdMeasure_Ioi (hσ : 0 < σ) (hx : 0 ≤ x) :
-    gpdMeasure ξ σ (Ioi x) = ENNReal.ofReal (gpdSurvival' ξ σ x) := by
+    gpdMeasure ξ σ (Ioi x) = ENNReal.ofReal (gpdSurvival ξ σ x) := by
   have hm := measurable_gpdTransform ξ σ
   have hS : MeasurableSet (gpdTransform ξ σ ⁻¹' Ioi x) := hm measurableSet_Ioi
   rw [gpdMeasure, Measure.map_apply hm measurableSet_Ioi]
@@ -191,7 +191,7 @@ theorem gpdMeasure_Ioi (hσ : 0 < σ) (hx : 0 ≤ x) :
       rw [mul_div_cancel₀ _ hξ, exp_log hu]
       field_simp
       ring
-    rw [key τ hτ hτx, gpdSurvival', ite_eq_right hξ, max_eq_left hu.le, rpow_def_of_pos hu]
+    rw [key τ hτ hτx, gpdSurvival, ite_eq_right hξ, max_eq_left hu.le, rpow_def_of_pos hu]
     congr 2
     simp only [τ]
     ring
@@ -211,32 +211,32 @@ theorem gpdMeasure_Ioi (hσ : 0 < σ) (hx : 0 ≤ x) :
       linarith
     have hne : -(1 / ξ) ≠ 0 := by simp [hξ]
     rw [stdExpMeasure, withDensity_apply _ hS, Measure.restrict_restrict hS, hempty,
-      Measure.restrict_empty, lintegral_zero_measure, gpdSurvival', ite_eq_right hξ,
+      Measure.restrict_empty, lintegral_zero_measure, gpdSurvival, ite_eq_right hξ,
       max_eq_right (not_lt.1 hu), zero_rpow hne, ENNReal.ofReal_zero]
 
 /-- **Distribution function of the GPD**: `P(X ≤ x) = gpdCDF ξ σ x`. -/
 theorem gpdMeasure_Iic (hσ : 0 < σ) (x : ℝ) :
     gpdMeasure ξ σ (Iic x) = ENNReal.ofReal (gpdCDF ξ σ x) := by
-  have hS1 := gpdSurvival'_le_one (ξ := ξ) hσ (le_max_right x 0)
+  have hS1 := gpdSurvival_le_one (ξ := ξ) hσ (le_max_right x 0)
   rw [← compl_Ioi, prob_compl_eq_one_sub measurableSet_Ioi, gpdCDF]
   rcases le_total 0 x with hx | hx
   · rw [gpdMeasure_Ioi hσ hx, max_eq_left hx, ← ENNReal.ofReal_one,
-      ← ENNReal.ofReal_sub _ (gpdSurvival'_nonneg ξ σ x)]
+      ← ENNReal.ofReal_sub _ (gpdSurvival_nonneg ξ σ x)]
   · have h1 : gpdMeasure ξ σ (Ioi x) = 1 := by
       refine le_antisymm prob_le_one ?_
       calc (1 : ENNReal) = gpdMeasure ξ σ (Ioi 0) := by
-            rw [gpdMeasure_Ioi hσ le_rfl, gpdSurvival'_zero_right, ENNReal.ofReal_one]
+            rw [gpdMeasure_Ioi hσ le_rfl, gpdSurvival_zero, ENNReal.ofReal_one]
         _ ≤ gpdMeasure ξ σ (Ioi x) := measure_mono (Ioi_subset_Ioi hx)
-    rw [h1, max_eq_right hx, gpdSurvival'_zero_right]
+    rw [h1, max_eq_right hx, gpdSurvival_zero]
     simp
 
 lemma continuous_gpdCDF (hσ : 0 < σ) : Continuous (gpdCDF ξ σ) := by
   unfold gpdCDF
-  exact continuous_const.sub ((gpdSurvival'_continuousOn hσ).comp_continuous
+  exact continuous_const.sub ((gpdSurvival_continuousOn hσ).comp_continuous
     (continuous_id.max continuous_const) fun x => le_max_right x 0)
 
 lemma gpdCDF_of_nonpos (hx : x ≤ 0) : gpdCDF ξ σ x = 0 := by
-  simp [gpdCDF, max_eq_right hx, gpdSurvival'_zero_right]
+  simp [gpdCDF, max_eq_right hx, gpdSurvival_zero]
 
 lemma gpdDensity_nonneg (hσ : 0 < σ) (ξ x : ℝ) : 0 ≤ gpdDensity ξ σ x := by
   unfold gpdDensity
@@ -277,7 +277,7 @@ theorem hasDerivAt_gpdCDF (hσ : 0 < σ) (hx : 0 < x) (hu : 0 < 1 + ξ * x / σ)
     exact hd.congr_of_eventuallyEq heq
   · have heq : gpdCDF ξ σ =ᶠ[𝓝 x] fun y => 1 - (1 + ξ * y / σ) ^ (-(1 / ξ)) := by
       filter_upwards [hev] with y hy
-      simp [gpdCDF, gpdSurvival', hξ, max_eq_left hy.1.le, max_eq_left hy.2.le]
+      simp [gpdCDF, gpdSurvival, hξ, max_eq_left hy.1.le, max_eq_left hy.2.le]
     have hd0 : HasDerivAt (fun y => 1 + ξ * y / σ) (ξ / σ) x := by
       simpa using (((hasDerivAt_id x).const_mul ξ).div_const σ).const_add 1
     have hd : HasDerivAt (fun y => 1 - (1 + ξ * y / σ) ^ (-(1 / ξ)))
@@ -308,7 +308,7 @@ lemma hasDerivAt_gpdCDF_of_ne (hσ : 0 < σ) (h0 : x ≠ 0) (h1 : x ≠ -σ / ξ
     have hne : -(1 / ξ) ≠ 0 := by simp [hξ]
     have heq : gpdCDF ξ σ =ᶠ[𝓝 x] fun _ => 1 := by
       filter_upwards [hev] with y hy
-      simp [gpdCDF, gpdSurvival', hξ, max_eq_left hy.1.le, max_eq_right hy.2.le]
+      simp [gpdCDF, gpdSurvival, hξ, max_eq_left hy.1.le, max_eq_right hy.2.le]
     have : gpdDensity ξ σ x = 0 := by simp [gpdDensity, not_lt.2 hu.le]
     rw [this]
     exact (hasDerivAt_const x (1 : ℝ)).congr_of_eventuallyEq heq
@@ -942,14 +942,14 @@ theorem ae_tendsto_gpdScaleMLE (hξ1 : -1 < ξ) (hξ : ξ ≠ 0) (hσ₀ : 0 < �
         (integrable_const 1).indicator measurableSet_Ioi
       have hmean : 0 < ∫ y, (Ioi (a k)).indicator (1 : ℝ → ℝ) y ∂gpdMeasure ξ σ₀ := by
         rw [integral_indicator_one measurableSet_Ioi, measureReal_def,
-          gpdMeasure_Ioi hσ₀ (le_max_left _ _), ENNReal.toReal_ofReal (gpdSurvival'_nonneg _ _ _)]
+          gpdMeasure_Ioi hσ₀ (le_max_left _ _), ENNReal.toReal_ofReal (gpdSurvival_nonneg _ _ _)]
         have hpos' : 0 < 1 + ξ * a k / σ₀ := by
           have h := haF k
           have : ξ * xF / σ₀ = -1 := by simp only [xF]; field_simp
           have : ξ * xF < ξ * a k := mul_lt_mul_of_neg_left h hneg
           have : ξ * xF / σ₀ < ξ * a k / σ₀ := div_lt_div_of_pos_right this hσ₀
           linarith
-        rw [gpdSurvival', ite_eq_right hξ, max_eq_left hpos'.le]
+        rw [gpdSurvival, ite_eq_right hξ, max_eq_left hpos'.le]
         exact rpow_pos_of_pos hpos' _
       filter_upwards [ae_tendsto_avg_comp hX hind (measurable_one.indicator measurableSet_Ioi)
         hgi] with ω hω

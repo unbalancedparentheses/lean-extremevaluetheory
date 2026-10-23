@@ -5,6 +5,7 @@ Authors: Federico Carrone
 -/
 import ExtremeValueTheory.Statistics.OrderStatistics
 import ExtremeValueTheory.RegularVariation.Basic
+import ExtremeValueTheory.UpperQuantile
 import Mathlib.Probability.Moments.Variance
 import Mathlib.Probability.IdentDistrib
 import Mathlib.Probability.CDF
