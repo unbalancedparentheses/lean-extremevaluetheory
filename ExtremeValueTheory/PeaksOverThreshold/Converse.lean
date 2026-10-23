@@ -60,7 +60,7 @@ namespace ExtremeValueTheory
 
 /-- The inverse `Λ_ξ` of the GPD survival function `Ḡ_{ξ,1}`: `Λ_ξ v = (v ^ (-ξ) - 1) / ξ` for
 `ξ ≠ 0` and `Λ_0 v = -log v`. It satisfies `Λ_ξ (Ḡ_{ξ,1} x) = x` whenever `Ḡ_{ξ,1} x > 0`
-(`gpdSurvivalInv_gpdSurvival'`), and it is strictly decreasing on `(0, ∞)`. -/
+(`gpdSurvivalInv_gpdSurvival`), and it is strictly decreasing on `(0, ∞)`. -/
 noncomputable def gpdSurvivalInv (ξ v : ℝ) : ℝ :=
   if ξ = 0 then -Real.log v else (v ^ (-ξ) - 1) / ξ
 
@@ -68,14 +68,14 @@ section GPDInv
 
 variable {ξ : ℝ}
 
-theorem gpdSurvival'_one_of_ne (hξ : ξ ≠ 0) (x : ℝ) :
-    gpdSurvival' ξ 1 x = (max (1 + ξ * x) 0) ^ (-(1 / ξ)) := by
-  simp [gpdSurvival', hξ]
+theorem gpdSurvival_one_of_ne (hξ : ξ ≠ 0) (x : ℝ) :
+    gpdSurvival ξ 1 x = (max (1 + ξ * x) 0) ^ (-(1 / ξ)) := by
+  simp [gpdSurvival, hξ]
 
 /-- Where `Ḡ_{ξ,1} x > 0` (`ξ ≠ 0`), one has `Ḡ_{ξ,1} x ^ (-ξ) = 1 + ξ x`. -/
-theorem gpdSurvival'_rpow_neg (hξ : ξ ≠ 0) {x : ℝ} (hpos : 0 < gpdSurvival' ξ 1 x) :
-    gpdSurvival' ξ 1 x ^ (-ξ) = 1 + ξ * x := by
-  rw [gpdSurvival'_one_of_ne hξ] at hpos ⊢
+theorem gpdSurvival_rpow_neg (hξ : ξ ≠ 0) {x : ℝ} (hpos : 0 < gpdSurvival ξ 1 x) :
+    gpdSurvival ξ 1 x ^ (-ξ) = 1 + ξ * x := by
+  rw [gpdSurvival_one_of_ne hξ] at hpos ⊢
   have hne : -(1 / ξ) ≠ 0 := by
     rw [neg_ne_zero]; exact one_div_ne_zero hξ
   have hb : 0 < 1 + ξ * x := by
@@ -84,27 +84,27 @@ theorem gpdSurvival'_rpow_neg (hξ : ξ ≠ 0) {x : ℝ} (hpos : 0 < gpdSurvival
     exact lt_irrefl _ hpos
   rw [max_eq_left hb.le, ← rpow_mul hb.le, show -(1 / ξ) * -ξ = 1 by field_simp, rpow_one]
 
-theorem gpdSurvivalInv_gpdSurvival' {x : ℝ} (hpos : 0 < gpdSurvival' ξ 1 x) :
-    gpdSurvivalInv ξ (gpdSurvival' ξ 1 x) = x := by
+theorem gpdSurvivalInv_gpdSurvival {x : ℝ} (hpos : 0 < gpdSurvival ξ 1 x) :
+    gpdSurvivalInv ξ (gpdSurvival ξ 1 x) = x := by
   by_cases hξ : ξ = 0
   · subst hξ
     simp [gpdSurvivalInv]
   · simp only [gpdSurvivalInv, hξ, ↓reduceIte]
-    rw [gpdSurvival'_rpow_neg hξ hpos]
+    rw [gpdSurvival_rpow_neg hξ hpos]
     field_simp
     ring
 
 /-- The functional equation of `Λ_ξ`: `Λ_ξ (Ḡ_{ξ,1}(w) v) = Λ_ξ v + v ^ (-ξ) w`. -/
-theorem gpdSurvivalInv_mul {v w : ℝ} (hv : 0 < v) (hw : 0 < gpdSurvival' ξ 1 w) :
-    gpdSurvivalInv ξ (gpdSurvival' ξ 1 w * v) = gpdSurvivalInv ξ v + v ^ (-ξ) * w := by
+theorem gpdSurvivalInv_mul {v w : ℝ} (hv : 0 < v) (hw : 0 < gpdSurvival ξ 1 w) :
+    gpdSurvivalInv ξ (gpdSurvival ξ 1 w * v) = gpdSurvivalInv ξ v + v ^ (-ξ) * w := by
   by_cases hξ : ξ = 0
   · subst hξ
-    simp only [gpdSurvivalInv, ↓reduceIte, gpdSurvival'_zero_left, neg_zero, rpow_zero,
+    simp only [gpdSurvivalInv, ↓reduceIte, gpdSurvival_of_eq_zero, neg_zero, rpow_zero,
       one_mul, div_one]
     rw [Real.log_mul (exp_pos _).ne' hv.ne', Real.log_exp]
     ring
   · simp only [gpdSurvivalInv, hξ, ↓reduceIte]
-    rw [mul_rpow hw.le hv.le, gpdSurvival'_rpow_neg hξ hw]
+    rw [mul_rpow hw.le hv.le, gpdSurvival_rpow_neg hξ hw]
     field_simp
     ring
 
@@ -152,21 +152,21 @@ theorem gpdSurvivalInv_one : gpdSurvivalInv ξ 1 = 0 := by
   split_ifs <;> simp
 
 /-- `Ḡ_{ξ,1} (Λ_ξ v) = v` for `v > 0`. -/
-theorem gpdSurvival'_gpdSurvivalInv {v : ℝ} (hv : 0 < v) :
-    gpdSurvival' ξ 1 (gpdSurvivalInv ξ v) = v := by
+theorem gpdSurvival_gpdSurvivalInv {v : ℝ} (hv : 0 < v) :
+    gpdSurvival ξ 1 (gpdSurvivalInv ξ v) = v := by
   by_cases hξ : ξ = 0
   · subst hξ
     simp [gpdSurvivalInv, Real.exp_log hv]
-  · rw [gpdSurvival'_one_of_ne hξ]
+  · rw [gpdSurvival_one_of_ne hξ]
     simp only [gpdSurvivalInv, hξ, ↓reduceIte]
     have h : 1 + ξ * ((v ^ (-ξ) - 1) / ξ) = v ^ (-ξ) := by field_simp; ring
     rw [h, max_eq_left (rpow_nonneg hv.le _), ← rpow_mul hv.le,
       show -ξ * -(1 / ξ) = 1 by field_simp, rpow_one]
 
 /-- `Ḡ_{ξ,1} x < 1` for `x > 0`. -/
-theorem gpdSurvival'_lt_one {x : ℝ} (hx : 0 < x) : gpdSurvival' ξ 1 x < 1 := by
+theorem gpdSurvival_lt_one {x : ℝ} (hx : 0 < x) : gpdSurvival ξ 1 x < 1 := by
   rcases lt_trichotomy ξ 0 with hξ | hξ | hξ
-  · rw [gpdSurvival'_one_of_ne hξ.ne]
+  · rw [gpdSurvival_one_of_ne hξ.ne]
     have hp : 0 < -(1 / ξ) := by
       have : 1 / ξ < 0 := one_div_neg.2 hξ
       linarith
@@ -175,9 +175,9 @@ theorem gpdSurvival'_lt_one {x : ℝ} (hx : 0 < x) : gpdSurvival' ξ 1 x < 1 := 
     · rw [max_eq_left hb.le]
       exact rpow_lt_one hb.le (by nlinarith) hp
   · subst hξ
-    simp only [gpdSurvival'_zero_left, div_one]
+    simp only [gpdSurvival_of_eq_zero, div_one]
     exact Real.exp_lt_one_iff.2 (by linarith)
-  · rw [gpdSurvival'_one_of_ne hξ.ne']
+  · rw [gpdSurvival_one_of_ne hξ.ne']
     have hb : 1 < 1 + ξ * x := by nlinarith
     rw [max_eq_left (by linarith)]
     exact rpow_lt_one_of_one_lt_of_neg hb (by
@@ -185,15 +185,15 @@ theorem gpdSurvival'_lt_one {x : ℝ} (hx : 0 < x) : gpdSurvival' ξ 1 x < 1 := 
       linarith)
 
 /-- For every `θ < 1` there is `δ > 0` with `θ < Ḡ_{ξ,1} δ < 1`. -/
-theorem exists_lt_gpdSurvival'_lt_one {θ : ℝ} (hθ : θ < 1) :
-    ∃ δ > 0, θ < gpdSurvival' ξ 1 δ ∧ gpdSurvival' ξ 1 δ < 1 := by
-  have hc : Tendsto (gpdSurvival' ξ 1) (𝓝[>] 0) (𝓝 1) := by
-    have := (gpdSurvival'_continuousOn (ξ := ξ) one_pos) 0 (mem_Ici.2 le_rfl)
+theorem exists_lt_gpdSurvival_lt_one {θ : ℝ} (hθ : θ < 1) :
+    ∃ δ > 0, θ < gpdSurvival ξ 1 δ ∧ gpdSurvival ξ 1 δ < 1 := by
+  have hc : Tendsto (gpdSurvival ξ 1) (𝓝[>] 0) (𝓝 1) := by
+    have := (gpdSurvival_continuousOn (ξ := ξ) one_pos) 0 (mem_Ici.2 le_rfl)
     have h := this.tendsto
-    rw [gpdSurvival'_zero_right] at h
+    rw [gpdSurvival_zero] at h
     exact h.mono_left (nhdsWithin_mono _ Ioi_subset_Ici_self)
   obtain ⟨δ, h1, h2⟩ := ((hc.eventually (lt_mem_nhds hθ)).and self_mem_nhdsWithin).exists
-  exact ⟨δ, h2, h1, gpdSurvival'_lt_one h2⟩
+  exact ⟨δ, h2, h1, gpdSurvival_lt_one h2⟩
 
 end GPDInv
 
@@ -208,6 +208,15 @@ theorem TendstoUniformlyOn.tendsto_sub_comp {ι κ : Type*} {L : Filter ι} {l :
   filter_upwards [hσ.eventually (Metric.tendstoUniformlyOn_iff.1 hU ε hε), hζ] with k h1 h2
   rw [Real.dist_eq, sub_zero, abs_sub_comm, ← Real.dist_eq]
   exact h1 _ h2
+
+/-! Deprecated names from when the all-shape GPD survival function was `gpdSurvival'`. -/
+
+@[deprecated (since := "2026-10-19")] alias gpdSurvival'_one_of_ne := gpdSurvival_one_of_ne
+@[deprecated (since := "2026-10-19")] alias gpdSurvival'_rpow_neg := gpdSurvival_rpow_neg
+@[deprecated (since := "2026-10-19")] alias gpdSurvivalInv_gpdSurvival' := gpdSurvivalInv_gpdSurvival
+@[deprecated (since := "2026-10-19")] alias gpdSurvival'_gpdSurvivalInv := gpdSurvival_gpdSurvivalInv
+@[deprecated (since := "2026-10-19")] alias gpdSurvival'_lt_one := gpdSurvival_lt_one
+@[deprecated (since := "2026-10-19")] alias exists_lt_gpdSurvival'_lt_one := exists_lt_gpdSurvival_lt_one
 
 end ExtremeValueTheory
 
@@ -263,21 +272,21 @@ section Converse
 variable {F} {ξ : ℝ} {β : ℝ → ℝ}
   (hβ : ∀ᶠ u in F.upperEndpointFilter, 0 < β u)
   (hU : TendstoUniformlyOn (fun u x ↦ excessSurvival (fun y ↦ 1 - F y) u (β u * x))
-    (gpdSurvival' ξ 1) F.upperEndpointFilter (Ici 0))
+    (gpdSurvival ξ 1) F.upperEndpointFilter (Ici 0))
 include hβ hU
 
 omit hβ in
 private lemma conv_pt {x : ℝ} (hx : 0 ≤ x) :
     Tendsto (fun u ↦ (1 - F (u + β u * x)) / (1 - F u)) F.upperEndpointFilter
-      (𝓝 (gpdSurvival' ξ 1 x)) :=
+      (𝓝 (gpdSurvival ξ 1 x)) :=
   hU.tendsto_at (mem_Ici.2 hx)
 
 /-- Under the uniform GPD approximation, `F̄ u → 0` as `u ↑ x_F` (`F` has no atom at a finite
 right endpoint). -/
 theorem tendsto_tail_zero_of_tendstoUniformlyOn_excessSurvival :
     Tendsto (fun u ↦ 1 - F u) F.upperEndpointFilter (𝓝 0) := by
-  obtain ⟨w, hw, hw0, hw1⟩ := exists_lt_gpdSurvival'_lt_one (ξ := ξ) (θ := 0) one_pos
-  set g := gpdSurvival' ξ 1 w with hg
+  obtain ⟨w, hw, hw0, hw1⟩ := exists_lt_gpdSurvival_lt_one (ξ := ξ) (θ := 0) one_pos
+  set g := gpdSurvival ξ 1 w with hg
   set κ := (g + 1) / 2 with hκ
   have hA : ∀ᶠ u in F.upperEndpointFilter, 0 < β u ∧ 0 < 1 - F u ∧
       0 < (1 - F (u + β u * w)) / (1 - F u) ∧ (1 - F (u + β u * w)) / (1 - F u) < κ := by
@@ -342,18 +351,18 @@ omit hU in
 /-- **No relative jumps at the quantiles.** For every `θ < 1` there is `x₀ < x_F` such that,
 whenever `q > x₀` and `F̄ > λ > 0` on `(-∞, q)`, one has `F̄ q ≥ θ λ`. -/
 private lemma conv_claimJ (hU : TendstoUniformlyOn
-      (fun u x ↦ excessSurvival (fun y ↦ 1 - F y) u (β u * x)) (gpdSurvival' ξ 1)
+      (fun u x ↦ excessSurvival (fun y ↦ 1 - F y) u (β u * x)) (gpdSurvival ξ 1)
       F.upperEndpointFilter (Ici 0)) {θ : ℝ} (hθ : θ < 1) :
     ∃ x₀, F x₀ < 1 ∧ ∀ q lam : ℝ, 0 < lam → (∀ y < q, lam < 1 - F y) → x₀ < q →
       θ * lam ≤ 1 - F q := by
-  obtain ⟨δ, hδ, hθg, hg1⟩ := exists_lt_gpdSurvival'_lt_one (ξ := ξ) hθ
-  set g := gpdSurvival' ξ 1 δ with hg
+  obtain ⟨δ, hδ, hθg, hg1⟩ := exists_lt_gpdSurvival_lt_one (ξ := ξ) hθ
+  set g := gpdSurvival ξ 1 δ with hg
   set ε := min (g - θ) ((1 - g) / 2) with hε
   have hε0 : 0 < ε := lt_min (by linarith) (by linarith)
   have hε1 : ε ≤ g - θ := min_le_left _ _
   have hε2 : ε ≤ (1 - g) / 2 := min_le_right _ _
   set κ := g + ε with hκ
-  have hg0 : 0 ≤ g := gpdSurvival'_nonneg _ _ _
+  have hg0 : 0 ≤ g := gpdSurvival_nonneg _ _ _
   have hκ0 : 0 < κ := by rw [hκ]; linarith
   have hκ1 : κ < 1 := by rw [hκ]; linarith
   have hA : ∀ᶠ u in F.upperEndpointFilter, 0 < β u ∧
@@ -488,7 +497,7 @@ private lemma conv_step {c : ℝ} (hc : 1 < c) :
   have hz0 : ∀ᶠ t in F.upperEndpointFilter, z t ∈ Ici 0 := by
     filter_upwards [hst] with t ht
     exact div_nonneg (sub_nonneg.2 ht.1) ht.2.2.1.le
-  have hGz : Tendsto (fun t ↦ gpdSurvival' ξ 1 (z t)) F.upperEndpointFilter (𝓝 c⁻¹) := by
+  have hGz : Tendsto (fun t ↦ gpdSurvival ξ 1 (z t)) F.upperEndpointFilter (𝓝 c⁻¹) := by
     have := hratio.sub (hU.tendsto_sub_comp hs hz0)
     rw [sub_zero] at this
     refine this.congr' ?_
@@ -500,16 +509,16 @@ private lemma conv_step {c : ℝ} (hc : 1 < c) :
   have hzlim : Tendsto z F.upperEndpointFilter (𝓝 (gpdSurvivalInv ξ c⁻¹)) := by
     refine ((continuousAt_gpdSurvivalInv (inv_pos.2 hc0)).tendsto.comp hGz).congr' ?_
     filter_upwards [hGz.eventually (lt_mem_nhds (inv_pos.2 hc0))] with t ht
-    exact gpdSurvivalInv_gpdSurvival' ht
+    exact gpdSurvivalInv_gpdSurvival ht
   -- `r t = β t / β (s t) → c⁻¹ ^ (-ξ)`
-  obtain ⟨w, hw, hw0, -⟩ := exists_lt_gpdSurvival'_lt_one (ξ := ξ) (θ := 0) one_pos
+  obtain ⟨w, hw, hw0, -⟩ := exists_lt_gpdSurvival_lt_one (ξ := ξ) (θ := 0) one_pos
   set r : ℝ → ℝ := fun t ↦ β t / β (s t) with hr_def
   set ζ : ℝ → ℝ := fun t ↦ z t + r t * w with hζ_def
   have hζ0 : ∀ᶠ t in F.upperEndpointFilter, ζ t ∈ Ici 0 := by
     filter_upwards [hst, hz0, hβ] with t ht h1 h2
     exact add_nonneg h1 (mul_nonneg (div_nonneg h2.le ht.2.2.1.le) hw.le)
-  have hGζ : Tendsto (fun t ↦ gpdSurvival' ξ 1 (ζ t)) F.upperEndpointFilter
-      (𝓝 (gpdSurvival' ξ 1 w * c⁻¹)) := by
+  have hGζ : Tendsto (fun t ↦ gpdSurvival ξ 1 (ζ t)) F.upperEndpointFilter
+      (𝓝 (gpdSurvival ξ 1 w * c⁻¹)) := by
     have := ((conv_pt hU hw.le).mul hratio).sub (hU.tendsto_sub_comp hs hζ0)
     rw [sub_zero] at this
     refine this.congr' ?_
@@ -526,10 +535,10 @@ private lemma conv_step {c : ℝ} (hc : 1 < c) :
   have hζlim : Tendsto ζ F.upperEndpointFilter
       (𝓝 (gpdSurvivalInv ξ c⁻¹ + c⁻¹ ^ (-ξ) * w)) := by
     rw [← gpdSurvivalInv_mul (inv_pos.2 hc0) hw0]
-    have hpos : 0 < gpdSurvival' ξ 1 w * c⁻¹ := mul_pos hw0 (inv_pos.2 hc0)
+    have hpos : 0 < gpdSurvival ξ 1 w * c⁻¹ := mul_pos hw0 (inv_pos.2 hc0)
     refine ((continuousAt_gpdSurvivalInv hpos).tendsto.comp hGζ).congr' ?_
     filter_upwards [hGζ.eventually (lt_mem_nhds hpos)] with t ht
-    exact gpdSurvivalInv_gpdSurvival' ht
+    exact gpdSurvivalInv_gpdSurvival ht
   have hrlim : Tendsto r F.upperEndpointFilter (𝓝 (c⁻¹ ^ (-ξ))) := by
     have := (hζlim.sub hzlim).div_const w
     rw [show (gpdSurvivalInv ξ c⁻¹ + c⁻¹ ^ (-ξ) * w - gpdSurvivalInv ξ c⁻¹) / w = c⁻¹ ^ (-ξ) by
@@ -642,7 +651,7 @@ function, and then `isInMDAGumbel_of_auxiliary_atTop` / `..._nhdsLT` applies. -/
 theorem isInMDAGumbel_of_tendstoUniformlyOn_excessSurvival
     (hβ : ∀ᶠ u in F.upperEndpointFilter, 0 < β u)
     (hU : TendstoUniformlyOn (fun u x ↦ excessSurvival (fun y ↦ 1 - F y) u (β u * x))
-      (gpdSurvival' 0 1) F.upperEndpointFilter (Ici 0)) :
+      (gpdSurvival 0 1) F.upperEndpointFilter (Ici 0)) :
     F.IsInMDAGumbel := by
   have hall : ∀ x, Tendsto (fun t ↦ (1 - F (t + x * β t)) / (1 - F t)) F.upperEndpointFilter
       (𝓝 (Real.exp (-x))) := by
@@ -673,7 +682,7 @@ theorem isInMDAGumbel_of_tendstoUniformlyOn_excessSurvival
 theorem isRegularlyVarying_of_tendstoUniformlyOn_excessSurvival (hξ : 0 < ξ)
     (hβ : ∀ᶠ u in F.upperEndpointFilter, 0 < β u)
     (hU : TendstoUniformlyOn (fun u x ↦ excessSurvival (fun y ↦ 1 - F y) u (β u * x))
-      (gpdSurvival' ξ 1) F.upperEndpointFilter (Ici 0)) :
+      (gpdSurvival ξ 1) F.upperEndpointFilter (Ici 0)) :
     IsRegularlyVarying (fun x ↦ 1 - F x) (-(1 / ξ)) := by
   obtain ⟨a, b, ha, hseq⟩ := conv_seq hβ hU
   refine Frechet.isRegularlyVarying_of_tendsto_mul_affine F.conv_antitone (one_div_pos.2 hξ)
@@ -684,7 +693,7 @@ theorem isRegularlyVarying_of_tendstoUniformlyOn_excessSurvival (hξ : 0 < ξ)
     rcases le_or_gt 1 y with hy1 | hy1
     · have hx : 0 ≤ (y - 1) / ξ := div_nonneg (by linarith) hξ.le
       have := conv_pt hU hx
-      rwa [gpdSurvival'_one_of_ne hξ.ne', show 1 + ξ * ((y - 1) / ξ) = y by field_simp; ring,
+      rwa [gpdSurvival_one_of_ne hξ.ne', show 1 + ξ * ((y - 1) / ξ) = y by field_simp; ring,
         max_eq_left hy.le] at this
     · refine tendsto_div_tail_of_tendstoUniformlyOn_excessSurvival hβ hU
         (Real.one_lt_rpow_of_pos_of_lt_one_of_neg hy hy1
@@ -703,7 +712,7 @@ is `b n + a n α (1 + z)` with `α = -1/ξ`, `b n = F^← (1 - 1/n)` and `a n = 
 theorem isInMDAWeibull_of_tendstoUniformlyOn_excessSurvival (hξ : ξ < 0)
     (hβ : ∀ᶠ u in F.upperEndpointFilter, 0 < β u)
     (hU : TendstoUniformlyOn (fun u x ↦ excessSurvival (fun y ↦ 1 - F y) u (β u * x))
-      (gpdSurvival' ξ 1) F.upperEndpointFilter (Ici 0)) :
+      (gpdSurvival ξ 1) F.upperEndpointFilter (Ici 0)) :
     F.IsInMDAWeibull (div_pos_of_neg_of_neg neg_one_lt_zero hξ) := by
   have hα : 0 < -1 / ξ := div_pos_of_neg_of_neg neg_one_lt_zero hξ
   set α := -1 / ξ with hα_def
@@ -731,7 +740,7 @@ theorem isInMDAWeibull_of_tendstoUniformlyOn_excessSurvival (hξ : ξ < 0)
     rcases le_or_gt (-1) z with hz1 | hz1
     · have hx : 0 ≤ α * (1 + z) := mul_nonneg hα.le (by linarith)
       have := conv_pt hU hx
-      rwa [gpdSurvival'_one_of_ne hξ', hlin, max_eq_left (by linarith), hαξ] at this
+      rwa [gpdSurvival_one_of_ne hξ', hlin, max_eq_left (by linarith), hαξ] at this
     · refine tendsto_div_tail_of_tendstoUniformlyOn_excessSurvival hβ hU
         (Real.one_lt_rpow (by linarith) hα) ?_
       simp only [gpdSurvivalInv, hξ', ↓reduceIte]
@@ -742,7 +751,7 @@ theorem isInMDAWeibull_of_tendstoUniformlyOn_excessSurvival (hξ : ξ < 0)
   · rw [standardWeibullCDF_apply_nonneg_eq hα hz]
     have hx : 0 ≤ α * (1 + z) := mul_nonneg hα.le (by linarith)
     have h0 := conv_pt hU hx
-    rw [gpdSurvival'_one_of_ne hξ', hlin, max_eq_right (by linarith), hαξ,
+    rw [gpdSurvival_one_of_ne hξ', hlin, max_eq_right (by linarith), hαξ,
       zero_rpow hα.ne'] at h0
     have hn := hseq _ _ h0
     simp only [happ]
@@ -764,7 +773,7 @@ survival function `x ↦ F̄ (u + β(u) x) / F̄ u` converges to `Ḡ_{ξ,1}` un
 theorem isInMDAGEV_of_tendstoUniformlyOn_excessSurvival
     (hβ : ∀ᶠ u in F.upperEndpointFilter, 0 < β u)
     (hU : TendstoUniformlyOn (fun u x ↦ excessSurvival (fun y ↦ 1 - F y) u (β u * x))
-      (gpdSurvival' ξ 1) F.upperEndpointFilter (Ici 0)) :
+      (gpdSurvival ξ 1) F.upperEndpointFilter (Ici 0)) :
     F.IsInMDAGEV ξ := by
   unfold IsInMDAGEV
   split_ifs with h1 h2
@@ -783,7 +792,7 @@ attraction of `H_ξ` if and only if there is a scale function `β > 0` such that
 theorem isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival (ξ : ℝ) :
     F.IsInMDAGEV ξ ↔ ∃ β : ℝ → ℝ, (∀ᶠ u in F.upperEndpointFilter, 0 < β u) ∧
       TendstoUniformlyOn (fun u x ↦ excessSurvival (fun y ↦ 1 - F y) u (β u * x))
-        (gpdSurvival' ξ 1) F.upperEndpointFilter (Ici 0) :=
+        (gpdSurvival ξ 1) F.upperEndpointFilter (Ici 0) :=
   ⟨F.exists_tendstoUniformlyOn_excessSurvival_of_isInMDAGEV',
     fun ⟨_, hβ, hU⟩ ↦ isInMDAGEV_of_tendstoUniformlyOn_excessSurvival hβ hU⟩
 
@@ -793,7 +802,7 @@ variable (F) in
 theorem isInMDAGEV_iff_exists_tendsto_sup_excessSurvival (ξ : ℝ) :
     F.IsInMDAGEV ξ ↔ ∃ β : ℝ → ℝ, (∀ᶠ u in F.upperEndpointFilter, 0 < β u) ∧
       Tendsto (fun u ↦ ⨆ x ∈ Ici (0 : ℝ),
-        |excessSurvival (fun y ↦ 1 - F y) u (β u * x) - gpdSurvival' ξ 1 x|)
+        |excessSurvival (fun y ↦ 1 - F y) u (β u * x) - gpdSurvival ξ 1 x|)
         F.upperEndpointFilter (𝓝 0) := by
   rw [F.isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival ξ]
   refine exists_congr fun β ↦ and_congr_right fun hβ ↦ (tendsto_iSup_abs_sub_iff (B := 1) ?_).symm
@@ -804,8 +813,8 @@ theorem isInMDAGEV_iff_exists_tendsto_sup_excessSurvival (ξ : ℝ) :
   have h2 : excessSurvival (fun y ↦ 1 - F y) u (β u * x) ≤ 1 :=
     div_le_one_of_le₀ (F.conv_antitone (le_add_of_nonneg_right (mul_nonneg hu.le hx')))
       (F.conv_nonneg _)
-  have h3 := gpdSurvival'_nonneg ξ 1 x
-  have h4 := gpdSurvival'_le_one (ξ := ξ) one_pos hx'
+  have h3 := gpdSurvival_nonneg ξ 1 x
+  have h4 := gpdSurvival_le_one (ξ := ξ) one_pos hx'
   exact abs_sub_le_iff.2 ⟨by linarith, by linarith⟩
 
 end Main

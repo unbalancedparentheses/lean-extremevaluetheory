@@ -9,9 +9,9 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
 /-!
 # Peaks over threshold: the Pickands–Balkema–de Haan theorem in the Fréchet case
 
-The *generalized Pareto distribution* (GPD) with shape `ξ ≥ 0` and scale `β > 0` has survival
-function `Ḡ_{ξ,β}(x) = (1 + ξ x / β) ^ (-1/ξ)` for `ξ > 0` and `Ḡ_{0,β}(x) = exp (-x / β)`,
-for `x ≥ 0`.
+The *generalized Pareto distribution* (GPD) with shape `ξ ∈ ℝ` and scale `β > 0` has survival
+function `Ḡ_{ξ,β}(x) = (1 + ξ x / β)_+ ^ (-1/ξ)` for `ξ ≠ 0` and `Ḡ_{0,β}(x) = exp (-x / β)`,
+for `x ≥ 0` (for `ξ < 0` it vanishes beyond the right endpoint `-β / ξ`).
 
 The Pickands–Balkema–de Haan theorem (Balkema and de Haan, *Residual life time at great age*,
 Ann. Probab. 2 (1974); Pickands, *Statistical inference using extreme order statistics*,
@@ -31,7 +31,7 @@ We also derive the asymptotics of the mean excess function, `e(u) / u → 1 / (�
 
 ## Main definitions
 
-* `ExtremeValueTheory.gpdSurvival ξ β x`: the GPD survival function.
+* `ExtremeValueTheory.gpdSurvival ξ β x`: the GPD survival function, for every shape `ξ`.
 * `ExtremeValueTheory.excessSurvival F u x = F (u + x) / F u`: the conditional excess survival
   function `P(X - u > x | X > u)` when `F x = P(X > x)`.
 * `ExtremeValueTheory.meanExcess F u = (∫ t in Ioi u, F t) / F u`: the mean excess function
@@ -54,22 +54,46 @@ open Filter Topology Set Real MeasureTheory
 
 namespace ExtremeValueTheory
 
-/-- The survival function of the generalized Pareto distribution with shape `ξ` and scale `β`:
-`(1 + ξ x / β) ^ (-(1 / ξ))` if `ξ ≠ 0` and `exp (-x / β)` if `ξ = 0`. It is meant to be used
-for `ξ ≥ 0`, `β > 0`, `x ≥ 0`. -/
+/-- The survival function of the **generalized Pareto distribution** with shape `ξ ∈ ℝ` and
+scale `β > 0` ([EKM, Definition 3.4.1]):
+
+  `Ḡ_{ξ,β}(x) = (max (1 + ξ x / β) 0) ^ (-(1 / ξ))` if `ξ ≠ 0`, `exp (-x / β)` if `ξ = 0`.
+
+On the support `x ≥ 0` this is the GPD tail `P(X > x)` for every shape: the factor
+`1 + ξ x / β` is positive on the interior of the support, and for `ξ < 0` the value is `0` at and
+beyond the right endpoint `x = -β / ξ` (where `1 + ξ x / β ≤ 0`). For `x < 0` the formula is the
+analytic extension `(1 + ξ x)_+ ^ (-1/ξ)` used in de Haan's limit relations, not the survival
+function (which would be `1` there).
+
+This is the one GPD survival function of the library; the former `ξ ≥ 0`-only formula and the
+primed all-shape version `gpdSurvival'` are both this definition. -/
 noncomputable def gpdSurvival (ξ β x : ℝ) : ℝ :=
-  if ξ = 0 then exp (-x / β) else (1 + ξ * x / β) ^ (-(1 / ξ))
+  if ξ = 0 then exp (-x / β) else (max (1 + ξ * x / β) 0) ^ (-(1 / ξ))
 
 section GPD
 
 variable {ξ β x : ℝ}
 
-theorem gpdSurvival_of_eq_zero (β x : ℝ) : gpdSurvival 0 β x = exp (-x / β) := by
+@[simp] theorem gpdSurvival_of_eq_zero (β x : ℝ) : gpdSurvival 0 β x = exp (-x / β) := by
   simp [gpdSurvival]
 
 theorem gpdSurvival_of_ne_zero (hξ : ξ ≠ 0) (β x : ℝ) :
-    gpdSurvival ξ β x = (1 + ξ * x / β) ^ (-(1 / ξ)) := by
+    gpdSurvival ξ β x = (max (1 + ξ * x / β) 0) ^ (-(1 / ξ)) := by
   simp [gpdSurvival, hξ]
+
+/-- Inside the support (`1 + ξ x / β ≥ 0`) the truncation `max · 0` is inactive. -/
+theorem gpdSurvival_of_ne_zero_of_nonneg (hξ : ξ ≠ 0) (h : 0 ≤ 1 + ξ * x / β) :
+    gpdSurvival ξ β x = (1 + ξ * x / β) ^ (-(1 / ξ)) := by
+  rw [gpdSurvival_of_ne_zero hξ, max_eq_left h]
+
+/-- For `ξ < 0`, the GPD survival function vanishes at and beyond the right endpoint `-β / ξ`,
+i.e. where `1 + ξ x / β ≤ 0`. -/
+theorem gpdSurvival_eq_zero_of_neg (hξ : ξ < 0) (h : 1 + ξ * x / β ≤ 0) :
+    gpdSurvival ξ β x = 0 := by
+  have hp : -(1 / ξ) ≠ 0 := by
+    have : 1 / ξ < 0 := one_div_neg.2 hξ
+    linarith
+  rw [gpdSurvival_of_ne_zero hξ.ne, max_eq_right h, zero_rpow hp]
 
 @[simp] theorem gpdSurvival_zero (ξ β : ℝ) : gpdSurvival ξ β 0 = 1 := by
   by_cases hξ : ξ = 0 <;> simp [gpdSurvival, hξ]
@@ -78,60 +102,119 @@ private theorem one_add_pos (hξ : 0 ≤ ξ) (hβ : 0 < β) (hx : 0 ≤ x) : 0 <
   have : 0 ≤ ξ * x / β := by positivity
   linarith
 
+theorem gpdSurvival_nonneg (ξ β x : ℝ) : 0 ≤ gpdSurvival ξ β x := by
+  unfold gpdSurvival
+  split_ifs
+  · exact (exp_pos _).le
+  · exact rpow_nonneg (le_max_right _ _) _
+
 theorem gpdSurvival_pos (hξ : 0 ≤ ξ) (hβ : 0 < β) (hx : 0 ≤ x) : 0 < gpdSurvival ξ β x := by
   unfold gpdSurvival
   split_ifs
   · exact exp_pos _
-  · exact rpow_pos_of_pos (one_add_pos hξ hβ hx) _
+  · exact rpow_pos_of_pos (lt_max_of_lt_left (one_add_pos hξ hβ hx)) _
 
-/-- The GPD survival function is antitone on `[0, ∞)`. -/
-theorem gpdSurvival_antitoneOn (hξ : 0 ≤ ξ) (hβ : 0 < β) :
-    AntitoneOn (gpdSurvival ξ β) (Ici 0) := by
+/-- The GPD survival function is antitone on `[0, ∞)`, for every shape `ξ`. -/
+theorem gpdSurvival_antitoneOn (hβ : 0 < β) : AntitoneOn (gpdSurvival ξ β) (Ici 0) := by
   intro x hx y hy hxy
   rw [mem_Ici] at hx hy
   unfold gpdSurvival
   split_ifs with h
   · exact exp_le_exp.2 (div_le_div_of_nonneg_right (by linarith) hβ.le)
-  · have hξ' : 0 < ξ := lt_of_le_of_ne hξ (Ne.symm h)
-    refine rpow_le_rpow_of_nonpos (one_add_pos hξ hβ hx) ?_ (by
-      have : 0 < 1 / ξ := by positivity
-      linarith)
-    have : ξ * x / β ≤ ξ * y / β :=
-      div_le_div_of_nonneg_right (mul_le_mul_of_nonneg_left hxy hξ) hβ.le
-    linarith
+  · rcases lt_or_gt_of_ne h with hξ | hξ
+    · have hp : 0 ≤ -(1 / ξ) := by
+        have : 1 / ξ < 0 := one_div_neg.2 hξ
+        linarith
+      refine rpow_le_rpow (le_max_right _ _) (max_le_max ?_ le_rfl) hp
+      have : ξ * y / β ≤ ξ * x / β :=
+        div_le_div_of_nonneg_right (mul_le_mul_of_nonpos_left hxy hξ.le) hβ.le
+      linarith
+    · rw [max_eq_left (one_add_pos hξ.le hβ hx).le, max_eq_left (one_add_pos hξ.le hβ hy).le]
+      refine rpow_le_rpow_of_nonpos (one_add_pos hξ.le hβ hx) ?_ (by
+        have : 0 < 1 / ξ := by positivity
+        linarith)
+      have : ξ * x / β ≤ ξ * y / β :=
+        div_le_div_of_nonneg_right (mul_le_mul_of_nonneg_left hxy hξ.le) hβ.le
+      linarith
 
-theorem gpdSurvival_le_one (hξ : 0 ≤ ξ) (hβ : 0 < β) (hx : 0 ≤ x) : gpdSurvival ξ β x ≤ 1 := by
-  simpa using gpdSurvival_antitoneOn hξ hβ (mem_Ici.2 le_rfl) (mem_Ici.2 hx) hx
+theorem gpdSurvival_le_one (hβ : 0 < β) (hx : 0 ≤ x) : gpdSurvival ξ β x ≤ 1 := by
+  simpa using gpdSurvival_antitoneOn (ξ := ξ) hβ (mem_Ici.2 le_rfl) (mem_Ici.2 hx) hx
 
-/-- The GPD survival function tends to `0` at `+∞`. -/
-theorem gpdSurvival_tendsto_atTop (hξ : 0 ≤ ξ) (hβ : 0 < β) :
+/-- The GPD survival function tends to `0` at `+∞`, for every shape `ξ`. -/
+theorem gpdSurvival_tendsto_atTop (hβ : 0 < β) :
     Tendsto (gpdSurvival ξ β) atTop (𝓝 0) := by
-  unfold gpdSurvival
-  split_ifs with h
+  rcases lt_trichotomy ξ 0 with hξ | rfl | hξ
+  · have h1 : Tendsto (fun x : ℝ => 1 + ξ * x / β) atTop atBot :=
+      tendsto_atBot_add_const_left _ _
+        ((tendsto_id.const_mul_atTop_of_neg hξ).atBot_div_const hβ)
+    refine tendsto_const_nhds.congr' ?_
+    filter_upwards [h1.eventually (eventually_le_atBot 0)] with x hx
+    exact (gpdSurvival_eq_zero_of_neg hξ hx).symm
   · have h1 : Tendsto (fun x : ℝ => x / β) atTop atTop := tendsto_id.atTop_div_const hβ
     refine (tendsto_exp_neg_atTop_nhds_zero.comp h1).congr fun x => ?_
     simp [neg_div]
-  · have hξ' : 0 < ξ := lt_of_le_of_ne hξ (Ne.symm h)
-    have h1 : Tendsto (fun x : ℝ => 1 + ξ * x / β) atTop atTop :=
+  · have h1 : Tendsto (fun x : ℝ => 1 + ξ * x / β) atTop atTop :=
       tendsto_atTop_add_const_left _ _
-        ((tendsto_id.const_mul_atTop hξ').atTop_div_const hβ)
-    exact (tendsto_rpow_neg_atTop (by positivity : 0 < 1 / ξ)).comp h1
+        ((tendsto_id.const_mul_atTop hξ).atTop_div_const hβ)
+    refine ((tendsto_rpow_neg_atTop (by positivity : 0 < 1 / ξ)).comp h1).congr' ?_
+    filter_upwards [eventually_ge_atTop 0] with x hx
+    exact (gpdSurvival_of_ne_zero_of_nonneg hξ.ne' (one_add_pos hξ.le hβ hx).le).symm
 
-/-- The GPD survival function is continuous on `[0, ∞)`. -/
-theorem gpdSurvival_continuousOn (hξ : 0 ≤ ξ) (hβ : 0 < β) :
-    ContinuousOn (gpdSurvival ξ β) (Ici 0) := by
-  unfold gpdSurvival
-  split_ifs with h
-  · exact (continuous_exp.comp (continuous_neg.div_const β)).continuousOn
-  · refine ContinuousOn.rpow_const (by fun_prop) fun x hx => Or.inl ?_
-    exact (one_add_pos hξ hβ hx).ne'
+/-- The GPD survival function is continuous on `[0, ∞)`, for every shape `ξ`. -/
+theorem gpdSurvival_continuousOn (hβ : 0 < β) : ContinuousOn (gpdSurvival ξ β) (Ici 0) := by
+  rcases lt_trichotomy ξ 0 with hξ | rfl | hξ
+  · have : gpdSurvival ξ β = fun x => (max (1 + ξ * x / β) 0) ^ (-(1 / ξ)) := by
+      funext x
+      exact gpdSurvival_of_ne_zero hξ.ne β x
+    rw [this]
+    refine ContinuousOn.rpow_const (by fun_prop) fun x _ => Or.inr ?_
+    have : 1 / ξ < 0 := one_div_neg.2 hξ
+    linarith
+  · have : gpdSurvival 0 β = fun x => exp (-x / β) := funext (gpdSurvival_of_eq_zero β)
+    rw [this]
+    exact (continuous_exp.comp (continuous_neg.div_const β)).continuousOn
+  · have : gpdSurvival ξ β = fun x => (max (1 + ξ * x / β) 0) ^ (-(1 / ξ)) := by
+      funext x
+      exact gpdSurvival_of_ne_zero hξ.ne' β x
+    rw [this]
+    refine ContinuousOn.rpow_const (by fun_prop) fun x hx => Or.inl ?_
+    exact (lt_max_of_lt_left (one_add_pos hξ.le hβ hx)).ne'
 
-/-- For `α ≠ 0`, `Ḡ_{1/α,1}(x) = (1 + x / α) ^ (-α)`. -/
-theorem gpdSurvival_inv_one {α : ℝ} (hα : α ≠ 0) (x : ℝ) :
+/-- For `α > 0` and `x ≥ 0`, `Ḡ_{1/α,1}(x) = (1 + x / α) ^ (-α)`. -/
+theorem gpdSurvival_inv_one {α : ℝ} (hα : 0 < α) (hx : 0 ≤ x) :
     gpdSurvival (1 / α) 1 x = (1 + x / α) ^ (-α) := by
-  rw [gpdSurvival_of_ne_zero (by simpa using hα), one_div_one_div]
+  rw [gpdSurvival_of_ne_zero_of_nonneg (by positivity)
+    (one_add_pos (by positivity) one_pos hx).le, one_div_one_div]
   congr 2
   field_simp
+
+/-- For `α > 0`, `Ḡ_{-1/α,1}(x) = (max (1 - x / α) 0) ^ α`. -/
+theorem gpdSurvival_neg_inv {α : ℝ} (hα : 0 < α) (x : ℝ) :
+    gpdSurvival (-1 / α) 1 x = (max (1 - x / α) 0) ^ α := by
+  have hne : (-1 / α) ≠ 0 := div_ne_zero (by norm_num) hα.ne'
+  simp only [gpdSurvival, hne, ↓reduceIte]
+  congr 1
+  · congr 1
+    ring
+  · field_simp
+
+/-! Deprecated names from when the all-shape GPD survival function was a separate definition
+`gpdSurvival'` (in `PeaksOverThreshold/Balkema.lean`). -/
+
+@[deprecated gpdSurvival (since := "2026-10-19")] alias gpdSurvival' := gpdSurvival
+
+@[deprecated "`gpdSurvival'` is now `gpdSurvival`" (since := "2026-10-19")]
+theorem gpdSurvival'_eq_gpdSurvival (_hξ : 0 ≤ ξ) (_hβ : 0 < β) (_hx : 0 ≤ x) :
+    gpdSurvival ξ β x = gpdSurvival ξ β x := rfl
+
+@[deprecated (since := "2026-10-19")] alias gpdSurvival'_zero_left := gpdSurvival_of_eq_zero
+@[deprecated (since := "2026-10-19")] alias gpdSurvival'_zero_right := gpdSurvival_zero
+@[deprecated (since := "2026-10-19")] alias gpdSurvival'_neg_inv := gpdSurvival_neg_inv
+@[deprecated (since := "2026-10-19")] alias gpdSurvival'_nonneg := gpdSurvival_nonneg
+@[deprecated (since := "2026-10-19")] alias gpdSurvival'_antitoneOn := gpdSurvival_antitoneOn
+@[deprecated (since := "2026-10-19")] alias gpdSurvival'_le_one := gpdSurvival_le_one
+@[deprecated (since := "2026-10-19")] alias gpdSurvival'_continuousOn := gpdSurvival_continuousOn
+@[deprecated (since := "2026-10-19")] alias gpdSurvival'_tendsto_atTop := gpdSurvival_tendsto_atTop
 
 end GPD
 
@@ -160,7 +243,7 @@ theorem tendsto_excessSurvival (hRV : IsRegularlyVarying F (-α)) (hα : 0 < α)
     (hx : 0 ≤ x) :
     Tendsto (fun u => excessSurvival F u (u / α * x)) atTop
       (𝓝 (gpdSurvival (1 / α) 1 x)) := by
-  rw [gpdSurvival_inv_one hα.ne']
+  rw [gpdSurvival_inv_one hα hx]
   simp_rw [excess_eq hα]
   exact hRV.2 _ (by have : 0 ≤ x / α := by positivity
                     linarith)
@@ -179,7 +262,7 @@ theorem tendstoUniformlyOn_excessSurvival (hF : Antitone F) (hRV : IsRegularlyVa
   intro ε hε
   -- choose `M` with `Ḡ(M) < ε / 2`
   obtain ⟨M, hM⟩ := eventually_atTop.1
-    ((gpdSurvival_tendsto_atTop hξ one_pos).eventually_lt_const (half_pos hε))
+    ((gpdSurvival_tendsto_atTop one_pos).eventually_lt_const (half_pos hε))
   set M' := max M 0 with hM'
   have hM'0 : 0 ≤ M' := le_max_right _ _
   have hGM : gpdSurvival (1 / α) 1 M' < ε / 2 := hM M' (le_max_left _ _)
@@ -200,12 +283,12 @@ theorem tendstoUniformlyOn_excessSurvival (hF : Antitone F) (hRV : IsRegularlyVa
     · have : y / α ≤ M' / α := div_le_div_of_nonneg_right hyM hα.le
       linarith
   rcases le_total x M' with hxM | hxM
-  · rw [gpdSurvival_inv_one hα.ne']
+  · rw [gpdSurvival_inv_one hα hx]
     exact (hc x hx hxM).trans (half_lt_self hε)
   · -- tail region: both quantities lie in `[0, ε)`
     have hG0 := gpdSurvival_pos hξ one_pos hx
     have hGx : gpdSurvival (1 / α) 1 x ≤ gpdSurvival (1 / α) 1 M' :=
-      gpdSurvival_antitoneOn hξ one_pos (mem_Ici.2 hM'0) (mem_Ici.2 hx) hxM
+      gpdSurvival_antitoneOn one_pos (mem_Ici.2 hM'0) (mem_Ici.2 hx) hxM
     have hE0 : 0 ≤ excessSurvival F u (u / α * x) :=
       (div_pos (hFpos _) (hFpos _)).le
     have hEx : excessSurvival F u (u / α * x) ≤ excessSurvival F u (u / α * M') := by
@@ -214,7 +297,7 @@ theorem tendstoUniformlyOn_excessSurvival (hF : Antitone F) (hRV : IsRegularlyVa
       have : u / α * M' ≤ u / α * x := mul_le_mul_of_nonneg_left hxM (by positivity)
       linarith
     have hEM := hc M' hM'0 le_rfl
-    rw [← gpdSurvival_inv_one hα.ne', Real.dist_eq, abs_lt] at hEM
+    rw [← gpdSurvival_inv_one hα hM'0, Real.dist_eq, abs_lt] at hEM
     rw [Real.dist_eq, abs_lt]
     constructor <;> linarith
 

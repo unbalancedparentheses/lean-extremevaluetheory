@@ -11,6 +11,7 @@ import ExtremeValueTheory.PseudoInverses
 import ExtremeValueTheory.SelfSimilarCDF
 import ExtremeValueTheory.TransformedCDF
 import ExtremeValueTheory.TypeOfCDF
+import ExtremeValueTheory.UpperQuantile
 import ExtremeValueTheory.WeakConvergenceCDF
 
 import ExtremeValueTheory.RegularVariation.Basic

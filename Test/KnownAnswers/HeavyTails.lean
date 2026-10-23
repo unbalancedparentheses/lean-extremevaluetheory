@@ -67,11 +67,11 @@ theorem test_gpd_exponential : gpdSurvival 0 2 2 = exp (-1) := by
 
 /-- `Ḡ_{1,1}(1) = (1 + 1)^{-1} = 1/2`. -/
 theorem test_gpd_one_one : gpdSurvival 1 1 1 = 1 / 2 := by
-  rw [gpdSurvival_of_ne_zero one_ne_zero]; norm_num [rpow_neg_one]
+  rw [gpdSurvival_of_ne_zero_of_nonneg one_ne_zero (by norm_num)]; norm_num [rpow_neg_one]
 
 /-- `Ḡ_{1/2,1}(2) = (1 + 1)^{-2} = 1/4`: fails if the exponent were `-ξ` instead of `-1/ξ`. -/
 theorem test_gpd_half_one : gpdSurvival (1 / 2) 1 2 = 1 / 4 := by
-  rw [gpdSurvival_of_ne_zero (by norm_num)]
+  rw [gpdSurvival_of_ne_zero_of_nonneg (by norm_num) (by norm_num)]
   rw [show (1 + 1 / 2 * 2 / 1 : ℝ) = 2 by norm_num, show -(1 / (1 / 2 : ℝ)) = -2 by norm_num,
     rpow_neg (by norm_num)]
   norm_num
@@ -79,14 +79,14 @@ theorem test_gpd_half_one : gpdSurvival (1 / 2) 1 2 = 1 / 4 := by
 /-- `ξ = -1`: `Ḡ_{-1,1}` is the uniform survival function `1 - x` on `[0, 1]`, and it vanishes
 beyond the right endpoint `-β/ξ = 1` ([EKM, Def. 3.4.9]). -/
 theorem test_gpd_uniform :
-    gpdSurvival' (-1) 1 (1 / 4) = 3 / 4 ∧ gpdSurvival' (-1) 1 2 = 0 := by
-  have h := gpdSurvival'_neg_inv (α := 1) one_pos
+    gpdSurvival (-1) 1 (1 / 4) = 3 / 4 ∧ gpdSurvival (-1) 1 2 = 0 := by
+  have h := gpdSurvival_neg_inv (α := 1) one_pos
   norm_num at h
   refine ⟨by rw [h]; norm_num, by rw [h]; norm_num⟩
 
 /-- `Ḡ_{-1/2,1}(1) = (1 - 1/2)^2 = 1/4`. -/
-theorem test_gpd_neg_half : gpdSurvival' (-1 / 2) 1 1 = 1 / 4 := by
-  rw [gpdSurvival'_neg_inv two_pos]
+theorem test_gpd_neg_half : gpdSurvival (-1 / 2) 1 1 = 1 / 4 := by
+  rw [gpdSurvival_neg_inv two_pos]
   norm_num [rpow_two]
 
 /-- **The excess law of a Pareto tail is a GPD** ([EKM, Example 3.4.13 / Theorem 3.4.13(c)]):
@@ -94,7 +94,7 @@ for `F̄(x) = x^{-α}` and `u > 0`, `F̄(u + x)/F̄(u) = Ḡ_{1/α, u/α}(x)`. F
 shape-scale convention were different (e.g. scale `u` instead of `u/α`). -/
 theorem test_pareto_excess_is_gpd {α u x : ℝ} (hα : 0 < α) (hu : 0 < u) (hx : 0 ≤ x) :
     excessSurvival (fun y ↦ y ^ (-α)) u x = gpdSurvival (1 / α) (u / α) x := by
-  rw [excessSurvival, gpdSurvival_of_ne_zero (one_div_pos.2 hα).ne', one_div_one_div,
+  rw [excessSurvival, gpdSurvival_of_ne_zero_of_nonneg (one_div_pos.2 hα).ne' (by positivity), one_div_one_div,
     ← div_rpow (by linarith) hu.le]
   congr 1
   field_simp
@@ -139,7 +139,9 @@ theorem test_meanExcess_gpd {ξ β u : ℝ} (hξ0 : 0 < ξ) (hξ1 : ξ < 1) (hβ
     have : 1 < 1 / ξ := by rw [lt_div_iff₀ hξ0]; linarith
     linarith
   have hint : ∫ t in Ioi u, gpdSurvival ξ β t = β / ξ * (c ^ (-(1 / ξ) + 1) / (1 / ξ - 1)) := by
-    simp only [gpdSurvival_of_ne_zero hξ0.ne']
+    rw [setIntegral_congr_fun measurableSet_Ioi fun t ht ↦ gpdSurvival_of_ne_zero_of_nonneg hξ0.ne'
+      (by have : 0 ≤ ξ * t / β := div_nonneg (mul_nonneg hξ0.le (hu.trans (le_of_lt ht))) hβ.le
+          linarith)]
     set e := -(1 / ξ) with he
     have he1 : e + 1 < 0 := by linarith
     have hpos : ∀ t ∈ Ici u, 0 < 1 + ξ * t / β := fun t ht ↦ by
@@ -166,7 +168,7 @@ theorem test_meanExcess_gpd {ξ β u : ℝ} (hξ0 : 0 < ξ) (hξ1 : ξ < 1) (hβ
     rw [this, ← hc_def]
     field_simp
     ring
-  rw [meanExcess, hint, gpdSurvival_of_ne_zero hξ0.ne', ← hc_def, rpow_add hc, rpow_one]
+  rw [meanExcess, hint, gpdSurvival_of_ne_zero_of_nonneg hξ0.ne' hc.le, ← hc_def, rpow_add hc, rpow_one]
   have hcpow : 0 < c ^ (-(1 / ξ)) := rpow_pos_of_pos hc _
   have h1ξ : 1 / ξ - 1 = (1 - ξ) / ξ := by field_simp
   rw [h1ξ, hc_def]
