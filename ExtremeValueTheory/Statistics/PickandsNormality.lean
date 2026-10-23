@@ -6,13 +6,14 @@ Authors: Federico Carrone
 import ExtremeValueTheory.Statistics.TailEmpiricalProcessRV
 import ExtremeValueTheory.Statistics.MomentNormality
 import ExtremeValueTheory.ForMathlib.Probability.DeltaMethod
+import ExtremeValueTheory.RegularVariation.Extended
 
 /-!
 # Asymptotic normality of the Pickands estimator
 -/
 
 open Filter Topology Set Real MeasureTheory ProbabilityTheory
-open scoped ENNReal NNReal
+open scoped ENNReal NNReal Matrix
 
 namespace ExtremeValueTheory
 
@@ -332,5 +333,171 @@ theorem tendstoInDistribution_sqrt_smul_tailTime (hU : ∀ i, Measurable (U i))
     exact ((measurable_const (a := √(k n : ℝ))).smul (hm.sub_const _)).aemeasurable
 
 end Joint
+
+/-! ### Second-order extended regular variation -/
+
+section SecondOrder
+
+/-- The limit function of second-order extended regular variation ([dHF, Theorem 2.3.3]),
+`H_{γ,ρ}(x) = ∫_1^x s^{γ-1} ∫_1^s u^{ρ-1} du ds = ∫_1^x s^{γ-1} h_ρ(s) ds`. For `ρ < 0` and
+`γ, γ + ρ ≠ 0` this is `(1/ρ) ((x^{γ+ρ} - 1)/(γ+ρ) - (x^γ - 1)/γ)`. -/
+noncomputable def extSecondOrderLimit (γ ρ x : ℝ) : ℝ :=
+  ∫ s in (1 : ℝ)..x, s ^ (γ - 1) * boxCox ρ s
+
+/-- **Second-order extended regular variation** ([dHF, Definition 2.3.1 and Theorem 2.3.3]),
+in the locally uniform form of [dHF, Theorem 2.3.9 / Remark B.3.? ]: `a > 0` eventually, `A` has
+eventually constant sign, `A(t) → 0`, `|A|` is regularly varying with index `ρ ≤ 0`, and
+
+  `((U(xt) - U(t)) / a(t) - D_γ(x)) / A(t) → H_{γ,ρ}(x)`
+
+locally uniformly in `x ∈ (0, ∞)`. -/
+structure IsExtSecondOrderRegularlyVarying (U : ℝ → ℝ) (γ ρ : ℝ) (a A : ℝ → ℝ) : Prop where
+  eventually_pos : ∀ᶠ t in atTop, 0 < a t
+  nonpos : ρ ≤ 0
+  tendsto_zero : Tendsto A atTop (𝓝 0)
+  sign : (∀ᶠ t in atTop, 0 < A t) ∨ (∀ᶠ t in atTop, A t < 0)
+  isRegularlyVarying_abs : IsRegularlyVarying (fun t => |A t|) ρ
+  tendstoLocallyUniformlyOn : TendstoLocallyUniformlyOn
+    (fun t x => ((U (x * t) - U t) / a t - extRVLimit γ x) / A t) (extSecondOrderLimit γ ρ)
+    atTop (Ioi 0)
+
+theorem continuousOn_rpow_mul_boxCox (γ ρ : ℝ) :
+    ContinuousOn (fun s : ℝ => s ^ (γ - 1) * boxCox ρ s) (Ioi 0) := by
+  refine ContinuousOn.mul (fun s hs => (continuousAt_rpow_const _ _
+    (Or.inl (ne_of_gt hs))).continuousWithinAt) ?_
+  unfold boxCox
+  split_ifs with h
+  · exact continuousOn_log.mono fun s hs => ne_of_gt hs
+  · exact ((continuousOn_id.rpow_const fun s hs => Or.inl (ne_of_gt hs)).sub
+      continuousOn_const).div_const _
+
+theorem continuousAt_extSecondOrderLimit (γ ρ : ℝ) {c : ℝ} (hc : 0 < c) :
+    ContinuousAt (extSecondOrderLimit γ ρ) c := by
+  have hcont := continuousOn_rpow_mul_boxCox γ ρ
+  have hsub : Set.uIcc (1 : ℝ) c ⊆ Ioi 0 := fun s hs => by
+    rcases Set.mem_uIcc.1 hs with h | h <;> simp only [mem_Ioi] <;> linarith [h.1]
+  have hii : IntervalIntegrable (fun s : ℝ => s ^ (γ - 1) * boxCox ρ s) volume 1 c :=
+    (hcont.mono hsub).intervalIntegrable
+  exact (intervalIntegral.integral_hasDerivAt_right hii
+    (hcont.stronglyMeasurableAtFilter isOpen_Ioi c hc)
+    (hcont.continuousAt (isOpen_Ioi.mem_nhds hc))).continuousAt
+
+end SecondOrder
+
+/-! ### The Pickands map and its gradient -/
+
+section PickandsMap
+
+theorem hasDerivAt_extRVLimit (γ : ℝ) {x : ℝ} (hx : 0 < x) :
+    HasDerivAt (extRVLimit γ) (x ^ (γ - 1)) x := by
+  by_cases hγ : γ = 0
+  · subst hγ
+    have : extRVLimit 0 = Real.log := funext extRVLimit_zero_left
+    rw [this, zero_sub, rpow_neg_one]
+    exact hasDerivAt_log hx.ne'
+  · have : extRVLimit γ = fun y => (y ^ γ - 1) / γ := funext (extRVLimit_of_ne hγ)
+    rw [this]
+    have h := ((hasDerivAt_rpow_const (p := γ) (Or.inl hx.ne')).sub_const 1).div_const γ
+    convert h using 1
+    field_simp
+
+theorem hasDerivAt_extRVLimit_four_div (γ : ℝ) {y : ℝ} (hy : y < 0) :
+    HasDerivAt (fun y => extRVLimit γ (4 / -y)) ((4 / -y) ^ (γ - 1) * (4 / y ^ 2)) y := by
+  have h1 : HasDerivAt (fun y : ℝ => -4 * y⁻¹) (-4 * -(y ^ 2)⁻¹) y :=
+    (hasDerivAt_inv hy.ne).const_mul (-4)
+  have e : (fun y : ℝ => -4 * y⁻¹) = fun y => 4 / -y := by
+    funext y; rw [div_neg, div_eq_mul_inv]; ring
+  rw [e] at h1
+  have hpos : 0 < 4 / -y := div_pos (by norm_num) (by linarith)
+  have h2 := (hasDerivAt_extRVLimit γ hpos).comp y h1
+  convert h2 using 1
+  field_simp
+
+/-- The Pickands statistic as a function of the normalized order statistics:
+`ψ(y) = log (D_γ(4/(-y₀)) - D_γ(4/(-y₁))) - log (D_γ(4/(-y₁)) - D_γ(4/(-y₂)))`. With
+`y_i = -(n/k)(1 - U_{(τ_i k + 1)})`, `τ = (1, 2, 4)`, this is `log 2 ×` the Pickands estimator of
+an exact generalized Pareto sample. -/
+noncomputable def pickandsMap (γ : ℝ) (y : EuclideanSpace ℝ (Fin 3)) : ℝ :=
+  Real.log (extRVLimit γ (4 / -y 0) - extRVLimit γ (4 / -y 1)) -
+    Real.log (extRVLimit γ (4 / -y 1) - extRVLimit γ (4 / -y 2))
+
+/-- The times `1, 2, 4` of the Pickands estimator. -/
+def pickandsTimes : Fin 3 → ℕ := ![1, 2, 4]
+
+/-- The centering point `(-1, -2, -4)`. -/
+noncomputable def pickandsCenter : EuclideanSpace ℝ (Fin 3) :=
+  WithLp.toLp 2 (fun i => -(pickandsTimes i : ℝ))
+
+/-- The gradient of `pickandsMap γ` at `pickandsCenter`. -/
+noncomputable def pickandsGrad (γ : ℝ) : EuclideanSpace ℝ (Fin 3) :=
+  WithLp.toLp 2 ![2 ^ γ / extRVLimit γ 2, -(1 + 2 ^ γ) / (2 * extRVLimit γ 2),
+    1 / (4 * extRVLimit γ 2)]
+
+theorem extRVLimit_four (γ : ℝ) :
+    extRVLimit γ 4 - extRVLimit γ 2 = 2 ^ γ * extRVLimit γ 2 := by
+  have h := extRVLimit_mul (γ := γ) (x := 2) (y := 2) two_pos two_pos
+  norm_num at h
+  linarith
+
+theorem pickandsMap_center (γ : ℝ) : pickandsMap γ pickandsCenter = γ * Real.log 2 := by
+  have hd : 0 < extRVLimit γ 2 := extRVLimit_pos one_lt_two
+  simp only [pickandsMap, pickandsCenter, pickandsTimes, WithLp.ofLp_toLp]
+  norm_num
+  rw [extRVLimit_one, sub_zero, extRVLimit_four, Real.log_mul (by positivity) hd.ne',
+    Real.log_rpow two_pos]
+  ring
+
+theorem hasGradientAt_pickandsMap (γ : ℝ) :
+    HasGradientAt (pickandsMap γ) (pickandsGrad γ) pickandsCenter := by
+  set D := extRVLimit γ with hD
+  have hd : 0 < D 2 := extRVLimit_pos one_lt_two
+  have hc : ∀ i, pickandsCenter i < 0 := by
+    intro i; fin_cases i <;> simp [pickandsCenter, pickandsTimes]
+  have hu : ∀ i, HasFDerivAt (fun v : EuclideanSpace ℝ (Fin 3) => D (4 / -v i))
+      (((4 / -pickandsCenter i) ^ (γ - 1) * (4 / pickandsCenter i ^ 2)) •
+        EuclideanSpace.proj (𝕜 := ℝ) i) pickandsCenter := fun i =>
+    (hasDerivAt_extRVLimit_four_div γ (hc i)).comp_hasFDerivAt (f := fun v => v i)
+      pickandsCenter (EuclideanSpace.proj (𝕜 := ℝ) i).hasFDerivAt
+  have hv0 : pickandsCenter 0 = -1 := by simp [pickandsCenter, pickandsTimes]
+  have hv1 : pickandsCenter 1 = -2 := by simp [pickandsCenter, pickandsTimes]
+  have hv2 : pickandsCenter 2 = -4 := by simp [pickandsCenter, pickandsTimes]
+  have hN : D (4 / -pickandsCenter 0) - D (4 / -pickandsCenter 1) = 2 ^ γ * D 2 := by
+    rw [hv0, hv1]; norm_num; exact extRVLimit_four γ
+  have hN' : D (4 / -pickandsCenter 1) - D (4 / -pickandsCenter 2) = D 2 := by
+    rw [hv1, hv2]; norm_num; rw [hD, extRVLimit_one, sub_zero]
+  have h2γ : (0 : ℝ) < 2 ^ γ := by positivity
+  have hF := ((hu 0).sub (hu 1)).log (by rw [hN]; positivity) |>.sub
+    (((hu 1).sub (hu 2)).log (by rw [hN']; positivity))
+  rw [hasGradientAt_iff_hasFDerivAt]
+  refine hF.congr_fderiv ?_
+  ext v
+  simp only [InnerProductSpace.toDual_apply, PiLp.inner_apply, Fin.sum_univ_three,
+    ContinuousLinearMap.sub_apply, ContinuousLinearMap.smul_apply, smul_eq_mul,
+    EuclideanSpace.coe_proj, RCLike.inner_apply, conj_trivial, pickandsGrad, WithLp.ofLp_toLp,
+    Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons,
+    Matrix.tail_cons]
+  rw [hN, hN', hv0, hv1, hv2]
+  have e4 : (4 : ℝ) ^ (γ - 1) = 2 ^ γ * 2 ^ γ / 4 := by
+    rw [rpow_sub_one (by norm_num), show (4 : ℝ) = 2 * 2 by norm_num,
+      mul_rpow (by norm_num) (by norm_num)]
+  have e2 : (2 : ℝ) ^ (γ - 1) = 2 ^ γ / 2 := rpow_sub_one (by norm_num) _
+  norm_num
+  rw [e4, e2]
+  field_simp
+  ring
+
+/-- The asymptotic variance `aᵀ S a` of the Pickands map, `S = (min (τ_i, τ_j))`. -/
+theorem pickandsGrad_quadForm (γ : ℝ) :
+    (pickandsGrad γ) ⬝ᵥ (brownianCovMatrix fun i => (pickandsTimes i : ℝ≥0)) *ᵥ
+      (pickandsGrad γ) = (2 * (2 ^ γ) ^ 2 + 1) / (4 * extRVLimit γ 2 ^ 2) := by
+  have hd : 0 < extRVLimit γ 2 := extRVLimit_pos one_lt_two
+  simp only [dotProduct, Matrix.mulVec, brownianCovMatrix, Fin.sum_univ_three, pickandsGrad,
+    pickandsTimes, Matrix.of_apply, WithLp.ofLp_toLp, Matrix.cons_val_zero, Matrix.cons_val_one,
+    Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons]
+  norm_num
+  field_simp
+  ring
+
+end PickandsMap
 
 end ExtremeValueTheory
