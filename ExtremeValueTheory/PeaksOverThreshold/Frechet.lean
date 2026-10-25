@@ -201,20 +201,20 @@ theorem gpdSurvival_neg_inv {α : ℝ} (hα : 0 < α) (x : ℝ) :
 /-! Deprecated names from when the all-shape GPD survival function was a separate definition
 `gpdSurvival'` (in `PeaksOverThreshold/Balkema.lean`). -/
 
-@[deprecated gpdSurvival (since := "2026-10-19")] alias gpdSurvival' := gpdSurvival
+@[deprecated gpdSurvival (since := "2026-10-23")] alias gpdSurvival' := gpdSurvival
 
-@[deprecated "`gpdSurvival'` is now `gpdSurvival`" (since := "2026-10-19")]
+@[deprecated "`gpdSurvival'` is now `gpdSurvival`" (since := "2026-10-23")]
 theorem gpdSurvival'_eq_gpdSurvival (_hξ : 0 ≤ ξ) (_hβ : 0 < β) (_hx : 0 ≤ x) :
     gpdSurvival ξ β x = gpdSurvival ξ β x := rfl
 
-@[deprecated (since := "2026-10-19")] alias gpdSurvival'_zero_left := gpdSurvival_of_eq_zero
-@[deprecated (since := "2026-10-19")] alias gpdSurvival'_zero_right := gpdSurvival_zero
-@[deprecated (since := "2026-10-19")] alias gpdSurvival'_neg_inv := gpdSurvival_neg_inv
-@[deprecated (since := "2026-10-19")] alias gpdSurvival'_nonneg := gpdSurvival_nonneg
-@[deprecated (since := "2026-10-19")] alias gpdSurvival'_antitoneOn := gpdSurvival_antitoneOn
-@[deprecated (since := "2026-10-19")] alias gpdSurvival'_le_one := gpdSurvival_le_one
-@[deprecated (since := "2026-10-19")] alias gpdSurvival'_continuousOn := gpdSurvival_continuousOn
-@[deprecated (since := "2026-10-19")] alias gpdSurvival'_tendsto_atTop := gpdSurvival_tendsto_atTop
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_zero_left := gpdSurvival_of_eq_zero
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_zero_right := gpdSurvival_zero
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_neg_inv := gpdSurvival_neg_inv
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_nonneg := gpdSurvival_nonneg
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_antitoneOn := gpdSurvival_antitoneOn
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_le_one := gpdSurvival_le_one
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_continuousOn := gpdSurvival_continuousOn
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_tendsto_atTop := gpdSurvival_tendsto_atTop
 
 end GPD
 

@@ -39,7 +39,7 @@ with law `gaussianReal (λ / (1 - ρ)) γ²`.
   `√k ((1/k) ∑_{i<k} (E_{(i+1)} - E_{(k+1)}) - 1) ⇒ N(0, 1)` for iid standard exponentials.
 * `ExtremeValueTheory.tendstoInMeasure_meanExcess_fun`: a conditional law of large numbers for
   functions of the top exponential excesses and of `E_{(k+1)}`.
-* `ExtremeValueTheory.tailQuantile`, `map_eq_expMeasure_map_survivalQuantile`: the tail quantile
+* `ExtremeValueTheory.survivalQuantile`, `map_eq_expMeasure_map_survivalQuantile`: the tail quantile
   function and the quantile transform `X =ᵈ U(e^E)`, `E` standard exponential.
 
 ## Proof
@@ -1278,9 +1278,9 @@ end Normality
 
 /-! Deprecated names: these lemmas are about `survivalQuantile` (the return-period form `U(t)`). -/
 
-@[deprecated (since := "2026-10-19")] alias tailQuantile_le_iff := survivalQuantile_le_iff
-@[deprecated (since := "2026-10-19")] alias monotoneOn_tailQuantile := monotoneOn_survivalQuantile
-@[deprecated (since := "2026-10-19")] alias measurable_tailQuantile := measurable_survivalQuantile
-@[deprecated (since := "2026-10-19")] alias map_eq_expMeasure_map_tailQuantile := map_eq_expMeasure_map_survivalQuantile
+@[deprecated (since := "2026-10-23")] alias tailQuantile_le_iff := survivalQuantile_le_iff
+@[deprecated (since := "2026-10-23")] alias monotoneOn_tailQuantile := monotoneOn_survivalQuantile
+@[deprecated (since := "2026-10-23")] alias measurable_tailQuantile := measurable_survivalQuantile
+@[deprecated (since := "2026-10-23")] alias map_eq_expMeasure_map_tailQuantile := map_eq_expMeasure_map_survivalQuantile
 
 end ExtremeValueTheory

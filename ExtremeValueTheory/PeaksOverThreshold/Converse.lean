@@ -211,12 +211,12 @@ theorem TendstoUniformlyOn.tendsto_sub_comp {ι κ : Type*} {L : Filter ι} {l :
 
 /-! Deprecated names from when the all-shape GPD survival function was `gpdSurvival'`. -/
 
-@[deprecated (since := "2026-10-19")] alias gpdSurvival'_one_of_ne := gpdSurvival_one_of_ne
-@[deprecated (since := "2026-10-19")] alias gpdSurvival'_rpow_neg := gpdSurvival_rpow_neg
-@[deprecated (since := "2026-10-19")] alias gpdSurvivalInv_gpdSurvival' := gpdSurvivalInv_gpdSurvival
-@[deprecated (since := "2026-10-19")] alias gpdSurvival'_gpdSurvivalInv := gpdSurvival_gpdSurvivalInv
-@[deprecated (since := "2026-10-19")] alias gpdSurvival'_lt_one := gpdSurvival_lt_one
-@[deprecated (since := "2026-10-19")] alias exists_lt_gpdSurvival'_lt_one := exists_lt_gpdSurvival_lt_one
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_one_of_ne := gpdSurvival_one_of_ne
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_rpow_neg := gpdSurvival_rpow_neg
+@[deprecated (since := "2026-10-23")] alias gpdSurvivalInv_gpdSurvival' := gpdSurvivalInv_gpdSurvival
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_gpdSurvivalInv := gpdSurvival_gpdSurvivalInv
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_lt_one := gpdSurvival_lt_one
+@[deprecated (since := "2026-10-23")] alias exists_lt_gpdSurvival'_lt_one := exists_lt_gpdSurvival_lt_one
 
 end ExtremeValueTheory
 

@@ -76,7 +76,7 @@ variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasur
 
 /-- The former name of the **tail quantile** `x_p = F^←(1 - p) = inf {x | P(Y > x) ≤ p}` of a
 real random variable `Y`; it is `upperQuantile (survival P Y) p`. -/
-@[deprecated upperQuantile (since := "2026-10-19")]
+@[deprecated upperQuantile (since := "2026-10-23")]
 noncomputable abbrev tailQuantile (P : Measure Ω) (Y : Ω → ℝ) (p : ℝ) : ℝ :=
   upperQuantile (survival P Y) p
 
@@ -785,11 +785,11 @@ end ReturnLevel
 
 /-! Deprecated names from when the level-`p` tail quantile was `tailQuantile P Y p`. -/
 
-@[deprecated (since := "2026-10-19")] alias tailQuantile_le_of_survival_le := upperQuantile_le_of_survival_le
-@[deprecated (since := "2026-10-19")] alias le_tailQuantile_of_lt_survival := le_upperQuantile_of_lt_survival
-@[deprecated (since := "2026-10-19")] alias tendsto_tailQuantile := tendsto_upperQuantile
-@[deprecated (since := "2026-10-19")] alias tendsto_tailQuantile_div_tailQuantile := tendsto_upperQuantile_div_upperQuantile
-@[deprecated (since := "2026-10-19")] alias tendstoInMeasure_orderStat_div_tailQuantile := tendstoInMeasure_orderStat_div_upperQuantile
-@[deprecated (since := "2026-10-19")] alias tailQuantile_eq_of_pareto := upperQuantile_eq_of_pareto
+@[deprecated (since := "2026-10-23")] alias tailQuantile_le_of_survival_le := upperQuantile_le_of_survival_le
+@[deprecated (since := "2026-10-23")] alias le_tailQuantile_of_lt_survival := le_upperQuantile_of_lt_survival
+@[deprecated (since := "2026-10-23")] alias tendsto_tailQuantile := tendsto_upperQuantile
+@[deprecated (since := "2026-10-23")] alias tendsto_tailQuantile_div_tailQuantile := tendsto_upperQuantile_div_upperQuantile
+@[deprecated (since := "2026-10-23")] alias tendstoInMeasure_orderStat_div_tailQuantile := tendstoInMeasure_orderStat_div_upperQuantile
+@[deprecated (since := "2026-10-23")] alias tailQuantile_eq_of_pareto := upperQuantile_eq_of_pareto
 
 end ExtremeValueTheory

@@ -429,7 +429,7 @@ end Consistency
 
 /-! Deprecated names from when the all-shape GPD survival function was `gpdSurvival'`. -/
 
-@[deprecated (since := "2026-10-19")] alias gpdSurvival'_lt_of_gpdSurvivalInv_lt := gpdSurvival_lt_of_gpdSurvivalInv_lt
-@[deprecated (since := "2026-10-19")] alias lt_gpdSurvival'_of_lt_gpdSurvivalInv := lt_gpdSurvival_of_lt_gpdSurvivalInv
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_lt_of_gpdSurvivalInv_lt := gpdSurvival_lt_of_gpdSurvivalInv_lt
+@[deprecated (since := "2026-10-23")] alias lt_gpdSurvival'_of_lt_gpdSurvivalInv := lt_gpdSurvival_of_lt_gpdSurvivalInv
 
 end ExtremeValueTheory

@@ -355,7 +355,7 @@ follow de Haan and Ferreira, \emph{Extreme Value Theory: An Introduction}, Sprin
 \begin{definition}[Weissman and tail-probability estimators]
   \label{def:weissman}
   \uses{def:hill, def:order-stat}
-  \lean{ExtremeValueTheory.tailQuantile, ExtremeValueTheory.weissman, ExtremeValueTheory.tailProbEstimator, ExtremeValueTheory.IsBoundedInProbability}
+  \lean{ExtremeValueTheory.upperQuantile, ExtremeValueTheory.weissman, ExtremeValueTheory.tailProbEstimator, ExtremeValueTheory.IsBoundedInProbability}
   \leanok
   For $p_n \to 0$, the quantile $x_{p} = \inf\{x : \bar F(x) \le p\}$ is estimated by
   $\hat x_{p_n} = X_{(k+1)} \, (k/(n p_n))^{\hat\gamma}$, and $\bar F(y_n)$ by
@@ -368,8 +368,8 @@ follow de Haan and Ferreira, \emph{Extreme Value Theory: An Introduction}, Sprin
   \uses{def:weissman, thm:hill-consistency}
   \lean{ExtremeValueTheory.tendstoInMeasure_weissman_div_of_bias, ExtremeValueTheory.tendstoInMeasure_weissman_div,
     ExtremeValueTheory.tendstoInMeasure_weissman_div_of_isBoundedInProbability,
-    ExtremeValueTheory.tendstoInMeasure_weissman_div_pareto, ExtremeValueTheory.tendstoInMeasure_orderStat_div_tailQuantile,
-    ExtremeValueTheory.tendsto_tailQuantile}
+    ExtremeValueTheory.tendstoInMeasure_weissman_div_pareto, ExtremeValueTheory.tendstoInMeasure_orderStat_div_upperQuantile,
+    ExtremeValueTheory.tendsto_upperQuantile}
   \leanok
   Let $X_i$ be iid with $\bar F \in RV_{-\alpha}$, $k \to \infty$, $k/n \to 0$ and
   $d_n = k/(n p_n)$. Then $\hat x_{p_n}/x_{p_n} \to 1$ in probability in each of these cases:
@@ -486,7 +486,7 @@ follow de Haan and Ferreira, \emph{Extreme Value Theory: An Introduction}, Sprin
   \uses{lem:renyi, thm:second-order-bound, thm:hill-consistency}
   \lean{ExtremeValueTheory.survivalQuantile, ExtremeValueTheory.tendstoInDistribution_hill_pareto,
     ExtremeValueTheory.tendstoInDistribution_hill_of_tendsto_zero, ExtremeValueTheory.tendstoInDistribution_hill,
-    ExtremeValueTheory.tendstoInDistribution_meanExcess, ExtremeValueTheory.map_eq_expMeasure_map_tailQuantile}
+    ExtremeValueTheory.tendstoInDistribution_meanExcess, ExtremeValueTheory.map_eq_expMeasure_map_survivalQuantile}
   \leanok
   Let $X_i$ be iid with tail quantile function $U$ second-order regularly varying with indices
   $\gamma > 0$, $\rho \le 0$ and auxiliary function $A$. If $k \to \infty$, $k/n \to 0$ and
@@ -530,8 +530,8 @@ follow de Haan and Ferreira, \emph{Extreme Value Theory: An Introduction}, Sprin
   \lean{MeasureTheory.TendstoInDistribution.exists_measure_le_abs_le,
     ExtremeValueTheory.isBoundedInProbability_of_tendstoInDistribution, ExtremeValueTheory.isBoundedInProbability_hill,
     ExtremeValueTheory.IsSecondOrderRegularlyVarying.exists_bound_of_neg,
-    ExtremeValueTheory.survivalQuantile_survival_eq_tailQuantile, ExtremeValueTheory.tailQuantile_eq_survivalQuantile,
-    ExtremeValueTheory.IsSecondOrderRegularlyVarying.tendsto_div_mul_rpow, ExtremeValueTheory.tendsto_tailQuantile_div_of_secondOrder,
+    ExtremeValueTheory.survivalQuantile_of_one_lt, ExtremeValueTheory.upperQuantile_eq_survivalQuantile,
+    ExtremeValueTheory.IsSecondOrderRegularlyVarying.tendsto_div_mul_rpow, ExtremeValueTheory.tendsto_upperQuantile_div_of_secondOrder,
     ExtremeValueTheory.tendstoInMeasure_weissman_div_of_secondOrder,
     ExtremeValueTheory.tendstoInMeasure_tailProbEstimator_div_of_secondOrder, ExtremeValueTheory.tendstoInDistribution_weissman}
   \leanok

@@ -584,6 +584,6 @@ end JointMLE
 
 /-! Deprecated names from when the all-shape GPD survival function was `gpdSurvival'`. -/
 
-@[deprecated (since := "2026-10-19")] alias hasDerivAt_neg_log_gpdSurvival' := hasDerivAt_neg_log_gpdSurvival
+@[deprecated (since := "2026-10-23")] alias hasDerivAt_neg_log_gpdSurvival' := hasDerivAt_neg_log_gpdSurvival
 
 end ExtremeValueTheory

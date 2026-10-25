@@ -256,9 +256,9 @@ end Bias
 `upperQuantile_eq_survivalQuantile` (`ExtremeValueTheory/UpperQuantile.lean`), stated for any
 survival function. -/
 
-@[deprecated (since := "2026-10-19")]
+@[deprecated (since := "2026-10-23")]
 alias survivalQuantile_survival_eq_tailQuantile := survivalQuantile_of_one_lt
-@[deprecated (since := "2026-10-19")]
+@[deprecated (since := "2026-10-23")]
 alias tailQuantile_eq_survivalQuantile := upperQuantile_eq_survivalQuantile
 
 /-! ### Consistency of the Weissman estimator -/
@@ -1299,6 +1299,6 @@ end Normality
 
 /-! Deprecated names from when the level-`p` tail quantile was `tailQuantile P Y p`. -/
 
-@[deprecated (since := "2026-10-19")] alias tendsto_tailQuantile_div_of_secondOrder := tendsto_upperQuantile_div_of_secondOrder
+@[deprecated (since := "2026-10-23")] alias tendsto_tailQuantile_div_of_secondOrder := tendsto_upperQuantile_div_of_secondOrder
 
 end ExtremeValueTheory

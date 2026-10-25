@@ -886,7 +886,7 @@ end Consistency
 
 /-! Deprecated names from when the all-shape GPD survival function was `gpdSurvival'`. -/
 
-@[deprecated (since := "2026-10-19")] alias continuous_gpdSurvival'_of_nonpos := continuous_gpdSurvival_of_nonpos
-@[deprecated (since := "2026-10-19")] alias one_lt_gpdSurvival'_of_neg := one_lt_gpdSurvival_of_neg
+@[deprecated (since := "2026-10-23")] alias continuous_gpdSurvival'_of_nonpos := continuous_gpdSurvival_of_nonpos
+@[deprecated (since := "2026-10-23")] alias one_lt_gpdSurvival'_of_neg := one_lt_gpdSurvival_of_neg
 
 end ExtremeValueTheory
