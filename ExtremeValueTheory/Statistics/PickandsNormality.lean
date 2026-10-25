@@ -410,7 +410,8 @@ theorem hasDerivAt_extRVLimit_four_div (γ : ℝ) {y : ℝ} (hy : y < 0) :
   rw [e] at h1
   have hpos : 0 < 4 / -y := div_pos (by norm_num) (by linarith)
   have h2 := (hasDerivAt_extRVLimit γ hpos).comp y h1
-  convert h2 using 1
+  refine h2.congr_deriv ?_
+  congr 1
   field_simp
 
 /-- The Pickands statistic as a function of the normalized order statistics:
@@ -451,36 +452,38 @@ theorem hasGradientAt_pickandsMap (γ : ℝ) :
     HasGradientAt (pickandsMap γ) (pickandsGrad γ) pickandsCenter := by
   set D := extRVLimit γ with hD
   have hd : 0 < D 2 := extRVLimit_pos one_lt_two
+  have hv0 : pickandsCenter 0 = -1 := by simp [pickandsCenter, pickandsTimes]
+  have hv1 : pickandsCenter 1 = -2 := by simp [pickandsCenter, pickandsTimes]
+  have hv2 : pickandsCenter 2 = -4 := by simp [pickandsCenter, pickandsTimes]
   have hc : ∀ i, pickandsCenter i < 0 := by
     intro i; fin_cases i <;> simp [pickandsCenter, pickandsTimes]
   have hu : ∀ i, HasFDerivAt (fun v : EuclideanSpace ℝ (Fin 3) => D (4 / -v i))
       (((4 / -pickandsCenter i) ^ (γ - 1) * (4 / pickandsCenter i ^ 2)) •
         EuclideanSpace.proj (𝕜 := ℝ) i) pickandsCenter := fun i =>
-    (hasDerivAt_extRVLimit_four_div γ (hc i)).comp_hasFDerivAt (f := fun v => v i)
+    (hasDerivAt_extRVLimit_four_div γ (hc i)).comp_hasFDerivAt
+      (f := (EuclideanSpace.proj (𝕜 := ℝ) i : EuclideanSpace ℝ (Fin 3) → ℝ))
       pickandsCenter (EuclideanSpace.proj (𝕜 := ℝ) i).hasFDerivAt
-  have hv0 : pickandsCenter 0 = -1 := by simp [pickandsCenter, pickandsTimes]
-  have hv1 : pickandsCenter 1 = -2 := by simp [pickandsCenter, pickandsTimes]
-  have hv2 : pickandsCenter 2 = -4 := by simp [pickandsCenter, pickandsTimes]
   have hN : D (4 / -pickandsCenter 0) - D (4 / -pickandsCenter 1) = 2 ^ γ * D 2 := by
     rw [hv0, hv1]; norm_num; exact extRVLimit_four γ
   have hN' : D (4 / -pickandsCenter 1) - D (4 / -pickandsCenter 2) = D 2 := by
-    rw [hv1, hv2]; norm_num; rw [hD, extRVLimit_one, sub_zero]
+    rw [hv1, hv2]; norm_num [hD, extRVLimit_one]
   have h2γ : (0 : ℝ) < 2 ^ γ := by positivity
-  have hF := ((hu 0).sub (hu 1)).log (by rw [hN]; positivity) |>.sub
-    (((hu 1).sub (hu 2)).log (by rw [hN']; positivity))
+  have hF := ((hu 0).sub (hu 1)).log (by simp only [Pi.sub_apply]; rw [hN]; positivity) |>.sub
+    (((hu 1).sub (hu 2)).log (by simp only [Pi.sub_apply]; rw [hN']; positivity))
   rw [hasGradientAt_iff_hasFDerivAt]
   refine hF.congr_fderiv ?_
   ext v
-  simp only [InnerProductSpace.toDual_apply, PiLp.inner_apply, Fin.sum_univ_three,
+  simp only [InnerProductSpace.toDual_apply_apply, PiLp.inner_apply, Fin.sum_univ_three,
     ContinuousLinearMap.sub_apply, ContinuousLinearMap.smul_apply, smul_eq_mul,
-    EuclideanSpace.coe_proj, RCLike.inner_apply, conj_trivial, pickandsGrad, WithLp.ofLp_toLp,
-    Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons,
-    Matrix.tail_cons]
+    RCLike.inner_apply, conj_trivial, pickandsGrad, Pi.sub_apply]
   rw [hN, hN', hv0, hv1, hv2]
+  simp only [EuclideanSpace.proj, PiLp.proj_apply]
   have e4 : (4 : ℝ) ^ (γ - 1) = 2 ^ γ * 2 ^ γ / 4 := by
     rw [rpow_sub_one (by norm_num), show (4 : ℝ) = 2 * 2 by norm_num,
       mul_rpow (by norm_num) (by norm_num)]
   have e2 : (2 : ℝ) ^ (γ - 1) = 2 ^ γ / 2 := rpow_sub_one (by norm_num) _
+  simp only [hD, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
+    Matrix.head_cons, Matrix.tail_cons]
   norm_num
   rw [e4, e2]
   field_simp
