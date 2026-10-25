@@ -230,7 +230,7 @@ theorem survivalQuantile_eq {F : ℝ → ℝ} (hF2 : ∀ x, 2 ≤ x → F x = (x
       constructor
       · intro h; exact absurd h (not_le.2 (inv_lt_one_of_one_lt₀ ht))
       · intro h; linarith
-  rw [survivalQuantile, ite_eq_left_iff.mpr (fun h => absurd ht h), hS, csInf_Ici]
+  rw [survivalQuantile_of_one_lt ht, upperQuantile_def, hS, csInf_Ici]
 
 /-- The auxiliary function `A(t) = -(t + 1)⁻¹`. -/
 noncomputable def auxA (t : ℝ) : ℝ := -(t + 1)⁻¹

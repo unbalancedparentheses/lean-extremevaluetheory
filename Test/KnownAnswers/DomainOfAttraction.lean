@@ -201,8 +201,7 @@ theorem test_tailQuantile_exponential {t : ℝ} (ht : 1 < t) :
     · rw [standardExponentialCDF_apply_of_nonneg hy, sub_sub_cancel, one_div,
         show t⁻¹ = exp (-log t) by rw [exp_neg, exp_log ht0], exp_le_exp]
       constructor <;> intro h <;> linarith
-  unfold CumulativeDistributionFunction.tailQuantile
-  rw [hS, csInf_Ici]
+  rw [CumulativeDistributionFunction.tailQuantile_def, hS, csInf_Ici]
 
 /-- `U(t) = t^{1/α}` for the Pareto(α) law ([dHF, §1.1]; [EKM, Table 3.4.2]). -/
 theorem test_tailQuantile_pareto {α : ℝ} (hα : 0 < α) {t : ℝ} (ht : 1 < t) :
@@ -226,8 +225,7 @@ theorem test_tailQuantile_pareto {α : ℝ} (hα : 0 < α) {t : ℝ} (ht : 1 < t
         inv_le_inv₀ (rpow_pos_of_pos hy0 _) ht0]
       rw [← rpow_le_rpow_iff (rpow_nonneg ht0.le _) hy0.le hα, ← rpow_mul ht0.le,
         one_div_mul_cancel hα.ne', rpow_one]
-  unfold CumulativeDistributionFunction.tailQuantile
-  rw [hS, csInf_Ici]
+  rw [CumulativeDistributionFunction.tailQuantile_def, hS, csInf_Ici]
 
 /-- `U(t) = 1 - 1/t` for the uniform law on `[0, 1]` ([dHF, §1.1]). -/
 theorem test_tailQuantile_uniform {t : ℝ} (ht : 1 < t) :
@@ -254,8 +252,7 @@ theorem test_tailQuantile_uniform {t : ℝ} (ht : 1 < t) :
           _ ≤ _ := (powerCDF one_pos).mono hy1.le
       rw [h1]
       constructor <;> intro h <;> linarith
-  unfold CumulativeDistributionFunction.tailQuantile
-  rw [hS, csInf_Ici]
+  rw [CumulativeDistributionFunction.tailQuantile_def, hS, csInf_Ici]
 
 /-- For Pareto(α), `U` is regularly varying with index `γ = 1/α` ([dHF, Theorem 1.2.1]). -/
 theorem test_tailQuantile_pareto_rv {α : ℝ} (hα : 0 < α) :
