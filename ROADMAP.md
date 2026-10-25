@@ -149,6 +149,13 @@ From the survey in [`docs/PRACTICAL_OPEN_PROBLEMS.md`](docs/PRACTICAL_OPEN_PROBL
        al.; Drees–Janßen–Resnick–Wang 2020 conjecture).
 
 ### Theoretical open problems
+Second survey (2026-10-25, [`docs/OPEN_PROBLEMS_SURVEY2.md`](docs/OPEN_PROBLEMS_SURVEY2.md)), top candidates:
+- [ ] Falk (2015): is the limit of a D-norm track idempotent? (a small 2-d construction may answer no)
+- [ ] Leonetti–Khorrami Chokami (2022): is the max-domain of attraction a Borel set, and of which class?
+- [ ] Strokorb–Schlather: existence of minimal dependency sets for given extremal coefficients
+- [ ] Does d-separation characterize extremal conditional independence in recursive max-linear models?
+- [ ] Sharp upper bound of Spearman's ρ given Kendall's τ for extreme-value copulas
+
 - [ ] The critical case `κ = 1` of the power-lag echo process (completes the Bai–Kulik–Wang answer)
 - [ ] Bai–Kulik–Wang §1.4 Q1: other processes with a mesoscopic phase transition (partly answered
       by the two echo processes)
