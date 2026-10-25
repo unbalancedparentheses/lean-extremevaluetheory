@@ -335,11 +335,11 @@ theorem test_nonvacuous_le_candidateExtremalIndex' (hα : 0 < α) :
     measurable_movingMaxSpectral (hasShiftInvariantWindows_M hα)
     (by rw [abs_M]; exact test_nonvacuous_hasExtremalIndex_abs hα)
 
-/-- **`θ = ϑ` iff the escape mass vanishes**
-(`HasSpectralTailProcess.eq_candidateExtremalIndex_iff_hasEscapeMass_zero`), on the moving
-maximum: since `θ = ϑ = 1/2`, the escape mass is `0`. -/
-theorem test_nonvacuous_hasEscapeMass_zero (hα : 0 < α) :
-    ∃ u : ℕ → ℝ, HasEscapeMass (P α) M u Nat.sqrt 0 := by
+/-- **`θ = ϑ` iff the late-return mass vanishes**
+(`HasSpectralTailProcess.eq_candidateExtremalIndex_iff_hasLateReturnMass_zero`), on the moving
+maximum: since `θ = ϑ = 1/2`, the late-return mass is `0`. -/
+theorem test_nonvacuous_hasLateReturnMass_zero (hα : 0 < α) :
+    ∃ u : ℕ → ℝ, HasLateReturnMass (P α) M u Nat.sqrt 0 := by
   have := isProbabilityMeasure_P hα
   have hstat := hasShiftInvariantWindows_M hα
   obtain ⟨u, hu, -⟩ := exists_levels_M hα one_pos
@@ -351,7 +351,7 @@ theorem test_nonvacuous_hasEscapeMass_zero (hα : 0 < α) :
       tendsto_sqrt_div (C := 2)
       (by filter_upwards [hu.eventually (gt_mem_nhds one_lt_two)] with n hn
           exact hn.le)
-  refine ⟨u, ((hasSpectralTailProcess_M hα).eq_candidateExtremalIndex_iff_hasEscapeMass_zero hα
+  refine ⟨u, ((hasSpectralTailProcess_M hα).eq_candidateExtremalIndex_iff_hasLateReturnMass_zero hα
     measurable_M measurable_movingMaxSpectral hstat (θ := 1 / 2)
     (by rw [abs_M]; exact test_nonvacuous_hasExtremalIndex_abs hα) hu one_pos
     tendsto_sqrt_atTop tendsto_sqrt_div hA).1 ?_⟩
@@ -432,7 +432,7 @@ theorem test_nonvacuous_movingAverage_hasExtremalIndex (hα : 0 < α) :
     (fun j hj => by simp [show ¬ j ≤ 1 by omega]) ?_
   simp [MovingAverage.weightSum, Finset.sum_range_succ]
 
-/-- **Infinite moving averages** (`InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_lt_one`):
+/-- **Infinite moving averages** (`InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_summable_rpow`):
 `X_t = Σ_j 2^{-j} Z_{t-j}` with Pareto(`α`) noise, `δ = α / 2`. -/
 theorem test_nonvacuous_infiniteMovingAverage (hα : 0 < α) :
     HasSpectralTailProcess (P α) (InfiniteMovingAverage.process (fun j => (1 / 2 : ℝ) ^ j) Z) α
@@ -443,7 +443,7 @@ theorem test_nonvacuous_infiniteMovingAverage (hα : 0 < α) :
           (InfiniteMovingAverage.spectral fun j => (1 / 2 : ℝ) ^ j) α).toReal := by
   have := isProbabilityMeasure_P hα
   have hδ : 0 < min (α / 2) (1 / 2) := by positivity
-  exact InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_lt_one measurable_Z
+  exact InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_summable_rpow measurable_Z
     (iIndepFun_Z hα) (identDistrib_Z hα) Z_nonneg hδ
     ((min_le_left _ _).trans_lt (by linarith)) ((min_le_right _ _).trans_lt (by norm_num))
     (isRegularlyVarying_Z hα) (fun j => by positivity) (AR1.summable_rpow (by norm_num) (by norm_num) hδ)
@@ -546,7 +546,7 @@ theorem test_nonvacuous_exists_isStationary_of_kernel (hφ0 : 0 < φ) (hφ1 : φ
 
 end ARMAX
 
-/-! ### The echo processes: `θ < ϑ` and the escape mass -/
+/-! ### The echo processes: `θ < ϑ` and the late-return mass -/
 
 /-- `log n / ⌊√n⌋ → 0`. -/
 theorem tendsto_log_div_sqrt :
@@ -615,11 +615,11 @@ theorem exists_levels_logEcho (hα : 0 < α) :
   refine ⟨u, ?_⟩
   simpa [abs_of_nonneg (echoProcess_nonneg Z_nonneg _ _)] using hu
 
-/-- **A strict gap `θ < ϑ` is a positive escape mass** (`HasSpectralTailProcess.lt_candidateExtremalIndex_iff`),
+/-- **A strict gap `θ < ϑ` is a positive late-return mass** (`HasSpectralTailProcess.lt_candidateExtremalIndex_iff`),
 on the logarithmic echo process, with `rₙ = ⌊√n⌋`: the block condition `𝒜(uₙ)` is discharged by
 `conditionA_logEchoProcess`, and since `θ = 1/2 < 1 = ϑ` the theorem produces `η = 1/2 > 0`. -/
 theorem test_nonvacuous_lt_candidateExtremalIndex_iff (hα : 0 < α) :
-    ∃ u : ℕ → ℝ, ∃ η > 0, HasEscapeMass (P α) (echoProcess logLag Z) u Nat.sqrt η ∧
+    ∃ u : ℕ → ℝ, ∃ η > 0, HasLateReturnMass (P α) (echoProcess logLag Z) u Nat.sqrt η ∧
       (1 / 2 : ℝ) = 1 - η := by
   have := isProbabilityMeasure_P hα
   obtain ⟨hstat, hT, hϑ, hθ⟩ := test_nonvacuous_logEchoProcess_theta_lt_vartheta hα
@@ -644,10 +644,10 @@ theorem test_nonvacuous_logEchoProcess_phase_transition (hα : 0 < α) :
     ∃ u : ℕ → ℝ,
       Tendsto (clusterRatio (P α) (echoProcess logLag Z) u fun n => ⌊Real.log n⌋₊) atTop
           (𝓝 ((1 + min (1 / (1 * α)) 1) / 2)) ∧
-        HasEscapeMass (P α) (echoProcess logLag Z) u (fun n => ⌊Real.log n⌋₊)
+        HasLateReturnMass (P α) (echoProcess logLag Z) u (fun n => ⌊Real.log n⌋₊)
           ((1 - min (1 / (1 * α)) 1) / 2) ∧
         Tendsto (clusterRatio (P α) (echoProcess logLag Z) u Nat.sqrt) atTop (𝓝 (1 / 2)) ∧
-        HasEscapeMass (P α) (echoProcess logLag Z) u Nat.sqrt (1 / 2) := by
+        HasLateReturnMass (P α) (echoProcess logLag Z) u Nat.sqrt (1 / 2) := by
   have := isProbabilityMeasure_P hα
   obtain ⟨u, hu⟩ := exists_levels_logEcho hα
   have hcrit : Tendsto (fun n : ℕ => ((⌊Real.log n⌋₊ : ℕ) : ℝ) / Real.log n) atTop (𝓝 1) :=

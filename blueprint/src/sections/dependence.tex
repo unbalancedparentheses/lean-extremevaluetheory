@@ -414,10 +414,10 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
 \begin{theorem}[Infinite moving averages and AR(1) for every $\alpha > 0$]
   \label{thm:infinite-ma-all-alpha}
   \uses{thm:infinite-ma, cor:ar1}
-  \lean{ExtremeValueTheory.LinearProcess.tsum_mul_le_rpow_tsum, ExtremeValueTheory.LinearProcess.exists_measure_tsum_gt_le_of_lt_one,
-    ExtremeValueTheory.LinearProcess.ae_summable_mul_of_lt_one, ExtremeValueTheory.LinearProcess.tendsto_measureReal_tsum_mul_div_of_lt_one,
-    ExtremeValueTheory.InfiniteMovingAverage.hasExtremalIndex_of_lt_one, ExtremeValueTheory.InfiniteMovingAverage.hasSpectralTailProcess_of_lt_one,
-    ExtremeValueTheory.InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_lt_one, ExtremeValueTheory.AR1.ae_process_eq_of_pos,
+  \lean{ExtremeValueTheory.LinearProcess.tsum_mul_le_rpow_tsum, ExtremeValueTheory.LinearProcess.exists_measure_tsum_gt_le_of_summable_rpow,
+    ExtremeValueTheory.LinearProcess.ae_summable_mul_of_summable_rpow, ExtremeValueTheory.LinearProcess.tendsto_measureReal_tsum_mul_div_of_summable_rpow,
+    ExtremeValueTheory.InfiniteMovingAverage.hasExtremalIndex_of_summable_rpow, ExtremeValueTheory.InfiniteMovingAverage.hasSpectralTailProcess_of_summable_rpow,
+    ExtremeValueTheory.InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_summable_rpow, ExtremeValueTheory.AR1.ae_process_eq_of_pos,
     ExtremeValueTheory.AR1.hasExtremalIndex_of_pos, ExtremeValueTheory.AR1.hasSpectralTailProcess_of_pos}
   \leanok
   The conclusions of Theorem~\ref{thm:infinite-ma} and Corollary~\ref{cor:ar1} hold for every
@@ -526,28 +526,28 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
 
 \section{\texorpdfstring{The gap between $\theta$ and $\vartheta$}{The gap between theta and vartheta}}
 
-\begin{definition}[Escape mass]
-  \label{def:escape-mass}
+\begin{definition}[Late-return mass]
+  \label{def:late-return-mass}
   \uses{thm:theta-eq-vartheta}
-  \lean{ExtremeValueTheory.escapeSet, ExtremeValueTheory.noReturnSet, ExtremeValueTheory.HasEscapeMass, ExtremeValueTheory.HasEscapeMass.unique, ExtremeValueTheory.HasEscapeMass.nonneg}
+  \lean{ExtremeValueTheory.lateReturnSet, ExtremeValueTheory.noReturnSet, ExtremeValueTheory.HasLateReturnMass, ExtremeValueTheory.HasLateReturnMass.unique, ExtremeValueTheory.HasLateReturnMass.nonneg}
   \leanok
-  Given an exceedance at time $0$, let $T_n$ be the first later time at which $|X|$ exceeds $u_n$. The escape at
-  lag $m$ is $\varepsilon_n(m) = \E[(1 - T_n/r_n)^+;\, T_n > m \mid |X_0| > u_n]$, and the escape mass is
+  Given an exceedance at time $0$, let $T_n$ be the first later time at which $|X|$ exceeds $u_n$. The late return at
+  lag $m$ is $\varepsilon_n(m) = \E[(1 - T_n/r_n)^+;\, T_n > m \mid |X_0| > u_n]$, and the late-return mass is
   $\eta = \lim_m \lim_n \varepsilon_n(m)$: the conditional mass of returns inside the block that happen only after
   a quiet stretch growing with the level, invisible to the tail process.
 \end{definition}
 
 \begin{theorem}[Gap formula]
   \label{thm:gap-formula}
-  \uses{def:escape-mass}
-  \lean{ExtremeValueTheory.HasShiftInvariantWindows.clusterRatio_sub_le, ExtremeValueTheory.HasSpectralTailProcess.tendsto_clusterRatio_add_clusterEscape,
-    ExtremeValueTheory.HasSpectralTailProcess.tendsto_clusterRatio_iff, ExtremeValueTheory.HasSpectralTailProcess.hasEscapeMass_le, ExtremeValueTheory.ForwardAntiClusteringAt.hasEscapeMass_zero,
+  \uses{def:late-return-mass}
+  \lean{ExtremeValueTheory.HasShiftInvariantWindows.clusterRatio_sub_le, ExtremeValueTheory.HasSpectralTailProcess.tendsto_clusterRatio_add_clusterLateReturn,
+    ExtremeValueTheory.HasSpectralTailProcess.tendsto_clusterRatio_iff, ExtremeValueTheory.HasSpectralTailProcess.hasLateReturnMass_le, ExtremeValueTheory.ForwardAntiClusteringAt.hasLateReturnMass_zero,
     ExtremeValueTheory.HasShiftInvariantWindows.tendsto_partialMax_iff_tendsto_clusterRatio,
-    ExtremeValueTheory.HasSpectralTailProcess.tendsto_partialMax_iff_hasEscapeMass, ExtremeValueTheory.HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex,
-    ExtremeValueTheory.HasSpectralTailProcess.eq_candidateExtremalIndex_iff_hasEscapeMass_zero, ExtremeValueTheory.HasSpectralTailProcess.lt_candidateExtremalIndex_iff}
+    ExtremeValueTheory.HasSpectralTailProcess.tendsto_partialMax_iff_hasLateReturnMass, ExtremeValueTheory.HasSpectralTailProcess.hasLateReturnMass_of_hasExtremalIndex,
+    ExtremeValueTheory.HasSpectralTailProcess.eq_candidateExtremalIndex_iff_hasLateReturnMass_zero, ExtremeValueTheory.HasSpectralTailProcess.lt_candidateExtremalIndex_iff}
   \leanok
   For a stationary sequence with spectral tail process, $u_n \to \infty$ and $r_n \to \infty$, the cluster ratio
-  $\PR[M_{r_n} > u_n]/(r_n \PR[|X_0| > u_n])$ tends to $L$ if and only if the escape mass is $\vartheta - L$; no
+  $\PR[M_{r_n} > u_n]/(r_n \PR[|X_0| > u_n])$ tends to $L$ if and only if the late-return mass is $\vartheta - L$; no
   anticlustering or mixing is assumed. Forward anticlustering forces $\eta = 0$. Under condition $\mathcal A$,
   $\theta = \vartheta - \eta$; in particular $\theta = \vartheta$ iff $\eta = 0$, and $\theta < \vartheta$ iff $\eta > 0$.
 \end{theorem}
@@ -564,15 +564,15 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
     ExtremeValueTheory.hasShiftInvariantWindows_of_shift, ExtremeValueTheory.echoSource, ExtremeValueTheory.isRegularlyVarying_echoProcess,
     ExtremeValueTheory.hasSpectralTailProcess_echoProcess, ExtremeValueTheory.candidateExtremalIndex_unitSpectral,
     ExtremeValueTheory.hasShiftInvariantWindows_echoProcess, ExtremeValueTheory.echoProcess_theta_lt_vartheta,
-    ExtremeValueTheory.tendsto_clusterRatio_echoProcess, ExtremeValueTheory.hasEscapeMass_echoProcess,
+    ExtremeValueTheory.tendsto_clusterRatio_echoProcess, ExtremeValueTheory.hasLateReturnMass_echoProcess,
     ExtremeValueTheory.not_forwardAntiClusteringAt_echoProcess, ExtremeValueTheory.logEchoProcess_theta_lt_vartheta,
-    ExtremeValueTheory.logEchoProcess_hasEscapeMass, ExtremeValueTheory.logEchoProcess_hasEscapeMass_of_tendsto}
+    ExtremeValueTheory.logEchoProcess_hasLateReturnMass, ExtremeValueTheory.logEchoProcess_hasLateReturnMass_of_tendsto}
   \leanok
   Let $Z_t$ be iid Pareto($\alpha$) and $L(z) = \lfloor \log z \rfloor + 1$. The echo process
   $X_t = \max(Z_t, \max\{Z_s : s < t,\ s + L(Z_s) = t\})$, in which each shock reappears once after a lag that grows
   with its size, is stationary and regularly varying, its spectral tail process is $\Theta_t = \mathbf 1\{t = 0\}$ (so
   $\vartheta = 1$ and $|Y_t| \to 0$), and its extremal index is $\theta = 1/2$. The cluster ratio tends to $1/2$, the
-  escape mass is $1/2 = \vartheta - \theta$, and anticlustering fails. In particular $|Y_t| \to 0$ does not imply
+  late-return mass is $1/2 = \vartheta - \theta$, and anticlustering fails. In particular $|Y_t| \to 0$ does not imply
   $\theta = \vartheta$.
 \end{theorem}
 \begin{proof}
@@ -604,7 +604,7 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
   \label{thm:echo-condition-a}
   \uses{thm:echo-process, thm:mixing-condition-a}
   \lean{ExtremeValueTheory.conditionA_echoProcess, ExtremeValueTheory.conditionA_logEchoProcess,
-    ExtremeValueTheory.logEchoProcess_tendsto_partialMax_of_conditionA, ExtremeValueTheory.logEchoProcess_hasEscapeMass_of_conditionA}
+    ExtremeValueTheory.logEchoProcess_tendsto_partialMax_of_conditionA, ExtremeValueTheory.logEchoProcess_hasLateReturnMass_of_conditionA}
   \leanok
   For long blocks ($\log n = o(r_n)$, $r_n = o(n)$) the echo process satisfies $\mathcal A$, so $\theta = \vartheta - \eta$
   applies through the general theorem: $\PR[M_n \le u_n] \to e^{-\tau/2}$.
@@ -615,16 +615,16 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
   at most $n\PR[L(Z) > l_n]$.
 \end{proof}
 
-\begin{proposition}[A mixture with no escape mass and no extremal index]
+\begin{proposition}[A mixture with no late-return mass and no extremal index]
   \label{prop:mixture}
   \uses{thm:gap-formula}
   \lean{ExtremeValueTheory.hasShiftInvariantWindows_mixture, ExtremeValueTheory.hasSpectralTailProcess_mixture,
-    ExtremeValueTheory.candidateExtremalIndex_mixture, ExtremeValueTheory.tendsto_clusterRatio_mixture, ExtremeValueTheory.hasEscapeMass_mixture,
+    ExtremeValueTheory.candidateExtremalIndex_mixture, ExtremeValueTheory.tendsto_clusterRatio_mixture, ExtremeValueTheory.hasLateReturnMass_mixture,
     ExtremeValueTheory.not_forwardAntiClusteringAt_mixture, ExtremeValueTheory.tendsto_partialMax_mixture,
     ExtremeValueTheory.not_hasExtremalIndex_mixture, ExtremeValueTheory.not_conditionA_mixture}
   \leanok
   Let $X_t = Z_0$ on an event of probability $p \in (0,1)$ independent of the iid Pareto sequence $Z$, and $X_t = Z_t$
-  otherwise. Then $\vartheta = 1 - p$, the cluster ratio tends to $\vartheta$ (escape mass $0$), yet anticlustering and
+  otherwise. Then $\vartheta = 1 - p$, the cluster ratio tends to $\vartheta$ (late-return mass $0$), yet anticlustering and
   condition $\mathcal A$ fail and $\PR[M_n \le u_n] \to p + (1-p)e^{-\tau}$, so no extremal index exists. Hence $\eta = 0$ is
   strictly weaker than anticlustering and does not imply that $\theta$ exists.
 \end{proposition}
@@ -688,7 +688,7 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
 \begin{corollary}[Uniqueness of the extremal index in the examples]
   \label{cor:strict-all}
   \uses{thm:strict-extremal-index, thm:infinite-ma-all-alpha, thm:armax, thm:echo-process}
-  \lean{ExtremeValueTheory.InfiniteMovingAverage.hasExtremalIndex_of_lt_one_strict, ExtremeValueTheory.AR1.hasExtremalIndex_of_pos_strict,
+  \lean{ExtremeValueTheory.InfiniteMovingAverage.hasExtremalIndex_of_summable_rpow_strict, ExtremeValueTheory.AR1.hasExtremalIndex_of_pos_strict,
     ExtremeValueTheory.ARMAX.hasExtremalIndex_candidate_strict, ExtremeValueTheory.logEchoProcess_hasExtremalIndex_strict,
     ExtremeValueTheory.logEchoProcess_not_hasExtremalIndex_one}
   \leanok

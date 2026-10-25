@@ -562,7 +562,7 @@ lemma gpdMeasure_add_mul_lt (hξ : ξ < 0) (hσ₀ : 0 < σ₀) {u : ℝ} (hu : 
   have h' : ξ * ((u - σ₀) / ξ) = u - σ₀ := mul_div_cancel₀ _ hξ.ne
   have : 1 + ξ * ((u - σ₀) / ξ) / σ₀ = u / σ₀ := by
     rw [h']; field_simp; ring
-  simp only [gpdSurvival', hξ.ne, ↓reduceIte, this, max_eq_left (div_pos hu hσ₀).le]
+  simp only [gpdSurvivalAll, hξ.ne, ↓reduceIte, this, max_eq_left (div_pos hu hσ₀).le]
 
 /-- **The largest observations are `o_P(√n)` on the scale of the score**:
 `max_{i<n} 1/(σ₀ + ξ Xᵢ) / √n → 0` in probability. For `ξ > 0` the maximum is at most `1/σ₀`;

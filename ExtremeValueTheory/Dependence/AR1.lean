@@ -15,7 +15,7 @@ moving average `X_t = ∑_{j ≥ 0} φ^j Z_{t-j}`. Its extremal index is
   `θ = 1 - φ^α`
 
 ([EKM, §8.1], [Chernick 1981], [KS20, Chapter 15]), the case `ψ_j = φ^j` of
-`InfiniteMovingAverage.hasExtremalIndex_of_lt_one`: `sup_j φ^{jα} = 1` and
+`InfiniteMovingAverage.hasExtremalIndex_of_summable_rpow`: `sup_j φ^{jα} = 1` and
 `∑_j φ^{jα} = 1 / (1 - φ^α)`. The geometric coefficients satisfy `∑_j φ^{jδ} < ∞` for every
 `δ > 0`, in particular for `δ = min(α, 1) / 2 < min(α, 1)`. No moment or centering assumption on
 the noise is needed (the noise is nonnegative, and the series converges absolutely).
@@ -93,7 +93,7 @@ theorem ae_process_eq_of_pos (hZ : ∀ i, Measurable (Z i))
     simpa only [InfiniteMovingAverage.setOf_lt_abs_eq hZ0] using hL
   rw [ae_all_iff]
   intro t
-  have h := LinearProcess.ae_summable_mul_of_lt_one (Z := fun j : ℕ => Z (t - 1 - j))
+  have h := LinearProcess.ae_summable_mul_of_summable_rpow (Z := fun j : ℕ => Z (t - 1 - j))
     (fun j => hZ _) (hZ 0) (fun j => hident _) hδ hδα hδ1 hL' (ψ := fun j => φ ^ j)
     (by simpa only [abs_of_nonneg (pow_nonneg hφ0.le _)] using summable_rpow hφ0 hφ1 hδ)
   filter_upwards [h] with ω hω
@@ -109,7 +109,7 @@ theorem hasExtremalIndex_of_pos (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun
     (hφ0 : 0 < φ) (hφ1 : φ < 1) :
     HasExtremalIndex (fun n : ℕ => process φ Z n) P (1 - φ ^ α) := by
   obtain ⟨hδ, hδα, hδ1⟩ := half_min_bounds hα
-  have h := InfiniteMovingAverage.hasExtremalIndex_of_lt_one (ψ := fun j => φ ^ j) hZ hind hident
+  have h := InfiniteMovingAverage.hasExtremalIndex_of_summable_rpow (ψ := fun j => φ ^ j) hZ hind hident
     hZ0 hδ hδα hδ1 hL (fun j => pow_nonneg hφ0.le j) (summable_rpow hφ0 hφ1 hδ) ⟨0, by simp⟩
   have hsup : (⨆ j : ℕ, φ ^ j) = 1 := by
     refine le_antisymm (ciSup_le fun j => pow_le_one₀ hφ0.le hφ1.le) ?_
@@ -134,7 +134,7 @@ theorem hasSpectralTailProcess_of_pos (hZ : ∀ i, Measurable (Z i)) (hind : iIn
       (InfiniteMovingAverage.indexLaw (fun j => φ ^ j) α)
       (InfiniteMovingAverage.spectral fun j => φ ^ j) := by
   obtain ⟨hδ, hδα, hδ1⟩ := half_min_bounds hα
-  exact InfiniteMovingAverage.hasSpectralTailProcess_of_lt_one (ψ := fun j => φ ^ j) hZ hind
+  exact InfiniteMovingAverage.hasSpectralTailProcess_of_summable_rpow (ψ := fun j => φ ^ j) hZ hind
     hident hZ0 hδ hδα hδ1 hL (fun j => pow_nonneg hφ0.le j) (summable_rpow hφ0 hφ1 hδ) ⟨0, by simp⟩
 
 /-- **The AR(1) recursion holds almost surely**: under the hypotheses of the extremal index

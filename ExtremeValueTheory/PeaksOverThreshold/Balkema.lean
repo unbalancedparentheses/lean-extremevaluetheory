@@ -33,9 +33,9 @@ survival function and `x_F` is the right endpoint of `F`.
 
 ## Main definitions
 
-* `ExtremeValueTheory.gpdSurvival'`: the GPD survival function `(max (1 + ξ x / β) 0) ^ (-1/ξ)`
-  for all shapes `ξ ∈ ℝ` (agreeing with `gpdSurvival` for `ξ ≥ 0`, `x ≥ 0`:
-  `gpdSurvival'_eq_gpdSurvival`).
+* `ExtremeValueTheory.gpdSurvivalAll`: the GPD survival function `(max (1 + ξ x / β) 0) ^ (-1/ξ)`
+  for all shapes `ξ ∈ ℝ` (agreeing with `gpdSurvivalNonneg` for `ξ ≥ 0`, `x ≥ 0`:
+  `gpdSurvivalAll_eq_gpdSurvivalNonneg`).
 * `CumulativeDistributionFunction.IsInMDAGEV F ξ`: `F` is in the maximum domain of attraction
   of `H_ξ` (Fréchet with `α = 1/ξ` for `ξ > 0`, Weibull with `α = -1/ξ` for `ξ < 0`, Gumbel
   for `ξ = 0`).
@@ -207,45 +207,45 @@ theorem isRegularlyVarying_of_one_le {h : ℝ → ℝ} {ρ : ℝ} (hpos : ∀ᶠ
 /-- The survival function of the generalized Pareto distribution with shape `ξ ∈ ℝ` and scale
 `β`: `(max (1 + ξ x / β) 0) ^ (-(1 / ξ))` if `ξ ≠ 0` and `exp (-x / β)` if `ξ = 0`. For
 `ξ < 0` it vanishes for `x ≥ -β / ξ`, the right endpoint of the GPD. -/
-noncomputable def gpdSurvival' (ξ β x : ℝ) : ℝ :=
+noncomputable def gpdSurvivalAll (ξ β x : ℝ) : ℝ :=
   if ξ = 0 then exp (-x / β) else (max (1 + ξ * x / β) 0) ^ (-(1 / ξ))
 
 section GPD
 
 variable {ξ β x : ℝ}
 
-/-- `gpdSurvival'` agrees with `gpdSurvival` for `ξ ≥ 0`, `β > 0`, `x ≥ 0`. -/
-theorem gpdSurvival'_eq_gpdSurvival (hξ : 0 ≤ ξ) (hβ : 0 < β) (hx : 0 ≤ x) :
-    gpdSurvival' ξ β x = gpdSurvival ξ β x := by
-  unfold gpdSurvival' gpdSurvival
+/-- `gpdSurvivalAll` agrees with `gpdSurvivalNonneg` for `ξ ≥ 0`, `β > 0`, `x ≥ 0`. -/
+theorem gpdSurvivalAll_eq_gpdSurvivalNonneg (hξ : 0 ≤ ξ) (hβ : 0 < β) (hx : 0 ≤ x) :
+    gpdSurvivalAll ξ β x = gpdSurvivalNonneg ξ β x := by
+  unfold gpdSurvivalAll gpdSurvivalNonneg
   split_ifs
   · rfl
   · have : 0 ≤ ξ * x / β := by positivity
     rw [max_eq_left (by linarith)]
 
-@[simp] theorem gpdSurvival'_zero_left (β x : ℝ) : gpdSurvival' 0 β x = exp (-x / β) := by
-  simp [gpdSurvival']
+@[simp] theorem gpdSurvivalAll_zero_left (β x : ℝ) : gpdSurvivalAll 0 β x = exp (-x / β) := by
+  simp [gpdSurvivalAll]
 
 /-- For `α > 0`, `Ḡ_{-1/α,1}(x) = (max (1 - x / α) 0) ^ α`. -/
-theorem gpdSurvival'_neg_inv {α : ℝ} (hα : 0 < α) (x : ℝ) :
-    gpdSurvival' (-1 / α) 1 x = (max (1 - x / α) 0) ^ α := by
+theorem gpdSurvivalAll_neg_inv {α : ℝ} (hα : 0 < α) (x : ℝ) :
+    gpdSurvivalAll (-1 / α) 1 x = (max (1 - x / α) 0) ^ α := by
   have hne : (-1 / α) ≠ 0 := div_ne_zero (by norm_num) hα.ne'
-  simp only [gpdSurvival', hne, ↓reduceIte]
+  simp only [gpdSurvivalAll, hne, ↓reduceIte]
   congr 1
   · congr 1
     ring
   · field_simp
 
-theorem gpdSurvival'_nonneg (ξ β x : ℝ) : 0 ≤ gpdSurvival' ξ β x := by
-  unfold gpdSurvival'
+theorem gpdSurvivalAll_nonneg (ξ β x : ℝ) : 0 ≤ gpdSurvivalAll ξ β x := by
+  unfold gpdSurvivalAll
   split_ifs
   · exact (exp_pos _).le
   · exact rpow_nonneg (le_max_right _ _) _
 
-theorem gpdSurvival'_antitoneOn (hβ : 0 < β) : AntitoneOn (gpdSurvival' ξ β) (Ici 0) := by
+theorem gpdSurvivalAll_antitoneOn (hβ : 0 < β) : AntitoneOn (gpdSurvivalAll ξ β) (Ici 0) := by
   rcases lt_or_ge ξ 0 with hξ | hξ
   · intro x hx y hy hxy
-    unfold gpdSurvival'
+    unfold gpdSurvivalAll
     simp only [hξ.ne, ↓reduceIte]
     have hp : 0 ≤ -(1 / ξ) := by
       have : 1 / ξ < 0 := one_div_neg.2 hξ
@@ -255,31 +255,31 @@ theorem gpdSurvival'_antitoneOn (hβ : 0 < β) : AntitoneOn (gpdSurvival' ξ β)
       div_le_div_of_nonneg_right (mul_le_mul_of_nonpos_left hxy hξ.le) hβ.le
     linarith
   · intro x hx y hy hxy
-    rw [gpdSurvival'_eq_gpdSurvival hξ hβ hx, gpdSurvival'_eq_gpdSurvival hξ hβ hy]
-    exact gpdSurvival_antitoneOn hξ hβ hx hy hxy
+    rw [gpdSurvivalAll_eq_gpdSurvivalNonneg hξ hβ hx, gpdSurvivalAll_eq_gpdSurvivalNonneg hξ hβ hy]
+    exact gpdSurvivalNonneg_antitoneOn hξ hβ hx hy hxy
 
-theorem gpdSurvival'_zero_right (ξ β : ℝ) : gpdSurvival' ξ β 0 = 1 := by
-  unfold gpdSurvival'
+theorem gpdSurvivalAll_zero_right (ξ β : ℝ) : gpdSurvivalAll ξ β 0 = 1 := by
+  unfold gpdSurvivalAll
   split_ifs <;> simp
 
-theorem gpdSurvival'_le_one (hβ : 0 < β) (hx : 0 ≤ x) : gpdSurvival' ξ β x ≤ 1 := by
-  simpa [gpdSurvival'_zero_right] using
-    gpdSurvival'_antitoneOn (ξ := ξ) hβ (mem_Ici.2 le_rfl) (mem_Ici.2 hx) hx
+theorem gpdSurvivalAll_le_one (hβ : 0 < β) (hx : 0 ≤ x) : gpdSurvivalAll ξ β x ≤ 1 := by
+  simpa [gpdSurvivalAll_zero_right] using
+    gpdSurvivalAll_antitoneOn (ξ := ξ) hβ (mem_Ici.2 le_rfl) (mem_Ici.2 hx) hx
 
-theorem gpdSurvival'_continuousOn (hβ : 0 < β) : ContinuousOn (gpdSurvival' ξ β) (Ici 0) := by
+theorem gpdSurvivalAll_continuousOn (hβ : 0 < β) : ContinuousOn (gpdSurvivalAll ξ β) (Ici 0) := by
   rcases lt_or_ge ξ 0 with hξ | hξ
-  · have : gpdSurvival' ξ β = fun x => (max (1 + ξ * x / β) 0) ^ (-(1 / ξ)) := by
+  · have : gpdSurvivalAll ξ β = fun x => (max (1 + ξ * x / β) 0) ^ (-(1 / ξ)) := by
       funext x
-      simp only [gpdSurvival', hξ.ne, ↓reduceIte]
+      simp only [gpdSurvivalAll, hξ.ne, ↓reduceIte]
     rw [this]
     refine ContinuousOn.rpow_const (by fun_prop) fun x _ => Or.inr ?_
     have : 1 / ξ < 0 := one_div_neg.2 hξ
     linarith
-  · exact (gpdSurvival_continuousOn hξ hβ).congr fun x hx =>
-      gpdSurvival'_eq_gpdSurvival hξ hβ hx
+  · exact (gpdSurvivalNonneg_continuousOn hξ hβ).congr fun x hx =>
+      gpdSurvivalAll_eq_gpdSurvivalNonneg hξ hβ hx
 
-theorem gpdSurvival'_tendsto_atTop (hβ : 0 < β) :
-    Tendsto (gpdSurvival' ξ β) atTop (𝓝 0) := by
+theorem gpdSurvivalAll_tendsto_atTop (hβ : 0 < β) :
+    Tendsto (gpdSurvivalAll ξ β) atTop (𝓝 0) := by
   rcases lt_or_ge ξ 0 with hξ | hξ
   · have h1 : Tendsto (fun x : ℝ => 1 + ξ * x / β) atTop atBot :=
       tendsto_atBot_add_const_left _ _
@@ -289,11 +289,11 @@ theorem gpdSurvival'_tendsto_atTop (hβ : 0 < β) :
     have hp : -(1 / ξ) ≠ 0 := by
       have : 1 / ξ < 0 := one_div_neg.2 hξ
       linarith
-    simp only [gpdSurvival', hξ.ne, ↓reduceIte]
+    simp only [gpdSurvivalAll, hξ.ne, ↓reduceIte]
     rw [max_eq_right hx, zero_rpow hp]
-  · refine (gpdSurvival_tendsto_atTop hξ hβ).congr' ?_
+  · refine (gpdSurvivalNonneg_tendsto_atTop hξ hβ).congr' ?_
     filter_upwards [eventually_ge_atTop 0] with x hx
-    exact (gpdSurvival'_eq_gpdSurvival hξ hβ hx).symm
+    exact (gpdSurvivalAll_eq_gpdSurvivalNonneg hξ hβ hx).symm
 
 end GPD
 
@@ -337,7 +337,7 @@ the maximum domain of attraction of the Fréchet distribution `Φ_α` if and onl
 theorem isInMDAFrechet_iff_tendstoUniformlyOn_excessSurvival {α : ℝ} (hα : 0 < α) :
     F.IsInMDAFrechet hα ↔
       TendstoUniformlyOn (fun u x ↦ excessSurvival (fun y ↦ 1 - F y) u (u / α * x))
-        (gpdSurvival (1 / α) 1) atTop (Ici 0) := by
+        (gpdSurvivalNonneg (1 / α) 1) atTop (Ici 0) := by
   rw [F.isInMDAFrechet_iff hα]
   constructor
   · intro hRV
@@ -345,7 +345,7 @@ theorem isInMDAFrechet_iff_tendstoUniformlyOn_excessSurvival {α : ℝ} (hα : 0
   · intro hU
     have hpt : ∀ x, 0 ≤ x → Tendsto (fun u ↦ excessSurvival (fun y ↦ 1 - F y) u (u / α * x))
         atTop (𝓝 ((1 + x / α) ^ (-α))) := fun x hx ↦ by
-      rw [← gpdSurvival_inv_one hα.ne']
+      rw [← gpdSurvivalNonneg_inv_one hα.ne']
       exact hU.tendsto_at (mem_Ici.2 hx)
     have hpos : ∀ᶠ u in atTop, 0 < 1 - F u := by
       have h0 := hpt 0 le_rfl
@@ -368,14 +368,14 @@ theorem isInMDAFrechet_iff_tendstoUniformlyOn_excessSurvival {α : ℝ} (hα : 0
 theorem isInMDAFrechet_iff_tendsto_sup_excessSurvival {α : ℝ} (hα : 0 < α) :
     F.IsInMDAFrechet hα ↔
       Tendsto (fun u ↦ ⨆ x ∈ Ici (0 : ℝ),
-        |excessSurvival (fun y ↦ 1 - F y) u (u / α * x) - gpdSurvival (1 / α) 1 x|)
+        |excessSurvival (fun y ↦ 1 - F y) u (u / α * x) - gpdSurvivalNonneg (1 / α) 1 x|)
         atTop (𝓝 0) := by
   rw [tendsto_iSup_abs_sub_iff (B := 1), F.isInMDAFrechet_iff_tendstoUniformlyOn_excessSurvival hα]
   filter_upwards [eventually_ge_atTop 0] with u hu x hx
   have hx' : (0 : ℝ) ≤ x := hx
   have hξ : (0 : ℝ) ≤ 1 / α := by positivity
   exact abs_sub_le_one_of_mem (F.excess_nonneg _ _) (F.excess_le_one (by positivity))
-    (gpdSurvival_pos hξ one_pos hx').le (gpdSurvival_le_one hξ one_pos hx')
+    (gpdSurvivalNonneg_pos hξ one_pos hx').le (gpdSurvivalNonneg_le_one hξ one_pos hx')
 
 /-! ### Weibull case -/
 
@@ -405,7 +405,7 @@ survival function `x ↦ F̄ (u + β(u) x) / F̄ u` converges to the GPD surviva
 theorem isInMDAWeibull_iff_tendstoUniformlyOn_excessSurvival {α : ℝ} (hα : 0 < α) :
     F.IsInMDAWeibull hα ↔ ∃ xF : ℝ, F xF = 1 ∧ (∀ x < xF, F x < 1) ∧
       TendstoUniformlyOn (fun u x ↦ excessSurvival (fun y ↦ 1 - F y) u ((xF - u) / α * x))
-        (gpdSurvival' (-1 / α) 1) (𝓝[<] xF) (Ici 0) := by
+        (gpdSurvivalAll (-1 / α) 1) (𝓝[<] xF) (Ici 0) := by
   rw [F.isInMDAWeibull_iff hα]
   refine exists_congr fun xF ↦ and_congr_right fun h1 ↦ and_congr_right fun hlt ↦ ?_
   have hF1 : ∀ y, xF ≤ y → 1 - F y = 0 := fun y hy ↦ by
@@ -413,14 +413,14 @@ theorem isInMDAWeibull_iff_tendstoUniformlyOn_excessSurvival {α : ℝ} (hα : 0
     rw [this, sub_self]
   constructor
   · intro hRV
-    refine tendstoUniformlyOn_Ici_of_antitoneOn (c := 0) ?_ ?_ (gpdSurvival'_antitoneOn one_pos)
-      (gpdSurvival'_continuousOn one_pos) (gpdSurvival'_tendsto_atTop one_pos) ?_
+    refine tendstoUniformlyOn_Ici_of_antitoneOn (c := 0) ?_ ?_ (gpdSurvivalAll_antitoneOn one_pos)
+      (gpdSurvivalAll_continuousOn one_pos) (gpdSurvivalAll_tendsto_atTop one_pos) ?_
     · filter_upwards [self_mem_nhdsWithin] with u hu
       exact F.excess_antitoneOn (div_nonneg (sub_nonneg.2 (le_of_lt hu)) hα.le)
     · exact Eventually.of_forall fun u x _ ↦ F.excess_nonneg _ _
     · intro x hx
       have hx' : (0 : ℝ) ≤ x := hx
-      rw [gpdSurvival'_neg_inv hα]
+      rw [gpdSurvivalAll_neg_inv hα]
       rcases lt_or_ge x α with hxα | hxα
       · have hb : 0 < 1 - x / α := by
           rw [sub_pos, div_lt_one hα]
@@ -460,7 +460,7 @@ theorem isInMDAWeibull_iff_tendstoUniformlyOn_excessSurvival {α : ℝ} (hα : 0
     have hx : (0 : ℝ) ≤ α * (1 - c⁻¹) :=
       mul_nonneg hα.le (sub_nonneg.2 (inv_le_one_of_one_le₀ hc))
     have h := (hU.tendsto_at (mem_Ici.2 hx)).comp (tendsto_sub_inv_atTop xF)
-    rw [gpdSurvival'_neg_inv hα, show 1 - α * (1 - c⁻¹) / α = c⁻¹ by field_simp; ring,
+    rw [gpdSurvivalAll_neg_inv hα, show 1 - α * (1 - c⁻¹) / α = c⁻¹ by field_simp; ring,
       max_eq_left hci.le, Real.inv_rpow hc0.le, ← Real.rpow_neg hc0.le] at h
     refine h.congr' ?_
     filter_upwards [eventually_gt_atTop 0] with t ht
@@ -473,7 +473,7 @@ theorem isInMDAWeibull_iff_tendstoUniformlyOn_excessSurvival {α : ℝ} (hα : 0
 theorem isInMDAWeibull_iff_tendsto_sup_excessSurvival {α : ℝ} (hα : 0 < α) :
     F.IsInMDAWeibull hα ↔ ∃ xF : ℝ, F xF = 1 ∧ (∀ x < xF, F x < 1) ∧
       Tendsto (fun u ↦ ⨆ x ∈ Ici (0 : ℝ),
-        |excessSurvival (fun y ↦ 1 - F y) u ((xF - u) / α * x) - gpdSurvival' (-1 / α) 1 x|)
+        |excessSurvival (fun y ↦ 1 - F y) u ((xF - u) / α * x) - gpdSurvivalAll (-1 / α) 1 x|)
         (𝓝[<] xF) (𝓝 0) := by
   rw [F.isInMDAWeibull_iff_tendstoUniformlyOn_excessSurvival hα]
   refine exists_congr fun xF ↦ and_congr_right fun _ ↦ and_congr_right fun _ ↦ ?_
@@ -482,8 +482,8 @@ theorem isInMDAWeibull_iff_tendsto_sup_excessSurvival {α : ℝ} (hα : 0 < α) 
   have hx' : (0 : ℝ) ≤ x := hx
   have hu' : 0 ≤ xF - u := (sub_pos.2 hu).le
   exact abs_sub_le_one_of_mem (F.excess_nonneg _ _)
-    (F.excess_le_one (mul_nonneg (div_nonneg hu' hα.le) hx')) (gpdSurvival'_nonneg _ _ _)
-    (gpdSurvival'_le_one one_pos hx')
+    (F.excess_le_one (mul_nonneg (div_nonneg hu' hα.le) hx')) (gpdSurvivalAll_nonneg _ _ _)
+    (gpdSurvivalAll_le_one one_pos hx')
 
 /-! ### Gumbel case -/
 
@@ -497,14 +497,14 @@ theorem tendstoUniformlyOn_excessSurvival_of_auxiliary {L : Filter ℝ} {f : ℝ
     (h : ∀ x, 0 ≤ x → Tendsto (fun t ↦ (1 - F (t + x * f t)) / (1 - F t)) L
       (𝓝 (Real.exp (-x)))) :
     TendstoUniformlyOn (fun u x ↦ excessSurvival (fun y ↦ 1 - F y) u (f u * x))
-      (gpdSurvival' 0 1) L (Ici 0) := by
-  refine tendstoUniformlyOn_Ici_of_antitoneOn (c := 0) ?_ ?_ (gpdSurvival'_antitoneOn one_pos)
-    (gpdSurvival'_continuousOn one_pos) (gpdSurvival'_tendsto_atTop one_pos) ?_
+      (gpdSurvivalAll 0 1) L (Ici 0) := by
+  refine tendstoUniformlyOn_Ici_of_antitoneOn (c := 0) ?_ ?_ (gpdSurvivalAll_antitoneOn one_pos)
+    (gpdSurvivalAll_continuousOn one_pos) (gpdSurvivalAll_tendsto_atTop one_pos) ?_
   · filter_upwards [hf] with u hu
     exact F.excess_antitoneOn hu.le
   · exact Eventually.of_forall fun u x _ ↦ F.excess_nonneg _ _
   · intro x hx
-    rw [gpdSurvival'_zero_left, div_one]
+    rw [gpdSurvivalAll_zero_left, div_one]
     refine (h x hx).congr fun u ↦ ?_
     simp only [excessSurvival, mul_comm]
 
@@ -515,14 +515,14 @@ theorem tendsto_sup_excessSurvival_of_auxiliary {L : Filter ℝ} {f : ℝ → �
       (𝓝 (Real.exp (-x)))) :
     Tendsto (fun u ↦ ⨆ x ∈ Ici (0 : ℝ),
       |excessSurvival (fun y ↦ 1 - F y) u (f u * x) - Real.exp (-x)|) L (𝓝 0) := by
-  have hG : ∀ x : ℝ, Real.exp (-x) = gpdSurvival' 0 1 x := fun x ↦ by simp
+  have hG : ∀ x : ℝ, Real.exp (-x) = gpdSurvivalAll 0 1 x := fun x ↦ by simp
   simp only [hG]
   rw [tendsto_iSup_abs_sub_iff (B := 1)]
   · exact F.tendstoUniformlyOn_excessSurvival_of_auxiliary hf h
   · filter_upwards [hf] with u hu x hx
     have hx' : (0 : ℝ) ≤ x := hx
     exact abs_sub_le_one_of_mem (F.excess_nonneg _ _) (F.excess_le_one (by positivity))
-      (gpdSurvival'_nonneg _ _ _) (gpdSurvival'_le_one one_pos hx')
+      (gpdSurvivalAll_nonneg _ _ _) (gpdSurvivalAll_le_one one_pos hx')
 
 /-- **Gumbel case, infinite right endpoint**: an auxiliary function `f` (with the relation for
 all real `x`) gives both membership in the Gumbel domain of attraction (via
@@ -533,7 +533,7 @@ theorem isInMDAGumbel_and_tendstoUniformlyOn_of_auxiliary_atTop (hF : ∀ x, F x
     (h : ∀ x, Tendsto (fun t ↦ (1 - F (t + x * f t)) / (1 - F t)) atTop
       (𝓝 (Real.exp (-x)))) :
     F.IsInMDAGumbel ∧ TendstoUniformlyOn
-      (fun u x ↦ excessSurvival (fun y ↦ 1 - F y) u (f u * x)) (gpdSurvival' 0 1) atTop
+      (fun u x ↦ excessSurvival (fun y ↦ 1 - F y) u (f u * x)) (gpdSurvivalAll 0 1) atTop
       (Ici 0) :=
   ⟨F.isInMDAGumbel_of_auxiliary_atTop hF hf h,
     F.tendstoUniformlyOn_excessSurvival_of_auxiliary hf fun x _ ↦ h x⟩
@@ -548,7 +548,7 @@ theorem isInMDAGumbel_and_tendstoUniformlyOn_of_auxiliary_nhdsLT {xF : ℝ}
     (h : ∀ x, Tendsto (fun t ↦ (1 - F (t + x * f t)) / (1 - F t)) (𝓝[<] xF)
       (𝓝 (Real.exp (-x)))) :
     F.IsInMDAGumbel ∧ TendstoUniformlyOn
-      (fun u x ↦ excessSurvival (fun y ↦ 1 - F y) u (f u * x)) (gpdSurvival' 0 1) (𝓝[<] xF)
+      (fun u x ↦ excessSurvival (fun y ↦ 1 - F y) u (f u * x)) (gpdSurvivalAll 0 1) (𝓝[<] xF)
       (Ici 0) :=
   ⟨F.isInMDAGumbel_of_auxiliary_nhdsLT hlt heq hf h,
     F.tendstoUniformlyOn_excessSurvival_of_auxiliary hf fun x _ ↦ h x⟩
@@ -598,7 +598,7 @@ theorem exists_tendstoUniformlyOn_excessSurvival_of_isInMDAGEV {ξ : ℝ} (hF : 
         (𝓝 (Real.exp (-x)))) :
     ∃ β : ℝ → ℝ, (∀ᶠ u in F.upperEndpointFilter, 0 < β u) ∧
       TendstoUniformlyOn (fun u x ↦ excessSurvival (fun y ↦ 1 - F y) u (β u * x))
-        (gpdSurvival' ξ 1) F.upperEndpointFilter (Ici 0) := by
+        (gpdSurvivalAll ξ 1) F.upperEndpointFilter (Ici 0) := by
   unfold IsInMDAGEV at hF
   split_ifs at hF with hξ hξ'
   · -- Fréchet
@@ -612,7 +612,7 @@ theorem exists_tendstoUniformlyOn_excessSurvival_of_isInMDAGEV {ξ : ℝ} (hF : 
       positivity
     · have hU := (F.isInMDAFrechet_iff_tendstoUniformlyOn_excessSurvival hα).1 hF
       rw [one_div_one_div] at hU
-      exact hU.congr_right fun x hx ↦ (gpdSurvival'_eq_gpdSurvival hξ.le one_pos hx).symm
+      exact hU.congr_right fun x hx ↦ (gpdSurvivalAll_eq_gpdSurvivalNonneg hξ.le one_pos hx).symm
   · -- Weibull
     have hα : 0 < -1 / ξ := div_pos_of_neg_of_neg neg_one_lt_zero hξ'
     obtain ⟨xF, h1, hlt, hU⟩ :=
@@ -651,9 +651,26 @@ function with shape `ξ`, uniformly in `x ≥ 0`, as `u` tends to the right endp
 theorem exists_tendstoUniformlyOn_excessSurvival_of_isInMDAGEV' {ξ : ℝ} (hF : F.IsInMDAGEV ξ) :
     ∃ β : ℝ → ℝ, (∀ᶠ u in F.upperEndpointFilter, 0 < β u) ∧
       TendstoUniformlyOn (fun u x ↦ excessSurvival (fun y ↦ 1 - F y) u (β u * x))
-        (gpdSurvival' ξ 1) F.upperEndpointFilter (Ici 0) := by
+        (gpdSurvivalAll ξ 1) F.upperEndpointFilter (Ici 0) := by
   refine F.exists_tendstoUniformlyOn_excessSurvival_of_isInMDAGEV hF fun hξ ↦ ?_
   subst hξ
   exact F.exists_auxiliary_upperEndpointFilter_of_isInMDAGumbel (by simpa [IsInMDAGEV] using hF)
 
 end CumulativeDistributionFunction
+
+/-! ### Deprecated names -/
+
+namespace ExtremeValueTheory
+
+@[deprecated (since := "2026-10-23")] alias gpdSurvival' := gpdSurvivalAll
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_eq_gpdSurvival := gpdSurvivalAll_eq_gpdSurvivalNonneg
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_zero_left := gpdSurvivalAll_zero_left
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_neg_inv := gpdSurvivalAll_neg_inv
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_nonneg := gpdSurvivalAll_nonneg
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_antitoneOn := gpdSurvivalAll_antitoneOn
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_zero_right := gpdSurvivalAll_zero_right
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_le_one := gpdSurvivalAll_le_one
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_continuousOn := gpdSurvivalAll_continuousOn
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_tendsto_atTop := gpdSurvivalAll_tendsto_atTop
+
+end ExtremeValueTheory

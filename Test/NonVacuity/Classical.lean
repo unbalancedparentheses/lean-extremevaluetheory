@@ -95,11 +95,11 @@ theorem test_nonvacuous_isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival 
     (∃ β : ℝ → ℝ, (∀ᶠ u in standardExponentialCDF.upperEndpointFilter, 0 < β u) ∧
       TendstoUniformlyOn
         (fun u x ↦ excessSurvival (fun y ↦ 1 - standardExponentialCDF y) u (β u * x))
-        (gpdSurvival' 0 1) standardExponentialCDF.upperEndpointFilter (Ici 0)) ∧
+        (gpdSurvivalAll 0 1) standardExponentialCDF.upperEndpointFilter (Ici 0)) ∧
     (∃ β : ℝ → ℝ, (∀ᶠ u in (paretoCDF (two_pos : (0 : ℝ) < 2)).upperEndpointFilter, 0 < β u) ∧
       TendstoUniformlyOn
         (fun u x ↦ excessSurvival (fun y ↦ 1 - paretoCDF (two_pos : (0 : ℝ) < 2) y) u (β u * x))
-        (gpdSurvival' (1 / 2) 1) (paretoCDF (two_pos : (0 : ℝ) < 2)).upperEndpointFilter
+        (gpdSurvivalAll (1 / 2) 1) (paretoCDF (two_pos : (0 : ℝ) < 2)).upperEndpointFilter
         (Ici 0)) :=
   ⟨(isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival _ 0).1
       isInMDAGEV_zero_standardExponentialCDF,

@@ -295,7 +295,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbability
 include hα hZ hind hlaw hpos in
 /-- **For the power-lag echo process the block condition fails for short blocks.** With
 `n P(X_0 > uₙ) → τ > 0` and `log rₙ / log n → ρ ∈ (0, γ / α)`, `A(uₙ)` fails along `rₙ`:
-anticlustering holds there, so the escape mass is `0`, whereas `A(uₙ)` together with `θ = 1/2`
+anticlustering holds there, so the late-return mass is `0`, whereas `A(uₙ)` together with `θ = 1/2`
 would force it to be `ϑ - θ = 1/2`. -/
 theorem powEchoProcess_not_conditionA (hγ : 0 < γ) (hγα : γ < α) {u : ℕ → ℝ} {τ : ℝ}
     (hτ0 : 0 < τ)
@@ -328,10 +328,10 @@ theorem powEchoProcess_not_conditionA (hγ : 0 < γ) (hγα : γ < α) {u : ℕ 
     have hn' : (0 : ℝ) < n := by exact_mod_cast hn
     simp only [Pi.div_apply]
     field_simp
-  have h := hT.hasEscapeMass_of_hasExtremalIndex hα (measurable_echoProcess hZ (measurable_powLag γ))
+  have h := hT.hasLateReturnMass_of_hasExtremalIndex hα (measurable_echoProcess hZ (measurable_powLag γ))
     measurable_unitSpectral hstat hθ' hτ' hτ0 hrr hrn hA
   rw [candidateExtremalIndex_unitSpectral hα] at h
-  have := h.unique (hAC.forward.hasEscapeMass_zero hrr)
+  have := h.unique (hAC.forward.hasLateReturnMass_zero hrr)
   norm_num at this
 
 include hα hZ hind hlaw hpos in
@@ -419,7 +419,7 @@ theorem logEchoProcess_betaMixing_incompatible :
         logEchoProcess_not_conditionA hα hZ hind hlaw hpos hτ0 hτ hr le_rfl hrlog⟩,
       fun _ hc hrlog => logEchoProcess_not_conditionA hα hZ hind hlaw hpos hτ0 hτ hr hc.le hrlog,
       fun hrn hlogr => ⟨conditionA_logEchoProcess hα hZ hind hlaw hpos hτ hr hrn hlogr,
-        (logEchoProcess_hasEscapeMass_of_tendsto hα hZ hind hlaw hpos hτ0 hτ hr hrn
+        (logEchoProcess_hasLateReturnMass_of_tendsto hα hZ hind hlaw hpos hτ0 hτ hr hrn
           hlogr).2.2⟩⟩⟩
 
 end Incompatible

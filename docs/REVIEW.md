@@ -156,17 +156,17 @@ instead of `lim_m limsup_n P(…| |X_0| > uₙ) = 0`. The two-sided version `Ant
 `⌊n/rₙ⌋` is ℕ-division. If `rₙ = n` the condition is trivially true; every theorem that uses it also
 assumes `rₙ → ∞` and `rₙ/n → 0`.
 
-**D7. Cluster ratio and escape mass** (`Anticlustering.lean:886`, `ThetaGap.lean:85–110`). New
+**D7. Cluster ratio and late-return mass** (`Anticlustering.lean:886`, `ThetaGap.lean:85–110`). New
 definitions.
 
   `CRₙ = P(max_{0≤t<rₙ} |X_t| > uₙ) / (rₙ P(|X_0| > uₙ))`.
 
-For `m < k`, the *escape set* is the event `{|X_0| > uₙ, |X_t| ≤ uₙ for 0 < t ≤ m, |X_t| > uₙ for
-some m < t ≤ k}`. The *escape at lag m* is
+For `m < k`, the *late-return set* is the event `{|X_0| > uₙ, |X_t| ≤ uₙ for 0 < t ≤ m, |X_t| > uₙ for
+some m < t ≤ k}`. The *late return at lag m* is
 
-  `εₙ(m) = (1/rₙ) Σ_{k<rₙ} P(escape set(m, k)) / P(|X_0| > uₙ) = E[(1 − Tₙ/rₙ)⁺ ; Tₙ > m | |X_0| > uₙ]`,
+  `εₙ(m) = (1/rₙ) Σ_{k<rₙ} P(late-return set(m, k)) / P(|X_0| > uₙ) = E[(1 − Tₙ/rₙ)⁺ ; Tₙ > m | |X_0| > uₙ]`,
 
-with `Tₙ` the first return time above `uₙ` after time 0. `HasEscapeMass P X u r η` means
+with `Tₙ` the first return time above `uₙ` after time 0. `HasLateReturnMass P X u r η` means
 `η = lim_{m→∞} lim_{n→∞} εₙ(m)`, in the δ–m form: for every `δ > 0` there is `m₀` such that for
 all `m ≥ m₀`, eventually `|εₙ(m) − η| ≤ δ`. In words, `η` is the conditional mass of returns
 above the threshold within the block at lags that grow with the level.
@@ -321,7 +321,7 @@ sequences it needs come from regular variation.
    `𝒜`), in which case the Lean version is a strengthening?
 2. Is this statement for `|X|` (rather than `X`, or `X⁺`) the form you would use?
 
-## R7. Gap formula: cluster ratio → `L` iff escape mass `= ϑ − L` ★ (new)
+## R7. Gap formula: cluster ratio → `L` iff late-return mass `= ϑ − L` ★ (new)
 
 **(a) Literature.** None. New result. Related to [BS09, §4], [KS20, §7.5], and to the question in
 [BKW24, §1] of when `θ < ϑ` happens.
@@ -329,7 +329,7 @@ sequences it needs come from regular variation.
 **(b) Lean, in math.** Let `α > 0`; `X_t`, `Θ_t` measurable; `X` stationary; `X` has spectral tail
 process `Θ`; `uₙ → ∞`; `rₙ → ∞`. Then for every real `L`:
 
-  `CRₙ → L`  ⟺  `X` has escape mass `η = ϑ − L` at `(uₙ, rₙ)` (D7).
+  `CRₙ → L`  ⟺  `X` has late-return mass `η = ϑ − L` at `(uₙ, rₙ)` (D7).
 
 Lean: `ExtremeValueTheory.HasSpectralTailProcess.tendsto_clusterRatio_iff`,
 `Dependence/ThetaGap.lean:311`.
@@ -344,7 +344,7 @@ converse fails: the mixture process (R10) has `η = 0` but no anticlustering.
 2. Is `η`, defined by the weight `(1 − Tₙ/rₙ)⁺`, a natural quantity to you? Would a different
    normalization be more standard?
 
-## R8. `θ < ϑ` iff the escape mass is positive, and then `θ = ϑ − η` ★ (new)
+## R8. `θ < ϑ` iff the late-return mass is positive, and then `θ = ϑ − η` ★ (new)
 
 **(a) Literature.** None; new.
 
@@ -352,7 +352,7 @@ converse fails: the mixture process (R10) has `η = 0` but no anticlustering.
 process `Θ`; `(|X_n|)` has extremal index `θ`; `uₙ` with `n P(|X_0| > uₙ) → τ` and `τ > 0`;
 `rₙ → ∞`, `rₙ/n → 0`; and `ConditionA` for `|X|` at `(uₙ, rₙ)`. Then
 
-  `θ < ϑ`  ⟺  there is `η > 0` such that `X` has escape mass `η` at `(uₙ, rₙ)` and `θ = ϑ − η`.
+  `θ < ϑ`  ⟺  there is `η > 0` such that `X` has late-return mass `η` at `(uₙ, rₙ)` and `θ = ϑ − η`.
 
 Lean: `ExtremeValueTheory.HasSpectralTailProcess.lt_candidateExtremalIndex_iff`,
 `Dependence/ThetaGap.lean:475`.
@@ -411,10 +411,10 @@ phase transition of their model occur for other regularly varying processes?
 *Phase transition* (`logEchoProcess_phase_transition`, `Dependence/EchoPhaseTransition.lean:791`).
 Same echo process and hypotheses as R9. Let `uₙ` satisfy `n P(X_0 > uₙ) → τ` with `τ > 0`, and let
 `rₙ ∈ ℕ` be arbitrary. Then:
-1. if `rₙ → ∞` and `rₙ/log n → 0`: `CRₙ → 1` and the escape mass is `0`;
-2. if `rₙ/log n → c` with `c > 0`: `CRₙ → (1 + min(1/(cα), 1))/2` and the escape mass is
+1. if `rₙ → ∞` and `rₙ/log n → 0`: `CRₙ → 1` and the late-return mass is `0`;
+2. if `rₙ/log n → c` with `c > 0`: `CRₙ → (1 + min(1/(cα), 1))/2` and the late-return mass is
    `(1 − min(1/(cα), 1))/2`;
-3. if `rₙ → ∞`, `rₙ/n → 0` and `log n / rₙ → 0`: `CRₙ → 1/2` and the escape mass is `1/2`.
+3. if `rₙ → ∞`, `rₙ/n → 0` and `log n / rₙ → 0`: `CRₙ → 1/2` and the late-return mass is `1/2`.
 
 The transition is continuous, with a kink at `c = 1/α`, the scale `(1/α) log n` of the echo lag at
 level `uₙ`.
@@ -427,7 +427,7 @@ has a finite limit.
 Pareto(`α`), and let `E` be an event independent of `σ(Z_t : t ∈ ℤ)` with `0 < P(E) < 1`. Put
 `X_t = Z_0` on `E` and `X_t = Z_t` off `E`. Then **no** `θ ∈ ℝ` is an extremal index of `X` (D4).
 Other theorems in the same file show that `X` is stationary, has a spectral tail process with
-`ϑ = 1 − P(E)`, has escape mass `0` (so `CRₙ → ϑ`), and that anticlustering and `𝒜` fail.
+`ϑ = 1 − P(E)`, has late-return mass `0` (so `CRₙ → ϑ`), and that anticlustering and `𝒜` fail.
 
 **(c) Caveats.** In the phase transition, the `rₙ/log n` with `n = 0` is junk (`log 0 = 0`),
 irrelevant for limits. Case 2 does not assume `rₙ/n → 0` (it follows).
@@ -477,7 +477,7 @@ Lean: `ExtremeValueTheory.conditionA_of_alphaMixing`, `Dependence/Mixing.lean:16
 coefficients). For AR(1) with `0 < φ < 1`, `θ = 1 − φ^α`.
 
 **(b) Lean, in math.**
-- `InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_lt_one`
+- `InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_summable_rpow`
   (`Dependence/InfiniteMovingAverageTailProcess.lean:901`). Let `(Z_i)_{i∈ℤ}` be iid, measurable,
   `Z_i ≥ 0` everywhere, with `P(Z_0 > x)` regularly varying with index `−α`. Let `0 < δ < α`,
   `δ < 1`, `ψ_j ≥ 0`, `Σ_j ψ_j^δ < ∞`, and `ψ_j > 0` for some `j`. Put `X_t = Σ_{j≥0} ψ_j Z_{t−j}`.

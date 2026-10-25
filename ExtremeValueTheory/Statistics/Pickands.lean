@@ -74,26 +74,26 @@ theorem gpdSurvivalInv_nonneg {v : ℝ} (hv : 0 < v) (hv1 : v ≤ 1) : 0 ≤ gpd
 
 /-- To the right of `Λ_ξ v`, the GPD survival function is `< v`. -/
 theorem gpdSurvival'_lt_of_gpdSurvivalInv_lt {v y : ℝ} (hv : 0 < v) (hv1 : v ≤ 1)
-    (hy : gpdSurvivalInv ξ v < y) : gpdSurvival' ξ 1 y < v := by
+    (hy : gpdSurvivalInv ξ v < y) : gpdSurvivalAll ξ 1 y < v := by
   have h0 := gpdSurvivalInv_nonneg (ξ := ξ) hv hv1
-  have hle : gpdSurvival' ξ 1 y ≤ v := by
-    have := gpdSurvival'_antitoneOn (ξ := ξ) one_pos (mem_Ici.2 h0) (mem_Ici.2 (h0.trans hy.le))
+  have hle : gpdSurvivalAll ξ 1 y ≤ v := by
+    have := gpdSurvivalAll_antitoneOn (ξ := ξ) one_pos (mem_Ici.2 h0) (mem_Ici.2 (h0.trans hy.le))
       hy.le
-    rwa [gpdSurvival'_gpdSurvivalInv hv] at this
+    rwa [gpdSurvivalAll_gpdSurvivalInv hv] at this
   refine hle.lt_of_ne fun heq => ?_
-  have := gpdSurvivalInv_gpdSurvival' (ξ := ξ) (x := y) (by rw [heq]; exact hv)
+  have := gpdSurvivalInv_gpdSurvivalAll (ξ := ξ) (x := y) (by rw [heq]; exact hv)
   rw [heq] at this
   exact hy.ne this
 
 /-- To the left of `Λ_ξ v` (on `[0, ∞)`), the GPD survival function is `> v`. -/
 theorem lt_gpdSurvival'_of_lt_gpdSurvivalInv {v y : ℝ} (hv : 0 < v) (hy0 : 0 ≤ y)
-    (hy : y < gpdSurvivalInv ξ v) : v < gpdSurvival' ξ 1 y := by
-  have hle : v ≤ gpdSurvival' ξ 1 y := by
-    have := gpdSurvival'_antitoneOn (ξ := ξ) one_pos (mem_Ici.2 hy0)
+    (hy : y < gpdSurvivalInv ξ v) : v < gpdSurvivalAll ξ 1 y := by
+  have hle : v ≤ gpdSurvivalAll ξ 1 y := by
+    have := gpdSurvivalAll_antitoneOn (ξ := ξ) one_pos (mem_Ici.2 hy0)
       (mem_Ici.2 (hy0.trans hy.le)) hy.le
-    rwa [gpdSurvival'_gpdSurvivalInv hv] at this
+    rwa [gpdSurvivalAll_gpdSurvivalInv hv] at this
   refine hle.lt_of_ne fun heq => ?_
-  have := gpdSurvivalInv_gpdSurvival' (ξ := ξ) (x := y) (by rw [← heq]; exact hv)
+  have := gpdSurvivalInv_gpdSurvivalAll (ξ := ξ) (x := y) (by rw [← heq]; exact hv)
   rw [← heq] at this
   exact hy.ne this.symm
 
@@ -303,7 +303,7 @@ theorem tendstoInMeasure_pickands {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurab
   -- `n F̄(u_n + β(u_n) x) / k_n → 8 Ḡ(x)`
   have hlim : ∀ x, 0 ≤ x → Tendsto (fun n : ℕ =>
       n * (P {ω | u n + β (u n) * x < X 0 ω}).toReal / k n) atTop
-      (𝓝 (8 * gpdSurvival' ξ 1 x)) := by
+      (𝓝 (8 * gpdSurvivalAll ξ 1 x)) := by
     intro x hx
     have h1 := (hU.tendsto_at (mem_Ici.2 hx)).comp hu
     have h2 := (hJ.mul h1).const_mul 8
@@ -343,7 +343,7 @@ theorem tendstoInMeasure_pickands {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurab
     have hGy := gpdSurvival'_lt_of_gpdSurvivalInv_lt (ξ := ξ) (y := gpdSurvivalInv ξ v + η) hv
       hv1.le (by linarith)
     have h := tendsto_measure_not_mem_orderStat hX hindep hident hk (hmk m) hβn
-      (G := fun x => 8 * gpdSurvival' ξ 1 x) hlim hx0 (by rw [hm]; linarith)
+      (G := fun x => 8 * gpdSurvivalAll ξ 1 x) hlim hx0 (by rw [hm]; linarith)
       (y := gpdSurvivalInv ξ v + η) (by linarith) (by rw [hm]; linarith)
     refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds h
       (Eventually.of_forall fun _ => bot_le) (Eventually.of_forall fun n => measure_mono ?_)

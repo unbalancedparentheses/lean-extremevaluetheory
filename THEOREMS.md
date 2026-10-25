@@ -129,7 +129,7 @@ for proofs sketches and dependencies.
   (`HasSpectralTailProcess.tendsto_blockRatio`), so under anticlustering and the block condition
   `𝒜` the extremal index is `ϑ` (`hasExtremalIndex_abs`); and `θ ≤ ϑ` holds with no anticlustering,
   mixing or block condition at all (`le_candidateExtremalIndex'`). The gap is exact: `θ = ϑ − η` with `η`
-  the *escape mass* of returns at lags growing with the level (`HasSpectralTailProcess.tendsto_clusterRatio_iff`,
+  the *late-return mass* of returns at lags growing with the level (`HasSpectralTailProcess.tendsto_clusterRatio_iff`,
   `lt_candidateExtremalIndex_iff`), and an explicit *echo process* has `θ = 1/2 < ϑ = 1` although its
   tail process tends to 0 (`logEchoProcess_theta_lt_vartheta`). Its cluster ratio has a block-length phase
   transition at `rₙ ≍ log n` (`logEchoProcess_phase_transition`). Checked on the moving maximum, where `θ = ϑ = 1/2`.
@@ -140,7 +140,7 @@ for proofs sketches and dependencies.
   maximum has `θ = 1/2` (second, independent proof) and finite moving averages have
   `θ = max ψ_j^α / Σ ψ_j^α` (`MovingAverage.hasExtremalIndex`). Infinite moving averages (by truncation,
   every `α > 0`, `Σψ_j^δ < ∞` for some `δ < min(α, 1)`): `θ = ϑ = sup ψ_j^α / Σ ψ_j^α`
-  (`InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_lt_one`), and AR(1) with
+  (`InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_summable_rpow`), and AR(1) with
   `0 < φ < 1` and nonnegative noise has `θ = 1 − φ^α` (`AR1.hasExtremalIndex_of_pos`).
 - **Markov chains** (`Dependence/MarkovChain.lean`, `MarkovTailChain.lean`, `ARMAX.lean`): stationary chains
   as random iterations (every kernel with an invariant law on a standard Borel space), the

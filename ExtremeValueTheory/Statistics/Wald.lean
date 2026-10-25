@@ -224,17 +224,17 @@ lemma gpdDensity_of_neg (hx : x < 0) : gpdDensity ξ σ x = 0 := by
 coincide only if their parameters do. -/
 theorem gpd_params_eq_of_gpdMeasure_eq (hξ : 0 < ξ) (hσ : 0 < σ) (hξ₀ : 0 < ξ₀) (hσ₀ : 0 < σ₀)
     (h : gpdMeasure ξ σ = gpdMeasure ξ₀ σ₀) : ξ = ξ₀ ∧ σ = σ₀ := by
-  have hS : ∀ x, 0 ≤ x → gpdSurvival' ξ σ x = gpdSurvival' ξ₀ σ₀ x := fun x hx => by
+  have hS : ∀ x, 0 ≤ x → gpdSurvivalAll ξ σ x = gpdSurvivalAll ξ₀ σ₀ x := fun x hx => by
     have := gpdMeasure_Ioi (ξ := ξ) hσ hx
     rw [h, gpdMeasure_Ioi hσ₀ hx] at this
-    exact ((ENNReal.ofReal_eq_ofReal_iff (gpdSurvival'_nonneg _ _ _)
-      (gpdSurvival'_nonneg _ _ _)).1 this).symm
+    exact ((ENNReal.ofReal_eq_ofReal_iff (gpdSurvivalAll_nonneg _ _ _)
+      (gpdSurvivalAll_nonneg _ _ _)).1 this).symm
   set f : ℝ → ℝ → ℝ → ℝ := fun ξ σ x => 1 / ξ * log (1 + ξ * x / σ)
   have hf : ∀ x, 0 < x → f ξ σ x = f ξ₀ σ₀ x := fun x hx => by
     have := hS x hx.le
     have h1 : 0 < 1 + ξ * x / σ := by positivity
     have h2 : 0 < 1 + ξ₀ * x / σ₀ := by positivity
-    simp only [gpdSurvival', hξ.ne', hξ₀.ne', ↓reduceIte, max_eq_left h1.le,
+    simp only [gpdSurvivalAll, hξ.ne', hξ₀.ne', ↓reduceIte, max_eq_left h1.le,
       max_eq_left h2.le] at this
     have hl := congrArg log this
     rw [log_rpow h1, log_rpow h2] at hl

@@ -57,8 +57,8 @@ finite-sample bias, coverage of confidence intervals, or how to choose `k` or th
 |---|---|---|
 | Standard GEV CDF | `gevFun ξ x` (`Statistics/ExtremeQuantile.lean`); `gevCDF ξ` (`GEV/Family.lean`) | `H_ξ(x) = exp(−(1+ξx)^(−1/ξ))` on `1+ξx > 0`; `exp(−e^(−x))` for `ξ = 0`; `0` left of the support (`ξ > 0`), `1` right of it (`ξ < 0`) |
 | Location–scale GEV | `gevLocScaleCDF ξ μ hσ` | `H_ξ((x − μ)/σ)`, `σ > 0` |
-| GPD survival | `gpdSurvival' ξ β x` (`PeaksOverThreshold/Balkema.lean`) | `max(1 + ξx/β, 0)^(−1/ξ)`; `exp(−x/β)` for `ξ = 0` |
-| GPD law | `gpdMeasure ξ σ` (`Statistics/GPDLikelihood.lean`) | law of `σ(e^(ξE) − 1)/ξ`, `E ~ Exp(1)`; survival `gpdSurvival' ξ σ` on `x ≥ 0` |
+| GPD survival | `gpdSurvivalAll ξ β x` (`PeaksOverThreshold/Balkema.lean`) | `max(1 + ξx/β, 0)^(−1/ξ)`; `exp(−x/β)` for `ξ = 0` |
+| GPD law | `gpdMeasure ξ σ` (`Statistics/GPDLikelihood.lean`) | law of `σ(e^(ξE) − 1)/ξ`, `E ~ Exp(1)`; survival `gpdSurvivalAll ξ σ` on `x ≥ 0` |
 | GPD Fisher information | `gpdFisherInfo ξ σ`, inverse `gpdFisherInfoInv ξ σ` | `I⁻¹ = (1+ξ)·[[1+ξ, −σ], [−σ, 2σ²]]` in the order `(ξ, σ)` |
 | GEV return level | `returnLevel ξ m` | `z_m = ((−log(1−1/m))^(−ξ) − 1)/ξ`, `−log(−log(1−1/m))` for `ξ = 0`; for `(μ, σ)`: `μ + σ z_m` |
 | Hill | `hill x k` | `k⁻¹ Σ_{i<k} (log X₍ᵢ₊₁₎ − log X₍ₖ₊₁₎)`, `X₍₁₎ ≥ X₍₂₎ ≥ …` (estimates `γ = 1/α`) |
@@ -346,7 +346,7 @@ connects it to the tail process; it does **not** analyse any estimator.
   (derivable from α-mixing via `conditionA_of_alphaMixing`) ⇒ `|X|` has extremal index `θ = ϑ`.
 - `HasSpectralTailProcess.le_candidateExtremalIndex'` — `θ ≤ ϑ` always (no mixing).
 - `HasSpectralTailProcess.tendsto_clusterRatio_iff`, `.lt_candidateExtremalIndex_iff` — the exact
-  gap `θ = ϑ − η` ("escape mass"), and `logEchoProcess_theta_lt_vartheta`: a stationary process
+  gap `θ = ϑ − η` ("late-return mass"), and `logEchoProcess_theta_lt_vartheta`: a stationary process
   whose tail process tends to 0 but `θ = 1/2 < ϑ = 1`. Practical meaning: **a runs- or
   blocks-type estimator can target `ϑ` while the true `θ` is smaller** when anticlustering fails;
   `logEchoProcess_phase_transition` shows the cluster ratio depends on whether the block length

@@ -1,4 +1,4 @@
-# Novelty check: the P1 results (θ vs ϑ, escape mass, echo process, block-length transition, mixture)
+# Novelty check: the P1 results (θ vs ϑ, late-return mass, echo process, block-length transition, mixture)
 
 Date: 2026-10-18. Scope: the files `Dependence/{ThetaLeVartheta,ThetaGap,EchoProcess,EchoPhaseTransition,EchoConditionA,MixtureProcess}.lean` (none of them contains `sorry`) and RESEARCH.md, "Progress on P1".
 
@@ -13,7 +13,7 @@ Not accessible (paywalled or 403): the Kulik–Soulier (2020) book itself; Smith
 | # | Result | Verdict | Closest prior work |
 |---|---|---|---|
 | 1 | θ ≤ ϑ under stationarity, spectral tail process and existence of θ only | **Known** in substance (KS20 Lemma 7.5.4, cited as "always holds"). The value we add is a formally checked proof with explicit, minimal hypotheses | KS20 Lemma 7.5.4; Segers 2006 Lemma 4.1; O'Brien 1987 |
-| 2 | Gap formula: cluster ratio → L ⇔ η = ϑ − L; under 𝒜, θ = ϑ − η | **Partially known.** It is a clean repackaging of a classical blocks/runs identity combined with the tail process. The exact two-sided "θ = ϑ − η" statement and the name "escape mass" were not found in the literature | Segers 2006 (p_m = Σ p θ^R_i); O'Brien 1987; Leadbetter 1983; Planinić–Soulier 2018 Lemma 4.1; BKW 2024/26 |
+| 2 | Gap formula: cluster ratio → L ⇔ η = ϑ − L; under 𝒜, θ = ϑ − η | **Partially known.** It is a clean repackaging of a classical blocks/runs identity combined with the tail process. The exact two-sided "θ = ϑ − η" statement and the name "late-return mass" were not found in the literature | Segers 2006 (p_m = Σ p θ^R_i); O'Brien 1987; Leadbetter 1983; Planinić–Soulier 2018 Lemma 4.1; BKW 2024/26 |
 | 3 | Echo process: Θ_t = 1{t=0} (ϑ = 1) but θ = 1/2 | **Likely new** as an explicit construction. No prior example found with extremal independence at every fixed lag together with θ < 1 and an existing θ | BW 2023 and BKW 2026 (the only published θ < ϑ examples, per BW); Weissman–Cohen 1995 (random translations, lags independent of size) |
 | 4 | Block-length phase transition at scale log n with a closed form and a kink at c = 1/α; 𝒜 holds iff blocks are long | **Likely new** as a result. The phenomenon type is known from BKW (polynomial "mesoscopic" scale) and BW (AC for r_n = o(log b_n)). It answers the first open question of BKW §1.4 in a different form | BKW Thm 1.5 and Cor 1.6; BW §1, (1.16)–(1.17) |
 | 5 | Mixture (constant w.p. p, iid otherwise): η = 0, no θ | **Known / folklore** (non-ergodic mixtures have no extremal index). The only new part is the remark "η = 0 does not imply that θ exists" | Leadbetter 1983; LLR 1983; Weissman–Cohen 1995 [unverified] |
@@ -43,21 +43,21 @@ Not accessible (paywalled or 403): the Kulik–Soulier (2020) book itself; Smith
 
 ---
 
-## 2. Gap formula and escape mass
+## 2. Gap formula and late-return mass
 
 **What we prove** (`ThetaGap.lean`):
 - **Exact identity (stationarity only):** 0 ≤ CR_n − (q_n(m) − ε_n(m)) ≤ m/r_n. Here:
   - CR_n is the cluster ratio P(M_{r_n} > u_n)/(r_n P(|X_0| > u_n));
   - q_n(m) = P(M_{1,m} ≤ u_n | |X_0| > u_n);
   - ε_n(m) = E[(1 − T_n/r_n)^+ ; T_n > m | |X_0| > u_n], with T_n the first return time.
-- **Gap formula:** CR_n → L ⇔ the escape mass η = lim_m lim_n ε_n(m) exists and η = ϑ − L.
-- **Under 𝒜:** θ = ϑ − η, so θ < ϑ ⇔ η > 0. The escape mass is independent of (u_n, r_n) whenever 𝒜 holds and θ exists.
+- **Gap formula:** CR_n → L ⇔ the late-return mass η = lim_m lim_n ε_n(m) exists and η = ϑ − L.
+- **Under 𝒜:** θ = ϑ − η, so θ < ϑ ⇔ η > 0. The late-return mass is independent of (u_n, r_n) whenever 𝒜 holds and θ exists.
 
 **Prior work.**
 - **The averaging identity is classical.** CR_n = (1/r_n) Σ_{k<r_n} q_n(k): blocks index = average of runs indices. This is Segers 2006 (above, §4.2 and Lemma 4.1); Weissman & Novak, "On blocks and runs estimators of the extremal index", J. Stat. Plann. Inference 66 (1998) 281–288; and Smith & Weissman, JRSS B 56 (1994) 515–528.
 - **O'Brien (1987)** (https://doi.org/10.1214/aop/1176992270): θ = lim P(M_{1,r_n} ≤ u_n | X_0 > u_n) under a mixing condition. Leadbetter, Z. Wahrsch. 65 (1983) 291–306: θ = lim CR_n under D(u_n). These give the "θ = lim CR_n under 𝒜" half.
 - **Chernick, Hsing & McCormick**, Adv. Appl. Probab. 23 (1991) 835–850, the D^(k)(u_n) conditions: θ = lim P(M_{2,k} ≤ u_n | X_1 > u_n) for a fixed k. In tail-process terms, D^(k) is exactly what rules out escape. Our η is the defect of the D^(k) formula as k → ∞.
-- **Basrak & Segers**, SPA 119 (2009) 1055–1080, and **KS20 ch. 6–7**, e.g. Cor. 6.2.6 as cited by BKW: anticlustering ⇒ CR_n → ϑ. This is our `ForwardAntiClusteringAt.hasEscapeMass_zero`.
+- **Basrak & Segers**, SPA 119 (2009) 1055–1080, and **KS20 ch. 6–7**, e.g. Cor. 6.2.6 as cited by BKW: anticlustering ⇒ CR_n → ϑ. This is our `ForwardAntiClusteringAt.hasLateReturnMass_zero`.
 - **BKW abstract:** the θ/ϑ gap "is a reflection of [a] phase transition … prohibited by the anticlustering condition". This is the same idea stated qualitatively; BKW give no general identity.
 - **Terminology clash:** "escape of mass" is already used by Abadi, Freitas & Freitas, "Dynamical counterexamples regarding the extremal index and the mean of the limiting cluster size distribution", arXiv:1808.02970 (journal version not checked), §4. There it means loss of point-process mass, i.e. mean cluster size ≠ 1/θ (Smith 1988 type). That is a related but different phenomenon. Cite it and distinguish, or rename ours (for example "escaping cluster mass" or "late-return mass").
 - No source was found that states the two-sided equivalence CR_n → L ⇔ η = ϑ − L, or θ = ϑ − η, as a theorem.

@@ -17,7 +17,7 @@ case the marginal tail is regularly varying, so exceedance levels exist for ever
 
 ## Main results
 
-* `InfiniteMovingAverage.hasExtremalIndex_of_lt_one_strict`: infinite moving averages, all
+* `InfiniteMovingAverage.hasExtremalIndex_of_summable_rpow_strict`: infinite moving averages, all
   `α > 0`.
 * `AR1.hasExtremalIndex_of_pos_strict`: the AR(1) process, all `α > 0`.
 * `ARMAX.hasExtremalIndex_candidate_strict`: `θ = ϑ` for ARMAX, in the strict sense.
@@ -36,8 +36,8 @@ section Linear
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
   {Z : ℤ → Ω → ℝ} {α : ℝ}
 
-/-- **Strict form of `InfiniteMovingAverage.hasExtremalIndex_of_lt_one`** (all `α > 0`). -/
-theorem InfiniteMovingAverage.hasExtremalIndex_of_lt_one_strict {ψ : ℕ → ℝ} {δ : ℝ}
+/-- **Strict form of `InfiniteMovingAverage.hasExtremalIndex_of_summable_rpow`** (all `α > 0`). -/
+theorem InfiniteMovingAverage.hasExtremalIndex_of_summable_rpow_strict {ψ : ℕ → ℝ} {δ : ℝ}
     (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
     (hδα : δ < α) (hδ1 : δ < 1)
@@ -45,8 +45,8 @@ theorem InfiniteMovingAverage.hasExtremalIndex_of_lt_one_strict {ψ : ℕ → �
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
     HasExtremalIndexStrict (fun n : ℕ => InfiniteMovingAverage.process ψ Z n) P
       ((⨆ j, ψ j) ^ α / ∑' j, ψ j ^ α) :=
-  ⟨InfiniteMovingAverage.hasExtremalIndex_of_lt_one hZ hind hident hZ0 hδ hδα hδ1 hL hψ0 hψ hpos,
-    (InfiniteMovingAverage.hasSpectralTailProcess_of_lt_one hZ hind hident hZ0 hδ hδα hδ1 hL hψ0
+  ⟨InfiniteMovingAverage.hasExtremalIndex_of_summable_rpow hZ hind hident hZ0 hδ hδα hδ1 hL hψ0 hψ hpos,
+    (InfiniteMovingAverage.hasSpectralTailProcess_of_summable_rpow hZ hind hident hZ0 hδ hδα hδ1 hL hψ0
       hψ hpos).hasExceedanceLevels_of_nonneg (InfiniteMovingAverage.measurable_process hZ 0)
       (InfiniteMovingAverage.process_nonneg hψ0 hZ0 0)⟩
 
@@ -116,5 +116,13 @@ theorem logEchoProcess_not_hasExtremalIndex_one (hα : 0 < α) (hZ : ∀ t, Meas
   norm_num at this
 
 end Echo
+
+end ExtremeValueTheory
+
+/-! ### Deprecated names -/
+
+namespace ExtremeValueTheory
+
+@[deprecated (since := "2026-10-23")] alias InfiniteMovingAverage.hasExtremalIndex_of_lt_one_strict := InfiniteMovingAverage.hasExtremalIndex_of_summable_rpow_strict
 
 end ExtremeValueTheory

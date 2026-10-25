@@ -327,6 +327,8 @@ end General
 
 /-! ### The counterexample -/
 
+namespace Minimality
+
 section Counterexample
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
@@ -359,9 +361,19 @@ theorem logEcho_alphaMixing_theta_ne_vartheta (hα : 0 < α) (hZ : ∀ t, Measur
   refine ⟨isStrongMixing_logEchoProcess hα hZ hind hlaw,
     fun h hh => alphaMixing_logEchoProcess_le hα hZ hind hlaw hh, hstat, hT, hϑ, hθ,
     fun u τ hτ0 hτ r hr hrn hlogr => ⟨conditionA_logEchoProcess hα hZ hind hlaw hpos hτ hr hrn
-      hlogr, (logEchoProcess_hasEscapeMass_of_tendsto hα hZ hind hlaw hpos hτ0 hτ hr hrn
+      hlogr, (logEchoProcess_hasLateReturnMass_of_tendsto hα hZ hind hlaw hpos hτ0 hτ hr hrn
         hlogr).2.2⟩⟩
 
 end Counterexample
+
+end Minimality
+
+end ExtremeValueTheory
+
+/-! ### Deprecated names -/
+
+namespace ExtremeValueTheory
+
+@[deprecated (since := "2026-10-23")] alias logEcho_alphaMixing_theta_ne_vartheta := Minimality.logEcho_alphaMixing_theta_ne_vartheta
 
 end ExtremeValueTheory

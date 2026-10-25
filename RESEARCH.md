@@ -53,12 +53,12 @@ the backward limit
 `Θ_{−t} → 0`; then the Bai–Wang-type `θ < ϑ` question (P1).
 
 Progress on P1 (the gap θ < ϑ), 2026-10-17:
-- **Gap formula** (`Dependence/ThetaGap.lean`): with the *escape mass* `η` (conditional mass of returns
+- **Gap formula** (`Dependence/ThetaGap.lean`): with the *late-return mass* `η` (called "escape mass" before 2026-10-23) (conditional mass of returns
   inside the block at lags growing with the level), the cluster ratio tends to `L` iff `η = ϑ − L`, with
   no anticlustering or mixing; under condition `𝒜`, `θ = ϑ − η`, so `θ < ϑ` iff `η > 0`.
 - **Echo process** (`Dependence/EchoProcess.lean`): iid Pareto shocks, each reappearing once after a lag
   `⌊log z⌋ + 1` growing with its size. Stationary, regularly varying, spectral tail process
-  `Θ_t = 1{t = 0}` (so `ϑ = 1`, `|Y_t| → 0`), extremal index `θ = 1/2`, escape mass `1/2`. This is a much
+  `Θ_t = 1{t = 0}` (so `ϑ = 1`, `|Y_t| → 0`), extremal index `θ = 1/2`, late-return mass `1/2`. This is a much
   simpler mechanism for `θ < ϑ` than the Bai–Wang stable-regenerative model (novelty not checked
   against the literature).
 - **Block-length phase transition** (`Dependence/EchoPhaseTransition.lean`): for the echo process the
@@ -146,7 +146,7 @@ with sources, exact quotes and feasibility.
 | Theorem | Hypothesis | Status | Witness |
 |---|---|---|---|
 | cluster ratio → `ϑ` (`tendsto_blockRatio`) | forward anticlustering | needed (cannot be dropped) | `logEcho_blockRatio_ne` |
-| same | anticlustering as a necessary condition | not necessary (exact condition: escape mass `0`) | `mixture_tendsto_blockRatio_of_not_antiClustering` |
+| same | anticlustering as a necessary condition | not necessary (exact condition: late-return mass `0`) | `mixture_tendsto_blockRatio_of_not_antiClustering` |
 | same | `rₙ → ∞` | needed | `movingMax_blockRatio_const_one` |
 | `Θₜ → 0` from anticlustering | anticlustering | sufficient, not necessary | `logEcho_tendsto_zero_of_not_antiClustering` |
 | `θ = ϑ` (`hasExtremalIndex_abs`) | condition `𝒜` under anticlustering | needed, even for `θ` to exist | `scaleMixture_needs_conditionA` |

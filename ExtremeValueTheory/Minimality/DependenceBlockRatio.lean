@@ -25,7 +25,7 @@ We test each hypothesis of
   forward anticlustering fails.
 * **But anticlustering is not necessary** (`mixture_tendsto_blockRatio_of_not_antiClustering`):
   the constant/iid mixture has cluster ratio `→ ϑ` while forward anticlustering fails. The sharp
-  condition is already known: the cluster ratio tends to `ϑ` *iff* the escape mass vanishes,
+  condition is already known: the cluster ratio tends to `ϑ` *iff* the late-return mass vanishes,
   `η = 0` (`HasSpectralTailProcess.tendsto_clusterRatio_iff`, which needs no anticlustering).
 * **`rₙ → ∞` cannot be dropped** (`movingMax_blockRatio_const_one`): for any process, bounded
   block lengths satisfy forward anticlustering vacuously (`forwardAntiClusteringAt_of_le`); for the
@@ -46,7 +46,7 @@ We test each hypothesis of
 open MeasureTheory ProbabilityTheory Filter Topology Set
 open scoped ENNReal NNReal
 
-namespace ExtremeValueTheory
+namespace ExtremeValueTheory.Minimality
 
 section General
 
@@ -150,7 +150,7 @@ theorem logEcho_blockRatio_ne (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
         (𝓝 (candidateExtremalIndex (Measure.dirac ()) unitSpectral α).toReal) := by
   obtain ⟨hstat, hT, hϑ, -⟩ := logEchoProcess_theta_lt_vartheta hα hZ hind hlaw hpos
   obtain ⟨hratio, -, hAC⟩ :=
-    logEchoProcess_hasEscapeMass_of_tendsto hα hZ hind hlaw hpos hτ0 hτ hr hrn hlogr
+    logEchoProcess_hasLateReturnMass_of_tendsto hα hZ hind hlaw hpos hτ0 hτ hr hrn hlogr
   have hτ' : Tendsto (fun n : ℕ => n * P.real {ω | u n < |echoProcess logLag Z 0 ω|}) atTop
       (𝓝 τ) := by
     simpa [abs_of_nonneg (echoProcess_nonneg hpos _ _)] using hτ
@@ -174,7 +174,7 @@ theorem logEcho_tendsto_zero_of_not_antiClustering (hα : 0 < α) (hZ : ∀ t, M
       ¬ ForwardAntiClusteringAt P (echoProcess logLag Z) u r := by
   obtain ⟨-, hT, -, -⟩ := logEchoProcess_theta_lt_vartheta hα hZ hind hlaw hpos
   obtain ⟨-, -, hAC⟩ :=
-    logEchoProcess_hasEscapeMass_of_tendsto hα hZ hind hlaw hpos hτ0 hτ hr hrn hlogr
+    logEchoProcess_hasLateReturnMass_of_tendsto hα hZ hind hlaw hpos hτ0 hτ hr hrn hlogr
   refine ⟨hT, Eventually.of_forall fun ω' => ?_, hAC⟩
   refine tendsto_const_nhds.congr' ?_
   filter_upwards [eventually_gt_atTop 0] with k hk
@@ -239,5 +239,19 @@ theorem mixture_not_tendsto_zero_of_const_one (hE : MeasurableSet E)
   simp at hp0
 
 end Mixture
+
+end ExtremeValueTheory.Minimality
+
+/-! ### Deprecated names -/
+
+namespace ExtremeValueTheory
+
+@[deprecated (since := "2026-10-23")] alias forwardAntiClusteringAt_of_le := Minimality.forwardAntiClusteringAt_of_le
+@[deprecated (since := "2026-10-23")] alias clusterRatio_const_one := Minimality.clusterRatio_const_one
+@[deprecated (since := "2026-10-23")] alias movingMax_blockRatio_const_one := Minimality.movingMax_blockRatio_const_one
+@[deprecated (since := "2026-10-23")] alias logEcho_blockRatio_ne := Minimality.logEcho_blockRatio_ne
+@[deprecated (since := "2026-10-23")] alias logEcho_tendsto_zero_of_not_antiClustering := Minimality.logEcho_tendsto_zero_of_not_antiClustering
+@[deprecated (since := "2026-10-23")] alias mixture_tendsto_blockRatio_of_not_antiClustering := Minimality.mixture_tendsto_blockRatio_of_not_antiClustering
+@[deprecated (since := "2026-10-23")] alias mixture_not_tendsto_zero_of_const_one := Minimality.mixture_not_tendsto_zero_of_const_one
 
 end ExtremeValueTheory

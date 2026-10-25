@@ -49,11 +49,11 @@ law Pareto(`α`) (`hlaw`), `Z ≥ 0` pointwise (`hpos`), `L` measurable. Neither
 * `conditionA_logEchoProcess`: **`𝒜(uₙ)` for `L(z) = ⌊log z⌋₊ + 1`**, assuming
   `n P(X_0 > uₙ) → τ` (any `τ`), `rₙ → ∞`, `rₙ / n → 0` and `log n / rₙ → 0`.
 * `logEchoProcess_tendsto_partialMax_of_conditionA`: with additionally `τ > 0`, the main theorem
-  (`HasSpectralTailProcess.tendsto_partialMax_iff_hasEscapeMass`) and the cluster-ratio value
+  (`HasSpectralTailProcess.tendsto_partialMax_iff_hasLateReturnMass`) and the cluster-ratio value
   `η = 1/2` give `P(max_{k < n} |X_k| ≤ uₙ) → exp (-τ / 2)`, i.e. `θ = ϑ - η = 1/2`,
   independently of the direct computation `hasExtremalIndex_echoProcess`.
-* `logEchoProcess_hasEscapeMass_of_conditionA`: conversely, `θ = 1/2` and `𝒜(uₙ)` give
-  `η = ϑ - θ = 1/2` through `HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex` (same
+* `logEchoProcess_hasLateReturnMass_of_conditionA`: conversely, `θ = 1/2` and `𝒜(uₙ)` give
+  `η = ϑ - θ = 1/2` through `HasSpectralTailProcess.hasLateReturnMass_of_hasExtremalIndex` (same
   hypotheses).
 
 ## Remarks
@@ -363,7 +363,7 @@ theorem mul_mul_measureReal_logLag_le (hα : 0 < α) {n : ℕ} (hn : 0 < n) :
 /-- **`𝒜(uₙ)` for the logarithmic echo process** `L(z) = ⌊log z⌋₊ + 1`, in the standard
 normalization: if `n P(X_0 > uₙ) → τ`, `rₙ → ∞`, `rₙ / n → 0` and `log n = o(rₙ)`, then the
 block condition holds (truncation lags `lₙ = ⌈(2 / α) log n⌉₊`). These are the block lengths of
-`logEchoProcess_hasEscapeMass_of_tendsto`. -/
+`logEchoProcess_hasLateReturnMass_of_tendsto`. -/
 theorem conditionA_logEchoProcess (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
     (hind : iIndepFun Z P) (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α)
     (hpos : ∀ t ω, 0 ≤ Z t ω) {u : ℕ → ℝ} {τ : ℝ}
@@ -408,8 +408,8 @@ theorem conditionA_logEchoProcess (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
 /-- **`θ = ϑ - η` for the echo process through the main theorem.** Along every level sequence with
 `n P(X_0 > uₙ) → τ > 0` and block length with `rₙ → ∞`, `rₙ / n → 0`, `log n = o(rₙ)`, the
 block condition holds (`conditionA_logEchoProcess`), so the gap formula of
-`Dependence/ThetaGap.lean` applies: the escape mass computed from the cluster ratio,
-`η = 1/2` (`logEchoProcess_hasEscapeMass_of_tendsto`), gives
+`Dependence/ThetaGap.lean` applies: the late-return mass computed from the cluster ratio,
+`η = 1/2` (`logEchoProcess_hasLateReturnMass_of_tendsto`), gives
 `P(M n ≤ uₙ) → exp (-(ϑ - η) τ) = exp (-τ / 2)`. This rederives `θ = 1/2` without the direct
 computation of `hasExtremalIndex_echoProcess`. -/
 theorem logEchoProcess_tendsto_partialMax_of_conditionA (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
@@ -426,27 +426,27 @@ theorem logEchoProcess_tendsto_partialMax_of_conditionA (hα : 0 < α) (hZ : ∀
       (𝓝 τ) := by
     simpa [abs_of_nonneg (echoProcess_nonneg hpos _ _)] using hτ
   have hA := conditionA_logEchoProcess hα hZ hind hlaw hpos hτ hr hrn hlogr
-  have h := hT.tendsto_partialMax_iff_hasEscapeMass hα (measurable_echoProcess hZ measurable_logLag)
+  have h := hT.tendsto_partialMax_iff_hasLateReturnMass hα (measurable_echoProcess hZ measurable_logLag)
     measurable_unitSpectral (hasShiftInvariantWindows_echoProcess hZ hind hlaw measurable_logLag)
     hτ' hτ0 hr hrn hA (1 / 2)
   rw [candidateExtremalIndex_unitSpectral hα] at h
   refine h.2 ?_
-  have hη := (logEchoProcess_hasEscapeMass_of_tendsto hα hZ hind hlaw hpos hτ0 hτ hr hrn hlogr).2.1
+  have hη := (logEchoProcess_hasLateReturnMass_of_tendsto hα hZ hind hlaw hpos hτ0 hτ hr hrn hlogr).2.1
   convert hη using 1
   norm_num
 
-/-- **The escape mass from the extremal index, through the main theorem**: since `θ = 1/2`
+/-- **The late-return mass from the extremal index, through the main theorem**: since `θ = 1/2`
 (`logEchoProcess_theta_lt_vartheta`) and `𝒜(uₙ)` holds (`conditionA_logEchoProcess`),
-`HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex` gives `η = ϑ - θ = 1/2` along every
+`HasSpectralTailProcess.hasLateReturnMass_of_hasExtremalIndex` gives `η = ϑ - θ = 1/2` along every
 level sequence with `n P(X_0 > uₙ) → τ > 0` and block length with `rₙ → ∞`, `rₙ / n → 0`,
 `log n = o(rₙ)`, consistent with the direct cluster-ratio computation. -/
-theorem logEchoProcess_hasEscapeMass_of_conditionA (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
+theorem logEchoProcess_hasLateReturnMass_of_conditionA (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
     (hind : iIndepFun Z P) (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α)
     (hpos : ∀ t ω, 0 ≤ Z t ω) {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
     (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess logLag Z 0 ω}) atTop (𝓝 τ))
     {r : ℕ → ℕ} (hr : Tendsto r atTop atTop) (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
     (hlogr : Tendsto (fun n : ℕ => Real.log n / r n) atTop (𝓝 0)) :
-    HasEscapeMass P (echoProcess logLag Z) u r (1 / 2) := by
+    HasLateReturnMass P (echoProcess logLag Z) u r (1 / 2) := by
   obtain ⟨hstat, hT, -, hθ⟩ := logEchoProcess_theta_lt_vartheta hα hZ hind hlaw hpos (P := P)
   have hτ' : Tendsto (fun n : ℕ => n * P.real {ω | u n < |echoProcess logLag Z 0 ω|}) atTop
       (𝓝 τ) := by
@@ -455,7 +455,7 @@ theorem logEchoProcess_hasEscapeMass_of_conditionA (hα : 0 < α) (hZ : ∀ t, M
     convert hθ using 3 with k
     funext ω
     exact abs_of_nonneg (echoProcess_nonneg hpos _ _)
-  have h := hT.hasEscapeMass_of_hasExtremalIndex hα (measurable_echoProcess hZ measurable_logLag)
+  have h := hT.hasLateReturnMass_of_hasExtremalIndex hα (measurable_echoProcess hZ measurable_logLag)
     measurable_unitSpectral hstat hθ' hτ' hτ0 hr hrn
     (conditionA_logEchoProcess hα hZ hind hlaw hpos hτ hr hrn hlogr)
   rw [candidateExtremalIndex_unitSpectral hα] at h
@@ -463,5 +463,13 @@ theorem logEchoProcess_hasEscapeMass_of_conditionA (hα : 0 < α) (hZ : ∀ t, M
   norm_num
 
 end LogLag
+
+end ExtremeValueTheory
+
+/-! ### Deprecated names -/
+
+namespace ExtremeValueTheory
+
+@[deprecated (since := "2026-10-23")] alias logEchoProcess_hasEscapeMass_of_conditionA := logEchoProcess_hasLateReturnMass_of_conditionA
 
 end ExtremeValueTheory

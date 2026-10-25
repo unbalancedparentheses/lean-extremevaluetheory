@@ -34,7 +34,7 @@ bounded size, and for them the cluster condition holds for `rₙ` fixed.
 open MeasureTheory ProbabilityTheory Filter Topology Set
 open scoped ENNReal NNReal
 
-namespace ExtremeValueTheory
+namespace ExtremeValueTheory.Minimality
 
 /-- **The Hill estimator of a constant sample vanishes**: if all `n` observations are equal and
 `k < n`, all the log-spacings are `0`. -/
@@ -121,5 +121,15 @@ theorem mixture_hill_needs_mixing (hE : MeasurableSet E)
     hkn (fun _ => 0) hclus hmix
 
 end Mixture
+
+end ExtremeValueTheory.Minimality
+
+/-! ### Deprecated names -/
+
+namespace ExtremeValueTheory
+
+@[deprecated (since := "2026-10-23")] alias hill_const := Minimality.hill_const
+@[deprecated (since := "2026-10-23")] alias not_tendstoInMeasure_hill_mixture := Minimality.not_tendstoInMeasure_hill_mixture
+@[deprecated (since := "2026-10-23")] alias mixture_hill_needs_mixing := Minimality.mixture_hill_needs_mixing
 
 end ExtremeValueTheory

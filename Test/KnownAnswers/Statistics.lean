@@ -180,24 +180,24 @@ theorem test_gpdDensity_neg : gpdDensity 1 1 (-1) = 0 := by
 
 /-- `GPD(1, 1)`: `G(1) = 1 - (1 + 1)⁻¹ = 1/2`. -/
 theorem test_gpdCDF_pareto : gpdCDF 1 1 1 = 1 / 2 := by
-  simp [gpdCDF, gpdSurvival']
+  simp [gpdCDF, gpdSurvivalAll]
   norm_num
 
 /-- The median of `GPD(0, 1) = Exp(1)` is `log 2`. -/
 theorem test_gpdCDF_exp_median : gpdCDF 0 1 (log 2) = 1 / 2 := by
   have : 0 ≤ log 2 := (log_pos one_lt_two).le
-  simp [gpdCDF, gpdSurvival', max_eq_left this, exp_neg, exp_log two_pos]
+  simp [gpdCDF, gpdSurvivalAll, max_eq_left this, exp_neg, exp_log two_pos]
   norm_num
 
 /-- `GPD(-1, 1)` is uniform: `G(x) = x` on `[0, 1]`. -/
 theorem test_gpdCDF_uniform {x : ℝ} (hx0 : 0 ≤ x) (hx1 : x ≤ 1) : gpdCDF (-1) 1 x = x := by
-  simp [gpdCDF, gpdSurvival', max_eq_left hx0, max_eq_left (show 0 ≤ 1 + -x by linarith)]
+  simp [gpdCDF, gpdSurvivalAll, max_eq_left hx0, max_eq_left (show 0 ≤ 1 + -x by linarith)]
 
 /-- The law `gpdMeasure` has the GPD tail: `GPD(1/2, 1)` at `x = 2` gives `(1 + 1)^{-2} = 1/4`. -/
 theorem test_gpdMeasure_Ioi : gpdMeasure (1 / 2) 1 (Set.Ioi 2) = ENNReal.ofReal (1 / 4) := by
   rw [gpdMeasure_Ioi one_pos (by norm_num)]
   congr 1
-  simp [gpdSurvival']
+  simp [gpdSurvivalAll]
   norm_num
 
 /-- The log-likelihood of `GPD(0, 1)` at the sample `(1, 2)`: `-1 - 2 = -3`. -/

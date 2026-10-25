@@ -126,8 +126,8 @@ above.
 - **Shape-parameter families.**
   - `gevCDF`, `IsInMDAGEV`, `gpdSurvivalInv` and `boxCox` split off shape 0 with an explicit
     `if`, so they are junk-free.
-  - `gpdSurvival` (`PeaksOverThreshold/Frechet.lean`) has no `max (·, 0)`, so for `ξ < 0` past the
-    endpoint it is `rpow` of a negative base. It is used only with `ξ ≥ 0`, `x ≥ 0`; `gpdSurvival'`
+  - `gpdSurvivalNonneg` (`PeaksOverThreshold/Frechet.lean`) has no `max (·, 0)`, so for `ξ < 0` past the
+    endpoint it is `rpow` of a negative base. It is used only with `ξ ≥ 0`, `x ≥ 0`; `gpdSurvivalAll`
     is correct for every shape.
 - **Estimators.**
   - `hill x k` and `logMoment x k j` are 0 at `k = 0`. They use `Real.log` of order statistics,

@@ -35,11 +35,11 @@ independence assumption** for the remainder bound, and it covers all exponential
   coefficient sequence with `|c_j| ≤ 1`.
 * `LinearProcess.tsum_mul_le_rpow_tsum`: a weighted Hölder inequality for `ℝ≥0∞`-valued series,
   `∑ a_j y_j ≤ (∑ a_j^{γ + (1-γ) q} y_j^q)^{1/q}` when `∑ a_j^γ ≤ 1`, `0 ≤ γ ≤ 1 ≤ q`.
-* `LinearProcess.exists_measure_tsum_gt_le_of_lt_one`: the same remainder bound for all `α > 0`
+* `LinearProcess.exists_measure_tsum_gt_le_of_summable_rpow`: the same remainder bound for all `α > 0`
   (`δ < α`, `δ < 1`), for every coefficient sequence with `∑_j |c_j|^δ ≤ 1`.
-* `LinearProcess.ae_summable_mul_of_lt_one`, `LinearProcess.ae_summable_mul` (`α < 1`): almost
+* `LinearProcess.ae_summable_mul_of_summable_rpow`, `LinearProcess.ae_summable_mul` (`α < 1`): almost
   sure absolute convergence of `∑ ψ_j Z_j`.
-* `LinearProcess.tendsto_measureReal_tsum_mul_div_of_lt_one`,
+* `LinearProcess.tendsto_measureReal_tsum_mul_div_of_summable_rpow`,
   `LinearProcess.tendsto_measureReal_tsum_mul_div` (`α < 1`): the tail asymptotics of `X`.
 
 ## Proof
@@ -414,7 +414,7 @@ moment assumption), every coefficient sequence `(c_j)` with `∑ |c_j|^δ ≤ 1`
 
 Proof: weighted Hölder (`tsum_mul_le_rpow_tsum`) with `q = α + 1 - δ` reduces this to the case
 `α / q < 1` of `exists_measure_tsum_gt_le`, applied to the variables `|Z_j|^q`. -/
-theorem exists_measure_tsum_gt_le_of_lt_one [IsProbabilityMeasure P] {Z₀ : Ω → ℝ}
+theorem exists_measure_tsum_gt_le_of_summable_rpow [IsProbabilityMeasure P] {Z₀ : Ω → ℝ}
     (hZ₀ : Measurable Z₀) {α δ : ℝ} (hδ : 0 < δ) (hδα : δ < α) (hδ1 : δ < 1)
     (hL : IsRegularlyVarying (fun x => P.real {ω | x < |Z₀ ω|}) (-α)) :
     ∃ K x₀ : ℝ, 0 < K ∧ 0 < x₀ ∧ ∀ Z : ℕ → Ω → ℝ, (∀ j, Measurable (Z j)) →
@@ -500,13 +500,13 @@ theorem exists_measure_tsum_gt_le_of_lt_one [IsProbabilityMeasure P] {Z₀ : Ω 
 `(Z_j)` are identically distributed copies of `Z₀` with `P(|Z₀| > x)` regularly varying with
 index `-α` and `∑ |ψ_j|^δ < ∞`, then `∑ ψ_j Z_j` converges absolutely almost surely. No
 independence, moment or centering assumption is needed. -/
-theorem ae_summable_mul_of_lt_one [IsProbabilityMeasure P] {Z : ℕ → Ω → ℝ} {Z₀ : Ω → ℝ}
+theorem ae_summable_mul_of_summable_rpow [IsProbabilityMeasure P] {Z : ℕ → Ω → ℝ} {Z₀ : Ω → ℝ}
     (hZ : ∀ j, Measurable (Z j)) (hZ₀ : Measurable Z₀) (hident : ∀ j, IdentDistrib (Z j) Z₀ P P)
     {α δ : ℝ} (hδ : 0 < δ) (hδα : δ < α) (hδ1 : δ < 1)
     (hL : IsRegularlyVarying (fun x => P.real {ω | x < |Z₀ ω|}) (-α))
     {ψ : ℕ → ℝ} (hψ : Summable fun j => |ψ j| ^ δ) :
     ∀ᵐ ω ∂P, Summable fun j => ψ j * Z j ω := by
-  obtain ⟨K, x₀, hK, hx₀, hR⟩ := exists_measure_tsum_gt_le_of_lt_one hZ₀ hδ hδα hδ1 hL
+  obtain ⟨K, x₀, hK, hx₀, hR⟩ := exists_measure_tsum_gt_le_of_summable_rpow hZ₀ hδ hδα hδ1 hL
   obtain ⟨m₀, hm₀⟩ := exists_tsum_add_le_one ψ δ
   have hR' := hR (fun j => Z (j + m₀)) (fun j => hZ _) (fun j => hident _) (fun j => ψ (j + m₀))
     ((summable_nat_add_iff m₀).2 hψ) (hm₀ m₀ le_rfl)
@@ -534,10 +534,10 @@ theorem ae_summable_mul_of_lt_one [IsProbabilityMeasure P] {Z : ℕ → Ω → �
 A3.26], [DR85], [Mikosch–Samorodnitsky 2000], [KS20, Chapter 15]). Let `(Z_j)_{j ≥ 0}` be
 independent copies of `Z₀`, with `P(|Z₀| > x)` regularly varying with index `-α`, `α > 0`, and
 tail balance `P(Z₀ > x) / P(|Z₀| > x) → p`. If `∑ |ψ_j|^δ < ∞` for some `0 < δ < α` with `δ < 1`, then
-`X = ∑_j ψ_j Z_j` (which converges absolutely almost surely, `ae_summable_mul_of_lt_one`)
+`X = ∑_j ψ_j Z_j` (which converges absolutely almost surely, `ae_summable_mul_of_summable_rpow`)
 satisfies `P(X > x) / P(|Z₀| > x) → ∑_j |ψ_j|^α (p 1{ψ_j > 0} + (1 - p) 1{ψ_j < 0})`.
 No moment or centering assumption on `Z₀` is needed. -/
-theorem tendsto_measureReal_tsum_mul_div_of_lt_one [IsProbabilityMeasure P] {Z : ℕ → Ω → ℝ}
+theorem tendsto_measureReal_tsum_mul_div_of_summable_rpow [IsProbabilityMeasure P] {Z : ℕ → Ω → ℝ}
     {Z₀ : Ω → ℝ}
     (hZ : ∀ j, Measurable (Z j)) (hZ₀ : Measurable Z₀) (hind : iIndepFun Z P)
     (hident : ∀ j, IdentDistrib (Z j) Z₀ P P) {α δ p : ℝ} (hδ : 0 < δ) (hδα : δ < α)
@@ -548,7 +548,7 @@ theorem tendsto_measureReal_tsum_mul_div_of_lt_one [IsProbabilityMeasure P] {Z :
       (𝓝 (∑' j, tailWeight α p (ψ j))) := by
   set L : ℝ → ℝ := fun x => P.real {ω | x < |Z₀ ω|} with hL_def
   obtain ⟨hp0, hp1⟩ := tailBalance_mem_Icc hL.1 hp
-  obtain ⟨K, x₀, hK, hx₀, hR⟩ := exists_measure_tsum_gt_le_of_lt_one hZ₀ hδ hδα hδ1 hL
+  obtain ⟨K, x₀, hK, hx₀, hR⟩ := exists_measure_tsum_gt_le_of_summable_rpow hZ₀ hδ hδα hδ1 hL
   obtain ⟨m₀, hm₀⟩ := exists_tsum_add_le_one ψ δ
   set w : ℕ → ℝ := fun j => tailWeight α p (ψ j) with hw_def
   have hw0 : ∀ j, 0 ≤ w j := fun j => (tailWeight_nonneg_le hp0 hp1).1
@@ -662,14 +662,14 @@ theorem tendsto_measureReal_tsum_mul_div_of_lt_one [IsProbabilityMeasure P] {Z :
 
 /-- **Almost sure convergence of the linear process** (`0 < δ < α < 1`): if `(Z_j)` are copies
 of `Z₀` with `P(|Z₀| > x)` regularly varying with index `-α` and `∑ |ψ_j|^δ < ∞`, then
-`∑ ψ_j Z_j` converges absolutely almost surely. The case `α < 1` of `ae_summable_mul_of_lt_one`. -/
+`∑ ψ_j Z_j` converges absolutely almost surely. The case `α < 1` of `ae_summable_mul_of_summable_rpow`. -/
 theorem ae_summable_mul [IsProbabilityMeasure P] {Z : ℕ → Ω → ℝ} {Z₀ : Ω → ℝ}
     (hZ : ∀ j, Measurable (Z j)) (hZ₀ : Measurable Z₀) (hident : ∀ j, IdentDistrib (Z j) Z₀ P P)
     {α δ : ℝ} (hδ : 0 < δ) (hδα : δ < α) (hα1 : α < 1)
     (hL : IsRegularlyVarying (fun x => P.real {ω | x < |Z₀ ω|}) (-α))
     {ψ : ℕ → ℝ} (hψ : Summable fun j => |ψ j| ^ δ) :
     ∀ᵐ ω ∂P, Summable fun j => ψ j * Z j ω :=
-  ae_summable_mul_of_lt_one hZ hZ₀ hident hδ hδα (hδα.trans hα1) hL hψ
+  ae_summable_mul_of_summable_rpow hZ hZ₀ hident hδ hδα (hδα.trans hα1) hL hψ
 
 /-- **Tails of infinite moving averages with regularly varying noise, `α < 1`** ([EKM, Lemma
 A3.26], [DR85], [KS20, Chapter 15]). Let `(Z_j)_{j ≥ 0}` be independent copies of `Z₀`, with
@@ -677,7 +677,7 @@ A3.26], [DR85], [KS20, Chapter 15]). Let `(Z_j)_{j ≥ 0}` be independent copies
 `P(Z₀ > x) / P(|Z₀| > x) → p`. If `∑ |ψ_j|^δ < ∞`, then `X = ∑_j ψ_j Z_j` (which converges
 absolutely almost surely, `ae_summable_mul`) satisfies
 `P(X > x) / P(|Z₀| > x) → ∑_j |ψ_j|^α (p 1{ψ_j > 0} + (1 - p) 1{ψ_j < 0})`. The case `α < 1` of
-`tendsto_measureReal_tsum_mul_div_of_lt_one`. -/
+`tendsto_measureReal_tsum_mul_div_of_summable_rpow`. -/
 theorem tendsto_measureReal_tsum_mul_div [IsProbabilityMeasure P] {Z : ℕ → Ω → ℝ} {Z₀ : Ω → ℝ}
     (hZ : ∀ j, Measurable (Z j)) (hZ₀ : Measurable Z₀) (hind : iIndepFun Z P)
     (hident : ∀ j, IdentDistrib (Z j) Z₀ P P) {α δ p : ℝ} (hδ : 0 < δ) (hδα : δ < α)
@@ -686,8 +686,18 @@ theorem tendsto_measureReal_tsum_mul_div [IsProbabilityMeasure P] {Z : ℕ → �
     {ψ : ℕ → ℝ} (hψ : Summable fun j => |ψ j| ^ δ) :
     Tendsto (fun x => P.real {ω | x < ∑' j, ψ j * Z j ω} / P.real {ω | x < |Z₀ ω|}) atTop
       (𝓝 (∑' j, tailWeight α p (ψ j))) :=
-  tendsto_measureReal_tsum_mul_div_of_lt_one hZ hZ₀ hind hident hδ hδα (hδα.trans hα1) hL hp hψ
+  tendsto_measureReal_tsum_mul_div_of_summable_rpow hZ hZ₀ hind hident hδ hδα (hδα.trans hα1) hL hp hψ
 
 end LinearProcess
 
 end ExtremeValueTheory
+
+/-! ### Deprecated names -/
+
+namespace ExtremeValueTheory.LinearProcess
+
+@[deprecated (since := "2026-10-23")] alias exists_measure_tsum_gt_le_of_lt_one := exists_measure_tsum_gt_le_of_summable_rpow
+@[deprecated (since := "2026-10-23")] alias ae_summable_mul_of_lt_one := ae_summable_mul_of_summable_rpow
+@[deprecated (since := "2026-10-23")] alias tendsto_measureReal_tsum_mul_div_of_lt_one := tendsto_measureReal_tsum_mul_div_of_summable_rpow
+
+end ExtremeValueTheory.LinearProcess

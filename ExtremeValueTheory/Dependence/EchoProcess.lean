@@ -21,9 +21,9 @@ innovations echo far away.
   `Θ_t = 1{t = 0}`, as for an iid sequence, and `ϑ = 1`.
 * But every exceedance cluster consists of *two* exceedances (an innovation and its echo), and
   `P(X_0 > x) ~ 2 P(Z > x)`. The extremal index is `θ = 1/2`.
-* The missing half of the cluster is exactly the escaping mass of `Dependence/ThetaGap.lean`: for
+* The missing half of the cluster is exactly the late-return mass of `Dependence/ThetaGap.lean`: for
   blocks `rₙ` longer than the echo lag of an exceedance (`E[L(Z); Z > uₙ] = o(rₙ P(Z > uₙ))`) but
-  with `rₙ P(Z > uₙ) → 0`, the cluster ratio tends to `1/2` and the escape mass is
+  with `rₙ P(Z > uₙ) → 0`, the cluster ratio tends to `1/2` and the late-return mass is
   `1/2 = ϑ - θ`. Forward anticlustering fails.
 
 The model is much simpler than the stable-regenerative model of Bai–Wang (arXiv:2110.07499), and
@@ -57,11 +57,11 @@ plus `L → ∞` and `E[L(Z)] < ∞` where stated):
   `ϑ = 1` (uses `L → ∞`, not `E[L(Z)] < ∞`).
 * `hasExtremalIndex_echoProcess`: `θ = 1/2` (uses `E[L(Z)] < ∞`).
 * `echoProcess_theta_lt_vartheta`: all of the above together.
-* `tendsto_clusterRatio_echoProcess`, `hasEscapeMass_echoProcess`,
-  `not_forwardAntiClusteringAt_echoProcess`: the cluster ratio tends to `1/2`, the escape mass is
+* `tendsto_clusterRatio_echoProcess`, `hasLateReturnMass_echoProcess`,
+  `not_forwardAntiClusteringAt_echoProcess`: the cluster ratio tends to `1/2`, the late-return mass is
   `1/2`, anticlustering fails.
-* `logEchoProcess_theta_lt_vartheta`, `logEchoProcess_hasEscapeMass`,
-  `logEchoProcess_hasEscapeMass_of_tendsto`: the same for `L(z) = ⌊log z⌋₊ + 1`, where the
+* `logEchoProcess_theta_lt_vartheta`, `logEchoProcess_hasLateReturnMass`,
+  `logEchoProcess_hasLateReturnMass_of_tendsto`: the same for `L(z) = ⌊log z⌋₊ + 1`, where the
   condition on the blocks is `log uₙ = o(rₙ)`; in the standard normalization
   `n P(X_0 > uₙ) → τ > 0` it suffices that `rₙ / n → 0` and `log n = o(rₙ)`.
 
@@ -822,7 +822,7 @@ theorem echoProcess_theta_lt_vartheta (hLinf : Tendsto L atTop atTop)
     by rw [candidateExtremalIndex_unitSpectral hα]; rfl,
     hasExtremalIndex_echoProcess hα hZ hind hlaw hpos hLm hL1 hLinf hLsum⟩
 
-/-! #### The cluster ratio and the escaping mass -/
+/-! #### The cluster ratio and the late-return mass -/
 
 include hα hZ hind hlaw in
 omit [IsProbabilityMeasure P] in
@@ -957,16 +957,16 @@ theorem tendsto_clusterRatio_echoProcess {u : ℕ → ℝ} (hu : Tendsto u atTop
     exact mul_le_mul_of_nonneg_right (by linarith) hρpos.le
 
 include hα hZ hind hlaw hpos hLm hL1 in
-/-- **The escaping mass of the echo process is `1/2 = ϑ - θ`**, as predicted by the gap formula
+/-- **The late-return mass of the echo process is `1/2 = ϑ - θ`**, as predicted by the gap formula
 `HasSpectralTailProcess.tendsto_clusterRatio_iff`: one of the two exceedances of each cluster
 sits at lag `L(Z) → ∞`, invisible to the tail process. -/
-theorem hasEscapeMass_echoProcess (hLinf : Tendsto L atTop atTop) {u : ℕ → ℝ}
+theorem hasLateReturnMass_echoProcess (hLinf : Tendsto L atTop atTop) {u : ℕ → ℝ}
     (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
     (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0))
     (hLsum : Summable fun j : ℕ => (paretoMeasure 1 α).real {z | j + 1 ≤ L z})
     (hR : Tendsto (fun n => (∑' j : ℕ, (paretoMeasure 1 α).real {z | u n < z ∧ j + 1 ≤ L z}) /
       (r n * u n ^ (-α))) atTop (𝓝 0)) :
-    HasEscapeMass P (echoProcess L Z) u r (1 / 2) := by
+    HasLateReturnMass P (echoProcess L Z) u r (1 / 2) := by
   have h := (hasSpectralTailProcess_echoProcess hα hZ hind hlaw hpos hLm hL1 hLinf
     ).tendsto_clusterRatio_iff hα (measurable_echoProcess hZ hLm) measurable_unitSpectral
     (hasShiftInvariantWindows_echoProcess hZ hind hlaw hLm) hu hr (1 / 2)
@@ -984,8 +984,8 @@ theorem not_forwardAntiClusteringAt_echoProcess (hLinf : Tendsto L atTop atTop) 
     (hR : Tendsto (fun n => (∑' j : ℕ, (paretoMeasure 1 α).real {z | u n < z ∧ j + 1 ≤ L z}) /
       (r n * u n ^ (-α))) atTop (𝓝 0)) :
     ¬ ForwardAntiClusteringAt P (echoProcess L Z) u r := fun hAC => by
-  have h1 := hasEscapeMass_echoProcess hα hZ hind hlaw hpos hLm hL1 hLinf hu hr hrb hLsum hR
-  have := h1.unique (hAC.hasEscapeMass_zero hr)
+  have h1 := hasLateReturnMass_echoProcess hα hZ hind hlaw hpos hLm hL1 hLinf hu hr hrb hLsum hR
+  have := h1.unique (hAC.hasLateReturnMass_zero hr)
   norm_num at this
 
 end Echo
@@ -1132,38 +1132,38 @@ theorem logEchoProcess_theta_lt_vartheta (hα : 0 < α) (hZ : ∀ t, Measurable 
   echoProcess_theta_lt_vartheta hα hZ hind hlaw hpos measurable_logLag one_le_logLag
     tendsto_logLag (summable_logLag hα)
 
-/-- **The gap is the escaping mass, explicitly**: for the logarithmic echo process, along any
+/-- **The gap is the late-return mass, explicitly**: for the logarithmic echo process, along any
 `uₙ → ∞`, `rₙ → ∞` with `rₙ uₙ^(-α) → 0` and `log uₙ = o(rₙ)` (see
-`logEchoProcess_hasEscapeMass_of_tendsto` for the standard normalization), the cluster ratio
-tends to `1/2 = θ`, the escape mass is `1/2 = ϑ - θ`, and forward anticlustering fails. -/
-theorem logEchoProcess_hasEscapeMass (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
+`logEchoProcess_hasLateReturnMass_of_tendsto` for the standard normalization), the cluster ratio
+tends to `1/2 = θ`, the late-return mass is `1/2 = ϑ - θ`, and forward anticlustering fails. -/
+theorem logEchoProcess_hasLateReturnMass (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
     (hind : iIndepFun Z P) (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α)
     (hpos : ∀ t ω, 0 ≤ Z t ω) {u : ℕ → ℝ} (hu : Tendsto u atTop atTop) {r : ℕ → ℕ}
     (hr : Tendsto r atTop atTop) (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0))
     (hlog : Tendsto (fun n => Real.log (u n) / r n) atTop (𝓝 0)) :
     Tendsto (clusterRatio P (echoProcess logLag Z) u r) atTop (𝓝 (1 / 2)) ∧
-      HasEscapeMass P (echoProcess logLag Z) u r (1 / 2) ∧
+      HasLateReturnMass P (echoProcess logLag Z) u r (1 / 2) ∧
       ¬ ForwardAntiClusteringAt P (echoProcess logLag Z) u r := by
   have hR := tendsto_tsum_logLag_div hα hu hr hlog
   exact ⟨tendsto_clusterRatio_echoProcess hα hZ hind hlaw hpos measurable_logLag one_le_logLag
       hu hr hrb (summable_logLag hα) hR,
-    hasEscapeMass_echoProcess hα hZ hind hlaw hpos measurable_logLag one_le_logLag tendsto_logLag
+    hasLateReturnMass_echoProcess hα hZ hind hlaw hpos measurable_logLag one_le_logLag tendsto_logLag
       hu hr hrb (summable_logLag hα) hR,
     not_forwardAntiClusteringAt_echoProcess hα hZ hind hlaw hpos measurable_logLag one_le_logLag
       tendsto_logLag hu hr hrb (summable_logLag hα) hR⟩
 
 /-- **The same in the standard normalization**: along every level sequence with
 `n P(X_0 > uₙ) → τ > 0` and every block length with `rₙ / n → 0` and `log n = o(rₙ)` (for
-instance `rₙ = ⌊√n⌋`, not checked here), the logarithmic echo process has escape mass
+instance `rₙ = ⌊√n⌋`, not checked here), the logarithmic echo process has late-return mass
 `1/2 = ϑ - θ` and violates forward anticlustering. -/
-theorem logEchoProcess_hasEscapeMass_of_tendsto (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
+theorem logEchoProcess_hasLateReturnMass_of_tendsto (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
     (hind : iIndepFun Z P) (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α)
     (hpos : ∀ t ω, 0 ≤ Z t ω) {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
     (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess logLag Z 0 ω}) atTop (𝓝 τ))
     {r : ℕ → ℕ} (hr : Tendsto r atTop atTop) (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
     (hlogr : Tendsto (fun n : ℕ => Real.log n / r n) atTop (𝓝 0)) :
     Tendsto (clusterRatio P (echoProcess logLag Z) u r) atTop (𝓝 (1 / 2)) ∧
-      HasEscapeMass P (echoProcess logLag Z) u r (1 / 2) ∧
+      HasLateReturnMass P (echoProcess logLag Z) u r (1 / 2) ∧
       ¬ ForwardAntiClusteringAt P (echoProcess logLag Z) u r := by
   have hT := hasSpectralTailProcess_echoProcess hα hZ hind hlaw hpos measurable_logLag
     one_le_logLag tendsto_logLag
@@ -1217,8 +1217,18 @@ theorem logEchoProcess_hasEscapeMass_of_tendsto (hα : 0 < α) (hZ : ∀ t, Meas
         exact Real.log_le_log (Real.rpow_pos_of_pos hupos _) hpow
       rw [div_le_div_iff₀ hR hα, ← add_div, div_mul_eq_mul_div, le_div_iff₀ hR]
       nlinarith
-  exact logEchoProcess_hasEscapeMass hα hZ hind hlaw hpos hu hr hrb hlog
+  exact logEchoProcess_hasLateReturnMass hα hZ hind hlaw hpos hu hr hrb hlog
 
 end LogLag
+
+end ExtremeValueTheory
+
+/-! ### Deprecated names -/
+
+namespace ExtremeValueTheory
+
+@[deprecated (since := "2026-10-23")] alias hasEscapeMass_echoProcess := hasLateReturnMass_echoProcess
+@[deprecated (since := "2026-10-23")] alias logEchoProcess_hasEscapeMass := logEchoProcess_hasLateReturnMass
+@[deprecated (since := "2026-10-23")] alias logEchoProcess_hasEscapeMass_of_tendsto := logEchoProcess_hasLateReturnMass_of_tendsto
 
 end ExtremeValueTheory

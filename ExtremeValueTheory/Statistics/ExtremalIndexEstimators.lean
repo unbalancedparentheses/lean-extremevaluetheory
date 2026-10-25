@@ -1223,7 +1223,7 @@ theorem logEcho_tendstoInMeasure_blocksEstimator {u : ℕ → ℝ} (hu : Tendsto
     (tendsto_sum_measureReal_lt_and_lt_div_of_div (X := fun k : ℕ => echoProcess logLag Z k) hrk)
     (logEcho_tendsto_sum_alphaMixing_div hα hZ hind hlaw hk hr hlogn)
     (logEcho_tendsto_alphaMixing_div hα hZ hind hlaw hk hr hlogn)
-  have h := (logEchoProcess_hasEscapeMass hα hZ hind hlaw hpos hu hr hrb hlogu).1
+  have h := (logEchoProcess_hasLateReturnMass hα hZ hind hlaw hpos hu hr hrb hlogu).1
   refine h.congr fun n => ?_
   have eB : P.real (blockEvent (fun k : ℕ => echoProcess logLag Z k) (r n) 0 (u n)) =
       P.real {ω | ∃ t ∈ Finset.Ico (0 : ℤ) (r n), u n < |echoProcess logLag Z t ω|} := by

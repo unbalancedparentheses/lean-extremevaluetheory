@@ -62,16 +62,16 @@ theorem test_pareto_tail :
 /-! ### The generalized Pareto distribution ([EKM, Def. 3.4.9]) -/
 
 /-- `Ḡ_{0,β}(x) = e^{-x/β}`: `Ḡ_{0,2}(2) = e⁻¹`. -/
-theorem test_gpd_exponential : gpdSurvival 0 2 2 = exp (-1) := by
-  rw [gpdSurvival_of_eq_zero]; norm_num
+theorem test_gpd_exponential : gpdSurvivalNonneg 0 2 2 = exp (-1) := by
+  rw [gpdSurvivalNonneg_of_eq_zero]; norm_num
 
 /-- `Ḡ_{1,1}(1) = (1 + 1)^{-1} = 1/2`. -/
-theorem test_gpd_one_one : gpdSurvival 1 1 1 = 1 / 2 := by
-  rw [gpdSurvival_of_ne_zero one_ne_zero]; norm_num [rpow_neg_one]
+theorem test_gpd_one_one : gpdSurvivalNonneg 1 1 1 = 1 / 2 := by
+  rw [gpdSurvivalNonneg_of_ne_zero one_ne_zero]; norm_num [rpow_neg_one]
 
 /-- `Ḡ_{1/2,1}(2) = (1 + 1)^{-2} = 1/4`: fails if the exponent were `-ξ` instead of `-1/ξ`. -/
-theorem test_gpd_half_one : gpdSurvival (1 / 2) 1 2 = 1 / 4 := by
-  rw [gpdSurvival_of_ne_zero (by norm_num)]
+theorem test_gpd_half_one : gpdSurvivalNonneg (1 / 2) 1 2 = 1 / 4 := by
+  rw [gpdSurvivalNonneg_of_ne_zero (by norm_num)]
   rw [show (1 + 1 / 2 * 2 / 1 : ℝ) = 2 by norm_num, show -(1 / (1 / 2 : ℝ)) = -2 by norm_num,
     rpow_neg (by norm_num)]
   norm_num
@@ -79,22 +79,22 @@ theorem test_gpd_half_one : gpdSurvival (1 / 2) 1 2 = 1 / 4 := by
 /-- `ξ = -1`: `Ḡ_{-1,1}` is the uniform survival function `1 - x` on `[0, 1]`, and it vanishes
 beyond the right endpoint `-β/ξ = 1` ([EKM, Def. 3.4.9]). -/
 theorem test_gpd_uniform :
-    gpdSurvival' (-1) 1 (1 / 4) = 3 / 4 ∧ gpdSurvival' (-1) 1 2 = 0 := by
-  have h := gpdSurvival'_neg_inv (α := 1) one_pos
+    gpdSurvivalAll (-1) 1 (1 / 4) = 3 / 4 ∧ gpdSurvivalAll (-1) 1 2 = 0 := by
+  have h := gpdSurvivalAll_neg_inv (α := 1) one_pos
   norm_num at h
   refine ⟨by rw [h]; norm_num, by rw [h]; norm_num⟩
 
 /-- `Ḡ_{-1/2,1}(1) = (1 - 1/2)^2 = 1/4`. -/
-theorem test_gpd_neg_half : gpdSurvival' (-1 / 2) 1 1 = 1 / 4 := by
-  rw [gpdSurvival'_neg_inv two_pos]
+theorem test_gpd_neg_half : gpdSurvivalAll (-1 / 2) 1 1 = 1 / 4 := by
+  rw [gpdSurvivalAll_neg_inv two_pos]
   norm_num [rpow_two]
 
 /-- **The excess law of a Pareto tail is a GPD** ([EKM, Example 3.4.13 / Theorem 3.4.13(c)]):
 for `F̄(x) = x^{-α}` and `u > 0`, `F̄(u + x)/F̄(u) = Ḡ_{1/α, u/α}(x)`. Fails if the GPD
 shape-scale convention were different (e.g. scale `u` instead of `u/α`). -/
 theorem test_pareto_excess_is_gpd {α u x : ℝ} (hα : 0 < α) (hu : 0 < u) (hx : 0 ≤ x) :
-    excessSurvival (fun y ↦ y ^ (-α)) u x = gpdSurvival (1 / α) (u / α) x := by
-  rw [excessSurvival, gpdSurvival_of_ne_zero (one_div_pos.2 hα).ne', one_div_one_div,
+    excessSurvival (fun y ↦ y ^ (-α)) u x = gpdSurvivalNonneg (1 / α) (u / α) x := by
+  rw [excessSurvival, gpdSurvivalNonneg_of_ne_zero (one_div_pos.2 hα).ne', one_div_one_div,
     ← div_rpow (by linarith) hu.le]
   congr 1
   field_simp
@@ -102,17 +102,17 @@ theorem test_pareto_excess_is_gpd {α u x : ℝ} (hα : 0 < α) (hu : 0 < u) (hx
 /-- **Lack of memory**: the excess law of an exponential tail is the same exponential,
 `Ḡ_{0,β}` ([EKM, §3.4]). -/
 theorem test_exponential_excess {β u x : ℝ} :
-    excessSurvival (fun y ↦ exp (-y / β)) u x = gpdSurvival 0 β x := by
-  rw [excessSurvival, gpdSurvival_of_eq_zero, ← exp_sub]
+    excessSurvival (fun y ↦ exp (-y / β)) u x = gpdSurvivalNonneg 0 β x := by
+  rw [excessSurvival, gpdSurvivalNonneg_of_eq_zero, ← exp_sub]
   congr 1
   ring
 
 /-- **Mean excess of the exponential GPD**: `e(u) = β` for `Ḡ_{0,β}` ([EKM, Theorem 3.4.13(e)]
 with `ξ = 0`). -/
 theorem test_meanExcess_gpd_zero {β : ℝ} (hβ : 0 < β) (u : ℝ) :
-    meanExcess (gpdSurvival 0 β) u = β := by
-  have hint : ∫ t in Ioi u, gpdSurvival 0 β t = β * exp (-u / β) := by
-    simp only [gpdSurvival_of_eq_zero]
+    meanExcess (gpdSurvivalNonneg 0 β) u = β := by
+  have hint : ∫ t in Ioi u, gpdSurvivalNonneg 0 β t = β * exp (-u / β) := by
+    simp only [gpdSurvivalNonneg_of_eq_zero]
     have hd : ∀ t ∈ Ici u, HasDerivAt (fun t ↦ -β * exp (-t / β)) (exp (-t / β)) t := by
       intro t _
       have := ((hasDerivAt_neg t).div_const β).exp.const_mul (-β)
@@ -125,12 +125,12 @@ theorem test_meanExcess_gpd_zero {β : ℝ} (hβ : 0 < β) (u : ℝ) :
       simpa using (tendsto_exp_atBot.comp this).const_mul (-β)
     rw [integral_Ioi_of_hasDerivAt_of_nonneg' hd (fun t _ ↦ (exp_pos _).le) hlim]
     ring
-  rw [meanExcess, hint, gpdSurvival_of_eq_zero, mul_div_cancel_right₀ _ (exp_pos _).ne']
+  rw [meanExcess, hint, gpdSurvivalNonneg_of_eq_zero, mul_div_cancel_right₀ _ (exp_pos _).ne']
 
 /-- **Mean excess of the GPD**: `e(u) = (β + ξ u)/(1 - ξ)` for `0 < ξ < 1`, `u ≥ 0`
 ([EKM, Theorem 3.4.13(e)]). Fails if the sign of `ξ u` or the factor `1/(1 - ξ)` were wrong. -/
 theorem test_meanExcess_gpd {ξ β u : ℝ} (hξ0 : 0 < ξ) (hξ1 : ξ < 1) (hβ : 0 < β) (hu : 0 ≤ u) :
-    meanExcess (gpdSurvival ξ β) u = (β + ξ * u) / (1 - ξ) := by
+    meanExcess (gpdSurvivalNonneg ξ β) u = (β + ξ * u) / (1 - ξ) := by
   set c := 1 + ξ * u / β with hc_def
   have hc : 0 < c := by have : 0 ≤ ξ * u / β := by positivity
                         linarith
@@ -138,8 +138,8 @@ theorem test_meanExcess_gpd {ξ β u : ℝ} (hξ0 : 0 < ξ) (hξ1 : ξ < 1) (hβ
   have ha : -(1 / ξ) < -1 := by
     have : 1 < 1 / ξ := by rw [lt_div_iff₀ hξ0]; linarith
     linarith
-  have hint : ∫ t in Ioi u, gpdSurvival ξ β t = β / ξ * (c ^ (-(1 / ξ) + 1) / (1 / ξ - 1)) := by
-    simp only [gpdSurvival_of_ne_zero hξ0.ne']
+  have hint : ∫ t in Ioi u, gpdSurvivalNonneg ξ β t = β / ξ * (c ^ (-(1 / ξ) + 1) / (1 / ξ - 1)) := by
+    simp only [gpdSurvivalNonneg_of_ne_zero hξ0.ne']
     set e := -(1 / ξ) with he
     have he1 : e + 1 < 0 := by linarith
     have hpos : ∀ t ∈ Ici u, 0 < 1 + ξ * t / β := fun t ht ↦ by
@@ -166,7 +166,7 @@ theorem test_meanExcess_gpd {ξ β u : ℝ} (hξ0 : 0 < ξ) (hξ1 : ξ < 1) (hβ
     rw [this, ← hc_def]
     field_simp
     ring
-  rw [meanExcess, hint, gpdSurvival_of_ne_zero hξ0.ne', ← hc_def, rpow_add hc, rpow_one]
+  rw [meanExcess, hint, gpdSurvivalNonneg_of_ne_zero hξ0.ne', ← hc_def, rpow_add hc, rpow_one]
   have hcpow : 0 < c ^ (-(1 / ξ)) := rpow_pos_of_pos hc _
   have h1ξ : 1 / ξ - 1 = (1 - ξ) / ξ := by field_simp
   rw [h1ξ, hc_def]

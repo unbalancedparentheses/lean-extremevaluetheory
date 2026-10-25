@@ -40,7 +40,7 @@ Hypotheses throughout: `α > 0`, iid Pareto(`α`) innovations `Z ≥ 0` (`hZ`, `
 * `powEchoProcess_antiClustering_iff`: for `ρ ∈ (0, 1)`, `ρ ≠ γ / α`, the anticlustering
   condition `AC(rₙ)` (all levels `aₙ x`, `n P(X_0 > aₙ) → τ > 0`) holds **iff** `ρ < γ / α`.
 * `powEchoProcess_critical`: for `rₙ / n^(γ/α) → c > 0`, the cluster ratio tends to
-  `(1 + φ_{α/γ}(κ)) / 2` with `κ = (2/τ)^(γ/α) / c`, the escape mass is `(1 - φ_{α/γ}(κ)) / 2`;
+  `(1 + φ_{α/γ}(κ)) / 2` with `κ = (2/τ)^(γ/α) / c`, the late-return mass is `(1 - φ_{α/γ}(κ)) / 2`;
   forward anticlustering fails when `κ < 1` and anticlustering holds when `κ > 1`.
 
 ## Remarks
@@ -552,7 +552,7 @@ theorem tendsto_clusterRatio_powEchoProcess_short (hγ : 0 < γ) (hγα : γ < �
 
 include hα hZ hind hlaw hpos in
 /-- **Anticlustering fails when the cluster ratio does not tend to `ϑ = 1`.** For the power-lag
-echo process, forward anticlustering along `uₙ → ∞`, `rₙ → ∞` would force the escape mass to
+echo process, forward anticlustering along `uₙ → ∞`, `rₙ → ∞` would force the late-return mass to
 vanish and hence the cluster ratio to tend to `ϑ = 1`. -/
 theorem not_forwardAntiClusteringAt_powEchoProcess (hγ : 0 < γ) {u : ℕ → ℝ}
     (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop) {ℓ : ℝ} (hℓ : ℓ ≠ 1)
@@ -563,7 +563,7 @@ theorem not_forwardAntiClusteringAt_powEchoProcess (hγ : 0 < γ) {u : ℕ → �
     (measurable_echoProcess hZ (measurable_powLag γ)) measurable_unitSpectral
     (hasShiftInvariantWindows_echoProcess hZ hind hlaw (measurable_powLag γ)) hu hr ℓ
   rw [candidateExtremalIndex_unitSpectral hα] at h
-  have := (h.1 hlim).unique (hAC.hasEscapeMass_zero hr)
+  have := (h.1 hlim).unique (hAC.hasLateReturnMass_zero hr)
   simp only [ENNReal.toReal_one] at this
   exact hℓ (by linarith)
 
@@ -710,7 +710,7 @@ theorem powEchoProcess_antiClustering_iff (hγ : 0 < γ) (hγα : γ < α) {a : 
 include hα hZ hind hlaw hpos in
 /-- **The critical block length `rₙ ~ c n^(γ/α)`.** With `n P(X_0 > uₙ) → τ > 0` and
 `rₙ / n^(γ/α) → c > 0`, the echo lag over block length is `uₙ^γ / rₙ → κ = (2/τ)^(γ/α) / c`, the
-cluster ratio tends to `(1 + φ_{α/γ}(κ)) / 2` and the escape mass is `(1 - φ_{α/γ}(κ)) / 2`.
+cluster ratio tends to `(1 + φ_{α/γ}(κ)) / 2` and the late-return mass is `(1 - φ_{α/γ}(κ)) / 2`.
 For `κ < 1` (i.e. `c > (2/τ)^(γ/α)`) this lies strictly between `θ = 1/2` and `ϑ = 1`, and
 forward anticlustering fails; for `κ > 1` anticlustering holds. -/
 theorem powEchoProcess_critical (hγ : 0 < γ) (hγα : γ < α) {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
@@ -719,7 +719,7 @@ theorem powEchoProcess_critical (hγ : 0 < γ) (hγα : γ < α) {u : ℕ → �
     (hrc : Tendsto (fun n : ℕ => (r n : ℝ) / (n : ℝ) ^ (γ / α)) atTop (𝓝 c)) :
     Tendsto (clusterRatio P (echoProcess (powLag γ) Z) u r) atTop
         (𝓝 ((1 + echoShape (α / γ) ((2 / τ) ^ (γ / α) / c)) / 2)) ∧
-      HasEscapeMass P (echoProcess (powLag γ) Z) u r
+      HasLateReturnMass P (echoProcess (powLag γ) Z) u r
         ((1 - echoShape (α / γ) ((2 / τ) ^ (γ / α) / c)) / 2) ∧
       ((2 / τ) ^ (γ / α) / c < 1 →
         ¬ ForwardAntiClusteringAt P (echoProcess (powLag γ) Z) u r) ∧

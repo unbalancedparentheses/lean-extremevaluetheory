@@ -30,7 +30,7 @@ level sequence (it is `1`-dependent), violates `D'(uₙ)` along every level sequ
 
 open MeasureTheory ProbabilityTheory Filter Topology Finset
 
-namespace ExtremeValueTheory
+namespace ExtremeValueTheory.Minimality
 
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
   {Z : ℕ → Ω → ℝ}
@@ -172,5 +172,19 @@ theorem leadbetter_needs_conditionD' (hid : ∀ t, IdentDistrib (Z t) (Z 0) P P)
   obtain ⟨u, hu⟩ := hasExceedanceLevels_movingMax hZ hind hid hcont τ hτ0
   exact ⟨u, hu, isStationary_movingMax hZ hind hid, conditionD_movingMax hind hid u,
     not_conditionD'_movingMax hid hτ0 hu, not_tendsto_exp_movingMax hZ hind hid hτ0 hu⟩
+
+end ExtremeValueTheory.Minimality
+
+/-! ### Deprecated names -/
+
+namespace ExtremeValueTheory
+
+@[deprecated (since := "2026-10-23")] alias maxLE_movingMax := Minimality.maxLE_movingMax
+@[deprecated (since := "2026-10-23")] alias conditionD_movingMax := Minimality.conditionD_movingMax
+@[deprecated (since := "2026-10-23")] alias measureReal_lt_movingMax_le := Minimality.measureReal_lt_movingMax_le
+@[deprecated (since := "2026-10-23")] alias not_conditionD'_movingMax := Minimality.not_conditionD'_movingMax
+@[deprecated (since := "2026-10-23")] alias not_tendsto_exp_movingMax := Minimality.not_tendsto_exp_movingMax
+@[deprecated (since := "2026-10-23")] alias hasExceedanceLevels_movingMax := Minimality.hasExceedanceLevels_movingMax
+@[deprecated (since := "2026-10-23")] alias leadbetter_needs_conditionD' := Minimality.leadbetter_needs_conditionD'
 
 end ExtremeValueTheory

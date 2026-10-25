@@ -37,17 +37,17 @@ Standing hypotheses: `α > 0`, iid Pareto(`α`) innovations (`hZ`, `hind`, `hlaw
 * `tendsto_clusterRatio_sub_echoProcess`: **the cluster ratio at every block length**,
   `clusterRatio - (1 + E[min(L(Z), rₙ); Z > uₙ] / (rₙ uₙ^(-α))) / 2 → 0`, for `L ≥ 1`,
   `uₙ → ∞`, `rₙ ≥ 1` eventually, `rₙ uₙ^(-α) → 0` (neither `L → ∞` nor `E L(Z) < ∞`).
-* `tendsto_clusterRatio_echoProcess_short`, `hasEscapeMass_echoProcess_short`: if eventually
+* `tendsto_clusterRatio_echoProcess_short`, `hasLateReturnMass_echoProcess_short`: if eventually
   `rₙ ≤ L(z)` for every `z > uₙ` (blocks shorter than every echo lag of an exceedance), the
-  cluster ratio tends to `1 = ϑ` and the escape mass is `0` (the latter with `L → ∞`, `rₙ → ∞`).
+  cluster ratio tends to `1 = ϑ` and the late-return mass is `0` (the latter with `L → ∞`, `rₙ → ∞`).
 * For the logarithmic lag `L(z) = ⌊log z⌋₊ + 1` and `n P(X_0 > uₙ) → τ > 0` (so that the echo
   lag of an exceedance is `≈ log uₙ ≈ (1 / α) log n`, `logEchoProcess_levels`):
-  - `logEchoProcess_short_blocks`: `rₙ → ∞`, `rₙ = o(log n)`: ratio `→ 1`, escape mass `0`;
+  - `logEchoProcess_short_blocks`: `rₙ → ∞`, `rₙ = o(log n)`: ratio `→ 1`, late-return mass `0`;
   - `logEchoProcess_critical_blocks`: `rₙ / log n → c > 0`: ratio
-    `→ (1 + min(1 / (c α), 1)) / 2`, escape mass `(1 - min(1 / (c α), 1)) / 2`;
+    `→ (1 + min(1 / (c α), 1)) / 2`, late-return mass `(1 - min(1 / (c α), 1)) / 2`;
   - `logEchoProcess_phase_transition`: the two regimes above together with the long-block regime
-    `log n = o(rₙ)`, `rₙ = o(n)` of `logEchoProcess_hasEscapeMass_of_tendsto` (ratio `→ 1/2`,
-    escape mass `1/2`);
+    `log n = o(rₙ)`, `rₙ = o(n)` of `logEchoProcess_hasLateReturnMass_of_tendsto` (ratio `→ 1/2`,
+    late-return mass `1/2`);
   - `logEchoProcess_not_conditionA`: for `rₙ → ∞`, `rₙ / log n → c ∈ [0, ∞)` the block condition
     `A(uₙ)` fails. With `conditionA_logEchoProcess` (`Dependence/EchoConditionA.lean`, for
     `log n = o(rₙ)`, `rₙ = o(n)`): along block lengths with `rₙ = o(n)` and
@@ -68,8 +68,8 @@ Standing hypotheses: `α > 0`, iid Pareto(`α`) innovations (`hZ`, `hind`, `hlaw
 * The cluster ratio is the block estimator of the extremal index; the theorem shows that, without
   anticlustering, the block estimator can converge to any value in `[θ, ϑ]` depending on the
   block length. Only in the long-block regime does it estimate `θ`. In the short and critical
-  regimes the escape mass of `Dependence/ThetaGap.lean` differs from `ϑ - θ`, so by
-  `HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex` the block condition `A(uₙ)` fails
+  regimes the late-return mass of `Dependence/ThetaGap.lean` differs from `ϑ - θ`, so by
+  `HasSpectralTailProcess.hasLateReturnMass_of_hasExtremalIndex` the block condition `A(uₙ)` fails
   along those block lengths (`logEchoProcess_not_conditionA`). In this example, among block
   lengths with `rₙ / log n → c ∈ [0, ∞]` (and `rₙ = o(n)`), the relation `θ = ϑ - η` holds
   exactly where `A(uₙ)` holds, namely for `c = ∞`. (Without `rₙ = o(n)` this fails: for
@@ -423,14 +423,14 @@ theorem tendsto_clusterRatio_echoProcess_short (hL1 : ∀ z, 1 ≤ L z) {u : ℕ
   rw [echoBlockMass_eq_of_le hα hu1 hn, div_self (by positivity)]
 
 include hα hZ hind hlaw hpos hLm in
-/-- **Short blocks: no escape mass.** In the regime of `tendsto_clusterRatio_echoProcess_short`
-(and `L → ∞`, `rₙ → ∞`), the escape mass is `0`: at block lengths below the echo lag the echo
+/-- **Short blocks: no late-return mass.** In the regime of `tendsto_clusterRatio_echoProcess_short`
+(and `L → ∞`, `rₙ → ∞`), the late-return mass is `0`: at block lengths below the echo lag the echo
 process looks like an iid sequence, with cluster ratio `ϑ = 1`. -/
-theorem hasEscapeMass_echoProcess_short (hL1 : ∀ z, 1 ≤ L z) (hLinf : Tendsto L atTop atTop)
+theorem hasLateReturnMass_echoProcess_short (hL1 : ∀ z, 1 ≤ L z) (hLinf : Tendsto L atTop atTop)
     {u : ℕ → ℝ} (hu : Tendsto u atTop atTop) {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
     (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0))
     (hshort : ∀ᶠ n in atTop, ∀ z, u n < z → r n ≤ L z) :
-    HasEscapeMass P (echoProcess L Z) u r 0 := by
+    HasLateReturnMass P (echoProcess L Z) u r 0 := by
   have h := (hasSpectralTailProcess_echoProcess hα hZ hind hlaw hpos hLm hL1 hLinf
     ).tendsto_clusterRatio_iff hα (measurable_echoProcess hZ hLm) measurable_unitSpectral
     (hasShiftInvariantWindows_echoProcess hZ hind hlaw hLm) hu hr 1
@@ -613,7 +613,7 @@ theorem logEchoProcess_levels {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
   exact ⟨hu, hnb, tendsto_log_div_log_of_tendsto_mul hα hu (by linarith) hnb⟩
 
 include hα hZ hind hlaw hpos in
-/-- **Blocks shorter than the echo lag (`rₙ = o(log n)`): cluster ratio `→ 1 = ϑ`, escape mass
+/-- **Blocks shorter than the echo lag (`rₙ = o(log n)`): cluster ratio `→ 1 = ϑ`, late-return mass
 `0`.** For the logarithmic echo process with `n P(X_0 > uₙ) → τ > 0` and `rₙ → ∞`,
 `rₙ / log n → 0`. -/
 theorem logEchoProcess_short_blocks {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
@@ -621,7 +621,7 @@ theorem logEchoProcess_short_blocks {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
     {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
     (hrlog : Tendsto (fun n : ℕ => (r n : ℝ) / Real.log n) atTop (𝓝 0)) :
     Tendsto (clusterRatio P (echoProcess logLag Z) u r) atTop (𝓝 1) ∧
-      HasEscapeMass P (echoProcess logLag Z) u r 0 := by
+      HasLateReturnMass P (echoProcess logLag Z) u r 0 := by
   obtain ⟨hu, hnb, hlu⟩ := logEchoProcess_levels hα hZ hind hlaw hpos hτ0 hτ
   have hrb := tendsto_mul_rpow_of_tendsto_div_log hnb hrlog
   -- `rₙ / log uₙ → 0`
@@ -646,13 +646,13 @@ theorem logEchoProcess_short_blocks {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
     omega
   exact ⟨tendsto_clusterRatio_echoProcess_short hα hZ hind hlaw hpos measurable_logLag
       one_le_logLag hu (hr.eventually_gt_atTop 0) hrb hshort,
-    hasEscapeMass_echoProcess_short hα hZ hind hlaw hpos measurable_logLag one_le_logLag
+    hasLateReturnMass_echoProcess_short hα hZ hind hlaw hpos measurable_logLag one_le_logLag
       tendsto_logLag hu hr hrb hshort⟩
 
 include hα hZ hind hlaw hpos in
 /-- **The critical regime `rₙ ≍ log n`.** For the logarithmic echo process with
 `n P(X_0 > uₙ) → τ > 0` and `rₙ / log n → c > 0`, the cluster ratio tends to
-`(1 + min(1 / (c α), 1)) / 2` and the escape mass is `(1 - min(1 / (c α), 1)) / 2`.
+`(1 + min(1 / (c α), 1)) / 2` and the late-return mass is `(1 - min(1 / (c α), 1)) / 2`.
 
 The echo lag of an exceedance is `≈ (1 / α) log n ≈ rₙ / (c α)`, so the echo of an exceedance at
 a uniformly placed time in the block stays in the block with probability `(1 - 1 / (c α))⁺`. The
@@ -663,7 +663,7 @@ theorem logEchoProcess_critical_blocks {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < 
     (hrlog : Tendsto (fun n : ℕ => (r n : ℝ) / Real.log n) atTop (𝓝 c)) :
     Tendsto (clusterRatio P (echoProcess logLag Z) u r) atTop
         (𝓝 ((1 + min (1 / (c * α)) 1) / 2)) ∧
-      HasEscapeMass P (echoProcess logLag Z) u r ((1 - min (1 / (c * α)) 1) / 2) := by
+      HasLateReturnMass P (echoProcess logLag Z) u r ((1 - min (1 / (c * α)) 1) / 2) := by
   obtain ⟨hu, hnb, hlu⟩ := logEchoProcess_levels hα hZ hind hlaw hpos hτ0 hτ
   have hrb := tendsto_mul_rpow_of_tendsto_div_log hnb hrlog
   have hL : Tendsto (fun n : ℕ => Real.log n) atTop atTop :=
@@ -744,8 +744,8 @@ theorem logEchoProcess_critical_blocks {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < 
 include hα hZ hind hlaw hpos in
 /-- **The block condition fails for blocks of length `O(log n)`.** For the logarithmic echo
 process with `n P(X_0 > uₙ) → τ > 0`, `rₙ → ∞` and `rₙ / log n → c ∈ [0, ∞)`, condition
-`A(uₙ)` fails along `rₙ`: otherwise, since `θ = 1/2` exists, the escape mass would be
-`ϑ - θ = 1/2` (`HasSpectralTailProcess.hasEscapeMass_of_hasExtremalIndex`), while it is
+`A(uₙ)` fails along `rₙ`: otherwise, since `θ = 1/2` exists, the late-return mass would be
+`ϑ - θ = 1/2` (`HasSpectralTailProcess.hasLateReturnMass_of_hasExtremalIndex`), while it is
 `(1 - min(1 / (c α), 1)) / 2 < 1/2` (or `0` for `c = 0`). Together with
 `conditionA_logEchoProcess` (`Dependence/EchoConditionA.lean`), for block lengths with
 `rₙ = o(n)` and `rₙ / log n → c ∈ [0, ∞]`, `A(uₙ)` holds iff `c = ∞`. (The restriction
@@ -766,7 +766,7 @@ theorem logEchoProcess_not_conditionA {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < �
     convert hθ using 3 with k
     funext ω
     exact abs_of_nonneg (echoProcess_nonneg hpos _ _)
-  have h := hT.hasEscapeMass_of_hasExtremalIndex hα (measurable_echoProcess hZ measurable_logLag)
+  have h := hT.hasLateReturnMass_of_hasExtremalIndex hα (measurable_echoProcess hZ measurable_logLag)
     measurable_unitSpectral hstat hθ' hτ' hτ0 hr (tendsto_div_of_tendsto_div_log hrlog) hA
   rw [candidateExtremalIndex_unitSpectral hα] at h
   rcases hc.eq_or_lt with rfl | hc
@@ -781,11 +781,11 @@ include hα hZ hind hlaw hpos in
 /-- **The block-length phase transition of the logarithmic echo process**, in the standard
 normalization `n P(X_0 > uₙ) → τ > 0`. The spectral tail process is `Θ_t = 1{t = 0}` (`ϑ = 1`)
 and the extremal index is `θ = 1/2` (`logEchoProcess_theta_lt_vartheta`), but the cluster ratio
-`P(M_{rₙ} > uₙ) / (rₙ P(X_0 > uₙ))` and the escape mass depend on the block length:
-* `rₙ → ∞`, `rₙ = o(log n)`: ratio `→ 1 = ϑ`, escape mass `0`;
-* `rₙ / log n → c > 0`: ratio `→ (1 + min(1 / (c α), 1)) / 2`, escape mass
+`P(M_{rₙ} > uₙ) / (rₙ P(X_0 > uₙ))` and the late-return mass depend on the block length:
+* `rₙ → ∞`, `rₙ = o(log n)`: ratio `→ 1 = ϑ`, late-return mass `0`;
+* `rₙ / log n → c > 0`: ratio `→ (1 + min(1 / (c α), 1)) / 2`, late-return mass
   `(1 - min(1 / (c α), 1)) / 2`;
-* `log n = o(rₙ)`, `rₙ = o(n)`: ratio `→ 1/2 = θ`, escape mass `1/2 = ϑ - θ`.
+* `log n = o(rₙ)`, `rₙ = o(n)`: ratio `→ 1/2 = θ`, late-return mass `1/2 = ϑ - θ`.
 The transition happens at the scale `rₙ ≍ log n` of the echo lag `(1 / α) log n` of an
 exceedance, and is continuous in `c`. -/
 theorem logEchoProcess_phase_transition {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
@@ -793,21 +793,29 @@ theorem logEchoProcess_phase_transition {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 <
     (r : ℕ → ℕ) :
     (Tendsto r atTop atTop → Tendsto (fun n : ℕ => (r n : ℝ) / Real.log n) atTop (𝓝 0) →
         Tendsto (clusterRatio P (echoProcess logLag Z) u r) atTop (𝓝 1) ∧
-          HasEscapeMass P (echoProcess logLag Z) u r 0) ∧
+          HasLateReturnMass P (echoProcess logLag Z) u r 0) ∧
       (∀ c : ℝ, 0 < c → Tendsto (fun n : ℕ => (r n : ℝ) / Real.log n) atTop (𝓝 c) →
         Tendsto (clusterRatio P (echoProcess logLag Z) u r) atTop
             (𝓝 ((1 + min (1 / (c * α)) 1) / 2)) ∧
-          HasEscapeMass P (echoProcess logLag Z) u r ((1 - min (1 / (c * α)) 1) / 2)) ∧
+          HasLateReturnMass P (echoProcess logLag Z) u r ((1 - min (1 / (c * α)) 1) / 2)) ∧
       (Tendsto r atTop atTop → Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0) →
         Tendsto (fun n : ℕ => Real.log n / r n) atTop (𝓝 0) →
         Tendsto (clusterRatio P (echoProcess logLag Z) u r) atTop (𝓝 (1 / 2)) ∧
-          HasEscapeMass P (echoProcess logLag Z) u r (1 / 2)) :=
+          HasLateReturnMass P (echoProcess logLag Z) u r (1 / 2)) :=
   ⟨fun hr hrlog => logEchoProcess_short_blocks hα hZ hind hlaw hpos hτ0 hτ hr hrlog,
     fun _ hc hrlog => logEchoProcess_critical_blocks hα hZ hind hlaw hpos hτ0 hτ hc hrlog,
     fun hr hrn hlogr =>
-      let h := logEchoProcess_hasEscapeMass_of_tendsto hα hZ hind hlaw hpos hτ0 hτ hr hrn hlogr
+      let h := logEchoProcess_hasLateReturnMass_of_tendsto hα hZ hind hlaw hpos hτ0 hτ hr hrn hlogr
       ⟨h.1, h.2.1⟩⟩
 
 end LogEcho
+
+end ExtremeValueTheory
+
+/-! ### Deprecated names -/
+
+namespace ExtremeValueTheory
+
+@[deprecated (since := "2026-10-23")] alias hasEscapeMass_echoProcess_short := hasLateReturnMass_echoProcess_short
 
 end ExtremeValueTheory

@@ -60,10 +60,10 @@ section GPD
 
 variable {ρ : ℝ}
 
-theorem continuous_gpdSurvival'_of_nonpos (hρ : ρ ≤ 0) : Continuous (gpdSurvival' ρ 1) := by
+theorem continuous_gpdSurvival'_of_nonpos (hρ : ρ ≤ 0) : Continuous (gpdSurvivalAll ρ 1) := by
   rcases hρ.lt_or_eq with hρ' | hρ'
-  · have : gpdSurvival' ρ 1 = fun x => (max (1 + ρ * x) 0) ^ (-(1 / ρ)) := by
-      funext x; exact gpdSurvival'_one_of_ne hρ'.ne x
+  · have : gpdSurvivalAll ρ 1 = fun x => (max (1 + ρ * x) 0) ^ (-(1 / ρ)) := by
+      funext x; exact gpdSurvivalAll_one_of_ne hρ'.ne x
     rw [this]
     have hp : 0 < -(1 / ρ) := by
       have : 1 / ρ < 0 := one_div_neg.2 hρ'
@@ -71,30 +71,30 @@ theorem continuous_gpdSurvival'_of_nonpos (hρ : ρ ≤ 0) : Continuous (gpdSurv
     exact (continuous_const.add (continuous_const.mul continuous_id)).max continuous_const
       |>.rpow_const fun _ => Or.inr hp.le
   · subst hρ'
-    have : gpdSurvival' 0 1 = fun x => Real.exp (-x / 1) := by
-      funext x; exact gpdSurvival'_zero_left 1 x
+    have : gpdSurvivalAll 0 1 = fun x => Real.exp (-x / 1) := by
+      funext x; exact gpdSurvivalAll_zero_left 1 x
     rw [this]
     fun_prop
 
 theorem one_lt_gpdSurvival'_of_neg (hρ : ρ ≤ 0) {x : ℝ} (hx : x < 0) :
-    1 < gpdSurvival' ρ 1 x := by
+    1 < gpdSurvivalAll ρ 1 x := by
   rcases hρ.lt_or_eq with hρ' | hρ'
-  · rw [gpdSurvival'_one_of_ne hρ'.ne]
+  · rw [gpdSurvivalAll_one_of_ne hρ'.ne]
     have hb : 1 < 1 + ρ * x := by nlinarith
     rw [max_eq_left (by linarith)]
     exact one_lt_rpow hb (by have : 1 / ρ < 0 := one_div_neg.2 hρ'; linarith)
   · subst hρ'
-    rw [gpdSurvival'_zero_left, div_one]
+    rw [gpdSurvivalAll_zero_left, div_one]
     exact Real.one_lt_exp_iff.2 (by linarith)
 
 /-- The `p`-th moment `p ∫_0^∞ z ^ (p - 1) Ḡ_{ρ,1}(z) dz` of the generalized Pareto
 distribution with shape `ρ` (layer cake form). -/
 noncomputable def gpdMoment (ρ p : ℝ) : ℝ :=
-  p * ∫ z in Ioi 0, z ^ (p - 1) * gpdSurvival' ρ 1 z
+  p * ∫ z in Ioi 0, z ^ (p - 1) * gpdSurvivalAll ρ 1 z
 
 /-- For `ρ < 0` the integrand of `gpdMoment` vanishes beyond the right endpoint `-1/ρ`. -/
 private lemma integral_Ioi_eq_intervalIntegral (hρ : ρ < 0) (g : ℝ → ℝ) :
-    ∫ z in Ioi 0, g z * gpdSurvival' ρ 1 z = ∫ z in (0 : ℝ)..(-1 / ρ), g z * (1 + ρ * z) ^ (-(1 / ρ)) := by
+    ∫ z in Ioi 0, g z * gpdSurvivalAll ρ 1 z = ∫ z in (0 : ℝ)..(-1 / ρ), g z * (1 + ρ * z) ^ (-(1 / ρ)) := by
   have he : 0 < -1 / ρ := div_pos_of_neg_of_neg (by norm_num) hρ
   have hp : 0 < -(1 / ρ) := by
     have : 1 / ρ < 0 := one_div_neg.2 hρ
@@ -102,7 +102,7 @@ private lemma integral_Ioi_eq_intervalIntegral (hρ : ρ < 0) (g : ℝ → ℝ) 
   rw [intervalIntegral.integral_of_le he.le,
     setIntegral_eq_of_subset_of_forall_sdiff_eq_zero measurableSet_Ioi Ioc_subset_Ioi_self]
   · refine setIntegral_congr_fun measurableSet_Ioc fun z hz => ?_
-    rw [gpdSurvival'_one_of_ne hρ.ne, max_eq_left]
+    rw [gpdSurvivalAll_one_of_ne hρ.ne, max_eq_left]
     have := hz.2
     rw [le_div_iff_of_neg hρ] at this
     linarith
@@ -111,7 +111,7 @@ private lemma integral_Ioi_eq_intervalIntegral (hρ : ρ < 0) (g : ℝ → ℝ) 
       by_contra h
       exact hz.2 ⟨hz.1, not_lt.1 h⟩
     rw [div_lt_iff_of_neg hρ] at h1
-    rw [gpdSurvival'_one_of_ne hρ.ne, max_eq_right (by linarith), zero_rpow hp.ne', mul_zero]
+    rw [gpdSurvivalAll_one_of_ne hρ.ne, max_eq_right (by linarith), zero_rpow hp.ne', mul_zero]
 
 theorem gpdMoment_one (hρ : ρ ≤ 0) : gpdMoment ρ 1 = 1 / (1 - ρ) := by
   rcases hρ.lt_or_eq with hρ' | hρ'
@@ -156,7 +156,7 @@ theorem gpdMoment_one (hρ : ρ ≤ 0) : gpdMoment ρ 1 = 1 / (1 - ρ) := by
         fun _ => Or.inr hp).intervalIntegrable _ _
   · subst hρ'
     rw [gpdMoment, one_mul]
-    simp only [gpdSurvival'_zero_left, div_one, sub_self, rpow_zero, one_mul]
+    simp only [gpdSurvivalAll_zero_left, div_one, sub_self, rpow_zero, one_mul]
     have := integral_rpow_mul_exp_neg_mul_Ioi (a := 1) (r := 1) one_pos one_pos
     simp only [sub_self, rpow_zero, one_mul, div_one, one_rpow, Real.Gamma_one] at this
     rw [this]
@@ -219,7 +219,7 @@ theorem gpdMoment_two (hρ : ρ ≤ 0) : gpdMoment ρ 2 = 2 / ((1 - ρ) * (1 - 2
         (by fun_prop) fun _ => Or.inr hp)).intervalIntegrable _ _
   · subst hρ'
     rw [gpdMoment]
-    simp only [gpdSurvival'_zero_left, div_one]
+    simp only [gpdSurvivalAll_zero_left, div_one]
     have := integral_rpow_mul_exp_neg_mul_Ioi (a := 2) (r := 1) two_pos one_pos
     simp only [one_mul, div_one, one_rpow, Real.Gamma_two] at this
     rw [this]
@@ -359,7 +359,7 @@ theorem tendsto_mul_integral_logExcess_div_rpow (hY : Measurable Y)
   refine ⟨eventually_atTop.2 ⟨T₀, fun t ht => (hlay t ht).1⟩, ?_⟩
   have key := tendsto_integral_filter_of_dominated_convergence (μ := volume.restrict (Ioi 0))
     (l := atTop) (F := fun t z => t * Fn t z)
-    (f := fun z => z ^ (p - 1) * gpdSurvival' ρ 1 z) (fun z => C * (1 + z ^ 2)⁻¹) ?_ ?_ ?_ ?_
+    (f := fun z => z ^ (p - 1) * gpdSurvivalAll ρ 1 z) (fun z => C * (1 + z ^ 2)⁻¹) ?_ ?_ ?_ ?_
   · refine (key.const_mul p).congr' ?_
     filter_upwards [eventually_ge_atTop T₀] with t ht
     rw [(hlay t ht).2, integral_const_mul]
@@ -576,7 +576,7 @@ theorem tendstoInMeasure_logMoment_div_of_log_tailQuantile {X : ℕ → Ω → �
   -- exceedance counts
   have hcount : ∀ x δ : ℝ, 0 < δ → Tendsto (fun n => P {ω | δ ≤
       |(exceedCount (fun i : Fin n => X i ω) (Real.exp (Real.log (s n) + Q n * x)) : ℝ) / k n -
-        gpdSurvival' ρ 1 x|}) atTop (𝓝 0) := by
+        gpdSurvivalAll ρ 1 x|}) atTop (𝓝 0) := by
     intro x δ hδ
     refine tendsto_measure_abs_exceedCount_div_sub hX hindep hident hk ?_ hδ
     refine ((F.tendsto_mul_one_sub_exp_log_tailQuantile hρ hV hU x).comp ht).congr' ?_
@@ -636,13 +636,13 @@ theorem tendstoInMeasure_logMoment_div_of_log_tailQuantile {X : ℕ → Ω → �
     intro ε hε
     set C' : ℝ := 2 * (μ₁ + 1) + K with hC'
     have hC'0 : 0 < C' := by rw [hC', hK]; linarith
-    have hG : Tendsto (fun η : ℝ => gpdSurvival' ρ 1 (-η)) (𝓝 0) (𝓝 1) := by
+    have hG : Tendsto (fun η : ℝ => gpdSurvivalAll ρ 1 (-η)) (𝓝 0) (𝓝 1) := by
       have h := ((continuous_gpdSurvival'_of_nonpos hρ).comp continuous_neg).tendsto 0
-      have e : (gpdSurvival' ρ 1 ∘ fun a : ℝ => -a) 0 = 1 := by
-        simp [gpdSurvival'_zero_right]
+      have e : (gpdSurvivalAll ρ 1 ∘ fun a : ℝ => -a) 0 = 1 := by
+        simp [gpdSurvivalAll_zero_right]
       rw [e] at h
       exact h
-    have e1 : ∀ᶠ η in 𝓝[>] (0 : ℝ), gpdSurvival' ρ 1 (-η) < 2 :=
+    have e1 : ∀ᶠ η in 𝓝[>] (0 : ℝ), gpdSurvivalAll ρ 1 (-η) < 2 :=
       (hG.eventually (gt_mem_nhds one_lt_two)).filter_mono nhdsWithin_le_nhds
     have e2 : ∀ᶠ η in 𝓝[>] (0 : ℝ), η ≤ 1 :=
       (eventually_le_nhds one_pos).filter_mono nhdsWithin_le_nhds
@@ -652,9 +652,9 @@ theorem tendstoInMeasure_logMoment_div_of_log_tailQuantile {X : ℕ → Ω → �
       exact (this.eventually (gt_mem_nhds (half_pos hε))).filter_mono nhdsWithin_le_nhds
     obtain ⟨η, h1, h2, h3, hη⟩ := (e1.and (e2.and (e3.and self_mem_nhdsWithin))).exists
     have hη0 : 0 < η := hη
-    set Gp := gpdSurvival' ρ 1 η with hGp
-    set Gm := gpdSurvival' ρ 1 (-η) with hGm
-    have hGp1 : Gp < 1 := gpdSurvival'_lt_one hη0
+    set Gp := gpdSurvivalAll ρ 1 η with hGp
+    set Gm := gpdSurvivalAll ρ 1 (-η) with hGm
+    have hGp1 : Gp < 1 := gpdSurvivalAll_lt_one hη0
     have hGm1 : 1 < Gm := one_lt_gpdSurvival'_of_neg hρ (by linarith)
     have hδp : 0 < 1 - Gp := by linarith
     have hδm : 0 < min (Gm - 1) 1 := lt_min (by linarith) one_pos

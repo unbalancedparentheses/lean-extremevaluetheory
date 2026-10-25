@@ -45,7 +45,7 @@ Common hypotheses below: `E` measurable (`hE`) and independent of `σ(Z)` (`hEZ`
 open MeasureTheory ProbabilityTheory Filter Topology Set
 open scoped ENNReal NNReal
 
-namespace ExtremeValueTheory
+namespace ExtremeValueTheory.Minimality
 
 section ScaleMixture
 
@@ -495,5 +495,28 @@ theorem scaleMixture_needs_conditionA (hc1 : c < 1) (hp0 : 0 < P.real E) (hp1 : 
     not_hasExtremalIndex_scaleMixture hE hEZ hα hZ hind hlaw hpos hc0 hc1 hp0 hp1⟩
 
 end ScaleMixture
+
+end ExtremeValueTheory.Minimality
+
+/-! ### Deprecated names -/
+
+namespace ExtremeValueTheory
+
+@[deprecated (since := "2026-10-23")] alias scaleMixture := Minimality.scaleMixture
+@[deprecated (since := "2026-10-23")] alias measurable_scaleMixture := Minimality.measurable_scaleMixture
+@[deprecated (since := "2026-10-23")] alias scaleMixture_nonneg := Minimality.scaleMixture_nonneg
+@[deprecated (since := "2026-10-23")] alias scaleMixture_le := Minimality.scaleMixture_le
+@[deprecated (since := "2026-10-23")] alias measureReal_scaleMixture_preimage := Minimality.measureReal_scaleMixture_preimage
+@[deprecated (since := "2026-10-23")] alias measureReal_lt_const_mul := Minimality.measureReal_lt_const_mul
+@[deprecated (since := "2026-10-23")] alias measureReal_lt_abs_scaleMixture := Minimality.measureReal_lt_abs_scaleMixture
+@[deprecated (since := "2026-10-23")] alias measureReal_forall_const_mul_le := Minimality.measureReal_forall_const_mul_le
+@[deprecated (since := "2026-10-23")] alias measureReal_partialMax_scaleMixture := Minimality.measureReal_partialMax_scaleMixture
+@[deprecated (since := "2026-10-23")] alias tendsto_partialMax_scaleMixture := Minimality.tendsto_partialMax_scaleMixture
+@[deprecated (since := "2026-10-23")] alias hasShiftInvariantWindows_scaleMixture := Minimality.hasShiftInvariantWindows_scaleMixture
+@[deprecated (since := "2026-10-23")] alias hasSpectralTailProcess_scaleMixture := Minimality.hasSpectralTailProcess_scaleMixture
+@[deprecated (since := "2026-10-23")] alias antiClusteringAt_scaleMixture := Minimality.antiClusteringAt_scaleMixture
+@[deprecated (since := "2026-10-23")] alias not_hasExtremalIndex_scaleMixture := Minimality.not_hasExtremalIndex_scaleMixture
+@[deprecated (since := "2026-10-23")] alias not_conditionA_scaleMixture := Minimality.not_conditionA_scaleMixture
+@[deprecated (since := "2026-10-23")] alias scaleMixture_needs_conditionA := Minimality.scaleMixture_needs_conditionA
 
 end ExtremeValueTheory

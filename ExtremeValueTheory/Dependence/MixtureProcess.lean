@@ -6,7 +6,7 @@ Authors: Federico Carrone
 import ExtremeValueTheory.Dependence.EchoProcess
 
 /-!
-# A mixture with no escaping mass and no extremal index
+# A mixture with no late-return mass and no extremal index
 
 Let `(Z_t)_{t ∈ ℤ}` be iid Pareto(`α`) and let `E` be an event, independent of the whole sequence
 `Z`, with `p = P(E) ∈ (0, 1)`. The **mixture process** is
@@ -14,7 +14,7 @@ Let `(Z_t)_{t ∈ ℤ}` be iid Pareto(`α`) and let `E` be an event, independent
 
 * Its spectral tail process is the mixture of the two spectral tail processes: `Θ ≡ 1` with
   probability `p`, `Θ_t = 1{t = 0}` with probability `1 - p`; so `ϑ = 1 - p`.
-* For blocks with `rₙ → ∞`, `rₙ uₙ^(-α) → 0` the cluster ratio tends to `1 - p = ϑ`: the escape
+* For blocks with `rₙ → ∞`, `rₙ uₙ^(-α) → 0` the cluster ratio tends to `1 - p = ϑ`: the late-return
   mass of `Dependence/ThetaGap.lean` is `η = 0`. Yet forward anticlustering fails (on `E` the
   exceedance at `0` recurs at every lag).
 * `P(M_n ≤ uₙ) → p + (1 - p) e^(-τ)` when `n P(X_0 > uₙ) → τ`: the limit is not of the form
@@ -49,7 +49,7 @@ iid (`hind`, `hlaw : P.map (Z t) = paretoMeasure 1 α`), and where stated `α > 
 * `hasShiftInvariantWindows_mixture` (`hE hEZ hZ hind hlaw`): stationarity.
 * `hasSpectralTailProcess_mixture` (`hE hEZ hα hZ hind hlaw hpos`) and
   `candidateExtremalIndex_mixture` (`α > 0`): `Θ` as above, `ϑ = 1 - p`.
-* `hasEscapeMass_mixture` (`hE hEZ hα hZ hind hlaw hpos`, `uₙ → ∞`, `rₙ → ∞`,
+* `hasLateReturnMass_mixture` (`hE hEZ hα hZ hind hlaw hpos`, `uₙ → ∞`, `rₙ → ∞`,
   `rₙ uₙ^(-α) → 0`): `η = 0`.
 * `not_conditionA_mixture` (`hE hEZ hα hZ hind hlaw hpos`, `0 < p < 1`, `n P(X_0 > uₙ) → τ > 0`,
   `rₙ → ∞`, `rₙ / n → 0`): `𝒜(uₙ)` fails for `|X|`. Proof: under `𝒜(uₙ)`, `η = 0` would force
@@ -607,13 +607,13 @@ theorem hasSpectralTailProcess_mixture :
   exact (key x hx).symm
 
 include hE hEZ hα hZ hind hlaw hpos in
-/-- **No mass escapes**: along `uₙ → ∞`, `rₙ → ∞`, `rₙ uₙ^(-α) → 0` the escape mass of the
+/-- **No late returns**: along `uₙ → ∞`, `rₙ → ∞`, `rₙ uₙ^(-α) → 0` the late-return mass of the
 mixture is `η = 0`, since the cluster ratio tends to `1 - p = ϑ`
 (`tendsto_clusterRatio_mixture`, `HasSpectralTailProcess.tendsto_clusterRatio_iff`). -/
-theorem hasEscapeMass_mixture {u : ℕ → ℝ} (hu : Tendsto u atTop atTop) {r : ℕ → ℕ}
+theorem hasLateReturnMass_mixture {u : ℕ → ℝ} (hu : Tendsto u atTop atTop) {r : ℕ → ℕ}
     (hr : Tendsto r atTop atTop)
     (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0)) :
-    HasEscapeMass P (mixtureProcess E Z) u r 0 := by
+    HasLateReturnMass P (mixtureProcess E Z) u r 0 := by
   have := isProbabilityMeasure_mixtureCoin (p := P.real E) measureReal_nonneg measureReal_le_one
   have h := (hasSpectralTailProcess_mixture hE hEZ hα hZ hind hlaw hpos).tendsto_clusterRatio_iff
     hα (measurable_mixtureProcess hE hZ) measurable_mixtureSpectral
@@ -625,8 +625,8 @@ theorem hasEscapeMass_mixture {u : ℕ → ℝ} (hu : Tendsto u atTop atTop) {r 
 include hE hEZ hα hZ hind hlaw hpos in
 /-- **The block condition `𝒜(uₙ)` fails** for the mixture with `0 < P(E) < 1`, along every level
 sequence with `n P(X_0 > uₙ) → τ > 0` and every block length with `rₙ → ∞`, `rₙ / n → 0`.
-Otherwise `θ = ϑ - η = 1 - p` (`HasSpectralTailProcess.tendsto_partialMax_iff_hasEscapeMass`,
-`hasEscapeMass_mixture`) would give `P(M n ≤ uₙ) → e^(-(1 - p) τ)`, whereas the limit is
+Otherwise `θ = ϑ - η = 1 - p` (`HasSpectralTailProcess.tendsto_partialMax_iff_hasLateReturnMass`,
+`hasLateReturnMass_mixture`) would give `P(M n ≤ uₙ) → e^(-(1 - p) τ)`, whereas the limit is
 `p + (1 - p) e^(-τ)` (`tendsto_partialMax_mixture`), strictly larger by strict convexity of
 `exp`. -/
 theorem not_conditionA_mixture (hp0 : 0 < P.real E) (hp1 : P.real E < 1) {u : ℕ → ℝ} {τ : ℝ}
@@ -647,8 +647,8 @@ theorem not_conditionA_mixture (hp0 : 0 < P.real E) (hp1 : P.real E < 1) {u : �
     refine (tendsto_mul_of_tendsto_natCast_mul hτ hrn).congr' ?_
     filter_upwards [hu.eventually_ge_atTop 1] with n hn
     rw [mixtureProcess_zero, measureReal_lt_of_map_eq hZ hlaw hα 0 hn]
-  have hη := hasEscapeMass_mixture hE hEZ hα hZ hind hlaw hpos hu hr hrb
-  have hiff := hT.tendsto_partialMax_iff_hasEscapeMass hα (measurable_mixtureProcess hE hZ)
+  have hη := hasLateReturnMass_mixture hE hEZ hα hZ hind hlaw hpos hu hr hrb
+  have hiff := hT.tendsto_partialMax_iff_hasLateReturnMass hα (measurable_mixtureProcess hE hZ)
     measurable_mixtureSpectral (hasShiftInvariantWindows_mixture hE hEZ hZ hind hlaw) hτ' hτ0 hr
     hrn hA (1 - p)
   rw [candidateExtremalIndex_mixture hα, ENNReal.toReal_ofReal (by linarith), sub_self] at hiff
@@ -670,5 +670,13 @@ theorem not_conditionA_mixture (hp0 : 0 < P.real E) (hp1 : P.real E < 1) {u : �
   linarith
 
 end Mixture
+
+end ExtremeValueTheory
+
+/-! ### Deprecated names -/
+
+namespace ExtremeValueTheory
+
+@[deprecated (since := "2026-10-23")] alias hasEscapeMass_mixture := hasLateReturnMass_mixture
 
 end ExtremeValueTheory

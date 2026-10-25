@@ -184,11 +184,13 @@ From the survey in [`docs/PRACTICAL_OPEN_PROBLEMS.md`](docs/PRACTICAL_OPEN_PROBL
 
 ### Consolidation
 - [ ] Unify the three tail-quantile definitions
-- [ ] One namespace for the `Minimality` results (`Classical*` files use `ExtremeValueTheory.Minimality`,
+- [x] One namespace for the `Minimality` results (`Classical*` files use `ExtremeValueTheory.Minimality`,
       `Dependence*` files do not)
-- [ ] Rename "escape mass" (clashes with Abadi–Freitas–Freitas)
-- [ ] Rename `gpdSurvival` / `gpdSurvival'` so the `ξ < 0` case cannot be picked by mistake
-- [ ] Fix misleading `_of_lt_one` names; remove duplicate helpers
+- [x] Rename "escape mass" (clashes with Abadi–Freitas–Freitas): now "late-return mass"
+- [x] Rename `gpdSurvival` / `gpdSurvival'` so the `ξ < 0` case cannot be picked by mistake
+      (`gpdSurvivalNonneg` / `gpdSurvivalAll`)
+- [x] Fix misleading `_of_lt_one` names (now `_of_summable_rpow`; old names are deprecated aliases)
+- [ ] Remove duplicate helpers
 - [ ] Promote helper lemmas from the test files into the library (e.g. the exponential law is not
       subexponential; uniqueness of the regular-variation index)
 
