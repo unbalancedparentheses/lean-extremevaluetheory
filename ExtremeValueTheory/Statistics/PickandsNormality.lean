@@ -344,19 +344,23 @@ section SecondOrder
 noncomputable def extSecondOrderLimit (γ ρ x : ℝ) : ℝ :=
   ∫ s in (1 : ℝ)..x, s ^ (γ - 1) * boxCox ρ s
 
-/-- **Second-order extended regular variation** ([dHF, Definition 2.3.1 and Theorem 2.3.3]),
-in the locally uniform form of [dHF, Theorem 2.3.9 / Remark B.3.? ]: `a > 0` eventually, `A` has
-eventually constant sign, `A(t) → 0`, `|A|` is regularly varying with index `ρ ≤ 0`, and
+/-- **Second-order extended regular variation** ([dHF, Definition 2.3.1]): `a > 0` and
+`A ≠ 0` eventually, `A(t) → 0`, and
 
   `((U(xt) - U(t)) / a(t) - D_γ(x)) / A(t) → H_{γ,ρ}(x)`
 
-locally uniformly in `x ∈ (0, ∞)`. -/
+locally uniformly in `x ∈ (0, ∞)`.
+
+[dHF, Definition 2.3.1] asks for pointwise convergence for each `x > 0` and for `A` of eventually
+constant sign; the convergence is then locally uniform on `(0, ∞)` (see [dHF, §2.3 and
+Appendix B.3]), and `|A|` is regularly varying with index
+`ρ ≤ 0` ([dHF, Theorem 2.3.3]). Here the locally uniform convergence is part of the hypothesis
+(that implication is not formalized), while the sign condition and the conclusions of
+[dHF, Theorem 2.3.3] are not needed and not assumed. -/
 structure IsExtSecondOrderRegularlyVarying (U : ℝ → ℝ) (γ ρ : ℝ) (a A : ℝ → ℝ) : Prop where
   eventually_pos : ∀ᶠ t in atTop, 0 < a t
-  nonpos : ρ ≤ 0
   tendsto_zero : Tendsto A atTop (𝓝 0)
-  sign : (∀ᶠ t in atTop, 0 < A t) ∨ (∀ᶠ t in atTop, A t < 0)
-  isRegularlyVarying_abs : IsRegularlyVarying (fun t => |A t|) ρ
+  eventually_ne_zero : ∀ᶠ t in atTop, A t ≠ 0
   tendstoLocallyUniformlyOn : TendstoLocallyUniformlyOn
     (fun t x => ((U (x * t) - U t) / a t - extRVLimit γ x) / A t) (extSecondOrderLimit γ ρ)
     atTop (Ioi 0)
