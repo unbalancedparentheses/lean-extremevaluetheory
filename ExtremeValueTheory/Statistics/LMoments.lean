@@ -226,18 +226,18 @@ variable {ξ σ : ℝ}
 /-- The distribution function of `GPD(ξ, σ)` is `gpdCDF ξ σ`. -/
 lemma cdf_gpdMeasure (hσ : 0 < σ) (x : ℝ) : cdf (gpdMeasure ξ σ) x = gpdCDF ξ σ x := by
   rw [cdf_eq_real, measureReal_def, gpdMeasure_Iic hσ, ENNReal.toReal_ofReal]
-  have := gpdSurvival'_le_one (ξ := ξ) hσ (le_max_right x 0)
+  have := gpdSurvivalAll_le_one (ξ := ξ) hσ (le_max_right x 0)
   rw [gpdCDF]; linarith
 
 /-- On the exponential scale the GPD survival function is explicit:
 `Ḡ_{ξ,σ}(T(t)) = e^{-t}`. -/
-lemma gpdSurvival'_gpdTransform (hσ : 0 < σ) (t : ℝ) :
-    gpdSurvival' ξ σ (gpdTransform ξ σ t) = exp (-t) := by
+lemma gpdSurvivalAll_gpdTransform (hσ : 0 < σ) (t : ℝ) :
+    gpdSurvivalAll ξ σ (gpdTransform ξ σ t) = exp (-t) := by
   by_cases hξ : ξ = 0
   · subst hξ
-    simp only [gpdSurvival'_zero_left, gpdTransform, ↓reduceIte]
+    simp only [gpdSurvivalAll_zero_left, gpdTransform, ↓reduceIte]
     congr 1; field_simp
-  · rw [gpdSurvival', ite_eq_right_iff.mpr (fun h ↦ absurd h hξ), one_add_mul_gpdTransform hσ hξ, max_eq_left (exp_pos _).le,
+  · rw [gpdSurvivalAll, ite_eq_right_iff.mpr (fun h ↦ absurd h hξ), one_add_mul_gpdTransform hσ hξ, max_eq_left (exp_pos _).le,
       ← exp_mul]
     congr 1; field_simp
 
@@ -245,7 +245,7 @@ lemma gpdSurvival'_gpdTransform (hσ : 0 < σ) (t : ℝ) :
 lemma one_sub_cdf_gpdMeasure_gpdTransform (hσ : 0 < σ) {t : ℝ} (ht : 0 < t) :
     1 - cdf (gpdMeasure ξ σ) (gpdTransform ξ σ t) = exp (-t) := by
   rw [cdf_gpdMeasure hσ, gpdCDF, max_eq_left (gpdTransform_pos hσ ht).le,
-    gpdSurvival'_gpdTransform hσ]
+    gpdSurvivalAll_gpdTransform hσ]
   ring
 
 private lemma gpd_alpha_integrand (hσ : 0 < σ) (r : ℕ) {t : ℝ} (ht : 0 < t) :
@@ -594,5 +594,10 @@ theorem lSkewness_gevLocScaleCDF_zero :
 end LocScale
 
 end GEV
+
+
+/-! ### Deprecated names -/
+
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_gpdTransform := gpdSurvivalAll_gpdTransform
 
 end ExtremeValueTheory

@@ -18,17 +18,17 @@ computation).
 
 * `meanExcess_measure_eq`: `meanExcess (t ↦ P(X > t)) u = E[(X - u)⁺] / P(X > u)` whenever
   `E[(X - u)⁺] < ∞`.
-* `gpdSurvival'_add`: **threshold stability of the GPD**, `Ḡ_{ξ,σ}(u + t) = Ḡ_{ξ,σ}(u)
+* `gpdSurvivalAll_add`: **threshold stability of the GPD**, `Ḡ_{ξ,σ}(u + t) = Ḡ_{ξ,σ}(u)
   Ḡ_{ξ,σ+ξu}(t)` for `u` in the support: the excess over `u` is `GPD(ξ, σ + ξ u)`.
-* `integral_gpdSurvival'`: `∫_0^∞ Ḡ_{ξ,σ} = σ / (1 - ξ)` for `ξ < 1`.
-* `meanExcess_gpdSurvival'`, `meanExcess_gpdMeasure`: **the GPD mean excess function is
+* `integral_gpdSurvivalAll`: `∫_0^∞ Ḡ_{ξ,σ} = σ / (1 - ξ)` for `ξ < 1`.
+* `meanExcess_gpdSurvivalAll`, `meanExcess_gpdMeasure`: **the GPD mean excess function is
   linear**, `e(u) = (σ + ξ u)/(1 - ξ) = σ/(1 - ξ) + (ξ/(1 - ξ)) u` for `ξ < 1`, `u ≥ 0`,
   `σ + ξ u > 0` ([EKM, Theorem 3.4.13(e)], direct part).
 * `empMeanExcess`, `ae_tendsto_empMeanExcess`: the **empirical mean excess function**
   `eₙ(u) = ∑_{i<n} (Xᵢ - u)⁺ / #{i < n : Xᵢ > u}` is strongly consistent for every fixed `u`
   with `P(X > u) > 0`, provided `E X⁺ < ∞`.
 
-* `eq_gpdSurvival'_of_meanExcess_eq_linear`: **the converse**: if `P(X > u) > 0` for all
+* `eq_gpdSurvivalAll_of_meanExcess_eq_linear`: **the converse**: if `P(X > u) > 0` for all
   `u ≥ 0` and `e(u) = a + b u` on `[0, ∞)` with `a > 0`, `b ≥ 0`, then
   `P(X > u) = P(X > 0) Ḡ_{ξ,σ}(u)` with `ξ = b/(1 + b)`, `σ = a/(1 + b)`. The proof shows that
   `I(u) = ∫_u^∞ F̄` solves `I' = -I/(a + b u)` (so `F̄ = I/e` is continuous) and that
@@ -83,9 +83,9 @@ section GPD
 
 variable {ξ σ : ℝ}
 
-lemma gpdSurvival'_pos {u : ℝ} (hσ : 0 < σ) (hu : 0 < σ + ξ * u) :
-    0 < gpdSurvival' ξ σ u := by
-  unfold gpdSurvival'
+lemma gpdSurvivalAll_pos {u : ℝ} (hσ : 0 < σ) (hu : 0 < σ + ξ * u) :
+    0 < gpdSurvivalAll ξ σ u := by
+  unfold gpdSurvivalAll
   split_ifs
   · exact exp_pos _
   · have : 0 < 1 + ξ * u / σ := by
@@ -95,24 +95,24 @@ lemma gpdSurvival'_pos {u : ℝ} (hσ : 0 < σ) (hu : 0 < σ + ξ * u) :
 
 /-- **Threshold stability of the GPD**: for `u` in the support (`σ + ξ u > 0`),
 `Ḡ_{ξ,σ}(u + t) = Ḡ_{ξ,σ}(u) Ḡ_{ξ,σ+ξu}(t)`. -/
-theorem gpdSurvival'_add (hσ : 0 < σ) {u : ℝ} (hu : 0 < σ + ξ * u) (t : ℝ) :
-    gpdSurvival' ξ σ (u + t) = gpdSurvival' ξ σ u * gpdSurvival' ξ (σ + ξ * u) t := by
+theorem gpdSurvivalAll_add (hσ : 0 < σ) {u : ℝ} (hu : 0 < σ + ξ * u) (t : ℝ) :
+    gpdSurvivalAll ξ σ (u + t) = gpdSurvivalAll ξ σ u * gpdSurvivalAll ξ (σ + ξ * u) t := by
   by_cases hξ : ξ = 0
   · subst hξ
-    simp only [gpdSurvival'_zero_left, zero_mul, add_zero, ← exp_add]
+    simp only [gpdSurvivalAll_zero_left, zero_mul, add_zero, ← exp_add]
     congr 1; ring
   · have hc : 0 < 1 + ξ * u / σ := by
       rw [show 1 + ξ * u / σ = (σ + ξ * u) / σ by field_simp]; positivity
     have e : 1 + ξ * (u + t) / σ = (1 + ξ * u / σ) * (1 + ξ * t / (σ + ξ * u)) := by
       field_simp; ring
-    simp only [gpdSurvival', hξ, ↓reduceIte]
+    simp only [gpdSurvivalAll, hξ, ↓reduceIte]
     rw [e, max_eq_left hc.le, ← mul_rpow hc.le (le_max_right _ _)]
     congr 1
     rw [mul_max_of_nonneg _ _ hc.le, mul_zero]
 
 /-- `∫_0^∞ Ḡ_{ξ,σ}(t) dt = σ / (1 - ξ)` for `ξ < 1`: the mean of `GPD(ξ, σ)`. -/
-theorem integral_gpdSurvival' (hσ : 0 < σ) (hξ : ξ < 1) :
-    ∫ t in Ioi 0, gpdSurvival' ξ σ t = σ / (1 - ξ) := by
+theorem integral_gpdSurvivalAll (hσ : 0 < σ) (hξ : ξ < 1) :
+    ∫ t in Ioi 0, gpdSurvivalAll ξ σ t = σ / (1 - ξ) := by
   have hint := integrable_id_gpdMeasure hσ hξ
   have hnn : 0 ≤ᵐ[gpdMeasure ξ σ] fun x ↦ x := by
     filter_upwards [ae_gpdMeasure (ξ := ξ) hσ] with x hx using hx.1.le
@@ -120,24 +120,24 @@ theorem integral_gpdSurvival' (hσ : 0 < σ) (hξ : ξ < 1) :
   rw [← pwm_zero, pwm_gpdMeasure_zero hσ hξ] at h
   rw [h]
   refine setIntegral_congr_fun measurableSet_Ioi fun t (ht : 0 < t) ↦ ?_
-  change gpdSurvival' ξ σ t = (gpdMeasure ξ σ).real (Ioi t)
-  rw [measureReal_def, gpdMeasure_Ioi hσ ht.le, ENNReal.toReal_ofReal (gpdSurvival'_nonneg _ _ _)]
+  change gpdSurvivalAll ξ σ t = (gpdMeasure ξ σ).real (Ioi t)
+  rw [measureReal_def, gpdMeasure_Ioi hσ ht.le, ENNReal.toReal_ofReal (gpdSurvivalAll_nonneg _ _ _)]
 
 /-- **The GPD mean excess function is linear** ([EKM, Theorem 3.4.13(e)]): for `ξ < 1`,
 `u ≥ 0` in the support (`σ + ξ u > 0`), `e(u) = (σ + ξ u) / (1 - ξ)`. -/
-theorem meanExcess_gpdSurvival' (hσ : 0 < σ) (hξ : ξ < 1) {u : ℝ} (hu : 0 < σ + ξ * u) :
-    meanExcess (gpdSurvival' ξ σ) u = (σ + ξ * u) / (1 - ξ) := by
-  have hpos := gpdSurvival'_pos (ξ := ξ) hσ hu
+theorem meanExcess_gpdSurvivalAll (hσ : 0 < σ) (hξ : ξ < 1) {u : ℝ} (hu : 0 < σ + ξ * u) :
+    meanExcess (gpdSurvivalAll ξ σ) u = (σ + ξ * u) / (1 - ξ) := by
+  have hpos := gpdSurvivalAll_pos (ξ := ξ) hσ hu
   rw [meanExcess, ← setIntegral_Ioi_zero_comp_add]
-  simp_rw [add_comm _ u, gpdSurvival'_add hσ hu]
-  rw [integral_const_mul, integral_gpdSurvival' hu hξ]
+  simp_rw [add_comm _ u, gpdSurvivalAll_add hσ hu]
+  rw [integral_const_mul, integral_gpdSurvivalAll hu hξ]
   field_simp
 
 /-- The slope form: `e(u) = σ/(1 - ξ) + (ξ/(1 - ξ)) u`. -/
-theorem meanExcess_gpdSurvival'_eq_linear (hσ : 0 < σ) (hξ : ξ < 1) {u : ℝ}
+theorem meanExcess_gpdSurvivalAll_eq_linear (hσ : 0 < σ) (hξ : ξ < 1) {u : ℝ}
     (hu : 0 < σ + ξ * u) :
-    meanExcess (gpdSurvival' ξ σ) u = σ / (1 - ξ) + ξ / (1 - ξ) * u := by
-  rw [meanExcess_gpdSurvival' hσ hξ hu]
+    meanExcess (gpdSurvivalAll ξ σ) u = σ / (1 - ξ) + ξ / (1 - ξ) * u := by
+  rw [meanExcess_gpdSurvivalAll hσ hξ hu]
   have : 1 - ξ ≠ 0 := by linarith
   field_simp
 
@@ -158,9 +158,9 @@ theorem meanExcess_gpdMeasure (hσ : 0 < σ) (hξ : ξ < 1) {u : ℝ} (hu0 : 0 �
     (∫ x, max (x - u) 0 ∂gpdMeasure ξ σ) / (gpdMeasure ξ σ).real (Ioi u) =
       (σ + ξ * u) / (1 - ξ) := by
   rw [← meanExcess_measure_eq (integrable_max_sub_gpdMeasure hσ hξ u),
-    ← meanExcess_gpdSurvival' hσ hξ hu, meanExcess, meanExcess]
-  have hF : ∀ t, 0 ≤ t → (gpdMeasure ξ σ).real (Ioi t) = gpdSurvival' ξ σ t := fun t ht ↦ by
-    rw [measureReal_def, gpdMeasure_Ioi hσ ht, ENNReal.toReal_ofReal (gpdSurvival'_nonneg _ _ _)]
+    ← meanExcess_gpdSurvivalAll hσ hξ hu, meanExcess, meanExcess]
+  have hF : ∀ t, 0 ≤ t → (gpdMeasure ξ σ).real (Ioi t) = gpdSurvivalAll ξ σ t := fun t ht ↦ by
+    rw [measureReal_def, gpdMeasure_Ioi hσ ht, ENNReal.toReal_ofReal (gpdSurvivalAll_nonneg _ _ _)]
   rw [hF u hu0, setIntegral_congr_fun measurableSet_Ioi fun t (ht : u < t) ↦ hF t (by linarith)]
 
 end GPD
@@ -221,8 +221,8 @@ theorem ae_tendsto_empMeanExcess_gpd {ξ σ : ℝ} (hσ : 0 < σ) (hξ : ξ < 1)
   have hpos : Integrable (fun x ↦ max x 0) (gpdMeasure ξ σ) := by
     simpa using integrable_max_sub_gpdMeasure hσ hξ 0
   have hS : 0 < (gpdMeasure ξ σ).real (Ioi u) := by
-    rw [measureReal_def, gpdMeasure_Ioi hσ hu0, ENNReal.toReal_ofReal (gpdSurvival'_nonneg _ _ _)]
-    exact gpdSurvival'_pos hσ hu
+    rw [measureReal_def, gpdMeasure_Ioi hσ hu0, ENNReal.toReal_ofReal (gpdSurvivalAll_nonneg _ _ _)]
+    exact gpdSurvivalAll_pos hσ hu
   rw [← meanExcess_gpdMeasure hσ hξ hu0 hu,
     ← meanExcess_measure_eq (integrable_max_sub_gpdMeasure hσ hξ u)]
   exact ae_tendsto_empMeanExcess hX hind hpos hS
@@ -273,11 +273,11 @@ suppose the mean excess function is linear, `e(u) = a + b u` for `u ≥ 0`, with
 `b ≥ 0`. Then the tail beyond `0` is generalized Pareto:
 `F̄(u) = F̄(0) Ḡ_{ξ,σ}(u)` for `u ≥ 0`, with `ξ = b/(1 + b) ∈ [0, 1)` and `σ = a/(1 + b)`.
 (Integrability of `F̄` is not assumed: it follows from `e(0) = a > 0`.) -/
-theorem eq_gpdSurvival'_of_meanExcess_eq_linear {a b : ℝ} (ha : 0 < a) (hb : 0 ≤ b)
+theorem eq_gpdSurvivalAll_of_meanExcess_eq_linear {a b : ℝ} (ha : 0 < a) (hb : 0 ≤ b)
     (hS : ∀ u, 0 ≤ u → 0 < μ.real (Ioi u))
     (he : ∀ u, 0 ≤ u → meanExcess (fun t ↦ μ.real (Ioi t)) u = a + b * u) {u : ℝ}
     (hu : 0 ≤ u) :
-    μ.real (Ioi u) = μ.real (Ioi 0) * gpdSurvival' (b / (1 + b)) (a / (1 + b)) u := by
+    μ.real (Ioi u) = μ.real (Ioi 0) * gpdSurvivalAll (b / (1 + b)) (a / (1 + b)) u := by
   set S : ℝ → ℝ := fun t ↦ μ.real (Ioi t) with hSdef
   have hanti : Antitone S := fun s t hst ↦ measureReal_mono (Ioi_subset_Ioi hst)
   have hmeas : Measurable S := hanti.measurable
@@ -358,13 +358,13 @@ theorem eq_gpdSurvival'_of_meanExcess_eq_linear {a b : ℝ} (ha : 0 < a) (hb : 0
   by_cases hb0 : b = 0
   · subst hb0
     simp only [meWeight, ↓reduceIte, zero_div, exp_zero, mul_one, zero_mul, add_zero,
-      gpdSurvival'_zero_left, div_one]
+      gpdSurvivalAll_zero_left, div_one]
     field_simp
     rw [mul_assoc, ← exp_add]
     simp
   · have hbpos : 0 < b := lt_of_le_of_ne hb (Ne.symm hb0)
     have hξ : b / (1 + b) ≠ 0 := by positivity
-    simp only [meWeight, hb0, ↓reduceIte, mul_zero, add_zero, gpdSurvival', hξ]
+    simp only [meWeight, hb0, ↓reduceIte, mul_zero, add_zero, gpdSurvivalAll, hξ]
     have e1 : 1 + b / (1 + b) * u / (a / (1 + b)) = (a + b * u) / a := by
       field_simp
     have e2 : -(1 / (b / (1 + b))) = -(1 / b + 1) := by field_simp
@@ -375,5 +375,15 @@ theorem eq_gpdSurvival'_of_meanExcess_eq_linear {a b : ℝ} (ha : 0 < a) (hb : 0
     field_simp
 
 end Converse
+
+
+/-! ### Deprecated names -/
+
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_pos := gpdSurvivalAll_pos
+@[deprecated (since := "2026-10-23")] alias gpdSurvival'_add := gpdSurvivalAll_add
+@[deprecated (since := "2026-10-23")] alias integral_gpdSurvival' := integral_gpdSurvivalAll
+@[deprecated (since := "2026-10-23")] alias meanExcess_gpdSurvival' := meanExcess_gpdSurvivalAll
+@[deprecated (since := "2026-10-23")] alias meanExcess_gpdSurvival'_eq_linear := meanExcess_gpdSurvivalAll_eq_linear
+@[deprecated (since := "2026-10-23")] alias eq_gpdSurvival'_of_meanExcess_eq_linear := eq_gpdSurvivalAll_of_meanExcess_eq_linear
 
 end ExtremeValueTheory
