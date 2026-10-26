@@ -113,16 +113,16 @@ path `(X_{n+1})_{n≥0}` has the same law on `ℝ^ℕ` as `(X_n)_{n≥0}`.
 every finite `S ⊂ ℤ`, `(X_{t+h})_{t∈S}` has the same law as `(X_t)_{t∈S}`. This is strict
 stationarity of a two-sided sequence.
 
-**D2. Spectral tail process** `HasSpectralTailProcess P X α Q Θ` (`TailProcess.lean:747`), with
+**D2. Spectral tail process** `HasSpectralTailProcess P X α Q Θ` (`TailProcess.lean:91`), with
 `X = (X_t)_{t∈ℤ}` on `(Ω, P)` and `Θ = (Θ_t)_{t∈ℤ}` on another space `(Ω', Q)`:
 1. `x ↦ P(|X_0| > x)` is regularly varying with index `−α`; and
 2. for every finite `S ⊂ ℤ`, the conditional law of `(X_t/|X_0|)_{t∈S}` given `|X_0| > x` converges
    weakly, as `x → ∞`, to the law of `(Θ_t)_{t∈S}`. Weak convergence is tested on bounded continuous
-   functions (`TendstoLawCond`, `TailProcess.lean:125`).
+   functions (`TendstoLawCond`, `TailProcess/Polar.lean:108`).
 
 `HasTailProcess` (`:757`) is the analogue with `X_t/x` and limit `Y` with `|Y_0|` Pareto(`α`).
 
-**D3. Candidate extremal index** `candidateExtremalIndex Q Θ α` (`TailProcess.lean:1014`):
+**D3. Candidate extremal index** `candidateExtremalIndex Q Θ α` (`TailProcess.lean:358`):
 
   `ϑ = ∫ [ (sup_{k≥0} |Θ_k|)^α − (sup_{k≥1} |Θ_k|)^α ] dQ`,
 
@@ -139,7 +139,7 @@ definition), which makes `θ` unique. Regularly varying tails always admit level
 (`hasExceedanceLevels_of_isRegularlyVarying`, `ThetaLeVartheta.lean:58`), and `*_strict` corollaries
 exist for all the examples (`StrictExtremalIndex*.lean`). The θ–ϑ theorems are stated for `|X|`.
 
-**D5. Anticlustering** `ForwardAntiClusteringAt P X u r` (`Anticlustering.lean:89`), with
+**D5. Anticlustering** `ForwardAntiClusteringAt P X u r` (`Anticlustering/Basic.lean:78`), with
 `u : ℕ → ℝ` and block lengths `r : ℕ → ℕ`: for every `ε > 0` there is `m` such that eventually in
 `n`,
 
@@ -149,14 +149,14 @@ This is the forward half of [BS09, Cond. 4.1] / [KS20, §6.1] at **one** level s
 instead of `lim_m limsup_n P(…| |X_0| > uₙ) = 0`. The two-sided version `AntiClusteringAt` and
 `AntiClustering` (at every level `aₙx`) are also defined; the theorems only use the forward one.
 
-**D6. Block condition** `ConditionA X P u r` (`Anticlustering.lean:724`):
+**D6. Block condition** `ConditionA X P u r` (`Anticlustering.lean:134`):
 
   `P(M_n ≤ uₙ) − P(M_{rₙ} ≤ uₙ)^{⌊n/rₙ⌋} → 0`.
 
 `⌊n/rₙ⌋` is ℕ-division. If `rₙ = n` the condition is trivially true; every theorem that uses it also
 assumes `rₙ → ∞` and `rₙ/n → 0`.
 
-**D7. Cluster ratio and late-return mass** (`Anticlustering.lean:886`, `ThetaGap.lean:85–110`). New
+**D7. Cluster ratio and late-return mass** (`Anticlustering.lean:296`, `ThetaGap.lean:85–110`). New
 definitions.
 
   `CRₙ = P(max_{0≤t<rₙ} |X_t| > uₙ) / (rₙ P(|X_0| > uₙ))`.
@@ -197,7 +197,7 @@ normed space with its Borel σ-algebra. The following are equivalent:
    `ν₁(y, ∞) = y^{−α}` for `y ≥ 1`, with: the law of `(Z/x, x^{−1}V)` given `Z > x` converges weakly
    to `ν`.
 
-Lean: `ExtremeValueTheory.polar_iff`, `Dependence/TailProcess.lean:715`. (`HasSpectralTailProcess.hasTailProcess`
+Lean: `ExtremeValueTheory.polar_iff`, `Dependence/TailProcess/Polar.lean:698`. (`HasSpectralTailProcess.hasTailProcess`
 applies this to windows of a time series.)
 
 **(c) Caveats.** None in the audit. The [BS09] erratum (SPA 121 (2011)) was **not** consulted;
@@ -238,7 +238,7 @@ which is not stated as such).
 and `ϑ > 0` when `Θ_t → 0`.
 
 **(b) Lean, in math.**
-- `candidateExtremalIndex_eq_measure` (`TailProcess.lean:1117`): if `α > 0`, every `Θ_t` is
+- `candidateExtremalIndex_eq_measure` (`TailProcess.lean:461`): if `α > 0`, every `Θ_t` is
   measurable and `|Θ_0| = 1` a.s., then `ϑ = (Pareto(α) ⊗ Q){(y, ω') : y |Θ_{k+1}(ω')| ≤ 1 for all
   k ≥ 0}`, i.e. `ϑ = P(sup_{k≥1} |Y_k| ≤ 1)` with `Y = R Θ`, `R` Pareto(α) independent of `Θ`. No
   stationarity and no decay of `Θ` is assumed (thanks to the `[0, ∞]` conventions of D3).
@@ -266,7 +266,7 @@ process `Θ`; `uₙ → ∞`; `rₙ → ∞` (`rₙ ∈ ℕ`); and forward antic
   `P(max_{0≤t<rₙ} |X_t| > uₙ) / (rₙ P(|X_0| > uₙ)) → ϑ`.
 
 Lean: `ExtremeValueTheory.HasSpectralTailProcess.tendsto_blockRatio`,
-`Dependence/Anticlustering.lean:553`.
+`Dependence/Anticlustering/BlockRatio.lean:178`.
 
 **(c) Caveats.** The project highlights the *absence* of hypotheses: no mixing, no `rₙ/n → 0`, no
 `rₙ P(|X_0| > uₙ) → 0`, anticlustering only forward and at a single level sequence. Also proved:
@@ -289,7 +289,7 @@ process `Θ`; `rₙ → ∞`, `rₙ/n → 0`. Assume: for every `τ > 0` and eve
 `(uₙ, rₙ)` hold. Then `(|X_n|)_{n≥0}` has extremal index `ϑ` (D4).
 
 Lean: `ExtremeValueTheory.HasSpectralTailProcess.hasExtremalIndex_abs`,
-`Dependence/Anticlustering.lean:815`.
+`Dependence/Anticlustering.lean:225`.
 
 **(c) Caveats.** `𝒜` is a hypothesis here. It is derived from α-mixing at a rate (R12) and from
 m-dependence (R11). The block length `rₙ` is the same for all `τ`. The conclusion is about `|X|`,
@@ -381,13 +381,13 @@ following hold:
 3. `ϑ = 1`;
 4. `(X_n)_{n≥0}` has extremal index `θ = 1/2`.
 
-Lean: `ExtremeValueTheory.logEchoProcess_theta_lt_vartheta`, `Dependence/EchoProcess.lean:1125`.
+Lean: `ExtremeValueTheory.logEchoProcess_theta_lt_vartheta`, `Dependence/EchoProcess.lean:400`.
 The strict version (levels exist, `θ` unique) is `logEchoProcess_hasExtremalIndex_strict`, and
 `logEchoProcess_not_hasExtremalIndex_one` confirms that `θ = 1` fails (`StrictExtremalIndexAll.lean`).
 
 **(c) Caveats.** The supremum in the definition is a real `⨆` over `j ∈ ℕ`, which would be the junk
 value `0` if infinitely many echoes landed at time `t`. That event is null by Borel–Cantelli, and this
-is proved (`EchoProcess.lean:418`). `Θ_t = 1{t=0}` gives `|Y_t| → 0`. So **`|Y_t| → 0` does not imply
+is proved (`EchoProcess/Basic.lean:171`). `Θ_t = 1{t=0}` gives `|Y_t| → 0`. So **`|Y_t| → 0` does not imply
 `θ = ϑ`**. An earlier reading of [PS18, Lemma 4.1] that suggested otherwise was withdrawn
 (RESEARCH.md). Anticlustering fails for this process (`not_forwardAntiClusteringAt_echoProcess`).
 The process is a stationary factor of iid noise, so it is ergodic-theoretically mixing (not
@@ -518,7 +518,7 @@ Theorem: if `IsExtremeValueDistr G` then there is an `A` with `A • G = Λ`, or
 `Ψ_ξ(x) = exp(−(−x)^ξ)` for `x < 0` (and `1` otherwise). `A • G = Λ` means `G(x) = Λ(Ax)`.
 
 Lean: `CumulativeDistributionFunction.IsExtremeValueDistr.classification`,
-`ExtremeValueTheory/SelfSimilarCDF.lean:1054`.
+`ExtremeValueTheory/SelfSimilarCDF.lean:583`.
 
 **(c)** Faithful. Based on Kalle Kytölä's ExtremeValueProject.
 
@@ -698,7 +698,7 @@ you would expect?
 
 **(b)**
 - *Converse* (`GCLTConverse.exists_isRegularlyVarying_tailBalance_of_tendsto`,
-  `StableLaws/GeneralizedCLTConverseAsymmetric.lean:984`): if `aₙ > 0` and
+  `StableLaws/GeneralizedCLTConverseAsymmetric.lean:407`): if `aₙ > 0` and
   `law((S_n − bₙ)/aₙ) ⇒ ν` with `ν` not a point mass, then there is `α ∈ (0, 2]` with
   `U ∈ RV_{2−α}`. If moreover `α < 2`, then `P(|X| > x) ∈ RV_{−α}`, `n P(|X| > aₙ) → B` for some
   `B > 0`, and `P(X > x)/P(|X| > x) → p` for some `p ∈ [0, 1]`.
@@ -706,7 +706,7 @@ you would expect?
   for `0 < α < 2`, (there are `aₙ > 0`, `bₙ` and an α-stable `ν` with `law((S_n − bₙ)/aₙ) ⇒ ν`) `⟺`
   (`P(|X| > x) ∈ RV_{−α}` and `P(X > x)/P(|X| > x) → p` for some `p ∈ [0, 1]`). Here "α-stable" is
   `IsStableIndex α ν`: `ν` is stable and `ν^{*n} = law(n^{1/α} Y + b_n)` for every `n ≥ 1`.
-- *Gaussian DOA* (`domainOfAttraction_gaussianReal_iff`, `StableLaws/GaussianDomain.lean:1099`):
+- *Gaussian DOA* (`domainOfAttraction_gaussianReal_iff`, `StableLaws/GaussianDomain.lean:394`):
   (there are `aₙ > 0`, `bₙ`, `m`, `v ≠ 0` with `law((S_n − bₙ)/aₙ) ⇒ N(m, v)`) `⟺` (`μ` is not a
   point mass and `U` is slowly varying).
 - *Index* (`IsStable.existsUnique_isStableIndex`, `StableLaws/StableIndex.lean:417`): every stable
@@ -821,7 +821,7 @@ neighbourhood of `0`. Theorem: for `α > 0`, `X` measurable with values in a sep
 `E`: (there is `μ` with `IsRegVarVector P X α μ`) `⟺` (`P(‖X‖ > x) ∈ RV_{−α}`, and there is a
 probability `S` on `E` with `law(X/‖X‖ | ‖X‖ > x) ⇒ S`).
 
-Lean: `ExtremeValueTheory.isRegVarVector_iff`, `RegularVariation/Multivariate.lean:802`.
+Lean: `ExtremeValueTheory.isRegVarVector_iff`, `RegularVariation/Multivariate/Polar.lean:395`.
 
 **(c)** Normalized by `P(‖X‖ > x)` rather than a sequence `aₙ`, so `μ{‖y‖ > 1} = 1`. This is the
 `M_0` convergence of Hult–Lindskog. The polar form `μ = α r^{−α−1}dr ⊗ S` is
@@ -837,7 +837,7 @@ Lean: `ExtremeValueTheory.isRegVarVector_iff`, `RegularVariation/Multivariate.le
 continuous linear `L`, and `w(L) ≠ 0` for some `L` ⇒ there is `μ` with `IsRegVarVector P X α μ`.
 
 Lean: `ExtremeValueTheory.CramerWold.isRegVarVector_of_tendsto_linear`,
-`RegularVariation/CramerWoldConverse.lean:988`.
+`RegularVariation/CramerWoldConverse.lean:572`.
 
 **(c)** Normalization by a regularly varying function of a continuous variable instead of
 `aₙ`-sequences. The integer-`α` counterexamples (Hult–Lindskog 2006) are not formalized.

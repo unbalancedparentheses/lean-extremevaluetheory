@@ -202,8 +202,8 @@ Second survey (2026-10-25, [`docs/OPEN_PROBLEMS_SURVEY2.md`](docs/OPEN_PROBLEMS_
       subexponential; uniqueness of the regular-variation index)
 
 - [>] Design pass (running): one representation of laws with a complete bridge; one definition
-      per concept; names and namespaces; oversized files split (outside `Statistics/`); test helpers
-      promoted; conventions in `docs/DESIGN.md`
+      per concept; test helpers promoted; conventions in `docs/DESIGN.md`. Done: names and namespaces;
+      oversized files split outside `Statistics/` (nothing there is now over ~950 lines)
 - [ ] **Afterwards:** split the oversized `Statistics/` files (deferred while statistics agents edit
       them); migrate remaining uses off the `@[deprecated]` aliases and then delete the aliases; rebase
       the in-flight agent branches onto the new names

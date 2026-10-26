@@ -64,7 +64,7 @@ Everything that depends on these is marked **[unverified]**.
 1. **The question is informal ("models such that…").** Nothing in BKW suggests they wanted a particular class, such as stable or long-memory models. The text calls for "other regularly varying stochastic processes". A very simple iid-driven, β-mixing model is a legitimate answer. Arguably it is a *stronger* one, because it shows that the phenomenon does not need long-range dependence.
 2. **The cutoff is exact and the mesoscopic transition is a step.** In BKW's mesoscopic language, P(max_{k≤d_n} X_k > b_n x) ~ ϑ_ρ d_n P(X₀ > b_n x) holds with ϑ_ρ = 1 for ρ < γ/α and ϑ_ρ = 1/2 = θ for ρ > γ/α.
    - This is our `powEchoProcess_polyBlocks` statement: the cluster ratio tends to 1 below the cutoff and to 1/2 above it.
-   - `clusterRatio` (`Dependence/Anticlustering.lean:886`) is P(max_{0≤t<r_n} |X_t| > u_n)/(r_n P(|X₀| > u_n)), which is exactly BKW's ratio in (1.15). Any u_n with n P(X₀ > u_n) → τ covers b_n x.
+   - `clusterRatio` (`Dependence/Anticlustering.lean:296`) is P(max_{0≤t<r_n} |X_t| > u_n)/(r_n P(|X₀| > u_n)), which is exactly BKW's ratio in (1.15). Any u_n with n P(X₀ > u_n) → τ covers b_n x.
    - It is a different shape from BKW's linear ϑ_ρ = (1 − 2ρβ) q_{F,2}. So the same example also gives a partial answer to the *first* question ("such a phase transition"): it is a mesoscopic transition, but discontinuous rather than interpolating. Say "a phase transition of a different (step) type", not "the same".
 3. **Only the normalizing levels are covered.** KS-style AC(r_n, c_n) at intermediate levels (r_n P(X > c_n) → 0) is not covered.
    - Heuristically, AC(r_n, c_n) holds iff r_n ≪ c_n^γ. This is unproved and should be stated as a remark at most.
