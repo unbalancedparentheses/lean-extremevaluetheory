@@ -5,6 +5,7 @@ Authors: Federico Carrone
 -/
 import ExtremeValueTheory.ExtremeValueDistribution
 import ExtremeValueTheory.LimitRelationManipulation
+import ExtremeValueTheory.UpperQuantile
 
 /-!
 # The Gumbel maximum domain of attraction
@@ -121,32 +122,13 @@ theorem tendsto_mul_of_auxiliary {g f : ℝ → ℝ} {L : Filter ℝ}
   field_simp
 
 /-- Basic properties of the generalized quantile `sInf {x | g x ≤ c}` of an antitone,
-right-continuous function `g`. -/
+right-continuous function `g`; this is `upperQuantile_spec`. -/
+@[deprecated upperQuantile_spec (since := "2026-10-23")]
 theorem quantile_spec {g : ℝ → ℝ} (hg : Antitone g)
     (hgr : ∀ x, ContinuousWithinAt g (Ici x) x) {c : ℝ} (hne : ∃ x, g x ≤ c)
     (hbdd : ∃ y, c < g y) :
-    g (sInf {x | g x ≤ c}) ≤ c ∧ ∀ y < sInf {x | g x ≤ c}, c < g y := by
-  obtain ⟨y₀, hy₀⟩ := hbdd
-  have hlb : ∀ x ∈ {x | g x ≤ c}, y₀ ≤ x := by
-    intro x hx
-    by_contra hcon
-    push Not at hcon
-    have := hg hcon.le
-    simp only [mem_ofPred_eq] at hx
-    linarith
-  have hB : BddBelow {x | g x ≤ c} := ⟨y₀, hlb⟩
-  have hne' : ({x | g x ≤ c} : Set ℝ).Nonempty := hne
-  set s := sInf {x | g x ≤ c} with hs
-  constructor
-  · have hlim : Tendsto g (𝓝[>] s) (𝓝 (g s)) :=
-      (hgr s).tendsto.mono_left (nhdsWithin_mono _ Ioi_subset_Ici_self)
-    refine le_of_tendsto hlim (eventually_nhdsWithin_of_forall fun x hx ↦ ?_)
-    obtain ⟨y, hy, hyx⟩ := exists_lt_of_csInf_lt hne' (show s < x from hx)
-    exact (hg hyx.le).trans hy
-  · intro y hy
-    by_contra hcon
-    push Not at hcon
-    exact absurd (csInf_le hB hcon) (not_le.2 hy)
+    g (sInf {x | g x ≤ c}) ≤ c ∧ ∀ y < sInf {x | g x ≤ c}, c < g y :=
+  upperQuantile_spec hg hgr hne hbdd
 
 end Gumbel
 
@@ -237,7 +219,7 @@ theorem tendsto_mul_one_sub_of_auxiliary_atTop (F : CumulativeDistributionFuncti
     have hn0 : (0 : ℝ) < 1 / n := by
       have : (1 : ℝ) ≤ n := by exact_mod_cast hn1
       positivity
-    exact Gumbel.quantile_spec F.antitone_one_sub F.rightContinuous_one_sub
+    exact upperQuantile_spec F.antitone_one_sub F.rightContinuous_one_sub
       ((hg0.eventually (gt_mem_nhds hn0)).exists.imp fun x hx ↦ hx.le) ⟨0, hn⟩
   have hb : Tendsto (fun n : ℕ ↦ sInf {y | 1 - F y ≤ 1 / (n : ℝ)}) atTop atTop := by
     refine Filter.tendsto_atTop.2 fun M ↦ ?_
@@ -270,7 +252,7 @@ theorem isInMDAGumbel_of_auxiliary_atTop (F : CumulativeDistributionFunction)
     have hn0 : (0 : ℝ) < 1 / n := by
       have : (1 : ℝ) ≤ n := by exact_mod_cast hn1
       positivity
-    exact Gumbel.quantile_spec F.antitone_one_sub F.rightContinuous_one_sub
+    exact upperQuantile_spec F.antitone_one_sub F.rightContinuous_one_sub
       ((hg0.eventually (gt_mem_nhds hn0)).exists.imp fun x hx ↦ hx.le) ⟨0, hn⟩
   exact F.isInMDAGumbel_of_quantile hf (Eventually.of_forall hF) h
     (F.tendsto_mul_one_sub_of_auxiliary_atTop hF hf h).1 hq
@@ -335,7 +317,7 @@ theorem isInMDAGumbel_of_auxiliary_nhdsLT (F : CumulativeDistributionFunction) {
       ∀ y < sInf {y | 1 - F y ≤ 1 / (n : ℝ)}, 1 / (n : ℝ) < 1 - F y := by
     filter_upwards [(tendsto_one_div_atTop_nhds_zero_nat (𝕜 := ℝ)).eventually
       (gt_mem_nhds (gpos (xF - 1) (by linarith)))] with n hn
-    exact Gumbel.quantile_spec F.antitone_one_sub F.rightContinuous_one_sub
+    exact upperQuantile_spec F.antitone_one_sub F.rightContinuous_one_sub
       ⟨xF, by rw [heq, sub_self]; positivity⟩ ⟨xF - 1, hn⟩
   have hlt' : ∀ᶠ n : ℕ in atTop, sInf {y | 1 - F y ≤ 1 / (n : ℝ)} < xF := by
     filter_upwards [hq, eventually_ge_atTop 1] with n hqn hn1

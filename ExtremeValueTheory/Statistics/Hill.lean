@@ -400,29 +400,14 @@ end Tail
 
 section Threshold
 
-/-- The generalized inverse `sInf {x | F x ≤ p}` of a right-continuous antitone function. -/
+/-- The generalized inverse `sInf {x | F x ≤ p}` of a right-continuous antitone function; this
+is `upperQuantile_spec_of_tendsto_atTop`. -/
+@[deprecated upperQuantile_spec_of_tendsto_atTop (since := "2026-10-23")]
 theorem threshold_spec {F : ℝ → ℝ} (hF : Antitone F) (hrc : ∀ x, ContinuousWithinAt F (Ici x) x)
     (h0 : Tendsto F atTop (𝓝 0)) {p M : ℝ} (hp : 0 < p) (hM : p < F M) :
     F (sInf {x | F x ≤ p}) ≤ p ∧ (∀ x < sInf {x | F x ≤ p}, p < F x) ∧
-      M ≤ sInf {x | F x ≤ p} := by
-  set S := {x | F x ≤ p} with hS
-  have hne : S.Nonempty := by
-    obtain ⟨x, hx⟩ := (h0.eventually (gt_mem_nhds hp)).exists
-    exact ⟨x, hx.le⟩
-  have hlow : ∀ x ∈ S, M < x := by
-    intro x hx
-    by_contra h
-    exact absurd ((hF (not_lt.1 h)).trans hx) (not_le.2 hM)
-  have hbdd : BddBelow S := ⟨M, fun x hx => (hlow x hx).le⟩
-  refine ⟨?_, fun x hx => ?_, le_csInf hne fun x hx => (hlow x hx).le⟩
-  · have hle : ∀ x ∈ Ioi (sInf S), F x ≤ p := by
-      intro x hx
-      obtain ⟨y, hyS, hyx⟩ := exists_lt_of_csInf_lt hne hx
-      exact (hF hyx.le).trans hyS
-    have hc := (hrc (sInf S)).mono Ioi_subset_Ici_self
-    exact le_of_tendsto hc (eventually_nhdsWithin_of_forall hle)
-  · have := notMem_of_lt_csInf hx hbdd
-    simpa [hS] using this
+      M ≤ sInf {x | F x ≤ p} :=
+  upperQuantile_spec_of_tendsto_atTop hF hrc h0 hp hM
 
 variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
 
@@ -442,12 +427,12 @@ theorem exists_threshold_of_isRegularlyVarying {Y : Ω → ℝ} (hY : Measurable
     (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0
   have hppos : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < k n / n := by
     filter_upwards [hkpos, hnpos] with n h1 h2; positivity
-  set t : ℕ → ℝ := fun n => sInf {x | F x ≤ (k n : ℝ) / n} with ht_def
+  set t : ℕ → ℝ := fun n => upperQuantile F ((k n : ℝ) / n) with ht_def
   have hspec : ∀ M, ∀ᶠ n in atTop, F (t n) ≤ (k n : ℝ) / n ∧
       (∀ x < t n, (k n : ℝ) / n < F x) ∧ M ≤ t n := by
     intro M
     filter_upwards [hppos, hkn.eventually (gt_mem_nhds (hFpos M))] with n h1 h2
-    exact threshold_spec hFanti (continuousWithinAt_survival hY) (tendsto_survival_atTop hY)
+    exact upperQuantile_spec_of_tendsto_atTop hFanti (continuousWithinAt_survival hY) (tendsto_survival_atTop hY)
       h1 h2
   have htinf : Tendsto t atTop atTop :=
     tendsto_atTop.2 fun M => (hspec M).mono fun n h => h.2.2

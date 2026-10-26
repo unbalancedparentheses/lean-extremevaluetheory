@@ -339,7 +339,7 @@ private lemma conv_quantile_spec {lam : ℝ} (hlo : ∃ y, lam < 1 - F y)
       (∀ y < sInf {y | 1 - F y ≤ lam}, lam < 1 - F y) ∧
       0 < 1 - F (sInf {y | 1 - F y ≤ lam}) := by
   obtain ⟨y₁, hy₁, hy₁'⟩ := hhi
-  have hq := Gumbel.quantile_spec F.conv_antitone F.conv_rightContinuous ⟨y₁, hy₁'⟩ hlo
+  have hq := upperQuantile_spec F.conv_antitone F.conv_rightContinuous ⟨y₁, hy₁'⟩ hlo
   refine ⟨hq.1, hq.2, ?_⟩
   have hle : sInf {y | 1 - F y ≤ lam} ≤ y₁ := by
     by_contra hcon

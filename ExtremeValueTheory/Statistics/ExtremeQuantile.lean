@@ -81,19 +81,13 @@ noncomputable abbrev tailQuantile (P : Measure Ω) (Y : Ω → ℝ) (p : ℝ) : 
   upperQuantile (survival P Y) p
 
 theorem upperQuantile_le_of_survival_le {p M y : ℝ} (hM : p < survival P Y M)
-    (hy : survival P Y y ≤ p) : upperQuantile (survival P Y) p ≤ y := by
-  refine csInf_le ⟨M, fun x hx => ?_⟩ hy
-  by_contra h
-  exact absurd ((survival_anti Y (not_le.1 h).le).trans hx) (not_le.2 hM)
+    (hy : survival P Y y ≤ p) : upperQuantile (survival P Y) p ≤ y :=
+  upperQuantile_le (survival_anti Y) hM hy
 
 theorem le_upperQuantile_of_lt_survival (hY : Measurable Y) {p y : ℝ} (hp : 0 < p)
     (hy : p < survival P Y y) : y ≤ upperQuantile (survival P Y) p := by
-  have hne : {x | survival P Y x ≤ p}.Nonempty := by
-    obtain ⟨x, hx⟩ := ((tendsto_survival_atTop (P := P) hY).eventually (gt_mem_nhds hp)).exists
-    exact ⟨x, hx.le⟩
-  refine le_csInf hne fun x hx => ?_
-  by_contra h
-  exact absurd ((survival_anti Y (not_le.1 h).le).trans hx) (not_le.2 hy)
+  obtain ⟨x, hx⟩ := ((tendsto_survival_atTop (P := P) hY).eventually (gt_mem_nhds hp)).exists
+  exact le_upperQuantile (survival_anti Y) ⟨x, hx.le⟩ hy
 
 /-- **Asymptotics of tail quantiles** under regular variation: if `F̄ = P(Y > ·)` is regularly
 varying with index `-α` and `p_n ↓ 0`, then `x_{p_n} → ∞` and `F̄(c x_{p_n}) / p_n → c ^ (-α)`
@@ -111,7 +105,7 @@ theorem tendsto_upperQuantile (hY : Measurable Y) {α : ℝ}
   have hspec : ∀ M, ∀ᶠ n in atTop, F (t n) ≤ p n ∧ (∀ x < t n, p n < F x) ∧ M ≤ t n := by
     intro M
     filter_upwards [hp0, hp.eventually (gt_mem_nhds (hFpos M))] with n h1 h2
-    exact threshold_spec hFanti (continuousWithinAt_survival hY) (tendsto_survival_atTop hY)
+    exact upperQuantile_spec_of_tendsto_atTop hFanti (continuousWithinAt_survival hY) (tendsto_survival_atTop hY)
       h1 h2
   have htinf : Tendsto t atTop atTop :=
     tendsto_atTop.2 fun M => (hspec M).mono fun n h => h.2.2

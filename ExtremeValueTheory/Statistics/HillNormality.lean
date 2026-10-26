@@ -1105,7 +1105,7 @@ theorem survivalQuantile_le_iff (hF : Antitone F) (hrc : ∀ x, ContinuousWithin
   have hp : 0 < t⁻¹ := inv_pos.2 (one_pos.trans ht)
   have hp1 : t⁻¹ < 1 := inv_lt_one_of_one_lt₀ ht
   obtain ⟨M, hM⟩ := (h1.eventually (lt_mem_nhds hp1)).exists
-  obtain ⟨hU1, hU2, -⟩ := threshold_spec hF hrc h0 hp hM
+  obtain ⟨hU1, hU2, -⟩ := upperQuantile_spec_of_tendsto_atTop hF hrc h0 hp hM
   rw [survivalQuantile_of_one_lt ht, upperQuantile_def]
   constructor
   · intro hx

@@ -243,7 +243,7 @@ theorem tailQuantile_spec {t : ℝ} (ht : 1 < t) :
     (lt_mem_nhds (show 1 - 1 / t < 1 by linarith))).exists
   obtain ⟨y₀, hy₀⟩ := (F.tendsto_atBot.eventually
     (gt_mem_nhds (show (0 : ℝ) < 1 - 1 / t by linarith))).exists
-  exact Gumbel.quantile_spec (g := fun y => 1 - F y) (fun _ _ h => sub_le_sub_left (F.mono' h) 1)
+  exact upperQuantile_spec (g := fun y => 1 - F y) (fun _ _ h => sub_le_sub_left (F.mono' h) 1)
     (fun x => continuousWithinAt_const.sub (F.right_continuous x)) ⟨y₁, by linarith⟩
     ⟨y₀, by linarith⟩
 
