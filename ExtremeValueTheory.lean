@@ -183,6 +183,7 @@ import ExtremeValueTheory.Statistics.GEVMLE
 import ExtremeValueTheory.Statistics.GEVMLEFisher
 import ExtremeValueTheory.Statistics.GEVFisherInformation
 import ExtremeValueTheory.Statistics.GEVHessian
+import ExtremeValueTheory.Statistics.GEVMLEEnvelope
 import ExtremeValueTheory.Statistics.GEVGumbelLimit
 import ExtremeValueTheory.Statistics.MeasurableArgmax
 import ExtremeValueTheory.Statistics.GPDJointNormalityNeg
