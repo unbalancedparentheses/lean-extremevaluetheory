@@ -1,0 +1,185 @@
+name: Mathlib bump
+
+# Once a week (and on demand) try the library against the newest Mathlib release tag: update
+# lean-toolchain, the Mathlib (and doc-gen4) rev in lakefile.lean and lake-manifest.json, build
+# the library and the specification tests, and open or update a pull request on the branch
+# `bot/mathlib-bump` with the result. The PR is labelled `build-passing` or `build-failing`;
+# when the build fails its body lists the first errors.
+#
+# Note: a PR opened with the default GITHUB_TOKEN does not trigger the other workflows (Build,
+# Nix, ...). The build reported in the PR body is the one run here; close and reopen the PR (or
+# push to it) to run the usual CI as well.
+
+on:
+  schedule:
+    - cron: "0 4 * * 1" # Mondays, 04:00 UTC
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "What to bump to: `release` (newest stable tag), `prerelease` (newest tag, release candidates included), `master`, or an explicit Mathlib tag such as v4.36.0"
+        required: false
+        default: release
+
+# One bump at a time; a newer run waits for the running one.
+concurrency:
+  group: mathlib-bump
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  MATHLIB_URL: https://github.com/leanprover-community/mathlib4.git
+  BRANCH: bot/mathlib-bump
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Choose the Mathlib target
+        id: target
+        env:
+          TARGET: ${{ github.event.inputs.target || 'release' }}
+        run: |
+          set -euo pipefail
+          # Release tags v4.X.Y and v4.X.Y-rcN. In GNU `sort -V` a tilde sorts before everything,
+          # so v4.36.0~rc1 < v4.36.0 as it should.
+          newest_tag() {
+            git ls-remote --tags --refs "$MATHLIB_URL" 'v4.*' | sed 's|.*refs/tags/||' \
+              | grep -E "$1" | sed 's/-rc/~rc/' | sort -V | tail -n 1 | sed 's/~rc/-rc/'
+          }
+          case "$TARGET" in
+            release)    rev="$(newest_tag '^v4\.[0-9]+\.[0-9]+$')" ;;
+            prerelease) rev="$(newest_tag '^v4\.[0-9]+\.[0-9]+(-rc[0-9]+)?$')" ;;
+            master)     rev="$(git ls-remote "$MATHLIB_URL" refs/heads/master | cut -f1)" ;;
+            *)          rev="$TARGET" ;;
+          esac
+          if [ -z "$rev" ]; then echo "::error::no Mathlib rev found for target '$TARGET'"; exit 1; fi
+          current="$(sed -n 's|.*mathlib4.git" @ "\(.*\)"|\1|p' lakefile.lean)"
+          toolchain="$(curl -sSfL "https://raw.githubusercontent.com/leanprover-community/mathlib4/$rev/lean-toolchain" | tr -d '[:space:]')"
+          echo "Current Mathlib: $current; target: $rev (toolchain $toolchain)"
+          {
+            echo "rev=$rev"
+            echo "current=$current"
+            echo "toolchain=$toolchain"
+            if [ "$rev" = "$current" ]; then echo "changed=false"; else echo "changed=true"; fi
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Update lean-toolchain, lakefile.lean and lake-manifest.json
+        if: steps.target.outputs.changed == 'true'
+        env:
+          REV: ${{ steps.target.outputs.rev }}
+          TOOLCHAIN: ${{ steps.target.outputs.toolchain }}
+        run: |
+          set -euo pipefail
+          echo "$TOOLCHAIN" > lean-toolchain
+          sed -i "s|\(mathlib4.git\" @ \"\)[^\"]*\"|\1$REV\"|" lakefile.lean
+          # doc-gen4 is tagged in step with Lean releases; follow it when the matching tag exists.
+          if git ls-remote --exit-code --tags https://github.com/leanprover/doc-gen4 "refs/tags/$REV" > /dev/null; then
+            sed -i "s|\(doc-gen4\" @ \"\)[^\"]*\"|\1$REV\"|" lakefile.lean
+          fi
+          lake update
+          git diff --stat
+
+      - name: Get Mathlib cache
+        if: steps.target.outputs.changed == 'true'
+        run: lake exe cache get || true
+
+      - name: Build the library and the specification tests
+        id: build
+        if: steps.target.outputs.changed == 'true'
+        run: |
+          set -uo pipefail
+          status=passing
+          lake build ExtremeValueTheory 2>&1 | tee "$RUNNER_TEMP/build.log" || status=failing
+          lake build Test 2>&1 | tee -a "$RUNNER_TEMP/build.log" || status=failing
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "Build $status"
+
+      - name: Write the pull request body
+        if: steps.target.outputs.changed == 'true'
+        env:
+          REV: ${{ steps.target.outputs.rev }}
+          CURRENT: ${{ steps.target.outputs.current }}
+          TOOLCHAIN: ${{ steps.target.outputs.toolchain }}
+          STATUS: ${{ steps.build.outputs.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+          log="$RUNNER_TEMP/build.log"
+          errors="$(grep -c '^error:' "$log" || true)"
+          deprecations="$(grep -c 'has been deprecated' "$log" || true)"
+          {
+            echo "Automated Mathlib bump: \`$CURRENT\` -> \`$REV\` (toolchain \`$TOOLCHAIN\`)."
+            echo
+            echo "**Build: $STATUS** (\`lake build ExtremeValueTheory\` and \`lake build Test\`)."
+            echo "Errors: $errors. Deprecation warnings: $deprecations. Full log: $RUN_URL"
+            if [ "$STATUS" = failing ]; then
+              echo
+              echo "First errors:"
+              echo
+              echo '```'
+              grep -A 8 '^error:' "$log" | head -n 120
+              echo '```'
+            fi
+            if [ "$deprecations" != 0 ]; then
+              echo
+              echo "Deprecations (first 40):"
+              echo
+              echo '```'
+              grep 'has been deprecated' "$log" | sed 's/^warning: //' | sort -u | head -n 40
+              echo '```'
+            fi
+            echo
+            echo "This PR is updated by the [Mathlib bump workflow](.github/workflows/mathlib-bump.yml); push fixes to \`$BRANCH\` on top of it."
+          } > "$RUNNER_TEMP/pr-body.md"
+          cat "$RUNNER_TEMP/pr-body.md"
+
+      - name: Create the labels
+        if: steps.target.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create mathlib-bump --color 1d76db --description "Automated Mathlib bump" --force
+          gh label create build-passing --color 0e8a16 --description "The bump builds" --force
+          gh label create build-failing --color d93f0b --description "The bump does not build" --force
+
+      - name: Open or update the pull request
+        id: cpr
+        if: steps.target.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@84ae59a2cdc2258d6fa0732dd66352dddae2a412 # v7.0.9
+        with:
+          branch: ${{ env.BRANCH }}
+          base: ${{ github.event.repository.default_branch }}
+          add-paths: |
+            lean-toolchain
+            lakefile.lean
+            lake-manifest.json
+          commit-message: "Bump Mathlib to ${{ steps.target.outputs.rev }}"
+          title: "Bump Mathlib to ${{ steps.target.outputs.rev }} (build ${{ steps.build.outputs.status }})"
+          body-path: ${{ runner.temp }}/pr-body.md
+          labels: |
+            mathlib-bump
+            build-${{ steps.build.outputs.status }}
+          delete-branch: true
+
+      - name: Drop the stale build label
+        if: steps.cpr.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ steps.cpr.outputs.pull-request-number }}
+          STATUS: ${{ steps.build.outputs.status }}
+        run: |
+          stale=build-passing
+          [ "$STATUS" = passing ] && stale=build-failing
+          gh pr edit "$PR" --remove-label "$stale" || true
