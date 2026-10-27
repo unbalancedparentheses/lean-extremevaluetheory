@@ -382,16 +382,12 @@ theorem test_nonvacuous_conditionA_of_alphaMixing (hα : 0 < α) {u : ℕ → �
 /-! ### Maxima with an extremal index: `P(M_n ≤ aₙx + bₙ) → H(x)^θ` -/
 
 /-- The marginal c.d.f. of the moving maximum. -/
-noncomputable def cdfM (hα : 0 < α) : CumulativeDistributionFunction :=
-  have := isProbabilityMeasure_P hα
-  ProbabilityMeasure.cdf ⟨(P α).map (M 0), inferInstance⟩
+noncomputable def cdfM (_hα : 0 < α) : CumulativeDistributionFunction :=
+  CumulativeDistributionFunction.ofMeasure ((P α).map (M 0))
 
 theorem cdfM_apply (hα : 0 < α) (x : ℝ) : cdfM hα x = (P α).real {ω | M 0 ω ≤ x} := by
   have := isProbabilityMeasure_P hα
-  unfold cdfM
-  change ((P α).map (M 0) (Set.Iic x)).toReal = _
-  rw [Measure.map_apply (measurable_M 0) measurableSet_Iic]
-  rfl
+  exact CumulativeDistributionFunction.ofMeasure_map_apply (measurable_M 0).aemeasurable x
 
 /-- **`P(M_n ≤ Aₙ⁻¹ x) → H(x)^θ`** (`tendsto_measureReal_partialMax_le_pow`), on the moving
 maximum (`θ = 1/2`): its marginal is in the Fréchet domain of attraction by Gnedenko's theorem

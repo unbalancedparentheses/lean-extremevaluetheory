@@ -286,8 +286,7 @@ theorem survival_eq (hX₀ : Measurable X₀) (x : ℝ) :
 theorem tendsto_survival (hX₀ : Measurable X₀) : Tendsto (survival P X₀) atTop (𝓝 0) := by
   have h := (tendsto_cdf_atTop (μ := P.map X₀)).const_sub 1
   rw [sub_self] at h
-  refine h.congr fun x => ?_
-  rw [survival_eq hX₀, cdf_eq_real]
+  exact h.congr fun x => one_sub_cdf_map_apply hX₀.aemeasurable x
 
 /-- **The fixed point equation in survival form.** If the law `π` of `X_0` is invariant,
 `law(max(φ X_0, Z)) = π` with `Z` Pareto independent of `X_0`, then `g(x) = P(X_0 > x)`

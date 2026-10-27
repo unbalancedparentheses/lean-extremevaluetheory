@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.MaxStable.Basic
+import ExtremeValueTheory.CDFBridge
 import ExtremeValueTheory.DomainOfAttraction.Quantile
 
 /-!
@@ -45,21 +46,16 @@ section Marginals
 /-- The `i`-th marginal distribution function `t ↦ μ {x | x i ≤ t}` of a probability law on
 `ι → ℝ`: the c.d.f. of the image of `μ` under the `i`-th coordinate. -/
 noncomputable def marginal (μ : Measure (ι → ℝ)) [IsProbabilityMeasure μ] (i : ι) :
-    CumulativeDistributionFunction where
-  toStieltjesFunction := cdf (μ.map fun x ↦ x i)
-  tendsto_atTop := tendsto_cdf_atTop _
-  tendsto_atBot := tendsto_cdf_atBot _
+    CumulativeDistributionFunction :=
+  CumulativeDistributionFunction.ofMeasure (μ.map fun x ↦ x i)
 
 variable {μ : Measure (ι → ℝ)} [IsProbabilityMeasure μ]
 
 lemma measurableSet_apply_le (i : ι) (t : ℝ) : MeasurableSet {x : ι → ℝ | x i ≤ t} :=
   measurableSet_le (measurable_pi_apply i) measurable_const
 
-lemma marginal_apply (i : ι) (t : ℝ) : marginal μ i t = μ.real {x | x i ≤ t} := by
-  change cdf (μ.map fun x ↦ x i) t = _
-  rw [cdf_eq_real, measureReal_def, measureReal_def,
-    Measure.map_apply (measurable_pi_apply i) measurableSet_Iic]
-  rfl
+lemma marginal_apply (i : ι) (t : ℝ) : marginal μ i t = μ.real {x | x i ≤ t} :=
+  CumulativeDistributionFunction.ofMeasure_map_apply (measurable_pi_apply i).aemeasurable t
 
 lemma marginal_mono (i : ι) : Monotone (marginal μ i) := (marginal μ i).mono'
 

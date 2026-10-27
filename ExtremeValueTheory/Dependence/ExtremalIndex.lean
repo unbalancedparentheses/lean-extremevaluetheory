@@ -6,6 +6,7 @@ Authors: Federico Carrone
 import ExtremeValueTheory.Dependence.Leadbetter
 import ExtremeValueTheory.SelfSimilarCDF
 import ExtremeValueTheory.LimitRelationManipulation
+import ExtremeValueTheory.CDFBridge
 
 /-!
 # The extremal index
@@ -117,10 +118,7 @@ choose `uₙ` with `P(X 0 > uₙ) = τ / n` exactly for `n > τ`. -/
 theorem hasExceedanceLevels_of_continuous [IsProbabilityMeasure P] (hX0 : Measurable (X 0))
     (hcont : Continuous fun x ↦ P.real {ω | X 0 ω ≤ x}) : HasExceedanceLevels X P := by
   set G : ℝ → ℝ := fun x ↦ P.real {ω | X 0 ω ≤ x} with hG
-  have hGcdf : G = cdf (P.map (X 0)) := by
-    funext x
-    rw [cdf_eq_real, map_measureReal_apply hX0 measurableSet_Iic]
-    rfl
+  have hGcdf : G = cdf (P.map (X 0)) := funext fun x ↦ (cdf_map_apply hX0.aemeasurable x).symm
   have hbot : Tendsto G atBot (𝓝 0) := hGcdf ▸ tendsto_cdf_atBot _
   have htop : Tendsto G atTop (𝓝 1) := hGcdf ▸ tendsto_cdf_atTop _
   have hsurv (v : ℝ) : P.real {ω | v < X 0 ω} = 1 - G v := by

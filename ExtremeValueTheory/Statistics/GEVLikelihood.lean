@@ -134,8 +134,7 @@ theorem measure_gevCDF_eq_withDensity (ξ : ℝ) :
     (continuous_gevFun ξ) ?_ (fun x => ?_) (fun x h _ => hasDerivAt_gevFun ?_)
     (gevDensity_nonneg ξ)
   · rw [← coe_gevCDF]; exact (gevCDF ξ).tendsto_atBot
-  · rw [StieltjesFunction.measure_Iic _ (gevCDF ξ).tendsto_atBot, sub_zero]
-    rw [gevCDF_apply]
+  · rw [CumulativeDistributionFunction.measure_Iic, gevCDF_apply]
   · by_cases hξ : ξ = 0
     · exact Or.inr hξ
     · refine Or.inl fun h0 => h ?_

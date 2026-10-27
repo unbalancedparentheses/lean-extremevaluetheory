@@ -2,6 +2,7 @@
 import ExtremeValueTheory.AffineTransformation
 import ExtremeValueTheory.ClassificationCalculation
 import ExtremeValueTheory.CumulativeDistributionFunction
+import ExtremeValueTheory.CDFBridge
 import ExtremeValueTheory.DegenerateCDF
 import ExtremeValueTheory.ExtremeValueDistribution
 import ExtremeValueTheory.LimitRelationManipulation
@@ -34,6 +35,7 @@ import ExtremeValueTheory.DomainOfAttraction.Gumbel
 import ExtremeValueTheory.Statistics.OrderStatistics
 import ExtremeValueTheory.Statistics.Hill
 import ExtremeValueTheory.DomainOfAttraction.GumbelNecessity
+import ExtremeValueTheory.DomainOfAttraction.OfMeasure
 import ExtremeValueTheory.PeaksOverThreshold.Balkema
 import ExtremeValueTheory.PeaksOverThreshold.Converse
 import ExtremeValueTheory.Statistics.Pickands

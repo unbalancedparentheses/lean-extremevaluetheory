@@ -318,8 +318,7 @@ theorem measure_gevLocScaleCDF_eq_withDensity (ξ μ : ℝ) (hσ : 0 < σ) :
     ((continuous_gevFun ξ).comp (by fun_prop)) ?_ (fun x => ?_) (fun x h _ => ?_)
     (fun x => gevLocScaleDensity_nonneg hσ)
   · rw [hF]; exact (gevLocScaleCDF ξ μ hσ).tendsto_atBot
-  · rw [StieltjesFunction.measure_Iic _ (gevLocScaleCDF ξ μ hσ).tendsto_atBot, sub_zero]
-    rw [gevLocScaleCDF_apply]
+  · rw [CumulativeDistributionFunction.measure_Iic, gevLocScaleCDF_apply]
   · have hd : HasDerivAt (fun y => (y - μ) / σ) σ⁻¹ x := by
       simpa using ((hasDerivAt_id x).sub_const μ).div_const σ
     have hx : 1 + ξ * ((x - μ) / σ) ≠ 0 ∨ ξ = 0 := by

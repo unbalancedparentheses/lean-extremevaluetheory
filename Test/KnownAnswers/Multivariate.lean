@@ -126,11 +126,7 @@ theorem test_frechetTransform_id {ι : Type*} {μ : Measure (ι → ℝ)} (h : I
     [IsProbabilityMeasure μ] {y : ι → ℝ} (hy : ∀ i, 0 < y i) (i : ι) :
     frechetTransform μ y i = y i := by
   have hm : marginal μ i (y i) = Real.exp (-(y i)⁻¹) := by
-    change cdf (μ.map fun x => x i) (y i) = _
-    rw [cdf_eq_real, map_measureReal_apply (measurable_pi_apply i) measurableSet_Iic,
-      measureReal_def]
-    change (μ {x | x i ≤ y i}).toReal = _
-    rw [h.measure_le i (y i) (hy i), ENNReal.toReal_ofReal (Real.exp_pos _).le]
+    rw [marginal_apply, measureReal_def, h.measure_le i (y i) (hy i), ENNReal.toReal_ofReal (Real.exp_pos _).le]
   rw [frechetTransform, hm, Real.log_exp]
   field_simp
 

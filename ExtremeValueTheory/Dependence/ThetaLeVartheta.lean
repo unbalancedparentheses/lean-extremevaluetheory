@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.Dependence.Anticlustering
+import ExtremeValueTheory.CDFBridge
 
 /-!
 # `θ ≤ ϑ` without mixing or anticlustering
@@ -60,14 +61,7 @@ theorem hasExceedanceLevels_of_isRegularlyVarying {X : ℕ → Ω → ℝ} (hX0 
     HasExceedanceLevels X P := by
   set g : ℝ → ℝ := fun x => P.real {ω | x < X 0 ω} with hg
   set μ := P.map (X 0)
-  have hgcdf : ∀ x, g x = 1 - cdf μ x := by
-    intro x
-    have : {ω | x < X 0 ω} = {ω | X 0 ω ≤ x}ᶜ := by ext; simp
-    rw [hg]
-    dsimp only
-    rw [this, probReal_compl_eq_one_sub (measurableSet_le hX0 measurable_const), cdf_eq_real,
-      map_measureReal_apply hX0 measurableSet_Iic]
-    rfl
+  have hgcdf : ∀ x, g x = 1 - cdf μ x := fun x ↦ (one_sub_cdf_map_apply hX0.aemeasurable x).symm
   have hanti : Antitone g := fun x y hxy =>
     measureReal_mono fun ω (hω : y < X 0 ω) => lt_of_le_of_lt hxy hω
   have htop : Tendsto g atTop (𝓝 0) := by

@@ -9,6 +9,7 @@ import ExtremeValueTheory.Minimality.ClassicalKaramata
 import ExtremeValueTheory.CumulativeDistributionFunction
 import Mathlib.MeasureTheory.Integral.Layercake
 import Mathlib.Probability.Independence.Basic
+import ExtremeValueTheory.CDFBridge
 
 /-!
 # Minimality: the moment condition in Breiman's lemma
@@ -87,7 +88,7 @@ instance (a : ℕ) : IsProbabilityMeasure (logLaw a) :=
   CumulativeDistributionFunction.isProbabilityMeasure_measure_coe (logCDF a)
 
 theorem logLaw_Ioi (a : ℕ) (x : ℝ) : logLaw a (Ioi x) = ENNReal.ofReal (logTail a x) := by
-  rw [logLaw, StieltjesFunction.measure_Ioi _ (logCDF a).tendsto_atTop x]
+  rw [logLaw, CumulativeDistributionFunction.measure_Ioi]
   congr 1
   change 1 - (1 - logTail a x) = _
   ring
