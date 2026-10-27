@@ -12,9 +12,13 @@ and [`RESEARCH.md`](RESEARCH.md) for the research results.
 
 In order:
 
-1. [>] Finish the running work: the design pass (see D) and Pickands and moment estimator normality.
+1. [>] Finish the running work: the design pass (see D) and Pickands and moment estimator normality;
+   also running: GEV three-parameter MLE normality, profile-likelihood intervals (GPD first),
+   nonparametric tail-dependence estimation (see A).
    Then the deferred cleanup: split the `Statistics/` files, remove the `@[deprecated]` aliases.
-2. [ ] Bump to current Mathlib and set up regular bumps (see E). The longer this waits, the harder it gets.
+2. [>] Mathlib: the library is on v4.35.0, the latest stable release (2026-10-27). Running: a weekly CI
+   job that tries the newest Mathlib and opens a pull request, a trial on v4.36.0-rc1, and fixes for
+   Mathlib deprecation warnings (see E).
 3. [ ] Human expert review with [`docs/REVIEW.md`](docs/REVIEW.md) (see C).
 4. [ ] arXiv note: the echo process and the answer to Bai–Kulik–Wang (see B).
 5. [ ] Close the most visible textbook gaps: GEV three-parameter MLE normality, profile-likelihood
@@ -225,8 +229,9 @@ Second survey (2026-10-25, [`docs/OPEN_PROBLEMS_SURVEY2.md`](docs/OPEN_PROBLEMS_
 
 ## E. Maintenance
 
-- [ ] Bump from Mathlib v4.35.0 to current Mathlib and fix the breakage
-- [ ] Regular bumps: a scheduled CI job that tries the latest Mathlib and opens a pull request
+- [x] On the latest stable Mathlib (v4.35.0, checked 2026-10-27)
+- [>] Trial bump to v4.36.0-rc1; fix Mathlib deprecation warnings on v4.35.0
+- [>] Regular bumps: a scheduled CI job that tries the latest Mathlib and opens a pull request
 - [ ] Tagged releases (e.g. one per Mathlib bump), so other projects can depend on a fixed version
 - [ ] Keep the nightly independent kernel check and the specification tests green on every bump
 
