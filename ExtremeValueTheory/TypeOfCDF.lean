@@ -67,10 +67,10 @@ lemma sInf_setOf_le_smul_apply (F : CumulativeDistributionFunction) (A : AffineI
     constructor
     · intro hy
       refine ⟨A⁻¹ y, ?_, ?_⟩
-      · simpa only [Set.mem_setOf_eq, mulAction_apply_eq] using hy
+      · simpa only [Set.mem_ofPred_eq, mulAction_apply_eq] using hy
       · exact EquivLike.apply_inv_apply A y
     · rintro ⟨x, hx, rfl⟩
-      simpa only [Set.mem_setOf_eq, mulAction_apply_eq_self_apply] using hx
+      simpa only [Set.mem_ofPred_eq, mulAction_apply_eq_self_apply] using hx
   have ne : {x | t ≤ F x}.Nonempty := by
     obtain ⟨x, hx⟩ := (F.tendsto_atTop.eventually (eventually_gt_nhds ht1)).exists
     exact ⟨x, hx.le⟩
@@ -100,7 +100,7 @@ lemma unique_orientationPreservingAffineEquiv_smul_eq_not_isDegenerate
   set p := sInf {x | F x₁ ≤ F x} with hp
   set q := sInf {x | t₂ ≤ F x} with hq
   have p_le : p ≤ x₁ := by
-    apply csInf_le _ (show x₁ ∈ {x | F x₁ ≤ F x} from Set.mem_setOf.mpr le_rfl)
+    apply csInf_le _ (show x₁ ∈ {x | F x₁ ≤ F x} from Set.mem_ofPred.mpr le_rfl)
     obtain ⟨a, ha⟩ := eventually_atBot.mp (F.tendsto_atBot.eventually (eventually_lt_nhds Fx₁_pos))
     refine ⟨a, fun x hx ↦ ?_⟩
     by_contra! con
@@ -112,7 +112,7 @@ lemma unique_orientationPreservingAffineEquiv_smul_eq_not_isDegenerate
     · intro x hx
       by_contra! con
       have := F.mono con.le
-      simp only [Set.mem_setOf_eq] at hx
+      simp only [Set.mem_ofPred_eq] at hx
       linarith
   have hpq : p ≠ q := by intro h; linarith
   have e_p := agree Fx₁_pos Fx₁_lt
@@ -196,7 +196,7 @@ lemma apply_eq_one_of_tendsto_of_gt
     -- Choose `x'` s.t. `β < x' < x` and `G'` is continuous at `x'`
     obtain ⟨x', ⟨x'_gt, x'_lt⟩, x'_cont⟩ :=
       (dense_cont_pts G').inter_open_nonempty (Ioo β x) isOpen_Ioo (nonempty_Ioo.mpr x_gt)
-    simp only [mem_setOf_eq] at x'_cont
+    simp only [mem_ofPred_eq] at x'_cont
 
     -- Choose `z'` s.t. `G(z') > 1 - ε'` where `ε' := ε/2`
     set ε' := ε/2 with hε'
@@ -209,7 +209,7 @@ lemma apply_eq_one_of_tendsto_of_gt
     -- Choose `z` s.t. `G(z) > 1 - ε'` and `G` is continuous at `z`
     obtain ⟨z, z_gt, z_cont⟩ :=
       (dense_cont_pts G).inter_open_nonempty {z | z' < z} isOpen_Ioi nonempty_Ioi
-    simp only [mem_setOf_eq] at z_gt z_cont
+    simp only [mem_ofPred_eq] at z_gt z_cont
     have Gz_gt : 1 - ε' < G z := hz'.trans_le <| G.mono (by linarith)
 
     -- `Aₙ(z) → β`
