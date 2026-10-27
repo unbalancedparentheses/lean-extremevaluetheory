@@ -140,7 +140,7 @@ theorem tendsto_clusterRatio_of_div {u : ℕ → ℝ} {r k : ℕ → ℕ}
   have hsum : ∑ h ∈ Icc 1 (r n), P.real {ω | u n < X 0 ω ∧ u n < X h ω} ≤
       r n * P.real {ω | u n < X 0 ω} := by
     calc _ ≤ ∑ h ∈ Icc 1 (r n), P.real {ω | u n < X 0 ω} :=
-          sum_le_sum fun h _ => measureReal_mono fun ω hω => hω.1
+          sum_le_sum fun h _ => measureReal_mono (by intro ω hω; exact hω.1)
       _ = _ := by rw [sum_const, Nat.card_Icc, nsmul_eq_mul]; simp
   simp only
   rw [← measureReal_def]

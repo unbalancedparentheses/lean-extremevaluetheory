@@ -521,7 +521,9 @@ theorem ae_summable_mul_of_summable_rpow [IsProbabilityMeasure P] {Z : ℕ → �
     rw [mul_zero, ENNReal.ofReal_zero] at hlim
     refine ge_of_tendsto hlim ?_
     filter_upwards [eventually_ge_atTop x₀] with x hx
-    exact (measure_mono fun ω (hω : R ω = ⊤) => (show ENNReal.ofReal x < R ω by
+    exact (measure_mono (s := {ω | R ω = ⊤}) (by
+      intro ω (hω : R ω = ⊤)
+      show ENNReal.ofReal x < R ω
       rw [hω]; exact ENNReal.ofReal_lt_top)).trans (hR' x hx)
   rw [ae_iff]
   refine measure_mono_null (fun ω hω => ?_) hnull

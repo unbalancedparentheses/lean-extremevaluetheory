@@ -351,8 +351,10 @@ lemma continuousOn_log_gpdDensity (x : ℝ) :
       have := hp.1; have := hp.2; positivity
     refine ContinuousOn.congr (f := fun p : ℝ × ℝ => -log p.2 - (1 / p.1 + 1) *
       log (1 + p.1 * x / p.2)) ?_ fun p hp => log_gpdDensity hp.2 hp.1.ne' hx (hu p hp)
-    refine (continuous_snd.continuousOn.log fun p hp => hp.2.ne').neg.sub
-      (((continuousOn_const.div continuous_fst.continuousOn fun p hp => hp.1.ne').add
+    refine ((continuous_snd.continuousOn (s := {p : ℝ × ℝ | 0 < p.1 ∧ 0 < p.2})).log
+      fun p hp => hp.2.ne').neg.sub
+      (((continuousOn_const.div continuous_fst.continuousOn
+        fun p (hp : p ∈ {p : ℝ × ℝ | 0 < p.1 ∧ 0 < p.2}) => hp.1.ne').add
         continuousOn_const).mul (ContinuousOn.log ?_ fun p hp => (hu p hp).ne'))
     exact continuousOn_const.add ((continuous_fst.continuousOn.mul continuousOn_const).div
       continuous_snd.continuousOn fun p hp => hp.2.ne')

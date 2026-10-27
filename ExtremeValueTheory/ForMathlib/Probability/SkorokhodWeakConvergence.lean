@@ -100,8 +100,7 @@ lemma one_mem_continuityTimes (ν : Measure (SkorokhodSpace E)) : (1 : I) ∈ co
 
 lemma countable_compl_continuityTimes (ν : Measure (SkorokhodSpace E)) [IsFiniteMeasure ν] :
     (continuityTimes ν)ᶜ.Countable :=
-  (countable_setOf_measure_not_continuousAt_ne_zero ν).mono fun _ ht h ↦
-    ht (Or.inr h)
+  (countable_setOf_measure_not_continuousAt_ne_zero ν).mono (by intro _ ht h; exact ht (Or.inr h))
 
 omit [SecondCountableTopology E] in
 lemma measurable_restrict_finset (J : Finset I) :
@@ -255,7 +254,7 @@ lemma exists_cadlagModulus_measure_le (μ : Measure (SkorokhodSpace E)) [IsFinit
     ∃ δ > 0, μ {x | ε ≤ cadlagModulus (⇑x) δ} ≤ η := by
   obtain ⟨K, hK, hμK⟩ := exists_isCompact_measure_compl_le μ hη
   obtain ⟨δ, hδ, hKδ⟩ := exists_forall_cadlagModulus_lt_of_isCompact hK hε
-  exact ⟨δ, hδ, (measure_mono fun x hx hxK ↦ not_le.2 (hKδ x hxK) hx).trans hμK⟩
+  exact ⟨δ, hδ, (measure_mono (by intro x hx hxK; exact not_le.2 (hKδ x hxK) hx)).trans hμK⟩
 
 omit [MeasurableSpace E] [BorelSpace E] in
 /-- **Billingsley, Theorem 13.2** (sufficiency). A sequence of probability measures `μ_n` on the
@@ -283,9 +282,11 @@ theorem isTightMeasureSet_of_cadlagModulus {μs : ℕ → Measure (SkorokhodSpac
     refine ⟨C₀ ∪ ⋃ n ∈ Finset.range N, C n, hC₀.union
       (totallyBounded_biUnion (Finset.range N).finite_toSet |>.2 fun n _ ↦ hC n), fun n ↦ ?_⟩
     rcases lt_or_ge n N with hn | hn
-    · refine (measure_mono fun x hx ↦ hx.imp fun t ht h ↦ ht ?_).trans (hμC n)
-      exact Or.inr (mem_biUnion (Finset.mem_coe.2 (Finset.mem_range.2 hn)) h)
-    · exact (measure_mono fun x hx ↦ hx.imp fun t ht h ↦ ht (Or.inl h)).trans (hN n hn)
+    · refine (measure_mono (by
+        intro x hx
+        exact hx.imp fun t ht h ↦
+          ht (Or.inr (mem_biUnion (Finset.mem_coe.2 (Finset.mem_range.2 hn)) h)))).trans (hμC n)
+    · exact (measure_mono (by intro x hx; exact hx.imp fun t ht h ↦ ht (Or.inl h))).trans (hN n hn)
   have hmod' : ∀ ε : ℝ≥0∞, 0 < ε → ∀ η : ℝ≥0∞, 0 < η → ∃ δ > 0,
       ∀ n, μs n {x | ε ≤ cadlagModulus (⇑x) δ} ≤ η := by
     intro ε hε η hη
@@ -300,11 +301,15 @@ theorem isTightMeasureSet_of_cadlagModulus {μs : ℕ → Measure (SkorokhodSpac
       · obtain ⟨n, -, rfl⟩ := Finset.mem_image.1 hr
         exact hδ' n
     · rcases lt_or_ge n N with hn | hn
-      · refine (measure_mono fun x hx ↦ hx.trans (cadlagModulus_mono _ (S.min'_le _ ?_))).trans
+      · refine (measure_mono (by
+          intro x hx
+          exact hx.trans (cadlagModulus_mono _ (S.min'_le _
+            (Finset.mem_insert_of_mem (Finset.mem_image_of_mem _ (Finset.mem_range.2 hn))))))).trans
           (hμδ n)
-        exact Finset.mem_insert_of_mem (Finset.mem_image_of_mem _ (Finset.mem_range.2 hn))
-      · exact (measure_mono fun x hx ↦ hx.trans (cadlagModulus_mono _ (S.min'_le _
-          (Finset.mem_insert_self _ _)))).trans (hN n hn)
+      · exact (measure_mono (by
+          intro x hx
+          exact hx.trans (cadlagModulus_mono _ (S.min'_le _ (Finset.mem_insert_self _ _))))).trans
+          (hN n hn)
   rw [isTightMeasureSet_iff_exists_isCompact_measure_compl_le]
   intro η hη
   have hη2 : 0 < η / 2 := ENNReal.half_pos hη.ne'

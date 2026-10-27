@@ -235,4 +235,4 @@ theorem IsCadlag.countable_setOf_edist_leftLim_ne_zero (hf : IsCadlag f) :
 first kind, i.e. points where the left limit differs from the value. -/
 theorem IsCadlag.countable_setOf_leftLim_ne {E : Type*} [EMetricSpace E] {f : X → E}
     (hf : IsCadlag f) : {t | Function.leftLim f t ≠ f t}.Countable :=
-  hf.countable_setOf_edist_leftLim_ne_zero.mono fun _ ht h ↦ ht (edist_eq_zero.1 h)
+  hf.countable_setOf_edist_leftLim_ne_zero.mono (by intro _ ht h; exact ht (edist_eq_zero.1 h))

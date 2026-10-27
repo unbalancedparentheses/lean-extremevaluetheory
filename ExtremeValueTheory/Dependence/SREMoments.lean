@@ -460,7 +460,7 @@ variable {μ : Measure ℝ}
 /-- **Markov's inequality** for `|X|^s`: `P(|X| > x) ≤ E|X|^s / x^s`. -/
 theorem measure_lt_abs_le_lintegral_div {s x : ℝ} (hs : 0 < s) (hx : 0 < x) :
     μ {y | x < |y|} ≤ (∫⁻ y, ‖y‖ₑ ^ s ∂μ) / ENNReal.ofReal (x ^ s) := by
-  refine (measure_mono fun y (hy : x < |y|) => ?_).trans
+  refine (measure_mono (s := {y | x < |y|}) fun y (hy : x < |y|) => ?_).trans
     (meas_ge_le_lintegral_div (f := fun y : ℝ => ‖y‖ₑ ^ s) (by fun_prop)
       (ENNReal.ofReal_pos.2 (Real.rpow_pos_of_pos hx s)).ne' ENNReal.ofReal_ne_top)
   show ENNReal.ofReal (x ^ s) ≤ ‖y‖ₑ ^ s

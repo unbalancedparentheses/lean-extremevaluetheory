@@ -175,8 +175,8 @@ lemma measurableSet_angularSet [Countable ι] {B : Set (ι → ℝ≥0∞)} (hB 
     MeasurableSet (angularSet B) := by
   have hsup : Measurable fun x : ι → ℝ≥0∞ ↦ ⨆ i, x i :=
     Measurable.iSup fun i ↦ measurable_pi_apply i
-  refine (measurableSet_lt measurable_const hsup).inter ?_
-  exact hB.preimage (Measurable.of_eval fun i ↦ (measurable_pi_apply i).div hsup)
+  exact (measurableSet_lt measurable_const hsup).inter <|
+    hB.preimage (Measurable.of_eval fun i ↦ (measurable_pi_apply i).div hsup)
 
 lemma angularSet_subset_exceedSet (B : Set (ι → ℝ≥0∞)) : angularSet B ⊆ exceedSet 1 :=
   fun _ hx ↦ lt_iSup_iff.1 hx.1

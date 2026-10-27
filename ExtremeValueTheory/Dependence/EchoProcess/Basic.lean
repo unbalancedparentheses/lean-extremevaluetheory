@@ -89,6 +89,7 @@ theorem echoSource_eq (t : ℤ) (x : ℝ) (j : ℕ) :
 
 theorem measurableSet_echoSourceSet (hLm : Measurable L) (x : ℝ) (j : ℕ) :
     MeasurableSet (echoSourceSet L x j) := by
+  change MeasurableSet (Set.Ioi x ∩ ({_z | j = 0} ∪ L ⁻¹' {j}))
   refine measurableSet_Ioi.inter ((MeasurableSet.const (j = 0)).union ?_)
   exact hLm (measurableSet_singleton j)
 

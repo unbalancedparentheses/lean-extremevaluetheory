@@ -146,7 +146,8 @@ theorem TendstoInDistribution.tendsto_measure_abs_le_mul [l.IsCountablyGenerated
     have hopen : IsOpen {p : ℝ × ℝ | |p.1| < z * p.2} :=
       isOpen_lt (continuous_abs.comp continuous_fst) (continuous_const.mul continuous_snd)
     have h3 : p ∉ {p : ℝ × ℝ | |p.1| < z * p.2} := fun h ↦
-      h2 (interior_maximal (s := A) (fun q (hq : |q.1| < z * q.2) ↦ show |q.1| ≤ z * q.2 from
+      h2 (interior_maximal (s := A) (t := {p : ℝ × ℝ | |p.1| < z * p.2})
+        (fun q (hq : |q.1| < z * q.2) ↦ show |q.1| ≤ z * q.2 from
         le_of_lt hq) hopen h)
     simp only [hA, mem_ofPred_eq, not_lt] at h1 h3 ⊢
     exact le_antisymm h1 h3

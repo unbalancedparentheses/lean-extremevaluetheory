@@ -13,7 +13,7 @@ open MeasureTheory ProbabilityTheory Filter Topology Set
 namespace ExtremeValueTheory.Test.NonVacuity
 
 /-- The compact parameter set `K = [-1/2, 1/2] × [1, 2]` for `(ξ, σ)`. -/
-def gpdK : Set (ℝ × ℝ) := Icc (-1 / 2 : ℝ) (1 / 2) ×ˢ Icc (1 : ℝ) 2
+noncomputable def gpdK : Set (ℝ × ℝ) := Icc (-1 / 2 : ℝ) (1 / 2) ×ˢ Icc (1 : ℝ) 2
 
 theorem isCompact_gpdK : IsCompact gpdK := isCompact_Icc.prod isCompact_Icc
 
@@ -76,7 +76,8 @@ theorem test_nonvacuous_tendstoInDistribution_gpdScaleMLE' :
     HasLaw.id
 
 /-- The compact parameter set `[-1/2, 1/2] × [0, 1] × [1, 2]` for `(ξ, μ, σ)`. -/
-def gevK : Set (ℝ × ℝ × ℝ) := Icc (-1 / 2 : ℝ) (1 / 2) ×ˢ (Icc (0 : ℝ) 1 ×ˢ Icc (1 : ℝ) 2)
+noncomputable def gevK : Set (ℝ × ℝ × ℝ) :=
+  Icc (-1 / 2 : ℝ) (1 / 2) ×ˢ (Icc (0 : ℝ) 1 ×ˢ Icc (1 : ℝ) 2)
 
 /-- Exercises `ae_tendsto_gevMLE` (strong consistency of the 3-parameter GEV MLE): iid
 `GEV(ξ = 1/4, μ = 1/2, σ = 3/2)` samples, `K = [-1/2, 1/2] × [0, 1] × [1, 2]`. All hypotheses

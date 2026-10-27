@@ -718,7 +718,8 @@ theorem tendsto_sum_measureReal_lt_and_lt_div_of_div {u : ℕ → ℝ} {S : ℕ 
     (by positivity)) (fun n => ?_) hS
   set p := P.real {ω | u n < X 0 ω}
   have hsum : ∑ h ∈ Icc 1 (S n), P.real {ω | u n < X 0 ω ∧ u n < X h ω} ≤ S n * p := by
-    calc _ ≤ ∑ h ∈ Icc 1 (S n), p := sum_le_sum fun h _ => measureReal_mono fun ω hω => hω.1
+    calc _ ≤ ∑ h ∈ Icc 1 (S n), p :=
+      sum_le_sum fun h _ => measureReal_mono (by intro ω hω; exact hω.1)
       _ = _ := by rw [sum_const, Nat.card_Icc, nsmul_eq_mul]; simp
   rcases (measureReal_nonneg (μ := P) (s := {ω | u n < X 0 ω})).lt_or_eq with hp | hp
   · rcases (Nat.cast_nonneg (α := ℝ) n).lt_or_eq with hn | hn
@@ -740,7 +741,8 @@ theorem sum_measureReal_lt_and_lt_le_of_isMDependent (hX : ∀ t, Measurable (X 
       (if h ≤ m then p else 0) + p ^ 2 := by
     intro h _
     split_ifs with hh
-    · exact (measureReal_mono fun ω hω => hω.1).trans (le_add_of_nonneg_right (sq_nonneg _))
+    · exact (measureReal_mono (by intro ω hω; exact hω.1)).trans
+        (le_add_of_nonneg_right (sq_nonneg _))
     · have hind := (hm.indepFun (s := 0) (t := h) (by omega)).measure_inter_preimage_eq_mul
         (Set.Ioi u) (Set.Ioi u) measurableSet_Ioi measurableSet_Ioi
       have e : {ω | u < X 0 ω ∧ u < X h ω} = X 0 ⁻¹' Set.Ioi u ∩ X h ⁻¹' Set.Ioi u := rfl
@@ -882,7 +884,8 @@ theorem HasShiftInvariantWindows.runs_bounds (hstat : HasShiftInvariantWindows P
   set D : ℕ → ℝ := fun k => P.real {ω | u < |X 0 ω| ∧ ∀ t ∈ Finset.Ioc (0 : ℤ) k, |X t ω| ≤ u}
   have hanti : ∀ m k, m ≤ k → D k ≤ D m := fun m k hmk => measureReal_mono fun ω hω =>
     ⟨hω.1, fun t ht => hω.2 t (Finset.Ioc_subset_Ioc le_rfl (by exact_mod_cast hmk) ht)⟩
-  have hDp : ∀ k, D k ≤ P.real {ω | u < |X 0 ω|} := fun k => measureReal_mono fun ω hω => hω.1
+  have hDp : ∀ k, D k ≤ P.real {ω | u < |X 0 ω|} := fun k =>
+    measureReal_mono (by intro ω hω; exact hω.1)
   constructor
   · rw [hstat.measureReal_exists_lt_eq_sum hX]
     calc (r : ℝ) * D r = ∑ _k ∈ Finset.range r, D r := by
@@ -1315,7 +1318,7 @@ theorem logEcho_tendstoInMeasure_runsEstimator {u : ℕ → ℝ} (hu : Tendsto u
     convert key using 4
     push_cast; ring
   · filter_upwards with n
-    exact div_le_one_of_le₀ (measureReal_mono fun ω hω => hω.1) measureReal_nonneg
+    exact div_le_one_of_le₀ (measureReal_mono (by intro ω hω; exact hω.1)) measureReal_nonneg
 
 end Echo
 

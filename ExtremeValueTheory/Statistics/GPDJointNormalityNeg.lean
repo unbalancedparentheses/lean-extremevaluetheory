@@ -53,7 +53,7 @@ section Nbhd
 variable {ξ₀ σ₀ : ℝ}
 
 /-- The closed neighbourhood `|ξ - ξ₀| ≤ |ξ₀|/8`, `|σ - σ₀| ≤ σ₀/8` of `(ξ₀, σ₀)`, `ξ₀ < 0`. -/
-def gpdNbhdNeg (ξ₀ σ₀ : ℝ) : Set (ℝ × ℝ) :=
+noncomputable def gpdNbhdNeg (ξ₀ σ₀ : ℝ) : Set (ℝ × ℝ) :=
   Icc (ξ₀ + ξ₀ / 8) (ξ₀ - ξ₀ / 8) ×ˢ Icc (σ₀ - σ₀ / 8) (σ₀ + σ₀ / 8)
 
 lemma convex_gpdNbhdNeg : Convex ℝ (gpdNbhdNeg ξ₀ σ₀) := (convex_Icc _ _).prod (convex_Icc _ _)

@@ -396,7 +396,7 @@ theorem HasShiftInvariantWindows.tendsto_partialMax_iff_tendsto_clusterRatio
     intro n
     simp only [b, hstat.measureReal_exists_lt_eq_sum hX]
     calc _ ≤ ∑ _k ∈ Finset.range (r n), p n :=
-          Finset.sum_le_sum fun k _ => measureReal_mono fun ω hω => hω.1
+          Finset.sum_le_sum fun k _ => measureReal_mono (by intro ω hω; exact hω.1)
       _ = r n * p n := by simp
   have hrp : Tendsto (fun n => (r n : ℝ) * p n) atTop (𝓝 0) := by
     have := hrn.mul hτ

@@ -347,7 +347,8 @@ theorem tsum_logLag_le {α : ℝ} (hα : 0 < α) {u : ℝ} (hu : 1 ≤ u) :
   have h2 : ∑' j, f (j + K) ≤ 2 ^ α / (1 - Real.exp (-α)) * u ^ (-α) := by
     calc ∑' j, f (j + K) ≤ ∑' j : ℕ, (2 : ℝ) ^ α * Real.exp (-α) ^ (j + K) :=
           (hfs.comp_injective (add_left_injective K)).tsum_le_tsum
-            (fun j => (measureReal_mono fun z hz => hz.2).trans (measureReal_logLag_le hα _)) hgK
+            (fun j => (measureReal_mono (by intro z hz; exact hz.2)).trans
+              (measureReal_logLag_le hα _)) hgK
       _ = 2 ^ α / (1 - Real.exp (-α)) * Real.exp (-α) ^ K := by
           simp_rw [pow_add, ← mul_assoc]
           rw [tsum_mul_right, tsum_mul_left, tsum_geometric_of_lt_one hq0 hq1]

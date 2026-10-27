@@ -164,7 +164,8 @@ theorem tendsto_rpow_sub_one_div (β : ℝ) :
   have h := hasDerivAt_iff_tendsto_slope.1
     (Real.hasDerivAt_rpow_const (x := 1) (p := β) (Or.inl one_ne_zero))
   simp only [Real.one_rpow, mul_one] at h
-  refine (h.mono_left (nhdsWithin_mono _ fun l (hl : 1 < l) => ne_of_gt hl)).congr' ?_
+  refine (h.mono_left (nhdsWithin_mono _ (s := Set.Ioi 1) fun l (hl : 1 < l) => ne_of_gt hl)).congr'
+    ?_
   filter_upwards [self_mem_nhdsWithin] with l _
   rw [slope_def_field, Real.one_rpow]
 

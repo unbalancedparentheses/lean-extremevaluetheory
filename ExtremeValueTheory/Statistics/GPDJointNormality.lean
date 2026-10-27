@@ -63,7 +63,7 @@ variable {ξ₀ σ₀ : ℝ}
 
 /-- The closed neighbourhood `|ξ - ξ₀| ≤ ξ₀/8`, `|σ - σ₀| ≤ σ₀/8` of the true parameter, on
 which the Hessian of the log-density is Lipschitz in the parameter, uniformly in the data. -/
-def gpdNbhd (ξ₀ σ₀ : ℝ) : Set (ℝ × ℝ) :=
+noncomputable def gpdNbhd (ξ₀ σ₀ : ℝ) : Set (ℝ × ℝ) :=
   Icc (ξ₀ - ξ₀ / 8) (ξ₀ + ξ₀ / 8) ×ˢ Icc (σ₀ - σ₀ / 8) (σ₀ + σ₀ / 8)
 
 lemma convex_gpdNbhd : Convex ℝ (gpdNbhd ξ₀ σ₀) := (convex_Icc _ _).prod (convex_Icc _ _)
@@ -218,7 +218,7 @@ lemma log_one_add_nonneg {x : ℝ} (hx : 0 ≤ x) : 0 ≤ log (1 + ξ₀ * x / �
                  linarith)
 
 /-- The compact convex box of values of `(ξ, σ, w(θ, x))`, `θ ∈ gpdNbhd ξ₀ σ₀`, `x ≥ 0`. -/
-def gpdBox (ξ₀ σ₀ : ℝ) : Set (ℝ × ℝ × ℝ) :=
+noncomputable def gpdBox (ξ₀ σ₀ : ℝ) : Set (ℝ × ℝ × ℝ) :=
   Icc (ξ₀ / 2) (2 * ξ₀) ×ˢ (Icc (σ₀ / 2) (2 * σ₀) ×ˢ Icc 0 (2 / ξ₀))
 
 lemma mem_gpdBox {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhd ξ₀ σ₀) {x : ℝ} (hx : 0 ≤ x) :

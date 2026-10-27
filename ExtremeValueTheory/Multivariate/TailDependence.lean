@@ -103,7 +103,7 @@ lemma tendsto_one_sub_two_mul_add_rpow_div (θ : ℝ) :
   have hd := Real.hasDerivAt_rpow_const (x := 1) (p := θ) (Or.inl one_ne_zero)
   rw [Real.one_rpow, mul_one] at hd
   have hs := (hasDerivAt_iff_tendsto_slope.1 hd).mono_left
-    (nhdsWithin_mono _ fun x (hx : x < 1) ↦ hx.ne)
+    (nhdsWithin_mono _ (s := Set.Iio 1) fun x (hx : x < 1) ↦ hx.ne)
   refine (tendsto_const_nhds (x := (2 : ℝ))).sub hs |>.congr' ?_
   filter_upwards [self_mem_nhdsWithin] with u (hu : u < 1)
   have h1 : u - 1 ≠ 0 := sub_ne_zero.2 hu.ne

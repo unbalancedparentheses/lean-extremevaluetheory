@@ -221,7 +221,7 @@ lemma AffineEquiv.isOrientationPreserving_iff_mono (A : ℝ ≃ᵃ[ℝ] ℝ) :
 -- TODO: Generalize to canonically linearly ordered fields?
 /-- The subgroup of affine isomorphishs ℝ → ℝ which are orientation preserving. -/
 noncomputable def orientationPreservingAffineEquiv : Subgroup (ℝ ≃ᵃ[ℝ] ℝ) where
-  carrier := AffineEquiv.IsOrientationPreserving
+  carrier := {A | A.IsOrientationPreserving}
   mul_mem' := by
     intro a b ha hb
     apply (AffineEquiv.isOrientationPreserving_iff_mono _).mpr

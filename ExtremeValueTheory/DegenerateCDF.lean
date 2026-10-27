@@ -56,7 +56,8 @@ lemma isDegenerate_iff (F : CumulativeDistributionFunction) :
     have one_after_x₀ : ∀ x > x₀, F x = 1 := by
       intro x hx
       apply le_antisymm (apply_le_one F x)
-      obtain ⟨x₁, ⟨is_one : F x₁ = 1, lt_x⟩⟩ := exists_lt_of_csInf_lt reaches_one hx
+      obtain ⟨x₁, ⟨is_one : F x₁ = 1, lt_x⟩⟩ :=
+        exists_lt_of_csInf_lt (s := {x : ℝ | F x = 1}) reaches_one hx
       simpa only [← is_one] using F.mono lt_x.le
     have one_after_x₀' : F '' Ioi x₀ = {1} := by
       rw [← Set.Nonempty.image_const (show (Ioi x₀).Nonempty from nonempty_Ioi)]

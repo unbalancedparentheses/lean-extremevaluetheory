@@ -266,7 +266,7 @@ theorem HasSpectralTailProcess.tendsto_atTop_of_tendsto_mul (h : HasSpectralTail
   filter_upwards [hp.eventually (gt_mem_nhds hC)] with n hn
   by_contra hcon
   rw [not_le] at hcon
-  exact absurd (measureReal_mono (μ := P) fun ω (hω : C < |X 0 ω|) => hcon.trans hω)
+  exact absurd (measureReal_mono (μ := P) (by intro ω (hω : C < |X 0 ω|); exact hcon.trans hω))
     (not_le.2 hn)
 
 /-- **Anticlustering implies `Θ_t → 0`** ([BS09, Proposition 4.2], [KS20, §6.1]).

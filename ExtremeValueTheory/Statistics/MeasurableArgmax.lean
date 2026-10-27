@@ -62,7 +62,7 @@ theorem measurableSet_exists_isMaxOn_inter {C : Set (ℝ × ℝ)} (hC : IsClosed
     MeasurableSet {x | ∃ θ ∈ K ∩ C, IsMaxOn (fun p => f p x) K θ} := by
   by_cases hne : (K ∩ C).Nonempty
   swap
-  · convert MeasurableSet.empty
+  · convert MeasurableSet.empty using 1
     ext x
     simp only [mem_ofPred_eq, mem_empty_iff_false, iff_false, not_exists, not_and]
     exact fun θ hθ => absurd ⟨θ, hθ⟩ hne

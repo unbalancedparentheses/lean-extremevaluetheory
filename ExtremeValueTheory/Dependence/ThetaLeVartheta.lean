@@ -219,12 +219,14 @@ theorem HasSpectralTailProcess.one_sub_le_mul_candidateExtremalIndex (hα : 0 < 
     rw [← Finset.sum_range_add_sum_Ico _ hmn]
     have h1 : ∑ k ∈ Finset.range m, P.real (D n k) ≤ m * p n := by
       calc _ ≤ ∑ _k ∈ Finset.range m, p n :=
-            Finset.sum_le_sum fun k _ => measureReal_mono fun ω hω => hω.1
+            Finset.sum_le_sum fun k _ => measureReal_mono (by intro ω hω; exact hω.1)
         _ = m * p n := by simp
     have h2 : ∑ k ∈ Finset.Ico m n, P.real (D n k) ≤ n * P.real (D n m) := by
       calc _ ≤ ∑ _k ∈ Finset.Ico m n, P.real (D n m) := Finset.sum_le_sum fun k hk =>
-            measureReal_mono fun ω hω => ⟨hω.1, fun t ht =>
-              hω.2 t (Finset.Ioc_subset_Ioc le_rfl (by exact_mod_cast (Finset.mem_Ico.1 hk).1) ht)⟩
+            measureReal_mono (by
+              intro ω hω
+              exact ⟨hω.1, fun t ht => hω.2 t
+                (Finset.Ioc_subset_Ioc le_rfl (by exact_mod_cast (Finset.mem_Ico.1 hk).1) ht)⟩)
         _ = (n - m : ℕ) * P.real (D n m) := by simp
         _ ≤ n * P.real (D n m) := by
             gcongr

@@ -504,7 +504,7 @@ theorem isBoundedInProbability_scoreSumNorm (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0
   have h1 := meas_ge_le_variance_div_sq (hmemS n) hM
   rw [hmean n] at h1
   simp only [sub_zero] at h1
-  refine (measure_mono fun ω (hω : M < |scoreSumNorm ξ σ₀ X n ω|) => hω.le).trans
+  refine (measure_mono (by intro ω (hω : M < |scoreSumNorm ξ σ₀ X n ω|); exact hω.le)).trans
     (h1.trans ?_)
   rw [← ENNReal.ofReal_toReal hεtop]
   refine ENNReal.ofReal_le_ofReal ?_
