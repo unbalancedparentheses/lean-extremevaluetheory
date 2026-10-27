@@ -200,9 +200,8 @@ section Tail
 
 variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
 
-/-- The survival function `x ↦ P(Y > x)` of a real random variable. -/
-noncomputable def survival (P : Measure Ω) (Y : Ω → ℝ) (x : ℝ) : ℝ :=
-  (P {ω | x < Y ω}).toReal
+/-! The survival function `survival P Y x = P(Y > x)` is defined in
+`ExtremeValueTheory/UpperQuantile.lean`. -/
 
 variable {Y : Ω → ℝ}
 

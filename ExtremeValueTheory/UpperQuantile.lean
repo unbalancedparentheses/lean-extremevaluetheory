@@ -5,6 +5,7 @@ Authors: Federico Carrone
 -/
 import Mathlib.Topology.Instances.Real.Lemmas
 import Mathlib.Topology.Order.LeftRightNhds
+import Mathlib.MeasureTheory.Measure.Real
 
 /-!
 # Upper-tail quantiles
@@ -31,6 +32,8 @@ former name `ExtremeValueTheory.tailQuantile P Y p` is a deprecated abbreviation
 
 * `ExtremeValueTheory.upperQuantile S p`: the canonical upper quantile at level `p`.
 * `ExtremeValueTheory.survivalQuantile S t`: the tail quantile function `U(t)`, return period `t`.
+* `ExtremeValueTheory.survival P Y x = P(Y > x)`: the survival function of a random variable, the
+  library's one definition of it.
 
 ## Main results
 
@@ -129,5 +132,19 @@ theorem survivalQuantile_of_le_one {S : ℝ → ℝ} {t : ℝ} (ht : t ≤ 1) :
 theorem upperQuantile_eq_survivalQuantile {S : ℝ → ℝ} {p : ℝ} (hp0 : 0 < p) (hp1 : p < 1) :
     upperQuantile S p = survivalQuantile S p⁻¹ := by
   rw [survivalQuantile_of_one_lt ((one_lt_inv₀ hp0).2 hp1), inv_inv]
+
+section Survival
+
+variable {Ω : Type*} [MeasurableSpace Ω]
+
+/-- The survival function `x ↦ P(Y > x)` of a real random variable. This is the library's one
+definition of the survival function of a random variable. -/
+noncomputable def survival (P : MeasureTheory.Measure Ω) (Y : Ω → ℝ) (x : ℝ) : ℝ :=
+  (P {ω | x < Y ω}).toReal
+
+theorem survival_eq_measureReal (P : MeasureTheory.Measure Ω) (Y : Ω → ℝ) (x : ℝ) :
+    survival P Y x = P.real {ω | x < Y ω} := rfl
+
+end Survival
 
 end ExtremeValueTheory

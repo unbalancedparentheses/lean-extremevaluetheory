@@ -5,6 +5,7 @@ Authors: Federico Carrone
 -/
 import ExtremeValueTheory.Dependence.MarkovChain
 import ExtremeValueTheory.Dependence.ThetaLeVartheta
+import ExtremeValueTheory.UpperQuantile
 
 /-!
 # The max-autoregressive (ARMAX) Markov chain
@@ -273,12 +274,12 @@ section Chain
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
   {X₀ : Ω → ℝ} {V : ℕ → Ω → ℝ}
 
-/-- The survival function `x ↦ P(X_0 > x)` of the initial law. -/
-noncomputable def survival (P : Measure Ω) (X₀ : Ω → ℝ) (x : ℝ) : ℝ := P.real {ω | x < X₀ ω}
+/-! The survival function `x ↦ P(X_0 > x)` of the initial law is
+`ExtremeValueTheory.survival P X₀` (`ExtremeValueTheory/UpperQuantile.lean`). -/
 
 theorem survival_eq (hX₀ : Measurable X₀) (x : ℝ) :
     survival P X₀ x = 1 - (P.map X₀).real (Iic x) := by
-  rw [survival, map_measureReal_apply hX₀ measurableSet_Iic, ← probReal_compl_eq_one_sub
+  rw [survival_eq_measureReal, map_measureReal_apply hX₀ measurableSet_Iic, ← probReal_compl_eq_one_sub
     (hX₀ measurableSet_Iic)]
   congr 1
   ext ω; simp
@@ -383,7 +384,7 @@ theorem hasExtremalIndex :
   refine hlim.congr' ?_
   filter_upwards [hu1, eventually_ge_atTop 1] with n hn1 hn
   rw [measureReal_partialMax_le hφ0.le hφ1.le hV hind hiid hlaw (by omega)
-    (by linarith : (0 : ℝ) ≤ u n), paretoMeasure_real_Iic hα hn1, survival]
+    (by linarith : (0 : ℝ) ≤ u n), paretoMeasure_real_Iic hα hn1, survival_eq_measureReal]
   congr 1
   rw [← probReal_compl_eq_one_sub (measurableSet_lt measurable_const hX₀)]
   congr 1; ext ω; simp
