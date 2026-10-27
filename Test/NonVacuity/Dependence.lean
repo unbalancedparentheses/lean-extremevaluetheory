@@ -22,27 +22,33 @@ namespace NonVacuity.Dependence
 /-! ### The concrete iid Pareto noise -/
 
 /-- The product law `⊗_{t ∈ ℤ} Pareto(1, α)` on `ℤ → ℝ`. -/
-noncomputable def P (α : ℝ) : Measure (ℤ → ℝ) := Measure.infinitePi fun _ : ℤ => paretoMeasure 1 α
+private noncomputable def P (α : ℝ) : Measure (ℤ → ℝ) :=
+  Measure.infinitePi fun _ : ℤ => paretoMeasure 1 α
 
 /-- The coordinates, made pointwise nonnegative: `Z t ω = |ω t|`. -/
-def Z (t : ℤ) (ω : ℤ → ℝ) : ℝ := |ω t|
+private def Z (t : ℤ) (ω : ℤ → ℝ) : ℝ := |ω t|
 
 variable {α : ℝ}
 
-theorem isProbabilityMeasure_P (hα : 0 < α) : IsProbabilityMeasure (P α) := by
+/-- Test-specific: `P α` is a probability measure. -/
+private theorem isProbabilityMeasure_P (hα : 0 < α) : IsProbabilityMeasure (P α) := by
   have := isProbabilityMeasure_paretoMeasure one_pos hα
   unfold P; infer_instance
 
-theorem measurable_Z (t : ℤ) : Measurable (Z t) :=
+/-- Test-specific: The noise coordinates are measurable. -/
+private theorem measurable_Z (t : ℤ) : Measurable (Z t) :=
   continuous_abs.measurable.comp (measurable_pi_apply t)
 
-theorem Z_nonneg (t : ℤ) (ω : ℤ → ℝ) : 0 ≤ Z t ω := abs_nonneg _
+/-- Test-specific: The noise is pointwise nonnegative. -/
+private theorem Z_nonneg (t : ℤ) (ω : ℤ → ℝ) : 0 ≤ Z t ω := abs_nonneg _
 
-theorem iIndepFun_Z (hα : 0 < α) : iIndepFun Z (P α) := by
+/-- Test-specific: The noise coordinates are independent. -/
+private theorem iIndepFun_Z (hα : 0 < α) : iIndepFun Z (P α) := by
   have := isProbabilityMeasure_paretoMeasure one_pos hα
   exact iIndepFun_infinitePi (X := fun _ (x : ℝ) => |x|) fun _ => continuous_abs.measurable
 
-theorem map_Z (hα : 0 < α) (t : ℤ) : (P α).map (Z t) = paretoMeasure 1 α := by
+/-- Test-specific: Each noise coordinate is Pareto(`1`, `α`). -/
+private theorem map_Z (hα : 0 < α) (t : ℤ) : (P α).map (Z t) = paretoMeasure 1 α := by
   have := isProbabilityMeasure_paretoMeasure one_pos hα
   have e : Z t = (fun x : ℝ => |x|) ∘ fun ω : ℤ → ℝ => ω t := rfl
   rw [e, ← Measure.map_map (g := fun x : ℝ => |x|) (f := fun ω : ℤ → ℝ => ω t)
@@ -53,18 +59,19 @@ theorem map_Z (hα : 0 < α) (t : ℤ) : (P α).map (Z t) = paretoMeasure 1 α :
     exact abs_of_pos (one_pos.trans hr)
   rw [Measure.map_congr hae, Measure.map_id]
 
-theorem identDistrib_Z (hα : 0 < α) (t : ℤ) : IdentDistrib (Z t) (Z 0) (P α) (P α) :=
+/-- Test-specific: The noise coordinates are identically distributed. -/
+private theorem identDistrib_Z (hα : 0 < α) (t : ℤ) : IdentDistrib (Z t) (Z 0) (P α) (P α) :=
   ⟨(measurable_Z t).aemeasurable, (measurable_Z 0).aemeasurable, by rw [map_Z hα, map_Z hα]⟩
 
 /-- `P(Z_t > x) = Pareto(1, α)(x, ∞)`. -/
-theorem measureReal_lt_Z (hα : 0 < α) (t : ℤ) (x : ℝ) :
+private theorem measureReal_lt_Z (hα : 0 < α) (t : ℤ) (x : ℝ) :
     (P α).real {ω | x < Z t ω} = tail (paretoMeasure 1 α) x := by
   have := isProbabilityMeasure_P hα
   rw [tail, ← map_Z hα t, map_measureReal_apply (measurable_Z t) measurableSet_Ioi]
   rfl
 
 /-- The tail of the noise is regularly varying with index `-α`. -/
-theorem isRegularlyVarying_Z (hα : 0 < α) :
+private theorem isRegularlyVarying_Z (hα : 0 < α) :
     IsRegularlyVarying (fun x => (P α).real {ω | x < Z 0 ω}) (-α) := by
   simp_rw [measureReal_lt_Z hα]
   exact isRegularlyVarying_tail_paretoMeasure one_pos hα
@@ -72,21 +79,26 @@ theorem isRegularlyVarying_Z (hα : 0 < α) :
 /-! ### The `ℕ`-indexed iid sequence -/
 
 /-- The `ℕ`-indexed iid Pareto sequence `X n = Z n`. -/
-def X (n : ℕ) : (ℤ → ℝ) → ℝ := Z n
+private def X (n : ℕ) : (ℤ → ℝ) → ℝ := Z n
 
-theorem measurable_X (n : ℕ) : Measurable (X n) := measurable_Z n
+/-- Test-specific: The `ℕ`-indexed sequence is measurable. -/
+private theorem measurable_X (n : ℕ) : Measurable (X n) := measurable_Z n
 
-theorem iIndepFun_X (hα : 0 < α) : iIndepFun X (P α) :=
+/-- Test-specific: The `ℕ`-indexed sequence is independent. -/
+private theorem iIndepFun_X (hα : 0 < α) : iIndepFun X (P α) :=
   (iIndepFun_Z hα).precomp (g := fun n : ℕ => (n : ℤ)) Nat.cast_injective
 
-theorem identDistrib_X (hα : 0 < α) (n : ℕ) : IdentDistrib (X n) (X 0) (P α) (P α) :=
+/-- Test-specific: The `ℕ`-indexed sequence is identically distributed. -/
+private theorem identDistrib_X (hα : 0 < α) (n : ℕ) : IdentDistrib (X n) (X 0) (P α) (P α) :=
   identDistrib_Z hα n
 
-theorem isRegularlyVarying_X (hα : 0 < α) :
+/-- Test-specific: The tail of `X 0` is regularly varying with index `-α`. -/
+private theorem isRegularlyVarying_X (hα : 0 < α) :
     IsRegularlyVarying (fun x => (P α).real {ω | x < X 0 ω}) (-α) :=
   isRegularlyVarying_Z hα
 
-theorem isStationary_X (hα : 0 < α) : IsStationary X (P α) :=
+/-- Test-specific: The `ℕ`-indexed iid sequence is stationary. -/
+private theorem isStationary_X (hα : 0 < α) : IsStationary X (P α) :=
   have := isProbabilityMeasure_P hα
   isStationary_of_iIndepFun measurable_X (iIndepFun_X hα) (identDistrib_X hα)
 
@@ -148,43 +160,53 @@ theorem test_nonvacuous_hasExtremalIndex_movingMax (hα : 0 < α) :
 /-! ### The `ℤ`-indexed moving maximum and its tail process -/
 
 /-- The moving maximum `M_t = max(Z_t, Z_{t+1})` of the concrete Pareto noise. -/
-noncomputable abbrev M : ℤ → (ℤ → ℝ) → ℝ := movingMax Z
+private noncomputable abbrev M : ℤ → (ℤ → ℝ) → ℝ := movingMax Z
 
-theorem measurable_M (t : ℤ) : Measurable (M t) := (measurable_Z t).max (measurable_Z (t + 1))
+/-- Test-specific: The moving maximum is measurable. -/
+private theorem measurable_M (t : ℤ) : Measurable (M t) :=
+  (measurable_Z t).max (measurable_Z (t + 1))
 
-theorem M_nonneg (t : ℤ) (ω : ℤ → ℝ) : 0 ≤ M t ω := (Z_nonneg t ω).trans (le_max_left _ _)
+/-- Test-specific: The moving maximum is nonnegative. -/
+private theorem M_nonneg (t : ℤ) (ω : ℤ → ℝ) : 0 ≤ M t ω := (Z_nonneg t ω).trans (le_max_left _ _)
 
-theorem abs_M : (fun k : ℕ => |M k|) = fun k : ℕ => M k := by
+/-- Test-specific: `|M| = M`. -/
+private theorem abs_M : (fun k : ℕ => |M k|) = fun k : ℕ => M k := by
   funext k ω; exact abs_of_nonneg (M_nonneg _ ω)
 
-theorem hasShiftInvariantWindows_M (hα : 0 < α) : HasShiftInvariantWindows (P α) M := by
+/-- Test-specific: The moving maximum is stationary (shift-invariant windows). -/
+private theorem hasShiftInvariantWindows_M (hα : 0 < α) : HasShiftInvariantWindows (P α) M := by
   have := isProbabilityMeasure_P hα
   rw [M, movingMax_eq_slidingWindow]
   exact (hasShiftInvariantWindows_of_iIndepFun measurable_Z (iIndepFun_Z hα)
     (identDistrib_Z hα)).slidingWindow measurable_Z _
     ((measurable_pi_apply 0).max (measurable_pi_apply 1))
 
-theorem isMDependent_M (hα : 0 < α) : IsMDependent (fun n : ℕ => M n) 1 (P α) := by
+/-- Test-specific: The moving maximum is `1`-dependent. -/
+private theorem isMDependent_M (hα : 0 < α) : IsMDependent (fun n : ℕ => M n) 1 (P α) := by
   have := isMDependent_slidingWindow measurable_Z (iIndepFun_Z hα) ![0, 1]
     ((measurable_pi_apply 0).max (measurable_pi_apply 1)) (a := 0) (m := 1) fun j => by
       fin_cases j <;> simp
   rw [M, movingMax_eq_slidingWindow]
   exact this
 
-theorem isMDependent_abs_M (hα : 0 < α) : IsMDependent (fun k : ℕ => |M k|) 1 (P α) := by
+/-- Test-specific: `|M|` is `1`-dependent. -/
+private theorem isMDependent_abs_M (hα : 0 < α) : IsMDependent (fun k : ℕ => |M k|) 1 (P α) := by
   rw [abs_M]; exact isMDependent_M hα
 
-theorem hasSpectralTailProcess_M (hα : 0 < α) :
+/-- Test-specific: The spectral tail process of the moving maximum (library example). -/
+private theorem hasSpectralTailProcess_M (hα : 0 < α) :
     HasSpectralTailProcess (P α) M α fairCoin movingMaxSpectral :=
   have := isProbabilityMeasure_P hα
   hasSpectralTailProcess_movingMax hα measurable_Z (iIndepFun_Z hα) (map_Z hα) Z_nonneg
 
-theorem indepFun_M (hα : 0 < α) (t : ℤ) (ht : (1 : ℤ) < t) : IndepFun (M 0) (M t) (P α) := by
+/-- Test-specific: `M 0` and `M t` are independent for `t > 1`. -/
+private theorem indepFun_M (hα : 0 < α) (t : ℤ) (ht : (1 : ℤ) < t) :
+    IndepFun (M 0) (M t) (P α) := by
   obtain ⟨k, rfl⟩ : ∃ k : ℕ, t = k := ⟨t.toNat, by omega⟩
   exact (isMDependent_M hα).indepFun (s := 0) (t := k) (by omega)
 
 /-- `Θ_k → 0` for the spectral tail process of the moving maximum (it vanishes for `k ≥ 2`). -/
-theorem tendsto_movingMaxSpectral :
+private theorem tendsto_movingMaxSpectral :
     ∀ᵐ b ∂fairCoin, Tendsto (fun k : ℕ => movingMaxSpectral k b) atTop (𝓝 0) := by
   refine Eventually.of_forall fun b => tendsto_const_nhds.congr' ?_
   filter_upwards [eventually_ge_atTop 2] with k hk
@@ -192,7 +214,7 @@ theorem tendsto_movingMaxSpectral :
   split_ifs with h1 h2 <;> first | rfl | omega
 
 /-- Levels `uₙ → ∞` with `n P(M_0 > uₙ) → τ` exist. -/
-theorem exists_levels_M (hα : 0 < α) {τ : ℝ} (hτ : 0 < τ) :
+private theorem exists_levels_M (hα : 0 < α) {τ : ℝ} (hτ : 0 < τ) :
     ∃ u : ℕ → ℝ, Tendsto (fun n : ℕ => n * (P α).real {ω | u n < |M 0 ω|}) atTop (𝓝 τ) ∧
       Tendsto u atTop atTop := by
   have := isProbabilityMeasure_P hα
@@ -382,10 +404,11 @@ theorem test_nonvacuous_conditionA_of_alphaMixing (hα : 0 < α) {u : ℕ → �
 /-! ### Maxima with an extremal index: `P(M_n ≤ aₙx + bₙ) → H(x)^θ` -/
 
 /-- The marginal c.d.f. of the moving maximum. -/
-noncomputable def cdfM (_hα : 0 < α) : CumulativeDistributionFunction :=
+private noncomputable def cdfM (_hα : 0 < α) : CumulativeDistributionFunction :=
   CumulativeDistributionFunction.ofMeasure ((P α).map (M 0))
 
-theorem cdfM_apply (hα : 0 < α) (x : ℝ) : cdfM hα x = (P α).real {ω | M 0 ω ≤ x} := by
+/-- Test-specific: `cdfM` is the c.d.f. of `M 0`. -/
+private theorem cdfM_apply (hα : 0 < α) (x : ℝ) : cdfM hα x = (P α).real {ω | M 0 ω ≤ x} := by
   have := isProbabilityMeasure_P hα
   exact CumulativeDistributionFunction.ofMeasure_map_apply (measurable_M 0).aemeasurable x
 
@@ -544,41 +567,6 @@ end ARMAX
 
 /-! ### The echo processes: `θ < ϑ` and the late-return mass -/
 
-/-- `log n / ⌊√n⌋ → 0`. -/
-theorem tendsto_log_div_sqrt :
-    Tendsto (fun n : ℕ => Real.log n / Nat.sqrt n) atTop (𝓝 0) := by
-  have h1 : Tendsto (fun x : ℝ => Real.log x / x ^ (1 / 2 : ℝ)) atTop (𝓝 0) :=
-    (isLittleO_log_rpow_atTop (by norm_num : (0 : ℝ) < 1 / 2)).tendsto_div_nhds_zero
-  have h2 := (h1.comp tendsto_natCast_atTop_atTop).const_mul 2
-  rw [mul_zero] at h2
-  refine squeeze_zero' ?_ ?_ h2
-  · filter_upwards [eventually_ge_atTop 1] with n hn
-    exact div_nonneg (Real.log_nonneg (by exact_mod_cast hn)) (Nat.cast_nonneg _)
-  · filter_upwards [eventually_ge_atTop 4] with n hn
-    have hn' : (4 : ℝ) ≤ n := by exact_mod_cast hn
-    have hlt : Real.sqrt n < Nat.sqrt n + 1 := by
-      rw [Real.sqrt_lt' (by positivity)]
-      have := Nat.lt_succ_sqrt n
-      have h : (n : ℝ) < ((Nat.sqrt n + 1 : ℕ) : ℝ) * ((Nat.sqrt n + 1 : ℕ) : ℝ) := by
-        exact_mod_cast this
-      push_cast at h
-      nlinarith
-    have h2s : 2 ≤ Real.sqrt n := by
-      rw [show (2 : ℝ) = Real.sqrt 4 by
-        rw [show (4 : ℝ) = 2 ^ 2 by norm_num, Real.sqrt_sq (by norm_num)]]
-      exact Real.sqrt_le_sqrt hn'
-    have hpos : (0 : ℝ) < Nat.sqrt n := by linarith
-    have hlog : 0 ≤ Real.log n := Real.log_nonneg (by linarith)
-    have hsq : (0 : ℝ) < Real.sqrt n := by linarith
-    show Real.log n / Nat.sqrt n ≤ 2 * (Real.log n / (n : ℝ) ^ (1 / 2 : ℝ))
-    rw [← Real.sqrt_eq_rpow]
-    calc Real.log n / Nat.sqrt n = Real.log n * (1 / Nat.sqrt n) := by ring
-      _ ≤ Real.log n * (2 / Real.sqrt n) := by
-          refine mul_le_mul_of_nonneg_left ?_ hlog
-          rw [div_le_div_iff₀ hpos hsq]
-          linarith
-      _ = 2 * (Real.log n / Real.sqrt n) := by ring
-
 /-- **The logarithmic echo process has `θ = 1/2 < 1 = ϑ`** (`logEchoProcess_theta_lt_vartheta`),
 on the concrete Pareto noise. -/
 theorem test_nonvacuous_logEchoProcess_theta_lt_vartheta (hα : 0 < α) :
@@ -602,7 +590,7 @@ theorem test_nonvacuous_powEchoProcess_theta_lt_vartheta (hα : 0 < α) :
     (by positivity) (by linarith)
 
 /-- Levels for the logarithmic echo process. -/
-theorem exists_levels_logEcho (hα : 0 < α) :
+private theorem exists_levels_logEcho (hα : 0 < α) :
     ∃ u : ℕ → ℝ, Tendsto (fun n : ℕ => n * (P α).real {ω | u n < echoProcess logLag Z 0 ω})
       atTop (𝓝 1) := by
   have := isProbabilityMeasure_P hα
@@ -626,7 +614,7 @@ theorem test_nonvacuous_lt_candidateExtremalIndex_iff (hα : 0 < α) :
       (𝓝 1) := by
     simpa [abs_of_nonneg (echoProcess_nonneg Z_nonneg _ _)] using hu
   have hA := conditionA_logEchoProcess hα measurable_Z (iIndepFun_Z hα) (map_Z hα) Z_nonneg hu
-    tendsto_sqrt_atTop tendsto_sqrt_div tendsto_log_div_sqrt
+    tendsto_sqrt_atTop tendsto_sqrt_div tendsto_log_div_natSqrt
   obtain ⟨η, hη, hesc, heq⟩ := (hT.lt_candidateExtremalIndex_iff hα
     (measurable_echoProcess measurable_Z measurable_logLag) (fun t => measurable_unitSpectral t)
     hstat (by rw [habs]; exact hθ) hu' one_pos tendsto_sqrt_atTop tendsto_sqrt_div hA).1
@@ -651,7 +639,7 @@ theorem test_nonvacuous_logEchoProcess_phase_transition (hα : 0 < α) :
   have h1 := (logEchoProcess_phase_transition hα measurable_Z (iIndepFun_Z hα) (map_Z hα) Z_nonneg
     one_pos hu (fun n => ⌊Real.log n⌋₊)).2.1 1 one_pos hcrit
   have h2 := (logEchoProcess_phase_transition hα measurable_Z (iIndepFun_Z hα) (map_Z hα) Z_nonneg
-    one_pos hu Nat.sqrt).2.2 tendsto_sqrt_atTop tendsto_sqrt_div tendsto_log_div_sqrt
+    one_pos hu Nat.sqrt).2.2 tendsto_sqrt_atTop tendsto_sqrt_div tendsto_log_div_natSqrt
   exact ⟨u, h1.1, h1.2, h2.1, h2.2⟩
 
 /-! ### Stochastic recurrence equations: GARCH(1,1) -/
@@ -659,35 +647,44 @@ theorem test_nonvacuous_logEchoProcess_phase_transition (hα : 0 < α) :
 /-- The innovation law `ζ = (δ_{1/3} + δ_2) / 2`. With `α₀ = 1`, `α₁ = 1`, `β₁ = 0` the
 GARCH(1,1) multiplier `A = Z²` takes the values `1/9` and `4`: `E log A = log(4/9)/2 < 0`
 (stationarity) and `E A = 37/18 > 1` (a finite tail index `κ ∈ (0, 1)`). -/
-noncomputable def ζ : Measure ℝ := (2⁻¹ : ℝ≥0∞) • (Measure.dirac (1 / 3 : ℝ) + Measure.dirac 2)
+private noncomputable def ζ : Measure ℝ :=
+  (2⁻¹ : ℝ≥0∞) • (Measure.dirac (1 / 3 : ℝ) + Measure.dirac 2)
 
 instance : IsProbabilityMeasure ζ :=
   ⟨by simp [ζ, ← two_mul, ENNReal.mul_inv_cancel two_ne_zero ENNReal.ofNat_ne_top]⟩
 
-theorem integrable_ζ (f : ℝ → ℝ) : Integrable f ζ :=
+/-- Test-specific: Every function is integrable for the two-point law `ζ`. -/
+private theorem integrable_ζ (f : ℝ → ℝ) : Integrable f ζ :=
   ((integrable_dirac enorm_lt_top).add_measure (integrable_dirac enorm_lt_top)).smul_measure
     (by simp)
 
-theorem integral_ζ (f : ℝ → ℝ) : ∫ z, f z ∂ζ = (f (1 / 3) + f 2) / 2 := by
+/-- Test-specific: Integrals against `ζ` are averages of two values. -/
+private theorem integral_ζ (f : ℝ → ℝ) : ∫ z, f z ∂ζ = (f (1 / 3) + f 2) / 2 := by
   rw [ζ, integral_smul_measure, integral_add_measure (integrable_dirac enorm_lt_top)
     (integrable_dirac enorm_lt_top), integral_dirac, integral_dirac]
   simp only [ENNReal.toReal_inv, ENNReal.toReal_ofNat, smul_eq_mul]
   ring
 
-theorem ae_ζ {p : ℝ → Prop} (h1 : p (1 / 3)) (h2 : p 2) : ∀ᵐ z ∂ζ, p z := by
+/-- Test-specific: A property holding at both atoms holds `ζ`-a.e. -/
+private theorem ae_ζ {p : ℝ → Prop} (h1 : p (1 / 3)) (h2 : p 2) : ∀ᵐ z ∂ζ, p z := by
   refine Measure.ae_smul_measure (ae_add_measure_iff.2 ⟨?_, ?_⟩) _
   · rw [ae_dirac_eq]; exact h1
   · rw [ae_dirac_eq]; exact h2
 
-theorem coeff_one_third : SRE.GARCH.coeff 1 0 (1 / 3) = 1 / 9 := by
+/-- Test-specific: The GARCH multiplier at `z = 1/3`. -/
+private theorem coeff_one_third : SRE.GARCH.coeff 1 0 (1 / 3) = 1 / 9 := by
   simp [SRE.GARCH.coeff]; norm_num
 
-theorem coeff_two : SRE.GARCH.coeff 1 0 2 = 4 := by
+/-- Test-specific: The GARCH multiplier at `z = 2`. -/
+private theorem coeff_two : SRE.GARCH.coeff 1 0 2 = 4 := by
   simp [SRE.GARCH.coeff]; norm_num
 
-theorem garch_hlog : Integrable (fun z => Real.log (SRE.GARCH.coeff 1 0 z)) ζ := integrable_ζ _
+/-- Test-specific: Integrability of `log A` under `ζ`. -/
+private theorem garch_hlog : Integrable (fun z => Real.log (SRE.GARCH.coeff 1 0 z)) ζ :=
+  integrable_ζ _
 
-theorem garch_hneg : ∫ z, Real.log (SRE.GARCH.coeff 1 0 z) ∂ζ < 0 := by
+/-- Test-specific: `E log A < 0` under `ζ`: the stationarity condition. -/
+private theorem garch_hneg : ∫ z, Real.log (SRE.GARCH.coeff 1 0 z) ∂ζ < 0 := by
   rw [integral_ζ, coeff_one_third, coeff_two, ← Real.log_mul (by norm_num) (by norm_num)]
   have : Real.log (1 / 9 * 4) < 0 := Real.log_neg (by norm_num) (by norm_num)
   linarith

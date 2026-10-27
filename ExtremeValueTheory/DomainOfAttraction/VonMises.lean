@@ -6,6 +6,7 @@ Authors: Federico Carrone
 import ExtremeValueTheory.DomainOfAttraction.Frechet
 import ExtremeValueTheory.DomainOfAttraction.Weibull
 import ExtremeValueTheory.RegularVariation.KaramataConverse
+import ExtremeValueTheory.HeavyTails.Examples
 
 /-!
 # Von Mises conditions for the Fréchet and Weibull domains of attraction
@@ -163,10 +164,40 @@ noncomputable def paretoCDF {α : ℝ} (hα : 0 < α) : CumulativeDistributionFu
     filter_upwards [eventually_le_atBot 1] with x hx
     rw [max_eq_right hx, Real.one_rpow, sub_self]
 
+/-- The Pareto c.d.f. above the left endpoint: `F(x) = 1 - x^(-α)` for `x ≥ 1`. -/
 lemma paretoCDF_apply_of_one_le {α : ℝ} (hα : 0 < α) {x : ℝ} (hx : 1 ≤ x) :
     paretoCDF hα x = 1 - x ^ (-α) := by
   change 1 - (max x 1) ^ (-α) = _
   rw [max_eq_left hx]
+
+/-- The Pareto c.d.f. below the left endpoint: `F(x) = 0` for `x ≤ 1`. -/
+lemma paretoCDF_apply_of_le_one {α : ℝ} (hα : 0 < α) {x : ℝ} (hx : x ≤ 1) :
+    paretoCDF hα x = 0 := by
+  change 1 - (max x 1) ^ (-α) = _
+  rw [max_eq_right hx, Real.one_rpow, sub_self]
+
+/-- The Pareto tail: `1 - F(x) = x^(-α)` for `x ≥ 1`. -/
+lemma one_sub_paretoCDF_of_one_le {α : ℝ} (hα : 0 < α) {x : ℝ} (hx : 1 ≤ x) :
+    1 - paretoCDF hα x = x ^ (-α) := by
+  rw [paretoCDF_apply_of_one_le hα hx, sub_sub_cancel]
+
+/-- `paretoCDF hα` is the c.d.f. of Mathlib's Pareto law `paretoMeasure 1 α`:
+`F(x) = P(X ≤ x)` for `X ∼ Pareto(1, α)`. -/
+theorem paretoCDF_apply_eq_measureReal_Iic {α : ℝ} (hα : 0 < α) (x : ℝ) :
+    paretoCDF hα x = (ProbabilityTheory.paretoMeasure 1 α).real (Iic x) := by
+  have := ProbabilityTheory.isProbabilityMeasure_paretoMeasure one_pos hα
+  rcases le_or_gt 1 x with hx | hx
+  · rw [paretoCDF_apply_of_one_le hα hx, MeasureTheory.measureReal_def, ← compl_Ioi,
+      MeasureTheory.prob_compl_eq_one_sub measurableSet_Ioi,
+      ENNReal.toReal_sub_of_le MeasureTheory.prob_le_one ENNReal.one_ne_top, ENNReal.toReal_one,
+      ← MeasureTheory.measureReal_def, ← tail, tail_paretoMeasure one_pos hα hx, Real.one_rpow,
+      one_mul]
+  · rw [paretoCDF_apply_of_le_one hα hx.le, MeasureTheory.measureReal_def, eq_comm,
+      ENNReal.toReal_eq_zero_iff]
+    refine Or.inl (MeasureTheory.measure_mono_null (Iic_subset_Iio.2 hx) ?_)
+    rw [ProbabilityTheory.paretoMeasure,
+      MeasureTheory.withDensity_apply _ measurableSet_Iio]
+    exact ProbabilityTheory.lintegral_paretoPDF_of_le le_rfl
 
 /-- The Pareto distribution with index `α` is in the Fréchet domain of attraction `MDA(Φ_α)`,
 via the von Mises condition: `x F'(x) / (1 - F(x)) = α` for `x > 1`. -/
@@ -211,6 +242,16 @@ lemma powerCDF_apply_of_mem_Icc {α : ℝ} (hα : 0 < α) {x : ℝ} (hx : x ∈ 
     powerCDF hα x = 1 - (1 - x) ^ α := by
   change 1 - (min 1 (max (1 - x) 0)) ^ α = _
   rw [max_eq_left (by linarith [hx.2]), min_eq_right (by linarith [hx.1])]
+
+lemma powerCDF_apply_of_nonpos {α : ℝ} (hα : 0 < α) {x : ℝ} (hx : x ≤ 0) :
+    powerCDF hα x = 0 := by
+  change 1 - (min 1 (max (1 - x) 0)) ^ α = _
+  rw [max_eq_left (by linarith), min_eq_left (by linarith), Real.one_rpow, sub_self]
+
+lemma powerCDF_apply_of_one_le {α : ℝ} (hα : 0 < α) {x : ℝ} (hx : 1 ≤ x) :
+    powerCDF hα x = 1 := by
+  change 1 - (min 1 (max (1 - x) 0)) ^ α = _
+  rw [max_eq_right (by linarith), min_eq_right zero_le_one, Real.zero_rpow hα.ne', sub_zero]
 
 /-- The distribution `1 - (1 - x) ^ α` on `[0, 1]` (in particular the uniform distribution,
 `α = 1`) is in the Weibull domain of attraction `MDA(Ψ_α)`, via the von Mises condition:

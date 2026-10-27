@@ -35,6 +35,8 @@ index.
 * `IsStableIndex.index_eq`, `IsStableIndex.pos`, `IsStableIndex.le_two`,
   `IsStable.existsUnique_isStableIndex`: the index is unique and lies in `(0, 2]`.
 * `stableIndex μ`: the index of a stable law; `isStable_iff_exists_isStableIndex`.
+* `IsSymmStable.isStableIndex`, `IsSymmStable.stableIndex_eq`: a symmetric `α`-stable law has
+  index `α`.
 * `domainOfAttraction_isStable_iff`: Feller's criterion with a plain `IsStable` limit whose
   (now well-defined) index is `α ∈ (0, 2)`.
 -/
@@ -444,6 +446,24 @@ theorem IsStable.stableIndex_le_two (h : IsStable μ) : stableIndex μ ≤ 2 :=
 theorem isStableIndex_iff_stableIndex_eq {α : ℝ} :
     IsStableIndex α μ ↔ IsStable μ ∧ stableIndex μ = α :=
   ⟨fun h => ⟨h.1, h.stableIndex_eq⟩, fun ⟨h, e⟩ => e ▸ h.isStableIndex_stableIndex⟩
+
+/-- **A symmetric `α`-stable law has index `α`** ([Feller, Vol. II, §VI.1]; [ST, §1.1]): its
+characteristic function `exp(-c |t|^α)` gives `μ^{*n} = law(n^{1/α} X)`, i.e. norming constants
+`aₙ = n^{1/α}` with no centering. -/
+theorem IsSymmStable.isStableIndex {α c : ℝ} (h : IsSymmStable α c μ) (hα : 0 < α)
+    (hc : 0 < c) : IsStableIndex α μ := by
+  refine ⟨h.isStable hα hc, fun n hn ↦ ⟨0, ?_⟩⟩
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+  have e : (n : ℝ) * c = c * |(n : ℝ) ^ α⁻¹| ^ α := by
+    rw [abs_of_pos (rpow_pos_of_pos hn' _), rpow_inv_rpow hn'.le hα.ne']
+    ring
+  simpa using (e ▸ h.convPow n).unique (h.map_mul ((n : ℝ) ^ α⁻¹))
+
+/-- The index of a symmetric `α`-stable law (`c > 0`) is `α`: e.g. `2` for a nondegenerate
+centred Gaussian law and `1` for a Cauchy law. -/
+theorem IsSymmStable.stableIndex_eq {α c : ℝ} (h : IsSymmStable α c μ) (hα : 0 < α)
+    (hc : 0 < c) : stableIndex μ = α :=
+  (h.isStableIndex hα hc).stableIndex_eq
 
 end Index
 

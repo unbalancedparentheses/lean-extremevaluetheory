@@ -25,19 +25,21 @@ namespace Test.NonVacuity.Processes
 
 /-! ### Canonical iid samples -/
 
-/-- iid sample of the law `μ` on the canonical product space. -/
-abbrev iidLaw (μ : Measure ℝ) : Measure (ℕ → ℝ) := Measure.infinitePi fun _ : ℕ => μ
+/-- Test-specific: iid sample of the law `μ` on the canonical product space. -/
+private abbrev iidLaw (μ : Measure ℝ) : Measure (ℕ → ℝ) := Measure.infinitePi fun _ : ℕ => μ
 
-theorem iidLaw_iIndepFun (μ : Measure ℝ) [IsProbabilityMeasure μ] :
+/-- Test-specific: the coordinates of `iidLaw μ` are independent. -/
+private theorem iidLaw_iIndepFun (μ : Measure ℝ) [IsProbabilityMeasure μ] :
     iIndepFun (fun i (ω : ℕ → ℝ) => ω i) (iidLaw μ) :=
   iIndepFun_infinitePi (X := fun _ => id) fun _ => measurable_id
 
-theorem iidLaw_map (μ : Measure ℝ) [IsProbabilityMeasure μ] (i : ℕ) :
+/-- Test-specific: the coordinates of `iidLaw μ` have law `μ`. -/
+private theorem iidLaw_map (μ : Measure ℝ) [IsProbabilityMeasure μ] (i : ℕ) :
     (iidLaw μ).map (fun ω : ℕ → ℝ => ω i) = μ :=
   Measure.infinitePi_map_eval _ i
 
-/-- The coordinates of an iid sample of `F.measure` have c.d.f. `F`. -/
-theorem iidLaw_cdf (F : CumulativeDistributionFunction) (i : ℕ) (x : ℝ) :
+/-- Test-specific: the coordinates of an iid sample of `F.measure` have c.d.f. `F`. -/
+private theorem iidLaw_cdf (F : CumulativeDistributionFunction) (i : ℕ) (x : ℝ) :
     (iidLaw F.measure).real {ω | ω i ≤ x} = F x := by
   have h := congrArg (fun m : Measure ℝ => m (Set.Iic x)) (iidLaw_map F.measure i)
   rw [Measure.map_apply (measurable_pi_apply i) measurableSet_Iic] at h
@@ -74,16 +76,18 @@ theorem test_nonvacuous_lintegral_exp_neg_lintegral :
 
 /-! ### Binomial point processes converge to a Poisson random measure -/
 
-/-- Weight `w n = min 1 (1/n)`: equal to `1/n` for `n ≥ 1`. -/
-def wt (n : ℕ) : ℝ := min 1 (1 / (n : ℝ))
+/-- Test-specific: weight `w n = min 1 (1/n)`, equal to `1/n` for `n ≥ 1`. -/
+private def wt (n : ℕ) : ℝ := min 1 (1 / (n : ℝ))
 
-theorem wt_nonneg (n : ℕ) : 0 ≤ wt n := le_min zero_le_one (by positivity)
+/-- Test-specific: `w n ≥ 0`. -/
+private theorem wt_nonneg (n : ℕ) : 0 ≤ wt n := le_min zero_le_one (by positivity)
 
-theorem wt_le_one (n : ℕ) : wt n ≤ 1 := min_le_left _ _
+/-- Test-specific: `w n ≤ 1`. -/
+private theorem wt_le_one (n : ℕ) : wt n ≤ 1 := min_le_left _ _
 
-/-- The sampling law `μ n = (1/n) Leb|[0,1] + (1 - 1/n) δ_n`: with `n` samples, about one lands
-in `[0, 1]` (uniformly) and the rest escape to infinity. -/
-def binLaw (n : ℕ) : Measure ℝ :=
+/-- Test-specific: the sampling law `μ n = (1/n) Leb|[0,1] + (1 - 1/n) δ_n`: with `n` samples,
+about one lands in `[0, 1]` (uniformly) and the rest escape to infinity. -/
+private def binLaw (n : ℕ) : Measure ℝ :=
   ENNReal.ofReal (wt n) • volume.restrict (Set.Icc (0 : ℝ) 1) +
     ENNReal.ofReal (1 - wt n) • Measure.dirac (n : ℝ)
 
@@ -93,8 +97,8 @@ instance (n : ℕ) : IsProbabilityMeasure (binLaw n) := by
   rw [← ENNReal.ofReal_add (wt_nonneg n) (by linarith [wt_le_one n])]
   simp
 
-/-- `n • μ n → Leb|[0,1]` vaguely. -/
-theorem tendstoVaguely_binLaw :
+/-- Test-specific: `n • μ n → Leb|[0,1]` vaguely. -/
+private theorem tendstoVaguely_binLaw :
     Measure.TendstoVaguely (fun n : ℕ ↦ (n : ℝ≥0∞) • binLaw n) atTop
       (volume.restrict (Set.Icc (0 : ℝ) 1)) := by
   intro f hf hfc
@@ -138,15 +142,6 @@ theorem test_nonvacuous_tendstoInLawVaguely_sumDiracRange :
 /-! ### Exceedances of iid exponential samples converge to a Poisson process -/
 
 open CumulativeDistributionFunction in
-theorem gumbel_zero_pos : 0 < standardGumbelCDF 0 := by
-  rw [standardGumbelCDF_apply_eq]; exact Real.exp_pos _
-
-open CumulativeDistributionFunction in
-theorem gumbel_mem_Ioo (x : ℝ) : standardGumbelCDF x ∈ Set.Ioo 0 1 := by
-  rw [standardGumbelCDF_apply_eq]
-  exact ⟨Real.exp_pos _, Real.exp_lt_one_iff.2 (by linarith [Real.exp_pos (-x)])⟩
-
-open CumulativeDistributionFunction in
 /-- `ExtremeValueTheory.tendsto_measureReal_sumDiracRange_affine_eq` (space component of the
 exceedance point process): iid standard exponential samples on `ℕ → ℝ`, with the Gumbel
 normalizations from `isInMDAGumbel_standardExponentialCDF`, threshold `u = 0`, and the two
@@ -154,20 +149,24 @@ disjoint exceedance intervals `(0, 1]` and `(1, ∞)`. -/
 theorem test_nonvacuous_tendsto_measureReal_sumDiracRange_affine_eq :
     ∃ As : ℕ → AffineIncrEquiv, ∃ (Ω' : Type) (_ : MeasurableSpace Ω') (P' : Measure Ω')
       (N' : Ω' → Measure ℝ),
-      IsPoissonRandomMeasure N' (exceedanceMeasure standardGumbelCDF gumbel_zero_pos) P' ∧
+      IsPoissonRandomMeasure N' (exceedanceMeasure standardGumbelCDF (standardGumbelCDF_pos 0))
+        P' ∧
       ∀ m : Fin 2 → ℕ, Tendsto (fun n ↦ (iidLaw standardExponentialCDF.measure).real
         {ω | ∀ j, sumDiracRange n (fun i ↦ As n (ω i)) (![Set.Ioc 0 1, Set.Ioi 1] j) = m j})
         atTop (𝓝 (P'.real {ω | ∀ j, N' ω (![Set.Ioc 0 1, Set.Ioi 1] j) = m j})) := by
   obtain ⟨As, hlim⟩ := isInMDAGumbel_standardExponentialCDF
   obtain ⟨Ω', mΩ', P', N', -, hN'⟩ :=
-    exists_isPoissonRandomMeasure (exceedanceMeasure standardGumbelCDF gumbel_zero_pos)
+    exists_isPoissonRandomMeasure
+      (exceedanceMeasure standardGumbelCDF (standardGumbelCDF_pos 0))
   refine ⟨As, Ω', mΩ', P', N', hN', fun m => ?_⟩
   refine tendsto_measureReal_sumDiracRange_affine_eq (X := fun i (ω : ℕ → ℝ) => ω i)
-    (fun i => measurable_pi_apply i) (iidLaw_iIndepFun _) (iidLaw_cdf _) hlim gumbel_zero_pos hN'
+    (fun i => measurable_pi_apply i) (iidLaw_iIndepFun _) (iidLaw_cdf _) hlim
+    (standardGumbelCDF_pos 0) hN'
     (fun j => ?_) ?_ m
   · fin_cases j
-    · exact Or.inl ⟨0, 1, le_rfl, zero_le_one, gumbel_mem_Ioo 0, gumbel_mem_Ioo 1, rfl⟩
-    · exact Or.inr ⟨1, zero_le_one, gumbel_mem_Ioo 1, rfl⟩
+    · exact Or.inl ⟨0, 1, le_rfl, zero_le_one, ⟨standardGumbelCDF_pos 0,
+        standardGumbelCDF_lt_one 0⟩, ⟨standardGumbelCDF_pos 1, standardGumbelCDF_lt_one 1⟩, rfl⟩
+    · exact Or.inr ⟨1, zero_le_one, ⟨standardGumbelCDF_pos 1, standardGumbelCDF_lt_one 1⟩, rfl⟩
   · intro i j hij
     fin_cases i <;> fin_cases j
     · exact absurd rfl hij
@@ -186,7 +185,7 @@ theorem test_nonvacuous_tendsto_measureReal_sumDiracRange_timeSpace_eq :
     ∃ As : ℕ → AffineIncrEquiv, ∃ (Ω' : Type) (_ : MeasurableSpace Ω') (P' : Measure Ω')
       (N' : Ω' → Measure (ℝ × ℝ)),
       IsPoissonRandomMeasure N' ((volume.restrict (Set.Ioc (0 : ℝ) 1)).prod
-        (exceedanceMeasure standardGumbelCDF gumbel_zero_pos)) P' ∧
+        (exceedanceMeasure standardGumbelCDF (standardGumbelCDF_pos 0))) P' ∧
       ∀ m : Fin 2 → ℕ, Tendsto (fun n ↦ (iidLaw standardExponentialCDF.measure).real
         {ω | ∀ j, sumDiracRange n (fun i ↦ (((i : ℝ) + 1) / n, As n (ω i)))
           (Set.Ioc (![0, 1/2] j) (![1/2, 1] j) ×ˢ Set.Ioi 0) = m j}) atTop
@@ -194,11 +193,13 @@ theorem test_nonvacuous_tendsto_measureReal_sumDiracRange_timeSpace_eq :
   obtain ⟨As, hlim⟩ := isInMDAGumbel_standardExponentialCDF
   obtain ⟨Ω', mΩ', P', N', -, hN'⟩ := exists_isPoissonRandomMeasure
     ((volume.restrict (Set.Ioc (0 : ℝ) 1)).prod
-      (exceedanceMeasure standardGumbelCDF gumbel_zero_pos))
+      (exceedanceMeasure standardGumbelCDF (standardGumbelCDF_pos 0)))
   refine ⟨As, Ω', mΩ', P', N', hN', fun m => ?_⟩
   refine tendsto_measureReal_sumDiracRange_timeSpace_eq (X := fun i (ω : ℕ → ℝ) => ω i)
-    (fun i => measurable_pi_apply i) (iidLaw_iIndepFun _) (iidLaw_cdf _) hlim gumbel_zero_pos hN'
-    (fun j => ?_) (fun j => ?_) (fun j => ?_) (fun _ => Or.inr ⟨0, le_rfl, gumbel_mem_Ioo 0, rfl⟩)
+    (fun i => measurable_pi_apply i) (iidLaw_iIndepFun _) (iidLaw_cdf _) hlim
+    (standardGumbelCDF_pos 0) hN'
+    (fun j => ?_) (fun j => ?_) (fun j => ?_)
+    (fun _ => Or.inr ⟨0, le_rfl, ⟨standardGumbelCDF_pos 0, standardGumbelCDF_lt_one 0⟩, rfl⟩)
     ?_ m
   · fin_cases j <;> norm_num
   · fin_cases j <;> norm_num
@@ -235,24 +236,6 @@ example : PolishSpace (SkorokhodSpace (EuclideanSpace ℝ (Fin 2))) := inferInst
 local instance : IsProbabilityMeasure (volume.restrict (Set.Icc (0 : ℝ) 1)) :=
   ⟨by simp⟩
 
-/-- The intermediate sequence `k n = ⌊√n⌋`: `k n → ∞`, `k n / n → 0`. -/
-theorem tendsto_sqrt_atTop : Tendsto Nat.sqrt atTop atTop := by
-  refine tendsto_atTop_atTop.2 fun b => ⟨b * b, fun n hn => ?_⟩
-  exact Nat.le_sqrt.2 hn
-
-theorem tendsto_sqrt_div : Tendsto (fun n : ℕ ↦ (Nat.sqrt n : ℝ) / n) atTop (𝓝 0) := by
-  have h : Tendsto (fun n : ℕ ↦ 2 / ((Nat.sqrt n : ℝ) + 1)) atTop (𝓝 0) :=
-    tendsto_const_nhds.div_atTop (tendsto_atTop_add_const_right _ 1
-      (tendsto_natCast_atTop_atTop.comp tendsto_sqrt_atTop))
-  refine squeeze_zero (fun n => by positivity) (fun n => ?_) h
-  rcases Nat.eq_zero_or_pos n with rfl | hn
-  · simp
-  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
-  have h2 : (Nat.sqrt n : ℝ) * Nat.sqrt n ≤ n := by exact_mod_cast Nat.sqrt_le n
-  have h3 : (Nat.sqrt n : ℝ) ≤ n := by exact_mod_cast Nat.sqrt_le_self n
-  rw [div_le_div_iff₀ hn' (by positivity)]
-  linarith
-
 /-- `ExtremeValueTheory.tendstoInDistribution_tailEmpiricalPath` (dHF Thm 5.1.4): for iid uniform
 `[0, 1]` samples on `ℕ → ℝ` and `k n = ⌊√n⌋`, the tail empirical process converges in `D[0,1]` to
 a Brownian motion. The Brownian motion `B` (a measurable `D[0,1]`-valued map with Brownian
@@ -268,8 +251,8 @@ theorem test_nonvacuous_tendstoInDistribution_tailEmpiricalPath :
         (fun _ ↦ iidLaw (volume.restrict (Set.Icc (0 : ℝ) 1))) (P' : Measure (SkorokhodSpace ℝ)) := by
   have hU : ∀ i, Measurable fun ω : ℕ → ℝ => ω i := fun i => measurable_pi_apply i
   obtain ⟨μ, -, hμ⟩ := exists_tendsto_tailEmpiricalPath (P := iidLaw (volume.restrict
-    (Set.Icc (0 : ℝ) 1))) hU (iidLaw_iIndepFun _) (iidLaw_map _) tendsto_sqrt_atTop
-    tendsto_sqrt_div
+    (Set.Icc (0 : ℝ) 1))) hU (iidLaw_iIndepFun _) (iidLaw_map _)
+    ExtremeValueTheory.tendsto_sqrt_atTop ExtremeValueTheory.tendsto_sqrt_div
   have hfdd : ∀ J : Finset unitInterval,
       ((μ : Measure (SkorokhodSpace ℝ)).map id).map
         (fun x : SkorokhodSpace ℝ ↦ fun t : J ↦ x t) =
@@ -277,6 +260,7 @@ theorem test_nonvacuous_tendstoInDistribution_tailEmpiricalPath :
     rw [Measure.map_id]
     exact hμ (fun t : J => (t : unitInterval))
   exact ⟨μ, hfdd, tendstoInDistribution_tailEmpiricalPath hU (iidLaw_iIndepFun _)
-    (iidLaw_map _) tendsto_sqrt_atTop tendsto_sqrt_div measurable_id hfdd⟩
+    (iidLaw_map _) ExtremeValueTheory.tendsto_sqrt_atTop
+    ExtremeValueTheory.tendsto_sqrt_div measurable_id hfdd⟩
 
 end Test.NonVacuity.Processes

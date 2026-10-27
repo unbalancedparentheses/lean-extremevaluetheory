@@ -20,36 +20,29 @@ namespace Test.KnownAnswers.Statistics
 
 /-! ### Order statistics -/
 
-/-- For an ascending sample the descending order statistics are the sample read backwards. -/
-theorem orderStat_of_monotone {n : ℕ} {x : Fin n → ℝ} (hx : Monotone x) {j : ℕ} (hj : j < n) :
-    orderStat x j = x (Fin.rev ⟨j, hj⟩) := by
-  rw [orderStat_of_lt x hj, Tuple.sort_eq_refl_iff_monotone.2 hx]
-  rfl
-
-/-- For a sample `x` and a permutation `σ` sorting it in ascending order,
-`orderStat x j = x (σ (rev j))`. -/
-theorem orderStat_of_sorting {n : ℕ} {x : Fin n → ℝ} (σ : Equiv.Perm (Fin n))
-    (hσ : Monotone (x ∘ σ)) {j : ℕ} (hj : j < n) :
-    orderStat x j = x (σ (Fin.rev ⟨j, hj⟩)) := by
-  rw [orderStat_of_lt x hj]
-  exact (congrFun (Tuple.comp_sort_eq_comp_iff_monotone.2 hσ) _).symm
+/-! `orderStat_of_monotone` and `orderStat_eq_of_monotone_comp` (library) evaluate the order
+statistics of a sample whose sorting permutation is known. -/
 
 /-- The sample `(1, e, e²)`, used for the Hill, Weissman and moment estimators. -/
-noncomputable def expSample : Fin 3 → ℝ := ![1, exp 1, exp 2]
+private noncomputable def expSample : Fin 3 → ℝ := ![1, exp 1, exp 2]
 
-theorem expSample_monotone : Monotone expSample := by
+/-- Test-specific: The sample `(1, e, e²)` is increasing. -/
+private theorem expSample_monotone : Monotone expSample := by
   refine Fin.monotone_iff_le_succ.2 fun i => ?_
   fin_cases i
   · simp [expSample]
   · simp [expSample]
 
-@[simp] theorem orderStat_expSample_0 : orderStat expSample 0 = exp 2 := by
+/-- Test-specific: The largest observation of `(1, e, e²)`. -/
+@[simp] private theorem orderStat_expSample_0 : orderStat expSample 0 = exp 2 := by
   rw [orderStat_of_monotone expSample_monotone (by norm_num)]; rfl
 
-@[simp] theorem orderStat_expSample_1 : orderStat expSample 1 = exp 1 := by
+/-- Test-specific: The second largest observation of `(1, e, e²)`. -/
+@[simp] private theorem orderStat_expSample_1 : orderStat expSample 1 = exp 1 := by
   rw [orderStat_of_monotone expSample_monotone (by norm_num)]; rfl
 
-@[simp] theorem orderStat_expSample_2 : orderStat expSample 2 = 1 := by
+/-- Test-specific: The smallest observation of `(1, e, e²)`. -/
+@[simp] private theorem orderStat_expSample_2 : orderStat expSample 2 = 1 := by
   rw [orderStat_of_monotone expSample_monotone (by norm_num)]; rfl
 
 /-- Convention ([EKM, §4.1] writes `X_{n,n} ≤ ⋯ ≤ X_{1,n}`): `orderStat x 0` is the sample
@@ -65,8 +58,8 @@ theorem test_orderStat_max_min :
     have h2 : σ 2 = 0 := by decide
     fin_cases i <;> norm_num [h0, h1, h2]
   constructor
-  · rw [orderStat_of_sorting σ hσ (by norm_num)]; rfl
-  · rw [orderStat_of_sorting σ hσ (by norm_num)]; rfl
+  · rw [orderStat_eq_of_monotone_comp σ hσ (by norm_num)]; rfl
+  · rw [orderStat_eq_of_monotone_comp σ hσ (by norm_num)]; rfl
 
 /-- Out-of-range order statistics take the junk value `0`. -/
 example : orderStat ![(3 : ℝ), 1, 2] 3 = 0 := orderStat_of_le _ le_rfl
@@ -309,12 +302,16 @@ theorem test_intervalsEstimator₂ : intervalsEstimator ![(1 : ℝ), 1, 1, 7] = 
 
 /-- A deterministic sample with exceedances of `u = 1` at times `0, 1, 4` among `0, …, 7`: two
 clusters, `{0, 1}` and `{4}`. -/
-noncomputable def clusterSample (t : ℕ) (_ : Unit) : ℝ := if t = 0 ∨ t = 1 ∨ t = 4 then 5 else 0
+private noncomputable def clusterSample (t : ℕ) (_ : Unit) : ℝ :=
+  if t = 0 ∨ t = 1 ∨ t = 4 then 5 else 0
 
-theorem clusterSample_le_iff (t : ℕ) : clusterSample t () ≤ 1 ↔ t ∉ ({0, 1, 4} : Finset ℕ) := by
+/-- Test-specific: Non-exceedance times of `clusterSample`. -/
+private theorem clusterSample_le_iff (t : ℕ) :
+    clusterSample t () ≤ 1 ↔ t ∉ ({0, 1, 4} : Finset ℕ) := by
   unfold clusterSample; split_ifs with h <;> simp_all
 
-theorem one_lt_clusterSample_iff (t : ℕ) :
+/-- Test-specific: Exceedance times of `clusterSample`. -/
+private theorem one_lt_clusterSample_iff (t : ℕ) :
     1 < clusterSample t () ↔ t ∈ ({0, 1, 4} : Finset ℕ) := by
   rw [← not_le, clusterSample_le_iff, not_not]
 

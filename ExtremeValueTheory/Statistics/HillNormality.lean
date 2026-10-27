@@ -428,11 +428,21 @@ section Localization
 variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbabilityMeasure P]
 
 omit [IsProbabilityMeasure P] in
+/-- The tail of a standard exponential random variable: if `E ∼ Exp(1)` then
+`P(E > v) = e^{-v}` for `v ≥ 0`. -/
 theorem measure_lt_expMeasure_of_hasLaw {E : Ω → ℝ} (hE : HasLaw E (expMeasure 1) P) {v : ℝ}
     (hv : 0 ≤ v) : P {ω | v < E ω} = ENNReal.ofReal (exp (-v)) := by
   rw [← expMeasure_Ioi hv, ← hE.map_eq, Measure.map_apply_of_aemeasurable hE.aemeasurable
     measurableSet_Ioi]
   rfl
+
+omit [IsProbabilityMeasure P] in
+/-- The tail of a standard exponential random variable as a real number: if `E ∼ Exp(1)` then
+`P(E > v) = e^{-v}` for `v ≥ 0` (real-valued form of `measure_lt_expMeasure_of_hasLaw`). -/
+theorem measureReal_lt_expMeasure_of_hasLaw {E : Ω → ℝ} (hE : HasLaw E (expMeasure 1) P)
+    {v : ℝ} (hv : 0 ≤ v) : P.real {ω | v < E ω} = exp (-v) := by
+  rw [measureReal_def, measure_lt_expMeasure_of_hasLaw hE hv,
+    ENNReal.toReal_ofReal (exp_pos _).le]
 
 /-- If `k(n) → ∞` and `k(n) / n → 0`, then `n / k(n) → ∞`. -/
 theorem tendsto_div_atTop_of_tendsto {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)

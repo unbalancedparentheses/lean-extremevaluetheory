@@ -202,8 +202,9 @@ Second survey (2026-10-25, [`docs/OPEN_PROBLEMS_SURVEY2.md`](docs/OPEN_PROBLEMS_
       (`gpdSurvivalNonneg` / `gpdSurvivalAll`)
 - [x] Fix misleading `_of_lt_one` names (now `_of_summable_rpow`; old names are deprecated aliases)
 - [ ] Remove duplicate helpers
-- [ ] Promote helper lemmas from the test files into the library (e.g. the exponential law is not
+- [x] Promote helper lemmas from the test files into the library (e.g. the exponential law is not
       subexponential; uniqueness of the regular-variation index)
+      (done 2026-10-27; conventions in [`docs/DESIGN.md`](docs/DESIGN.md))
 
 - [>] Design pass (running): one representation of laws with a complete bridge; one definition
       per concept; test helpers promoted; conventions in `docs/DESIGN.md`. Done: names and namespaces;

@@ -26,7 +26,7 @@ section Pareto
 variable {α : ℝ}
 
 /-- `P(x < |Z|) = P(Z > x)` for Pareto `Z` and `x ≥ 0`. -/
-theorem pareto_real_lt_abs (x : ℝ) :
+private theorem pareto_real_lt_abs (x : ℝ) :
     (paretoMeasure 1 α).real {ω | x < |ω|} = tail (paretoMeasure 1 α) x := by
   rw [tail]
   refine measureReal_congr ?_
@@ -35,7 +35,7 @@ theorem pareto_real_lt_abs (x : ℝ) :
   simp [this, Set.mem_Ioi]
 
 /-- The tail `x ↦ P(x < |Z|)` of a Pareto law is regularly varying with index `-α`. -/
-theorem isRegularlyVarying_pareto_abs (hα : 0 < α) :
+private theorem isRegularlyVarying_pareto_abs (hα : 0 < α) :
     IsRegularlyVarying (fun x => (paretoMeasure 1 α).real {ω | x < |ω|}) (-α) :=
   (isRegularlyVarying_tail_paretoMeasure one_pos hα).congr
     (Eventually.of_forall fun x => (pareto_real_lt_abs x).symm)
@@ -47,14 +47,15 @@ end Pareto
 section RegVar
 
 /-- The completely dependent vector `(|Z|, |Z|)`, `Z` Pareto(`α`), on `Ω = ℝ`. -/
-noncomputable def diagVec (ω : ℝ) : ℝ × ℝ := (|ω|, |ω|)
+private noncomputable def diagVec (ω : ℝ) : ℝ × ℝ := (|ω|, |ω|)
 
-theorem measurable_diagVec : Measurable diagVec := by
+/-- Test-specific: Measurability of the diagonal vector `(|Z|, |Z|)`. -/
+private theorem measurable_diagVec : Measurable diagVec := by
   unfold diagVec; fun_prop
 
 /-- `(|Z|, |Z|)` is regularly varying (library example `isRegVarVector_diag`, whose hypotheses
 are discharged here for an explicit Pareto law). -/
-theorem isRegVarVector_diagVec {α : ℝ} (hα : 0 < α) :
+private theorem isRegVarVector_diagVec {α : ℝ} (hα : 0 < α) :
     haveI := isProbabilityMeasure_paretoMeasure one_pos hα
     IsRegVarVector (paretoMeasure 1 α) diagVec α
       (polarMeasure α (Measure.dirac ((1 : ℝ), (1 : ℝ)))) := by
@@ -82,9 +83,10 @@ theorem test_nonvacuous_eq_polarMeasure :
   exact (isRegVarVector_diagVec two_pos).eq_polarMeasure two_pos measurable_diagVec
 
 /-- The independent vector `(|Z₁|, |Z₂|)`, `Z₁, Z₂` iid Pareto, on `Ω = ℝ × ℝ`. -/
-noncomputable def indepVec (ω : ℝ × ℝ) : ℝ × ℝ := (|ω.1|, |ω.2|)
+private noncomputable def indepVec (ω : ℝ × ℝ) : ℝ × ℝ := (|ω.1|, |ω.2|)
 
-theorem prod_real_fst {α : ℝ} (hα : 0 < α) (x : ℝ) :
+/-- Test-specific: Under the product law, the first coordinate has the Pareto tail. -/
+private theorem prod_real_fst {α : ℝ} (hα : 0 < α) (x : ℝ) :
     ((paretoMeasure 1 α).prod (paretoMeasure 1 α)).real {ω | x < |ω.1|} =
       (paretoMeasure 1 α).real {ω | x < |ω|} := by
   have := isProbabilityMeasure_paretoMeasure one_pos hα
@@ -95,7 +97,8 @@ theorem prod_real_fst {α : ℝ} (hα : 0 < α) (x : ℝ) :
   rw [measureReal_def, measureReal_def, h]
   rfl
 
-theorem prod_real_snd {α : ℝ} (hα : 0 < α) (x : ℝ) :
+/-- Test-specific: Under the product law, the second coordinate has the Pareto tail. -/
+private theorem prod_real_snd {α : ℝ} (hα : 0 < α) (x : ℝ) :
     ((paretoMeasure 1 α).prod (paretoMeasure 1 α)).real {ω | x < |ω.2|} =
       (paretoMeasure 1 α).real {ω | x < |ω|} := by
   have := isProbabilityMeasure_paretoMeasure one_pos hα
@@ -130,7 +133,8 @@ end RegVar
 
 section CramerWold
 
-theorem half_ne_int : ∀ k : ℤ, (1 / 2 : ℝ) ≠ k := by
+/-- Test-specific: `1/2` is not an integer (the non-integer index hypothesis of Cramér–Wold). -/
+private theorem half_ne_int : ∀ k : ℤ, (1 / 2 : ℝ) ≠ k := by
   intro k h
   rcases le_or_gt k 0 with hk | hk
   · have : (k : ℝ) ≤ 0 := by exact_mod_cast hk
@@ -236,64 +240,69 @@ positive orthant) can never satisfy `ν(Iic (x ⊓ 0)) > 0`. We therefore use **
 section MDA
 
 /-- The standard Gumbel law on `ℝ`. -/
-noncomputable def gumbelLaw : Measure ℝ := standardGumbelCDF.toStieltjesFunction.measure
+private noncomputable def gumbelLaw : Measure ℝ := standardGumbelCDF.toStieltjesFunction.measure
 
 instance : IsProbabilityMeasure gumbelLaw :=
   CumulativeDistributionFunction.isProbabilityMeasure_measure_coe _
 
 /-- The Gumbel c.d.f. `G(t) = exp(-e^{-t})`. -/
-noncomputable def G (t : ℝ) : ℝ := Real.exp (-Real.exp (-t))
+private noncomputable def G (t : ℝ) : ℝ := Real.exp (-Real.exp (-t))
 
-theorem continuous_G : Continuous G := by unfold G; fun_prop
+/-- Test-specific: The Gumbel c.d.f. `G` is continuous. -/
+private theorem continuous_G : Continuous G := by unfold G; fun_prop
 
-theorem G_pos (t : ℝ) : 0 < G t := Real.exp_pos _
+/-- Test-specific: The Gumbel c.d.f. `G` is positive. -/
+private theorem G_pos (t : ℝ) : 0 < G t := standardGumbelCDF_pos t
 
-theorem gumbelLaw_real_Iic (t : ℝ) : gumbelLaw.real (Iic t) = G t := by
+/-- Test-specific: `gumbelLaw` has c.d.f. `G`. -/
+private theorem gumbelLaw_real_Iic (t : ℝ) : gumbelLaw.real (Iic t) = G t := by
   rw [measureReal_def, gumbelLaw, ← CumulativeDistributionFunction.apply_eq_measure_Iic,
     standardGumbelCDF_apply_eq, G]
 
 /-- Max-stability of the Gumbel c.d.f.: `G(t + log n)^n = G(t)`. -/
-theorem G_add_log_pow (t : ℝ) {n : ℕ} (hn : 1 ≤ n) : G (t + Real.log n) ^ n = G t := by
-  have hn0 : (0 : ℝ) < n := by exact_mod_cast hn
-  rw [G, G, ← Real.exp_nat_mul, neg_add, Real.exp_add, Real.exp_neg (Real.log n),
-    Real.exp_log hn0]
-  congr 1
-  field_simp
+private theorem G_add_log_pow (t : ℝ) {n : ℕ} (hn : 1 ≤ n) : G (t + Real.log n) ^ n = G t := by
+  simpa [G, standardGumbelCDF_apply_eq] using CumulativeDistributionFunction.standardGumbelCDF_pow_apply_add_log hn t
 
 /-- Normalizing constants `aₙ = 1`, `bₙ = log n`. -/
-def aN : ℕ → Fin 2 → ℝ := fun _ _ => 1
+private def aN : ℕ → Fin 2 → ℝ := fun _ _ => 1
 
-noncomputable def bN : ℕ → Fin 2 → ℝ := fun n _ => Real.log n
+/-- Test-specific: Normalizing constants `bₙ = log n`. -/
+private noncomputable def bN : ℕ → Fin 2 → ℝ := fun n _ => Real.log n
 
-theorem aN_mul_add (n : ℕ) (x : Fin 2 → ℝ) (i : Fin 2) :
+/-- Test-specific: `aₙ x + bₙ = x + log n` coordinatewise. -/
+private theorem aN_mul_add (n : ℕ) (x : Fin 2 → ℝ) (i : Fin 2) :
     (aN n * x + bN n) i = x i + Real.log n := by
   simp [aN, bN]
 
 /-! #### Comonotone Gumbel vector `(Z, Z)` -/
 
 /-- The law of `(Z, Z)`, `Z` standard Gumbel. -/
-noncomputable def comonoGumbel : Measure (Fin 2 → ℝ) := gumbelLaw.map fun z _ => z
+private noncomputable def comonoGumbel : Measure (Fin 2 → ℝ) := gumbelLaw.map fun z _ => z
 
-theorem measurable_diag2 : Measurable fun z : ℝ => fun _ : Fin 2 => z :=
+/-- Test-specific: Measurability of the diagonal embedding `z ↦ (z, z)`. -/
+private theorem measurable_diag2 : Measurable fun z : ℝ => fun _ : Fin 2 => z :=
   Measurable.of_eval fun _ => measurable_id
 
 instance : IsProbabilityMeasure comonoGumbel :=
   (Measure.isProbabilityMeasure_map_iff measurable_diag2.aemeasurable).2 inferInstance
 
-theorem comonoGumbel_real_Iic (y : Fin 2 → ℝ) :
+/-- Test-specific: The c.d.f. of `(Z, Z)` is `G (min y₀ y₁)`. -/
+private theorem comonoGumbel_real_Iic (y : Fin 2 → ℝ) :
     comonoGumbel.real (Iic y) = G (min (y 0) (y 1)) := by
   rw [comonoGumbel, map_measureReal_apply measurable_diag2 measurableSet_Iic]
   have : (fun z : ℝ => fun _ : Fin 2 => z) ⁻¹' Iic y = Iic (min (y 0) (y 1)) := by
     ext z; simp [Pi.le_def, Fin.forall_fin_two]
   rw [this, gumbelLaw_real_Iic]
 
-theorem marginal_comonoGumbel (i : Fin 2) : ⇑(marginal comonoGumbel i) = G := by
+/-- Test-specific: Both margins of `(Z, Z)` are Gumbel. -/
+private theorem marginal_comonoGumbel (i : Fin 2) : ⇑(marginal comonoGumbel i) = G := by
   funext t
   rw [marginal_apply, comonoGumbel, map_measureReal_apply measurable_diag2
     (measurableSet_le (measurable_pi_apply i) measurable_const)]
   exact gumbelLaw_real_Iic t
 
-theorem isMDAWith_comonoGumbel : IsMDAWith comonoGumbel comonoGumbel aN bN := by
+/-- Test-specific: `(Z, Z)` is in its own domain of attraction with `aₙ = 1`, `bₙ = log n`. -/
+private theorem isMDAWith_comonoGumbel : IsMDAWith comonoGumbel comonoGumbel aN bN := by
   refine ⟨fun _ _ => one_pos, fun x _ => tendsto_const_nhds.congr' ?_⟩
   filter_upwards [eventually_ge_atTop 1] with n hn
   rw [comonoGumbel_real_Iic, comonoGumbel_real_Iic, aN_mul_add, aN_mul_add,
@@ -329,17 +338,19 @@ theorem test_nonvacuous_tendsto_conditionalExcessCDF_comonotone (x : Fin 2 → �
 /-! #### Independent Gumbel vector (independence copula) -/
 
 /-- The law of `(Z₁, Z₂)`, `Z₁, Z₂` iid standard Gumbel. -/
-noncomputable def indepGumbel : Measure (Fin 2 → ℝ) := Measure.pi fun _ => gumbelLaw
+private noncomputable def indepGumbel : Measure (Fin 2 → ℝ) := Measure.pi fun _ => gumbelLaw
 
 instance : IsProbabilityMeasure indepGumbel := by unfold indepGumbel; infer_instance
 
-theorem indepGumbel_real_Iic (y : Fin 2 → ℝ) :
+/-- Test-specific: The c.d.f. of `(Z₁, Z₂)` is `G y₀ · G y₁`. -/
+private theorem indepGumbel_real_Iic (y : Fin 2 → ℝ) :
     indepGumbel.real (Iic y) = G (y 0) * G (y 1) := by
   rw [indepGumbel, ← Set.pi_univ_Iic, measureReal_def, Measure.pi_pi, ENNReal.toReal_prod,
     Fin.prod_univ_two]
   simp only [← measureReal_def, gumbelLaw_real_Iic]
 
-theorem marginal_indepGumbel (i : Fin 2) : ⇑(marginal indepGumbel i) = G := by
+/-- Test-specific: Both margins of `(Z₁, Z₂)` are Gumbel. -/
+private theorem marginal_indepGumbel (i : Fin 2) : ⇑(marginal indepGumbel i) = G := by
   funext t
   have h := map_measureReal_apply (μ := Measure.pi fun _ : Fin 2 => gumbelLaw)
     (measurable_pi_apply i) (measurableSet_Iic (a := t))
@@ -347,7 +358,8 @@ theorem marginal_indepGumbel (i : Fin 2) : ⇑(marginal indepGumbel i) = G := by
   rw [marginal_apply, ← gumbelLaw_real_Iic t, h]
   rfl
 
-theorem isMDAWith_indepGumbel : IsMDAWith indepGumbel indepGumbel aN bN := by
+/-- Test-specific: `(Z₁, Z₂)` is in its own domain of attraction with `aₙ = 1`, `bₙ = log n`. -/
+private theorem isMDAWith_indepGumbel : IsMDAWith indepGumbel indepGumbel aN bN := by
   refine ⟨fun _ _ => one_pos, fun x _ => tendsto_const_nhds.congr' ?_⟩
   filter_upwards [eventually_ge_atTop 1] with n hn
   rw [indepGumbel_real_Iic, indepGumbel_real_Iic, aN_mul_add, aN_mul_add, mul_pow,

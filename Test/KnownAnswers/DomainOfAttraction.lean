@@ -28,11 +28,8 @@ theorem test_pareto_frechet_normalization {α : ℝ} (hα : 0 < α) (x : ℝ) :
   · rw [standardFrechetCDF_apply_nonpos_eq hα hx]
     refine tendsto_const_nhds.congr' ?_
     filter_upwards [eventually_ge_atTop 1] with n hn
-    have h0 : paretoCDF hα ((n : ℝ) ^ (1 / α) * x) = 0 := by
-      refine le_antisymm ?_ ((paretoCDF hα).apply_nonneg _)
-      calc paretoCDF hα ((n : ℝ) ^ (1 / α) * x) ≤ paretoCDF hα 1 :=
-            (paretoCDF hα).mono (by nlinarith [rpow_nonneg (Nat.cast_nonneg n) (1 / α)])
-        _ = 0 := by rw [paretoCDF_apply_of_one_le hα le_rfl, one_rpow, sub_self]
+    have h0 : paretoCDF hα ((n : ℝ) ^ (1 / α) * x) = 0 :=
+      paretoCDF_apply_of_le_one hα (by nlinarith [rpow_nonneg (Nat.cast_nonneg n) (1 / α)])
     rw [h0, zero_pow (by omega)]
   · rw [standardFrechetCDF_apply_pos_eq hα hx]
     refine (tendsto_one_add_div_pow_exp (-x ^ (-α))).congr' ?_
@@ -105,45 +102,39 @@ theorem test_uniform_weibull_normalization (x : ℝ) :
     ring_nf
   · rw [standardWeibullCDF_apply_nonneg_eq one_pos hx]
     refine tendsto_const_nhds.congr' (Eventually.of_forall fun n ↦ ?_)
-    have h : powerCDF one_pos (1 + x / n) = 1 := by
-      refine le_antisymm ((powerCDF one_pos).apply_le_one _) ?_
-      calc (1 : ℝ) = powerCDF one_pos 1 := by
-            rw [powerCDF_apply_of_mem_Icc one_pos ⟨zero_le_one, le_rfl⟩]; simp
-        _ ≤ _ := (powerCDF one_pos).mono (by have := div_nonneg hx (Nat.cast_nonneg n); linarith)
+    have h : powerCDF one_pos (1 + x / n) = 1 :=
+      powerCDF_apply_of_one_le one_pos (by have := div_nonneg hx (Nat.cast_nonneg n); linarith)
     simp [h]
 
 /-! ### The unified `IsInMDAGEV ξ` and its sign convention ([dHF, Theorem 1.1.3]) -/
 
 /-- Pareto(α) ∈ MDA(H_ξ) with `ξ = 1/α > 0` ([EKM, Table 3.4.2]). Fails if the Fréchet side
 were assigned to `ξ < 0` or the index were `ξ` instead of `1/ξ`. -/
-theorem test_pareto_isInMDAGEV {α : ℝ} (hα : 0 < α) : (paretoCDF hα).IsInMDAGEV (1 / α) := by
-  simp only [IsInMDAGEV, one_div_pos.2 hα, ↓reduceDIte]
-  convert isInMDAFrechet_paretoCDF hα using 2
-  simp
+theorem test_pareto_isInMDAGEV {α : ℝ} (hα : 0 < α) : (paretoCDF hα).IsInMDAGEV (1 / α) :=
+  isInMDAGEV_paretoCDF hα
 
 /-- Uniform ∈ MDA(H_ξ) with `ξ = -1`, and more generally `1 - (1 - x)^α` ∈ MDA(H_{-1/α})
 ([EKM, Table 3.4.3]). -/
-theorem test_power_isInMDAGEV {α : ℝ} (hα : 0 < α) : (powerCDF hα).IsInMDAGEV (-1 / α) := by
-  have hneg : -1 / α < 0 := div_neg_of_neg_of_pos (by norm_num) hα
-  have hnpos : ¬ 0 < -1 / α := not_lt.2 hneg.le
-  simp only [IsInMDAGEV, hnpos, hneg, ↓reduceDIte]
-  convert isInMDAWeibull_powerCDF hα using 2
-  field_simp
+theorem test_power_isInMDAGEV {α : ℝ} (hα : 0 < α) : (powerCDF hα).IsInMDAGEV (-1 / α) :=
+  isInMDAGEV_powerCDF hα
 
 /-- Exponential ∈ MDA(H_0) ([EKM, Table 3.4.4]). -/
-theorem test_exponential_isInMDAGEV : standardExponentialCDF.IsInMDAGEV 0 := by
-  simp only [IsInMDAGEV, lt_self_iff_false, ↓reduceDIte]
-  exact isInMDAGumbel_standardExponentialCDF
+theorem test_exponential_isInMDAGEV : standardExponentialCDF.IsInMDAGEV 0 :=
+  isInMDAGEV_standardExponentialCDF
+
+/-- The sign convention of `IsInMDAGEV`: `ξ > 0` is the Fréchet side with index `1/ξ`, `ξ < 0` the
+Weibull side with index `-1/ξ`, `ξ = 0` the Gumbel domain. -/
+theorem test_isInMDAGEV_sign_convention (F : CumulativeDistributionFunction) :
+    (F.IsInMDAGEV (1 / 2) ↔ F.IsInMDAFrechet two_pos) ∧
+      (F.IsInMDAGEV (-1 / 2) ↔ F.IsInMDAWeibull two_pos) ∧
+      (F.IsInMDAGEV 0 ↔ F.IsInMDAGumbel) := by
+  refine ⟨?_, ?_, isInMDAGEV_zero_iff⟩
+  · rw [isInMDAGEV_iff_of_pos (by norm_num)]
+    norm_num
+  · rw [isInMDAGEV_iff_of_neg (by norm_num)]
+    norm_num
 
 /-! ### Negative checks: the wrong domain is rejected -/
-
-/-- Uniqueness of the index of regular variation (used below). -/
-theorem rv_index_unique {f : ℝ → ℝ} {ρ σ : ℝ} (hρ : IsRegularlyVarying f ρ)
-    (hσ : IsRegularlyVarying f σ) : ρ = σ := by
-  have h := tendsto_nhds_unique (hρ.tendsto two_pos) (hσ.tendsto two_pos)
-  have hlog := congrArg log h
-  rw [log_rpow two_pos, log_rpow two_pos] at hlog
-  exact mul_right_cancel₀ (log_pos one_lt_two).ne' hlog
 
 /-- Pareto(α) is **not** in `MDA(Φ_β)` for `β ≠ α`: the Fréchet index is the tail index
 ([EKM, Theorem 3.3.7]). -/
@@ -152,7 +143,7 @@ theorem test_pareto_not_isInMDAFrechet_of_ne {α β : ℝ} (hα : 0 < α) (hβ :
   intro h
   have h1 := isRegularlyVarying_of_isInMDAFrechet _ hβ h
   have h2 := isRegularlyVarying_of_isInMDAFrechet _ hα (isInMDAFrechet_paretoCDF hα)
-  exact hne (neg_inj.1 (rv_index_unique h1 h2))
+  exact hne (neg_inj.1 (IsRegularlyVarying.index_eq h1 h2))
 
 /-- The exponential law is **not** in any Fréchet domain: its tail `e^{-x}` is not regularly
 varying ([EKM, Theorem 3.3.7]). -/
@@ -176,11 +167,7 @@ theorem test_uniform_not_isInMDAFrechet {α : ℝ} (hα : 0 < α) :
   obtain ⟨x, hpos, hx1⟩ :=
     ((isRegularlyVarying_of_isInMDAFrechet _ hα h).eventually_pos.and
       (eventually_ge_atTop 1)).exists
-  have : powerCDF one_pos x = 1 := by
-    refine le_antisymm ((powerCDF one_pos).apply_le_one _) ?_
-    calc (1 : ℝ) = powerCDF one_pos 1 := by
-          rw [powerCDF_apply_of_mem_Icc one_pos ⟨zero_le_one, le_rfl⟩]; simp
-      _ ≤ _ := (powerCDF one_pos).mono hx1
+  have : powerCDF one_pos x = 1 := powerCDF_apply_of_one_le one_pos hx1
   linarith
 
 /-! ### The tail quantile function `U(t) = F^←(1 - 1/t)` ([dHF, §1.1]) -/
@@ -213,11 +200,7 @@ theorem test_tailQuantile_pareto {α : ℝ} (hα : 0 < α) {t : ℝ} (ht : 1 < t
     ext y
     simp only [mem_ofPred_eq, mem_Ici]
     rcases lt_or_ge y 1 with hy | hy
-    · have h0 : paretoCDF hα y = 0 := by
-        refine le_antisymm ?_ ((paretoCDF hα).apply_nonneg _)
-        calc paretoCDF hα y ≤ paretoCDF hα 1 := (paretoCDF hα).mono hy.le
-          _ = 0 := by rw [paretoCDF_apply_of_one_le hα le_rfl, one_rpow, sub_self]
-      rw [h0, sub_zero]
+    · rw [paretoCDF_apply_of_le_one hα hy.le, sub_zero]
       constructor
       · intro h; exact absurd h (not_le.2 ((div_lt_one ht0).2 ht))
       · intro h; linarith
@@ -238,21 +221,12 @@ theorem test_tailQuantile_uniform {t : ℝ} (ht : 1 < t) :
     ext y
     simp only [mem_ofPred_eq, mem_Ici]
     rcases lt_or_ge y 0 with hy | hy
-    · have h0 : powerCDF one_pos y = 0 := by
-        refine le_antisymm ?_ ((powerCDF one_pos).apply_nonneg _)
-        calc powerCDF one_pos y ≤ powerCDF one_pos 0 := (powerCDF one_pos).mono hy.le
-          _ = 0 := by rw [powerCDF_apply_of_mem_Icc one_pos ⟨le_rfl, zero_le_one⟩]; simp
-      rw [h0]
+    · rw [powerCDF_apply_of_nonpos one_pos hy.le]
       constructor <;> intro h <;> linarith
     rcases le_or_gt y 1 with hy1 | hy1
     · rw [powerCDF_apply_of_mem_Icc one_pos ⟨hy, hy1⟩, rpow_one]
       constructor <;> intro h <;> linarith
-    · have h1 : powerCDF one_pos y = 1 := by
-        refine le_antisymm ((powerCDF one_pos).apply_le_one _) ?_
-        calc (1 : ℝ) = powerCDF one_pos 1 := by
-              rw [powerCDF_apply_of_mem_Icc one_pos ⟨zero_le_one, le_rfl⟩]; simp
-          _ ≤ _ := (powerCDF one_pos).mono hy1.le
-      rw [h1]
+    · rw [powerCDF_apply_of_one_le one_pos hy1.le]
       constructor <;> intro h <;> linarith
   unfold CumulativeDistributionFunction.tailQuantile
   rw [hS, csInf_Ici]

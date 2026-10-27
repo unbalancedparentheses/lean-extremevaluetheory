@@ -27,6 +27,8 @@ statements are not vacuous ([EKM, Table 1.4.3/1.4.4]).
 * `tail_weibullTailLaw`: `F̄(x) = exp(-x^τ)` for `x ≥ 0`.
 * `isSubexponential_weibullTailLaw`: for `0 < τ < 1` the Weibull law is subexponential
   ([EKM, Example 1.4.3 / Table 1.4.4]).
+* `not_isSubexponential_weibullTailLaw`: for `τ ≥ 1` (in particular the exponential law) it is
+  not subexponential.
 * `tail_paretoMeasure`: the Pareto law `paretoMeasure t r` (Mathlib) has tail `(t / x)^r` for
   `x ≥ t`.
 * `isSubexponential_paretoMeasure`: Pareto laws are subexponential ([EKM, Corollary 1.3.2]).
@@ -149,6 +151,23 @@ theorem isSubexponential_weibullTailLaw (hτ0 : 0 < τ) (hτ1 : τ < 1) :
     IsSubexponential (weibullTailLaw τ hτ0) :=
   IsSubexponential.of_tail_eq_exp_neg_rpow (weibullTailLaw_Iio_zero hτ0) hτ0 hτ1
     fun _ hx => tail_weibullTailLaw hτ0 hx
+
+/-- **Weibull laws with shape `τ ≥ 1` are not subexponential** ([EKM, §1.3 and Table 1.4.4]); in
+particular (`τ = 1`) **the exponential law is not subexponential**. They are not even long-tailed:
+by superadditivity of `x ↦ x^τ`, `F̄(x - 1) / F̄(x) = exp(x^τ - (x - 1)^τ) ≥ e` for `x ≥ 1`. -/
+theorem not_isSubexponential_weibullTailLaw (hτ0 : 0 < τ) (hτ1 : 1 ≤ τ) :
+    ¬ IsSubexponential (weibullTailLaw τ hτ0) := by
+  intro h
+  have hge : ∀ᶠ x in atTop, exp 1 ≤
+      tail (weibullTailLaw τ hτ0) (x - 1) / tail (weibullTailLaw τ hτ0) x := by
+    filter_upwards [eventually_ge_atTop 1] with x hx
+    rw [tail_weibullTailLaw hτ0 (by linarith), tail_weibullTailLaw hτ0 (by linarith), ← exp_sub,
+      exp_le_exp]
+    have := Real.add_rpow_le_rpow_add (sub_nonneg.2 hx) zero_le_one hτ1
+    rw [sub_add_cancel, one_rpow] at this
+    linarith
+  have := ge_of_tendsto (h.tendsto_tail_sub_div 1) hge
+  linarith [add_one_le_exp (1 : ℝ)]
 
 end Weibull
 

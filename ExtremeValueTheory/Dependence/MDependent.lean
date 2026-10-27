@@ -178,10 +178,12 @@ variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'
   {P : Measure Ω} [IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ}
   {Q : Measure Ω'} [IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ}
 
+/-- The sample fraction `k n = ⌊√n⌋` tends to infinity. -/
 theorem tendsto_sqrt_atTop : Tendsto Nat.sqrt atTop atTop :=
   tendsto_atTop_atTop.2 fun b => ⟨b * b, fun n hn => by
     rw [← Nat.sqrt_eq b]; exact Nat.sqrt_le_sqrt hn⟩
 
+/-- The sample fraction `k n = ⌊√n⌋` is intermediate: `k n / n → 0`. -/
 theorem tendsto_sqrt_div : Tendsto (fun n => (Nat.sqrt n : ℝ) / n) atTop (𝓝 0) := by
   have hinv : Tendsto (fun n => 1 / (Nat.sqrt n : ℝ)) atTop (𝓝 0) :=
     tendsto_const_nhds.div_atTop (tendsto_natCast_atTop_atTop.comp tendsto_sqrt_atTop)
@@ -191,6 +193,49 @@ theorem tendsto_sqrt_div : Tendsto (fun n => (Nat.sqrt n : ℝ) / n) atTop (𝓝
   have hle : (Nat.sqrt n : ℝ) * Nat.sqrt n ≤ n := by exact_mod_cast Nat.sqrt_le n
   rw [div_le_div_iff₀ (by nlinarith) hs]
   nlinarith
+
+/-- `k n = ⌊√n⌋ → ∞` as a real sequence. -/
+theorem tendsto_natCast_sqrt_atTop : Tendsto (fun n => (Nat.sqrt n : ℝ)) atTop atTop :=
+  tendsto_natCast_atTop_atTop.comp tendsto_sqrt_atTop
+
+/-- `log x / √x → 0` as `x → ∞`. -/
+theorem tendsto_log_div_sqrt_atTop : Tendsto (fun x : ℝ => Real.log x / √x) atTop (𝓝 0) := by
+  have h := (isLittleO_log_rpow_atTop (by norm_num : (0 : ℝ) < 1 / 2)).tendsto_div_nhds_zero
+  refine h.congr' ?_
+  filter_upwards [eventually_ge_atTop 0] with x hx
+  rw [Real.sqrt_eq_rpow]
+
+/-- `log n / ⌊√n⌋ → 0`: with the sample fraction `k n = ⌊√n⌋`, `log n = o(k n)`. -/
+theorem tendsto_log_div_natSqrt :
+    Tendsto (fun n : ℕ => Real.log n / Nat.sqrt n) atTop (𝓝 0) := by
+  have h2 := (tendsto_log_div_sqrt_atTop.comp tendsto_natCast_atTop_atTop).const_mul 2
+  rw [mul_zero] at h2
+  refine squeeze_zero' ?_ ?_ h2
+  · filter_upwards [eventually_ge_atTop 1] with n hn
+    exact div_nonneg (Real.log_nonneg (by exact_mod_cast hn)) (Nat.cast_nonneg _)
+  · filter_upwards [eventually_ge_atTop 4] with n hn
+    have hn' : (4 : ℝ) ≤ n := by exact_mod_cast hn
+    have hlt : Real.sqrt n < Nat.sqrt n + 1 := by
+      rw [Real.sqrt_lt' (by positivity)]
+      have := Nat.lt_succ_sqrt n
+      have h : (n : ℝ) < ((Nat.sqrt n + 1 : ℕ) : ℝ) * ((Nat.sqrt n + 1 : ℕ) : ℝ) := by
+        exact_mod_cast this
+      push_cast at h
+      nlinarith
+    have h2s : 2 ≤ Real.sqrt n := by
+      rw [show (2 : ℝ) = Real.sqrt 4 by
+        rw [show (4 : ℝ) = 2 ^ 2 by norm_num, Real.sqrt_sq (by norm_num)]]
+      exact Real.sqrt_le_sqrt hn'
+    have hpos : (0 : ℝ) < Nat.sqrt n := by linarith
+    have hlog : 0 ≤ Real.log n := Real.log_nonneg (by linarith)
+    have hsq : (0 : ℝ) < Real.sqrt n := by linarith
+    show Real.log n / Nat.sqrt n ≤ 2 * (Real.log n / Real.sqrt n)
+    calc Real.log n / Nat.sqrt n = Real.log n * (1 / Nat.sqrt n) := by ring
+      _ ≤ Real.log n * (2 / Real.sqrt n) := by
+          refine mul_le_mul_of_nonneg_left ?_ hlog
+          rw [div_le_div_iff₀ hpos hsq]
+          linarith
+      _ = 2 * (Real.log n / Real.sqrt n) := by ring
 
 /-- `|X|` restricted to `ℕ` is stationary for a stationary `ℤ`-indexed series. -/
 theorem HasShiftInvariantWindows.isStationary_abs (hX : ∀ t, Measurable (X t))
