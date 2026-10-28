@@ -231,8 +231,9 @@ Second survey (2026-10-25, [`docs/OPEN_PROBLEMS_SURVEY2.md`](docs/OPEN_PROBLEMS_
 ## E. Maintenance
 
 - [x] On the latest stable Mathlib (v4.35.0, checked 2026-10-27)
-- [>] Trial bump to v4.36.0-rc1; fix Mathlib deprecation warnings on v4.35.0
-- [>] Regular bumps: a scheduled CI job that tries the latest Mathlib and opens a pull request
+- [x] Trial bump to v4.36.0-rc1 builds (branch `wip/mathlib-v4.36-trial`; 23 files, all from `Set`
+      becoming a structure); Mathlib deprecation warnings outside `Statistics/` fixed on v4.35.0
+- [x] Regular bumps: a scheduled CI job that tries the latest Mathlib and opens a pull request
 - [ ] Tagged releases (e.g. one per Mathlib bump), so other projects can depend on a fixed version
 - [ ] Keep the nightly independent kernel check and the specification tests green on every bump
 

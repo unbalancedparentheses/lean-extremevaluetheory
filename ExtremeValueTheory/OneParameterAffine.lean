@@ -26,7 +26,7 @@ lemma eq_sUnion_connectedComponentIn (U : Set ℝ) :
   apply subset_antisymm
   · intro x x_in_U
     simpa using ⟨x, x_in_U, mem_connectedComponentIn x_in_U⟩
-  · simp only [sUnion_subset_iff, mem_setOf_eq, forall_exists_index, and_imp]
+  · simp only [sUnion_subset_iff, mem_ofPred_eq, forall_exists_index, and_imp]
     intro C x x_in_U hC
     simpa [hC] using connectedComponentIn_subset U x
 
@@ -152,12 +152,12 @@ lemma IsOpen.countable_setOf_connectedComponentIn
   have key := SeparableSpace.countable_connectedComponents (α := s) inferInstance
   let ψ : {C : Set α | ∃ x ∈ s, C = connectedComponentIn s x} → ConnectedComponents s :=
     fun C ↦ ConnectedComponents.mk
-            ⟨(mem_setOf_eq.mp C.prop).choose, (mem_setOf_eq.mp C.prop).choose_spec.1⟩
+            ⟨(mem_ofPred_eq.mp C.prop).choose, (mem_ofPred_eq.mp C.prop).choose_spec.1⟩
   have ψ_inj : Function.Injective ψ := by
     intro C₁ C₂ hψC
     ext1
-    have aux₁ := (mem_setOf_eq.mp C₁.prop).choose_spec
-    have aux₂ := (mem_setOf_eq.mp C₂.prop).choose_spec
+    have aux₁ := (mem_ofPred_eq.mp C₁.prop).choose_spec
+    have aux₂ := (mem_ofPred_eq.mp C₂.prop).choose_spec
     rw [aux₁.2, aux₂.2]
     simp only [ψ, ConnectedComponents.coe_eq_coe] at hψC
     rw [connectedComponentIn_eq_image aux₁.1, connectedComponentIn_eq_image aux₂.1]
@@ -325,7 +325,7 @@ private lemma exists_measure_preimage_add_inter_pos {A B : Set ℝ}
     simp_rw [this]
     rw [lintegral_indicator B_mble, setLIntegral_const, mul_comm]
   by_contra con
-  push_neg at con
+  push Not at con
   have h₂ : (volume.prod volume) S = 0 := by
     rw [Measure.prod_apply S_mble]
     have : ∀ x : ℝ, volume (Prod.mk x ⁻¹' S) = 0 := by
@@ -445,7 +445,7 @@ lemma linear_of_additive_of_le_on_measure_pos
     rw [this, abs_mul, abs_of_pos n_pos] at key
     rw [div_lt_iff₀ ε_pos] at hn
     by_contra con
-    push_neg at con
+    push Not at con
     nlinarith
   have F_cont : Continuous F := continuous_of_continuousAt_zero F F_contAt
   have := map_real_smul F F_cont x 1
