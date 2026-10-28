@@ -121,27 +121,26 @@ that way; their novelty has been checked against the literature
 
 ## Status and what's next
 
-The theory taught in the standard textbooks is essentially complete. What is left to make this the
-best extreme value theory library, in order (details in [`ROADMAP.md`](ROADMAP.md)):
+The theory taught in the standard textbooks is essentially complete. The library is on Mathlib
+v4.35.0, the latest stable release, and a weekly CI job tries newer Mathlib versions. What is left for
+version 1.0, in order (details and progress in [`ROADMAP.md`](ROADMAP.md)):
 
-1. **A consistent design.** A pass in progress unifies how laws are represented, removes duplicate
-   definitions, fixes names and namespaces, and splits oversized files; the conventions will be written up
-   in `docs/DESIGN.md`.
-2. **Keeping up with Mathlib.** The library is pinned to Mathlib v4.35.0; it needs a bump and regular
-   automated bumps, with tagged releases.
-3. **Review by human experts**, the one check independent of the AI that helped write the statements.
-4. **A paper** on the new results.
-5. **The remaining textbook gaps people notice first:** three-parameter GEV maximum likelihood
-   normality, profile-likelihood intervals, the parametric stable family, cluster point processes,
-   Brown–Resnick processes, nonparametric tail-dependence estimation.
-6. **Usability:** a tutorial, worked examples for the standard distributions, a stable API with a
-   changelog.
-7. **Outreach:** an announcement on the Lean Zulip and upstreaming the general results to Mathlib.
-8. **Open problems**, practical ones first: how to choose block and run lengths for clustering
-   estimators, sliding-block estimators, block maxima versus peaks over threshold
-   ([`docs/PRACTICAL_OPEN_PROBLEMS.md`](docs/PRACTICAL_OPEN_PROBLEMS.md)).
-9. **A link to real software:** executable reference versions of the estimators, cross-checked against
-   R and Python packages to catch convention bugs.
+1. **The statistics practitioners use most:** three-parameter GEV maximum likelihood normality,
+   profile-likelihood intervals, Pickands estimator normality, nonparametric tail-dependence estimation
+   (in progress).
+2. **A consistent design.** Done: names and namespaces, one representation of laws, split files,
+   conventions in [`docs/DESIGN.md`](docs/DESIGN.md). Left: one definition per concept (in progress),
+   splitting the statistics files, a changelog and a tagged release.
+3. **Documentation that matches the code**, with specification tests and a faithfulness audit of the
+   newest results.
+4. **Usability:** a tutorial and worked examples for the standard distributions.
+5. **Review by human experts**, the one check independent of the AI that helped write the statements,
+   then **a paper** on the new results and an announcement on the Lean Zulip.
+
+After 1.0: the remaining textbook gaps (the parametric stable family, cluster point processes,
+Brown–Resnick processes), open problems ([`docs/PRACTICAL_OPEN_PROBLEMS.md`](docs/PRACTICAL_OPEN_PROBLEMS.md),
+[`docs/OPEN_PROBLEMS_SURVEY2.md`](docs/OPEN_PROBLEMS_SURVEY2.md)), upstreaming the general results to
+Mathlib, and executable estimators cross-checked against R and Python.
 
 ## Build
 

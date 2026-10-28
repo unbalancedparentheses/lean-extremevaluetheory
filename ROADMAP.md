@@ -8,30 +8,69 @@ and [`RESEARCH.md`](RESEARCH.md) for the research results.
 
 `[x]` done, `[~]` partial, `[>]` in progress, `[ ]` missing.
 
-## Next up
+## Version 1.0
 
-In order:
+What "finished" means for a first release: the running work merged, a consistent design, documentation
+that matches the code, a way in for new users, and review by people other than the AI that wrote the
+statements. Everything after that (further textbook chapters, open problems, upstreaming, executable
+estimators) is listed in sections A–G and is not needed for 1.0. Updated 2026-10-28.
 
-1. [>] Finish the running work: the design pass (see D) and Pickands and moment estimator normality;
-   also running: GEV three-parameter MLE normality, profile-likelihood intervals (GPD first),
-   nonparametric tail-dependence estimation (see A).
-   Then the deferred cleanup: split the `Statistics/` files, remove the `@[deprecated]` aliases.
-2. [>] Mathlib: the library is on v4.35.0, the latest stable release (2026-10-27). Running: a weekly CI
-   job that tries the newest Mathlib and opens a pull request, a trial on v4.36.0-rc1, and fixes for
-   Mathlib deprecation warnings (see E).
-3. [ ] Human expert review with [`docs/REVIEW.md`](docs/REVIEW.md) (see C).
-4. [ ] arXiv note: the echo process and the answer to Bai–Kulik–Wang (see B).
-5. [ ] Close the most visible textbook gaps: GEV three-parameter MLE normality, profile-likelihood
-   intervals, the parametric stable family, Davis–Hsing cluster processes, Brown–Resnick processes,
-   nonparametric tail-dependence estimation (see A).
-6. [ ] Tutorial and worked examples (see D).
-7. [ ] Zulip announcement and Mathlib upstreaming (see F).
-8. [ ] Then open problems (see B), practical ones first: block and run length for extremal-index
-   estimators; sliding blocks without β-mixing; block maxima versus peaks over threshold; GEV
-   likelihood on the whole parameter space; annual maxima with a seasonal bound. Then the theoretical
-   ones (the critical case of the power-lag echo process, `θ < ϑ` for Markov chains, the weakest
-   condition for `θ = ϑ`).
-9. [ ] A link to real EVT software (see G).
+**Owner:** *agent* = done by Claude Code agents; *you* = needs the maintainer (sending, submitting,
+posting, deciding).
+
+1. [>] **Finish the work in flight** (*agent*; paused until the usage limit resets, see the table below)
+   - [>] One definition per concept: the tail-quantile definitions unified (`UpperQuantile.lean`),
+     duplicate helpers removed
+   - [>] Pickands and moment estimator normality (moment estimator `γ > 0` done on its branch)
+   - [>] GEV three-parameter MLE normality, then unconditional GEV return-level normality
+   - [>] Profile-likelihood intervals (Wilks' theorem, GPD first)
+   - [>] Nonparametric tail dependence: empirical stable tail dependence function with estimated margins
+2. [ ] **Close the design pass** (*agent*)
+   - [ ] Split the oversized `Statistics/` files (waits for item 1)
+   - [ ] Stop using `@[deprecated]` aliases inside the library and tests (the aliases stay for
+         downstream users; [`docs/DESIGN.md`](docs/DESIGN.md) keeps them six months)
+   - [ ] Fix the Mathlib deprecation warnings in `Statistics/` and in the newly promoted files
+         (`GEVDomain.lean`, `ExtremalIndexEstimatorsIid.lean`: `dif_pos`, `if_pos`, `Set.mem_setOf_eq`)
+   - [ ] `CHANGELOG.md` and a tagged release `v1.0.0`
+3. [ ] **Documentation matches the code** (*agent*)
+   - [ ] [`THEOREMS.md`](THEOREMS.md), the README and the website list every merged result
+   - [ ] Every new file has a blueprint entry
+   - [ ] Specification tests for the newest results (return levels, intervals, SRE/GARCH,
+         extremal-index estimators, the 1.0 statistics results)
+   - [ ] Seventh faithfulness audit (everything since the sixth)
+4. [ ] **A way in for new users** (*agent*)
+   - [ ] Tutorial: your first extreme value theory proof in Lean
+   - [ ] Worked examples for the standard laws
+   - [ ] "How to find a result" guide
+5. [ ] **Trust and visibility** (*you*, with drafts from an agent)
+   - [ ] Human expert review with [`docs/REVIEW.md`](docs/REVIEW.md) (see C)
+   - [ ] Finish the novelty check, then the arXiv note on the echo process (see B)
+   - [ ] Announce on the Lean Zulip (see F)
+
+### Work in flight
+
+Each task has a git worktree under `.claude/worktrees/` and a branch on GitHub. A `-snapshot` branch
+holds files that were not yet committed when the agent stopped. Delete both branches after merging.
+
+| Task | Branch on GitHub | State (2026-10-28) |
+|---|---|---|
+| One definition per concept | `wip/a56e6c64e2876ca08` (+ `-snapshot`) | paused, close to done |
+| Pickands and moment normality | `wip/a752c6f656f0f5787` (+ `-snapshot`) | paused; moment done, Pickands at step 3 |
+| GEV 3-parameter MLE normality | `wip/gev-mle-normality` (+ `-snapshot`) | paused, early |
+| Profile-likelihood intervals | `wip/profile-likelihood-snapshot` | paused, early |
+| Tail-dependence estimation | `wip/tail-dependence-estimation-snapshot` | paused, early |
+| Mathlib v4.36.0-rc1 trial | `wip/mathlib-v4.36-trial` | builds; merge when v4.36.0 is stable |
+
+Done in the current round (merged to `main`): names and namespaces; oversized files split outside
+`Statistics/`; the law bridge (`CDFBridge.lean`); test helpers promoted and `docs/DESIGN.md`; the
+weekly Mathlib bump workflow and deprecation fixes; the second open-problems survey.
+
+### After 1.0
+
+In order: the remaining textbook gaps (parametric stable family, Davis–Hsing cluster processes,
+Brown–Resnick processes, bias-reduced estimators; see A); open problems, practical ones first (block
+and run length for extremal-index estimators, then the rest of B); upstreaming `ForMathlib/` to Mathlib
+(see F); executable estimators checked against R and Python (see G).
 
 ---
 
@@ -57,7 +96,7 @@ Regular Variation and Point Processes* (1987) and *Heavy-Tail Phenomena* (2007);
 - [x] Pickands–Balkema–de Haan (equivalence, every shape)
 - [x] GPD / GEV densities, Wald consistency, Fisher information, joint normality (GPD `ξ ≠ 0`)
 - [x] GEV: full 3×3 Fisher information (digamma), positive definite, `E[∇²ℓ] = −I`, trivariate score CLT
-- [ ] GEV: joint normality of the 3-parameter MLE (missing: Hessian domination near a moving endpoint,
+- [>] GEV: joint normality of the 3-parameter MLE (missing: Hessian domination near a moving endpoint,
       a preliminary √n rate, a 3×3 Slutsky step); then GEV return-level normality becomes unconditional
 - [~] Likelihood at `ξ = 0`: GEV/GPD log-densities and scores continuous at 0 and true derivatives there;
       Gumbel (μ, σ) Fisher information and score CLT. Missing: the σξ and ξξ entries at 0 (need
@@ -78,7 +117,7 @@ Regular Variation and Point Processes* (1987) and *Heavy-Tail Phenomena* (2007);
       return-level intervals
 - [~] Return levels: POT normality unconditional (from GPD MLE); GEV/Gumbel conditional on GEV MLE
       normality (in progress, see A.2)
-- [ ] Profile-likelihood intervals (Coles §2.6.6)
+- [>] Profile-likelihood intervals (Coles §2.6.6)
 - [ ] Hill confidence interval with bias (`λ ≠ 0`)
 - [ ] Bias-reduced estimators (second-order: Gomes et al., Feuerverger–Hall), and their normality
 - [~] Extremal-index estimators: blocks and runs consistent (general, m-dependent, via the tail
@@ -108,7 +147,7 @@ Regular Variation and Point Processes* (1987) and *Heavy-Tail Phenomena* (2007);
 - [x] Max-stable vectors: spectral representation (existence, uniqueness), Pickands function
 - [x] Multivariate domains of attraction (dHF ch. 6.2)
 - [x] Multivariate POT and the multivariate GPD (Rootzén–Tajvidi; sequence thresholds, pointwise)
-- [ ] Nonparametric estimation: empirical tail dependence function / stable tail dependence
+- [>] Nonparametric estimation: empirical tail dependence function / stable tail dependence
       function, CFG and Pickands estimators with estimated margins, and their consistency
 - [ ] Hidden regular variation and asymptotic independence (Resnick 2002, Ledford–Tawn)
 
@@ -194,21 +233,21 @@ Second survey (2026-10-25, [`docs/OPEN_PROBLEMS_SURVEY2.md`](docs/OPEN_PROBLEMS_
 ## D. Code quality and usability
 
 ### Consolidation
-- [ ] Unify the three tail-quantile definitions
+- [>] Unify the three tail-quantile definitions
 - [x] One namespace for the `Minimality` results (`Classical*` files use `ExtremeValueTheory.Minimality`,
       `Dependence*` files do not)
 - [x] Rename "escape mass" (clashes with Abadi–Freitas–Freitas): now "late-return mass"
 - [x] Rename `gpdSurvival` / `gpdSurvival'` so the `ξ < 0` case cannot be picked by mistake
       (`gpdSurvivalNonneg` / `gpdSurvivalAll`)
 - [x] Fix misleading `_of_lt_one` names (now `_of_summable_rpow`; old names are deprecated aliases)
-- [ ] Remove duplicate helpers
+- [>] Remove duplicate helpers
 - [x] Promote helper lemmas from the test files into the library (e.g. the exponential law is not
       subexponential; uniqueness of the regular-variation index)
       (done 2026-10-27; conventions in [`docs/DESIGN.md`](docs/DESIGN.md))
 
-- [>] Design pass (running): one representation of laws with a complete bridge; one definition
-      per concept; test helpers promoted; conventions in `docs/DESIGN.md`. Done: names and namespaces;
-      oversized files split outside `Statistics/` (nothing there is now over ~950 lines)
+- [>] Design pass: one definition per concept is still running. Done: names and namespaces;
+      oversized files split outside `Statistics/`; one representation of laws (`CDFBridge.lean`);
+      test helpers promoted; conventions in [`docs/DESIGN.md`](docs/DESIGN.md)
 - [ ] **Afterwards:** split the oversized `Statistics/` files (deferred while statistics agents edit
       them); migrate remaining uses off the `@[deprecated]` aliases and then delete the aliases; rebase
       the in-flight agent branches onto the new names
@@ -234,7 +273,7 @@ Second survey (2026-10-25, [`docs/OPEN_PROBLEMS_SURVEY2.md`](docs/OPEN_PROBLEMS_
 - [x] Trial bump to v4.36.0-rc1 builds (branch `wip/mathlib-v4.36-trial`; 23 files, all from `Set`
       becoming a structure); Mathlib deprecation warnings outside `Statistics/` fixed on v4.35.0
 - [x] Regular bumps: a scheduled CI job that tries the latest Mathlib and opens a pull request
-- [ ] Tagged releases (e.g. one per Mathlib bump), so other projects can depend on a fixed version
+- [ ] Tagged releases, starting with `v1.0.0` (then one per Mathlib bump), so other projects can depend on a fixed version
 - [ ] Keep the nightly independent kernel check and the specification tests green on every bump
 
 ---

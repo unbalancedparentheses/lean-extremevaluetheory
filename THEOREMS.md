@@ -5,6 +5,13 @@ A detailed list of what the library proves, grouped by topic, with the main Lean
 compares with its textbook source, and the [blueprint](https://unbalancedparentheses.github.io/lean-extremevaluetheory/blueprint/)
 for proofs sketches and dependencies.
 
+- **Laws on ℝ, one representation** (`CDFBridge.lean`, conventions in [`docs/DESIGN.md`](docs/DESIGN.md)):
+  the library's `CumulativeDistributionFunction`, `Measure ℝ` and Mathlib's `cdf` are interchangeable
+  (`ofMeasure`, `measure_ofMeasure`, `equivMeasure`), with the law of intervals and atoms, laws of random
+  variables (`hasLaw_measure_iff`), and weak convergence stated with Mathlib's `cdf`
+  (`tendsto_probabilityMeasure_iff_forall_continuousAt_tendsto_cdf`). The domains of attraction transfer
+  to measures and random variables (`DomainOfAttraction/OfMeasure.lean`).
+
 - **Fisher–Tippett–Gnedenko** (`CumulativeDistributionFunction.IsExtremeValueDistr.classification`):
   proved, depending only on the standard axioms `propext`, `Classical.choice`, `Quot.sound`.
 - **Max-stability and the GEV family** (`GEV/`): max-stable laws are exactly the extreme value
@@ -91,8 +98,25 @@ for proofs sketches and dependencies.
   (`ae_tendsto_gpdMLE'`), asymptotic normality of a measurable scale MLE for `ξ > −1/2`
   (`tendstoInDistribution_gpdScaleMLE'`), the GPD Fisher information, and joint asymptotic normality
   `√n(θ̂ − θ₀) ⇒ N(0, I⁻¹)` of a measurable MLE for every `ξ₀ > −1/2`, `ξ₀ ≠ 0` (`exists_gpdMLE_tendstoInDistribution`). For the GEV: identifiability, strong consistency of
-  the 3-parameter MLE for `ξ > −1` (`ae_tendsto_gevMLE`), and the location–scale Fisher information with
-  its score CLT.
+  the 3-parameter MLE for `ξ > −1` (`ae_tendsto_gevMLE`), the full 3×3 Fisher information in closed form
+  with digamma and Γ terms (`Statistics/GEVFisherInformation.lean`), positive definite
+  (`posDef_gevFisherInfo`), the Hessian of the log-likelihood with `E[∇²ℓ] = −I`
+  (`integral_gevHess_eq_neg_gevFisherInfo`) and the trivariate score CLT
+  (`tendstoInDistribution_gevScoreVec3`). GEV return-level normality is proved conditional on MLE
+  normality (`tendstoInDistribution_gevReturnLevel`).
+- **The Gumbel case `ξ = 0`** (`Statistics/GEVGumbelLimit.lean`): the GEV and GPD log-densities and
+  scores are continuous at `ξ = 0` and are true derivatives there; the Gumbel `(μ, σ)` Fisher information
+  is positive definite (`posDef_gumbelFisherInfo`), with the bivariate score CLT
+  (`tendstoInDistribution_gumbelScoreVec`).
+- **Probability-weighted moments and L-moments** (`Statistics/LMoments.lean`,
+  `LMomentsEstimators.lean`): closed forms for the GPD and the GEV, including Hosking's L-skewness
+  (`lSkewness_gevCDF_hosking`; the library's `ξ` is Hosking's `−k`); strong consistency of the sample
+  PWMs and L-moments (`ae_tendsto_samplePWM`, `ae_tendsto_sampleLSkewness`) and of the Hosking–Wallis
+  GPD estimators (`ae_tendsto_gpdPWMShapeEst`, `ae_tendsto_gpdPWMScaleEst`), for continuous `F`.
+- **Mean excess function** (`Statistics/MeanExcess.lean`): GPD threshold stability
+  (`gpdSurvivalAll_add`), the GPD mean excess is linear (`meanExcess_gpdSurvivalAll`), the empirical mean
+  excess is strongly consistent (`ae_tendsto_empMeanExcess`), and the converse: a linear mean excess
+  forces a GPD tail, for unbounded support (`eq_gpdSurvivalAll_of_meanExcess_eq_linear`, EKM 3.4.13(e)).
 - **Upper order statistics and records**: the Poisson limit law of the `k`-th largest
   (`tendsto_measureReal_orderStat_le`), the joint law of the two largest, and records: `P(record at
   k) = 1/k`, `E N_n = H_n`, `N_n / log n → 1` in probability (`tendstoInMeasure_recordCount_div_log`).
