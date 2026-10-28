@@ -49,8 +49,13 @@ posting, deciding).
 
 ### Work in flight
 
+**Status (2026-10-28): all agents paused by the weekly usage limit, which resets 2026-10-31 13:00
+(Buenos Aires).** Agents resume only when the maintainer says so. On resuming: continue each agent from
+its branch (the `-snapshot` branch has its uncommitted files), then merge in the order of the table.
+
 Each task has a git worktree under `.claude/worktrees/` and a branch on GitHub. A `-snapshot` branch
-holds files that were not yet committed when the agent stopped. Delete both branches after merging.
+holds files that were not yet committed when the agent stopped. Delete both branches, and the worktree,
+after merging.
 
 | Task | Branch on GitHub | State (2026-10-28) |
 |---|---|---|
@@ -60,6 +65,31 @@ holds files that were not yet committed when the agent stopped. Delete both bran
 | Profile-likelihood intervals | `wip/profile-likelihood-snapshot` | paused, early |
 | Tail-dependence estimation | `wip/tail-dependence-estimation-snapshot` | paused, early |
 | Mathlib v4.36.0-rc1 trial | `wip/mathlib-v4.36-trial` | builds; merge when v4.36.0 is stable |
+
+### Waiting on the maintainer
+
+- [ ] Say when to resume the agents (after the usage limit resets)
+- [ ] Decide on the three Dependabot pull requests (#1–#3: nokogiri, faraday, concurrent-ruby for the
+      website); an agent can check that the site still builds and merge them
+- [ ] Expert review: send [`docs/REVIEW.md`](docs/REVIEW.md) to two or three extreme value theorists
+      (an agent can draft the emails)
+- [ ] Novelty check of the Bai–Kulik–Wang answer against Kulik–Soulier's examples (needs the physical
+      book or an expert), then submit the arXiv note (an agent can draft it)
+- [ ] Post the Lean Zulip announcement (an agent can draft it)
+- [ ] Confirm the deprecation policy proposed in [`docs/DESIGN.md`](docs/DESIGN.md): aliases kept at
+      least six months and one Mathlib bump
+
+### Cleanup to do
+
+- [ ] Remove the five paused worktrees (about 43 GB) once their work is merged
+- [ ] Fix the remaining Mathlib deprecation warnings (about 18: `Statistics/`, `GEVDomain.lean`,
+      `ExtremalIndexEstimatorsIid.lean`) after the statistics agents finish
+- [ ] Rename the remaining `Statistics/` lemmas whose names still contain `gpdSurvival'`
+- [ ] In the tests, replace `iidLaw_cdf` (`Test/NonVacuity/Processes.lean`) and `gumbelLaw_real_Iic`
+      (`Test/NonVacuity/Multivariate.lean`) by the bridge's `hasLaw_measure_iff` and `measureReal_Iic`
+- [ ] `Statistics/Hill.lean` still converts by hand between `cdf (P.map Y)` and the survival function;
+      use `CDFBridge` instead
+- [ ] Delete the `wip/…` and `-snapshot` branches on GitHub as each task is merged
 
 Done in the current round (merged to `main`): names and namespaces; oversized files split outside
 `Statistics/`; the law bridge (`CDFBridge.lean`); test helpers promoted and `docs/DESIGN.md`; the
