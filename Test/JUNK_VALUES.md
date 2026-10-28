@@ -115,9 +115,9 @@ above.
   - `IsExtendedRegularlyVarying`, `HasTailProcess` and `HasSpectralTailProcess` divide by
     quantities that their own hypotheses keep positive.
 - **Quantiles.**
-  - `tailQuantile` (`DomainOfAttraction/Quantile.lean`, `Statistics/ExtremeQuantile.lean`) and
-    `survivalQuantile` are `sInf` on `ℝ`, which is junk 0 on empty or unbounded sets. The lemmas
-    assume `1 < t` or `p < F̄(M)`.
+  - `upperQuantile` (`UpperQuantile.lean`), and the return-period forms `survivalQuantile` and
+    `CumulativeDistributionFunction.tailQuantile` built on it, are `sInf` on `ℝ`, which is junk 0
+    on empty or unbounded sets. The lemmas assume `1 < t`, or `p < S M` and `S x ≤ p` somewhere.
 - **POT functions.**
   - `excessSurvival F u x = F (u + x) / F u` and `meanExcess F u = (∫_{Ioi u} F) / F u` are junk
     when `F u = 0`, and the mean excess is also junk when `F` is not integrable.
@@ -126,9 +126,9 @@ above.
 - **Shape-parameter families.**
   - `gevCDF`, `IsInMDAGEV`, `gpdSurvivalInv` and `boxCox` split off shape 0 with an explicit
     `if`, so they are junk-free.
-  - `gpdSurvival` (`PeaksOverThreshold/Frechet.lean`) has no `max (·, 0)`, so for `ξ < 0` past the
-    endpoint it is `rpow` of a negative base. It is used only with `ξ ≥ 0`, `x ≥ 0`; `gpdSurvival'`
-    is correct for every shape.
+  - `gpdSurvival` (`PeaksOverThreshold/Frechet.lean`) truncates with `max (·, 0)`, so for `ξ < 0`
+    it is `0` past the endpoint `-β/ξ`. For `x < 0` it is the analytic extension
+    `(1 + ξx/β)_+^(-1/ξ)`, not the survival function (which would be `1`).
 - **Estimators.**
   - `hill x k` and `logMoment x k j` are 0 at `k = 0`. They use `Real.log` of order statistics,
     which equals `log |x|` for non-positive values, and `orderStat x j = 0` for `j ≥ n`.

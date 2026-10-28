@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.StableLaws.LevyMeasureLimit
+import ExtremeValueTheory.UpperQuantile
 
 /-!
 # The converse of the generalized central limit theorem (general case)
@@ -68,9 +69,13 @@ section NormSeq
 
 variable {μ : Measure ℝ} [IsProbabilityMeasure μ] {α : ℝ}
 
-/-- The canonical normalizing sequence `aₙ = inf {x : P(|X| > x) ≤ 1 / n}`. -/
+/-- The canonical normalizing sequence `aₙ = inf {x : P(|X| > x) ≤ 1 / n}`: the upper quantile
+(`ExtremeValueTheory.upperQuantile`) of `P(|X| > ·)` at level `1 / n`. -/
 noncomputable def normSeq (μ : Measure ℝ) (n : ℕ) : ℝ :=
-  sInf {x : ℝ | absTail μ x ≤ (n : ℝ)⁻¹}
+  upperQuantile (absTail μ) (n : ℝ)⁻¹
+
+theorem normSeq_def (μ : Measure ℝ) (n : ℕ) :
+    normSeq μ n = sInf {x : ℝ | absTail μ x ≤ (n : ℝ)⁻¹} := rfl
 
 /-- `P(|X| > x)` is right-continuous: if `P(|X| > y) ≤ c` for all `y > x`, then
 `P(|X| > x) ≤ c`. -/
