@@ -216,4 +216,198 @@ theorem tendsto_pickandsLog_sub_div {U : ℝ → ℝ} {γ ρ : ℝ} {a A : ℝ �
 
 end Remainder
 
+/-! ### Convergence in probability through a joint limit -/
+
+section Prob
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
+
+/-- If `G(s, y) → g₀` as `s → l_s` and `y → c`, `t_n → l_s` deterministically and `Y_n → c` in
+probability, then `G(t_n, Y_n) → g₀` in probability. -/
+theorem TendstoInMeasure.comp_prod_of_tendsto {E β : Type*} [PseudoMetricSpace E]
+    {lt : Filter β} {G : β × E → ℝ} {c : E} {g₀ : ℝ} (hG : Tendsto G (lt ×ˢ 𝓝 c) (𝓝 g₀))
+    {t : ℕ → β} (ht : Tendsto t atTop lt) {Y : ℕ → Ω → E}
+    (hY : TendstoInMeasure P Y atTop (fun _ => c)) :
+    TendstoInMeasure P (fun n ω => G (t n, Y n ω)) atTop (fun _ => g₀) := by
+  rw [tendstoInMeasure_iff_dist] at hY ⊢
+  intro ε hε
+  obtain ⟨S, hS, B, hB, hSB⟩ := mem_prod_iff.1 (hG (Metric.ball_mem_nhds g₀ hε))
+  obtain ⟨δ, hδ, hδB⟩ := Metric.mem_nhds_iff.1 hB
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds (hY δ hδ)
+    (Eventually.of_forall fun _ => bot_le) ?_
+  filter_upwards [ht hS] with n hn
+  refine measure_mono fun ω hω => ?_
+  simp only [mem_ofPred_eq] at hω ⊢
+  by_contra hcon
+  push Not at hcon
+  have hmem := hSB (show (t n, Y n ω) ∈ S ×ˢ B from ⟨hn, hδB (Metric.mem_ball.2 hcon)⟩)
+  simp only [mem_preimage, Metric.mem_ball] at hmem
+  linarith
+
+end Prob
+
+/-! ### Asymptotic normality of the Pickands estimator -/
+
+section Normality
+
+theorem measurable_extRVLimit (γ : ℝ) : Measurable (extRVLimit γ) := by
+  by_cases hγ : γ = 0
+  · rw [show extRVLimit γ = Real.log from funext fun x => by simp [extRVLimit, hγ]]
+    exact measurable_log
+  · rw [show extRVLimit γ = fun x => (x ^ γ - 1) / γ from funext (extRVLimit_of_ne hγ)]
+    fun_prop
+
+theorem measurable_pickandsMap (γ : ℝ) : Measurable (pickandsMap γ) := by
+  have := measurable_extRVLimit γ
+  unfold pickandsMap
+  fun_prop
+
+theorem measurable_pickandsLog {U : ℝ → ℝ} (hU : Measurable U) (t : ℝ) :
+    Measurable (pickandsLog U t) := by
+  unfold pickandsLog
+  fun_prop
+
+theorem measurable_pickands_pi (n k : ℕ) : Measurable fun y : Fin n → ℝ => pickands y k :=
+  ((((measurable_orderStat_pi k).sub (measurable_orderStat_pi (2 * k))).div
+    ((measurable_orderStat_pi (2 * k)).sub (measurable_orderStat_pi (4 * k)))).log).div_const _
+
+/-- The asymptotic variance of the Pickands estimator,
+`(2 · 2^{2γ} + 1) / (4 D_γ(2)² (log 2)²)`; see `pickandsVariance_of_ne` and
+`pickandsVariance_zero` for the closed forms of [dHF, Theorem 3.3.5]. -/
+noncomputable def pickandsVariance (γ : ℝ) : ℝ :=
+  (2 * (2 ^ γ) ^ 2 + 1) / (4 * extRVLimit γ 2 ^ 2 * Real.log 2 ^ 2)
+
+/-- For `γ ≠ 0` the asymptotic variance of the Pickands estimator is
+`γ² (2^{2γ+1} + 1) / (2 (2^γ - 1) log 2)²` ([dHF, Theorem 3.3.5]). -/
+theorem pickandsVariance_of_ne {γ : ℝ} (hγ : γ ≠ 0) :
+    pickandsVariance γ = γ ^ 2 * (2 ^ (2 * γ + 1) + 1) / (2 * (2 ^ γ - 1) * Real.log 2) ^ 2 := by
+  have hd := extRVLimit_pos (γ := γ) one_lt_two
+  rw [extRVLimit_of_ne hγ] at hd
+  have h1 : (2 : ℝ) ^ γ - 1 ≠ 0 := by
+    intro h; rw [h, zero_div] at hd; exact lt_irrefl _ hd
+  have hl : Real.log 2 ≠ 0 := (Real.log_pos one_lt_two).ne'
+  rw [pickandsVariance, extRVLimit_of_ne hγ, rpow_add two_pos, rpow_one,
+    show 2 * γ = γ + γ by ring, rpow_add two_pos]
+  field_simp
+  ring
+
+/-- For `γ = 0` the asymptotic variance of the Pickands estimator is `3 / (4 (log 2)⁴)`
+([dHF, Theorem 3.3.5]). -/
+theorem pickandsVariance_zero : pickandsVariance 0 = 3 / (4 * Real.log 2 ^ 4) := by
+  rw [pickandsVariance, extRVLimit_zero_left]
+  norm_num
+  ring
+
+theorem pickandsVariance_nonneg (γ : ℝ) : 0 ≤ pickandsVariance γ := by
+  unfold pickandsVariance; positivity
+
+variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
+  {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'} [IsProbabilityMeasure P']
+
+/-- **Asymptotic normality of the Pickands estimator, uniform representation.** Let the `V_i`
+be iid uniform on `(0, 1)` (with values in `(0, 1)` everywhere), let `U` be measurable and
+nondecreasing on `(1, ∞)` and of second-order extended regular variation with indices `γ`, `ρ`
+and auxiliary functions `a`, `A`. If `k → ∞`, `k/n → 0` and `√k A(n/k) → λ`, then the Pickands
+estimator `γ̂_P` of the sample `U(1/(1 - V_i))` satisfies
+`√k (γ̂_P - γ) ⇒ N(λ b_{γ,ρ}, σ²_γ)` (`pickandsBias`, `pickandsVariance`). -/
+theorem tendstoInDistribution_pickands_uniform {V : ℕ → Ω → ℝ} (hV : ∀ i, Measurable (V i))
+    (hind : iIndepFun V P) (hlaw : ∀ i, P.map (V i) = volume.restrict (Set.Icc 0 1))
+    (hV01 : ∀ i ω, V i ω ∈ Ioo (0 : ℝ) 1) {U : ℝ → ℝ} (hUm : MonotoneOn U (Ioi 1))
+    (hUmeas : Measurable U) {γ ρ lam : ℝ} {a A : ℝ → ℝ}
+    (h2 : IsExtSecondOrderRegularlyVarying U γ ρ a A) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {Z : Ω' → ℝ}
+    (hZ : HasLaw Z (gaussianReal (lam * pickandsBias γ ρ) (pickandsVariance γ).toNNReal) P') :
+    TendstoInDistribution (fun n ω => √(k n : ℝ) *
+        (pickands (fun i : Fin n => U (1 / (1 - V i ω))) (k n) - γ)) atTop Z (fun _ => P) P' := by
+  set S := brownianCovMatrix fun i => (pickandsTimes i : ℝ≥0) with hS
+  set Y : ℕ → Ω → EuclideanSpace ℝ (Fin 3) := fun n ω =>
+    WithLp.toLp 2 (fun i => -tailTime V n (k n) (pickandsTimes i * k n) ω) with hY
+  have hτ : ∀ i, 0 < pickandsTimes i := by intro i; fin_cases i <;> simp [pickandsTimes]
+  have hT := tendstoInDistribution_sqrt_smul_tailTime hV hind hlaw hk hkn pickandsTimes hτ
+  have hsk : Tendsto (fun n => √(k n : ℝ)) atTop atTop :=
+    tendsto_sqrt_atTop.comp (tendsto_natCast_atTop_atTop.comp hk)
+  have hYm : ∀ n, Measurable (Y n) := fun n => (WithLp.measurable_toLp 2 _).comp
+    (measurable_pi_iff.2 fun i => (measurable_tailTime hV n (k n) _).neg)
+  set v0 : ℝ := pickandsGrad γ ⬝ᵥ S *ᵥ pickandsGrad γ with hv0
+  have hDM := hT.delta_method_gaussian (θh := Y) (θ := pickandsCenter)
+    (posSemidef_brownianCovMatrix _) HasLaw.id hsk (hasGradientAt_pickandsMap γ)
+    (fun n => ((measurable_pickandsMap γ).comp (hYm n)).aemeasurable)
+    (HasLaw.id (μ := gaussianReal 0 v0.toNNReal))
+  have hY0 := hT.tendstoInMeasure_of_smul hsk
+  have hYc : TendstoInMeasure P Y atTop (fun _ => pickandsCenter) := by
+    rw [tendstoInMeasure_iff_dist] at hY0 ⊢
+    intro ε hε
+    simpa [dist_eq_norm, hY, pickandsCenter] using hY0 ε hε
+  have ht : Tendsto (fun n : ℕ => (n : ℝ) / k n) atTop atTop := tendsto_div_atTop_of_tendsto hk hkn
+  have hG := TendstoInMeasure.comp_prod_of_tendsto (tendsto_pickandsLog_sub_div h2) ht hYc
+  have hB := TendstoInMeasure.mul' (tendstoInMeasure_const_of_tendsto (P := P) hlam) hG rfl
+  have hBm : ∀ n, AEMeasurable (fun ω => √(k n : ℝ) * A (n / k n) *
+      ((pickandsLog U (n / k n) (Y n ω) - pickandsMap γ (Y n ω)) / A (n / k n))) P := fun n =>
+    (measurable_const.mul ((((measurable_pickandsLog hUmeas _).comp (hYm n)).sub
+      ((measurable_pickandsMap γ).comp (hYm n))).div_const _)).aemeasurable
+  have hC := hDM.continuous_comp_prodMk_of_tendstoInMeasure_const
+    (g := fun q : ℝ × ℝ => (Real.log 2)⁻¹ * (q.1 + q.2)) (by fun_prop) hB hBm
+  refine (tendstoInDistribution_of_tendstoInMeasure_sub _ _ hC ?_ ?_).congr_limit
+    hZ.aemeasurable ?_
+  · have h4 : ∀ᶠ n in atTop, 4 * k n < n := by
+      have := hkn.const_mul (4 : ℝ)
+      rw [mul_zero] at this
+      filter_upwards [this.eventually (gt_mem_nhds one_pos),
+        (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0] with n h1 h2
+      rw [← mul_div_assoc, div_lt_one h2] at h1
+      exact_mod_cast h1
+    have hg : MonotoneOn (fun v : ℝ => U (1 / (1 - v))) (Ioo 0 1) := by
+      intro v hv w hw hvw
+      have hv1 : 0 < 1 - v := sub_pos.2 hv.2
+      have hw1 : 0 < 1 - w := sub_pos.2 hw.2
+      refine hUm ?_ ?_ (one_div_le_one_div_of_le hv1 (by linarith))
+      · simp only [mem_Ioi]; rw [lt_one_div one_pos hv1]; linarith [hv.1]; norm_num
+      · simp only [mem_Ioi]; rw [lt_one_div one_pos hw1]; linarith [hw.1]; norm_num
+    refine tendstoInMeasure_of_eventuallyEq (g := fun _ _ => (0 : ℝ))
+      (tendstoInMeasure_const_of_tendsto tendsto_const_nhds) ?_
+    filter_upwards [hk.eventually_gt_atTop 0, h4, ht.eventually h2.eventually_ne_zero,
+      eventually_gt_atTop 0] with n hk0 hn4 hA0 hn0
+    intro ω
+    have hk0' : (0 : ℝ) < k n := by exact_mod_cast hk0
+    have hn0' : (0 : ℝ) < n := by exact_mod_cast hn0
+    have hkk : (k n : ℝ) / n * (n / k n) = 1 := by field_simp
+    have hos : ∀ j < n, orderStat (fun i : Fin n => U (1 / (1 - V i ω))) j =
+        U ((tailTime V n (k n) j ω)⁻¹ * (n / k n)) := by
+      intro j hj
+      rw [show (fun i : Fin n => U (1 / (1 - V i ω))) =
+        (fun v : ℝ => U (1 / (1 - v))) ∘ (fun i : Fin n => V i ω) from rfl,
+        orderStat_comp_monotoneOn hg (fun i => hV01 i ω) hj, tailTime, inv_div,
+        div_mul_eq_mul_div, hkk]
+    have key : pickands (fun i : Fin n => U (1 / (1 - V i ω))) (k n) =
+        pickandsLog U (n / k n) (Y n ω) / Real.log 2 := by
+      rw [pickands, hos (k n) (by omega), hos (2 * k n) (by omega), hos (4 * k n) (by omega)]
+      simp [pickandsLog, hY, pickandsTimes]
+    have hl : Real.log 2 ≠ 0 := (Real.log_pos one_lt_two).ne'
+    simp only [Pi.sub_apply]
+    rw [key, pickandsMap_center]
+    field_simp
+    ring
+  · intro n
+    exact (measurable_const.mul (((measurable_pickands_pi n (k n)).comp (measurable_pi_iff.2
+      fun i => hUmeas.comp (measurable_const.div (measurable_const.sub (hV i))))).sub_const
+        _)).aemeasurable
+  · rw [hZ.map_eq]
+    have hv0nn : 0 ≤ v0 := by rw [hv0, hS, pickandsGrad_quadForm]; positivity
+    rw [show (fun ω : ℝ => (Real.log 2)⁻¹ * ((id ω, lam * (pickandsBias γ ρ * Real.log 2)).1 +
+        (id ω, lam * (pickandsBias γ ρ * Real.log 2)).2)) = (fun x => (Real.log 2)⁻¹ * x) ∘
+        (fun x => x + lam * (pickandsBias γ ρ * Real.log 2)) from rfl,
+      ← Measure.map_map (by fun_prop) (by fun_prop), gaussianReal_map_add_const,
+      gaussianReal_map_const_mul]
+    have hl : Real.log 2 ≠ 0 := (Real.log_pos one_lt_two).ne'
+    congr 1
+    · field_simp
+    · apply NNReal.eq
+      rw [NNReal.coe_mul, NNReal.coe_mk, Real.coe_toNNReal _ hv0nn,
+        Real.coe_toNNReal _ (pickandsVariance_nonneg γ), hv0, hS, pickandsGrad_quadForm,
+        pickandsVariance]
+      field_simp
+
+end Normality
+
 end ExtremeValueTheory
