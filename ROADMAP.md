@@ -13,18 +13,23 @@ and [`RESEARCH.md`](RESEARCH.md) for the research results.
 What "finished" means for a first release: the running work merged, a consistent design, documentation
 that matches the code, a way in for new users, and review by people other than the AI that wrote the
 statements. Everything after that (further textbook chapters, open problems, upstreaming, executable
-estimators) is listed in sections A–G and is not needed for 1.0. Updated 2026-10-28.
+estimators) is listed in sections A–G and is not needed for 1.0. Updated 2026-11-01.
 
 **Owner:** *agent* = done by Claude Code agents; *you* = needs the maintainer (sending, submitting,
 posting, deciding).
 
-1. [>] **Finish the work in flight** (*agent*; paused until the usage limit resets, see the table below)
-   - [>] One definition per concept: the tail-quantile definitions unified (`UpperQuantile.lean`),
-     duplicate helpers removed
-   - [>] Pickands and moment estimator normality (moment estimator `γ > 0` done on its branch)
-   - [>] GEV three-parameter MLE normality, then unconditional GEV return-level normality
-   - [>] Profile-likelihood intervals (Wilks' theorem, GPD first)
-   - [>] Nonparametric tail dependence: empirical stable tail dependence function with estimated margins
+1. [>] **Finish the work in flight** (*agent*; paused, one draft pull request per task, see the table below)
+   - [>] One definition per concept: `upperQuantile`/`survivalQuantile`/`survival` (`UpperQuantile.lean`)
+         and one GPD survival function done and building; the remaining duplicates of the audit are
+         listed in the pull request
+   - [>] Pickands and moment estimator normality: moment estimator `γ > 0` done; the Pickands theorem for
+         uniform samples is written but its last proof does not build yet
+   - [>] GEV three-parameter MLE normality (step 1 of 3, domination near the moving endpoint, mostly
+         done), then unconditional GEV return-level normality
+   - [>] Profile-likelihood intervals (Wilks' theorem, GPD first): early, the log-likelihood expansion
+   - [>] Nonparametric tail dependence: the consistency theorems for the empirical stable tail dependence
+         function, `χ̂` and the Pickands function estimator are written; the population file does not
+         build yet
 2. [ ] **Close the design pass** (*agent*)
    - [ ] Split the oversized `Statistics/` files (waits for item 1)
    - [ ] Stop using `@[deprecated]` aliases inside the library and tests (the aliases stay for
@@ -49,26 +54,27 @@ posting, deciding).
 
 ### Work in flight
 
-**Status (2026-10-28): all agents paused by the weekly usage limit, which resets 2026-10-31 13:00
-(Buenos Aires).** Agents resume only when the maintainer says so. On resuming: continue each agent from
-its branch (the `-snapshot` branch has its uncommitted files), then merge in the order of the table.
+**Status (2026-11-01): all agents paused.** The usage limit reset on 2026-10-31, but agents resume only
+when the maintainer says so. Every task's work, including files that were not committed when its agent
+stopped, is committed on one branch on GitHub. Each branch has a draft pull request: it lists what is
+done, the build status, what is missing and how to continue with Claude Code. The table is also the
+merge order: one definition per concept goes first, because the statistics branches use its names.
 
-Each task has a git worktree under `.claude/worktrees/` and a branch on GitHub. A `-snapshot` branch
-holds files that were not yet committed when the agent stopped. Delete both branches, and the worktree,
-after merging.
+Each task also has a git worktree under `.claude/worktrees/` on this machine. Delete the branch and the
+worktree after merging.
 
-| Task | Branch on GitHub | State (2026-10-28) |
+| Task | Branch on GitHub | State (2026-11-01) |
 |---|---|---|
-| One definition per concept | `wip/a56e6c64e2876ca08` (+ `-snapshot`) | paused, close to done |
-| Pickands and moment normality | `wip/a752c6f656f0f5787` (+ `-snapshot`) | paused; moment done, Pickands at step 3 |
-| GEV 3-parameter MLE normality | `wip/gev-mle-normality` (+ `-snapshot`) | paused, early |
-| Profile-likelihood intervals | `wip/profile-likelihood-snapshot` | paused, early |
-| Tail-dependence estimation | `wip/tail-dependence-estimation-snapshot` | paused, early |
-| Mathlib v4.36.0-rc1 trial | `wip/mathlib-v4.36-trial` | builds; merge when v4.36.0 is stable |
+| One definition per concept | `wip/one-definition-per-concept` | `lake build` and `lake build Test` green; rest of the duplicate audit to do; 10 commits behind `main` |
+| Pickands and moment normality | `wip/pickands-moment-normality` | moment `γ > 0` done; Pickands: last proof has 4 errors, then the general-sample theorem; 30 behind |
+| GEV 3-parameter MLE normality | `wip/gev-mle-normality` | step 1 of 3; `GEVMLEDomination.lean` has 3 errors; 6 behind |
+| Tail-dependence estimation | `wip/tail-dependence-estimation` | headline theorems written; `Multivariate/StableTailDependence.lean` has 16 errors; 6 behind |
+| Profile-likelihood intervals | `wip/profile-likelihood` | early: log-likelihood expansion, 7 errors; 6 behind |
+| Mathlib v4.36 trial | `wip/mathlib-v4.36-trial` | builds on v4.36.0-rc1; v4.36.0 is not stable yet (rc2 out); merge after it is |
 
 ### Waiting on the maintainer
 
-- [ ] Say when to resume the agents (after the usage limit resets)
+- [ ] Say when to resume the agents (the usage limit reset on 2026-10-31)
 - [ ] Decide on the three Dependabot pull requests (#1–#3: nokogiri, faraday, concurrent-ruby for the
       website); an agent can check that the site still builds and merge them
 - [ ] Expert review: send [`docs/REVIEW.md`](docs/REVIEW.md) to two or three extreme value theorists
@@ -81,7 +87,7 @@ after merging.
 
 ### Cleanup to do
 
-- [ ] Remove the five paused worktrees (about 43 GB) once their work is merged
+- [ ] Remove the five task worktrees (about 43 GB) once their work is merged
 - [ ] Fix the remaining Mathlib deprecation warnings (about 18: `Statistics/`, `GEVDomain.lean`,
       `ExtremalIndexEstimatorsIid.lean`) after the statistics agents finish
 - [ ] Rename the remaining `Statistics/` lemmas whose names still contain `gpdSurvival'`
@@ -89,7 +95,9 @@ after merging.
       (`Test/NonVacuity/Multivariate.lean`) by the bridge's `hasLaw_measure_iff` and `measureReal_Iic`
 - [ ] `Statistics/Hill.lean` still converts by hand between `cdf (P.map Y)` and the survival function;
       use `CDFBridge` instead
-- [ ] Delete the `wip/…` and `-snapshot` branches on GitHub as each task is merged
+- [ ] Delete each `wip/…` branch on GitHub when its pull request is merged, and the seven superseded
+      branches now (`wip/<agent-id>`, `wip/<agent-id>-snapshot`, `wip/<task>-snapshot`), whose content
+      is in the task branches
 
 Done in the current round (merged to `main`): names and namespaces; oversized files split outside
 `Statistics/`; the law bridge (`CDFBridge.lean`); test helpers promoted and `docs/DESIGN.md`; the
