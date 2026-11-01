@@ -56,7 +56,7 @@ posting, deciding).
 
 **Status (2026-11-01): all agents paused.** The usage limit reset on 2026-10-31, but agents resume only
 when the maintainer says so. Every task's work, including files that were not committed when its agent
-stopped, is committed on one branch on GitHub. Each branch has a draft pull request: it lists what is
+stopped, is committed on one branch on GitHub. Each branch has a draft pull request (#4–#9): it lists what is
 done, the build status, what is missing and how to continue with Claude Code. The table is also the
 merge order: one definition per concept goes first, because the statistics branches use its names.
 
@@ -65,12 +65,12 @@ worktree after merging.
 
 | Task | Branch on GitHub | Worktree (`.claude/worktrees/`) | Pull request | State (2026-11-01) |
 |---|---|---|---|---|
-| One definition per concept | `wip/one-definition-per-concept` | `agent-a56e6c64e2876ca08` | draft, to open | `lake build` and `lake build Test` green; rest of the duplicate audit to do; 10 commits behind `main` |
-| Pickands and moment normality | `wip/pickands-moment-normality` | `agent-a752c6f656f0f5787` | draft, to open | moment `γ > 0` done; Pickands: last proof has 4 errors, then the general-sample theorem; 30 behind |
-| GEV 3-parameter MLE normality | `wip/gev-mle-normality` | `agent-adb4e909bd47d4918` | draft, to open | step 1 of 3; `GEVMLEDomination.lean` has 3 errors; 6 behind |
-| Tail-dependence estimation | `wip/tail-dependence-estimation` | `agent-abbc402ee0bc82e16` | draft, to open | headline theorems written; `Multivariate/StableTailDependence.lean` has 16 errors; 6 behind |
-| Profile-likelihood intervals | `wip/profile-likelihood` | `agent-a1f2496f3e30ac917` | draft, to open | early: log-likelihood expansion, 7 errors; 6 behind |
-| Mathlib v4.36 trial | `wip/mathlib-v4.36-trial` | none | draft, to open | builds on v4.36.0-rc1; v4.36.0 is not stable yet (rc2 out); merge after it is |
+| One definition per concept | `wip/one-definition-per-concept` | `agent-a56e6c64e2876ca08` | [#4](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/4) (draft) | `lake build` and `lake build Test` green; rest of the duplicate audit to do; 10 commits behind `main` |
+| Pickands and moment normality | `wip/pickands-moment-normality` | `agent-a752c6f656f0f5787` | [#5](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/5) (draft) | moment `γ > 0` done; Pickands: last proof has 4 errors, then the general-sample theorem; 30 behind |
+| GEV 3-parameter MLE normality | `wip/gev-mle-normality` | `agent-adb4e909bd47d4918` | [#6](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/6) (draft) | step 1 of 3; `GEVMLEDomination.lean` has 3 errors; 6 behind |
+| Tail-dependence estimation | `wip/tail-dependence-estimation` | `agent-abbc402ee0bc82e16` | [#7](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/7) (draft) | headline theorems written; `Multivariate/StableTailDependence.lean` has 16 errors; 6 behind |
+| Profile-likelihood intervals | `wip/profile-likelihood` | `agent-a1f2496f3e30ac917` | [#8](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/8) (draft) | early: log-likelihood expansion, 7 errors; 6 behind |
+| Mathlib v4.36 trial | `wip/mathlib-v4.36-trial` | none | [#9](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/9) (draft) | builds on v4.36.0-rc1; v4.36.0 is not stable yet (rc2 out); merge after it is |
 
 ### Waiting on the maintainer
 
