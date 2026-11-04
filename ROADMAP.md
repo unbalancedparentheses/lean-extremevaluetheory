@@ -9,6 +9,112 @@ and [`RESEARCH.md`](RESEARCH.md) for the research results.
 
 `[x]` done, `[~]` partial, `[>]` in progress, `[ ]` missing.
 
+## Ranked plan (2026-11-04)
+
+Everything still open in this file, in the order to do it. The ranking puts first what:
+
+- unblocks other work, or protects work already done;
+- has a long lead time (expert review, accounts);
+- costs little and buys a lot of trust.
+
+Each tier can run in parallel internally. The sections below give the details.
+
+**Tier 0: this week, mostly the maintainer (minutes each)**
+1. *you:* say go to resume the agents
+2. *you:* send [`docs/REVIEW.md`](docs/REVIEW.md) to two or three experts. Review takes weeks, so it
+   should start before anything else (C)
+3. Merge [#4](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/4), one definition
+   per concept. It already builds, and the statistics pull requests rebase on it
+4. *you:* enable the GitHub–Zenodo integration, so `v1.0.0` gets a DOI (H.1)
+
+**Tier 1: finish the work in flight** (sunk cost; ordered by how close each is)
+5. [#7](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/7) Tail-dependence
+   estimation: theorems written, one file to fix
+6. [#5](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/5) Pickands and moment
+   estimator normality: one proof, then the general-sample theorem
+7. [#6](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/6) GEV three-parameter MLE
+   normality, then unconditional GEV return-level normality: the result practitioners rely on most
+8. [#8](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/8) Profile-likelihood
+   intervals
+9. [#9](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/9) Mathlib v4.36: only
+   once v4.36.0 is stable
+
+**Tier 2: trust that runs by itself** (independent of tier 1, so in parallel with it)
+10. Axiom audit in the build (H.7)
+11. Comparator challenge on four headline theorems, in CI (H.7)
+12. Architecture checks and gates against overclaiming (H.6, H.7)
+13. Specification tests for the newest results, and the seventh faithfulness audit (C)
+
+**Tier 3: release 1.0**
+14. Close the design pass:
+    - split the `Statistics/` files;
+    - stop using the `@[deprecated]` aliases;
+    - fix the Mathlib deprecation warnings;
+    - do the cleanup list.
+
+    (Version 1.0, item 2)
+15. Documentation matches the code: `THEOREMS.md`, README, website, blueprint entries (item 3)
+16. Honest counts and a Limitations section in the README (H.2)
+17. `CONTRIBUTING.md`, `CLAUDE.md`, code of conduct, templates and the credit rules (H.4)
+18. `v1.0.0`: `CHANGELOG.md`, the GitHub release and the DOI, plus the badges, the "use it in your
+    project" section and the downstream CI job (H.1)
+19. The library paper on arXiv (*agent* drafts, *you* submit) (H.8)
+20. *you:* announce on the Lean Zulip, with the release and the paper (F)
+21. *you:* contact formal-mathfin and invite one or two collaborators (H.8)
+22. Dependabot pull requests #1–#3, after checking that the website builds
+
+**Tier 4: after 1.0, users and contributors**
+23. Labels; the issue tracker as the only backlog; 10–15 good first issues; the open problems as
+    `EVT-OP-…` issues (H.4, H.5)
+24. A way in:
+    - tutorial;
+    - worked examples for the standard laws;
+    - applied examples;
+    - "how to find a result" guide;
+    - onboarding, beginners' manual and troubleshooting pages.
+
+    (D, H.4)
+25. The theorem catalogue, the Hugging Face dataset (*you* create the account), `formalization.yaml` and
+    the review deadline in CI (H.3, H.7)
+26. *you:* decide on registering with Palomar (H.7)
+27. One tagged release per Mathlib bump (E)
+
+**Tier 5: research** (B)
+28. Finish the novelty check of the Bai–Kulik–Wang answer, then the arXiv note on the echo process
+29. Practical open problem 1, block and run length for the extremal-index estimators; then problems 2–6
+30. Theoretical open problems, starting with the critical case `κ = 1` of the power-lag echo process
+
+**Tier 6: textbook gaps** (A; most-used statistics first)
+31. Statistics:
+    - Hill interval with bias;
+    - Ferro–Segers Theorem 1;
+    - likelihood at `ξ = 0`;
+    - GEV likelihood on the whole parameter space;
+    - L-moments follow-ups;
+    - bias-reduced estimators;
+    - a random number of exceedances.
+32. Processes and dependence:
+    - Davis–Hsing cluster processes and cluster functionals;
+    - the weighted tail empirical process and quantile process;
+    - Brown–Resnick, Schlather and extremal-t;
+    - hidden regular variation;
+    - stochastic volatility.
+33. Theory:
+    - the parametric stable family and its tails;
+    - Π-variation;
+    - two-sided second-order inequalities;
+    - rates of convergence of maxima;
+    - records;
+    - domains of attraction for processes;
+    - sharp Kesten–Goldie tails (needs the renewal theorem).
+
+**Tier 7: long term**
+34. Upstream `ForMathlib/` to Mathlib, then regular variation and the EVT core; a talk (F)
+35. Executable estimators cross-checked against R and Python (G)
+36. Optional: a Docker image, only if a contributor needs it (H.4)
+
+---
+
 ## Version 1.0
 
 What "finished" means for a first release: the running work merged, a consistent design, documentation
