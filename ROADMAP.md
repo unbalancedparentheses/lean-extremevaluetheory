@@ -3,7 +3,8 @@
 What it takes to be the best extreme value theory library, in six tracks: the **textbook layer**,
 **research** (with priority to problems practitioners care about), **verification** (evidence that the
 statements are the right ones, including review by human experts), **code quality and usability**,
-**maintenance**, and **outreach**, plus one distinctive extra: a link to real EVT software. See [`THEOREMS.md`](THEOREMS.md) for what is proved
+**maintenance**, and **outreach**, plus one distinctive extra: a link to real EVT software, and a
+**growth** track (H) that turns the library into something people use, cite and contribute to. See [`THEOREMS.md`](THEOREMS.md) for what is proved
 and [`RESEARCH.md`](RESEARCH.md) for the research results.
 
 `[x]` done, `[~]` partial, `[>]` in progress, `[ ]` missing.
@@ -52,6 +53,15 @@ posting, deciding).
    - [ ] Finish the novelty check, then the arXiv note on the echo process (see B)
    - [ ] Announce on the Lean Zulip (see F)
 
+6. [ ] **Ready for users and contributors** (*agent*, with accounts from *you*; details in H)
+   - [ ] Release `v1.0.0` with a Zenodo DOI, badges and a "use it in your project" section,
+         checked by a downstream CI job (H.1)
+   - [ ] Honest counts and a Limitations section in the README (H.2)
+   - [ ] `CONTRIBUTING.md`, `CLAUDE.md`, labels, issues and the first good first issues (H.4)
+   - [ ] Open problems filed as numbered issues (H.5)
+   - [ ] Architecture checks in CI (H.6)
+   - [ ] Axiom audit in the build and the Comparator challenge (H.7)
+
 ### Work in flight
 
 **Status (2026-11-01): all agents paused.** The usage limit reset on 2026-10-31, but agents resume only
@@ -84,6 +94,9 @@ worktree after merging.
 - [ ] Post the Lean Zulip announcement (an agent can draft it)
 - [ ] Confirm the deprecation policy proposed in [`docs/DESIGN.md`](docs/DESIGN.md): aliases kept at
       least six months and one Mathlib bump
+- [ ] Growth (H): enable the GitHub–Zenodo integration on the repository; create a Hugging Face
+      account or organization for the dataset; approve and send the contact to formal-mathfin;
+      submit the library paper
 
 ### Cleanup to do
 
@@ -339,3 +352,143 @@ sign of scipy's GEV shape, rather than only document them in
 - [ ] Executable (`Float`) versions of the estimators, each linked to the definition it implements
 - [ ] Cross-check scripts against R and Python on shared test data, run in CI
 - [ ] A report of any disagreements with the packages
+
+---
+
+## H. Growth
+
+How the library gets users, citations and contributors. Modelled on
+[formal-mathfin](https://github.com/formal-applied-math/formal-mathfin), a Lean library of mathematical
+finance. In six months it reached 49 stars, 17 forks, 8 contributors and 9 releases, with an arXiv
+paper. What it did that we do not yet do:
+
+- a release with a DOI in its first month;
+- its results published as a Hugging Face dataset;
+- honest counts and a Limitations section in its README;
+- issues with labels and good first issues;
+- open problems filed as numbered issues;
+- architecture rules enforced by tests;
+- other people's work ported with credit.
+
+What we already do better: a complete independent kernel check, a blueprint, mutation and junk-value
+tests, faithfulness audits. Everything else on their list is below.
+
+**Owner:** *agent* unless marked *you*.
+
+### H.1 Releases, citation and use as a dependency
+- [ ] Release early: `CHANGELOG.md` and the tag `v1.0.0` with a GitHub release as soon as the work in
+      flight is merged, and the library paper (H.8) right after, as formal-mathfin did (a release three
+      weeks after starting, the paper a week later). Each tag pins Lean and Mathlib; then one tag per
+      Mathlib bump (see E)
+- [ ] *you:* enable the GitHub–Zenodo integration on the repository, so every release gets a DOI; then
+      add `.zenodo.json` and the DOI to [`CITATION.cff`](CITATION.cff)
+- [ ] README badges: build, kernel check, DOI, then arXiv and the dataset when they exist
+- [ ] README section "Using the library in a project": the `require` lines for `lakefile.toml` with
+      `rev = "v1.0.0"`, `lake exe cache get`, `import ExtremeValueTheory`
+- [ ] `Downstream/`: a client project that only imports the library and states one headline theorem,
+      and a weekly workflow that builds it in a fresh project requiring this repository (catches
+      packaging breakage that our own build cannot see)
+
+### H.2 Honest numbers in the README
+- [ ] A status for every headline result: `full`, `library_wrapper` (restates Mathlib) or
+      `reduced_core` (weaker than the result it is named after), taken from the catalogue in H.3
+- [ ] `scripts/coverage_report.py`: counts by status and by area, printed into the README by CI
+- [ ] A **Limitations** section in the README naming every result weaker than its textbook form
+      (GEV MLE on a compact parameter set, the `ξ ≠ 0` restrictions, iid-only estimators, the multivariate
+      generalized Pareto hypothesis `G(x ∧ 0) > 0`, …), drawn from the scope notes in
+      [`FAITHFULNESS.md`](FAITHFULNESS.md)
+
+### H.3 The theorem catalogue as a dataset
+- [ ] `catalogue/*.json`, one file per area. Each entry has:
+      - an id and a name;
+      - the source (book and theorem number);
+      - the Lean name and file, and the statement;
+      - the status from H.2, and a scope note saying what is left out.
+
+      Generate it from [`THEOREMS.md`](THEOREMS.md) and the blueprint's `\lean{}` names
+- [ ] A CI check that every catalogue entry's Lean name resolves and its statement matches `#check`
+- [ ] *you:* create a Hugging Face account or organization; then a workflow that publishes the catalogue
+      as a dataset on every release (the AI theorem-proving community is a large audience)
+- [ ] `formalization.yaml`: machine-readable provenance (sources, AI-written parts, human-reviewed
+      parts after C, axioms), generated by a script
+
+### H.4 Contributors
+- [ ] `CONTRIBUTING.md`: setup with the Mathlib cache, where things go, the rules (no `sorry`, standard
+      axioms, faithful docstrings, reuse before writing, register new files), and the pull request
+      checklist (`lake build`, `lake build Test`, blueprint names)
+- [ ] `CODE_OF_CONDUCT.md`, a pull request template and issue templates (bug in a statement, missing
+      result, proof request)
+- [ ] `CLAUDE.md`, plus an `AGENTS.md` that points to it: the agent workflow used here. It covers:
+      - worktrees and the instant `.lake` clone;
+      - the `lake` path, and retrying on "too many open files";
+      - checkpoint commits pushed to a `wip/<task>` branch with a draft pull request;
+      - the verification list before merging.
+- [ ] Labels: `area:*` (classical, POT, statistics, dependence, multivariate, processes, heavy tails,
+      ForMathlib), `type:*` (proof, refactor, docs, tooling, research), `difficulty:*` (small, medium,
+      hard), `status:*` (ready, blocked-upstream, research), `open-problem`, `good first issue`.
+      Document them in `docs/ISSUE_LABELS.md` and create them with `gh label create`
+- [ ] Make the issue tracker the only backlog: move the open items of A–G into issues, and keep only the
+      strategy in this file, linking the issues
+- [ ] 10–15 `good first issue` items, for example:
+      - a worked example for one standard law (see D, Usability);
+      - known-answer tests for a recent result;
+      - the unbiasedness of the sample probability-weighted moments `b_r` (A.2);
+      - the bridge `tailCount = exceedCount` (from PR #4);
+      - a docstring that cites the wrong theorem number.
+- [ ] `docs/ONBOARDING.md`: from clone to a merged pull request, with one first contribution done as an
+      example
+- [ ] A Contributors section in the README crediting each person by what they did
+- [ ] `docs/BEGINNERS.md`: Lean and the library for mathematicians who have never used Lean, with
+      exercises whose solutions are checked by the build
+- [ ] `docs/TROUBLESHOOTING.md`: the setup failures we have hit (Mathlib cache, `lake` not on `PATH`,
+      "too many open files", stale `.lake`, toolchain mismatch)
+- [ ] A Docker image with the toolchain and a prebuilt Mathlib, published by CI to the GitHub container
+      registry, for contributors who cannot install elan
+
+### H.5 Open problems as issues
+- [ ] One issue per problem in [`docs/PRACTICAL_OPEN_PROBLEMS.md`](docs/PRACTICAL_OPEN_PROBLEMS.md)
+      and [`docs/OPEN_PROBLEMS_SURVEY2.md`](docs/OPEN_PROBLEMS_SURVEY2.md), numbered `EVT-OP-001`, …,
+      labelled `open-problem`. Each issue gives the source and quote, why it matters, and what the
+      library already has
+- [ ] `EVT-OP-001`: block and run length for the extremal-index estimators (the first practical problem
+      in B)
+
+### H.6 Architecture checks in CI
+- [ ] `scripts/check_architecture.py`, run in CI:
+      - every file is imported by `ExtremeValueTheory.lean`;
+      - every module imports a library module or is imported by one (no orphans);
+      - `ForMathlib/` imports only Mathlib and `ForMathlib/`.
+- [ ] A duplicate-definition check that flags two definitions with the same body (automates the audit
+      of PR #4)
+- [ ] After the design pass: no use of a `@[deprecated]` alias inside the library or the tests
+
+### H.7 Trust machinery that runs by itself
+- [ ] **Axiom audit in the build.** `ExtremeValueTheory/AxiomAudit.lean` runs `#print axioms` on every
+      headline theorem (the catalogue in H.3) and compares the output with `#guard_msgs`. A `sorry` or an
+      extra axiom anywhere in their proofs then fails `lake build`. Today this check is done by hand at
+      merge time
+- [ ] **Comparator challenge.**
+      - `Challenge.lean` states three to five headline theorems with `sorry`, using only Mathlib's
+        definitions: Fisher–Tippett–Gnedenko, Pickands–Balkema–de Haan, consistency of the Hill
+        estimator, the answer to Bai–Kulik–Wang.
+      - `Solution.lean` proves them from the library.
+      - `lake comparator`, in Lean core since v4.35.0, checks in a sandbox that the two files state the
+        same theorems, that the proofs use only the standard axioms, and that the kernel accepts them.
+        Add the nanoda kernel too.
+      - Run it in CI and on every release.
+
+      This lets a skeptical reader trust the headline statements after reading one short file that
+      imports nothing but Mathlib, instead of our definitions
+- [ ] Machine-readable provenance in `formalization.yaml` (see H.3)
+
+### H.8 Papers and partners
+- [ ] A library paper on arXiv, "A formally verified library of extreme value theory in Lean 4",
+      before the echo-process note in B (*agent* drafts, *you* submit). A library paper is what people
+      cite
+- [ ] Contact formal-mathfin (Raphael Coelho). Their `ExtremeValue.lean`, `GeneralizedPareto.lean` and
+      `PoissonMaxima.lean` (about 900 lines) overlap a small part of ours, and their risk measures
+      (value-at-risk, expected shortfall) are where extreme value theory is used. Propose that they
+      depend on this library for extremes, or a bridge file between the two (*agent* drafts, *you*
+      send)
+- [ ] Search for other Lean projects with results on extremes, regular variation or heavy tails, and
+      port or link them with credit to their authors
