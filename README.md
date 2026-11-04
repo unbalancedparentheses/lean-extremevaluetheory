@@ -12,7 +12,7 @@ behave, how heavy tails look, how to estimate them from data, and how extremes c
 - **Broad.** The classical theory of maxima and regular variation, peaks over threshold, the
   statistics of extremes (estimators, likelihood, return levels, confidence intervals), stable laws
   and heavy tails, extremes of dependent sequences, multivariate extremes, point processes and the
-  Skorokhod space. About 94,000 lines and 3,900 theorems, with no `sorry`.
+  Skorokhod space. About 100,000 lines and 4,300 theorems and lemmas, with no `sorry`.
 - **Checked twice.** Lean's kernel checks every proof, and CI re-checks all 718,274 declarations
   with an independent checker.
 - **Tested against the textbooks.** Proving a theorem is not enough: it has to *state* the right
@@ -119,11 +119,78 @@ that way; their novelty has been checked against the literature
 - **Known results, proved under weaker hypotheses:** `θ ≤ ϑ` (Kulik–Soulier Lemma 7.5.4) and an exact
   formula for the gap `ϑ − θ`.
 
+## Limitations
+
+Many results are narrower than their textbook form, and each case is recorded here so that nobody has
+to discover it. Rows and scope notes are in [`FAITHFULNESS.md`](FAITHFULNESS.md), and missing results
+in [`ROADMAP.md`](ROADMAP.md).
+
+**Nobody independent has reviewed this yet.** The statements, tests and audits were written with AI
+assistance, and no human expert has checked them. The kernel guarantees the proofs, not that a
+statement matches its textbook. The new results' novelty has not been confirmed by experts either.
+
+**Maximum likelihood and return levels**
+- GEV: consistency only on a compact parameter set `K ⊂ {ξ > −1, σ > 0}`. Joint normality of the
+  three-parameter estimator is not proved, so GEV and Gumbel return-level normality
+  (`tendstoInDistribution_gevReturnLevel`) assume parameter normality as a hypothesis.
+- GPD: also on a compact set, with the true parameter in its interior. Joint normality needs
+  `ξ₀ > −1/2` and `ξ₀ ≠ 0`.
+- `ξ = 0`: the likelihood is only partly covered. Normality of the estimator at `ξ = 0` is not proved.
+- Peaks-over-threshold return levels treat the excesses as an exact iid GPD sample with a known exceedance
+  probability `ζ`. The number of exceedances is not random, and neither the error of the GPD
+  approximation above a finite threshold nor the estimation of `ζ` is accounted for.
+- Not proved: profile-likelihood intervals, and likelihood over the whole parameter space.
+
+**Tail estimators**
+- Normality of the Pickands and moment estimators is not proved. Hill intervals are only without bias
+  (`λ = 0`), and there are no bias-reduced estimators.
+- The basic far-tail Weissman theorems assume the rate and the bias condition; second-order versions
+  derive them, for `ρ < 0`, and with extra regularity at `ρ = 0`.
+- The intervals estimator of the extremal index (`tendstoInMeasure_intervalsEstimator₁`) takes the limit
+  law of the inter-exceedance times (Ferro–Segers Theorem 1) and the moment convergence as hypotheses.
+- The dependent-data Hill theorem and the intervals estimator have only been instantiated on iid data, so
+  no test shows them applying to a genuinely dependent sequence.
+- These are asymptotic statements. The library says nothing about finite samples or how to choose a
+  threshold, a block length or `k`.
+
+**Heavy tails and stable laws**
+- The ruin probability `pkRuin` is *defined* by the Pollaczek–Khinchine formula. It is not derived from
+  the Cramér–Lundberg process.
+- `X = AX + B` and GARCH(1,1): the tail is bounded by `O(x^{−s})` for `s < κ` and shown not to be for
+  `s > κ`. The sharp Kesten–Goldie asymptotics `c x^{−κ}` is not proved.
+- The parametric stable family `S(α, β, σ, μ)` and the tails of stable laws are not developed.
+
+**Dependence**
+- The moving-maximum, moving-average, echo and linear-process theorems assume noise that is nonnegative
+  for every `ω`, not almost surely, which is formally stronger than the textbook.
+- Series of linear processes in `LinearProcess.tendsto_measureReal_tsum_mul_div` need `α < 1`.
+- Infinite moving averages need `Σψ^δ < ∞` for some `δ < min(α, 1)`, which for `α > 1` is slightly
+  stronger than the optimal `Σψ < ∞`.
+- ARMAX needs exact Pareto innovations.
+
+**Multivariate extremes and processes**
+- The multivariate GPD limit `IsMDAWith.tendsto_conditionalExcessCDF` needs `G(x ∧ 0) > 0`, which fails
+  for unit-Fréchet-standardized limits; use `IsMDAWith.tendsto_conditionalExcess_tailQuantile` for those.
+- The multivariate domain-of-attraction equivalence assumes continuous margins.
+- The Pickands dependence estimator assumes known unit Fréchet margins. Nonparametric tail-dependence
+  estimation is not finished.
+- Point-process convergence is stated through joint laws of counts on finite families of disjoint sets,
+  with no topology on the space of measures.
+- The tail empirical process is uniform and unweighted. Cluster point processes and Brown–Resnick, Schlather
+  and extremal-t processes are not formalized.
+
+**Classical theory**
+- The von Mises criterion for the Gumbel domain (`isInMDAGumbel_of_vonMises`) covers only an infinite right
+  endpoint.
+- Karamata's direct half has versions for measurable `F` and for `F` antitone on `[a, ∞)`, but
+  its converse `IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi` assumes `F` antitone on all of `ℝ`.
+
 ## Status and what's next
 
 The theory taught in the standard textbooks is essentially complete. The library is on Mathlib
-v4.35.0, the latest stable release, and a weekly CI job tries newer Mathlib versions. What is left for
-version 1.0, in order (details and progress in [`ROADMAP.md`](ROADMAP.md)):
+v4.35.0, the latest stable release, and a weekly CI job tries newer Mathlib versions. The first release
+is `v0.9.0`; it is usable and citable, but has had no expert review. What is left for version 1.0, in
+order (details and progress in [`ROADMAP.md`](ROADMAP.md)):
 
 1. **The statistics practitioners use most:** three-parameter GEV maximum likelihood normality,
    profile-likelihood intervals, Pickands estimator normality, nonparametric tail-dependence estimation
@@ -151,6 +218,29 @@ lake build Test     # the specification tests
 ```
 
 With Nix, `nix develop` gives a shell with `elan` and the other tools used by the scripts and CI.
+
+## Use it in your project
+
+Create a Lean project with the same [`lean-toolchain`](lean-toolchain), and add to its `lakefile.toml`:
+
+```toml
+[[require]]
+name = "lean-extremevaluetheory"
+git = "https://github.com/unbalancedparentheses/lean-extremevaluetheory"
+rev = "v0.9.0"
+```
+
+Then fetch it and build:
+
+```sh
+lake update
+lake exe cache get   # prebuilt Mathlib; the library itself compiles from source the first time
+lake build
+```
+
+and write `import ExtremeValueTheory`. Each tag fixes Lean and Mathlib together.
+[`Downstream/Readme.lean`](Downstream/Readme.lean) is such a client, and a weekly
+[workflow](.github/workflows/downstream.yml) builds it in a fresh project that requires this repository.
 
 ## Layout
 

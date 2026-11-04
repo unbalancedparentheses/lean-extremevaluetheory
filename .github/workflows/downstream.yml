@@ -1,0 +1,52 @@
+name: Downstream
+
+# Build a fresh Lake project that requires this repository, as the README tells a reader to, and
+# compile Downstream/Readme.lean in it. This checks what build.yml cannot: that the dependency
+# resolves from a clean workspace, that the Mathlib cache downloads for it, and that the umbrella
+# module exports what the README shows. Weekly and on demand, since it compiles the whole library.
+
+on:
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      rev:
+        description: 'Commit, branch or tag to require (default: the commit of this run)'
+        required: false
+
+jobs:
+  downstream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      REV: ${{ inputs.rev || github.sha }}
+      REPO: ${{ github.server_url }}/${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Create the client project
+        run: |
+          mkdir "$RUNNER_TEMP/client"
+          cp lean-toolchain "$RUNNER_TEMP/client/"
+          cp Downstream/Readme.lean "$RUNNER_TEMP/client/Client.lean"
+          cat > "$RUNNER_TEMP/client/lakefile.toml" <<EOF
+          name = "client"
+          defaultTargets = ["Client"]
+
+          [[require]]
+          name = "lean-extremevaluetheory"
+          git = "$REPO"
+          rev = "$REV"
+
+          [[lean_lib]]
+          name = "Client"
+          EOF
+      - name: Build it
+        working-directory: ${{ runner.temp }}/client
+        run: |
+          lake update
+          lake exe cache get
+          lake build
