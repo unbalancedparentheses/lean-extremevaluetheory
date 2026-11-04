@@ -25,7 +25,7 @@ Each tier can run in parallel internally. The sections below give the details.
    should start before anything else (C)
 3. Merge [#4](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/4), one definition
    per concept. It already builds, and the statistics pull requests rebase on it
-4. *you:* enable the GitHub–Zenodo integration, so `v1.0.0` gets a DOI (H.1)
+4. Done (2026-11-04): the GitHub–Zenodo integration is enabled, so `v1.0.0` will get a DOI (H.1)
 
 **Tier 1: finish the work in flight** (sunk cost; ordered by how close each is)
 5. [#7](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/7) Tail-dependence
@@ -201,8 +201,7 @@ worktree after merging.
 - [ ] Post the Lean Zulip announcement (an agent can draft it)
 - [ ] Confirm the deprecation policy proposed in [`docs/DESIGN.md`](docs/DESIGN.md): aliases kept at
       least six months and one Mathlib bump
-- [ ] Growth (H): enable the GitHub–Zenodo integration on the repository; create a Hugging Face
-      account or organization for the dataset; approve and send the contact to formal-mathfin;
+- [ ] Growth (H): create a Hugging Face account or organization for the dataset; approve and send the contact to formal-mathfin;
       submit the library paper; decide on registering with Palomar; send the collaborator invitations
 
 ### Cleanup to do
@@ -505,8 +504,9 @@ small contributions together, so direct outreach (H.8) matters at least as much 
       flight is merged, and the library paper (H.8) right after, as formal-mathfin did (a release three
       weeks after starting, the paper a week later). Each tag pins Lean and Mathlib; then one tag per
       Mathlib bump (see E)
-- [ ] *you:* enable the GitHub–Zenodo integration on the repository, so every release gets a DOI; then
-      add `.zenodo.json` and the DOI to [`CITATION.cff`](CITATION.cff)
+- [x] The GitHub–Zenodo integration is enabled, so every GitHub release gets a permanent DOI (no test
+      releases), and [`.zenodo.json`](.zenodo.json) holds the metadata
+- [ ] After `v1.0.0`: add the DOI to [`CITATION.cff`](CITATION.cff) and the README
 - [ ] README badges: build, kernel check, DOI, then arXiv and the dataset when they exist
 - [ ] README section "Using the library in a project": the `require` lines for `lakefile.toml` with
       `rev = "v1.0.0"`, `lake exe cache get`, `import ExtremeValueTheory`

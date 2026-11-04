@@ -1,0 +1,32 @@
+{
+  "title": "Extreme Value Theory in Lean",
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "Apache-2.0",
+  "creators": [
+    {
+      "name": "Carrone, Federico"
+    }
+  ],
+  "description": "A Lean 4 library, built on Mathlib, of machine-checked extreme value theory and heavy-tailed probability: limits of maxima and the Fisher-Tippett-Gnedenko theorem, regular variation, peaks over threshold, estimators, likelihood and return levels, stable laws, extremes of dependent sequences, multivariate extremes, point processes and the Skorokhod space. The Fisher-Tippett-Gnedenko development and its blueprint are based on ExtremeValueProject by Kalle Kytölä and the participants of the Aalto University course MS-EV0029. The statements, audits and tests were written with AI assistance and have not yet been reviewed by human experts.",
+  "keywords": [
+    "extreme value theory",
+    "Lean 4",
+    "Mathlib",
+    "formal verification",
+    "heavy tails",
+    "regular variation"
+  ],
+  "related_identifiers": [
+    {
+      "relation": "isDerivedFrom",
+      "identifier": "https://github.com/kkytola/ExtremeValueProject",
+      "scheme": "url"
+    },
+    {
+      "relation": "isDocumentedBy",
+      "identifier": "https://unbalancedparentheses.github.io/lean-extremevaluetheory/",
+      "scheme": "url"
+    }
+  ]
+}
