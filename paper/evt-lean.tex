@@ -121,9 +121,9 @@ checks, all but the last of which can be rerun from the repository.
     hypotheses can hold together. Three of the results in Section~\ref{sec:new} do not have such a test yet.
   \item[Known-answer tests.] 159 tests check definitions against textbook values, which catches sign
     and parametrization errors.
-  \item[Junk-value audit.] A scan, run by hand, of 3,718 theorems for statements that hold only through a totalization
-    convention found one such statement, now fixed.
-  \item[Mutation checks.] 323 perturbations of the statements of 45 headline theorems were tried by hand with their proofs kept.
+  \item[Junk-value audit.] A scanner, not part of continuous integration, examined 3,718 theorems for statements that hold only through a
+    totalization convention. Reviewing the 740 it flagged found one such statement, now fixed.
+  \item[Mutation checks.] A script, not part of continuous integration, tried 323 perturbations of the statements of 45 headline theorems with their proofs kept.
     A perturbation that still compiles suggests a theorem proved for a trivial reason. One survived, and we
     judged it harmless.
   \item[Faithfulness audits.] Six written comparisons of statements with the literature, recording each deviation.
@@ -139,27 +139,32 @@ von Mises condition, the generalized CLT, Hill consistency, Leadbetter's theorem
 identification $\theta=\vartheta$ of the extremal index are needed.
 
 \paragraph{The extremal index and the tail process.}
-For a stationary regularly varying sequence let $\theta$ be its extremal index, and let $\vartheta$ be the
-candidate extremal index read off the spectral tail process~\cite{ks20}. Then $\theta\le\vartheta$, and they agree
-under anticlustering together with the block condition $A(u_n)$ on a common block sequence. Bai and Wang~\cite{bw} gave a model with $\theta<\vartheta$. We give a much simpler one.
+For a stationary, nonnegative, regularly varying sequence let $\theta$ be its extremal index, and let $\vartheta$ be
+the candidate extremal index read off the spectral tail process~\cite{ks20}. Then $\theta\le\vartheta$, and they agree
+when anticlustering and the block condition $A(u_n)$ hold on a common block sequence $r_n\to\infty$, $r_n=o(n)$. For
+signed sequences, the formalized comparison concerns $|X_t|$. Bai and Wang~\cite{bw} gave a model with $\theta<\vartheta$. We give a much simpler one.
 
-The \emph{echo process} is built from iid Pareto$(\alpha)$ shocks. Each shock of size $z$ appears
-once at its own time and again after a lag that grows with $z$. Since the lag grows without bound, no
-fixed lag sees the echo, so the spectral tail process is $\Theta_t=\mathbf 1\{t=0\}$ and $\vartheta=1$. Yet large values
-still come in pairs, and the extremal index is $\theta=1/2$
-(\lean{logEchoProcess_theta_lt_vartheta}).
+The \emph{echo process} is built from iid Pareto$(\alpha)$ shocks $Z_t$ and the lag $L(z)=\lfloor\log z\rfloor+1$, by
+$X_t=\max\bigl(Z_t,\sup\{Z_s: s<t,\ s+L(Z_s)=t\}\bigr)$: each shock appears at its own time and again $L(Z_s)$ steps later.
+A large shock and its echo separate beyond every fixed window, so the spectral tail process is
+$\Theta_t=\mathbf 1\{t=0\}$ and $\vartheta=1$. Yet each cluster of exceedances consists of a shock and its echo. Since
+$E[L(Z_0)]<\infty$, echoes entering from before the observation window are negligible, so
+$P(M_n\le u_n)\to e^{-\tau/2}$ whenever $nP(X_0>u_n)\to\tau$, which gives $\theta=1/2$
+(\lean{logEchoProcess_theta_lt_vartheta}). The library proves the same for other lags that grow without bound and have finite mean.
 
 \paragraph{An answer to a question of Bai, Kulik and Wang.}
-Bai, Kulik and Wang~\cite{bkw} ask whether there are regularly varying processes for which anticlustering
-holds with $\lim\log r_n/\log n=\rho$ only for $\rho$ up to some $\rho_0<1$. Taking the lag $\lfloor z^\gamma\rfloor+1$
-with $0<\gamma<\alpha$ gives such a process for every $\rho_0=\gamma/\alpha\in(0,1)$: anticlustering at the normalizing levels holds if
-$\rho<\rho_0$ and fails if $\rho>\rho_0$ (\lean{powEchoProcess_antiClustering_iff}).
+Bai, Kulik and Wang~\cite[arXiv v2, \S1.4]{bkw} ask whether there are models for which anticlustering
+holds with $\lim\log r_n/\log n=\rho$ only for $\rho$ up to some $\rho_0<1$. Given $\rho_0\in(0,1)$, take the lag
+$\lfloor z^\gamma\rfloor+1$ with $\gamma=\alpha\rho_0$. For $0<\rho<1$ with $\rho\ne\rho_0$, anticlustering at the normalizing levels holds if and only if
+$\rho<\rho_0$ (\lean{powEchoProcess_antiClustering_iff}). The formal statement uses one level for both the conditioning event and the
+exceedance, where their condition allows two. The two forms are equivalent by an elementary argument from regular variation, which is not formalized.
 
 \paragraph{Mixing and a warning for estimators.}
 The echo processes are $\beta$-mixing, geometrically for the logarithmic lag, and still have $\theta\neq\vartheta$
 (\lean{logEchoProcess_betaMixing_incompatible}). This illustrates the classical point that anticlustering and mixing must
-hold at a common block length. On the same process, the runs estimator with short runs converges to
-$\vartheta$, not to $\theta$ (\lean{logEcho_tendstoInMeasure_runsEstimator}).
+hold at a common block length. On the logarithmic-lag process, write $p_n=P(X_0>u_n)$ for thresholds $u_n\to\infty$. If $np_n\to\infty$, $r_n\to\infty$,
+$r_n=o(\log u_n)$, and there are gaps $s_n\to\infty$ with $\log n=o(s_n)$ and $r_n+s_n=o(np_n)$, then the runs estimator converges in
+probability to $1=\vartheta$, not to $\theta=1/2$ (\lean{logEcho_tendstoInMeasure_runsEstimator}).
 
 \paragraph{Status of these claims.}
 Our literature check compared these results with the papers we could read in full. We could not obtain the Kulik--Soulier
@@ -183,6 +188,9 @@ Many results are narrower than their textbook forms. The README and \texttt{FAIT
   \item \textbf{Stochastic recurrence.} The tail of $X=AX+B$ is identified through moment bounds. The sharp Kesten--Goldie
     asymptotics is not proved.
   \item \textbf{Dependence.} Several theorems assume noise that is nonnegative at every sample point.
+  \item \textbf{Process limits.} Point-process convergence is formalized through joint laws of counts on finite families of
+    disjoint sets, with no topology on the space of measures. The functional limit of the tail empirical process is for uniform observations in
+    unweighted $D[0,1]$; beyond it, only weighted near-zero bounds are proved.
   \item \textbf{Asymptotics only.} The library says nothing about finite-sample behaviour or about choosing a threshold or block length.
 \end{itemize}
 
@@ -195,8 +203,9 @@ Section~\ref{sec:trust} and for the request below.
 
 \section{Conclusion}
 
-We would most value review by extreme value theorists. The repository's \texttt{docs/REVIEW.md} translates each statement into ordinary mathematics,
-so no knowledge of Lean is needed, and corrections are very welcome. Next come the missing likelihood results, contributing the general
+We would most value review by extreme value theorists. The repository's \texttt{docs/REVIEW.md} translates the main statements into ordinary mathematics,
+so no knowledge of Lean is needed, and corrections are very welcome. It does not yet cover the answer to Bai, Kulik and Wang's question, return levels, confidence
+intervals or the extremal-index estimators; \texttt{FAITHFULNESS.md} lists those. Next come the missing likelihood results, contributing the general
 results to Mathlib, and executable estimators cross-checked against R and Python packages.
 
 \begin{thebibliography}{9}

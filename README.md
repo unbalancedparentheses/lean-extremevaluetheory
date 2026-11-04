@@ -23,7 +23,8 @@ behave, how heavy tails look, how to estimate them from data, and how extremes c
 [Website](https://unbalancedparentheses.github.io/lean-extremevaluetheory/) ·
 [Blueprint](https://unbalancedparentheses.github.io/lean-extremevaluetheory/blueprint/) ·
 [API documentation](https://unbalancedparentheses.github.io/lean-extremevaluetheory/docs/) ·
-[Roadmap](ROADMAP.md)
+[Roadmap](ROADMAP.md) ·
+[Changelog](CHANGELOG.md)
 
 ## Start here
 
@@ -66,8 +67,8 @@ that the statement says what the textbook says. The library checks both.
 | [Axiom audit](Test/AxiomAudit.lean), at every build in CI | `sorry` and hidden assumptions | all 9,487 declarations use only `propext`, `Classical.choice`, `Quot.sound` |
 | [Non-vacuity tests](Test/README.md) | hypotheses that can never hold together | 92 tests: most headline theorems applied to a concrete object (not yet `powEchoProcess_antiClustering_iff`, `logEchoProcess_betaMixing_incompatible` or `logEcho_tendstoInMeasure_runsEstimator`) |
 | [Known-answer tests](Test/README.md) | sign and parametrization slips in definitions | 159 tests against textbook values (Gumbel moments, Smith's Fisher information, extremal indices, …) |
-| [Junk-value audit](Test/JUNK_VALUES.md) | statements true only because `x/0 = 0` or `log 0 = 0` | 3,718 theorems scanned, by hand rather than in CI; one such statement found and fixed |
-| [Mutation checks](Test/MUTATION.md) | statements proved "too easily" | 323 perturbed statements, by hand rather than in CI; none reveals a weakness |
+| [Junk-value audit](Test/JUNK_VALUES.md) | statements true only because `x/0 = 0` or `log 0 = 0` | 3,718 theorems scanned by a script outside CI; one such statement found and fixed |
+| [Mutation checks](Test/MUTATION.md) | statements proved "too easily" | 323 perturbed statements, by a script outside CI; none reveals a weakness |
 | [Faithfulness audits](FAITHFULNESS.md) | statements that differ from the literature | six audits; every known deviation recorded |
 
 What is still missing is review by human experts: the audits and tests were written with AI

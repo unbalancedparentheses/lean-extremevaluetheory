@@ -1,7 +1,12 @@
 # Expert review guide: *Extreme Value Theory in Lean*
 
 Repository: `https://github.com/unbalancedparentheses/lean-extremevaluetheory` (blueprint:
-`https://unbalancedparentheses.github.io/lean-extremevaluetheory`). Snapshot: commit `9a3bfe3`.
+`https://unbalancedparentheses.github.io/lean-extremevaluetheory`). Snapshot: release `v0.9.0`.
+
+The entries below were written at commit `9a3bfe3` (2026-10-18). Every Lean name in them still exists in
+`v0.9.0`, but this guide does not cover results added since, such as the answer to Bai–Kulik–Wang's
+question, return levels, confidence intervals and the extremal-index estimators. `FAITHFULNESS.md` lists
+those, and the README's Limitations section lists known restrictions.
 
 ## What we are asking
 

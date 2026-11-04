@@ -10,7 +10,7 @@ library does not verify numerical optimizers, default tuning, or confidence-inte
 this guide says "covered", it means the *formula the package computes* (as documented) agrees
 with the formula defined in Lean, and the Lean theorem gives the stated asymptotic property under
 the stated hypotheses. Every theorem name below was checked with `#check` against the library at
-commit `9a3bfe3`; the faithfulness of each statement to its textbook source is audited in
+commit `9a3bfe3` (2026-10-18), and each name still exists in release `v0.9.0`; the faithfulness of each statement to its textbook source is audited in
 `FAITHFULNESS.md` (repository root).
 
 Everything in the library is **asymptotic** (`n → ∞`, `k → ∞`, `u → x_F`). Nothing is said about

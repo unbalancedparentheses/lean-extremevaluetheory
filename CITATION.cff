@@ -2,6 +2,8 @@ cff-version: 1.2.0
 message: "If you use this library, please cite it as below."
 title: "Extreme Value Theory in Lean"
 type: software
+version: 0.9.0
+date-released: 2026-11-04
 authors:
   - family-names: Carrone
     given-names: Federico
