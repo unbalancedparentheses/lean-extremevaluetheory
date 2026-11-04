@@ -1,3 +1,4 @@
+import Test.AxiomAudit
 import Test.Basic
 import Test.NonVacuity.Classical
 import Test.NonVacuity.Statistics

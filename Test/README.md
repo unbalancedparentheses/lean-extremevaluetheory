@@ -6,6 +6,7 @@ built in CI (`lake build Test`), so any change that breaks one fails the build.
 
 | Kind | What it catches | Files |
 |---|---|---|
+| **Axiom audit** | A `sorry` or an extra axiom anywhere in the library, even one hidden in a macro. Every declaration is checked, so a new result needs no registration. | `Test/AxiomAudit.lean`, with the textual check `scripts/check_source.py` |
 | **Non-vacuity** | Hypotheses that can never hold together, so the theorem says nothing. Each test builds a concrete object (a distribution, a sequence, a process) satisfying all hypotheses of a headline theorem and applies the theorem to it. | `Test/NonVacuity/*.lean` |
 | **Known answers** | Sign, parametrization and normalization slips in definitions. Each test checks a definition on a case with a textbook answer (the Gumbel CDF at 0 is `e⁻¹`, the extremal index of an iid sequence is 1, …). | `Test/KnownAnswers/*.lean` |
 | **Junk values** | Statements that are true only because of Lean's conventions (`x / 0 = 0`, `log 0 = 0`, truncated subtraction, `∞ * 0 = 0`). | `Test/JunkValues.lean`, report in [`JUNK_VALUES.md`](JUNK_VALUES.md) |
