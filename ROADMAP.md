@@ -14,7 +14,7 @@ and [`RESEARCH.md`](RESEARCH.md) for the research results.
 What "finished" means for a first release: the running work merged, a consistent design, documentation
 that matches the code, a way in for new users, and review by people other than the AI that wrote the
 statements. Everything after that (further textbook chapters, open problems, upstreaming, executable
-estimators) is listed in sections A–G and is not needed for 1.0. Updated 2026-11-01.
+estimators) is listed in sections A–G and is not needed for 1.0. Updated 2026-11-04.
 
 **Owner:** *agent* = done by Claude Code agents; *you* = needs the maintainer (sending, submitting,
 posting, deciding).
@@ -60,7 +60,8 @@ posting, deciding).
    - [ ] `CONTRIBUTING.md`, `CLAUDE.md`, labels, issues and the first good first issues (H.4)
    - [ ] Open problems filed as numbered issues (H.5)
    - [ ] Architecture checks in CI (H.6)
-   - [ ] Axiom audit in the build and the Comparator challenge (H.7)
+   - [ ] Axiom audit in the build, the Comparator challenge, the review deadline and the gates against
+         overclaiming (H.7)
 
 ### Work in flight
 
@@ -96,7 +97,7 @@ worktree after merging.
       least six months and one Mathlib bump
 - [ ] Growth (H): enable the GitHub–Zenodo integration on the repository; create a Hugging Face
       account or organization for the dataset; approve and send the contact to formal-mathfin;
-      submit the library paper
+      submit the library paper; decide on registering with Palomar; send the collaborator invitations
 
 ### Cleanup to do
 
@@ -312,6 +313,10 @@ Second survey (2026-10-25, [`docs/OPEN_PROBLEMS_SURVEY2.md`](docs/OPEN_PROBLEMS_
       that a given law is in the Fréchet domain and applying the Hill estimator's consistency to it)
 - [ ] Worked examples for the standard distributions (Pareto, exponential, uniform, Gumbel, GPD, GEV,
       Student t, Cauchy), applying the headline theorems; the non-vacuity tests are a starting point
+- [ ] Applied examples in `Examples/Applications/`, each a concrete problem ending in one statement the
+      build checks, and each importing only the umbrella `ExtremeValueTheory` as a downstream project does:
+      a 100-year flood return level, a reinsurance layer, a tail index estimated with Hill. Link them from
+      [`docs/PRACTITIONERS.md`](docs/PRACTITIONERS.md)
 - [ ] A stable public API: after the design pass, deprecate before removing and keep a `CHANGELOG.md`
 - [ ] A short "how to find a result" guide (blueprint, API docs search, `THEOREMS.md`, naming conventions
       in `docs/DESIGN.md`)
@@ -359,19 +364,33 @@ sign of scipy's GEV shape, rather than only document them in
 
 How the library gets users, citations and contributors. Modelled on
 [formal-mathfin](https://github.com/formal-applied-math/formal-mathfin), a Lean library of mathematical
-finance. In six months it reached 49 stars, 17 forks, 8 contributors and 9 releases, with an arXiv
-paper. What it did that we do not yet do:
+finance. In six months it reached 49 stars, 17 forks, 7 contributors (plus a bot) and 9 releases, with
+an arXiv paper. What it did that we do not yet do:
 
 - a release with a DOI in its first month;
 - its results published as a Hugging Face dataset;
 - honest counts and a Limitations section in its README;
-- issues with labels and good first issues;
+- issues with labels and good first issues, each specified so a stranger can start from it;
 - open problems filed as numbered issues;
 - architecture rules enforced by tests;
+- reviews that CI forces to happen, and gates against claims stronger than the proof;
+- applied examples that end in a statement the build checks;
 - other people's work ported with credit.
 
-What we already do better: a complete independent kernel check, a blueprint, mutation and junk-value
-tests, faithfulness audits. Everything else on their list is below.
+What we already do better: a complete independent kernel check that runs in CI (their kernel replay has
+not completed, and Comparator is not in their CI), a blueprint, mutation and junk-value tests,
+faithfulness audits. Everything else on their list is below.
+
+Their commit counts are the lesson about contributors (2026-11-04): the maintainer has 1,357, one
+contributor has 560, and nobody else has more than 12. One strong collaborator did far more than all the
+small contributions together, so direct outreach (H.8) matters at least as much as good first issues.
+
+**What we do not copy:**
+
+- their autoformalization pipeline (`formal-foundry`): its prover silently did not run for two months
+  while CI stayed green. Documenting our agent workflow (H.4) gives most of the benefit;
+- the weight of their process: a 31 KB `CLAUDE.md`, a 210 KB ledger file and eight-lens review panels. We
+  take the review deadline and the gates in H.7, and keep them small.
 
 **Owner:** *agent* unless marked *you*.
 
@@ -435,15 +454,25 @@ tests, faithfulness audits. Everything else on their list is below.
       - the unbiasedness of the sample probability-weighted moments `b_r` (A.2);
       - the bridge `tailCount = exceedCount` (from PR #4);
       - a docstring that cites the wrong theorem number.
+
+      Each one has the sections Context, Task, Acceptance criteria and Pointers, and names the exact
+      lemmas and files, so a stranger can start from the issue alone. Make this the proof-request template
 - [ ] `docs/ONBOARDING.md`: from clone to a merged pull request, with one first contribution done as an
       example
-- [ ] A Contributors section in the README crediting each person by what they did
+- [ ] A Contributors section in the README crediting each person by what they did; CI checks that a
+      first-time author has added themselves
+- [ ] Credit in the history: merge contributions with a merge commit, never a squash, so each person's
+      commits reach `main` as they wrote them. Contributors put their own name on the `Copyright` and
+      `Authors:` lines of their files, and a `.mailmap` covers differing git names. Write this into
+      `CONTRIBUTING.md`
 - [ ] `docs/BEGINNERS.md`: Lean and the library for mathematicians who have never used Lean, with
       exercises whose solutions are checked by the build
 - [ ] `docs/TROUBLESHOOTING.md`: the setup failures we have hit (Mathlib cache, `lake` not on `PATH`,
       "too many open files", stale `.lake`, toolchain mismatch)
-- [ ] A Docker image with the toolchain and a prebuilt Mathlib, published by CI to the GitHub container
-      registry, for contributors who cannot install elan
+- [ ] Optional, only if a contributor reports needing it: a Docker image with the toolchain and a prebuilt
+      Mathlib, published by CI to the GitHub container registry, for contributors who cannot install elan.
+      It must not need a registry login. formal-mathfin needs its image partly because BrownianMotion
+      compiles from source; we depend only on Mathlib, so `lake exe cache get` should be enough
 
 ### H.5 Open problems as issues
 - [ ] One issue per problem in [`docs/PRACTICAL_OPEN_PROBLEMS.md`](docs/PRACTICAL_OPEN_PROBLEMS.md)
@@ -461,6 +490,10 @@ tests, faithfulness audits. Everything else on their list is below.
 - [ ] A duplicate-definition check that flags two definitions with the same body (automates the audit
       of PR #4)
 - [ ] After the design pass: no use of a `@[deprecated]` alias inside the library or the tests
+- [ ] An admission rule, as a short section at the top of this file: what the library is not trying to be
+      (the largest theorem count), when a new result is worth adding (it is used by another module, or
+      connects two parts of the library), and what stays out (mathematics Mathlib lacks and that we should
+      not build ourselves, labelled `status:blocked-upstream`)
 
 ### H.7 Trust machinery that runs by itself
 - [ ] **Axiom audit in the build.** `ExtremeValueTheory/AxiomAudit.lean` runs `#print axioms` on every
@@ -479,6 +512,21 @@ tests, faithfulness audits. Everything else on their list is below.
 
       This lets a skeptical reader trust the headline statements after reading one short file that
       imports nothing but Mathlib, instead of our definitions
+- [ ] **Palomar registry.** [Palomar](https://palomar-registry.org), incubated by the Lean FRO and ICARM,
+      records a fixed commit and a few declarations, re-checks the proof and publishes the exact statement
+      and the review's comments. It is a filter, not an endorsement or a novelty claim. Submit the Comparator
+      challenge with `formalization.yaml` (*agent* prepares; *you* decide on registering, which publishes
+      the review). This is outside review while we wait for experts (see C), not a replacement for them
+- [ ] **A deadline for reviews.** CI fails when the headline theorems (the catalogue in H.3) have grown more
+      than a set number past the last audit recorded in [`FAITHFULNESS.md`](FAITHFULNESS.md); formal-mathfin
+      allows 12 entries. A script cannot judge an audit, but it can check that one happened. Each audit ends
+      in a ranked list of fixes, filed as issues
+- [ ] **Gates against overclaiming**, in `scripts/`, run in CI:
+      - an entry with status `full` cannot rest on a theorem proved by `rfl` or by unfolding a definition;
+      - search tactics (`exact?`, `apply?`) and trust-extending commands (`native_decide`, new `axiom`s)
+        cannot appear in committed source;
+      - each catalogue entry stores a hash of the inputs it was checked under, and CI fails when they change
+        without a new check, so a stale claim cannot survive.
 - [ ] Machine-readable provenance in `formalization.yaml` (see H.3)
 
 ### H.8 Papers and partners
@@ -491,4 +539,8 @@ tests, faithfulness audits. Everything else on their list is below.
       depend on this library for extremes, or a bridge file between the two (*agent* drafts, *you*
       send)
 - [ ] Search for other Lean projects with results on extremes, regular variation or heavy tails, and
-      port or link them with credit to their authors
+      port or link them with credit to their authors. Porting can also bring in the author: formal-mathfin
+      ported Robert Martin's American put and SVI work, and lists them as a contributor
+- [ ] Invite one or two strong collaborators directly: people already working on probability in Lean or on
+      extreme value theory, each offered a specific area to own (see the commit counts at the top of H)
+      (*agent* drafts, *you* send)
