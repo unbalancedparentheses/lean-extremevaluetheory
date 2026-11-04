@@ -27,6 +27,19 @@ Each tier can run in parallel internally. The sections below give the details.
    per concept. It already builds, and the statistics pull requests rebase on it
 4. Done (2026-11-04): the GitHub–Zenodo integration is enabled, so `v1.0.0` will get a DOI (H.1)
 
+**First release: `v0.9.0`, before the work in flight** (decided 2026-11-04). A citable release with
+honest limits now does more than waiting for every proof. It does not wait for #4–#9; those ship in 0.x
+and 1.0 releases.
+- [x] CI fails on `sorry` and extra axioms (`Test/AxiomAudit.lean`, `scripts/check_source.py`)
+- [x] Limitations section and "Use it in your project" in the README; downstream CI job
+- [>] Independent AI review of the statements and claims by Codex; fix what it finds. This is AI review,
+  and does not replace expert review
+- [ ] `CHANGELOG.md`, the tag and GitHub release `v0.9.0`, which creates the Zenodo DOI; add the DOI to
+  `CITATION.cff` and the README
+- [ ] Library paper: *agent* drafts, Codex reviews, *you* submit to arXiv (check early whether you need an
+  endorsement)
+- [ ] *you:* send the expert emails and post on the Lean Zulip, with the release and paper links
+
 **Tier 1: finish the work in flight** (sunk cost; ordered by how close each is)
 5. [#7](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/7) Tail-dependence
    estimation: theorems written, one file to fix
@@ -40,9 +53,9 @@ Each tier can run in parallel internally. The sections below give the details.
    once v4.36.0 is stable
 
 **Tier 2: trust that runs by itself** (independent of tier 1, so in parallel with it)
-10. Axiom audit in the build (H.7)
+10. Done (2026-11-04): axiom audit of every declaration in CI (H.7)
 11. Comparator challenge on four headline theorems, in CI (H.7)
-12. Architecture checks and gates against overclaiming (H.6, H.7)
+12. Architecture checks and the remaining gates against overclaiming (H.6, H.7)
 13. Specification tests for the newest results, and the seventh faithfulness audit (C)
 
 **Tier 3: release 1.0**
@@ -54,12 +67,11 @@ Each tier can run in parallel internally. The sections below give the details.
 
     (Version 1.0, item 2)
 15. Documentation matches the code: `THEOREMS.md`, README, website, blueprint entries (item 3)
-16. Honest counts and a Limitations section in the README (H.2)
+16. Honest counts by status in the README (H.2); keep the Limitations section current
 17. `CONTRIBUTING.md`, `CLAUDE.md`, code of conduct, templates and the credit rules (H.4)
-18. `v1.0.0`: `CHANGELOG.md`, the GitHub release and the DOI, plus the badges, the "use it in your
-    project" section and the downstream CI job (H.1)
-19. The library paper on arXiv (*agent* drafts, *you* submit) (H.8)
-20. *you:* announce on the Lean Zulip, with the release and the paper (F)
+18. `v1.0.0`, once the experts have replied and #4, #6 and #7 are in
+19. A new version of the library paper for 1.0, if the review changes it
+20. *you:* announce 1.0 on the Lean Zulip (F)
 21. *you:* contact formal-mathfin and invite one or two collaborators (H.8)
 22. Dependabot pull requests #1–#3, after checking that the website builds
 
@@ -160,13 +172,13 @@ posting, deciding).
    - [ ] Announce on the Lean Zulip (see F)
 
 6. [ ] **Ready for users and contributors** (*agent*, with accounts from *you*; details in H)
-   - [ ] Release `v1.0.0` with a Zenodo DOI, badges and a "use it in your project" section,
+   - [ ] Release `v0.9.0`, then `v1.0.0`, with a Zenodo DOI, badges and a "use it in your project" section,
          checked by a downstream CI job (H.1)
-   - [ ] Honest counts and a Limitations section in the README (H.2)
+   - [~] Honest counts and a Limitations section in the README (H.2): Limitations done
    - [ ] `CONTRIBUTING.md`, `CLAUDE.md`, labels, issues and the first good first issues (H.4)
    - [ ] Open problems filed as numbered issues (H.5)
    - [ ] Architecture checks in CI (H.6)
-   - [ ] Axiom audit in the build, the Comparator challenge, the review deadline and the gates against
+   - [~] Axiom audit in the build (done), the Comparator challenge, the review deadline and the gates against
          overclaiming (H.7)
 
 ### Work in flight
@@ -500,17 +512,16 @@ small contributions together, so direct outreach (H.8) matters at least as much 
 **Owner:** *agent* unless marked *you*.
 
 ### H.1 Releases, citation and use as a dependency
-- [ ] Release early: `CHANGELOG.md` and the tag `v1.0.0` with a GitHub release as soon as the work in
-      flight is merged, and the library paper (H.8) right after, as formal-mathfin did (a release three
-      weeks after starting, the paper a week later). Each tag pins Lean and Mathlib; then one tag per
-      Mathlib bump (see E)
+- [>] Release early: `CHANGELOG.md` and the tag `v0.9.0` with a GitHub release, and the library paper
+      (H.8) right after, as formal-mathfin did (a release three weeks after starting, the paper a week
+      later). Each tag pins Lean and Mathlib; then one tag per Mathlib bump (see E)
 - [x] The GitHub–Zenodo integration is enabled, so every GitHub release gets a permanent DOI (no test
       releases), and [`.zenodo.json`](.zenodo.json) holds the metadata
-- [ ] After `v1.0.0`: add the DOI to [`CITATION.cff`](CITATION.cff) and the README
+- [ ] After `v0.9.0`: add the DOI to [`CITATION.cff`](CITATION.cff) and the README
 - [ ] README badges: build, kernel check, DOI, then arXiv and the dataset when they exist
-- [ ] README section "Using the library in a project": the `require` lines for `lakefile.toml` with
-      `rev = "v1.0.0"`, `lake exe cache get`, `import ExtremeValueTheory`
-- [ ] `Downstream/`: a client project that only imports the library and states one headline theorem,
+- [x] README section "Use it in your project": the `require` lines for `lakefile.toml`,
+      `lake exe cache get`, `import ExtremeValueTheory`
+- [>] `Downstream/`: a client project that only imports the library and states one headline theorem,
       and a weekly workflow that builds it in a fresh project requiring this repository (catches
       packaging breakage that our own build cannot see)
 
@@ -518,7 +529,7 @@ small contributions together, so direct outreach (H.8) matters at least as much 
 - [ ] A status for every headline result: `full`, `library_wrapper` (restates Mathlib) or
       `reduced_core` (weaker than the result it is named after), taken from the catalogue in H.3
 - [ ] `scripts/coverage_report.py`: counts by status and by area, printed into the README by CI
-- [ ] A **Limitations** section in the README naming every result weaker than its textbook form
+- [x] A **Limitations** section in the README naming every result weaker than its textbook form
       (GEV MLE on a compact parameter set, the `ξ ≠ 0` restrictions, iid-only estimators, the multivariate
       generalized Pareto hypothesis `G(x ∧ 0) > 0`, …), drawn from the scope notes in
       [`FAITHFULNESS.md`](FAITHFULNESS.md)
@@ -602,10 +613,8 @@ small contributions together, so direct outreach (H.8) matters at least as much 
       not build ourselves, labelled `status:blocked-upstream`)
 
 ### H.7 Trust machinery that runs by itself
-- [ ] **Axiom audit in the build.** `ExtremeValueTheory/AxiomAudit.lean` runs `#print axioms` on every
-      headline theorem (the catalogue in H.3) and compares the output with `#guard_msgs`. A `sorry` or an
-      extra axiom anywhere in their proofs then fails `lake build`. Today this check is done by hand at
-      merge time
+- [x] **Axiom audit in the build.** [`Test/AxiomAudit.lean`](Test/AxiomAudit.lean) checks every declaration
+      in the library, not a list of headline theorems, so a `sorry` or an extra axiom anywhere fails CI
 - [ ] **Comparator challenge.**
       - `Challenge.lean` states three to five headline theorems with `sorry`, using only Mathlib's
         definitions: Fisher–Tippett–Gnedenko, Pickands–Balkema–de Haan, consistency of the Hill
@@ -629,8 +638,8 @@ small contributions together, so direct outreach (H.8) matters at least as much 
       in a ranked list of fixes, filed as issues
 - [ ] **Gates against overclaiming**, in `scripts/`, run in CI:
       - an entry with status `full` cannot rest on a theorem proved by `rfl` or by unfolding a definition;
-      - search tactics (`exact?`, `apply?`) and trust-extending commands (`native_decide`, new `axiom`s)
-        cannot appear in committed source;
+      - [x] search tactics (`exact?`, `apply?`) and trust-extending commands (`native_decide`, new
+        `axiom`s) cannot appear in committed source ([`scripts/check_source.py`](scripts/check_source.py));
       - each catalogue entry stores a hash of the inputs it was checked under, and CI fails when they change
         without a new check, so a stale claim cannot survive.
 - [ ] Machine-readable provenance in `formalization.yaml` (see H.3)
