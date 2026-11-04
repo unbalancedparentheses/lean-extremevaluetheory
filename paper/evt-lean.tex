@@ -1,0 +1,211 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1.1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs,alltt}
+\usepackage{hyperref}
+
+\newcommand{\lean}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\repo}{\url{https://github.com/unbalancedparentheses/lean-extremevaluetheory}}
+\newcommand{\release}{\texttt{v0.9.0}}
+\newcommand{\doi}{\texttt{[DOI: fill in after the release]}}
+
+\title{A library of extreme value theory in Lean 4}
+\author{Federico Carrone}
+\date{November 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We describe a Lean~4 library, built on Mathlib, that formalizes the core of extreme value theory:
+the Fisher--Tippett--Gnedenko theorem, domains of attraction, regular variation, the
+Pickands--Balkema--de Haan theorem, estimators and likelihood theory for the tail, stable laws and
+heavy tails, extremes of dependent sequences, multivariate extremes and point processes. The library
+has about 100,000 lines and 4,300 theorems and lemmas, uses no \texttt{sorry} and depends only on Lean's three standard
+axioms, which continuous integration checks for every declaration. Since a formal proof does not
+show that a statement matches the literature, the library also carries specification tests, mutation
+checks and written audits, and it records where its statements are narrower than their textbook forms.
+Formalizing the extremal index exposed its hypotheses and led to examples that, to our knowledge, are
+new, including a process that answers a question of Bai, Kulik and Wang. The statements, tests and
+audits were written with AI assistance and have not yet been reviewed by human experts in extreme value theory.
+\end{abstract}
+
+\section{Introduction}
+
+Extreme value theory describes the behaviour of maxima and of the far tail of a distribution. It is
+used to estimate quantities such as the level of a flood expected once in a hundred years or the loss
+from a catastrophic insurance event. Its results carry many technical hypotheses, and
+software such as \texttt{evd}, \texttt{ismev}, \texttt{extRemes} and \texttt{pyextremes} relies on them.
+A machine-checked account makes those hypotheses explicit.
+
+This paper describes such an account, in Lean~4~\cite{lean4} on top of Mathlib~\cite{mathlib}. The
+development of the Fisher--Tippett--Gnedenko theorem and its blueprint are based on
+ExtremeValueProject, by Kalle Kytölä and the participants of an Aalto University course on formalized
+mathematics~\cite{evp}. The source, an interactive blueprint, API documentation and a catalogue of
+results with their references are at \repo; this paper refers to release \release{} (\doi).
+
+Our main points are the following.
+\begin{itemize}
+  \item The library's scope (Section~\ref{sec:contents}), which covers the standard textbooks'
+        theory of maxima, regular variation and peaks over threshold, and much of their statistics.
+  \item How the library tests that a statement is the right one, and not only that its proof is
+        correct (Section~\ref{sec:trust}).
+  \item What the process found (Section~\ref{sec:new}): hypotheses in the literature that cannot be
+        dropped, and new examples for the extremal index.
+  \item What it does not establish (Section~\ref{sec:limits}).
+\end{itemize}
+
+\section{What is formalized}\label{sec:contents}
+
+The central result is the classification of limits of normalized maxima. Writing
+$A\bullet G$ for the distribution function $G$ after an increasing affine change of variables, the
+library states it as follows.
+\begin{alltt}\small
+theorem CumulativeDistributionFunction.IsExtremeValueDistr.classification
+    \{G : CumulativeDistributionFunction\} (hG : G.IsExtremeValueDistr) :
+    (\(\exists\) (A : AffineIncrEquiv), A \(\bullet\) G = standardGumbelCDF) \(\lor\)
+      (\(\exists\) (A : AffineIncrEquiv) (\(\xi\) : \(\mathbb{R}\)) (h\(\xi\) : 0 < \(\xi\)),
+        A \(\bullet\) G = standardFrechetCDF h\(\xi\)) \(\lor\)
+      (\(\exists\) (A : AffineIncrEquiv) (\(\xi\) : \(\mathbb{R}\)) (h\(\xi\) : 0 < \(\xi\)),
+        A \(\bullet\) G = standardWeibullCDF h\(\xi\))
+\end{alltt}
+Here \lean{G.IsExtremeValueDistr} says that $G$ is non-degenerate and is a limit of $F(a_n x + b_n)^n$
+at continuity points of $G$, for some distribution function $F$ and affine normalizations.
+Table~\ref{tab:contents} summarizes the rest; the repository's \texttt{THEOREMS.md} lists each result with its source.
+
+\begin{table}[ht]
+\centering\small
+\begin{tabular}{p{0.24\linewidth}p{0.68\linewidth}}
+\toprule
+Area & Main results \\
+\midrule
+Limits of maxima & Fisher--Tippett--Gnedenko; max-stable laws are exactly the extreme value laws \\
+Domains of attraction & Fr\'echet, Weibull and Gumbel characterizations; the quantile form \\
+Peaks over threshold & Pickands--Balkema--de Haan as an equivalence for every shape \\
+Regular variation & Karamata (both halves), Potter bounds, representation theorem, Breiman's lemma \\
+Stable laws & Generalized CLT for $0<\alpha<2$; domains of attraction; uniqueness of the index \\
+Heavy tails & Subexponential laws, random sums, Embrechts--Veraverbeke ruin asymptotics \\
+Estimators & Hill (consistency, normality, dependent data), Pickands and moment consistency, Weissman \\
+Likelihood & GPD and GEV maximum likelihood: consistency, Fisher information; GPD joint normality \\
+Return levels & Asymptotic normality, Wald intervals with asymptotic coverage, the delta method \\
+Dependence & Leadbetter's theorem; extremal index; tail process; $\theta=\vartheta$ under anticlustering and $A(u_n)$ \\
+Time series & AR(1), ARMAX, linear processes, Markov chains; $X=AX+B$ and GARCH(1,1) tail indices \\
+Multivariate & Regular variation, converse Cram\'er--Wold, spectral representation, the multivariate GPD \\
+Processes & Poisson random measures; exceedance point processes; $D[0,1]$ is Polish; tail empirical process \\
+\bottomrule
+\end{tabular}
+\caption{Contents of the library. Section~\ref{sec:limits} qualifies these entries.}
+\label{tab:contents}
+\end{table}
+
+General results that are not specific to extremes (vague convergence, Poisson random measures, mixing
+coefficients, the Skorokhod space, the delta method) were absent from Mathlib when we needed them. They
+live in a separate folder, written to Mathlib's conventions so that they can be contributed upstream.
+
+\section{Testing the statements}\label{sec:trust}
+
+Lean's kernel guarantees that a conclusion follows from its hypotheses. It does not guarantee that the
+hypotheses can hold, or that a definition means what its name suggests. In a formal development these
+failures are easy to produce: in Lean $x/0=0$, $\log 0=0$, and the integral of a non-integrable
+function is $0$, so a statement can be true for an unintended reason. Several statements in the
+project this library started from were false as written and have been corrected. We use the following
+checks, all but the last of which can be rerun from the repository.
+\begin{description}
+  \item[Axiom audit.] Continuous integration fails if any of the library's 9,487 declarations depends on an
+    axiom other than \lean{propext}, \lean{Classical.choice} and \lean{Quot.sound}.
+  \item[Independent kernel.] A nightly job rechecks all declarations, including those of
+    Mathlib, with \texttt{con-leche}, a second kernel.
+  \item[Non-vacuity tests.] 92 tests apply a headline theorem to a concrete object, showing that its
+    hypotheses can hold together. Three of the results in Section~\ref{sec:new} do not have such a test yet.
+  \item[Known-answer tests.] 159 tests check definitions against textbook values, which catches sign
+    and parametrization errors.
+  \item[Junk-value audit.] A scan, run by hand, of 3,718 theorems for statements that hold only through a totalization
+    convention found one such statement, now fixed.
+  \item[Mutation checks.] 323 perturbations of the statements of 45 headline theorems were tried by hand with their proofs kept.
+    A perturbation that still compiles suggests a theorem proved for a trivial reason. One survived, and we
+    judged it harmless.
+  \item[Faithfulness audits.] Six written comparisons of statements with the literature, recording each deviation.
+\end{description}
+These tests and audits were themselves written with AI assistance, so they are not independent of the
+statements they test. They reduce the risk of error, but do not remove it.
+
+\section{What the formalization found}\label{sec:new}
+
+\paragraph{Hypotheses that cannot be dropped.}
+The library contains counterexamples showing that hypotheses of Karamata's theorem, Breiman's lemma, the
+von Mises condition, the generalized CLT, Hill consistency, Leadbetter's theorem and the
+identification $\theta=\vartheta$ of the extremal index are needed.
+
+\paragraph{The extremal index and the tail process.}
+For a stationary regularly varying sequence let $\theta$ be its extremal index, and let $\vartheta$ be the
+candidate extremal index read off the spectral tail process~\cite{ks20}. Then $\theta\le\vartheta$, and they agree
+under anticlustering together with the block condition $A(u_n)$ on a common block sequence. Bai and Wang~\cite{bw} gave a model with $\theta<\vartheta$. We give a much simpler one.
+
+The \emph{echo process} is built from iid Pareto$(\alpha)$ shocks. Each shock of size $z$ appears
+once at its own time and again after a lag that grows with $z$. Since the lag grows without bound, no
+fixed lag sees the echo, so the spectral tail process is $\Theta_t=\mathbf 1\{t=0\}$ and $\vartheta=1$. Yet large values
+still come in pairs, and the extremal index is $\theta=1/2$
+(\lean{logEchoProcess_theta_lt_vartheta}).
+
+\paragraph{An answer to a question of Bai, Kulik and Wang.}
+Bai, Kulik and Wang~\cite{bkw} ask whether there are regularly varying processes for which anticlustering
+holds with $\lim\log r_n/\log n=\rho$ only for $\rho$ up to some $\rho_0<1$. Taking the lag $\lfloor z^\gamma\rfloor+1$
+with $0<\gamma<\alpha$ gives such a process for every $\rho_0=\gamma/\alpha\in(0,1)$: anticlustering at the normalizing levels holds if
+$\rho<\rho_0$ and fails if $\rho>\rho_0$ (\lean{powEchoProcess_antiClustering_iff}).
+
+\paragraph{Mixing and a warning for estimators.}
+The echo processes are $\beta$-mixing, geometrically for the logarithmic lag, and still have $\theta\neq\vartheta$
+(\lean{logEchoProcess_betaMixing_incompatible}). This illustrates the classical point that anticlustering and mixing must
+hold at a common block length. On the same process, the runs estimator with short runs converges to
+$\vartheta$, not to $\theta$ (\lean{logEcho_tendstoInMeasure_runsEstimator}).
+
+\paragraph{Status of these claims.}
+Our literature check compared these results with the papers we could read in full. We could not obtain the Kulik--Soulier
+book~\cite{ks20}, Weissman--Cohen, or Smith (1988), so the claim of novelty is provisional, and no expert has confirmed it.
+Some results close to these are known: $\theta\le\vartheta$ is Lemma 7.5.4 of~\cite{ks20} as cited by~\cite{bkw},
+and the principle behind the mixing example is classical.
+
+\section{Limitations}\label{sec:limits}
+
+Many results are narrower than their textbook forms. The README and \texttt{FAITHFULNESS.md} give the full list; the most important are the following.
+\begin{itemize}
+  \item \textbf{No expert review.} This matters most, and the rest of this list may be incomplete because of it.
+  \item \textbf{GEV likelihood.} Maximum likelihood consistency is proved on a compact parameter set and for an exact iid GEV sample, not for block maxima from a law in a domain of attraction.
+    Joint normality of the three-parameter estimator is not proved, so GEV and Gumbel return-level normality
+    assume parameter normality as a hypothesis.
+  \item \textbf{GPD likelihood and return levels.} Joint normality needs $\xi_0>-1/2$, $\xi_0\neq 0$ and a compact parameter
+    set. Peaks-over-threshold return levels treat the excesses as an exact iid GPD sample with a known exceedance probability.
+  \item \textbf{Estimators.} Normality of the Pickands and moment estimators is not proved, and neither are
+    profile-likelihood intervals. The blocks and runs estimators of the extremal index assume that their population ratio converges to $\theta$, and the intervals estimator assumes its empirical-moment limits.
+  \item \textbf{Ruin.} The ruin probability is defined by the Pollaczek--Khinchine formula, not derived from the risk process.
+  \item \textbf{Stochastic recurrence.} The tail of $X=AX+B$ is identified through moment bounds. The sharp Kesten--Goldie
+    asymptotics is not proved.
+  \item \textbf{Dependence.} Several theorems assume noise that is nonnegative at every sample point.
+  \item \textbf{Asymptotics only.} The library says nothing about finite-sample behaviour or about choosing a threshold or block length.
+\end{itemize}
+
+\section{How it was built}
+
+Most of the code, tests and documents were written by AI coding agents (Claude Code), directed and reviewed by the author, on top of the
+Aalto project. Codex, a second AI system, reviewed the statements and claims of this release. This changes what evidence the library
+can offer. The proofs need no trust in the agents, because the kernel checks them. The statements do, and that is the reason for
+Section~\ref{sec:trust} and for the request below.
+
+\section{Conclusion}
+
+We would most value review by extreme value theorists. The repository's \texttt{docs/REVIEW.md} translates each statement into ordinary mathematics,
+so no knowledge of Lean is needed, and corrections are very welcome. Next come the missing likelihood results, contributing the general
+results to Mathlib, and executable estimators cross-checked against R and Python packages.
+
+\begin{thebibliography}{9}
+\bibitem{bkw} S.~Bai, R.~Kulik and Y.~Wang. A remarkable example on clustering of extremes for regularly-varying stochastic processes. arXiv:2409.17966; Ann.\ Appl.\ Probab.\ 36(4) (2026) 3132--3168.
+\bibitem{bw} S.~Bai and Y.~Wang. Tail processes for stable-regenerative multiple-stable model. arXiv:2110.07499; Bernoulli 29(4) (2023) 3255--3279.
+\bibitem{lean4} L.~de Moura and S.~Ullrich. The Lean 4 theorem prover and programming language. CADE 2021.
+\bibitem{evp} K.~Kytölä and contributors. ExtremeValueProject. \url{https://github.com/kkytola/ExtremeValueProject}.
+\bibitem{ks20} R.~Kulik and P.~Soulier. \emph{Heavy-Tailed Time Series}. Springer, 2020.
+\bibitem{mathlib} The mathlib Community. The Lean mathematical library. CPP 2020.
+\end{thebibliography}
+
+\end{document}

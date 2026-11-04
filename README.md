@@ -13,7 +13,7 @@ behave, how heavy tails look, how to estimate them from data, and how extremes c
   statistics of extremes (estimators, likelihood, return levels, confidence intervals), stable laws
   and heavy tails, extremes of dependent sequences, multivariate extremes, point processes and the
   Skorokhod space. About 100,000 lines and 4,300 theorems and lemmas, with no `sorry`.
-- **Checked twice.** Lean's kernel checks every proof, and CI re-checks all 718,274 declarations
+- **Checked twice.** Lean's kernel checks every proof, and CI re-checks all 719,515 declarations
   with an independent checker.
 - **Tested against the textbooks.** Proving a theorem is not enough: it has to *state* the right
   thing. About 250 specification tests and six audits check that it does.
@@ -41,9 +41,9 @@ The Fisher–Tippett–Gnedenko theorem, as stated in the library:
 ```lean
 theorem CumulativeDistributionFunction.IsExtremeValueDistr.classification
     {G : CumulativeDistributionFunction} (hG : G.IsExtremeValueDistr) :
-    (∃ A, A • G = standardGumbelCDF) ∨
-      (∃ A ξ, ∃ (hξ : 0 < ξ), A • G = standardFrechetCDF hξ) ∨
-      (∃ A ξ, ∃ (hξ : 0 < ξ), A • G = standardWeibullCDF hξ)
+    (∃ (A : AffineIncrEquiv), A • G = standardGumbelCDF) ∨
+      (∃ (A : AffineIncrEquiv) (ξ : ℝ) (hξ : 0 < ξ), A • G = standardFrechetCDF hξ) ∨
+      (∃ (A : AffineIncrEquiv) (ξ : ℝ) (hξ : 0 < ξ), A • G = standardWeibullCDF hξ)
 ```
 
 `G.IsExtremeValueDistr` says that `G` is non-degenerate and is the limit of `F(aₙx + bₙ)ⁿ` for some
@@ -62,12 +62,12 @@ that the statement says what the textbook says. The library checks both.
 | Check | What it rules out | Result |
 |---|---|---|
 | Lean's kernel, at every build | a wrong proof | every proof checked |
-| [`con-leche`](.github/workflows/kernel-check.yml), an independent kernel with a machine-checked proof that it never accepts `False` | a bug in Lean's kernel | all 718,274 declarations accepted |
+| [`con-leche`](.github/workflows/kernel-check.yml), an independent kernel with a machine-checked proof that it never accepts `False` | a bug in Lean's kernel | all 719,515 declarations accepted (2026-11-04), nightly |
 | [Axiom audit](Test/AxiomAudit.lean), at every build in CI | `sorry` and hidden assumptions | all 9,487 declarations use only `propext`, `Classical.choice`, `Quot.sound` |
-| [Non-vacuity tests](Test/README.md) | hypotheses that can never hold together | 92 tests: every headline theorem applied to a concrete object |
-| [Known-answer tests](Test/README.md) | sign and parametrization slips in definitions | 158 tests against textbook values (Gumbel moments, Smith's Fisher information, extremal indices, …) |
-| [Junk-value audit](Test/JUNK_VALUES.md) | statements true only because `x/0 = 0` or `log 0 = 0` | 3,718 theorems scanned; one such statement found and fixed |
-| [Mutation checks](Test/MUTATION.md) | statements proved "too easily" | 323 perturbed statements; none reveals a weakness |
+| [Non-vacuity tests](Test/README.md) | hypotheses that can never hold together | 92 tests: most headline theorems applied to a concrete object (not yet `powEchoProcess_antiClustering_iff`, `logEchoProcess_betaMixing_incompatible` or `logEcho_tendstoInMeasure_runsEstimator`) |
+| [Known-answer tests](Test/README.md) | sign and parametrization slips in definitions | 159 tests against textbook values (Gumbel moments, Smith's Fisher information, extremal indices, …) |
+| [Junk-value audit](Test/JUNK_VALUES.md) | statements true only because `x/0 = 0` or `log 0 = 0` | 3,718 theorems scanned, by hand rather than in CI; one such statement found and fixed |
+| [Mutation checks](Test/MUTATION.md) | statements proved "too easily" | 323 perturbed statements, by hand rather than in CI; none reveals a weakness |
 | [Faithfulness audits](FAITHFULNESS.md) | statements that differ from the literature | six audits; every known deviation recorded |
 
 What is still missing is review by human experts: the audits and tests were written with AI
@@ -87,8 +87,8 @@ written for that reader, and corrections are very welcome.
 | Estimators | Hill (consistency, normality, dependent data), Pickands, moment, Weissman | `tendstoInMeasure_hill`, `tendstoInDistribution_hill`, `tendstoInMeasure_pickands`, `tendstoInDistribution_weissman` |
 | Likelihood | GPD and GEV maximum likelihood: consistency, Fisher information, joint normality | `ae_tendsto_gpdMLE'`, `exists_gpdMLE_tendstoInDistribution`, `ae_tendsto_gevMLE` |
 | Return levels | Asymptotic normality; Wald intervals with correct coverage; the delta method | `tendstoInDistribution_gpdReturnLevel`, `tendsto_measure_mem_gpdReturnLevelInterval`, `TendstoInDistribution.delta_method_gaussian` |
-| Dependence | Leadbetter's theorem; extremal index; tail process; `θ = ϑ` under anticlustering | `tendsto_measureReal_partialMax_le_exp`, `HasSpectralTailProcess.hasExtremalIndex_abs` |
-| Clustering estimators | Blocks and runs estimators of the extremal index are consistent | `tendstoInMeasure_blocksEstimator`, `tendstoInMeasure_runsEstimator` |
+| Dependence | Leadbetter's theorem; extremal index; tail process; `θ = ϑ` under anticlustering and the block condition `A(uₙ)` on a common block sequence | `tendsto_measureReal_partialMax_le_exp`, `HasSpectralTailProcess.hasExtremalIndex_abs` |
+| Clustering estimators | Blocks and runs estimators converge to their population ratio; that ratio equals the extremal index only under further hypotheses | `tendstoInMeasure_blocksEstimator`, `tendstoInMeasure_runsEstimator` |
 | Time series | AR(1), ARMAX, linear processes, Markov chains; `X = AX + B` and GARCH(1,1) tails | `SRE.eq_stationaryLaw`, `SRE.GARCH.exists_tail_index` |
 | Multivariate | Regular variation, converse Cramér–Wold, max-stable spectral representation, domains of attraction, the multivariate GPD | `isRegVarVector_iff`, `IsSimpleMaxStable.existsUnique_hasSpectralMeasure`, `isMDAWith_iff`, `IsMDAWith.tendsto_conditionalExcessCDF` |
 | Processes | Poisson random measures; exceedances converge to a Poisson process; `D[0,1]` is Polish; tail empirical process ⇒ Brownian motion | `ProbabilityTheory.exists_isPoissonRandomMeasure`, `SkorokhodSpace.instPolishSpace`, `tendstoInDistribution_tailEmpiricalPath` |
@@ -130,12 +130,16 @@ assistance, and no human expert has checked them. The kernel guarantees the proo
 statement matches its textbook. The new results' novelty has not been confirmed by experts either.
 
 **Maximum likelihood and return levels**
-- GEV: consistency only on a compact parameter set `K ⊂ {ξ > −1, σ > 0}`. Joint normality of the
+- GEV: consistency only on a compact parameter set `K ⊂ {ξ > −1, σ > 0}`, and only for an exact iid GEV
+  sample. Fitting finite-block maxima from a law in a domain of attraction, or dependent block maxima, is
+  not covered. Joint normality of the
   three-parameter estimator is not proved, so GEV and Gumbel return-level normality
   (`tendstoInDistribution_gevReturnLevel`) assume parameter normality as a hypothesis.
 - GPD: also on a compact set, with the true parameter in its interior. Joint normality needs
   `ξ₀ > −1/2` and `ξ₀ ≠ 0`.
-- `ξ = 0`: the likelihood is only partly covered. Normality of the estimator at `ξ = 0` is not proved.
+- `ξ = 0`: the likelihood is only partly covered. With the shape known to be `0`, the scale estimator is
+  normal (`tendstoInDistribution_sampleMean_gpd_zero`). Joint estimation when the true shape is `0` is not
+  proved.
 - Peaks-over-threshold return levels treat the excesses as an exact iid GPD sample with a known exceedance
   probability `ζ`. The number of exceedances is not random, and neither the error of the GPD
   approximation above a finite threshold nor the estimation of `ζ` is accounted for.
@@ -146,10 +150,13 @@ statement matches its textbook. The new results' novelty has not been confirmed 
   (`λ = 0`), and there are no bias-reduced estimators.
 - The basic far-tail Weissman theorems assume the rate and the bias condition; second-order versions
   derive them, for `ρ < 0`, and with extra regularity at `ρ = 0`.
-- The intervals estimator of the extremal index (`tendstoInMeasure_intervalsEstimator₁`) takes the limit
-  law of the inter-exceedance times (Ferro–Segers Theorem 1) and the moment convergence as hypotheses.
-- The dependent-data Hill theorem and the intervals estimator have only been instantiated on iid data, so
-  no test shows them applying to a genuinely dependent sequence.
+- The blocks and runs estimators (`tendstoInMeasure_blocksEstimator`, `tendstoInMeasure_runsEstimator`)
+  assume that the population block or run ratio converges to `θ`. They do not prove that this limit is the
+  extremal index, and on the echo process it is not (`logEcho_tendstoInMeasure_runsEstimator`).
+- The intervals estimator (`tendstoInMeasure_intervalsEstimator₁`) assumes the two empirical-moment limits.
+  Deriving them from a sequence's actual inter-exceedance times (Ferro–Segers Theorem 1) is not proved.
+- The non-vacuity tests of the dependent-data Hill theorem and of the intervals estimator use iid data.
+  Hill does have a dependent application in the library (`MovingAverage.tendstoInMeasure_hill`).
 - These are asymptotic statements. The library says nothing about finite samples or how to choose a
   threshold, a block length or `k`.
 
@@ -161,11 +168,13 @@ statement matches its textbook. The new results' novelty has not been confirmed 
 - The parametric stable family `S(α, β, σ, μ)` and the tails of stable laws are not developed.
 
 **Dependence**
-- The moving-maximum, moving-average, echo and linear-process theorems assume noise that is nonnegative
-  for every `ω`, not almost surely, which is formally stronger than the textbook.
-- Series of linear processes in `LinearProcess.tendsto_measureReal_tsum_mul_div` need `α < 1`.
-- Infinite moving averages need `Σψ^δ < ∞` for some `δ < min(α, 1)`, which for `α > 1` is slightly
-  stronger than the optimal `Σψ < ∞`.
+- `θ = ϑ` needs anticlustering and the block condition `A(uₙ)` on a common block sequence, and this is
+  essential: the echo processes are β-mixing and have `θ < ϑ`.
+- The moving-maximum, moving-average and echo theorems assume noise that is nonnegative for every `ω`, not
+  almost surely, which is formally stronger than the textbook. The tails of linear processes do not
+  (`tendsto_measureReal_tsum_mul_div_of_summable_rpow` allows signed noise and coefficients).
+- Infinite moving averages need `Σ|ψ|^δ < ∞` for some `δ < min(α, 1)`, which for `α > 1` is slightly
+  stronger than the optimal `Σ|ψ| < ∞`.
 - ARMAX needs exact Pareto innovations.
 
 **Multivariate extremes and processes**
@@ -176,12 +185,11 @@ statement matches its textbook. The new results' novelty has not been confirmed 
   estimation is not finished.
 - Point-process convergence is stated through joint laws of counts on finite families of disjoint sets,
   with no topology on the space of measures.
-- The tail empirical process is uniform and unweighted. Cluster point processes and Brown–Resnick, Schlather
+- The functional limit of the tail empirical process is for uniform observations in unweighted `D[0,1]`;
+  only weighted near-zero bounds are proved beyond it. Cluster point processes and Brown–Resnick, Schlather
   and extremal-t processes are not formalized.
 
 **Classical theory**
-- The von Mises criterion for the Gumbel domain (`isInMDAGumbel_of_vonMises`) covers only an infinite right
-  endpoint.
 - Karamata's direct half has versions for measurable `F` and for `F` antitone on `[a, ∞)`, but
   its converse `IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi` assumes `F` antitone on all of `ℝ`.
 

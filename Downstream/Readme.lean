@@ -9,7 +9,7 @@ imports only the umbrella module and restates the theorem the README quotes.
 -/
 
 example {G : CumulativeDistributionFunction} (hG : G.IsExtremeValueDistr) :
-    (∃ A, A • G = standardGumbelCDF) ∨
-      (∃ A ξ, ∃ (hξ : 0 < ξ), A • G = standardFrechetCDF hξ) ∨
-      (∃ A ξ, ∃ (hξ : 0 < ξ), A • G = standardWeibullCDF hξ) :=
+    (∃ (A : AffineIncrEquiv), A • G = standardGumbelCDF) ∨
+      (∃ (A : AffineIncrEquiv) (ξ : ℝ) (hξ : 0 < ξ), A • G = standardFrechetCDF hξ) ∨
+      (∃ (A : AffineIncrEquiv) (ξ : ℝ) (hξ : 0 < ξ), A • G = standardWeibullCDF hξ) :=
   hG.classification

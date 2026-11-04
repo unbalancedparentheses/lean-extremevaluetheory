@@ -34,6 +34,9 @@ and 1.0 releases.
 - [x] Limitations section and "Use it in your project" in the README; downstream CI job
 - [>] Independent AI review of the statements and claims by Codex; fix what it finds. This is AI review,
   and does not replace expert review
+- [ ] Non-vacuity tests for `powEchoProcess_antiClustering_iff`, `logEchoProcess_betaMixing_incompatible`
+  and `logEcho_tendstoInMeasure_runsEstimator` (found by the Codex review; can follow the release, the
+  README discloses the gap)
 - [ ] `CHANGELOG.md`, the tag and GitHub release `v0.9.0`, which creates the Zenodo DOI; add the DOI to
   `CITATION.cff` and the README
 - [ ] Library paper: *agent* drafts, Codex reviews, *you* submit to arXiv (check early whether you need an

@@ -245,7 +245,7 @@ survivor (strengthening `1 < α` to `2 < α` in Karamata) is harmless. Every hyp
 Besides Lean's own kernel at build time, CI re-checks the whole exported environment (the library
 and everything it uses from Mathlib) with `con-leche --verified`, an independent kernel checker with a
 machine-checked proof that it never accepts a declaration of type `False`
-(`.github/workflows/kernel-check.yml`). First full run (2026-10-18): 718,274 declarations accepted.
+(`.github/workflows/kernel-check.yml`). First full run (2026-10-18): 718,274 declarations accepted; on 2026-11-04: 719,515.
 This checks proofs, not statements: the audits below remain the evidence that the statements are
 the intended ones.
 
