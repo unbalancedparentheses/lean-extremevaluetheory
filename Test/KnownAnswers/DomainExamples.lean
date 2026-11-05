@@ -1,4 +1,6 @@
+import ExtremeValueTheory.DomainOfAttraction.Examples
 import ExtremeValueTheory.DomainOfAttraction.GEVDomain
+import ExtremeValueTheory.DomainOfAttraction.SampleMaxima
 
 /-!
 # Known answers and non-vacuity: `IsInMDAGEV` against `gevCDF`, and the standard laws
@@ -44,5 +46,103 @@ theorem test_exists_isInMDAGEV_of_tendsto_exponential :
     ∃ ξ, standardExponentialCDF.IsInMDAGEV ξ := by
   obtain ⟨As, hAs⟩ := isInMDAGumbel_standardExponentialCDF
   exact exists_isInMDAGEV_of_tendsto isExtremeValueDistr_standardGumbelCDF.1 fun x _ => hAs x
+
+/-- Exercises `IsInMDAGEV.unique`: the Pareto(`2`) law is in `MDA(H_{1/2})`, and in no other
+`MDA(H_ξ)`; so the exponential law's `ξ = 0` and the uniform law's `ξ = -1` do not apply to it. -/
+theorem test_unique_pareto {ξ : ℝ} (h : (paretoCDF (two_pos : (0 : ℝ) < 2)).IsInMDAGEV ξ) :
+    ξ = 1 / 2 :=
+  h.unique (isInMDAGEV_paretoCDF two_pos)
+
+/-! ### The normal, Gamma and Cauchy laws -/
+
+/-- The normal law at the textbook levels, at `x = 0`: the limit is `Λ(0) = e⁻¹`. -/
+theorem test_tendsto_standardNormalCDF_pow_zero :
+    Tendsto (fun n ↦ standardNormalCDF (normalScale n * 0 + normalLocation n) ^ n) atTop
+      (𝓝 (exp (-1))) := by
+  have h := tendsto_standardNormalCDF_pow 0
+  rwa [standardGumbelCDF_apply_eq, neg_zero, exp_zero] at h
+
+/-- The normal law is in `MDA(H_0)` and in no other domain: its tail is lighter than any power. -/
+theorem test_normal_not_isInMDAGEV {ξ : ℝ} (hξ : ξ ≠ 0) : ¬ standardNormalCDF.IsInMDAGEV ξ :=
+  fun h ↦ hξ (h.unique isInMDAGEV_standardNormalCDF)
+
+/-- Normal laws with any mean and positive variance are in `MDA(H_0)`. -/
+theorem test_isInMDAGEV_gaussianReal : (ofMeasure (gaussianReal 3 2)).IsInMDAGEV 0 :=
+  isInMDAGEV_ofMeasure_gaussianReal 3 two_ne_zero
+
+/-- The Gamma law at `a = r = 1` is the exponential law, and the constants reduce to the classical
+`a_n = 1`, `b_n = log n`: `F (x + log n) ^ n → Λ(x)`. -/
+theorem test_tendsto_gammaCDF_pow_one (x : ℝ) :
+    Tendsto (fun n : ℕ ↦ gammaCDF 1 1 (x + log n) ^ n) atTop (𝓝 (standardGumbelCDF x)) := by
+  have h := tendsto_gammaCDF_pow one_pos one_pos x
+  simpa using h
+
+/-- Erlang law of shape `3`, rate `2`, in `MDA(H_0)`. -/
+theorem test_isInMDAGEV_erlang : (gammaCDF 3 2).IsInMDAGEV 0 :=
+  isInMDAGEV_gammaCDF (by norm_num) (by norm_num)
+
+/-- The Cauchy law at `x = 1`: `F (n / π) ^ n → Φ_1(1) = e⁻¹`. -/
+theorem test_tendsto_standardCauchyCDF_pow_one :
+    Tendsto (fun n : ℕ ↦ standardCauchyCDF ((n : ℝ) / π * 1) ^ n) atTop (𝓝 (exp (-1))) := by
+  have h := tendsto_standardCauchyCDF_pow 1
+  rw [standardFrechetCDF_apply_pos_eq _ one_pos] at h
+  simpa using h
+
+/-- The Cauchy law has `ξ = 1`, not the `ξ = 0` of the normal law. -/
+theorem test_cauchy_not_isInMDAGEV_zero : ¬ standardCauchyCDF.IsInMDAGEV 0 := fun h ↦
+  zero_ne_one (h.unique isInMDAGEV_standardCauchyCDF)
+
+/-! ### Random-variable forms -/
+
+/-- An iid standard normal sequence, packaged with its marginal c.d.f. Test-specific. -/
+private theorem exists_iid_normal :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ),
+      IsProbabilityMeasure P ∧ (∀ i, Measurable (X i)) ∧ iIndepFun X P ∧
+      (∀ i, IdentDistrib (X i) (X 0) P P) ∧
+      ∀ x, standardNormalCDF x = P.real {ω | X 0 ω ≤ x} := by
+  obtain ⟨Ω, _, P, X, hXm, hlaw, hind, hP⟩ := exists_iid ℕ (gaussianReal 0 1)
+  refine ⟨Ω, _, P, X, hP, hXm, hind, fun i ↦ (hlaw i).identDistrib (hlaw 0), fun x ↦ ?_⟩
+  rw [standardNormalCDF, ofMeasure_apply, ← (hlaw 0).map_eq, map_measureReal_apply (hXm 0)
+    measurableSet_Iic]
+  rfl
+
+/-- **Non-vacuity of `isInMDAGEV_iff_exists_tendsto_sampleMax`**: the maxima of an iid normal sequence,
+suitably normalized, converge in distribution to the Gumbel law `H_0`. -/
+theorem test_normal_sampleMax :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ) (a b : ℕ → ℝ),
+      IsProbabilityMeasure P ∧ (∀ n, 0 < a n) ∧ ∀ x,
+        Tendsto (fun n ↦ P.real {ω | (blockMax X n 0 ω - b n) / a n ≤ x}) atTop
+          (𝓝 (gevCDF 0 x)) := by
+  obtain ⟨Ω, _, P, X, hP, -, hind, hid, hF⟩ := exists_iid_normal
+  obtain ⟨a, b, ha, h⟩ :=
+    (isInMDAGEV_iff_exists_tendsto_sampleMax hF hind hid 0).1 isInMDAGEV_standardNormalCDF
+  exact ⟨Ω, _, P, X, a, b, hP, ha, h⟩
+
+/-- **Non-vacuity of `exists_isInMDAGEV_and_smul_eq_of_tendsto_sampleMax`**: applied to the limit of
+the normal maxima, it recovers that the limit is of GEV type. -/
+theorem test_fisherTippettGnedenko_sampleMax :
+    ∃ (A : AffineIncrEquiv) (ξ : ℝ), A • gevCDF 0 = gevCDF ξ := by
+  obtain ⟨Ω, _, P, X, hP, -, hind, hid, hF⟩ := exists_iid_normal
+  obtain ⟨a, b, ha, h⟩ :=
+    (isInMDAGEV_iff_exists_tendsto_sampleMax hF hind hid 0).1 isInMDAGEV_standardNormalCDF
+  exact (exists_isInMDAGEV_and_smul_eq_of_tendsto_sampleMax hF hind hid ha
+    (isExtremeValueDistr_gevCDF 0).1 fun x _ ↦ h x).2
+
+/-- **Non-vacuity of `isInMDAGEV_iff_exists_tendstoUniformlyOn_cond`**: for a normal variable, the
+excess over a high threshold, rescaled and conditioned, tends to the standard exponential law: the
+limit `gpdSurvivalAll 0 1 x` is `e^{-x}`. -/
+theorem test_normal_cond_excess :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : Ω → ℝ) (β : ℝ → ℝ),
+      IsProbabilityMeasure P ∧
+      TendstoUniformlyOn (fun u x ↦ (P[|X ⁻¹' Ioi u]).real {ω | β u * x < X ω - u})
+        (fun x ↦ exp (-x)) standardNormalCDF.upperEndpointFilter (Ici 0) := by
+  obtain ⟨Ω, _, P, X, hP, hXm, -, -, hF⟩ := exists_iid_normal
+  obtain ⟨β, -, h⟩ := (isInMDAGEV_iff_exists_tendstoUniformlyOn_cond (hXm 0) hF 0).1
+    isInMDAGEV_standardNormalCDF
+  have hg : gpdSurvivalAll 0 1 = fun x ↦ exp (-x) := by
+    funext x
+    simp [gpdSurvivalAll]
+  rw [hg] at h
+  exact ⟨Ω, _, P, X 0, β, hP, h⟩
 
 end Test.KnownAnswers.DomainExamples
