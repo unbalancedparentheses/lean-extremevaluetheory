@@ -279,8 +279,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbability
 
 theorem survival_eq (hX₀ : Measurable X₀) (x : ℝ) :
     survival P X₀ x = 1 - (P.map X₀).real (Iic x) := by
-  rw [survival_eq_measureReal, map_measureReal_apply hX₀ measurableSet_Iic, ← probReal_compl_eq_one_sub
-    (hX₀ measurableSet_Iic)]
+  rw [survival_eq_measureReal, map_measureReal_apply hX₀ measurableSet_Iic,
+    ← probReal_compl_eq_one_sub (hX₀ measurableSet_Iic)]
   congr 1
   ext ω; simp
 
@@ -587,6 +587,9 @@ theorem hasExtremalIndexStrict_canonical :
   exact map_stationaryLaw hφ0 hφ1 hα
 
 end Existence
+
+@[deprecated ExtremeValueTheory.survival (since := "2026-11-05")]
+alias survival := ExtremeValueTheory.survival
 
 end ARMAX
 
