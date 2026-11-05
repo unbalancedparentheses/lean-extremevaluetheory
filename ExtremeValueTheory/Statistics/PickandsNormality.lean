@@ -258,7 +258,7 @@ theorem tendstoInMeasure_euclideanSpace_zero {ι : Type*} [Fintype ι]
   have hc1 : 1 ≤ c := by rw [hc]; linarith [(Nat.cast_nonneg (Fintype.card ι) : (0 : ℝ) ≤ _)]
   have hη : 0 < ε / c := by positivity
   have hi := fun i => (tendstoInMeasure_iff_norm.1 (h i)) (ε / c) hη
-  have hsum := tendsto_finset_sum (Finset.univ : Finset ι) fun i _ => hi i
+  have hsum := tendsto_finsetSum (Finset.univ : Finset ι) fun i _ => hi i
   simp only [Finset.sum_const_zero] at hsum
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hsum
     (fun _ => bot_le) fun n => ?_
@@ -806,15 +806,28 @@ theorem pickandsVariance_nonneg (γ : ℝ) : 0 ≤ pickandsVariance γ := by
 variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}
   {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'} [IsProbabilityMeasure P']
 
+omit [IsProbabilityMeasure P] in
+/-- A uniform random variable lies in the open interval `(0, 1)` almost surely. -/
+theorem ae_mem_Ioo_of_map_eq_uniform {V : Ω → ℝ} (hV : Measurable V)
+    (hlaw : P.map V = volume.restrict (Set.Icc 0 1)) : P {ω | V ω ∉ Ioo (0 : ℝ) 1} = 0 := by
+  have h0 : ∀ᵐ x ∂(volume : Measure ℝ), x ≠ 0 := compl_mem_ae_iff.2 (measure_singleton 0)
+  have h1 : ∀ᵐ x ∂(volume : Measure ℝ), x ≠ 1 := compl_mem_ae_iff.2 (measure_singleton 1)
+  have h : ∀ᵐ x ∂(P.map V), x ∈ Ioo (0 : ℝ) 1 := by
+    rw [hlaw]
+    filter_upwards [ae_restrict_mem measurableSet_Icc, ae_restrict_of_ae h0,
+      ae_restrict_of_ae h1] with x hx hx0 hx1
+    exact ⟨lt_of_le_of_ne hx.1 hx0.symm, lt_of_le_of_ne hx.2 hx1⟩
+  exact ae_of_ae_map hV.aemeasurable h
+
 /-- **Asymptotic normality of the Pickands estimator, uniform representation.** Let the `V_i`
-be iid uniform on `(0, 1)` (with values in `(0, 1)` everywhere), let `U` be measurable and
+be iid uniform on `[0, 1]`, let `U` be measurable and
 nondecreasing on `(1, ∞)` and of second-order extended regular variation with indices `γ`, `ρ`
 and auxiliary functions `a`, `A`. If `k → ∞`, `k/n → 0` and `√k A(n/k) → λ`, then the Pickands
 estimator `γ̂_P` of the sample `U(1/(1 - V_i))` satisfies
 `√k (γ̂_P - γ) ⇒ N(λ b_{γ,ρ}, σ²_γ)` (`pickandsBias`, `pickandsVariance`). -/
 theorem tendstoInDistribution_pickands_uniform {V : ℕ → Ω → ℝ} (hV : ∀ i, Measurable (V i))
     (hind : iIndepFun V P) (hlaw : ∀ i, P.map (V i) = volume.restrict (Set.Icc 0 1))
-    (hV01 : ∀ i ω, V i ω ∈ Ioo (0 : ℝ) 1) {U : ℝ → ℝ} (hUm : MonotoneOn U (Ioi 1))
+    {U : ℝ → ℝ} (hUm : MonotoneOn U (Ioi 1))
     (hUmeas : Measurable U) {γ ρ lam : ℝ} {a A : ℝ → ℝ}
     (h2 : IsExtSecondOrderRegularlyVarying U γ ρ a A) {k : ℕ → ℕ}
     (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
@@ -866,11 +879,23 @@ theorem tendstoInDistribution_pickands_uniform {V : ℕ → Ω → ℝ} (hV : �
       refine hUm ?_ ?_ (one_div_le_one_div_of_le hw1 (by linarith))
       · simp only [mem_Ioi]; rw [lt_one_div one_pos hv1]; linarith [hv.1]
       · simp only [mem_Ioi]; rw [lt_one_div one_pos hw1]; linarith [hw.1]
-    refine tendstoInMeasure_of_eventuallyEq (g := fun _ _ => (0 : ℝ))
-      (tendstoInMeasure_const_of_tendsto tendsto_const_nhds) ?_
+    have hzero : TendstoInMeasure P (fun (_ : ℕ) (_ : Ω) => (0 : ℝ)) atTop (fun _ => 0) :=
+      tendstoInMeasure_const_of_tendsto tendsto_const_nhds
+    refine hzero.congr_of_measure_ne ?_
+    have hnull : ∀ n : ℕ, P {ω | ∃ i : Fin n, V i ω ∉ Ioo (0 : ℝ) 1} = 0 := fun n => by
+      have : {ω | ∃ i : Fin n, V i ω ∉ Ioo (0 : ℝ) 1} = ⋃ i : Fin n, {ω | V i ω ∉ Ioo (0 : ℝ) 1} := by
+        ext; simp
+      rw [this]
+      exact measure_iUnion_null fun i => ae_mem_Ioo_of_map_eq_uniform (hV i) (hlaw i)
+    refine tendsto_const_nhds.congr' ?_
     filter_upwards [hk.eventually_gt_atTop 0, h4, ht.eventually h2.eventually_ne_zero,
       eventually_gt_atTop 0] with n hk0 hn4 hA0 hn0
-    intro ω
+    refine (measure_mono_null (fun ω hω => ?_) (hnull n)).symm
+    simp only [mem_ofPred_eq] at hω ⊢
+    by_contra hcon
+    push Not at hcon
+    apply hω
+    have hV01 : ∀ i : Fin n, V i ω ∈ Ioo (0 : ℝ) 1 := hcon
     have hk0' : (0 : ℝ) < k n := by exact_mod_cast hk0
     have hn0' : (0 : ℝ) < n := by exact_mod_cast hn0
     have hkk : (k n : ℝ) / n * (n / k n) = 1 := by field_simp
@@ -879,7 +904,7 @@ theorem tendstoInDistribution_pickands_uniform {V : ℕ → Ω → ℝ} (hV : �
       intro j hj
       rw [show (fun i : Fin n => U (1 / (1 - V i ω))) =
         (fun v : ℝ => U (1 / (1 - v))) ∘ (fun i : Fin n => V i ω) from rfl,
-        orderStat_comp_monotoneOn hg (fun i => hV01 i ω) hj, tailTime, inv_div,
+        orderStat_comp_monotoneOn hg hV01 hj, tailTime, inv_div,
         div_mul_eq_mul_div, hkk]
     have key : pickands (fun i : Fin n => U (1 / (1 - V i ω))) (k n) =
         pickandsLog U (n / k n) (Y n ω) / Real.log 2 := by
@@ -909,6 +934,241 @@ theorem tendstoInDistribution_pickands_uniform {V : ℕ → Ω → ℝ} (hV : �
         Real.coe_toNNReal _ (pickandsVariance_nonneg γ), hv0, hS, pickandsGrad_quadForm,
         pickandsVariance]
       field_simp
+
+/-- The image of the standard exponential law under `x ↦ 1 - e^{-x}` is the uniform law. -/
+theorem map_one_sub_exp_neg_expMeasure :
+    (expMeasure 1).map (fun x => 1 - exp (-x)) = volume.restrict (Set.Icc 0 1) := by
+  have hm : Measurable fun x : ℝ => 1 - exp (-x) := by fun_prop
+  have : IsFiniteMeasure ((volume : Measure ℝ).restrict (Set.Icc 0 1)) := ⟨by simp⟩
+  refine Measure.ext_of_Iic _ _ fun s => ?_
+  rw [Measure.map_apply hm measurableSet_Iic, Measure.restrict_apply measurableSet_Iic]
+  rcases lt_or_ge s 0 with hs | hs
+  · have e : Iic s ∩ Set.Icc (0 : ℝ) 1 = ∅ := by
+      ext x; simp only [mem_inter_iff, mem_Iic, mem_Icc, mem_empty_iff_false, iff_false]
+      rintro ⟨h1, h2, _⟩; linarith
+    rw [e, measure_empty]
+    refine measure_mono_null (t := Iic 0) (fun x hx => ?_) ?_
+    · simp only [mem_preimage, mem_Iic] at hx ⊢
+      by_contra hx0
+      have : exp (-x) < 1 := by
+        rw [← exp_zero]; exact exp_lt_exp.2 (by linarith [not_le.1 hx0])
+      linarith
+    · have h0 := expMeasure_Iic (le_refl (0 : ℝ))
+      simpa using h0
+  rcases lt_or_ge s 1 with hs1 | hs1
+  · have h1s : 0 < 1 - s := by linarith
+    have e1 : (fun x : ℝ => 1 - exp (-x)) ⁻¹' Iic s = Iic (-log (1 - s)) := by
+      ext x
+      simp only [mem_preimage, mem_Iic]
+      rw [show (1 - exp (-x) ≤ s) ↔ 1 - s ≤ exp (-x) by constructor <;> intro h <;> linarith,
+        ← log_le_iff_le_exp h1s]
+      constructor <;> intro h <;> linarith
+    have e2 : Iic s ∩ Set.Icc (0 : ℝ) 1 = Set.Icc 0 s := by
+      ext x; simp only [mem_inter_iff, mem_Iic, mem_Icc]
+      constructor
+      · rintro ⟨h1, h2, _⟩; exact ⟨h2, h1⟩
+      · rintro ⟨h1, h2⟩; exact ⟨h2, h1, by linarith⟩
+    have hl : 0 ≤ -log (1 - s) := by
+      have := log_nonpos h1s.le (by linarith)
+      linarith
+    rw [e1, e2, expMeasure_Iic hl, neg_neg, exp_log h1s, Real.volume_Icc]
+    congr 1
+    ring
+  · have e1 : (fun x : ℝ => 1 - exp (-x)) ⁻¹' Iic s = univ := by
+      ext x
+      simp only [mem_preimage, mem_Iic, mem_univ, iff_true]
+      linarith [exp_pos (-x)]
+    have e2 : Iic s ∩ Set.Icc (0 : ℝ) 1 = Set.Icc 0 1 := by
+      ext x; simp only [mem_inter_iff, mem_Iic, mem_Icc]
+      constructor
+      · rintro ⟨_, h⟩; exact h
+      · intro h; exact ⟨by linarith [h.2], h⟩
+    rw [e1, e2, measure_univ, Real.volume_Icc]
+    norm_num
+
+/-- **Asymptotic normality of the Pickands estimator on the exponential scale**: the statement of
+`tendstoInDistribution_pickands_uniform` for the samples `U(e^{E_i})`, `E_i` iid standard
+exponential. -/
+theorem tendstoInDistribution_pickands_comp_exp {E : ℕ → Ω → ℝ} (hEm : ∀ i, Measurable (E i))
+    (hE : ∀ i, HasLaw (E i) (expMeasure 1) P) (hind : iIndepFun E P) {U : ℝ → ℝ}
+    (hUm : MonotoneOn U (Ioi 1)) (hUmeas : Measurable U) {γ ρ lam : ℝ} {a A : ℝ → ℝ}
+    (h2 : IsExtSecondOrderRegularlyVarying U γ ρ a A) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {Z : Ω' → ℝ}
+    (hZ : HasLaw Z (gaussianReal (lam * pickandsBias γ ρ) (pickandsVariance γ).toNNReal) P') :
+    TendstoInDistribution (fun n ω => √(k n : ℝ) *
+        (pickands (fun i : Fin n => U (exp (E i ω))) (k n) - γ)) atTop Z (fun _ => P) P' := by
+  have hm : Measurable fun x : ℝ => 1 - exp (-x) := by fun_prop
+  have hlaw : ∀ i, P.map (fun ω => 1 - exp (-E i ω)) = volume.restrict (Set.Icc 0 1) := fun i => by
+    rw [← map_one_sub_exp_neg_expMeasure, ← (hE i).map_eq, Measure.map_map hm (hEm i)]
+    rfl
+  have h := tendstoInDistribution_pickands_uniform (V := fun i ω => 1 - exp (-E i ω))
+    (fun i => hm.comp (hEm i)) (hind.comp (fun _ x => 1 - exp (-x)) fun _ => hm) hlaw hUm hUmeas
+    h2 hk hkn hlam hZ
+  have e : ∀ x : ℝ, 1 / (1 - (1 - exp (-x))) = exp x := fun x => by
+    rw [sub_sub_cancel, exp_neg, one_div, inv_inv]
+  simpa only [e] using h
+
+/-- **Asymptotic normality of the Pickands estimator** (Pickands 1975; Dekkers and de Haan 1989,
+Theorem 2.3; [dHF, Theorem 3.3.5]). Let `X_0, X_1, …` be iid real random variables whose tail
+quantile function `U(t) = F^←(1 - 1/t)` satisfies the second-order condition
+`IsExtSecondOrderRegularlyVarying U γ ρ a A` for some `γ ∈ ℝ`, `ρ`. If `k = k(n) → ∞`, `k / n → 0`
+and `√k A(n / k) → λ`, then the estimator
+`γ̂_P = (log 2)⁻¹ log ((X_{(k+1)} - X_{(2k+1)}) / (X_{(2k+1)} - X_{(4k+1)}))` satisfies
+
+  `√k (γ̂_P - γ) ⇒ N(λ b_{γ,ρ}, σ²_γ)`,
+
+with `b_{γ,ρ} = pickandsBias γ ρ` (`pickandsBias_of_ne`, `pickandsBias_zero_right`) and
+`σ²_γ = pickandsVariance γ`, which is `γ² (2^{2γ+1} + 1) / (2 (2^γ - 1) log 2)²` for `γ ≠ 0` and
+`3 / (4 (log 2)⁴)` for `γ = 0` (`pickandsVariance_of_ne`, `pickandsVariance_zero`).
+
+Two points of comparison with the source:
+
+* The second-order condition is assumed with locally uniform convergence in `x`; [dHF] states it
+  pointwise and deduces uniformity. See `IsExtSecondOrderRegularlyVarying`. That deduction is not
+  formalized, so this hypothesis is formally stronger than the textbook's.
+* `k` is the **smallest** of the three indices, and it is both the index in `√k` and the point
+  `n / k` at which `A` is evaluated, as in Dekkers and de Haan. See the module docstring for the
+  translation if the largest index is called `k`. -/
+theorem tendstoInDistribution_pickands {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
+    (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ}
+    {a A : ℝ → ℝ}
+    (h2 : IsExtSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ a A)
+    {k : ℕ → ℕ} (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {Z : Ω' → ℝ}
+    (hZ : HasLaw Z (gaussianReal (lam * pickandsBias γ ρ) (pickandsVariance γ).toNNReal) P') :
+    TendstoInDistribution (fun n ω =>
+        √(k n : ℝ) * (pickands (fun i : Fin n => X i ω) (k n) - γ))
+      atTop Z (fun _ => P) P' := by
+  obtain ⟨Ω₀, _, P₀, E, hEm, hE, hind, hP₀⟩ := exists_iid ℕ (expMeasure 1)
+  have hUm := measurable_survivalQuantile (survival_anti (P := P) (X 0))
+    (continuousWithinAt_survival (P := P) (hX 0)) (tendsto_survival_atTop (P := P) (hX 0))
+    (tendsto_survival_atBot (P := P) (hX 0))
+  have hUmono := monotoneOn_survivalQuantile (survival_anti (P := P) (X 0))
+    (continuousWithinAt_survival (P := P) (hX 0)) (tendsto_survival_atTop (P := P) (hX 0))
+    (tendsto_survival_atBot (P := P) (hX 0))
+  have hB := tendstoInDistribution_pickands_comp_exp hEm hE hind hUmono hUm h2 hk hkn hlam hZ
+  refine hB.of_map_eq (fun n => ?_) (Eventually.of_forall fun n => ?_)
+  · exact (measurable_const.mul (((measurable_pickands_pi n (k n)).comp
+      (measurable_pi_iff.2 fun i => hX i)).sub_const _)).aemeasurable
+  exact map_statistic_eq_map_statistic_comp_exp hX hindep hident hE hind n
+    (measurable_const.mul ((measurable_pickands_pi n (k n)).sub_const _))
+
+/-- **Asymptotic normality of the Pickands estimator without bias**: if `√k A(n / k) → 0`, then
+`√k (γ̂_P - γ) ⇒ N(0, σ²_γ)`. -/
+theorem tendstoInDistribution_pickands_of_tendsto_zero {X : ℕ → Ω → ℝ}
+    (hX : ∀ i, Measurable (X i)) (hindep : iIndepFun X P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ : ℝ} {a A : ℝ → ℝ}
+    (h2 : IsExtSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ a A)
+    {k : ℕ → ℕ} (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hA : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 0)) {Z : Ω' → ℝ}
+    (hZ : HasLaw Z (gaussianReal 0 (pickandsVariance γ).toNNReal) P') :
+    TendstoInDistribution (fun n ω =>
+        √(k n : ℝ) * (pickands (fun i : Fin n => X i ω) (k n) - γ))
+      atTop Z (fun _ => P) P' :=
+  tendstoInDistribution_pickands hX hindep hident h2 hk hkn hA (by rwa [zero_mul])
+
+/-- `H_{γ,ρ} = (D_{γ+ρ} - D_γ) / ρ` on `(0, ∞)` for `ρ ≠ 0`. -/
+theorem extSecondOrderLimit_of_ne {γ ρ : ℝ} (hρ : ρ ≠ 0) {x : ℝ} (hx : 0 < x) :
+    extSecondOrderLimit γ ρ x = (extRVLimit (γ + ρ) x - extRVLimit γ x) / ρ := by
+  have hsub : Set.uIcc (1 : ℝ) x ⊆ Ioi 0 := fun s hs => by
+    rcases Set.mem_uIcc.1 hs with h | h <;> simp only [mem_Ioi] <;> linarith [h.1]
+  have hd : ∀ s ∈ Set.uIcc (1 : ℝ) x, HasDerivAt (fun s => (extRVLimit (γ + ρ) s -
+      extRVLimit γ s) / ρ) (s ^ (γ - 1) * boxCox ρ s) s := fun s hs => by
+    have hs0 : 0 < s := hsub hs
+    refine (((hasDerivAt_extRVLimit (γ + ρ) hs0).sub (hasDerivAt_extRVLimit γ hs0)).div_const
+      ρ).congr_deriv ?_
+    have hb : boxCox ρ s = (s ^ ρ - 1) / ρ := by simp [boxCox, hρ]
+    rw [hb, show γ + ρ - 1 = (γ - 1) + ρ by ring, rpow_add hs0]
+    ring
+  have hii : IntervalIntegrable (fun s : ℝ => s ^ (γ - 1) * boxCox ρ s) volume 1 x :=
+    ((continuousOn_rpow_mul_boxCox γ ρ).mono hsub).intervalIntegrable
+  rw [extSecondOrderLimit, intervalIntegral.integral_eq_sub_of_hasDerivAt hd hii, extRVLimit_one,
+    extRVLimit_one]
+  ring
+
+/-- Spacing of `D_γ` at `1, 1/2`. -/
+theorem extRVLimit_one_sub_half (γ : ℝ) :
+    extRVLimit γ 1 - extRVLimit γ (1 / 2) = (2 : ℝ) ^ (-γ) * extRVLimit γ 2 := by
+  have h := extRVLimit_mul (γ := γ) (x := 1 / 2) (y := 2) (by norm_num) two_pos
+  rw [show (1 / 2 : ℝ) * 2 = 1 by norm_num] at h
+  rw [h, rpow_neg two_pos.le, one_div, inv_rpow two_pos.le]
+  ring
+
+/-- Spacing of `D_γ` at `1/2, 1/4`. -/
+theorem extRVLimit_half_sub_quarter (γ : ℝ) :
+    extRVLimit γ (1 / 2) - extRVLimit γ (1 / 4) = ((2 : ℝ) ^ (-γ)) ^ 2 * extRVLimit γ 2 := by
+  have h := extRVLimit_mul (γ := γ) (x := 1 / 4) (y := 2) (by norm_num) two_pos
+  rw [show (1 / 4 : ℝ) * 2 = 1 / 2 by norm_num] at h
+  have e : ((1 : ℝ) / 4) ^ γ = ((2 : ℝ) ^ (-γ)) ^ 2 := by
+    rw [show (1 : ℝ) / 4 = 2⁻¹ * 2⁻¹ by norm_num, mul_rpow (by norm_num) (by norm_num),
+      inv_rpow two_pos.le, rpow_neg two_pos.le]
+    ring
+  rw [h, e]
+  ring
+
+/-- **Closed form of the Pickands bias**, `ρ ≠ 0`:
+`b_{γ,ρ} = D_{γ+ρ}(2) / D_γ(2) · 2^{-ρ} (1 - 2^{-ρ}) / (ρ log 2)`. -/
+theorem pickandsBias_of_ne (γ : ℝ) {ρ : ℝ} (hρ : ρ ≠ 0) :
+    pickandsBias γ ρ = extRVLimit (γ + ρ) 2 / extRVLimit γ 2 *
+      ((2 : ℝ) ^ (-ρ) * (1 - (2 : ℝ) ^ (-ρ))) / (ρ * Real.log 2) := by
+  have hl : Real.log 2 ≠ 0 := (Real.log_pos one_lt_two).ne'
+  have hD : extRVLimit γ 2 ≠ 0 := (extRVLimit_pos one_lt_two).ne'
+  have hp : (2 : ℝ) ^ (-γ) ≠ 0 := (rpow_pos_of_pos two_pos _).ne'
+  have e : (2 : ℝ) ^ (-(γ + ρ)) = 2 ^ (-γ) * 2 ^ (-ρ) := by
+    rw [neg_add, rpow_add two_pos]
+  unfold pickandsBias
+  rw [extSecondOrderLimit_of_ne hρ one_pos, extSecondOrderLimit_of_ne hρ (by norm_num),
+    extSecondOrderLimit_of_ne hρ (by norm_num), extRVLimit_one_sub_half γ,
+    extRVLimit_half_sub_quarter γ,
+    show (extRVLimit (γ + ρ) 1 - extRVLimit γ 1) / ρ - (extRVLimit (γ + ρ) (1 / 2) -
+      extRVLimit γ (1 / 2)) / ρ = ((extRVLimit (γ + ρ) 1 - extRVLimit (γ + ρ) (1 / 2)) -
+      (extRVLimit γ 1 - extRVLimit γ (1 / 2))) / ρ by ring,
+    show (extRVLimit (γ + ρ) (1 / 2) - extRVLimit γ (1 / 2)) / ρ - (extRVLimit (γ + ρ) (1 / 4) -
+      extRVLimit γ (1 / 4)) / ρ = ((extRVLimit (γ + ρ) (1 / 2) - extRVLimit (γ + ρ) (1 / 4)) -
+      (extRVLimit γ (1 / 2) - extRVLimit γ (1 / 4))) / ρ by ring,
+    extRVLimit_one_sub_half γ, extRVLimit_one_sub_half (γ + ρ), extRVLimit_half_sub_quarter γ,
+    extRVLimit_half_sub_quarter (γ + ρ), e]
+  field_simp
+  ring
+
+/-- `H_{γ,ρ}` is exact for the model `U = D_γ + c D_{γ+ρ}`, which is therefore of second-order
+extended regular variation, with `a(t) = t^γ (1 + c t^ρ)` and `A(t) = ρ c t^ρ / (1 + c t^ρ)`. This
+is the standard example with a nontrivial second-order term; it covers all `γ ∈ ℝ`, `ρ < 0`. -/
+theorem isExtSecondOrderRegularlyVarying_add_extRVLimit {γ ρ c : ℝ} (hρ : ρ < 0) (hc : 0 < c)
+    {U : ℝ → ℝ} (hU : ∀ t, 0 < t → U t = extRVLimit γ t + c * extRVLimit (γ + ρ) t) :
+    IsExtSecondOrderRegularlyVarying U γ ρ (fun t => t ^ γ * (1 + c * t ^ ρ))
+      (fun t => ρ * (c * t ^ ρ) / (1 + c * t ^ ρ)) := by
+  have hto : Tendsto (fun t : ℝ => c * t ^ ρ) atTop (𝓝 0) := by
+    have := (tendsto_rpow_neg_atTop (y := -ρ) (by linarith)).const_mul c
+    simpa using this
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · filter_upwards [eventually_gt_atTop 0] with t ht
+    positivity
+  · have : Tendsto (fun t : ℝ => ρ * (c * t ^ ρ) / (1 + c * t ^ ρ)) atTop
+        (𝓝 (ρ * 0 / (1 + 0))) :=
+      (hto.const_mul ρ).div (tendsto_const_nhds.add hto) (by norm_num)
+    rwa [mul_zero, zero_div] at this
+  · filter_upwards [eventually_gt_atTop 0] with t ht
+    have : 0 < c * t ^ ρ := by positivity
+    exact (div_neg_of_neg_of_pos (mul_neg_of_neg_of_pos hρ this) (by linarith)).ne
+  · rw [Metric.tendstoLocallyUniformlyOn_iff]
+    intro ε hε x hx
+    refine ⟨Ioi 0, self_mem_nhdsWithin, ?_⟩
+    filter_upwards [eventually_gt_atTop 0] with t ht y hy
+    have hy0 : 0 < y := hy
+    have hw : 0 < c * t ^ ρ := by positivity
+    have htγ : 0 < t ^ γ := by positivity
+    have key : ((U (y * t) - U t) / (t ^ γ * (1 + c * t ^ ρ)) - extRVLimit γ y) /
+        (ρ * (c * t ^ ρ) / (1 + c * t ^ ρ)) = extSecondOrderLimit γ ρ y := by
+      rw [extSecondOrderLimit_of_ne hρ.ne hy0, hU _ (mul_pos hy0 ht), hU _ ht, mul_comm y t,
+        extRVLimit_mul ht hy0, extRVLimit_mul ht hy0, rpow_add ht]
+      have h1w : 1 + c * t ^ ρ ≠ 0 := by positivity
+      have h2 : t ^ ρ ≠ 0 := by positivity
+      field_simp
+      ring
+    rw [key, dist_self]
+    exact hε
 
 end Normality
 
