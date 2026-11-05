@@ -22,4 +22,4 @@ In `Test/KnownAnswers/Statistics.lean`, add `gpdReturnLevel u 0 1 ζ N = u + log
 - [ ] `lake build`, `lake build Test` and `python3 scripts/check_source.py` pass.
 
 ## Pointers
-- `gevFun_returnLevel` in `Statistics/ExtremeQuantile.lean` is the model. `gpdSurvivalAll`: `PeaksOverThreshold/Balkema.lean`.
+- `gevFun_returnLevel` in `Statistics/ExtremeQuantile.lean` is the model. `gpdSurvivalAll`: `PeaksOverThreshold/Frechet.lean`.
