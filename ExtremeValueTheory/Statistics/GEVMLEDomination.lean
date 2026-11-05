@@ -25,7 +25,7 @@ in the support: `u` can be arbitrarily small at a fixed `v`. There are two subst
 
 The exponents are `a = a_w + 2 + 2ε`, `b = b_w + 2ε`, with `a_w = max(0, 2/ξ₀)`,
 `b_w = max(0, -2/ξ₀)`, the exponents of `w = u^{-1/ξ}` in the box. The condition for `E` to be
-integrable under the true law, `-1 < a ξ₀` and `b ξ₀ < 1`, can be met exactly when `ξ₀ > -1/2`
+integrable under the true law, `-1 < a ξ₀` and `b ξ₀ < 1`, can be met for `ξ₀ > -1/2`
 (`exists_gevEnvM_integrable`): for `-1/2 < ξ₀ < 0` it reads `(2 + 2ε) |ξ₀| < 1`.
 
 On the compact sets `{c ≤ v ≤ 1/c}` the second derivative is uniformly continuous

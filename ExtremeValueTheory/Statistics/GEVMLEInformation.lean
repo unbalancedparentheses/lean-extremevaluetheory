@@ -64,13 +64,6 @@ lemma gevThetaOf_gevEtaOf (hξ₀ : ξ₀ ≠ 0) (hσ₀ : σ₀ ≠ 0) {θ : �
     ring
   · field_simp
 
-lemma gevThetaOf_self_eq (hξ₀ : ξ₀ ≠ 0) :
-    gevThetaOf ξ₀ μ₀ σ₀ (ξ₀, 0, 1) = (ξ₀, μ₀, σ₀) := by
-  simp only [gevThetaOf, Prod.mk.injEq, true_and]
-  constructor
-  · simp
-  · field_simp
-
 /-- **The support function is affine in `v`**: `u(θ(η), x) = κ₀ + κ₁ v(x)`. -/
 theorem gevU_gevThetaOf (hξ₀ : ξ₀ ≠ 0) (hσ₀ : σ₀ ≠ 0) {η : ℝ × ℝ × ℝ} (h1 : η.1 ≠ 0)
     (h2 : η.2.2 ≠ 0) (x : ℝ) :
@@ -140,10 +133,6 @@ lemma gevEtaJInv_gevEtaJ (hξ₀ : ξ₀ ≠ 0) (hσ₀ : σ₀ ≠ 0) (d : ℝ 
   simp [gevEtaJ, gevEtaJInv, Prod.mk.injEq]
   constructor <;> field_simp <;> ring
 
-lemma gevEtaJ_smul (r : ℝ) (d : ℝ × ℝ × ℝ) : gevEtaJ ξ₀ σ₀ (r • d) = r • gevEtaJ ξ₀ σ₀ d := by
-  funext j
-  fin_cases j <;> simp [gevEtaJ] <;> ring
-
 /-- The second derivative of `gevThetaOf` at the truth, in the order `(μ, σ, ξ)`. -/
 noncomputable def gevEtaSecond (ξ₀ σ₀ : ℝ) (d e : ℝ × ℝ × ℝ) : Fin 3 → ℝ :=
   ![σ₀ / ξ₀ * (2 * d.2.2 * e.2.2 + d.2.1 * e.2.2 + e.2.1 * d.2.2),
@@ -159,7 +148,6 @@ theorem exists_abs_gevThetaOf_sub_sub_le (hξ₀ : ξ₀ ≠ 0) :
       |(gevThetaOf ξ₀ μ₀ σ₀ ((ξ₀, 0, 1) + d)).2.2 - σ₀ - gevEtaJ ξ₀ σ₀ d 1| ≤
           C * gevEtaNorm d ^ 2 ∧
       (gevThetaOf ξ₀ μ₀ σ₀ ((ξ₀, 0, 1) + d)).1 - ξ₀ - gevEtaJ ξ₀ σ₀ d 2 = 0 := by
-  obtain ⟨τ₀, -⟩ : ∃ _ : ℝ, True := ⟨0, trivial⟩
   set A := |σ₀ / ξ₀| with hA
   refine ⟨2 * A * (1 + |ξ₀|), by positivity, fun d hd => ?_⟩
   obtain ⟨τ, b, c⟩ := d

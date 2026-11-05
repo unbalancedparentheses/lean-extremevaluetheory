@@ -54,9 +54,9 @@ anything is known about how close `θ̂ₙ` is to the observations near the endp
   `η` are singular there).
 * The boundary `ξ₀ = -1/2` and the nonregular case `-1 < ξ₀ < -1/2` of [Smith 1985], where the rate
   differs from `√n`.
-* The results are for maximizers over a compact parameter set, or for consistent local maximizers;
-  the existence of a consistent sequence of local maximizers without a compact parameter set
-  ([Bücher–Segers 2017, Theorem 2]) is not formalized.
+* The results are for maximizers over a compact parameter set, or for local maximizers assumed
+  consistent; the existence of a consistent sequence of local maximizers without a compact parameter
+  set is not formalized.
 
 ## References
 

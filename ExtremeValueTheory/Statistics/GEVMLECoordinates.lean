@@ -14,7 +14,8 @@ position of an observation under the truth. For a parameter `θ = (ξ, μ, σ)`,
 
   `u = κ₀ + κ₁ v`, `κ₁ = ξ σ₀ / (ξ₀ σ)`, `κ₀ = 1 - κ₁ + (ξ/σ) (μ₀ - μ)`.
 
-In the coordinates `η = (ξ, κ₀, κ₁)` (`gevEtaOf`, with inverse `gevThetaOf`; the truth is
+In the coordinates `η = (ξ, κ₀, κ₁)` (`ExtremeValueTheory.gevEtaOf`, with inverse
+`ExtremeValueTheory.gevThetaOf`; the truth is
 `(ξ₀, 0, 1)`) the set `{η : u(η, v) > 0}` of parameters admitting an observation is **convex**,
 which it is not in the coordinates `(ξ, μ, σ)`: the segment from the truth to the maximum likelihood
 estimator stays in the support of every observation. This is what replaces, for the three-parameter
@@ -28,12 +29,9 @@ With `y = -log u / ξ` and `w = e^y = u^{-1/ξ}`, the log-density is
 * `hasDerivAt_gevEtaLog`, `hasDerivAt_gevEtaD`: `gevEtaD` and `gevEtaM` are the first and second
   derivatives of the log-density along curves in the coordinates `η`.
 * `gevEtaD_eq_sum`, `gevEtaM_eq_sum`: they are linear and bilinear in the directions.
-* `gevU_gevThetaOf`, `log_gevLocScaleDensity_gevThetaOf`: the link with the parameters `θ`.
-* `gevEtaD_self_eq`: at the truth, the derivative in the direction `d` is the score in the
-  direction `J d` (`gevEtaJ`, the Jacobian of `gevThetaOf` at the truth).
-* `gevEtaM_self_eq`: at the truth, the second derivative in terms of the Hessian and the score.
-* `integral_gevEtaM_self`: its expectation is `-(J d)ᵀ I(θ₀) (J e)`, by the information identity
-  `integral_gevHess_eq_neg_gevFisherInfo`.
+
+The link with the parameters `θ`, the score and the Fisher information is in
+`ExtremeValueTheory.Statistics.GEVMLEInformation`.
 
 ## References
 
@@ -119,11 +117,6 @@ lemma gevEtaM_eq_sum (η : ℝ × ℝ × ℝ) (v : ℝ) (d e : ℝ × ℝ × ℝ
       gevEtaM η v (gevEtaBasis j) (gevEtaBasis k) := by
   simp only [Fin.sum_univ_three, gevEtaCoord, gevEtaBasis, gevEtaM, gevEtaDDY, gevEtaDY]
   simp
-  ring
-
-lemma gevEtaM_smul_left (η : ℝ × ℝ × ℝ) (v r : ℝ) (d e : ℝ × ℝ × ℝ) :
-    gevEtaM η v (r • d) e = r * gevEtaM η v d e := by
-  simp only [gevEtaM, gevEtaDDY, gevEtaDY, Prod.smul_fst, Prod.smul_snd, smul_eq_mul]
   ring
 
 end Defs
