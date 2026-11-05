@@ -57,15 +57,25 @@ noncomputable def gpdProfileLogLik (K : Set (ℝ × ℝ)) (g : ℝ × ℝ → �
 /-- The **profile likelihood confidence set** ([Coles, §2.6.6]) for `g` at critical value `c`:
 the values `ψ` with profile deviance `D_p(ψ) = 2 (sup_K ℓₙ - ℓ_p(ψ)) ≤ c`, with `c` the `(1 - α)`
 quantile of `χ²₁`. (It is an interval when the profile likelihood is unimodal; nothing here depends
-on that, and we do not prove that it is.) A value `ψ` not attained on `K` has `ℓ_p(ψ) = -∞`, so it
-is excluded as soon as `sup_K ℓₙ` is finite. -/
+on that, and we do not prove that it is.)
+
+The unrestricted maximum `sup_K ℓₙ` must be finite, otherwise the deviance has no meaning and the
+set is empty. This is a real condition: in `EReal`, `⊥ - ⊥ = ⊥`, so without it the set would be all
+of `ℝ` when `K` is empty or no parameter in `K` allows the sample. Given that, a value `ψ` not
+attained on `K` has `ℓ_p(ψ) = -∞`, deviance `+∞`, and is excluded. -/
 def gpdProfileInterval (K : Set (ℝ × ℝ)) (g : ℝ × ℝ → ℝ) (c : ℝ) {n : ℕ} (x : Fin n → ℝ) : Set ℝ :=
-  {ψ | 2 * (gpdMaxLogLik K x - gpdProfileLogLik K g ψ x) ≤ (c : EReal)}
+  {ψ | gpdMaxLogLik K x ≠ ⊥ ∧ gpdMaxLogLik K x ≠ ⊤ ∧
+    2 * (gpdMaxLogLik K x - gpdProfileLogLik K g ψ x) ≤ (c : EReal)}
 
 /-- The **deviance confidence region** for the full parameter ([Coles, §2.6.5]):
-`{θ : D(θ) = 2 (sup_K ℓₙ - ℓₙ(θ)) ≤ c}`, with `c` the `(1 - α)` quantile of `χ²₂`. -/
+`{θ ∈ K : D(θ) = 2 (sup_K ℓₙ - ℓₙ(θ)) ≤ c}`, with `c` the `(1 - α)` quantile of `χ²₂`.
+
+As for `gpdProfileInterval`, `sup_K ℓₙ` must be finite. Membership of `K` is required because the
+likelihood is maximized over `K`: a point outside `K` can have likelihood above `sup_K ℓₙ`, and
+`gpdLogLikE` takes junk finite values at `σ ≤ 0`. -/
 def gpdDevianceRegion (K : Set (ℝ × ℝ)) (c : ℝ) {n : ℕ} (x : Fin n → ℝ) : Set (ℝ × ℝ) :=
-  {θ | 2 * (gpdMaxLogLik K x - gpdLogLikE θ.1 θ.2 x) ≤ (c : EReal)}
+  {θ | θ ∈ K ∧ gpdMaxLogLik K x ≠ ⊥ ∧ gpdMaxLogLik K x ≠ ⊤ ∧
+    2 * (gpdMaxLogLik K x - gpdLogLikE θ.1 θ.2 x) ≤ (c : EReal)}
 
 lemma gpdMaxLogLik_eq_of_isMaxOn {K : Set (ℝ × ℝ)} {n : ℕ} {x : Fin n → ℝ} {θ : ℝ × ℝ}
     (hθ : θ ∈ K) (hmax : IsMaxOn (fun p : ℝ × ℝ => gpdLogLikE p.1 p.2 x) K θ) :
@@ -109,6 +119,20 @@ private lemma deviance_le_iff {K₁ K₂ : Set (ℝ × ℝ)} (hξ₀ : 0 < ξ₀
   rw [key h₁ hm₁, key h₂ hm₂, ← EReal.coe_sub,
     show (2 : EReal) = ((2 : ℝ) : EReal) from rfl, ← EReal.coe_mul, EReal.coe_le_coe_iff]
 
+/-- On nonnegative data, if `θ₀` with `ξ₀ > 0` is in `K` and `K` has a maximizer, the maximized
+log-likelihood is finite. -/
+private lemma gpdMaxLogLik_finite {K : Set (ℝ × ℝ)} (hξ₀ : 0 < ξ₀) (hσ₀ : 0 < σ₀)
+    (h₀K : (ξ₀, σ₀) ∈ K) {n : ℕ} {x : ℕ → ℝ} (hx : ∀ i, 0 ≤ x i) {θ : ℝ × ℝ} (hθ : θ ∈ K)
+    (hm : IsMaxOn (fun p : ℝ × ℝ => gpdLogLikE p.1 p.2 (fun i : Fin n => x i)) K θ) :
+    gpdMaxLogLik K (fun i : Fin n => x i) ≠ ⊥ ∧ gpdMaxLogLik K (fun i : Fin n => x i) ≠ ⊤ := by
+  have h₀ : gpdLogLikE ξ₀ σ₀ (fun i : Fin n => x i) ≠ ⊥ := by
+    rw [gpdLogLikE_eq_coe hξ₀ hσ₀ fun i => hx i]
+    exact EReal.coe_ne_bot _
+  have hle : gpdLogLikE ξ₀ σ₀ (fun i : Fin n => x i) ≤ gpdLogLikE θ.1 θ.2 (fun i : Fin n => x i) :=
+    hm h₀K
+  rw [gpdMaxLogLik_eq_of_isMaxOn hθ hm, gpdLogLikE_eq_coe_of_ne_bot (ne_bot_of_le_ne_bot h₀ hle)]
+  exact ⟨EReal.coe_ne_bot _, EReal.coe_ne_top _⟩
+
 /-- **Asymptotic coverage of the profile likelihood confidence set for the GPD** ([Coles, §2.6.6]).
 Let `K ⊂ {ξ > -1, σ > 0}` be compact with `θ₀ = (ξ₀, σ₀)`, `ξ₀ > 0`, in its interior, let `g` be
 continuous on `K` with a chart of the level set through `θ₀` (`IsGPDProfileChart`), and let
@@ -146,10 +170,14 @@ theorem tendsto_measure_mem_gpdProfileInterval {K : Set (ℝ × ℝ)} (hK : IsCo
   filter_upwards [ae_forall_pos_of_gpd hσ₀ hX] with ω hω
   have hx : ∀ i, 0 ≤ X i ω := fun i => (hω i).le
   apply propext
+  obtain ⟨hne₁, hne₂⟩ := gpdMaxLogLik_finite (x := fun i => X i ω) hξ₀ hσ₀ (interior_subset hθ₀) hx
+    (hG n _).1 (hG n _).2
   change 2 * (gpdLogLikN _ _ (fun i => X i ω) n - gpdLogLikN _ _ (fun i => X i ω) n) ≤ c ↔
+    gpdMaxLogLik K (fun i : Fin n => X i ω) ≠ ⊥ ∧ gpdMaxLogLik K (fun i : Fin n => X i ω) ≠ ⊤ ∧
     2 * (gpdMaxLogLik K (fun i : Fin n => X i ω) -
       gpdProfileLogLik K g (g (ξ₀, σ₀)) (fun i : Fin n => X i ω)) ≤ (c : EReal)
-  rw [gpdProfileLogLik, gpdMaxLogLik_eq_of_isMaxOn (hG n _).1 (hG n _).2,
+  rw [and_iff_right hne₁, and_iff_right hne₂,
+    gpdProfileLogLik, gpdMaxLogLik_eq_of_isMaxOn (hG n _).1 (hG n _).2,
     gpdMaxLogLik_eq_of_isMaxOn (hG' n _).1 (hG' n _).2,
     deviance_le_iff (x := fun i => X i ω) hξ₀ hσ₀ (interior_subset hθ₀) hθ₀K' hx (hG n _).2
       (hG' n _).2 c]
@@ -234,9 +262,14 @@ theorem tendsto_measure_mem_gpdDevianceRegion {K : Set (ℝ × ℝ)} (hK : IsCom
   filter_upwards [ae_forall_pos_of_gpd hσ₀ hX] with ω hω
   have hx : ∀ i, 0 ≤ X i ω := fun i => (hω i).le
   apply propext
+  obtain ⟨hne₁, hne₂⟩ := gpdMaxLogLik_finite (x := fun i => X i ω) hξ₀ hσ₀ (interior_subset hθ₀) hx
+    (hG n _).1 (hG n _).2
   change 2 * (gpdLogLikN _ _ (fun i => X i ω) n - gpdLogLikN _ _ (fun i => X i ω) n) ≤ c ↔
+    (ξ₀, σ₀) ∈ K ∧
+    gpdMaxLogLik K (fun i : Fin n => X i ω) ≠ ⊥ ∧ gpdMaxLogLik K (fun i : Fin n => X i ω) ≠ ⊤ ∧
     2 * (gpdMaxLogLik K (fun i : Fin n => X i ω) -
       gpdLogLikE ξ₀ σ₀ (fun i : Fin n => X i ω)) ≤ (c : EReal)
+  rw [and_iff_right (interior_subset hθ₀), and_iff_right hne₁, and_iff_right hne₂]
   have hm₀ : IsMaxOn (fun p : ℝ × ℝ => gpdLogLikE p.1 p.2 (fun i : Fin n => X i ω))
       {(ξ₀, σ₀)} (ξ₀, σ₀) := isMaxOn_iff.2 fun p hp => by
     rw [mem_singleton_iff.1 hp]
