@@ -66,7 +66,7 @@ that the statement says what the textbook says. The library checks both.
 | Lean's kernel, at every build | a wrong proof | every proof checked |
 | [`con-leche`](.github/workflows/kernel-check.yml), an independent kernel with a machine-checked proof that it never accepts `False` | a bug in Lean's kernel | all 719,515 declarations accepted (2026-11-04), nightly |
 | [Axiom audit](Test/AxiomAudit.lean), at every build in CI | `sorry` and hidden assumptions | all 9,487 declarations use only `propext`, `Classical.choice`, `Quot.sound` |
-| [Non-vacuity tests](Test/README.md) | hypotheses that can never hold together | 92 tests: most headline theorems applied to a concrete object (not yet `powEchoProcess_antiClustering_iff`, `logEchoProcess_betaMixing_incompatible` or `logEcho_tendstoInMeasure_runsEstimator`) |
+| [Non-vacuity tests](Test/README.md) | hypotheses that can never hold together | 95 tests: headline theorems applied to a concrete object, including the echo-process theorems named under New results |
 | [Known-answer tests](Test/README.md) | sign and parametrization slips in definitions | 159 tests against textbook values (Gumbel moments, Smith's Fisher information, extremal indices, …) |
 | [Junk-value audit](Test/JUNK_VALUES.md) | statements true only because `x/0 = 0` or `log 0 = 0` | 3,718 theorems scanned by a script outside CI; one such statement found and fixed |
 | [Mutation checks](Test/MUTATION.md) | statements proved "too easily" | 323 perturbed statements, by a script outside CI; none reveals a weakness |

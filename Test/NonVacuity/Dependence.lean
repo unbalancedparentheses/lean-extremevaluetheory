@@ -729,4 +729,203 @@ theorem test_nonvacuous_garch_tail :
     hκ1 hnd⟩
 
 
+/-! ### Short and long blocks for the echo processes -/
+
+/-- Test-specific: blocks `⌊√(log n)⌋`, shorter than the echo lag of the logarithmic echo process. -/
+private noncomputable def shortBlock (n : ℕ) : ℕ := ⌊√(Real.log n)⌋₊
+
+/-- Test-specific: `log n → ∞` along the naturals. -/
+private theorem tendsto_log_nat : Tendsto (fun n : ℕ => Real.log n) atTop atTop :=
+  Real.tendsto_log_atTop.comp tendsto_natCast_atTop_atTop
+
+/-- Test-specific: `⌊√(log n)⌋ → ∞`. -/
+private theorem tendsto_shortBlock : Tendsto shortBlock atTop atTop :=
+  tendsto_nat_floor_atTop.comp (Real.tendsto_sqrt_atTop.comp tendsto_log_nat)
+
+/-- Test-specific: `⌊√(log n)⌋ / log n → 0`. -/
+private theorem tendsto_shortBlock_div_log :
+    Tendsto (fun n : ℕ => (shortBlock n : ℝ) / Real.log n) atTop (𝓝 0) := by
+  have hinv : Tendsto (fun n : ℕ => (√(Real.log n))⁻¹) atTop (𝓝 0) :=
+    tendsto_inv_atTop_zero.comp (Real.tendsto_sqrt_atTop.comp tendsto_log_nat)
+  refine squeeze_zero' ?_ ?_ hinv
+  · filter_upwards [tendsto_log_nat.eventually_gt_atTop 0] with n hn
+    positivity
+  · filter_upwards [tendsto_log_nat.eventually_gt_atTop 0] with n hn
+    have hfl : (shortBlock n : ℝ) ≤ √(Real.log n) := Nat.floor_le (Real.sqrt_nonneg _)
+    have hs : 0 < √(Real.log n) := Real.sqrt_pos.2 hn
+    rw [div_le_iff₀ hn, inv_mul_eq_div, Real.div_sqrt]
+    exact hfl
+
+/-- Test-specific: blocks `⌊√n⌋` have `log ⌊√n⌋ / log n → 1/2`. -/
+private theorem tendsto_log_sqrt_div_log :
+    Tendsto (fun n : ℕ => Real.log (Nat.sqrt n) / Real.log n) atTop (𝓝 (1 / 2)) := by
+  have hlow : Tendsto (fun n : ℕ => 1 / 2 - Real.log 2 / Real.log n) atTop (𝓝 (1 / 2)) := by
+    simpa using tendsto_const_nhds.sub (tendsto_log_nat.const_div_atTop (Real.log 2))
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' hlow tendsto_const_nhds ?_ ?_
+  · filter_upwards [tendsto_log_nat.eventually_gt_atTop 0,
+      tendsto_sqrt_atTop.eventually_ge_atTop 1] with n hn hs
+    have hspos : (0 : ℝ) < Nat.sqrt n := by exact_mod_cast hs
+    have hs1 : (1 : ℝ) ≤ Nat.sqrt n := by exact_mod_cast hs
+    have hle : (n : ℝ) ≤ (2 * (Nat.sqrt n : ℝ)) ^ 2 := by
+      have h := (Nat.lt_succ_sqrt' n).le
+      have h' : (n : ℝ) ≤ ((Nat.sqrt n : ℝ) + 1) ^ 2 := by exact_mod_cast h
+      nlinarith
+    have hnpos : (0 : ℝ) < n := by
+      by_contra h0
+      have : (n : ℝ) = 0 := le_antisymm (not_lt.1 h0) (Nat.cast_nonneg n)
+      simp [this] at hn
+    have hlog := Real.log_le_log hnpos hle
+    rw [Real.log_pow, Real.log_mul two_ne_zero hspos.ne'] at hlog
+    push_cast at hlog
+    rw [sub_le_iff_le_add, ← add_div, le_div_iff₀ hn]
+    linarith
+  · filter_upwards [tendsto_log_nat.eventually_gt_atTop 0,
+      tendsto_sqrt_atTop.eventually_ge_atTop 1] with n hn hs
+    have hspos : (0 : ℝ) < Nat.sqrt n := by exact_mod_cast hs
+    have hle : (Nat.sqrt n : ℝ) ^ 2 ≤ n := by exact_mod_cast Nat.sqrt_le' n
+    have hlog := Real.log_le_log (by positivity) hle
+    rw [Real.log_pow] at hlog
+    push_cast at hlog
+    rw [div_le_iff₀ hn]
+    linarith
+
+/-- Test-specific: normalizing levels for the power-lag echo process. -/
+private theorem exists_levels_powEcho (hα : 0 < α) {γ : ℝ} (hγ : 0 < γ) (hγα : γ < α) :
+    ∃ a : ℕ → ℝ, Tendsto (fun n : ℕ =>
+      n * (P α).real {ω | a n < echoProcess (powLag γ) Z 0 ω}) atTop (𝓝 1) := by
+  have := isProbabilityMeasure_P hα
+  obtain ⟨a, ha⟩ := (powEchoProcess_theta_lt_vartheta hα measurable_Z (iIndepFun_Z hα) (map_Z hα)
+    Z_nonneg hγ hγα).2.1.hasExceedanceLevels_abs
+    (measurable_echoProcess measurable_Z (measurable_powLag γ)) 1 one_pos
+  refine ⟨a, ?_⟩
+  simpa [abs_of_nonneg (echoProcess_nonneg Z_nonneg _ _)] using ha
+
+/-- **The answer to Bai–Kulik–Wang's question, on both sides of the cutoff**
+(`powEchoProcess_antiClustering_iff`), with blocks `rₙ = ⌊√n⌋`, so `ρ = 1/2`. For the lag exponent
+`γ = 3α/4` the cutoff is `ρ₀ = 3/4 > ρ` and anticlustering holds; for `γ = α/4` the cutoff is
+`ρ₀ = 1/4 < ρ` and it fails. -/
+theorem test_nonvacuous_powEchoProcess_antiClustering_iff (hα : 0 < α) :
+    (∃ a : ℕ → ℝ, AntiClustering (P α) (echoProcess (powLag (3 * α / 4)) Z) a Nat.sqrt) ∧
+      ∃ a : ℕ → ℝ, Tendsto (fun n : ℕ =>
+          n * (P α).real {ω | a n < echoProcess (powLag (α / 4)) Z 0 ω}) atTop (𝓝 1) ∧
+        ¬ AntiClustering (P α) (echoProcess (powLag (α / 4)) Z) a Nat.sqrt := by
+  have := isProbabilityMeasure_P hα
+  constructor
+  · obtain ⟨a, ha⟩ := exists_levels_powEcho hα (γ := 3 * α / 4) (by positivity) (by linarith)
+    refine ⟨a, (powEchoProcess_antiClustering_iff hα measurable_Z (iIndepFun_Z hα) (map_Z hα)
+      Z_nonneg (by positivity) (by linarith) one_pos ha (ρ := 1 / 2) (by norm_num) (by norm_num)
+      ?_ tendsto_log_sqrt_div_log).2 ?_⟩
+    · rw [show 3 * α / 4 / α = 3 / 4 by field_simp]; norm_num
+    · rw [show 3 * α / 4 / α = 3 / 4 by field_simp]; norm_num
+  · obtain ⟨a, ha⟩ := exists_levels_powEcho hα (γ := α / 4) (by positivity) (by linarith)
+    refine ⟨a, ha, fun h => ?_⟩
+    have := (powEchoProcess_antiClustering_iff hα measurable_Z (iIndepFun_Z hα) (map_Z hα)
+      Z_nonneg (by positivity) (by linarith) one_pos ha (ρ := 1 / 2) (by norm_num) (by norm_num)
+      (by rw [show α / 4 / α = 1 / 4 by field_simp]; norm_num) tendsto_log_sqrt_div_log).1 h
+    rw [show α / 4 / α = 1 / 4 by field_simp] at this
+    norm_num at this
+
+/-- **Mixing does not give `θ = ϑ`** (`logEchoProcess_betaMixing_incompatible`), with each of its
+three block scales realized at normalizing levels: `⌊√(log n)⌋` (anticlustering holds and `A(uₙ)`
+fails), `⌊log n⌋` (`A(uₙ)` fails) and `⌊√n⌋` (`A(uₙ)` holds and forward anticlustering fails). -/
+theorem test_nonvacuous_logEchoProcess_betaMixing_incompatible (hα : 0 < α) :
+    IsBetaMixing (fun k : ℕ => echoProcess logLag Z k) (P α) ∧
+      ∃ u : ℕ → ℝ,
+        (AntiClusteringAt (P α) (echoProcess logLag Z) u shortBlock ∧
+          ¬ ConditionA (fun k : ℕ => |echoProcess logLag Z k|) (P α) u shortBlock) ∧
+        ¬ ConditionA (fun k : ℕ => |echoProcess logLag Z k|) (P α) u
+          (fun n : ℕ => ⌊Real.log n⌋₊) ∧
+        (ConditionA (fun k : ℕ => |echoProcess logLag Z k|) (P α) u Nat.sqrt ∧
+          ¬ ForwardAntiClusteringAt (P α) (echoProcess logLag Z) u Nat.sqrt) := by
+  have := isProbabilityMeasure_P hα
+  obtain ⟨-, hmix, h⟩ := logEchoProcess_betaMixing_incompatible hα measurable_Z (iIndepFun_Z hα)
+    (map_Z hα) Z_nonneg
+  obtain ⟨u, hu⟩ := exists_levels_logEcho hα
+  refine ⟨hmix, u, ?_, ?_, ?_⟩
+  · exact (h u 1 one_pos hu shortBlock tendsto_shortBlock).1 tendsto_shortBlock_div_log
+  · have hfl : Tendsto (fun n : ℕ => ((⌊Real.log n⌋₊ : ℕ) : ℝ) / Real.log n) atTop (𝓝 1) :=
+      (tendsto_nat_floor_div_atTop).comp tendsto_log_nat
+    exact (h u 1 one_pos hu _ (tendsto_nat_floor_atTop.comp tendsto_log_nat)).2.1 1 one_pos hfl
+  · exact (h u 1 one_pos hu Nat.sqrt tendsto_sqrt_atTop).2.2 tendsto_sqrt_div tendsto_log_div_natSqrt
+
+/-- **The practitioner warning about short runs** (`logEcho_tendstoInMeasure_runsEstimator`), with all
+its rates realized: levels `uₙ = n^(1/(4α))`, so `n pₙ ~ 2 n^(3/4) → ∞`, runs `rₙ = ⌊√(log n)⌋`
+and gaps `sₙ = ⌊√n⌋`. The runs estimator tends to `1 = ϑ`, not to the extremal index `1/2`. -/
+theorem test_nonvacuous_logEcho_tendstoInMeasure_runsEstimator (hα : 0 < α) :
+    TendstoInMeasure (P α) (fun n => runsEstimator (fun k : ℕ => echoProcess logLag Z k) n
+      (shortBlock n) ((n : ℝ) ^ (1 / (4 * α)))) atTop (fun _ => 1) := by
+  have := isProbabilityMeasure_P hα
+  set u : ℕ → ℝ := fun n => (n : ℝ) ^ (1 / (4 * α)) with hu_def
+  have hexp : 0 < 1 / (4 * α) := by positivity
+  have hu : Tendsto u atTop atTop := (tendsto_rpow_atTop hexp).comp tendsto_natCast_atTop_atTop
+  -- `pₙ / uₙ^(-α) → 2`
+  have hq : Tendsto (fun n : ℕ => (P α).real {ω | u n < echoProcess logLag Z ((0 : ℕ) : ℤ) ω} /
+      u n ^ (-α)) atTop (𝓝 2) :=
+    (tendsto_measureReal_lt_echoProcess_div hα measurable_Z (iIndepFun_Z hα) (map_Z hα)
+      measurable_logLag one_le_logLag ((0 : ℕ) : ℤ)).comp hu
+  have hupow : ∀ n : ℕ, 0 < n → u n ^ (-α) = (n : ℝ) ^ (-(1 / 4) : ℝ) := by
+    intro n hn
+    rw [hu_def]
+    show ((n : ℝ) ^ (1 / (4 * α))) ^ (-α) = _
+    rw [← Real.rpow_mul (Nat.cast_nonneg n)]
+    congr 1
+    field_simp
+  have hnp : ∀ᶠ n : ℕ in atTop, (n : ℝ) * (P α).real {ω | u n < echoProcess logLag Z ((0 : ℕ) : ℤ) ω} =
+      (n : ℝ) ^ (3 / 4 : ℝ) * ((P α).real {ω | u n < echoProcess logLag Z ((0 : ℕ) : ℤ) ω} /
+        u n ^ (-α)) := by
+    filter_upwards [eventually_gt_atTop 0] with n hn
+    have hnr : (0 : ℝ) < n := by exact_mod_cast hn
+    rw [hupow n hn, Real.rpow_neg hnr.le, div_inv_eq_mul]
+    have : (n : ℝ) ^ (3 / 4 : ℝ) * (n : ℝ) ^ (1 / 4 : ℝ) = n := by
+      rw [← Real.rpow_add hnr]; norm_num
+    calc (n : ℝ) * _ = ((n : ℝ) ^ (3 / 4 : ℝ) * (n : ℝ) ^ (1 / 4 : ℝ)) * _ := by rw [this]
+      _ = _ := by ring
+  have h34 : Tendsto (fun n : ℕ => (n : ℝ) ^ (3 / 4 : ℝ)) atTop atTop :=
+    (tendsto_rpow_atTop (by norm_num)).comp tendsto_natCast_atTop_atTop
+  have hk : Tendsto (fun n : ℕ => (n : ℝ) * (P α).real {ω | u n < echoProcess logLag Z ((0 : ℕ) : ℤ) ω})
+      atTop atTop :=
+    (h34.atTop_mul_pos (by norm_num) hq).congr' (hnp.mono fun _ h => h.symm)
+  -- `rₙ / log uₙ → 0`
+  have hrlog : Tendsto (fun n : ℕ => (shortBlock n : ℝ) / Real.log (u n)) atTop (𝓝 0) := by
+    have := tendsto_shortBlock_div_log.const_mul (4 * α)
+    rw [mul_zero] at this
+    refine this.congr' ?_
+    filter_upwards [eventually_gt_atTop 0] with n hn
+    have hnr : (0 : ℝ) < n := by exact_mod_cast hn
+    rw [hu_def]
+    show _ = (shortBlock n : ℝ) / Real.log ((n : ℝ) ^ (1 / (4 * α)))
+    rw [Real.log_rpow hnr]
+    field_simp
+  -- `(rₙ + sₙ) / (n pₙ) → 0`
+  have hdecay : Tendsto (fun n : ℕ => 2 * (n : ℝ) ^ (-(1 / 4) : ℝ)) atTop (𝓝 0) := by
+    simpa using ((tendsto_rpow_neg_atTop (y := 1 / 4) (by norm_num)).comp
+      tendsto_natCast_atTop_atTop).const_mul 2
+  have hrs34 : Tendsto (fun n : ℕ => ((shortBlock n + Nat.sqrt n : ℕ) : ℝ) / (n : ℝ) ^ (3 / 4 : ℝ))
+      atTop (𝓝 0) := by
+    refine squeeze_zero' (Eventually.of_forall fun n => by positivity) ?_ hdecay
+    filter_upwards [eventually_gt_atTop 0] with n hn
+    have hnr : (0 : ℝ) < n := by exact_mod_cast hn
+    have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
+    have hs : (Nat.sqrt n : ℝ) ≤ √n := Real.nat_sqrt_le_real_sqrt
+    have hr : (shortBlock n : ℝ) ≤ √n := by
+      refine (Nat.floor_le (Real.sqrt_nonneg _)).trans (Real.sqrt_le_sqrt ?_)
+      exact (Real.log_le_sub_one_of_pos hnr).trans (by linarith)
+    have hsq : √n = (n : ℝ) ^ (1 / 2 : ℝ) := Real.sqrt_eq_rpow n
+    rw [div_le_iff₀ (by positivity)]
+    have hpow : (n : ℝ) ^ (-(1 / 4) : ℝ) * (n : ℝ) ^ (3 / 4 : ℝ) = √n := by
+      rw [← Real.rpow_add hnr, hsq]; norm_num
+    push_cast
+    calc (shortBlock n : ℝ) + Nat.sqrt n ≤ 2 * √n := by linarith
+      _ = 2 * (n : ℝ) ^ (-(1 / 4) : ℝ) * (n : ℝ) ^ (3 / 4 : ℝ) := by rw [mul_assoc, hpow]
+  have hrsk : Tendsto (fun n : ℕ => ((shortBlock n + Nat.sqrt n : ℕ) : ℝ) /
+      ((n : ℝ) * (P α).real {ω | u n < echoProcess logLag Z ((0 : ℕ) : ℤ) ω})) atTop (𝓝 0) := by
+    have hinv := hrs34.mul (hq.inv₀ (by norm_num : (2 : ℝ) ≠ 0))
+    rw [zero_mul] at hinv
+    refine hinv.congr' ?_
+    filter_upwards [hnp] with n hn
+    rw [hn, ← div_div, div_eq_mul_inv (_ / (n : ℝ) ^ (3 / 4 : ℝ))]
+  exact logEcho_tendstoInMeasure_runsEstimator hα measurable_Z (iIndepFun_Z hα) (map_Z hα) Z_nonneg
+    hu tendsto_shortBlock hrlog hk (s := Nat.sqrt) tendsto_sqrt_atTop tendsto_log_div_natSqrt hrsk
+
+
 end NonVacuity.Dependence

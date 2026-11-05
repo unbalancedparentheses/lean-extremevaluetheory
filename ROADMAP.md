@@ -34,9 +34,8 @@ and 1.0 releases.
 - [x] Limitations section and "Use it in your project" in the README; downstream CI job
 - [>] Independent AI review of the statements and claims by Codex; fix what it finds. This is AI review,
   and does not replace expert review
-- [ ] Non-vacuity tests for `powEchoProcess_antiClustering_iff`, `logEchoProcess_betaMixing_incompatible`
-  and `logEcho_tendstoInMeasure_runsEstimator` (found by the Codex review; can follow the release, the
-  README discloses the gap)
+- [x] Non-vacuity tests for `powEchoProcess_antiClustering_iff`, `logEchoProcess_betaMixing_incompatible`
+  and `logEcho_tendstoInMeasure_runsEstimator` (found by the Codex review; added after the release)
 - [x] `CHANGELOG.md`, the tag and [GitHub release `v0.9.0`](https://github.com/unbalancedparentheses/lean-extremevaluetheory/releases/tag/v0.9.0)
   (2026-11-04), and the Zenodo DOI [10.5281/zenodo.23966373](https://doi.org/10.5281/zenodo.23966373), in `CITATION.cff` and the README
 - [>] Library paper [`paper/evt-lean.tex`](paper/evt-lean.tex): drafted and reviewed twice by Codex; *you*

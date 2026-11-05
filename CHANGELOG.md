@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Non-vacuity tests for the answer to Bai–Kulik–Wang's question (on both sides of the cutoff), for mixing
+  without `θ = ϑ` (at each of its three block scales) and for the warning about short runs (with all its
+  rates realized).
+
 ## v0.9.0 (2026-11-04)
 
 The first release, on Lean and Mathlib v4.35.0. It is usable and citable, but no human expert has
