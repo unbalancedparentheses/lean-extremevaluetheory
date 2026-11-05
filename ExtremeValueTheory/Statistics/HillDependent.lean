@@ -78,6 +78,12 @@ variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω}
 noncomputable def tailCount (X : ℕ → Ω → ℝ) (n : ℕ) (u : ℝ) (ω : Ω) : ℝ :=
   ∑ i ∈ range n, if u < X i ω then (1 : ℝ) else 0
 
+/-- `tailCount` is the exceedance count of the first `n` observations, as a real number. -/
+theorem tailCount_eq_exceedCount (X : ℕ → Ω → ℝ) (n : ℕ) (u : ℝ) (ω : Ω) :
+    tailCount X n u ω = exceedCount (fun i : Fin n ↦ X i ω) u := by
+  rw [tailCount, exceedCount_eq_sum]
+  exact (Fin.sum_univ_eq_sum_range (fun i ↦ if u < X i ω then (1 : ℝ) else 0) n).symm
+
 theorem measurable_ite_lt {Y : Ω → ℝ} (hY : Measurable Y) (u : ℝ) :
     Measurable fun ω => if u < Y ω then (1 : ℝ) else 0 :=
   Measurable.ite (measurableSet_lt measurable_const hY) measurable_const measurable_const

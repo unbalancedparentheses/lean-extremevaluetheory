@@ -147,9 +147,9 @@ theorem returnLevel_eq_boxCox (ξ : ℝ) {m : ℝ} (hm : 1 < m) :
     returnLevel ξ m = boxCox ξ (-log (1 - 1 / m))⁻¹ := by
   have hy := neg_log_one_sub_inv_pos hm
   rcases eq_or_ne ξ 0 with rfl | hξ
-  · simp [returnLevel, boxCox_zero, log_inv]
+  · simp [returnLevel, gevTransform, boxCox_zero, log_inv]
   · rw [boxCox_of_ne hξ, inv_rpow hy.le, ← rpow_neg hy.le]
-    simp only [returnLevel, hξ, ↓reduceIte]
+    simp only [returnLevel, gevTransform, hξ, ↓reduceIte]
 
 /-- The **`m`-block return level** of `GEV(ξ, μ, σ)`: `z_m = μ + σ z_m^{std}`, the
 `(1 - 1/m)` quantile of the block maximum (`gevLocScaleCDF_returnLevel`). -/
@@ -159,14 +159,14 @@ noncomputable def gevReturnLevel (ξ μ σ m : ℝ) : ℝ := μ + σ * returnLev
 `z_m = μ - σ/ξ (1 - y_m^{-ξ})`, `y_m = -log(1 - 1/m)` ([Coles, (3.4)]). -/
 theorem gevReturnLevel_eq_of_ne {ξ : ℝ} (hξ : ξ ≠ 0) (μ σ m : ℝ) :
     gevReturnLevel ξ μ σ m = μ - σ / ξ * (1 - (-log (1 - 1 / m)) ^ (-ξ)) := by
-  simp only [gevReturnLevel, returnLevel, hξ, ↓reduceIte]
+  simp only [gevReturnLevel, returnLevel, gevTransform, hξ, ↓reduceIte]
   field_simp
   ring
 
 /-- The **Gumbel return level**: `z_m = μ - σ log y_m` ([Coles, (3.4)], `ξ = 0`). -/
 theorem gevReturnLevel_zero (μ σ m : ℝ) :
     gevReturnLevel 0 μ σ m = μ - σ * log (-log (1 - 1 / m)) := by
-  simp [gevReturnLevel, returnLevel, sub_eq_add_neg]
+  simp [gevReturnLevel, returnLevel, gevTransform, sub_eq_add_neg]
 
 /-- **Gumbel limit of the GEV return level**: `z_m(ξ) → μ - σ log y_m` as `ξ → 0`. -/
 theorem tendsto_gevReturnLevel_gumbel (μ σ : ℝ) {m : ℝ} (hm : 1 < m) :
@@ -182,7 +182,7 @@ theorem tendsto_gevReturnLevel_gumbel (μ σ : ℝ) {m : ℝ} (hm : 1 < m) :
 
 lemma measurable_gevReturnLevel (m : ℝ) :
     Measurable fun p : ℝ × ℝ × ℝ => gevReturnLevel p.1 p.2.1 p.2.2 m := by
-  unfold gevReturnLevel returnLevel
+  unfold gevReturnLevel returnLevel gevTransform
   refine measurable_snd.fst.add (measurable_snd.snd.mul ?_)
   exact Measurable.ite (measurableSet_eq_fun measurable_fst measurable_const) measurable_const
     (((measurable_const.pow measurable_fst.neg).sub_const 1).div measurable_fst)
@@ -198,7 +198,7 @@ noncomputable def gevReturnLevelGrad (ξ σ m : ℝ) : EuclideanSpace ℝ (Fin 3
 
 lemma returnLevel_of_ne {ξ : ℝ} (hξ : ξ ≠ 0) (m : ℝ) :
     returnLevel ξ m = ((-log (1 - 1 / m)) ^ (-ξ) - 1) / ξ := by
-  simp only [returnLevel, hξ, ↓reduceIte]
+  simp only [returnLevel, gevTransform, hξ, ↓reduceIte]
 
 lemma boxCoxShapeDeriv_inv {ξ y : ℝ} (hξ : ξ ≠ 0) (hy : 0 < y) (σ : ℝ) :
     σ * boxCoxShapeDeriv ξ y⁻¹ = σ / ξ ^ 2 * (1 - y ^ (-ξ)) - σ / ξ * y ^ (-ξ) * log y := by

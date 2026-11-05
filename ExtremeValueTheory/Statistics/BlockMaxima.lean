@@ -56,6 +56,16 @@ noncomputable def blockMax (X : ℕ → Ω → ℝ) (n j : ℕ) (ω : Ω) : ℝ 
   if h : 0 < n then (range n).sup' (nonempty_range_iff.2 h.ne') (fun i ↦ X (j * n + i) ω)
   else 0
 
+/-- For a positive block size, the maximum of a block is the partial maximum of the shifted
+sequence. -/
+theorem blockMax_eq_partialMax (X : ℕ → Ω → ℝ) {n : ℕ} (hn : 0 < n) (j : ℕ) (ω : Ω) :
+    blockMax X n j ω = partialMax (fun i ↦ X (j * n + i)) n ω := by
+  rw [blockMax, dif_pos hn]
+  refine le_antisymm (Finset.sup'_le _ _ fun i hi ↦ ?_) ((partialMax_le_iff hn).2 fun i hi ↦ ?_)
+  · exact (partialMax_le_iff (X := fun i ↦ X (j * n + i)) (ω := ω) hn).1 le_rfl i
+      (Finset.mem_range.1 hi)
+  · exact Finset.le_sup' (fun i ↦ X (j * n + i) ω) (Finset.mem_range.2 hi)
+
 /-- The empirical distribution function `Ĥ_{m,n}(x)` of the first `m` normalized block maxima
 `(M_{n,j} - b_n) / a_n`, `j < m`. -/
 noncomputable def blockMaxEmpCDF (X : ℕ → Ω → ℝ) (a b : ℕ → ℝ) (m n : ℕ) (x : ℝ) (ω : Ω) : ℝ :=

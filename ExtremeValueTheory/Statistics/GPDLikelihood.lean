@@ -97,6 +97,13 @@ variable {ξ σ x : ℝ}
 noncomputable def gpdTransform (ξ σ t : ℝ) : ℝ :=
   if ξ = 0 then σ * t else σ * (exp (ξ * t) - 1) / ξ
 
+/-- The GPD quantile transform is the Box–Cox function of `e^t`, scaled by `σ`. -/
+theorem gpdTransform_eq_mul_boxCox (ξ σ t : ℝ) : gpdTransform ξ σ t = σ * boxCox ξ (exp t) := by
+  rw [boxCox_exp, gpdTransform]
+  split_ifs
+  · rfl
+  · ring
+
 /-- The **generalized Pareto law** `GPD(ξ, σ)`, defined as the law of `σ (e^{ξ E} - 1) / ξ`
 for a standard exponential `E`. Its survival function is `gpdSurvivalAll ξ σ`
 (`gpdMeasure_Ioi`) and its density is `gpdDensity ξ σ` (`gpdMeasure_eq_withDensity`). -/

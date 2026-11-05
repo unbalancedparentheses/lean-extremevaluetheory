@@ -227,12 +227,12 @@ theorem test_gevLogLik_gumbel {μ σ : ℝ} (hσ : 0 < σ) : gevLogLik 0 μ σ !
 /-- The `m`-block return level of the Gumbel law ([Col, (3.4)]): `z_m = -log(-log(1 - 1/m))`;
 at `m = 2` this is the Gumbel median `-log log 2`. -/
 theorem test_returnLevel_gumbel_median : returnLevel 0 2 = -log (log 2) := by
-  norm_num [returnLevel]
+  norm_num [returnLevel, gevTransform]
   rw [one_div, log_inv, log_neg_eq_log]
 
 /-- Return level for `ξ = 1` at `m = 2`: `((log 2)⁻¹ - 1)/1`. -/
 theorem test_returnLevel_frechet : returnLevel 1 2 = (log 2)⁻¹ - 1 := by
-  norm_num [returnLevel, rpow_neg_one]
+  norm_num [returnLevel, gevTransform, rpow_neg_one]
   rw [one_div, log_inv, inv_neg, neg_neg]
 
 /-! ### Fisher information of the GPD -/

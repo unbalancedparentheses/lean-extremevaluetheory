@@ -3,6 +3,7 @@ Copyright (c) 2026 Federico Carrone.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
+import ExtremeValueTheory.RegularVariation.Extended
 import ExtremeValueTheory.Statistics.Moment
 
 /-!
@@ -746,8 +747,7 @@ by the block maximum on average once every `m` blocks, i.e. the `(1 - 1/m)` quan
 ([EKM, §6.2.4, §6.3.3]; Coles, *An Introduction to Statistical Modeling of Extreme Values*, §3.1.3).
 For the location-scale family `H_ξ((x - μ)/σ)` the return level is `μ + σ z_m`. -/
 noncomputable def returnLevel (ξ m : ℝ) : ℝ :=
-  if ξ = 0 then -Real.log (-Real.log (1 - 1 / m))
-  else ((-Real.log (1 - 1 / m)) ^ (-ξ) - 1) / ξ
+  gevTransform ξ (-Real.log (1 - 1 / m))
 
 /-- The return level is the `(1 - 1/m)` quantile of `H_ξ`: `H_ξ(z_m) = 1 - 1/m`. -/
 theorem gevFun_returnLevel (ξ : ℝ) {m : ℝ} (hm : 1 < m) :
@@ -763,10 +763,10 @@ theorem gevFun_returnLevel (ξ : ℝ) {m : ℝ} (hm : 1 < m) :
   have hexp : Real.exp (-(-Real.log (1 - 1 / m))) = 1 - 1 / m := by
     rw [neg_neg, Real.exp_log h1]
   by_cases hξ : ξ = 0
-  · simp only [gevFun, returnLevel, hξ, ite_true, neg_neg, Real.exp_log hL]
+  · simp only [gevFun, returnLevel, gevTransform, hξ, ite_true, neg_neg, Real.exp_log hL]
     exact Real.exp_log h1
   · have hpos : 1 + ξ * returnLevel ξ m = (-Real.log (1 - 1 / m)) ^ (-ξ) := by
-      simp only [returnLevel, hξ, ite_false]
+      simp only [returnLevel, gevTransform, hξ, ite_false]
       field_simp
       ring
     have hpos' : 0 < 1 + ξ * returnLevel ξ m := by
