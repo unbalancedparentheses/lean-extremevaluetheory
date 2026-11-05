@@ -125,8 +125,8 @@ three-parameter GEV MLE) for a **positive shape**, the moving lower endpoint: ii
 `GEV(ξ = 1/4, μ = 1/2, σ = 3/2)` samples, `K = [-1/2, 1/2] × [0, 1] × [1, 2]`. All hypotheses
 discharged: a measurable maximum likelihood estimator exists and is asymptotically normal. -/
 theorem test_nonvacuous_exists_gevMLE_tendstoInDistribution_pos :
-    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ),
-      IsProbabilityMeasure P ∧ iIndepFun X P ∧
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ)
+      (_ : IsProbabilityMeasure P), iIndepFun X P ∧
       ∃ g : (n : ℕ) → (Fin n → ℝ) → ℝ × ℝ × ℝ, (∀ n, Measurable (g n)) ∧
         (∀ n x, g n x ∈ gevK ∧
           IsMaxOn (fun p : ℝ × ℝ × ℝ => gevLogLikE p.1 p.2.1 p.2.2 x) gevK (g n x)) ∧
@@ -139,6 +139,7 @@ theorem test_nonvacuous_exists_gevMLE_tendstoInDistribution_pos :
   have hσ : (0 : ℝ) < 3 / 2 := by norm_num
   obtain ⟨Ω, _, P, X, -, hlaw, hind, hP⟩ :=
     exists_iid ℕ (gevLocScaleCDF (1 / 4) (1 / 2) hσ).measure
+  have := hP
   refine ⟨Ω, _, P, X, hP, hind, ?_⟩
   exact exists_gevMLE_tendstoInDistribution isCompact_gevK gevK_sub
     (mem_interior_gevK (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
@@ -148,8 +149,8 @@ theorem test_nonvacuous_exists_gevMLE_tendstoInDistribution_pos :
 the moving upper endpoint: iid `GEV(ξ = -2/5, μ = 1/2, σ = 3/2)` samples, `-1/2 < ξ < 0`,
 `K = [-1/2, 1/2] × [0, 1] × [1, 2]`. All hypotheses discharged. -/
 theorem test_nonvacuous_exists_gevMLE_tendstoInDistribution_neg :
-    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ),
-      IsProbabilityMeasure P ∧ iIndepFun X P ∧
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ)
+      (_ : IsProbabilityMeasure P), iIndepFun X P ∧
       ∃ g : (n : ℕ) → (Fin n → ℝ) → ℝ × ℝ × ℝ, (∀ n, Measurable (g n)) ∧
         (∀ n x, g n x ∈ gevK ∧
           IsMaxOn (fun p : ℝ × ℝ × ℝ => gevLogLikE p.1 p.2.1 p.2.2 x) gevK (g n x)) ∧
@@ -162,6 +163,7 @@ theorem test_nonvacuous_exists_gevMLE_tendstoInDistribution_neg :
   have hσ : (0 : ℝ) < 3 / 2 := by norm_num
   obtain ⟨Ω, _, P, X, -, hlaw, hind, hP⟩ :=
     exists_iid ℕ (gevLocScaleCDF (-(2 / 5)) (1 / 2) hσ).measure
+  have := hP
   refine ⟨Ω, _, P, X, hP, hind, ?_⟩
   exact exists_gevMLE_tendstoInDistribution isCompact_gevK gevK_sub
     (mem_interior_gevK (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
@@ -173,8 +175,8 @@ maximum likelihood return level): the `100`-block return level for iid
 `gevReturnLevelVar_pos`. All hypotheses discharged. -/
 theorem test_nonvacuous_exists_gevMLE_returnLevel :
     0 < gevReturnLevelVar (1 / 4) (3 / 2) 100 ∧
-    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ),
-      IsProbabilityMeasure P ∧ iIndepFun X P ∧
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ)
+      (_ : IsProbabilityMeasure P), iIndepFun X P ∧
       ∃ g : (n : ℕ) → (Fin n → ℝ) → ℝ × ℝ × ℝ, (∀ n, Measurable (g n)) ∧
         (∀ n x, g n x ∈ gevK ∧
           IsMaxOn (fun p : ℝ × ℝ × ℝ => gevLogLikE p.1 p.2.1 p.2.2 x) gevK (g n x)) ∧
@@ -187,8 +189,9 @@ theorem test_nonvacuous_exists_gevMLE_returnLevel :
   refine ⟨gevReturnLevelVar_pos hσ (by norm_num) (by norm_num) 100, ?_⟩
   obtain ⟨Ω, _, P, X, -, hlaw, hind, hP⟩ :=
     exists_iid ℕ (gevLocScaleCDF (1 / 4) (1 / 2) hσ).measure
+  have := hP
   refine ⟨Ω, _, P, X, hP, hind, ?_⟩
-  exact exists_gevMLE_returnLevel_tendstoInDistribution isCompact_gevK gevK_sub
+  exact exists_gevMLE_returnLevel_tendstoInDistribution (m := 100) isCompact_gevK gevK_sub
     (mem_interior_gevK (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (by norm_num)) (by norm_num) (by norm_num) hσ (by norm_num) hlaw hind HasLaw.id
 
