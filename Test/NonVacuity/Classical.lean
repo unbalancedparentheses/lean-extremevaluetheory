@@ -109,15 +109,15 @@ theorem test_nonvacuous_tendsto_integral_Ioi_div :
     (fun _ _ h => sub_le_sub_left ((paretoCDF two_pos).mono' h) 1)
     test_nonvacuous_isInMDAFrechet_iff (by norm_num)
 
-/-- Exercises `IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi` (the converse half of
+/-- Exercises `IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi_of_pos` (the converse half of
 Karamata's theorem) on the Pareto tail `x^{-2}`; the hypothesis `x F̄(x) / ∫ₓ^∞ F̄ → 1` is obtained
 from the direct half. -/
 theorem test_nonvacuous_of_tendsto_mul_div_integral_Ioi :
     IsRegularlyVarying (fun x ↦ 1 - paretoCDF (two_pos : (0 : ℝ) < 2) x) (-2) := by
-  refine IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi (a := 1)
-    (fun _ _ h => sub_le_sub_left ((paretoCDF two_pos).mono' h) 1) ?_ (by norm_num : (1 : ℝ) < 2) ?_
-  · exact (integrableOn_Ioi_rpow_of_lt (by norm_num : (-2 : ℝ) < -1) one_pos).congr_fun
-      (fun t ht => (one_sub_paretoCDF_of_one_le two_pos (le_of_lt ht)).symm) measurableSet_Ioi
+  refine IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi_of_pos ?_ (by norm_num : (1 : ℝ) < 2) ?_
+  · filter_upwards [eventually_ge_atTop 1] with x hx
+    rw [one_sub_paretoCDF_of_one_le two_pos hx]
+    positivity
   · have h := test_nonvacuous_tendsto_integral_Ioi_div.inv₀ (by norm_num)
     norm_num at h ⊢
     exact h
