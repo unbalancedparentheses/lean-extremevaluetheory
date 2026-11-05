@@ -1,5 +1,6 @@
 # Extreme Value Theory in Lean
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23966372.svg)](https://doi.org/10.5281/zenodo.23966372)
 [![Build](https://github.com/unbalancedparentheses/lean-extremevaluetheory/actions/workflows/build.yml/badge.svg)](https://github.com/unbalancedparentheses/lean-extremevaluetheory/actions/workflows/build.yml)
 [![Blueprint](https://github.com/unbalancedparentheses/lean-extremevaluetheory/actions/workflows/blueprint.yml/badge.svg)](https://unbalancedparentheses.github.io/lean-extremevaluetheory/blueprint/)
 [![Kernel check](https://github.com/unbalancedparentheses/lean-extremevaluetheory/actions/workflows/kernel-check.yml/badge.svg)](https://github.com/unbalancedparentheses/lean-extremevaluetheory/actions/workflows/kernel-check.yml)
@@ -275,7 +276,8 @@ counterpart says, please open an issue. Open problems with precise targets are l
 
 ## Citing
 
-See [`CITATION.cff`](CITATION.cff), or use GitHub's "Cite this repository" button.
+See [`CITATION.cff`](CITATION.cff), or use GitHub's "Cite this repository" button. The DOI
+[10.5281/zenodo.23966372](https://doi.org/10.5281/zenodo.23966372) always points to the latest release; [10.5281/zenodo.23966373](https://doi.org/10.5281/zenodo.23966373) is `v0.9.0`.
 
 ## Credits
 

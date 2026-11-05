@@ -37,10 +37,10 @@ and 1.0 releases.
 - [ ] Non-vacuity tests for `powEchoProcess_antiClustering_iff`, `logEchoProcess_betaMixing_incompatible`
   and `logEcho_tendstoInMeasure_runsEstimator` (found by the Codex review; can follow the release, the
   README discloses the gap)
-- [ ] `CHANGELOG.md`, the tag and GitHub release `v0.9.0`, which creates the Zenodo DOI; add the DOI to
-  `CITATION.cff` and the README
-- [ ] Library paper: *agent* drafts, Codex reviews, *you* submit to arXiv (check early whether you need an
-  endorsement)
+- [x] `CHANGELOG.md`, the tag and [GitHub release `v0.9.0`](https://github.com/unbalancedparentheses/lean-extremevaluetheory/releases/tag/v0.9.0)
+  (2026-11-04), and the Zenodo DOI [10.5281/zenodo.23966373](https://doi.org/10.5281/zenodo.23966373), in `CITATION.cff` and the README
+- [>] Library paper [`paper/evt-lean.tex`](paper/evt-lean.tex): drafted and reviewed twice by Codex; *you*
+  submit to arXiv (check early whether you need an endorsement)
 - [ ] *you:* send the expert emails and post on the Lean Zulip, with the release and paper links
 
 **Tier 1: finish the work in flight** (sunk cost; ordered by how close each is)
@@ -520,11 +520,11 @@ small contributions together, so direct outreach (H.8) matters at least as much 
       later). Each tag pins Lean and Mathlib; then one tag per Mathlib bump (see E)
 - [x] The GitHub–Zenodo integration is enabled, so every GitHub release gets a permanent DOI (no test
       releases), and [`.zenodo.json`](.zenodo.json) holds the metadata
-- [ ] After `v0.9.0`: add the DOI to [`CITATION.cff`](CITATION.cff) and the README
+- [x] The DOI is in [`CITATION.cff`](CITATION.cff) and the README
 - [ ] README badges: build, kernel check, DOI, then arXiv and the dataset when they exist
 - [x] README section "Use it in your project": the `require` lines for `lakefile.toml`,
       `lake exe cache get`, `import ExtremeValueTheory`
-- [>] `Downstream/`: a client project that only imports the library and states one headline theorem,
+- [x] `Downstream/`: a client project that only imports the library and states one headline theorem,
       and a weekly workflow that builds it in a fresh project requiring this repository (catches
       packaging breakage that our own build cannot see)
 
