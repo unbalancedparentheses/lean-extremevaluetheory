@@ -143,4 +143,120 @@ theorem test_pickandsDependenceEstimator_comonotone (n : ℕ) (hn : 0 < n) :
   field_simp
   norm_num
 
+/-! ### The empirical stable tail dependence function
+
+Hand computations on deterministic samples with `k ≤ n` (`2 k ≤ n` in the second case): the top `k`
+ranks of a comonotone sample coincide, so the union has `k` points and `ℓ̂_n(1, 1) = 1`, `χ̂ = 1`; the
+top ranks of a countermonotone sample are disjoint, so the union has `2 k` points and
+`ℓ̂_n(1, 1) = 2`, `χ̂ = 0` ([BGST, §9.4.1]; [dHF, §7.2]). -/
+
+/-- The rank of `i` among `0, 1, …, n - 1` is `i + 1`. -/
+theorem test_sampleRank_natCast {n i : ℕ} (hi : i < n) :
+    sampleRank (fun m => (m : ℝ)) n i = i + 1 := by
+  have : (Finset.range n).filter (fun m : ℕ => (m : ℝ) ≤ (i : ℝ)) = Finset.range (i + 1) := by
+    ext m
+    simp only [Finset.mem_filter, Finset.mem_range, Nat.cast_le]
+    omega
+  rw [sampleRank, this, Finset.card_range]
+
+private lemma card_filter_gt {p : ℕ → Prop} {_ : DecidablePred p} {n i : ℕ}
+    (hp : ∀ m : ℕ, p m ↔ i < m) : ((Finset.range n).filter p).card = n - (i + 1) := by
+  have : (Finset.range n).filter p = Finset.Ico (i + 1) n := by
+    ext m
+    simp only [Finset.mem_filter, Finset.mem_range, Finset.mem_Ico, hp]
+    omega
+  rw [this, Nat.card_Ico]
+
+private lemma card_filter_lt {p : ℕ → Prop} {_ : DecidablePred p} {n i : ℕ} (hi : i < n)
+    (hp : ∀ m : ℕ, p m ↔ m < i) : ((Finset.range n).filter p).card = i := by
+  have : (Finset.range n).filter p = Finset.range i := by
+    ext m
+    simp only [Finset.mem_filter, Finset.mem_range, hp]
+    omega
+  rw [this, Finset.card_range]
+
+private lemma cast_card_filter_gt_lt {p : ℕ → Prop} {_ : DecidablePred p} {n i k : ℕ}
+    (hp : ∀ m : ℕ, p m ↔ i < m) :
+    ((((Finset.range n).filter p).card : ℕ) : ℝ) < k ↔ n - (i + 1) < k := by
+  rw [card_filter_gt hp, Nat.cast_lt]
+
+private lemma cast_card_filter_lt_lt {p : ℕ → Prop} {_ : DecidablePred p} {n i k : ℕ} (hi : i < n)
+    (hp : ∀ m : ℕ, p m ↔ m < i) :
+    ((((Finset.range n).filter p).card : ℕ) : ℝ) < k ↔ i < k := by
+  rw [card_filter_lt hi hp, Nat.cast_lt]
+
+/-- **Complete dependence**: on the comonotone sample `X_i = (i, i)`, `ℓ̂_n(1, 1) = 1`. -/
+theorem test_empiricalStableTailDependence_comonotone {n k : ℕ} (hk : 0 < k) (hkn : k ≤ n) :
+    empiricalStableTailDependence (fun i (_ : Fin 2) => (i : ℝ)) n k (fun _ => 1) = 1 := by
+  classical
+  have hcount : empiricalTailCount (fun i (_ : Fin 2) => (i : ℝ)) n k (fun _ => 1) = k := by
+    rw [empiricalTailCount_eq]
+    refine (congrArg Finset.card (?_ : _ = Finset.Ico (n - k) n)).trans ?_
+    · ext i
+      simp only [Finset.mem_filter, Finset.mem_range, Finset.mem_Ico, mul_one, exists_const]
+      rw [card_filter_gt (i := i) fun m ↦ Nat.cast_lt, Nat.cast_lt]
+      omega
+    · rw [Nat.card_Ico]
+      omega
+  have hk' : (k : ℝ) ≠ 0 := by positivity
+  rw [empiricalStableTailDependence, hcount, inv_mul_cancel₀ hk']
+
+/-- **Independence-like extreme**: on the countermonotone sample `X_i = (i, -i)`, the top ranks are
+disjoint and `ℓ̂_n(1, 1) = 2`, the value of `ℓ(1, 1)` at asymptotic independence. -/
+theorem test_empiricalStableTailDependence_countermonotone {n k : ℕ} (hk : 0 < k)
+    (hkn : 2 * k ≤ n) :
+    empiricalStableTailDependence (fun i => ![(i : ℝ), -(i : ℝ)]) n k (fun _ => 1) = 2 := by
+  classical
+  have hcount : empiricalTailCount (fun i => ![(i : ℝ), -(i : ℝ)]) n k (fun _ => 1) = 2 * k := by
+    rw [empiricalTailCount_eq]
+    refine (congrArg Finset.card (?_ : _ = Finset.range k ∪ Finset.Ico (n - k) n)).trans ?_
+    · ext i
+      simp only [Finset.mem_filter, Finset.mem_range, Finset.mem_union, Finset.mem_Ico,
+        Fin.exists_fin_two, Matrix.cons_val_zero, Matrix.cons_val_one, mul_one]
+      constructor
+      · rintro ⟨hi, h | h⟩
+        · have := (cast_card_filter_gt_lt (i := i) (fun m ↦ by simp)).1 h
+          omega
+        · have := (cast_card_filter_lt_lt hi (fun m ↦ by simp)).1 h
+          omega
+      · intro h
+        have hi : i < n := by omega
+        refine ⟨hi, ?_⟩
+        by_cases hik : i < k
+        · exact Or.inr ((cast_card_filter_lt_lt hi (fun m ↦ by simp)).2 hik)
+        · exact Or.inl ((cast_card_filter_gt_lt (i := i) (fun m ↦ by simp)).2 (by omega))
+    · rw [Finset.card_union_of_disjoint, Finset.card_range, Nat.card_Ico]
+      · omega
+      · rw [Finset.disjoint_left]
+        intro i hi hi'
+        simp only [Finset.mem_range, Finset.mem_Ico] at hi hi'
+        omega
+  have hk' : (k : ℝ) ≠ 0 := by positivity
+  rw [empiricalStableTailDependence, hcount]
+  push_cast
+  field_simp
+
+/-- The tail dependence estimator on the comonotone sample: `χ̂ = 2 - 1 = 1`. -/
+theorem test_tailDependenceEstimator_comonotone {n k : ℕ} (hk : 0 < k) (hkn : k ≤ n) :
+    tailDependenceEstimator (fun i (_ : Fin 2) => (i : ℝ)) n k = 1 := by
+  rw [tailDependenceEstimator, test_empiricalStableTailDependence_comonotone hk hkn]
+  norm_num
+
+/-- The tail dependence estimator on the countermonotone sample: `χ̂ = 2 - 2 = 0`. -/
+theorem test_tailDependenceEstimator_countermonotone {n k : ℕ} (hk : 0 < k) (hkn : 2 * k ≤ n) :
+    tailDependenceEstimator (fun i => ![(i : ℝ), -(i : ℝ)]) n k = 0 := by
+  rw [tailDependenceEstimator, test_empiricalStableTailDependence_countermonotone hk hkn]
+  norm_num
+
+/-- The order-statistics form agrees with the rank form at an integer `k x_j`: on the comonotone
+sample, `(1/k) ∑ 1{∃ j, X_i^j ≥ X^j_{n-k+1,n}} = 1`. -/
+theorem test_empiricalStableTailDependenceOrderStat_comonotone {n k : ℕ} (hk : 0 < k)
+    (hkn : k ≤ n) :
+    empiricalStableTailDependenceOrderStat (fun i (_ : Fin 2) => (i : ℝ)) n k (fun _ => 1) = 1 := by
+  have hfl : ⌊(k : ℝ) * 1⌋₊ = k := by rw [mul_one, Nat.floor_natCast]
+  have hk' : (k : ℝ) ≠ 0 := by positivity
+  rw [empiricalStableTailDependenceOrderStat_eq _ hk fun _ => by rw [hfl]; omega]
+  simp only [hfl, div_self hk']
+  exact test_empiricalStableTailDependence_comonotone hk hkn
+
 end Test.KnownAnswers.Multivariate

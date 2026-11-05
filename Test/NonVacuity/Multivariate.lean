@@ -397,6 +397,267 @@ theorem test_nonvacuous_tendsto_conditionalExcessCDF_independent (x : Fin 2 → 
     simp only [Pi.zero_apply, G, neg_zero, Real.exp_zero, ← Real.exp_add]
     rw [Real.exp_lt_one_iff]; norm_num
 
+/-! #### The stable tail dependence function and its estimators
+
+The sample is the canonical iid sequence `X_i ω = ω i` on `ℕ → (Fin 2 → ℝ)` with the product law
+`⊗_i μ`, and the sample fraction is `k n = ⌊√n⌋`. For the two Gumbel vectors above, `ℓ` is known in
+closed form: `ℓ(x) = max(x₀, x₁)` for `(Z, Z)` and `ℓ(x) = x₀ + x₁` for independent coordinates
+([dHF, §6.1]; [BGST04, §8.2]). -/
+
+/-- The product law of an iid sequence with law `μ`. -/
+private noncomputable def iidLaw (μ : Measure (Fin 2 → ℝ)) [IsProbabilityMeasure μ] :
+    Measure (ℕ → Fin 2 → ℝ) :=
+  Measure.infinitePi fun _ : ℕ => μ
+
+instance (μ : Measure (Fin 2 → ℝ)) [IsProbabilityMeasure μ] : IsProbabilityMeasure (iidLaw μ) := by
+  unfold iidLaw; infer_instance
+
+/-- The canonical coordinates. -/
+private def iidX (i : ℕ) (ω : ℕ → Fin 2 → ℝ) : Fin 2 → ℝ := ω i
+
+private theorem measurable_iidX (i : ℕ) : Measurable (iidX i) := measurable_pi_apply i
+
+private theorem iIndepFun_iidX (μ : Measure (Fin 2 → ℝ)) [IsProbabilityMeasure μ] :
+    iIndepFun iidX (iidLaw μ) :=
+  iIndepFun_infinitePi (X := fun _ (x : Fin 2 → ℝ) => x) fun _ => measurable_id
+
+private theorem map_iidX (μ : Measure (Fin 2 → ℝ)) [IsProbabilityMeasure μ] (i : ℕ) :
+    (iidLaw μ).map (iidX i) = μ :=
+  Measure.infinitePi_map_eval _ i
+
+private theorem identDistrib_iidX (μ : Measure (Fin 2 → ℝ)) [IsProbabilityMeasure μ] (i : ℕ) :
+    IdentDistrib (iidX i) (iidX 0) (iidLaw μ) (iidLaw μ) :=
+  ⟨(measurable_iidX i).aemeasurable, (measurable_iidX 0).aemeasurable, by
+    rw [map_iidX, map_iidX]⟩
+
+private theorem continuous_marginal_comonoGumbel (i : Fin 2) :
+    Continuous (marginal comonoGumbel i) := by
+  rw [marginal_comonoGumbel]; exact continuous_G
+
+private theorem continuous_marginal_indepGumbel (i : Fin 2) :
+    Continuous (marginal indepGumbel i) := by
+  rw [marginal_indepGumbel]; exact continuous_G
+
+/-- The probability integral transform of the Gumbel law. -/
+private theorem gumbelLaw_real_one_sub_lt_G {s : ℝ} (h0 : 0 < s) (h1 : s < 1) :
+    gumbelLaw.real {z | 1 - s < G z} = s := by
+  have h := measureReal_one_sub_lt_marginal (μ := comonoGumbel) (j := 0)
+    (continuous_marginal_comonoGumbel 0) h0 h1
+  simp only [marginal_comonoGumbel] at h
+  have hm : MeasurableSet {y : Fin 2 → ℝ | 1 - s < G (y 0)} :=
+    measurableSet_lt measurable_const (continuous_G.measurable.comp (measurable_pi_apply 0))
+  have hmap := map_measureReal_apply (μ := gumbelLaw) measurable_diag2 hm
+  exact hmap.symm.trans h
+
+private theorem measurableSet_G_le (c : ℝ) : MeasurableSet {z | G z ≤ c} :=
+  measurableSet_le continuous_G.measurable measurable_const
+
+private theorem gumbelLaw_real_G_le {s : ℝ} (h0 : 0 < s) (h1 : s < 1) :
+    gumbelLaw.real {z | G z ≤ 1 - s} = 1 - s := by
+  have hc : {z | G z ≤ 1 - s} = {z | 1 - s < G z}ᶜ := by ext; simp
+  rw [hc, probReal_compl_eq_one_sub
+    (measurableSet_lt measurable_const continuous_G.measurable), gumbelLaw_real_one_sub_lt_G h0 h1]
+
+/-- Eventually as `t ↓ 0`, `0 < t` and `t a < 1`. -/
+private theorem eventually_mul_lt_one (a : ℝ) : ∀ᶠ t in 𝓝[>] (0 : ℝ), 0 < t ∧ t * a < 1 := by
+  have hcont : Continuous fun t : ℝ => t * a := by fun_prop
+  have h : Tendsto (fun t : ℝ => t * a) (𝓝[>] 0) (𝓝 0) := by
+    simpa using (hcont.tendsto (0 : ℝ)).mono_left nhdsWithin_le_nhds
+  exact (eventually_mem_nhdsWithin).and (h.eventually (gt_mem_nhds one_pos))
+
+/-- **Known answer**: complete dependence has `ℓ(x) = max(x₀, x₁)`. -/
+theorem test_hasStableTailDependence_comonoGumbel :
+    HasStableTailDependence comonoGumbel fun x => max (x 0) (x 1) := by
+  intro x hx
+  refine tendsto_const_nhds.congr' ?_
+  filter_upwards [eventually_mul_lt_one (max (x 0) (x 1))] with t ⟨ht, htm⟩
+  have hm : 0 < max (x 0) (x 1) := lt_max_of_lt_left (hx 0)
+  have hset : (fun z : ℝ => fun _ : Fin 2 => z) ⁻¹'
+      {y | ∃ j, 1 - t * x j < marginal comonoGumbel j (y j)} =
+      {z | 1 - t * max (x 0) (x 1) < G z} := by
+    ext z
+    simp only [Set.mem_preimage, Set.mem_setOf_eq, marginal_comonoGumbel, Fin.exists_fin_two]
+    rcases le_total (x 0) (x 1) with h | h
+    · have := mul_le_mul_of_nonneg_left h ht.le
+      rw [max_eq_right h]
+      constructor
+      · rintro (h' | h') <;> linarith
+      · exact Or.inr
+    · have := mul_le_mul_of_nonneg_left h ht.le
+      rw [max_eq_left h]
+      constructor
+      · rintro (h' | h') <;> linarith
+      · exact Or.inl
+  have hprob : tailUnionProb comonoGumbel t x = t * max (x 0) (x 1) := by
+    have hmap := map_measureReal_apply (μ := gumbelLaw) measurable_diag2
+      (measurableSet_tailUnion (μ := comonoGumbel) t x)
+    rw [hset, gumbelLaw_real_one_sub_lt_G (mul_pos ht hm) htm] at hmap
+    exact hmap
+  rw [hprob, inv_mul_cancel_left₀ ht.ne']
+
+/-- **Known answer**: independence has `ℓ(x) = x₀ + x₁`. -/
+theorem test_hasStableTailDependence_indepGumbel :
+    HasStableTailDependence indepGumbel fun x => x 0 + x 1 := by
+  intro x hx
+  have hlim : Tendsto (fun t : ℝ => x 0 + x 1 - t * (x 0 * x 1)) (𝓝[>] 0) (𝓝 (x 0 + x 1)) := by
+    have hcont : Continuous fun t : ℝ => x 0 + x 1 - t * (x 0 * x 1) := by fun_prop
+    simpa using (hcont.tendsto (0 : ℝ)).mono_left nhdsWithin_le_nhds
+  refine hlim.congr' ?_
+  filter_upwards [eventually_mul_lt_one (x 0), eventually_mul_lt_one (x 1)] with t ⟨ht, h0⟩ ⟨_, h1⟩
+  have hc : {y : Fin 2 → ℝ | ∃ j, 1 - t * x j < marginal indepGumbel j (y j)}ᶜ =
+      Set.pi Set.univ fun j => {z | G z ≤ 1 - t * x j} := by
+    ext y
+    simp [marginal_indepGumbel]
+  have hcompl := probReal_compl_eq_one_sub (μ := indepGumbel)
+    (measurableSet_tailUnion (μ := indepGumbel) t x)
+  have hpi : indepGumbel.real {y : Fin 2 → ℝ | ∃ j, 1 - t * x j < marginal indepGumbel j (y j)}ᶜ =
+      (1 - t * x 0) * (1 - t * x 1) := by
+    rw [hc]
+    change (Measure.pi fun _ : Fin 2 => gumbelLaw).real _ = _
+    rw [measureReal_def, Measure.pi_pi, ENNReal.toReal_prod, Fin.prod_univ_two]
+    simp only [← measureReal_def]
+    rw [gumbelLaw_real_G_le (mul_pos ht (hx 0)) h0, gumbelLaw_real_G_le (mul_pos ht (hx 1)) h1]
+  have hprob : tailUnionProb indepGumbel t x = 1 - (1 - t * x 0) * (1 - t * x 1) := by
+    have : tailUnionProb indepGumbel t x =
+        indepGumbel.real {y | ∃ j, 1 - t * x j < marginal indepGumbel j (y j)} := rfl
+    rw [this]
+    linarith
+  rw [hprob]
+  field_simp
+  ring
+
+/-- **Cross-check against the domain-of-attraction formula**: for complete dependence,
+`V₀(1/x) = max(x₀, x₁)`. -/
+theorem test_maxStableExponent_inv_comonoGumbel {x : Fin 2 → ℝ} (hx : ∀ j, 0 < x j) :
+    maxStableExponent (frechetStandardization comonoGumbel) (fun j => (x j)⁻¹) =
+      max (x 0) (x 1) :=
+  (isMDAWith_comonoGumbel.hasStableTailDependence continuous_marginal_comonoGumbel
+    continuous_marginal_comonoGumbel).unique test_hasStableTailDependence_comonoGumbel hx
+
+/-- **Cross-check**: for independence, `V₀(1/x) = x₀ + x₁`. -/
+theorem test_maxStableExponent_inv_indepGumbel {x : Fin 2 → ℝ} (hx : ∀ j, 0 < x j) :
+    maxStableExponent (frechetStandardization indepGumbel) (fun j => (x j)⁻¹) = x 0 + x 1 :=
+  (isMDAWith_indepGumbel.hasStableTailDependence continuous_marginal_indepGumbel
+    continuous_marginal_indepGumbel).unique test_hasStableTailDependence_indepGumbel hx
+
+/-- **Known answer**: `χ = 2 - ℓ(1, 1) = 1` for complete dependence. -/
+theorem test_hasUpperTailDependence_comonoGumbel :
+    HasUpperTailDependence comonoGumbel (fun y => y 0) (fun y => y 1) 1 := by
+  have h := test_hasStableTailDependence_comonoGumbel.hasUpperTailDependence
+    continuous_marginal_comonoGumbel
+  norm_num at h
+  exact h
+
+/-- **Known answer**: `χ = 2 - ℓ(1, 1) = 0` for independence. -/
+theorem test_hasUpperTailDependence_indepGumbel :
+    HasUpperTailDependence indepGumbel (fun y => y 0) (fun y => y 1) 0 := by
+  have h := test_hasStableTailDependence_indepGumbel.hasUpperTailDependence
+    continuous_marginal_indepGumbel
+  norm_num at h
+  exact h
+
+/-- Non-vacuity of `tendstoInMeasure_empiricalStableTailDependence`, all hypotheses discharged, on
+the iid comonotone Gumbel sequence: `ℓ̂_n(x) → max(x₀, x₁)`. -/
+theorem test_nonvacuous_tendstoInMeasure_empiricalStableTailDependence_comono {x : Fin 2 → ℝ}
+    (hx : ∀ j, 0 < x j) :
+    TendstoInMeasure (iidLaw comonoGumbel)
+      (fun n ω => empiricalStableTailDependence (fun i => iidX i ω) n (Nat.sqrt n) x) atTop
+      (fun _ => max (x 0) (x 1)) :=
+  tendstoInMeasure_empiricalStableTailDependence measurable_iidX (iIndepFun_iidX _)
+    (identDistrib_iidX _) (map_iidX _ 0) continuous_marginal_comonoGumbel
+    test_hasStableTailDependence_comonoGumbel tendsto_sqrt_atTop tendsto_sqrt_div hx
+
+/-- Non-vacuity of the same theorem on the iid independent Gumbel sequence:
+`ℓ̂_n(x) → x₀ + x₁`. -/
+theorem test_nonvacuous_tendstoInMeasure_empiricalStableTailDependence_indep {x : Fin 2 → ℝ}
+    (hx : ∀ j, 0 < x j) :
+    TendstoInMeasure (iidLaw indepGumbel)
+      (fun n ω => empiricalStableTailDependence (fun i => iidX i ω) n (Nat.sqrt n) x) atTop
+      (fun _ => x 0 + x 1) :=
+  tendstoInMeasure_empiricalStableTailDependence measurable_iidX (iIndepFun_iidX _)
+    (identDistrib_iidX _) (map_iidX _ 0) continuous_marginal_indepGumbel
+    test_hasStableTailDependence_indepGumbel tendsto_sqrt_atTop tendsto_sqrt_div hx
+
+/-- Non-vacuity of the uniform consistency on the box `(0, T]²`, on the independent sequence. -/
+theorem test_nonvacuous_uniform_consistency_indep (T : ℝ) {ε : ℝ} (hε : 0 < ε) :
+    Tendsto (fun n => iidLaw indepGumbel {ω | ∃ x : Fin 2 → ℝ, (∀ j, 0 < x j ∧ x j ≤ T) ∧
+      ε ≤ |empiricalStableTailDependence (fun i => iidX i ω) n (Nat.sqrt n) x - (x 0 + x 1)|})
+      atTop (𝓝 0) :=
+  tendsto_measure_exists_abs_empiricalStableTailDependence_sub measurable_iidX (iIndepFun_iidX _)
+    (identDistrib_iidX _) (map_iidX _ 0) continuous_marginal_indepGumbel
+    test_hasStableTailDependence_indepGumbel tendsto_sqrt_atTop tendsto_sqrt_div T hε
+
+/-- Non-vacuity of the order-statistics form, on the comonotone sequence. -/
+theorem test_nonvacuous_tendstoInMeasure_orderStat_comono {x : Fin 2 → ℝ} (hx : ∀ j, 0 < x j) :
+    TendstoInMeasure (iidLaw comonoGumbel)
+      (fun n ω => empiricalStableTailDependenceOrderStat (fun i => iidX i ω) n (Nat.sqrt n) x) atTop
+      (fun _ => max (x 0) (x 1)) :=
+  tendstoInMeasure_empiricalStableTailDependenceOrderStat measurable_iidX (iIndepFun_iidX _)
+    (identDistrib_iidX _) (map_iidX _ 0) continuous_marginal_comonoGumbel
+    test_hasStableTailDependence_comonoGumbel tendsto_sqrt_atTop tendsto_sqrt_div hx
+
+/-- Non-vacuity of `tendstoInMeasure_tailDependenceEstimator`: on the independent sequence,
+`χ̂_n → 2 - (1 + 1) = 0`. -/
+theorem test_nonvacuous_tendstoInMeasure_tailDependenceEstimator_indep :
+    TendstoInMeasure (iidLaw indepGumbel)
+      (fun n ω => tailDependenceEstimator (fun i => iidX i ω) n (Nat.sqrt n)) atTop
+      (fun _ => 2 - ((1 : ℝ) + 1)) :=
+  tendstoInMeasure_tailDependenceEstimator measurable_iidX (iIndepFun_iidX _)
+    (identDistrib_iidX _) (map_iidX _ 0) continuous_marginal_indepGumbel
+    test_hasStableTailDependence_indepGumbel tendsto_sqrt_atTop tendsto_sqrt_div
+
+/-- Non-vacuity of `IsMDAWith.tendstoInMeasure_empiricalStableTailDependence`, on the comonotone
+sequence in its own domain of attraction. -/
+theorem test_nonvacuous_isMDAWith_empiricalStableTailDependence {x : Fin 2 → ℝ}
+    (hx : ∀ j, 0 < x j) :
+    TendstoInMeasure (iidLaw comonoGumbel)
+      (fun n ω => empiricalStableTailDependence (fun i => iidX i ω) n (Nat.sqrt n) x) atTop
+      (fun _ => maxStableExponent (frechetStandardization comonoGumbel) fun j => (x j)⁻¹) :=
+  isMDAWith_comonoGumbel.tendstoInMeasure_empiricalStableTailDependence
+    continuous_marginal_comonoGumbel continuous_marginal_comonoGumbel measurable_iidX
+    (iIndepFun_iidX _) (identDistrib_iidX _) (map_iidX _ 0) tendsto_sqrt_atTop tendsto_sqrt_div hx
+
+/-- Non-vacuity of `IsMDAWith.tendstoInMeasure_tailDependenceEstimator`, on the independent
+sequence in its own domain of attraction. -/
+theorem test_nonvacuous_isMDAWith_tailDependenceEstimator :
+    TendstoInMeasure (iidLaw indepGumbel)
+      (fun n ω => tailDependenceEstimator (fun i => iidX i ω) n (Nat.sqrt n)) atTop
+      (fun _ => 2 - extremalCoefficient (frechetStandardization indepGumbel)) :=
+  isMDAWith_indepGumbel.tendstoInMeasure_tailDependenceEstimator
+    continuous_marginal_indepGumbel continuous_marginal_indepGumbel measurable_iidX
+    (iIndepFun_iidX _) (identDistrib_iidX _) (map_iidX _ 0) tendsto_sqrt_atTop tendsto_sqrt_div
+
+/-- Non-vacuity of `IsMDAWith.tendstoInMeasure_pickandsRankEstimator`, on the comonotone sequence
+in its own domain of attraction. -/
+theorem test_nonvacuous_isMDAWith_pickandsRankEstimator {t : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1) :
+    TendstoInMeasure (iidLaw comonoGumbel)
+      (fun n ω => pickandsRankEstimator (fun i => iidX i ω) n (Nat.sqrt n) t) atTop
+      (fun _ => pickandsDependence (frechetStandardization comonoGumbel) t) :=
+  isMDAWith_comonoGumbel.tendstoInMeasure_pickandsRankEstimator
+    continuous_marginal_comonoGumbel continuous_marginal_comonoGumbel measurable_iidX
+    (iIndepFun_iidX _) (identDistrib_iidX _) (map_iidX _ 0) tendsto_sqrt_atTop tendsto_sqrt_div ht
+
+/-- **Known answer**: the limit of the Pickands estimator for complete dependence is
+`A(t) = max(t, 1 - t)` ([Pic81]; [BGST04, §8.2]). -/
+theorem test_pickandsDependence_comonoGumbel {t : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1) :
+    pickandsDependence (frechetStandardization comonoGumbel) t = max t (1 - t) := by
+  rw [← maxStableExponent_inv_pair_eq_pickands ht,
+    test_maxStableExponent_inv_comonoGumbel (x := ![t, 1 - t]) fun j => by
+      fin_cases j
+      · simpa using ht.1
+      · simpa using ht.2]
+  simp
+
+/-- **Known answer**: for independence, `A ≡ 1`. -/
+theorem test_pickandsDependence_indepGumbel {t : ℝ} (ht : t ∈ Ioo (0 : ℝ) 1) :
+    pickandsDependence (frechetStandardization indepGumbel) t = 1 := by
+  rw [← maxStableExponent_inv_pair_eq_pickands ht,
+    test_maxStableExponent_inv_indepGumbel (x := ![t, 1 - t]) fun j => by
+      fin_cases j
+      · simpa using ht.1
+      · simpa using ht.2]
+  simp
+
 end MDA
 
 end ExtremeValueTheory.Test.Multivariate

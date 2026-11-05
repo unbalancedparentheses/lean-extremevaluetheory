@@ -457,8 +457,8 @@ distribution functions are continuous, and suppose that `μ` has stable tail dep
 
 The form uniform in `x` is `tendsto_measure_exists_abs_empiricalStableTailDependence_sub`.
 Continuity of the marginals (`hc`) gives the probability integral transform and the Lipschitz
-bound; `hℓ` is the existence of `ℓ`, not assumed through a domain of attraction, which is weaker
-(`IsMDAWith.hasStableTailDependence`). -/
+bound. `hℓ` asks only that `ℓ` exists, which follows from a domain of attraction
+(`IsMDAWith.hasStableTailDependence`) and is a weaker assumption. -/
 theorem tendstoInMeasure_empiricalStableTailDependence {X : ℕ → Ω → ι → ℝ}
     (hX : ∀ i, Measurable (X i)) (hindep : iIndepFun X P)
     (hident : ∀ i, IdentDistrib (X i) (X 0) P P) (hlaw : P.map (X 0) = μ)
