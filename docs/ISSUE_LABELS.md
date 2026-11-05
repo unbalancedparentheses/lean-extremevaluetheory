@@ -28,8 +28,7 @@ Give each issue one label from each group below, where the group applies.
 | Entry points | `good first issue` | a newcomer can start from the issue alone |
 | | `open-problem` | a sourced problem from the surveys, numbered `EVT-OP-…`; kept after it is solved |
 
-Draft issues are in `.github/issue-drafts/`: the first line of each file is `Title: …`, the second
-`Labels: …`, and the rest is the body.
+New issues use the templates in `.github/ISSUE_TEMPLATE/`. Proof requests have the sections Context, Task, Acceptance criteria and Pointers.
 
 ## Creating the labels
 
