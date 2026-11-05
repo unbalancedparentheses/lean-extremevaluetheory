@@ -1,0 +1,306 @@
+[
+  {
+    "id": "symmetric-stable-exists",
+    "name": "Symmetric alpha-stable laws exist",
+    "source": "Feller §XVII.4; ST §1.1",
+    "lean_name": "ExtremeValueTheory.exists_isSymmStable",
+    "file": "ExtremeValueTheory/StableLaws/DomainOfAttraction.lean",
+    "statement": "ExtremeValueTheory.exists_isSymmStable {α c : ℝ} (hα0 : 0 < α) (hα2 : α ≤ 2) (hc : 0 ≤ c) :\n  ∃ ν, ExtremeValueTheory.IsSymmStable α c ν",
+    "status": "full",
+    "scope_note": "0 < alpha <= 2, c >= 0, where c = 0 gives the point mass at 0, which is not stable.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "ce7c432b791c251387b642ba1a654491"
+  },
+  {
+    "id": "gclt-symmetric",
+    "name": "Generalized CLT, symmetric case",
+    "source": "Feller §XVII.5 Thm 2; EKM Thm 2.2.8",
+    "lean_name": "ExtremeValueTheory.tendsto_map_convPow_of_isRegularlyVarying",
+    "file": "ExtremeValueTheory/StableLaws/DomainOfAttraction.lean",
+    "statement": "ExtremeValueTheory.tendsto_map_convPow_of_isRegularlyVarying {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] (hsymm : MeasureTheory.Measure.map (fun x => -x) μ = μ)\n  {α : ℝ} (hα0 : 0 < α) (hα2 : α < 2)\n  (hRV : ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.absTail μ) (-α)) {a : ℕ → ℝ}\n  (ha : ∀ (n : ℕ), 0 < a n)\n  (hna : Filter.Tendsto (fun n => ↑n * ExtremeValueTheory.absTail μ (a n)) Filter.atTop (nhds 1)) :\n  ∃ ν,\n    ExtremeValueTheory.IsSymmStable α (ExtremeValueTheory.StableIntegral.stableConst α) ↑ν ∧\n      Filter.Tendsto\n        (fun n =>\n          ⟨MeasureTheory.Measure.map (fun x => (a n)⁻¹ * x) (ExtremeValueTheory.Subexp.convPow μ n),\n            ⋯⟩)\n        Filter.atTop (nhds ν)",
+    "status": "reduced",
+    "scope_note": "Symmetric law only, no centering, no skewness; sufficiency only. See the range-by-range entries and the iff domain-of-attraction-stable.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "7ac61e3364a3b437a7f9d14551b47bdd"
+  },
+  {
+    "id": "gclt-below-one",
+    "name": "Generalized CLT, 0 < alpha < 1",
+    "source": "Feller §XVII.5 Thm 2; EKM Thm 2.2.8",
+    "lean_name": "ExtremeValueTheory.tendsto_map_convPow_of_isRegularlyVarying_of_lt_one",
+    "file": "ExtremeValueTheory/StableLaws/GeneralizedCLT.lean",
+    "statement": "ExtremeValueTheory.tendsto_map_convPow_of_isRegularlyVarying_of_lt_one {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] {α p : ℝ} (hα0 : 0 < α) (hα1 : α < 1)\n  (hRV : ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.absTail μ) (-α))\n  (hp :\n    Filter.Tendsto (fun x => μ.real (Set.Ioi x) / ExtremeValueTheory.absTail μ x) Filter.atTop\n      (nhds p))\n  {a : ℕ → ℝ} (ha : ∀ (n : ℕ), 0 < a n)\n  (hna : Filter.Tendsto (fun n => ↑n * ExtremeValueTheory.absTail μ (a n)) Filter.atTop (nhds 1)) :\n  ∃ ν,\n    ExtremeValueTheory.HasStableCharFun α (ExtremeValueTheory.StableIntegral.stableConst α)\n        ((2 * p - 1) * ExtremeValueTheory.StableIntegral.stableSkewConst α) ↑ν ∧\n      Filter.Tendsto\n        (fun n =>\n          ⟨MeasureTheory.Measure.map (fun x => (a n)⁻¹ * x) (ExtremeValueTheory.Subexp.convPow μ n),\n            ⋯⟩)\n        Filter.atTop (nhds ν)",
+    "status": "reduced",
+    "scope_note": "One range of alpha, and sufficiency only; regular variation and tail balance are hypotheses. No skewed instance (p != 1/2) is exhibited in the library.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "8c23a2c778fe4863af4f829572632494"
+  },
+  {
+    "id": "gclt-above-one",
+    "name": "Generalized CLT, 1 < alpha < 2, textbook characteristic function",
+    "source": "Feller §XVII.5 Thm 2; ST (1.1.6)",
+    "lean_name": "ExtremeValueTheory.tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt'",
+    "file": "ExtremeValueTheory/StableLaws/Constants.lean",
+    "statement": "ExtremeValueTheory.tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt'\n  {μ : MeasureTheory.Measure ℝ} [MeasureTheory.IsProbabilityMeasure μ] {α p : ℝ} (hα1 : 1 < α)\n  (hα2 : α < 2) (hRV : ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.absTail μ) (-α))\n  (hp :\n    Filter.Tendsto (fun x => μ.real (Set.Ioi x) / ExtremeValueTheory.absTail μ x) Filter.atTop\n      (nhds p))\n  {a : ℕ → ℝ} (ha : ∀ (n : ℕ), 0 < a n)\n  (hna : Filter.Tendsto (fun n => ↑n * ExtremeValueTheory.absTail μ (a n)) Filter.atTop (nhds 1)) :\n  ∃ ν,\n    (∀ (t : ℝ),\n        MeasureTheory.charFun (↑ν) t =\n          Complex.exp\n            (-↑(Real.Gamma (1 - α) * Real.cos (Real.pi * α / 2) * |t| ^ α) *\n              (1 - ↑((2 * p - 1) * t.sign * Real.tan (Real.pi * α / 2)) * Complex.I))) ∧\n      Filter.Tendsto\n        (fun n =>\n          ⟨MeasureTheory.Measure.map (fun x => (a n)⁻¹ * (x - ↑n * ∫ (y : ℝ), y ∂μ))\n              (ExtremeValueTheory.Subexp.convPow μ n),\n            ⋯⟩)\n        Filter.atTop (nhds ν)",
+    "status": "reduced",
+    "scope_note": "One range of alpha, and sufficiency only. No skewed instance (p != 1/2) is exhibited in the library.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "19dc4f3c7de740f22a53b9843567623c"
+  },
+  {
+    "id": "gclt-one",
+    "name": "Generalized CLT, alpha = 1",
+    "source": "Feller §XVII.5 Thm 2; EKM Thm 2.2.8",
+    "lean_name": "ExtremeValueTheory.tendsto_map_convPow_sub_of_isRegularlyVarying_one'",
+    "file": "ExtremeValueTheory/StableLaws/GeneralizedCLTOne.lean",
+    "statement": "ExtremeValueTheory.tendsto_map_convPow_sub_of_isRegularlyVarying_one' {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] {p : ℝ}\n  (hRV : ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.absTail μ) (-1))\n  (hp :\n    Filter.Tendsto (fun x => μ.real (Set.Ioi x) / ExtremeValueTheory.absTail μ x) Filter.atTop\n      (nhds p))\n  {a : ℕ → ℝ} (ha : ∀ (n : ℕ), 0 < a n)\n  (hna : Filter.Tendsto (fun n => ↑n * ExtremeValueTheory.absTail μ (a n)) Filter.atTop (nhds 1)) :\n  ∃ ν,\n    ExtremeValueTheory.HasStableOneCharFun (Real.pi / 2) (2 * p - 1)\n        ExtremeValueTheory.StableIntegral.stableLogConst ↑ν ∧\n      Filter.Tendsto\n        (fun n =>\n          ⟨MeasureTheory.Measure.map\n              (fun x => (a n)⁻¹ * (x - ↑n * ∫ (y : ℝ) in Set.Icc (-a n) (a n), y ∂μ))\n              (ExtremeValueTheory.Subexp.convPow μ n),\n            ⋯⟩)\n        Filter.atTop (nhds ν)",
+    "status": "reduced",
+    "scope_note": "alpha = 1 only, and sufficiency only, with centering by the truncated mean.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "096aab4a5420a866f795f759b507d7db"
+  },
+  {
+    "id": "stable-constant",
+    "name": "Closed form of the constant C_alpha",
+    "source": "Feller §XVII.4 (4.9); ST (1.1.6)",
+    "lean_name": "ExtremeValueTheory.StableIntegral.stableConst_eq_Gamma_mul_cos",
+    "file": "ExtremeValueTheory/StableLaws/Constants.lean",
+    "statement": "ExtremeValueTheory.StableIntegral.stableConst_eq_Gamma_mul_cos {α : ℝ} (hα0 : 0 < α) (hα2 : α < 2)\n  (hα1 : α ≠ 1) :\n  ExtremeValueTheory.StableIntegral.stableConst α = Real.Gamma (1 - α) * Real.cos (Real.pi * α / 2)",
+    "status": "full",
+    "scope_note": "0 < alpha < 2, alpha != 1, where the formula makes sense; the value pi/2 at alpha = 1 is a separate lemma.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "0f6f094949e6fe12b475f66c34171811"
+  },
+  {
+    "id": "stable-skew-constant",
+    "name": "E_alpha = C_alpha tan(pi alpha/2)",
+    "source": "ST (1.1.6)",
+    "lean_name": "ExtremeValueTheory.StableIntegral.stableSkewConst_eq_mul_tan",
+    "file": "ExtremeValueTheory/StableLaws/Constants.lean",
+    "statement": "ExtremeValueTheory.StableIntegral.stableSkewConst_eq_mul_tan {α : ℝ} (hα0 : 0 < α) (hα2 : α < 2)\n  (hα1 : α ≠ 1) :\n  ExtremeValueTheory.StableIntegral.stableSkewConst α =\n    ExtremeValueTheory.StableIntegral.stableConst α * Real.tan (Real.pi * α / 2)",
+    "status": "full",
+    "scope_note": "0 < alpha < 2, alpha != 1.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "692f361a6b69ac5290a03c2f842a0a12"
+  },
+  {
+    "id": "stable-log-constant",
+    "name": "The drift constant of the 1-stable limit is 1 - gamma",
+    "source": "Feller §XVII.5 (no number cited)",
+    "lean_name": "ExtremeValueTheory.StableIntegral.stableLogConst_eq",
+    "file": "ExtremeValueTheory/StableLaws/EulerConstant.lean",
+    "statement": "ExtremeValueTheory.StableIntegral.stableLogConst_eq :\n  ExtremeValueTheory.StableIntegral.stableLogConst = 1 - Real.eulerMascheroniConstant",
+    "status": "full",
+    "scope_note": "Nothing left out.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "61969c4ba0da5fa04d624357332bc395"
+  },
+  {
+    "id": "domain-of-attraction-stable-index",
+    "name": "Feller's criterion for the domain of attraction of a stable law",
+    "source": "Feller §XVII.5 Thm 2; GK §35 Thm 2; EKM Thm 2.2.8",
+    "lean_name": "ExtremeValueTheory.domainOfAttraction_isStableIndex_iff",
+    "file": "ExtremeValueTheory/StableLaws/DomainOfAttractionIff.lean",
+    "statement": "ExtremeValueTheory.domainOfAttraction_isStableIndex_iff {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] {α : ℝ} (hα0 : 0 < α) (hα2 : α < 2) :\n  (∃ a,\n      (∀ (n : ℕ), 0 < a n) ∧\n        ∃ b ν,\n          ExtremeValueTheory.IsStableIndex α ↑ν ∧\n            Filter.Tendsto\n              (fun n =>\n                ⟨MeasureTheory.Measure.map (fun x => (a n)⁻¹ * (x - b n))\n                    (ExtremeValueTheory.Subexp.convPow μ n),\n                  ⋯⟩)\n              Filter.atTop (nhds ν)) ↔\n    ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.absTail μ) (-α) ∧\n      ∃ p,\n        0 ≤ p ∧\n          p ≤ 1 ∧\n            Filter.Tendsto (fun x => μ.real (Set.Ioi x) / ExtremeValueTheory.absTail μ x)\n              Filter.atTop (nhds p)",
+    "status": "full",
+    "scope_note": "Both directions, 0 < alpha < 2, general law with arbitrary centering. Uses the library's predicate IsStableIndex; domain-of-attraction-stable is the form with plain IsStable. Normalizing constants are existential in this statement.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "8b7ba237ef1246425eec2a29ae8b49ae"
+  },
+  {
+    "id": "domain-of-attraction-stable",
+    "name": "Feller's criterion with a plain stable limit",
+    "source": "Feller §XVII.5 Thm 2",
+    "lean_name": "ExtremeValueTheory.domainOfAttraction_isStable_iff",
+    "file": "ExtremeValueTheory/StableLaws/StableIndex.lean",
+    "statement": "ExtremeValueTheory.domainOfAttraction_isStable_iff {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] {α : ℝ} (hα0 : 0 < α) (hα2 : α < 2) :\n  (∃ a,\n      (∀ (n : ℕ), 0 < a n) ∧\n        ∃ b ν,\n          ExtremeValueTheory.IsStable ↑ν ∧\n            ExtremeValueTheory.stableIndex ↑ν = α ∧\n              Filter.Tendsto\n                (fun n =>\n                  ⟨MeasureTheory.Measure.map (fun x => (a n)⁻¹ * (x - b n))\n                      (ExtremeValueTheory.Subexp.convPow μ n),\n                    ⋯⟩)\n                Filter.atTop (nhds ν)) ↔\n    ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.absTail μ) (-α) ∧\n      ∃ p,\n        0 ≤ p ∧\n          p ≤ 1 ∧\n            Filter.Tendsto (fun x => μ.real (Set.Ioi x) / ExtremeValueTheory.absTail μ x)\n              Filter.atTop (nhds p)",
+    "status": "full",
+    "scope_note": "Both directions, 0 < alpha < 2. The limit's location shift is identified only up to existence.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "e91f911612b86bfd72fd2b85e03f4145"
+  },
+  {
+    "id": "domain-of-attraction-normal",
+    "name": "The domain of attraction of the normal law",
+    "source": "Feller §IX.8 Thm 1, §XVII.5 Thm 2; GK §35 Thm 1",
+    "lean_name": "ExtremeValueTheory.domainOfAttraction_gaussianReal_iff",
+    "file": "ExtremeValueTheory/StableLaws/GaussianDomain.lean",
+    "statement": "ExtremeValueTheory.domainOfAttraction_gaussianReal_iff {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] :\n  (∃ a,\n      (∀ (n : ℕ), 0 < a n) ∧\n        ∃ b m v,\n          v ≠ 0 ∧\n            Filter.Tendsto\n              (fun n =>\n                ⟨MeasureTheory.Measure.map (fun x => (a n)⁻¹ * (x - b n))\n                    (ExtremeValueTheory.Subexp.convPow μ n),\n                  ⋯⟩)\n              Filter.atTop (nhds ⟨ProbabilityTheory.gaussianReal m v, ⋯⟩)) ↔\n    (∀ (x : ℝ), μ ≠ MeasureTheory.Measure.dirac x) ∧\n      ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.truncSecondMoment μ) 0",
+    "status": "full",
+    "scope_note": "Both directions. The side condition that the law is not a point mass is necessary and is stated.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "6de9958bee8b880b4f52b8b1712eb457"
+  },
+  {
+    "id": "limit-is-stable",
+    "name": "Every non-degenerate limit of normalized sums is stable",
+    "source": "Feller §VI.1 Thm 1; GK §33",
+    "lean_name": "ExtremeValueTheory.isStable_of_tendsto",
+    "file": "ExtremeValueTheory/StableLaws/GaussianDomain/Necessity.lean",
+    "statement": "ExtremeValueTheory.isStable_of_tendsto {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] {a b : ℕ → ℝ} (ha : ∀ (n : ℕ), 0 < a n)\n  {ν : MeasureTheory.ProbabilityMeasure ℝ} (hnd : ∀ (x : ℝ), ↑ν ≠ MeasureTheory.Measure.dirac x)\n  (hconv :\n    Filter.Tendsto\n      (fun n =>\n        ⟨MeasureTheory.Measure.map (fun x => (a n)⁻¹ * (x - b n))\n            (ExtremeValueTheory.Subexp.convPow μ n),\n          ⋯⟩)\n      Filter.atTop (nhds ν)) :\n  ExtremeValueTheory.IsStable ↑ν",
+    "status": "full",
+    "scope_note": "Nothing left out.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "4a467af003b4b41750b4db660ff42a50"
+  },
+  {
+    "id": "limit-is-stable-explicit",
+    "name": "The limit in the converse of the generalized CLT, with its characteristic function",
+    "source": "Feller §XVII.5 Thm 2; GK §35 Thm 2",
+    "lean_name": "ExtremeValueTheory.exists_stable_limit_of_tendsto",
+    "file": "ExtremeValueTheory/StableLaws/DomainOfAttractionIff.lean",
+    "statement": "ExtremeValueTheory.exists_stable_limit_of_tendsto {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] {a b : ℕ → ℝ} (ha : ∀ (n : ℕ), 0 < a n)\n  {ν : MeasureTheory.ProbabilityMeasure ℝ} (hnd : ∀ (x : ℝ), ↑ν ≠ MeasureTheory.Measure.dirac x)\n  (hconv :\n    Filter.Tendsto\n      (fun n =>\n        ⟨MeasureTheory.Measure.map (fun x => (a n)⁻¹ * (x - b n))\n            (ExtremeValueTheory.Subexp.convPow μ n),\n          ⋯⟩)\n      Filter.atTop (nhds ν)) :\n  ∃ α,\n    0 < α ∧\n      α ≤ 2 ∧\n        (α < 2 →\n          ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.absTail μ) (-α) ∧\n            ∃ cp cm,\n              0 ≤ cp ∧\n                0 ≤ cm ∧\n                  0 < cp + cm ∧\n                    (∀ (u : ℝ),\n                        0 < u →\n                          Filter.Tendsto (fun n => ↑n * μ.real (Set.Ioi (a n * u))) Filter.atTop\n                              (nhds (cp * u ^ (-α))) ∧\n                            Filter.Tendsto (fun n => ↑n * μ.real (Set.Iio (-(a n * u))))\n                              Filter.atTop (nhds (cm * u ^ (-α)))) ∧\n                      ExtremeValueTheory.IsStableIndex α ↑ν ∧\n                        ∃ m,\n                          (α ≠ 1 →\n                              ExtremeValueTheory.HasStableCharFun α\n                                (ExtremeValueTheory.StableIntegral.stableConst α * (cp + cm))\n                                (ExtremeValueTheory.StableIntegral.stableSkewConst α * (cp - cm))\n                                (MeasureTheory.Measure.map (fun x => x + m) ↑ν)) ∧\n                            (α = 1 →\n                              ExtremeValueTheory.HasStableOneCharFun\n                                (ExtremeValueTheory.StableIntegral.stableConst 1 * (cp + cm))\n                                (cp - cm) ExtremeValueTheory.StableIntegral.stableLogConst\n                                (MeasureTheory.Measure.map (fun x => x + m) ↑ν)))",
+    "status": "full",
+    "scope_note": "The explicit conclusion is for alpha < 2 only; the Gaussian case alpha = 2 is domain-of-attraction-normal. The location shift m is existential.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "e002aef4743ec0dfbc6c893277d6c327"
+  },
+  {
+    "id": "stable-index-unique",
+    "name": "A stable law has a unique index in (0, 2]",
+    "source": "Feller §VI.1 Thm 1",
+    "lean_name": "ExtremeValueTheory.IsStable.existsUnique_isStableIndex",
+    "file": "ExtremeValueTheory/StableLaws/StableIndex.lean",
+    "statement": "ExtremeValueTheory.IsStable.existsUnique_isStableIndex {μ : MeasureTheory.Measure ℝ}\n  (h : ExtremeValueTheory.IsStable μ) : ∃! α, ExtremeValueTheory.IsStableIndex α μ",
+    "status": "full",
+    "scope_note": "Nothing left out.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "1ec900f5c951ae6d4c8954e5d9e5bb08"
+  },
+  {
+    "id": "gclt-converse-symmetric",
+    "name": "Converse of the generalized CLT, symmetric case",
+    "source": "Feller §XVII.5 Thm 2; GK §35",
+    "lean_name": "ExtremeValueTheory.GCLTConverse.exists_isRegularlyVarying_of_tendsto",
+    "file": "ExtremeValueTheory/StableLaws/GeneralizedCLTConverse.lean",
+    "statement": "ExtremeValueTheory.GCLTConverse.exists_isRegularlyVarying_of_tendsto {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] {a : ℕ → ℝ}\n  (hsymm : MeasureTheory.Measure.map (fun x => -x) μ = μ) (ha : ∀ (n : ℕ), 0 < a n)\n  {ν : MeasureTheory.ProbabilityMeasure ℝ} (hnd : ↑ν ≠ MeasureTheory.Measure.dirac 0)\n  (hconv :\n    Filter.Tendsto\n      (fun n =>\n        ⟨MeasureTheory.Measure.map (fun x => (a n)⁻¹ * x) (ExtremeValueTheory.Subexp.convPow μ n),\n          ⋯⟩)\n      Filter.atTop (nhds ν)) :\n  ∃ α,\n    0 < α ∧\n      α ≤ 2 ∧\n        ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.truncSecondMoment μ) (2 - α) ∧\n          (α < 2 → ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.absTail μ) (-α))",
+    "status": "reduced",
+    "scope_note": "Symmetric law and no centering. The general form is gclt-converse.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "0dc4363becc30fbde922c2190e453ead"
+  },
+  {
+    "id": "gclt-converse",
+    "name": "Converse of the generalized CLT",
+    "source": "Feller §XVII.5 Thm 2; GK §35 Thm 2",
+    "lean_name": "ExtremeValueTheory.GCLTConverse.exists_isRegularlyVarying_tailBalance_of_tendsto",
+    "file": "ExtremeValueTheory/StableLaws/GeneralizedCLTConverseAsymmetric.lean",
+    "statement": "ExtremeValueTheory.GCLTConverse.exists_isRegularlyVarying_tailBalance_of_tendsto\n  {μ : MeasureTheory.Measure ℝ} [MeasureTheory.IsProbabilityMeasure μ] {a b : ℕ → ℝ}\n  (ha : ∀ (n : ℕ), 0 < a n) {ν : MeasureTheory.ProbabilityMeasure ℝ}\n  (hnd : ∀ (x : ℝ), ↑ν ≠ MeasureTheory.Measure.dirac x)\n  (hconv :\n    Filter.Tendsto\n      (fun n =>\n        ⟨MeasureTheory.Measure.map (fun x => (a n)⁻¹ * (x - b n))\n            (ExtremeValueTheory.Subexp.convPow μ n),\n          ⋯⟩)\n      Filter.atTop (nhds ν)) :\n  ∃ α,\n    0 < α ∧\n      α ≤ 2 ∧\n        ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.truncSecondMoment μ) (2 - α) ∧\n          (α < 2 →\n            ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.absTail μ) (-α) ∧\n              (∃ B > 0,\n                  Filter.Tendsto (fun n => ↑n * ExtremeValueTheory.absTail μ (a n)) Filter.atTop\n                    (nhds B)) ∧\n                ∃ p,\n                  0 ≤ p ∧\n                    p ≤ 1 ∧\n                      Filter.Tendsto (fun x => μ.real (Set.Ioi x) / ExtremeValueTheory.absTail μ x)\n                        Filter.atTop (nhds p))",
+    "status": "full",
+    "scope_note": "Necessity of regular variation and tail balance for any centering; the limit is identified by limit-is-stable-explicit.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "5ab9ae9146ef774d63cdbbf7c8dce5d0"
+  },
+  {
+    "id": "domain-of-attraction-symmetric",
+    "name": "Feller's criterion, symmetric case",
+    "source": "Feller §XVII.5 Thm 2; GK §35 Thm 2",
+    "lean_name": "ExtremeValueTheory.GCLTConverse.domainOfAttraction_isSymmStable_iff",
+    "file": "ExtremeValueTheory/StableLaws/GeneralizedCLTConverseAsymmetric/Symmetrization.lean",
+    "statement": "ExtremeValueTheory.GCLTConverse.domainOfAttraction_isSymmStable_iff {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] {α : ℝ}\n  (hsymm : MeasureTheory.Measure.map (fun x => -x) μ = μ) (hα0 : 0 < α) (hα2 : α < 2) :\n  (∃ a,\n      (∀ (n : ℕ), 0 < a n) ∧\n        ∃ c > 0,\n          ∃ ν,\n            ExtremeValueTheory.IsSymmStable α c ↑ν ∧\n              Filter.Tendsto\n                (fun n =>\n                  ⟨MeasureTheory.Measure.map (fun x => (a n)⁻¹ * x)\n                      (ExtremeValueTheory.Subexp.convPow μ n),\n                    ⋯⟩)\n                Filter.atTop (nhds ν)) ↔\n    ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.absTail μ) (-α)",
+    "status": "reduced",
+    "scope_note": "Symmetric law and no centering. The general form is domain-of-attraction-stable-index.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "ef820a1214bbade8dfed7377b09ccd09"
+  },
+  {
+    "id": "levy-continuity",
+    "name": "Lévy's continuity theorem with existence of the limit",
+    "source": "Feller §XV.3 Thm 2",
+    "lean_name": "ExtremeValueTheory.exists_tendsto_of_tendsto_charFun",
+    "file": "ExtremeValueTheory/StableLaws/LevyContinuity.lean",
+    "statement": "ExtremeValueTheory.exists_tendsto_of_tendsto_charFun.{u_1} {E : Type u_1} [NormedAddCommGroup E]\n  [InnerProductSpace ℝ E] [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]\n  {μ : ℕ → MeasureTheory.ProbabilityMeasure E} {f : E → ℂ} (hf : ContinuousAt f 0)\n  (h :\n    ∀ (t : E),\n      Filter.Tendsto (fun n => MeasureTheory.charFun (↑(μ n)) t) Filter.atTop (nhds (f t))) :\n  ∃ ν, MeasureTheory.charFun ↑ν = f ∧ Filter.Tendsto μ Filter.atTop (nhds ν)",
+    "status": "full",
+    "scope_note": "On a finite-dimensional real inner product space; sequences. A short proof from Mathlib's tightness and Prokhorov results, but Mathlib does not state the existence of the limit.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "6d5392af5713d412b743f0c3bb5c958b"
+  },
+  {
+    "id": "cauchy-charfun",
+    "name": "Characteristic function of the Cauchy law",
+    "source": "Feller §XV.2",
+    "lean_name": "ExtremeValueTheory.charFun_cauchyMeasure",
+    "file": "ExtremeValueTheory/StableLaws/Cauchy.lean",
+    "statement": "ExtremeValueTheory.charFun_cauchyMeasure (x₀ : ℝ) (γ : NNReal) (t : ℝ) :\n  MeasureTheory.charFun (ProbabilityTheory.cauchyMeasure x₀ γ) t =\n    Complex.exp (↑t * ↑x₀ * Complex.I - ↑↑γ * ↑|t|)",
+    "status": "full",
+    "scope_note": "Nothing left out; gamma = 0 gives the point mass.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "48062ba4e0079dafe8d483905b08e247"
+  }
+]

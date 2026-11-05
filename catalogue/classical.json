@@ -1,0 +1,338 @@
+[
+  {
+    "id": "fisher-tippett-gnedenko",
+    "name": "Fisher-Tippett-Gnedenko theorem",
+    "source": "EKM Thm 3.2.3",
+    "lean_name": "CumulativeDistributionFunction.IsExtremeValueDistr.classification",
+    "file": "ExtremeValueTheory/SelfSimilarCDF.lean",
+    "statement": "CumulativeDistributionFunction.IsExtremeValueDistr.classification\n  {G : CumulativeDistributionFunction} (G_evd : G.IsExtremeValueDistr) :\n  (∃ A, A • G = standardGumbelCDF) ∨\n    (∃ A ξ, ∃ (hξ : 0 < ξ), A • G = standardFrechetCDF hξ) ∨\n      ∃ A ξ, ∃ (hξ : 0 < ξ), A • G = standardWeibullCDF hξ",
+    "status": "full",
+    "scope_note": "No extra hypotheses. Says every extreme value law is of Gumbel, Fréchet or Weibull type; it does not assert the normalizing constants of any particular F (that is the domains area).",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "3057fa6675067580aaf485d9d22b1dd3"
+  },
+  {
+    "id": "jenkinson-von-mises",
+    "name": "Fisher-Tippett-Gnedenko, Jenkinson-von Mises form",
+    "source": "EKM Thm 3.4.5; dHF Thm 1.1.3",
+    "lean_name": "CumulativeDistributionFunction.IsExtremeValueDistr.exists_smul_eq_gevCDF",
+    "file": "ExtremeValueTheory/GEV/Family.lean",
+    "statement": "CumulativeDistributionFunction.IsExtremeValueDistr.exists_smul_eq_gevCDF\n  {G : CumulativeDistributionFunction} (hG : G.IsExtremeValueDistr) :\n  ∃ A ξ, A • G = ExtremeValueTheory.gevCDF ξ",
+    "status": "full",
+    "scope_note": "Every extreme value law is of the type of a standard GEV law H_xi. Location and scale are carried by the affine map.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "9e75ac8fb38df593ecb704c9b4f9bfc8"
+  },
+  {
+    "id": "max-stable-iff-evd",
+    "name": "Max-stable laws are the extreme value laws",
+    "source": "EKM Thm 3.2.2; dHF Thm 1.1.3",
+    "lean_name": "CumulativeDistributionFunction.isMaxStable_iff_isExtremeValueDistr",
+    "file": "ExtremeValueTheory/GEV/MaxStable.lean",
+    "statement": "CumulativeDistributionFunction.isMaxStable_iff_isExtremeValueDistr\n  (G : CumulativeDistributionFunction) : G.IsMaxStable ↔ G.IsExtremeValueDistr",
+    "status": "full",
+    "scope_note": "Nothing left out. Univariate; multivariate max-stability is in the multivariate area.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "b0a4f4a80af00f6b2e2ba7488c95188d"
+  },
+  {
+    "id": "gumbel-is-evd",
+    "name": "The standard Gumbel law is an extreme value law",
+    "source": "EKM Def 3.2.6",
+    "lean_name": "isExtremeValueDistr_standardGumbelCDF",
+    "file": "ExtremeValueTheory/ExtremeValueDistribution.lean",
+    "statement": "isExtremeValueDistr_standardGumbelCDF : standardGumbelCDF.IsExtremeValueDistr",
+    "status": "full",
+    "scope_note": "Standard form only; other members of the type follow from the affine action.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "1bb23495d7c525df70408c02c65de4e9"
+  },
+  {
+    "id": "frechet-is-evd",
+    "name": "The standard Fréchet law is an extreme value law",
+    "source": "EKM Def 3.2.6",
+    "lean_name": "isExtremeValueDistr_standardFrechetCDF",
+    "file": "ExtremeValueTheory/ExtremeValueDistribution.lean",
+    "statement": "isExtremeValueDistr_standardFrechetCDF {ξ : ℝ} (ξ_pos : 0 < ξ) :\n  (standardFrechetCDF ξ_pos).IsExtremeValueDistr",
+    "status": "full",
+    "scope_note": "Standard form only, for every shape > 0.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "b8ce072676af8964318e982068020f50"
+  },
+  {
+    "id": "weibull-is-evd",
+    "name": "The standard Weibull law is an extreme value law",
+    "source": "EKM Def 3.2.6",
+    "lean_name": "isExtremeValueDistr_standardWeibullCDF",
+    "file": "ExtremeValueTheory/ExtremeValueDistribution.lean",
+    "statement": "isExtremeValueDistr_standardWeibullCDF {ξ : ℝ} (ξ_pos : 0 < ξ) :\n  (standardWeibullCDF ξ_pos).IsExtremeValueDistr",
+    "status": "full",
+    "scope_note": "Standard form only, for every shape > 0.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "7f8a2b117388340117ee87a85beeaa4b"
+  },
+  {
+    "id": "gev-mean",
+    "name": "Mean of the GEV law, xi != 0",
+    "source": "EKM §3.4; Coles §3.1",
+    "lean_name": "ExtremeValueTheory.integral_id_gevCDF",
+    "file": "ExtremeValueTheory/GEV/Moments.lean",
+    "statement": "ExtremeValueTheory.integral_id_gevCDF {ξ : ℝ} (hξ : ξ < 1) (h0 : ξ ≠ 0) :\n  ∫ (x : ℝ), x ∂(ExtremeValueTheory.gevCDF ξ).measure = (Real.Gamma (1 - ξ) - 1) / ξ",
+    "status": "full",
+    "scope_note": "Standard law (location 0, scale 1), for xi < 1, xi != 0. The value at xi = 0 is the separate entry gev-mean-zero. Integrability is proved.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "bf685fd6e8b864d7c836b61b6d3ad39c"
+  },
+  {
+    "id": "gev-variance",
+    "name": "Variance of the GEV law, xi != 0",
+    "source": "Coles §3.1; EKM §3.4",
+    "lean_name": "ExtremeValueTheory.variance_id_gevCDF",
+    "file": "ExtremeValueTheory/GEV/Moments.lean",
+    "statement": "ExtremeValueTheory.variance_id_gevCDF {ξ : ℝ} (hξ : ξ < 1 / 2) (h0 : ξ ≠ 0) :\n  ProbabilityTheory.variance (fun x => x) (ExtremeValueTheory.gevCDF ξ).measure =\n    (Real.Gamma (1 - 2 * ξ) - Real.Gamma (1 - ξ) ^ 2) / ξ ^ 2",
+    "status": "full",
+    "scope_note": "Standard law, for xi < 1/2, xi != 0. The value at xi = 0 is the separate entry gumbel-variance.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "265e79e193ba9e9cbde7642e62231f1d"
+  },
+  {
+    "id": "gev-mean-zero",
+    "name": "The mean of the Gumbel law is Euler's constant",
+    "source": "EKM §3.4; Coles §3.1",
+    "lean_name": "ExtremeValueTheory.integral_id_gevCDF_zero",
+    "file": "ExtremeValueTheory/GEV/Moments.lean",
+    "statement": "ExtremeValueTheory.integral_id_gevCDF_zero :\n  ∫ (x : ℝ), x ∂(ExtremeValueTheory.gevCDF 0).measure = Real.eulerMascheroniConstant",
+    "status": "full",
+    "scope_note": "Standard law.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "ea3cfaaae513f1c8ececa9ab03203639"
+  },
+  {
+    "id": "gumbel-variance",
+    "name": "The variance of the Gumbel law is pi^2/6",
+    "source": "EKM §3.4; Coles §3.1",
+    "lean_name": "ExtremeValueTheory.variance_id_gevCDF_zero",
+    "file": "ExtremeValueTheory/GEV/GumbelVariance.lean",
+    "statement": "ExtremeValueTheory.variance_id_gevCDF_zero :\n  ProbabilityTheory.variance (fun x => x) (ExtremeValueTheory.gevCDF 0).measure = Real.pi ^ 2 / 6",
+    "status": "full",
+    "scope_note": "Standard law.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "60ec739731c46223d7fb24778c437cdf"
+  },
+  {
+    "id": "gev-pwm",
+    "name": "Probability-weighted moments of the GEV law",
+    "source": "HWW (1985)",
+    "lean_name": "ExtremeValueTheory.integral_mul_gevFun_pow_gevCDF",
+    "file": "ExtremeValueTheory/GEV/Moments.lean",
+    "statement": "ExtremeValueTheory.integral_mul_gevFun_pow_gevCDF {ξ : ℝ} (hξ : ξ < 1) (h0 : ξ ≠ 0) (r : ℕ) :\n  ∫ (x : ℝ), x * ExtremeValueTheory.gevFun ξ x ^ r ∂(ExtremeValueTheory.gevCDF ξ).measure =\n    ((↑r + 1) ^ ξ * Real.Gamma (1 - ξ) - 1) / (ξ * (↑r + 1))",
+    "status": "full",
+    "scope_note": "Standard law, xi < 1, xi != 0. The case xi = 0 is the separate entry gumbel-pwm.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "8053c49b4ca1ba70254fcdd8a2d2a3fa"
+  },
+  {
+    "id": "gumbel-pwm",
+    "name": "Probability-weighted moments of the Gumbel law",
+    "source": "HWW (1985)",
+    "lean_name": "ExtremeValueTheory.integral_mul_gevFun_pow_gevCDF_zero",
+    "file": "ExtremeValueTheory/GEV/GumbelVariance.lean",
+    "statement": "ExtremeValueTheory.integral_mul_gevFun_pow_gevCDF_zero (r : ℕ) :\n  ∫ (x : ℝ), x * ExtremeValueTheory.gevFun 0 x ^ r ∂(ExtremeValueTheory.gevCDF 0).measure =\n    (Real.eulerMascheroniConstant + Real.log (↑r + 1)) / (↑r + 1)",
+    "status": "full",
+    "scope_note": "Standard law.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "366af36b8ecc804ed016a3738014c676"
+  },
+  {
+    "id": "return-level-quantile",
+    "name": "The return level is the (1-1/m) quantile of H_xi",
+    "source": "Coles §3.1.3",
+    "lean_name": "ExtremeValueTheory.gevFun_returnLevel",
+    "file": "ExtremeValueTheory/Statistics/ExtremeQuantile.lean",
+    "statement": "ExtremeValueTheory.gevFun_returnLevel (ξ : ℝ) {m : ℝ} (hm : 1 < m) :\n  ExtremeValueTheory.gevFun ξ (ExtremeValueTheory.returnLevel ξ m) = 1 - 1 / m",
+    "status": "full",
+    "scope_note": "Standard law, m > 1. Inference for return levels is in the likelihood area.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "693cc90f6ca0ea1789f58968eac43fb7"
+  },
+  {
+    "id": "weak-convergence-cdf",
+    "name": "Weak convergence on R through Mathlib's cdf",
+    "source": "Billingsley §2 (portmanteau, no number cited)",
+    "lean_name": "CumulativeDistributionFunction.tendsto_probabilityMeasure_iff_forall_continuousAt_tendsto_cdf",
+    "file": "ExtremeValueTheory/CDFBridge.lean",
+    "statement": "CumulativeDistributionFunction.tendsto_probabilityMeasure_iff_forall_continuousAt_tendsto_cdf\n  {μs : ℕ → MeasureTheory.ProbabilityMeasure ℝ} {μ : MeasureTheory.ProbabilityMeasure ℝ} :\n  Filter.Tendsto μs Filter.atTop (nhds μ) ↔\n    ∀ (x : ℝ),\n      ContinuousAt (↑(ProbabilityTheory.cdf ↑μ)) x →\n        Filter.Tendsto (fun n => ↑(ProbabilityTheory.cdf ↑(μs n)) x) Filter.atTop\n          (nhds (↑(ProbabilityTheory.cdf ↑μ) x))",
+    "status": "full",
+    "scope_note": "The converse direction is proved in this library (Mathlib has no such statement at this version), so it is not a wrapper. Sequences only.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "45c54f1402ae463eed45664acf595708"
+  },
+  {
+    "id": "has-law-iff-cdf",
+    "name": "X has law F.measure iff F is its c.d.f.",
+    "source": "standard (no number cited)",
+    "lean_name": "CumulativeDistributionFunction.hasLaw_measure_iff",
+    "file": "ExtremeValueTheory/CDFBridge.lean",
+    "statement": "CumulativeDistributionFunction.hasLaw_measure_iff.{u_1} (F : CumulativeDistributionFunction)\n  {Ω : Type u_1} {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {X : Ω → ℝ} (hX : AEMeasurable X P) :\n  ProbabilityTheory.HasLaw X F.measure P ↔\n    ∀ (x : ℝ), ↑F.toStieltjesFunction x = P.real {ω | X ω ≤ x}",
+    "status": "wrapper",
+    "scope_note": "Restates Mathlib's correspondence between a law on R and its c.d.f. for the library's CumulativeDistributionFunction; no mathematics of its own.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "57bc0d7402967555f4c931ed1186b5d3"
+  },
+  {
+    "id": "measure-of-cdf",
+    "name": "The law of the c.d.f. of a probability measure is that measure",
+    "source": "standard (no number cited)",
+    "lean_name": "CumulativeDistributionFunction.measure_ofMeasure",
+    "file": "ExtremeValueTheory/CDFBridge.lean",
+    "statement": "CumulativeDistributionFunction.measure_ofMeasure (μ : MeasureTheory.Measure ℝ)\n  [MeasureTheory.IsProbabilityMeasure μ] : (CumulativeDistributionFunction.ofMeasure μ).measure = μ",
+    "status": "wrapper",
+    "scope_note": "One-line restatement of Mathlib's ProbabilityTheory.measure_cdf for the library's CumulativeDistributionFunction.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "e40417fc271eb9d321ad8f2d4b0e78b1"
+  },
+  {
+    "id": "order-stat-poisson",
+    "name": "Poisson limit of the k-th largest order statistic",
+    "source": "EKM Thm 4.2.3; LLR Thm 2.2.2",
+    "lean_name": "ExtremeValueTheory.tendsto_measureReal_orderStat_le",
+    "file": "ExtremeValueTheory/Statistics/UpperOrderStatistics.lean",
+    "statement": "ExtremeValueTheory.tendsto_measureReal_orderStat_le.{u_1} {Ω : Type u_1} [MeasurableSpace Ω]\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {X : ℕ → Ω → ℝ}\n  (hX : ∀ (i : ℕ), Measurable (X i)) (hind : ProbabilityTheory.iIndepFun X P) {F : ℝ → ℝ}\n  (hF : ∀ (i : ℕ) (x : ℝ), P.real {ω | X i ω ≤ x} = F x) {u : ℕ → ℝ} {τ : ℝ}\n  (hu : Filter.Tendsto (fun n => ↑n * (1 - F (u n))) Filter.atTop (nhds τ)) (j : ℕ) :\n  Filter.Tendsto (fun n => P.real {ω | ExtremeValueTheory.orderStat (fun i => X (↑i) ω) j ≤ u n})\n    Filter.atTop (nhds (Real.exp (-τ) * ∑ m ∈ Finset.range (j + 1), τ ^ m / ↑m.factorial))",
+    "status": "full",
+    "scope_note": "orderStat x j is the (j+1)-th largest, so the indices are shifted by one against the books.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "72844484baea5a2457b5c55d98954582"
+  },
+  {
+    "id": "order-stat-affine",
+    "name": "Limit law of the normalized k-th largest order statistic",
+    "source": "EKM Thm 4.2.3; LLR Thm 2.2.2",
+    "lean_name": "ExtremeValueTheory.tendsto_measureReal_affine_orderStat_le",
+    "file": "ExtremeValueTheory/Statistics/UpperOrderStatistics.lean",
+    "statement": "ExtremeValueTheory.tendsto_measureReal_affine_orderStat_le.{u_1} {Ω : Type u_1} [MeasurableSpace Ω]\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {X : ℕ → Ω → ℝ}\n  (hX : ∀ (i : ℕ), Measurable (X i)) (hind : ProbabilityTheory.iIndepFun X P)\n  {F G : CumulativeDistributionFunction}\n  (hF : ∀ (i : ℕ) (x : ℝ), P.real {ω | X i ω ≤ x} = ↑F.toStieltjesFunction x)\n  {As : ℕ → AffineIncrEquiv} {x : ℝ} (hGx : ↑G.toStieltjesFunction x ∈ Set.Ioo 0 1)\n  (h :\n    Filter.Tendsto (fun n => ↑(As n • F).toStieltjesFunction x ^ n) Filter.atTop\n      (nhds (↑G.toStieltjesFunction x)))\n  (j : ℕ) :\n  Filter.Tendsto\n    (fun n => P.real {ω | (As n) (ExtremeValueTheory.orderStat (fun i => X (↑i) ω) j) ≤ x})\n    Filter.atTop\n    (nhds\n      (↑G.toStieltjesFunction x *\n        ∑ m ∈ Finset.range (j + 1), (-Real.log (↑G.toStieltjesFunction x)) ^ m / ↑m.factorial))",
+    "status": "reduced",
+    "scope_note": "Only at points x with H(x) in (0,1): the boundary of the support is excluded by hypothesis, whereas the book states the limit for every x.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "8b9f72c10154c44da3eee7de5a7d1c46"
+  },
+  {
+    "id": "order-stat-joint",
+    "name": "Joint limit law of the two largest order statistics",
+    "source": "EKM §4.2; LLR Thm 2.3.2",
+    "lean_name": "ExtremeValueTheory.tendsto_measureReal_orderStat_zero_le_and_orderStat_one_le",
+    "file": "ExtremeValueTheory/Statistics/UpperOrderStatistics.lean",
+    "statement": "ExtremeValueTheory.tendsto_measureReal_orderStat_zero_le_and_orderStat_one_le.{u_1} {Ω : Type u_1}\n  [MeasurableSpace Ω] {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {X : ℕ → Ω → ℝ} (hX : ∀ (i : ℕ), Measurable (X i)) (hind : ProbabilityTheory.iIndepFun X P)\n  {F : ℝ → ℝ} (hF : ∀ (i : ℕ) (x : ℝ), P.real {ω | X i ω ≤ x} = F x) {u v : ℕ → ℝ}\n  (hvu : ∀ᶠ (n : ℕ) in Filter.atTop, v n ≤ u n) {τ₁ τ₂ : ℝ}\n  (hu : Filter.Tendsto (fun n => ↑n * (1 - F (u n))) Filter.atTop (nhds τ₁))\n  (hv : Filter.Tendsto (fun n => ↑n * (1 - F (v n))) Filter.atTop (nhds τ₂)) :\n  Filter.Tendsto\n    (fun n =>\n      P.real\n        {ω |\n          ExtremeValueTheory.orderStat (fun i => X (↑i) ω) 0 ≤ u n ∧\n            ExtremeValueTheory.orderStat (fun i => X (↑i) ω) 1 ≤ v n})\n    Filter.atTop (nhds (Real.exp (-τ₂) * (1 + τ₂ - τ₁)))",
+    "status": "reduced",
+    "scope_note": "Two levels only. The cited theorem gives the joint law of any number of upper order statistics.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "c28e3f22c2e4523774c392272ea77844"
+  },
+  {
+    "id": "record-probability",
+    "name": "Rényi: P(record at k) = 1/k",
+    "source": "EKM §5.4; Res87 Prop 4.1",
+    "lean_name": "ExtremeValueTheory.measureReal_isRecord",
+    "file": "ExtremeValueTheory/Statistics/Records.lean",
+    "statement": "ExtremeValueTheory.measureReal_isRecord.{u_1} {Ω : Type u_1} [MeasurableSpace Ω]\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {X : ℕ → Ω → ℝ}\n  (hX : ∀ (i : ℕ), Measurable (X i)) (hind : ProbabilityTheory.iIndepFun X P)\n  (hident : ∀ (i : ℕ), MeasureTheory.Measure.map (X i) P = MeasureTheory.Measure.map (X 0) P)\n  (hcont : ∀ (x : ℝ), P {ω | X 0 ω = x} = 0) (k : ℕ) :\n  P.real {ω | ExtremeValueTheory.IsRecord (fun i => X i ω) k} = 1 / (↑k + 1)",
+    "status": "full",
+    "scope_note": "Continuity of F is stated as no atoms. Indices start at 0, so the probability at index k is 1/(k+1).",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "c10916dccb4363cf76fc9b0524b98386"
+  },
+  {
+    "id": "record-count",
+    "name": "Weak law of large numbers for the number of records",
+    "source": "EKM §5.4; Res87 Prop 4.1",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_recordCount_div_log",
+    "file": "ExtremeValueTheory/Statistics/Records.lean",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_recordCount_div_log.{u_1} {Ω : Type u_1} [MeasurableSpace Ω]\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {X : ℕ → Ω → ℝ}\n  (hX : ∀ (i : ℕ), Measurable (X i)) (hind : ProbabilityTheory.iIndepFun X P)\n  (hident : ∀ (i : ℕ), MeasureTheory.Measure.map (X i) P = MeasureTheory.Measure.map (X 0) P)\n  (hcont : ∀ (x : ℝ), P {ω | X 0 ω = x} = 0) :\n  MeasureTheory.TendstoInMeasure P\n    (fun n ω => ↑(ExtremeValueTheory.recordCount (fun i => X i ω) n) / Real.log ↑n) Filter.atTop\n    fun x => 1",
+    "status": "full",
+    "scope_note": "Convergence in probability only; the strong law and the CLT for N_n are not stated.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "ffc64c689e6e54a171553a59f57ecfa5"
+  }
+]

@@ -1,0 +1,226 @@
+[
+  {
+    "id": "rv-vector-polar",
+    "name": "Polar decomposition of multivariate regular variation",
+    "source": "Res07 Thm 6.1; BDM02; KS20 §2.2",
+    "lean_name": "ExtremeValueTheory.isRegVarVector_iff",
+    "file": "ExtremeValueTheory/RegularVariation/Multivariate/Polar.lean",
+    "statement": "ExtremeValueTheory.isRegVarVector_iff.{u_1, u_2} {Ω : Type u_1} {E : Type u_2}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E]\n  [SecondCountableTopology E] {X : Ω → E} {α : ℝ} (hα : 0 < α) (hX : Measurable X) :\n  (∃ μ, ExtremeValueTheory.IsRegVarVector P X α μ) ↔\n    ExtremeValueTheory.IsRegularlyVarying (fun x => P.real {ω | x < ‖X ω‖}) (-α) ∧\n      ∃ S,\n        MeasureTheory.IsProbabilityMeasure S ∧\n          ExtremeValueTheory.TendstoLawCond P (fun x => {ω | x < ‖X ω‖}) (fun x ω => ‖X ω‖⁻¹ • X ω)\n            Filter.atTop S",
+    "status": "full",
+    "scope_note": "Normalized by P(||X|| > x) rather than by a sequence a_n, which changes the exponent measure only by a scale.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "be522b790cbc6f402004e8bb0aa471f2"
+  },
+  {
+    "id": "exponent-measure-polar",
+    "name": "The exponent measure in polar coordinates",
+    "source": "Res07 §6.1",
+    "lean_name": "ExtremeValueTheory.IsRegVarVector.eq_polarMeasure",
+    "file": "ExtremeValueTheory/RegularVariation/Multivariate/Polar.lean",
+    "statement": "ExtremeValueTheory.IsRegVarVector.eq_polarMeasure.{u_1, u_2} {Ω : Type u_1} {E : Type u_2}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  [NormedAddCommGroup E] [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E]\n  [SecondCountableTopology E] {X : Ω → E} {α : ℝ} {μ : MeasureTheory.Measure E} (hα : 0 < α)\n  (h : ExtremeValueTheory.IsRegVarVector P X α μ) (hX : Measurable X) :\n  μ = ExtremeValueTheory.polarMeasure α (ExtremeValueTheory.spectralMeasure μ)",
+    "status": "full",
+    "scope_note": "Nothing left out.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "7ccb6e2dbade249712574a17add86761"
+  },
+  {
+    "id": "rv-vector-independent",
+    "name": "Independent components: asymptotic independence",
+    "source": "Res07 §6.5.1; KS20 §2.1",
+    "lean_name": "ExtremeValueTheory.isRegVarVector_of_indepFun",
+    "file": "ExtremeValueTheory/RegularVariation/Multivariate.lean",
+    "statement": "ExtremeValueTheory.isRegVarVector_of_indepFun.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {α : ℝ} (hα : 0 < α)\n  {X₁ X₂ : Ω → ℝ} (h₁ : Measurable X₁) (h₂ : Measurable X₂) (h₁0 : ∀ (ω : Ω), 0 ≤ X₁ ω)\n  (h₂0 : ∀ (ω : Ω), 0 ≤ X₂ ω) (hind : ProbabilityTheory.IndepFun X₁ X₂ P)\n  (hRV : ExtremeValueTheory.IsRegularlyVarying (fun x => P.real {ω | x < X₁ ω}) (-α)) {c : ℝ}\n  (hc : 0 ≤ c)\n  (hbal :\n    Filter.Tendsto (fun x => P.real {ω | x < X₂ ω} / P.real {ω | x < X₁ ω}) Filter.atTop (nhds c)) :\n  ExtremeValueTheory.IsRegVarVector P (fun ω => (X₁ ω, X₂ ω)) α\n    (ExtremeValueTheory.polarMeasure α (ExtremeValueTheory.axesSpectralMeasure c))",
+    "status": "reduced",
+    "scope_note": "Two nonnegative components (pointwise) with a tail ratio limit; no general dimension or sign.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "11a3b12a72aa92fee340e0cad2d01fc4"
+  },
+  {
+    "id": "cramer-wold-converse",
+    "name": "Converse Cramér-Wold device for non-integer index",
+    "source": "BDM02 Thm 1.1(i)",
+    "lean_name": "ExtremeValueTheory.CramerWold.isRegVarVector_of_tendsto_linear",
+    "file": "ExtremeValueTheory/RegularVariation/CramerWoldConverse.lean",
+    "statement": "ExtremeValueTheory.CramerWold.isRegVarVector_of_tendsto_linear.{u_1, u_2} {Ω : Type u_1}\n  {E : Type u_2} {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [NormedAddCommGroup E]\n  [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E] {X : Ω → E}\n  [MeasureTheory.IsProbabilityMeasure P] [FiniteDimensional ℝ E] (hX : Measurable X) {α : ℝ}\n  (hα : 0 < α) (hαZ : ∀ (k : ℤ), α ≠ ↑k) {V : ℝ → ℝ}\n  (hV : ExtremeValueTheory.IsRegularlyVarying V (-α)) {w : StrongDual ℝ E → ℝ}\n  (hw :\n    ∀ (L : StrongDual ℝ E),\n      Filter.Tendsto (fun x => P.real {ω | x < L (X ω)} / V x) Filter.atTop (nhds (w L)))\n  (hw0 : ∃ L, w L ≠ 0) : ∃ μ, ExtremeValueTheory.IsRegVarVector P X α μ",
+    "status": "full",
+    "scope_note": "Finite-dimensional, normalization by a regularly varying V, non-integer alpha as in the source. The integer-alpha counterexamples of Hult-Lindskog are not formalized.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "44a2891883ba67312c4337739d7817cf"
+  },
+  {
+    "id": "multivariate-domain",
+    "name": "Characterization of multivariate domains of attraction",
+    "source": "dHF Thms 6.1.1, 6.2.1; Res87 Prop 5.10",
+    "lean_name": "ExtremeValueTheory.isMDAWith_iff",
+    "file": "ExtremeValueTheory/Multivariate/DomainOfAttractionConverse.lean",
+    "statement": "ExtremeValueTheory.isMDAWith_iff.{u_1} {ι : Type u_1} [Fintype ι]\n  {μ ν : MeasureTheory.Measure (ι → ℝ)} [MeasureTheory.IsProbabilityMeasure μ]\n  [MeasureTheory.IsProbabilityMeasure ν] {a b : ℕ → ι → ℝ}\n  (hcμ : ∀ (i : ι), Continuous ↑(ExtremeValueTheory.marginal μ i).toStieltjesFunction)\n  (hcν : ∀ (i : ι), Continuous ↑(ExtremeValueTheory.marginal ν i).toStieltjesFunction)\n  (ha : ∀ (n : ℕ) (i : ι), 0 < a n i) :\n  ExtremeValueTheory.IsMDAWith μ ν a b ↔\n    (∀ (i : ι) (t : ℝ),\n        Filter.Tendsto\n          (fun n => ↑(ExtremeValueTheory.marginal μ i).toStieltjesFunction (a n i * t + b n i) ^ n)\n          Filter.atTop (nhds (↑(ExtremeValueTheory.marginal ν i).toStieltjesFunction t))) ∧\n      ∀ (y : ι → ℝ),\n        (∀ (i : ι), 0 < y i) →\n          Filter.Tendsto\n            (fun n =>\n              ↑n *\n                (1 -\n                  μ.real\n                    (Set.Iic fun i => (ExtremeValueTheory.marginal μ i).tailQuantile (↑n * y i))))\n            Filter.atTop\n            (nhds\n              (ExtremeValueTheory.maxStableExponent (ExtremeValueTheory.frechetStandardization ν)\n                y))",
+    "status": "reduced",
+    "scope_note": "Continuous marginals of both laws are assumed, an extra hypothesis.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "b619634bdbcef56cd95fe6eb80f0c811"
+  },
+  {
+    "id": "mgpd",
+    "name": "The multivariate GPD as a limit of conditional excess laws",
+    "source": "RT06 Thm 2.1",
+    "lean_name": "ExtremeValueTheory.IsMDAWith.tendsto_conditionalExcessCDF",
+    "file": "ExtremeValueTheory/Multivariate/POT.lean",
+    "statement": "ExtremeValueTheory.IsMDAWith.tendsto_conditionalExcessCDF.{u_1} {ι : Type u_1} [Fintype ι]\n  {μ ν : MeasureTheory.Measure (ι → ℝ)} [MeasureTheory.IsProbabilityMeasure μ]\n  [MeasureTheory.IsProbabilityMeasure ν] {a b : ℕ → ι → ℝ}\n  (h : ExtremeValueTheory.IsMDAWith μ ν a b)\n  (hc : ∀ (i : ι), Continuous ↑(ExtremeValueTheory.marginal ν i).toStieltjesFunction) {x : ι → ℝ}\n  (hx : 0 < ν.real (Set.Iic (x ⊓ 0))) (h0 : ν.real (Set.Iic 0) < 1) :\n  Filter.Tendsto (fun n => ExtremeValueTheory.conditionalExcessCDF μ (a n) (b n) x) Filter.atTop\n    (nhds (ExtremeValueTheory.mgpdCDF ν x))",
+    "status": "reduced",
+    "scope_note": "Needs G(x ^ 0) > 0, which rules out unit-Fréchet-standardized limits; pointwise in x, with thresholds along the normalizing sequence b_n.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "020ad4e519b87ba5aa997b7e4aa3569f"
+  },
+  {
+    "id": "mgpd-standardized",
+    "name": "The standardized multivariate GPD as a limit",
+    "source": "RT06 Thm 2.1",
+    "lean_name": "ExtremeValueTheory.IsMDAWith.tendsto_conditionalExcess_tailQuantile",
+    "file": "ExtremeValueTheory/Multivariate/POT.lean",
+    "statement": "ExtremeValueTheory.IsMDAWith.tendsto_conditionalExcess_tailQuantile.{u_1} {ι : Type u_1} [Fintype ι]\n  {μ ν : MeasureTheory.Measure (ι → ℝ)} [MeasureTheory.IsProbabilityMeasure μ]\n  [MeasureTheory.IsProbabilityMeasure ν] {a b : ℕ → ι → ℝ} [Nonempty ι]\n  (h : ExtremeValueTheory.IsMDAWith μ ν a b)\n  (hc : ∀ (i : ι), Continuous ↑(ExtremeValueTheory.marginal ν i).toStieltjesFunction) {y : ι → ℝ}\n  (hy : ∀ (i : ι), 0 < y i) :\n  Filter.Tendsto\n    (fun n =>\n      μ.real\n          ((Set.Iic fun i => (ExtremeValueTheory.marginal μ i).tailQuantile (↑n * y i)) \\\n            Set.Iic fun i => (ExtremeValueTheory.marginal μ i).tailQuantile (↑n * 1)) /\n        μ.real (Set.Iic fun i => (ExtremeValueTheory.marginal μ i).tailQuantile (↑n * 1))ᶜ)\n    Filter.atTop\n    (nhds (ExtremeValueTheory.standardMGPD (ExtremeValueTheory.frechetStandardization ν) y))",
+    "status": "reduced",
+    "scope_note": "Unit Fréchet scale only, at thresholds U(n 1) and pointwise in y.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "675d9a21ed7e6782a40aa718dbe7749c"
+  },
+  {
+    "id": "spectral-to-max-stable",
+    "name": "A spectral measure gives a simple max-stable law",
+    "source": "dHF Thm 6.1.9",
+    "lean_name": "ExtremeValueTheory.exists_isSimpleMaxStable_of_spectralMeasure",
+    "file": "ExtremeValueTheory/MaxStable/Spectral.lean",
+    "statement": "ExtremeValueTheory.exists_isSimpleMaxStable_of_spectralMeasure.{u_1} {ι : Type u_1} [Fintype ι]\n  (H : MeasureTheory.Measure (ι → ENNReal)) [MeasureTheory.SFinite H]\n  (hH : ∀ (i : ι), ∫⁻ (w : ι → ENNReal), w i ∂H = 1) :\n  ∃ ν,\n    ExtremeValueTheory.IsSimpleMaxStable ν ∧\n      ∀ (y : ι → ℝ),\n        (∀ (i : ι), 0 < y i) →\n          ν (Set.Iic y) =\n            ENNReal.ofReal\n              (Real.exp (-(∫⁻ (w : ι → ENNReal), ⨆ i, w i / ENNReal.ofReal (y i) ∂H).toReal))",
+    "status": "full",
+    "scope_note": "The constructive direction, as named; s-finite H on [0, infinity]^iota, normalized.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "47de107b4626d9bdf4a0622c1273d59a"
+  },
+  {
+    "id": "max-stable-spectral",
+    "name": "Spectral representation of simple max-stable laws",
+    "source": "dHF Thm 6.1.9; Res87 Prop 5.11",
+    "lean_name": "ExtremeValueTheory.IsSimpleMaxStable.exists_hasSpectralMeasure",
+    "file": "ExtremeValueTheory/MaxStable/Converse.lean",
+    "statement": "ExtremeValueTheory.IsSimpleMaxStable.exists_hasSpectralMeasure.{u_1} {ι : Type u_1} [Fintype ι]\n  {μ : MeasureTheory.Measure (ι → ℝ)} (h : ExtremeValueTheory.IsSimpleMaxStable μ) :\n  ∃ H,\n    MeasureTheory.IsFiniteMeasure H ∧\n      (∀ᵐ (w : ι → ENNReal) ∂H, ∀ (i : ι), w i ≤ 1) ∧\n        (∀ᵐ (w : ι → ENNReal) ∂H, ⨆ i, w i = 1) ∧\n          (∀ (i : ι), ∫⁻ (w : ι → ENNReal), w i ∂H = 1) ∧ ExtremeValueTheory.HasSpectralMeasure μ H",
+    "status": "full",
+    "scope_note": "Any finite dimension; H on the sup-norm sphere. Simple (unit Fréchet margins) only, as named.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "bbc9900006519d15dacb6a464b1aaf30"
+  },
+  {
+    "id": "max-stable-spectral-unique",
+    "name": "The spectral measure is unique",
+    "source": "dHF §6.1",
+    "lean_name": "ExtremeValueTheory.IsSimpleMaxStable.existsUnique_hasSpectralMeasure",
+    "file": "ExtremeValueTheory/MaxStable/Uniqueness.lean",
+    "statement": "ExtremeValueTheory.IsSimpleMaxStable.existsUnique_hasSpectralMeasure.{u_1} {ι : Type u_1}\n  [Fintype ι] {μ : MeasureTheory.Measure (ι → ℝ)} (h : ExtremeValueTheory.IsSimpleMaxStable μ) :\n  ∃! H,\n    MeasureTheory.IsFiniteMeasure H ∧\n      (∀ᵐ (w : ι → ENNReal) ∂H, ⨆ i, w i = 1) ∧ ExtremeValueTheory.HasSpectralMeasure μ H",
+    "status": "full",
+    "scope_note": "Unique on the sup-norm sphere.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "4c173095dced09f61a9b5f732e8bb4b4"
+  },
+  {
+    "id": "max-stable-rv",
+    "name": "Simple max-stable vectors are regularly varying",
+    "source": "Res87 Prop 5.15; dHF §6.1",
+    "lean_name": "ExtremeValueTheory.IsSimpleMaxStable.isRegVarVector",
+    "file": "ExtremeValueTheory/MaxStable/RegularVariation.lean",
+    "statement": "ExtremeValueTheory.IsSimpleMaxStable.isRegVarVector.{u_1, u_2} {ι : Type u_1} [Fintype ι]\n  {H : MeasureTheory.Measure (ι → ENNReal)} [MeasureTheory.IsFiniteMeasure H] {Ω : Type u_2}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {X : Ω → ι → ℝ} (hX : Measurable X)\n  (hS : ExtremeValueTheory.HasSpectralMeasure (MeasureTheory.Measure.map X P) H)\n  (h : ExtremeValueTheory.IsSimpleMaxStable (MeasureTheory.Measure.map X P))\n  (hH : ∀ᵐ (w : ι → ENNReal) ∂H, ⨆ i, w i = 1) [Nonempty ι] :\n  ExtremeValueTheory.IsRegVarVector P X 1 (ExtremeValueTheory.maxStableTailMeasure H)",
+    "status": "full",
+    "scope_note": "Index 1, as for unit Fréchet margins.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "ac476c57baabf55a1f5f77f524897b6a"
+  },
+  {
+    "id": "max-stable-tail-dependence",
+    "name": "Tail dependence of max-stable laws: lambda_U = 2 - theta",
+    "source": "dHF §6.1; Coles §8.4",
+    "lean_name": "ExtremeValueTheory.IsSimpleMaxStable.hasUpperTailDependence",
+    "file": "ExtremeValueTheory/Multivariate/TailDependence.lean",
+    "statement": "ExtremeValueTheory.IsSimpleMaxStable.hasUpperTailDependence {μ : MeasureTheory.Measure (Fin 2 → ℝ)}\n  (h : ExtremeValueTheory.IsSimpleMaxStable μ) :\n  ExtremeValueTheory.HasUpperTailDependence μ (fun z => z 0) (fun z => z 1)\n    (2 - ExtremeValueTheory.extremalCoefficient μ)",
+    "status": "full",
+    "scope_note": "Bivariate simple max-stable laws.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "654fee4817b241e9d0caed1b49f08695"
+  },
+  {
+    "id": "pickands-convex",
+    "name": "Convexity of the Pickands dependence function",
+    "source": "Pickands (1981); dHF §6.1.5",
+    "lean_name": "ExtremeValueTheory.IsSimpleMaxStable.convexOn_pickandsDependence",
+    "file": "ExtremeValueTheory/MaxStable/Converse.lean",
+    "statement": "ExtremeValueTheory.IsSimpleMaxStable.convexOn_pickandsDependence\n  {ν : MeasureTheory.Measure (Fin 2 → ℝ)} (h : ExtremeValueTheory.IsSimpleMaxStable ν) :\n  ConvexOn ℝ (Set.Icc 0 1) (ExtremeValueTheory.pickandsDependence ν)",
+    "status": "full",
+    "scope_note": "Every bivariate simple max-stable law. Convention A(t) with the weight t on coordinate 0, mirrored against some texts.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "04d55b864f7b3be2bf29a601b75ee5dc"
+  },
+  {
+    "id": "pickands-estimator",
+    "name": "Strong consistency of Pickands' dependence estimator",
+    "source": "Pickands (1981)",
+    "lean_name": "ExtremeValueTheory.tendsto_pickandsDependenceEstimator",
+    "file": "ExtremeValueTheory/Multivariate/PickandsEstimator.lean",
+    "statement": "ExtremeValueTheory.tendsto_pickandsDependenceEstimator.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} {Z : ℕ → Ω → Fin 2 → ℝ} (hZ : Measurable (Z 0))\n  (hindep : Pairwise fun i j => ProbabilityTheory.IndepFun (Z i) (Z j) P)\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (Z i) (Z 0) P P)\n  {μ : MeasureTheory.Measure (Fin 2 → ℝ)} (hlaw : MeasureTheory.Measure.map (Z 0) P = μ)\n  (h : ExtremeValueTheory.IsSimpleMaxStable μ) {t : ℝ} (ht : t ∈ Set.Ioo 0 1) :\n  ∀ᵐ (ω : Ω) ∂P,\n    Filter.Tendsto (ExtremeValueTheory.pickandsDependenceEstimator t fun i => Z i ω) Filter.atTop\n      (nhds (ExtremeValueTheory.pickandsDependence μ t))",
+    "status": "full",
+    "scope_note": "Known unit Fréchet margins and an exactly max-stable sample, as in Pickands' setting; only pairwise independence is used. Estimated margins and data only in the domain of attraction are not covered.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "1b9cda11fe2bac08860b74ddbb75c3f5"
+  }
+]

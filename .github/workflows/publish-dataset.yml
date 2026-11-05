@@ -1,0 +1,28 @@
+name: Publish dataset
+
+# Publishes the theorem catalogue to Hugging Face on every release. It stays disabled until the repository
+# has the secret HF_TOKEN and the variable HF_DATASET_REPO (for example `lean-evt/theorem-catalogue`): without
+# them the upload step is skipped and the job only builds the dataset.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      HF_DATASET_REPO: ${{ vars.HF_DATASET_REPO }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the dataset
+        run: python3 scripts/publish_dataset.py --out dist/dataset
+      - name: Upload to Hugging Face
+        if: ${{ env.HF_TOKEN != '' && env.HF_DATASET_REPO != '' }}
+        run: |
+          python3 -m pip install huggingface_hub
+          python3 scripts/publish_dataset.py --out dist/dataset --push "$HF_DATASET_REPO" --tag "$GITHUB_REF_NAME"

@@ -15,3 +15,7 @@ jobs:
       - uses: leanprover/lean-action@v1
       - name: Build the specification tests and the axiom audit
         run: lake build Test
+      - name: Check the theorem catalogue against Lean, and its gate against overclaiming
+        run: python3 scripts/catalogue.py check
+      - name: Report the catalogue's counts
+        run: python3 scripts/catalogue.py report >> "$GITHUB_STEP_SUMMARY"

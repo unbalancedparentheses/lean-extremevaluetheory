@@ -1,0 +1,338 @@
+[
+  {
+    "id": "leadbetter",
+    "name": "Leadbetter's theorem",
+    "source": "LLR Thm 3.4.1; EKM Thm 4.4.3",
+    "lean_name": "ExtremeValueTheory.tendsto_measureReal_partialMax_le_exp",
+    "file": "ExtremeValueTheory/Dependence/Leadbetter.lean",
+    "statement": "ExtremeValueTheory.tendsto_measureReal_partialMax_le_exp.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} {X : ℕ → Ω → ℝ}\n  [MeasureTheory.IsProbabilityMeasure P] (hs : ProbabilityTheory.IsStationary X P)\n  (hX : ∀ (t : ℕ), Measurable (X t)) {u : ℕ → ℝ} (hD : ExtremeValueTheory.ConditionD X P u)\n  (hD' : ExtremeValueTheory.ConditionD' X P u) {τ : ℝ}\n  (hτ : Filter.Tendsto (fun n => ↑n * P.real {ω | u n < X 0 ω}) Filter.atTop (nhds τ)) :\n  Filter.Tendsto (fun n => P.real {ω | ExtremeValueTheory.partialMax X n ω ≤ u n}) Filter.atTop\n    (nhds (Real.exp (-τ)))",
+    "status": "full",
+    "scope_note": "D(u_n) and D'(u_n) are hypotheses, as in the book.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "9d16b6da0dc5544da14f72914375277d"
+  },
+  {
+    "id": "maxima-extremal-index",
+    "name": "Maxima of stationary sequences with an extremal index",
+    "source": "LLR Thm 3.7.1; EKM Thm 8.1.2",
+    "lean_name": "ExtremeValueTheory.tendsto_measureReal_partialMax_le_pow",
+    "file": "ExtremeValueTheory/Dependence/ExtremalIndex.lean",
+    "statement": "ExtremeValueTheory.tendsto_measureReal_partialMax_le_pow.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} {X : ℕ → Ω → ℝ}\n  [MeasureTheory.IsProbabilityMeasure P] (hs : ProbabilityTheory.IsStationary X P)\n  (hX : ∀ (t : ℕ), Measurable (X t)) {F H : CumulativeDistributionFunction}\n  (hF : ∀ (x : ℝ), ↑F.toStieltjesFunction x = P.real {ω | X 0 ω ≤ x}) (hH : H.IsExtremeValueDistr)\n  (As : ℕ → AffineIncrEquiv)\n  (hlim :\n    ∀ (x : ℝ),\n      Filter.Tendsto (fun n => ↑(As n • F).toStieltjesFunction x ^ n) Filter.atTop\n        (nhds (↑H.toStieltjesFunction x)))\n  {θ : ℝ} (hθ : ExtremeValueTheory.HasExtremalIndex X P θ) (hθ0 : 0 < θ) (x : ℝ) :\n  Filter.Tendsto (fun n => P.real {ω | ExtremeValueTheory.partialMax X n ω ≤ (As n)⁻¹ x})\n    Filter.atTop (nhds (↑(H.pow hθ0).toStieltjesFunction x))",
+    "status": "full",
+    "scope_note": "theta > 0, as in the book; convergence of the iid maxima is assumed at every x.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "420f987a47ef33836fcac8c41ef82f14"
+  },
+  {
+    "id": "evd-pow",
+    "name": "H^theta is an extreme value law of the same type",
+    "source": "LLR §3.7",
+    "lean_name": "ExtremeValueTheory.isExtremeValueDistr_pow",
+    "file": "ExtremeValueTheory/Dependence/ExtremalIndex.lean",
+    "statement": "ExtremeValueTheory.isExtremeValueDistr_pow {H : CumulativeDistributionFunction}\n  (hH : H.IsExtremeValueDistr) {θ : ℝ} (hθ0 : 0 < θ) :\n  (H.pow hθ0).IsExtremeValueDistr ∧ ∃ A, A • H = H.pow hθ0",
+    "status": "full",
+    "scope_note": "theta > 0.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "edee441a9557a88fa2703e974dff34e7"
+  },
+  {
+    "id": "extremal-index-unique",
+    "name": "Uniqueness of the extremal index",
+    "source": "LLR §3.7",
+    "lean_name": "ExtremeValueTheory.HasExtremalIndex.unique",
+    "file": "ExtremeValueTheory/Dependence/ExtremalIndex.lean",
+    "statement": "ExtremeValueTheory.HasExtremalIndex.unique.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} {X : ℕ → Ω → ℝ} {θ θ' : ℝ}\n  (h : ExtremeValueTheory.HasExtremalIndex X P θ) (h' : ExtremeValueTheory.HasExtremalIndex X P θ')\n  (hl : ExtremeValueTheory.HasExceedanceLevels X P) : θ = θ'",
+    "status": "full",
+    "scope_note": "Needs exceedance levels to exist, which is the strict notion of LLR.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "eb3e658d478e8f41421ae6ac576ead3b"
+  },
+  {
+    "id": "moving-max-extremal-index",
+    "name": "The moving maximum has extremal index 1/2",
+    "source": "EKM Ex 8.1.3",
+    "lean_name": "ExtremeValueTheory.hasExtremalIndex_movingMax",
+    "file": "ExtremeValueTheory/Dependence/Examples.lean",
+    "statement": "ExtremeValueTheory.hasExtremalIndex_movingMax.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {Z : ℕ → Ω → ℝ}\n  (hZ : ∀ (t : ℕ), Measurable (Z t)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hid : ∀ (t : ℕ), ProbabilityTheory.IdentDistrib (Z t) (Z 0) P P) :\n  ExtremeValueTheory.HasExtremalIndex (fun t ω => max (Z t ω) (Z (t + 1) ω)) P (1 / 2)",
+    "status": "full",
+    "scope_note": "Any iid noise. HasExtremalIndex quantifies over level sequences, so it holds vacuously at any tau with no levels when the marginal has atoms; the strict form is in Dependence/StrictExtremalIndex.lean.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "5fd01900e1bca2626a9efd20a81f156a"
+  },
+  {
+    "id": "basrak-segers-polar",
+    "name": "Basrak-Segers equivalence for a random vector",
+    "source": "BS09 Thm 2.1",
+    "lean_name": "ExtremeValueTheory.polar_iff",
+    "file": "ExtremeValueTheory/Dependence/TailProcess/Polar.lean",
+    "statement": "ExtremeValueTheory.polar_iff.{u_1, u_2} {Ω : Type u_1} {E : Type u_2} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] [NormedAddCommGroup E]\n  [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E] [SecondCountableTopology E] {Z : Ω → ℝ}\n  {V : Ω → E} {α : ℝ} (hα : 0 < α) (hZ : Measurable Z) (hV : Measurable V) :\n  (ExtremeValueTheory.IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α) ∧\n      ∃ μ,\n        MeasureTheory.IsProbabilityMeasure μ ∧\n          ExtremeValueTheory.TendstoLawCond P (fun x => {ω | x < Z ω}) (fun x ω => (Z ω)⁻¹ • V ω)\n            Filter.atTop μ) ↔\n    ∃ ν,\n      MeasureTheory.IsProbabilityMeasure ν ∧\n        MeasureTheory.Measure.map Prod.fst ν = ProbabilityTheory.paretoMeasure 1 α ∧\n          ExtremeValueTheory.TendstoLawCond P (fun x => {ω | x < Z ω})\n            (fun x ω => (Z ω / x, x⁻¹ • V ω)) Filter.atTop ν",
+    "status": "reduced",
+    "scope_note": "Only (ii) <=> (iii) of the cited theorem, for one vector (Z, V). The statement for the whole series is hasTailProcess and related lemmas. The BS09 erratum was not consulted.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "3251d1eea58f2699e821ba29961bbf4f"
+  },
+  {
+    "id": "spectral-to-tail-process",
+    "name": "From the spectral tail process to the tail process",
+    "source": "BS09 Thm 2.1, §3; KS20 Ch. 5",
+    "lean_name": "ExtremeValueTheory.HasSpectralTailProcess.hasTailProcess",
+    "file": "ExtremeValueTheory/Dependence/TailProcess.lean",
+    "statement": "ExtremeValueTheory.HasSpectralTailProcess.hasTailProcess.{u_1, u_2} {Ω : Type u_1} {Ω' : Type u_2}\n  {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ} {Q : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ} (hα : 0 < α)\n  (hX : ∀ (t : ℤ), Measurable (X t)) (hΘm : ∀ (t : ℤ), Measurable (Θ t))\n  (h : ExtremeValueTheory.HasSpectralTailProcess P X α Q Θ) :\n  ExtremeValueTheory.HasTailProcess P X α ((ProbabilityTheory.paretoMeasure 1 α).prod Q) fun t p =>\n    p.1 * Θ t p.2",
+    "status": "full",
+    "scope_note": "One direction, as named. The tail process is realized on the product space Pareto x Q.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "e6501c71f1be8cd2a94183a3a73dac0b"
+  },
+  {
+    "id": "time-change",
+    "name": "The time-change formula",
+    "source": "BS09 Thm 3.1(iii); KS20 Thm 5.3.1",
+    "lean_name": "ExtremeValueTheory.HasSpectralTailProcess.lintegral_timeChange",
+    "file": "ExtremeValueTheory/Dependence/TimeChange.lean",
+    "statement": "ExtremeValueTheory.HasSpectralTailProcess.lintegral_timeChange.{u_1, u_2} {Ω : Type u_1}\n  {Ω' : Type u_2} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ} {Q : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ} (hα : 0 < α)\n  (hX : ∀ (t : ℤ), Measurable (X t)) (hΘm : ∀ (t : ℤ), Measurable (Θ t))\n  (hstat : ExtremeValueTheory.HasShiftInvariantWindows P X)\n  (h : ExtremeValueTheory.HasSpectralTailProcess P X α Q Θ) (i : ℤ) (S : Finset ℤ)\n  {g : (↥S → ℝ) → ENNReal} (hg : Measurable g) :\n  ∫⁻ (ω' : Ω'), {ω' | Θ (-i) ω' ≠ 0}.indicator (fun ω' => g fun t => Θ (↑t - i) ω') ω' ∂Q =\n    ∫⁻ (ω' : Ω'), (g fun t => Θ (↑t) ω' / |Θ i ω'|) * ENNReal.ofReal (|Θ i ω'| ^ α) ∂Q",
+    "status": "full",
+    "scope_note": "Measurable g >= 0 on finite windows. Stationarity is stated as shift-invariance of all finite windows.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "145cca028e27057162b3ede576d86401"
+  },
+  {
+    "id": "cluster-ratio",
+    "name": "The cluster ratio converges to the candidate extremal index",
+    "source": "BS09 §4; KS20 §7.5",
+    "lean_name": "ExtremeValueTheory.HasSpectralTailProcess.tendsto_blockRatio",
+    "file": "ExtremeValueTheory/Dependence/Anticlustering/BlockRatio.lean",
+    "statement": "ExtremeValueTheory.HasSpectralTailProcess.tendsto_blockRatio.{u_1, u_2} {Ω : Type u_1}\n  {Ω' : Type u_2} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ} {Q : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ} (hα : 0 < α)\n  (hX : ∀ (t : ℤ), Measurable (X t)) (hΘm : ∀ (t : ℤ), Measurable (Θ t))\n  (hstat : ExtremeValueTheory.HasShiftInvariantWindows P X)\n  (h : ExtremeValueTheory.HasSpectralTailProcess P X α Q Θ) {u : ℕ → ℝ}\n  (hu : Filter.Tendsto u Filter.atTop Filter.atTop) {r : ℕ → ℕ}\n  (hr : Filter.Tendsto r Filter.atTop Filter.atTop)\n  (hAC : ExtremeValueTheory.ForwardAntiClusteringAt P X u r) :\n  Filter.Tendsto\n    (fun n =>\n      P.real {ω | ∃ t ∈ Finset.Ico 0 ↑(r n), u n < |X t ω|} / (↑(r n) * P.real {ω | u n < |X 0 ω|}))\n    Filter.atTop (nhds (ExtremeValueTheory.candidateExtremalIndex Q Θ α).toReal)",
+    "status": "full",
+    "scope_note": "Forward anticlustering at one level sequence is a hypothesis, as in the sources, and is necessary (Minimality.logEcho_blockRatio_ne). For |X|.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "6355f5efe63ce59c417b6d4ee7a1192a"
+  },
+  {
+    "id": "theta-equals-vartheta",
+    "name": "theta = candidate index under anticlustering",
+    "source": "BS09 Prop 4.2; KS20 §7.5",
+    "lean_name": "ExtremeValueTheory.HasSpectralTailProcess.hasExtremalIndex_abs",
+    "file": "ExtremeValueTheory/Dependence/Anticlustering.lean",
+    "statement": "ExtremeValueTheory.HasSpectralTailProcess.hasExtremalIndex_abs.{u_1, u_2} {Ω : Type u_1}\n  {Ω' : Type u_2} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ} {Q : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ} (hα : 0 < α)\n  (hX : ∀ (t : ℤ), Measurable (X t)) (hΘm : ∀ (t : ℤ), Measurable (Θ t))\n  (hstat : ExtremeValueTheory.HasShiftInvariantWindows P X)\n  (h : ExtremeValueTheory.HasSpectralTailProcess P X α Q Θ) {r : ℕ → ℕ}\n  (hr : Filter.Tendsto r Filter.atTop Filter.atTop)\n  (hrn : Filter.Tendsto (fun n => ↑(r n) / ↑n) Filter.atTop (nhds 0))\n  (hcond :\n    ∀ τ > 0,\n      ∀ (u : ℕ → ℝ),\n        Filter.Tendsto (fun n => ↑n * P.real {ω | u n < |X 0 ω|}) Filter.atTop (nhds τ) →\n          ExtremeValueTheory.ForwardAntiClusteringAt P X u r ∧\n            ExtremeValueTheory.ConditionA (fun k => |X ↑k|) P u r) :\n  ExtremeValueTheory.HasExtremalIndex (fun k => |X ↑k|) P\n    (ExtremeValueTheory.candidateExtremalIndex Q Θ α).toReal",
+    "status": "full",
+    "scope_note": "Anticlustering and the block condition A(u_n) are hypotheses at every level sequence, as in the sources. A(u_n) carries the factorization of block maxima, so this is conditional on it; it is discharged only in the m-dependent entry. Stated for |X|.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "4b4c2727437197519b121649ffd20042"
+  },
+  {
+    "id": "theta-equals-vartheta-m-dependent",
+    "name": "theta = candidate index for m-dependent series",
+    "source": "BS09 §4; KS20 §7.5",
+    "lean_name": "ExtremeValueTheory.HasSpectralTailProcess.hasExtremalIndex_of_isMDependent",
+    "file": "ExtremeValueTheory/Dependence/MDependent.lean",
+    "statement": "ExtremeValueTheory.HasSpectralTailProcess.hasExtremalIndex_of_isMDependent.{u_1, u_2} {Ω : Type u_1}\n  {Ω' : Type u_2} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ} {Q : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ} (hα : 0 < α)\n  (hX : ∀ (t : ℤ), Measurable (X t)) (hΘm : ∀ (t : ℤ), Measurable (Θ t))\n  (hstat : ExtremeValueTheory.HasShiftInvariantWindows P X)\n  (h : ExtremeValueTheory.HasSpectralTailProcess P X α Q Θ) {m : ℕ}\n  (hm : ProbabilityTheory.IsMDependent (fun n => X ↑n) m P) :\n  ExtremeValueTheory.HasExtremalIndex (fun k => |X ↑k|) P\n    (ExtremeValueTheory.candidateExtremalIndex Q Θ α).toReal",
+    "status": "full",
+    "scope_note": "Everything is derived from stationarity, the spectral tail process and m-dependence. Stated for |X|.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "ee5f1bd1c40edd5ebc57ba68945efc92"
+  },
+  {
+    "id": "condition-a-of-mixing",
+    "name": "Strong mixing implies the block condition",
+    "source": "BS09 §4; KS20 §7.5",
+    "lean_name": "ExtremeValueTheory.conditionA_of_alphaMixing",
+    "file": "ExtremeValueTheory/Dependence/Mixing.lean",
+    "statement": "ExtremeValueTheory.conditionA_of_alphaMixing.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} {X : ℕ → Ω → ℝ} [MeasureTheory.IsProbabilityMeasure P]\n  (hs : ProbabilityTheory.IsStationary X P) (hX : ∀ (t : ℕ), Measurable (X t)) {u : ℕ → ℝ}\n  {r l : ℕ → ℕ} (hr : Filter.Tendsto r Filter.atTop Filter.atTop)\n  (hrn : Filter.Tendsto (fun n => ↑(r n) / ↑n) Filter.atTop (nhds 0))\n  (hlr : Filter.Tendsto (fun n => ↑(l n) / ↑(r n)) Filter.atTop (nhds 0))\n  (hα :\n    Filter.Tendsto (fun n => ↑n / ↑(r n) * (ProbabilityTheory.alphaMixing X P (l n)).toReal)\n      Filter.atTop (nhds 0))\n  {C : ℝ} (hC : ∀ᶠ (n : ℕ) in Filter.atTop, ↑n * P.real {ω | u n < X 0 ω} ≤ C) :\n  ExtremeValueTheory.ConditionA X P u r",
+    "status": "full",
+    "scope_note": "A simple sufficient rate; nothing for beta-mixing beyond alpha <= beta.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "e07235386e4dd95aeb320fd9aed8d1a3"
+  },
+  {
+    "id": "moving-average-extremal-index",
+    "name": "Extremal index of a finite moving average",
+    "source": "EKM §8.1; DR85; KS20 §15.3",
+    "lean_name": "ExtremeValueTheory.MovingAverage.hasExtremalIndex",
+    "file": "ExtremeValueTheory/Dependence/MDependentExamples.lean",
+    "statement": "ExtremeValueTheory.MovingAverage.hasExtremalIndex.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} {Z : ℤ → Ω → ℝ} [MeasureTheory.IsProbabilityMeasure P] {α : ℝ}\n  {m : ℕ} {ψ : ℕ → ℝ} (hZ : ∀ (i : ℤ), Measurable (Z i)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hident : ∀ (i : ℤ), ProbabilityTheory.IdentDistrib (Z i) (Z 0) P P)\n  (hZ0 : ∀ (i : ℤ) (ω : Ω), 0 ≤ Z i ω) (hα : 0 < α)\n  (hL : ExtremeValueTheory.IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α))\n  (hψ0 : ∀ (j : ℕ), 0 ≤ ψ j) (hψm : ∀ (j : ℕ), m < j → ψ j = 0)\n  (hW : 0 < ExtremeValueTheory.MovingAverage.weightSum m ψ α) :\n  ExtremeValueTheory.HasExtremalIndex (fun n => ExtremeValueTheory.MovingAverage.process m ψ Z ↑n) P\n    ((Finset.range (m + 1)).sup' ⋯ ψ ^ α / ∑ j ∈ Finset.range (m + 1), ψ j ^ α)",
+    "status": "reduced",
+    "scope_note": "Finite order, nonnegative coefficients and noise nonnegative at every point; the books allow signs.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "ad9ba3289aed0803ea64df108d274782"
+  },
+  {
+    "id": "infinite-moving-average",
+    "name": "theta = candidate index for infinite moving averages",
+    "source": "DR85; KS20 Ch. 15",
+    "lean_name": "ExtremeValueTheory.InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_summable_rpow",
+    "file": "ExtremeValueTheory/Dependence/InfiniteMovingAverageTailProcess.lean",
+    "statement": "ExtremeValueTheory.InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_summable_rpow.{u_1}\n  {Ω : Type u_1} {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} {Z : ℤ → Ω → ℝ} {ψ : ℕ → ℝ}\n  {α δ : ℝ} [MeasureTheory.IsProbabilityMeasure P] (hZ : ∀ (i : ℤ), Measurable (Z i))\n  (hind : ProbabilityTheory.iIndepFun Z P)\n  (hident : ∀ (i : ℤ), ProbabilityTheory.IdentDistrib (Z i) (Z 0) P P)\n  (hZ0 : ∀ (i : ℤ) (ω : Ω), 0 ≤ Z i ω) (hδ : 0 < δ) (hδα : δ < α) (hδ1 : δ < 1)\n  (hL : ExtremeValueTheory.IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α))\n  (hψ0 : ∀ (j : ℕ), 0 ≤ ψ j) (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :\n  ExtremeValueTheory.HasSpectralTailProcess P (ExtremeValueTheory.InfiniteMovingAverage.process ψ Z)\n      α (ExtremeValueTheory.InfiniteMovingAverage.indexLaw ψ α)\n      (ExtremeValueTheory.InfiniteMovingAverage.spectral ψ) ∧\n    ExtremeValueTheory.HasExtremalIndex\n      (fun n => ExtremeValueTheory.InfiniteMovingAverage.process ψ Z ↑n) P\n      (ExtremeValueTheory.candidateExtremalIndex\n          (ExtremeValueTheory.InfiniteMovingAverage.indexLaw ψ α)\n          (ExtremeValueTheory.InfiniteMovingAverage.spectral ψ) α).toReal",
+    "status": "reduced",
+    "scope_note": "Nonnegative coefficients and noise; sum psi^delta < infinity for some delta < min(alpha, 1), which for alpha > 1 is stronger than the optimal condition.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "65528bbb0fca2ed7b50c8f10e9e87e65"
+  },
+  {
+    "id": "ar1-extremal-index",
+    "name": "Extremal index of the AR(1) process",
+    "source": "EKM §8.1; KS20 Ch. 15",
+    "lean_name": "ExtremeValueTheory.AR1.hasExtremalIndex_of_pos",
+    "file": "ExtremeValueTheory/Dependence/AR1.lean",
+    "statement": "ExtremeValueTheory.AR1.hasExtremalIndex_of_pos.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} {Z : ℤ → Ω → ℝ} {φ α : ℝ} [MeasureTheory.IsProbabilityMeasure P]\n  (hZ : ∀ (i : ℤ), Measurable (Z i)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hident : ∀ (i : ℤ), ProbabilityTheory.IdentDistrib (Z i) (Z 0) P P)\n  (hZ0 : ∀ (i : ℤ) (ω : Ω), 0 ≤ Z i ω) (hα : 0 < α)\n  (hL : ExtremeValueTheory.IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hφ0 : 0 < φ)\n  (hφ1 : φ < 1) :\n  ExtremeValueTheory.HasExtremalIndex (fun n => ExtremeValueTheory.AR1.process φ Z ↑n) P (1 - φ ^ α)",
+    "status": "reduced",
+    "scope_note": "0 < phi < 1 and nonnegative noise: the negative coefficient and signed noise cases of Chernick are left out.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "2c3c12bc6c92d9ddb4434b702ad7359f"
+  },
+  {
+    "id": "stationary-markov-chain",
+    "name": "A stationary Markov chain with a prescribed kernel",
+    "source": "Kallenberg Lemma 4.22 (via Mathlib)",
+    "lean_name": "ExtremeValueTheory.RandomIteration.exists_isStationary_of_kernel",
+    "file": "ExtremeValueTheory/Dependence/MarkovChain.lean",
+    "statement": "ExtremeValueTheory.RandomIteration.exists_isStationary_of_kernel.{u_1} {E : Type u_1}\n  [MeasurableSpace E] [StandardBorelSpace E] [Nonempty E] (K : ProbabilityTheory.Kernel E E)\n  [ProbabilityTheory.IsMarkovKernel K] (π : MeasureTheory.Measure E)\n  [MeasureTheory.IsProbabilityMeasure π] (hπ : π.bind ⇑K = π) :\n  ∃ g,\n    Measurable (Function.uncurry g) ∧\n      ExtremeValueTheory.RandomIteration.noiseKernel g MeasureTheory.volume = K ∧\n        ProbabilityTheory.IsStationary\n            (ExtremeValueTheory.RandomIteration.chain g Prod.fst fun n p => p.2 n)\n            (ExtremeValueTheory.RandomIteration.canonicalMeasure π MeasureTheory.volume) ∧\n          MeasureTheory.Measure.map Prod.fst\n              (ExtremeValueTheory.RandomIteration.canonicalMeasure π MeasureTheory.volume) =\n            π",
+    "status": "full",
+    "scope_note": "On a standard Borel space, indexed by N and forward only: no two-sided chain.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "c072b02432bafd70e57cfb1c0d2b2e06"
+  },
+  {
+    "id": "tail-chain",
+    "name": "The forward tail chain for iid innovations",
+    "source": "Perfekt (1994); Janssen-Segers (2014)",
+    "lean_name": "ExtremeValueTheory.RandomIteration.tendstoLawCond_tailChain_iid",
+    "file": "ExtremeValueTheory/Dependence/MarkovTailChain.lean",
+    "statement": "ExtremeValueTheory.RandomIteration.tendstoLawCond_tailChain_iid.{u_1, u_2} {F : Type u_1}\n  [MeasurableSpace F] {f : ℝ → F → ℝ} {a b : F → ℝ} {Ω : Type u_2} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {X₀ : Ω → ℝ} {V : ℕ → Ω → F}\n  (hf : Measurable (Function.uncurry f)) (ha : Measurable a) (hb : Measurable b) {K : Set ℝ}\n  (hKm : MeasurableSet K) (hK : ∀ x ∈ K, ∀ (v : F), f x v ∈ K)\n  (hfab : ∀ x ∈ K, ∀ (v : F), |f x v - a v * x| ≤ b v) (hX₀ : Measurable X₀)\n  (hX₀K : ∀ᵐ (ω : Ω) ∂P, X₀ ω ∈ K) (hV : ∀ (n : ℕ), Measurable (V n))\n  (hind : ProbabilityTheory.IndepFun X₀ (fun ω n => V n ω) P)\n  (hiid : ProbabilityTheory.iIndepFun V P) {ν : MeasureTheory.Measure F}\n  (hlaw : ∀ (n : ℕ), MeasureTheory.Measure.map (V n) P = ν) {S : ℝ → Set ℝ}\n  (hS : ∀ (x : ℝ), MeasurableSet (S x)) {μ₀ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ₀]\n  (hX0 :\n    ExtremeValueTheory.TendstoLawCond P (fun x => X₀ ⁻¹' S x) (fun x ω => X₀ ω / x) Filter.atTop μ₀)\n  (k : ℕ) :\n  ExtremeValueTheory.TendstoLawCond P (fun x => X₀ ⁻¹' S x)\n    (fun x ω t => ExtremeValueTheory.RandomIteration.chain f X₀ V (↑t) ω / x) Filter.atTop\n    (MeasureTheory.Measure.map (fun p t => ExtremeValueTheory.RandomIteration.tailWalk a p.1 p.2 ↑t)\n      (μ₀.prod (MeasureTheory.Measure.infinitePi fun x => ν)))",
+    "status": "reduced",
+    "scope_note": "The tail-chain condition is in random-function form |f(x,v) - a(v) x| <= b(v), regular variation of the marginal is a conditional-limit hypothesis, forward only. Not the general kernel condition of the sources.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "3358197b99ad83f48c79723cf1a56b1f"
+  },
+  {
+    "id": "armax-extremal-index",
+    "name": "theta = candidate index for ARMAX",
+    "source": "EKM §8.1; KS20 Ch. 14",
+    "lean_name": "ExtremeValueTheory.ARMAX.hasExtremalIndex_candidate",
+    "file": "ExtremeValueTheory/Dependence/MarkovTailChain.lean",
+    "statement": "ExtremeValueTheory.ARMAX.hasExtremalIndex_candidate.{u_1} {φ α : ℝ} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {X₀ : Ω → ℝ} {V : ℕ → Ω → ℝ} (hφ0 : 0 < φ) (hφ1 : φ < 1) (hα : 0 < α) (hX₀ : Measurable X₀)\n  (hV : ∀ (n : ℕ), Measurable (V n)) (hind : ProbabilityTheory.IndepFun X₀ (fun ω n => V n ω) P)\n  (hiid : ProbabilityTheory.iIndepFun V P)\n  (hlaw : ∀ (n : ℕ), MeasureTheory.Measure.map (V n) P = ProbabilityTheory.paretoMeasure 1 α)\n  (hinv :\n    MeasureTheory.Measure.map (Function.uncurry (ExtremeValueTheory.ARMAX.step φ))\n        ((MeasureTheory.Measure.map X₀ P).prod (ProbabilityTheory.paretoMeasure 1 α)) =\n      MeasureTheory.Measure.map X₀ P)\n  (Q : MeasureTheory.Measure (ℕ → ℝ)) [MeasureTheory.IsProbabilityMeasure Q] :\n  ExtremeValueTheory.HasExtremalIndex\n    (ExtremeValueTheory.RandomIteration.chain (ExtremeValueTheory.ARMAX.step φ) X₀ V) P\n    (ExtremeValueTheory.candidateExtremalIndex Q\n        (ExtremeValueTheory.RandomIteration.spectralWalk fun x => φ) α).toReal",
+    "status": "reduced",
+    "scope_note": "Exact Pareto(1, alpha) innovations. theta and the candidate index are computed separately; the ARMAX spectral tail process is not stated, so this does not go through the theorem theta-equals-vartheta.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "a130e992adc6556312260bfb6ee80082"
+  },
+  {
+    "id": "sre-uniqueness",
+    "name": "Uniqueness of the stationary law of X = AX + B",
+    "source": "BDM16 Thm 2.1.3",
+    "lean_name": "ExtremeValueTheory.SRE.eq_stationaryLaw",
+    "file": "ExtremeValueTheory/Dependence/SRE.lean",
+    "statement": "ExtremeValueTheory.SRE.eq_stationaryLaw {ν : MeasureTheory.Measure (ℝ × ℝ)}\n  [MeasureTheory.IsProbabilityMeasure ν] (hA : MeasureTheory.Integrable (fun p => Real.log |p.1|) ν)\n  (hneg : ∫ (p : ℝ × ℝ), Real.log |p.1| ∂ν < 0)\n  (hB : MeasureTheory.Integrable (fun p => p.2.posLog) ν) (π' : MeasureTheory.Measure ℝ)\n  [MeasureTheory.IsProbabilityMeasure π']\n  (hinv :\n    MeasureTheory.Measure.map (Function.uncurry ExtremeValueTheory.SRE.affine) (π'.prod ν) = π') :\n  π' = ExtremeValueTheory.SRE.stationaryLaw ν",
+    "status": "reduced",
+    "scope_note": "Assumes log|A| integrable with negative mean, stronger than the book when P(A = 0) > 0 (Lean's log 0 = 0). Uniqueness part of the theorem.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "5db552805384d98ce85adc804a249832"
+  },
+  {
+    "id": "sre-tail-bound",
+    "name": "Tail upper bound in the Kesten-Goldie regime",
+    "source": "BDM16; Kesten (1973); Goldie (1991)",
+    "lean_name": "ExtremeValueTheory.SRE.exists_stationaryLaw_tail_le",
+    "file": "ExtremeValueTheory/Dependence/SREMoments.lean",
+    "statement": "ExtremeValueTheory.SRE.exists_stationaryLaw_tail_le {ν : MeasureTheory.Measure (ℝ × ℝ)}\n  [MeasureTheory.IsProbabilityMeasure ν] (hA : MeasureTheory.Integrable (fun p => Real.log |p.1|) ν)\n  (hneg : ∫ (p : ℝ × ℝ), Real.log |p.1| ∂ν < 0)\n  (hB : MeasureTheory.Integrable (fun p => p.2.posLog) ν) {κ : ℝ} (hκ : 0 < κ)\n  (h1 : ∫⁻ (p : ℝ × ℝ), ‖p.1‖ₑ ^ κ ∂ν = 1) (hnd : ¬∀ᵐ (p : ℝ × ℝ) ∂ν, |p.1| = 1)\n  (hBκ : ∫⁻ (p : ℝ × ℝ), ‖p.2‖ₑ ^ κ ∂ν < ⊤) {s : ℝ} (hs : 0 < s) (hsκ : s < κ) :\n  ∃ C,\n    0 ≤ C ∧\n      ∀ (x : ℝ),\n        0 < x →\n          (ExtremeValueTheory.SRE.stationaryLaw ν) {y | x < |y|} ≤ ENNReal.ofReal (C * x ^ (-s))",
+    "status": "reduced",
+    "scope_note": "Only P(|X| > x) = O(x^{-s}) for s < kappa. The Kesten-Goldie asymptotic c x^{-kappa}, the main result of the theory, is not proved, nor is the bound at s = kappa.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "49a55280324e3546fe4d2a6e8f5d8d29"
+  },
+  {
+    "id": "garch-tail-index",
+    "name": "Existence of the GARCH(1,1) tail index",
+    "source": "BDM16 Thm 4.3.1; Mikosch-Stărică (2000)",
+    "lean_name": "ExtremeValueTheory.SRE.GARCH.exists_tail_index",
+    "file": "ExtremeValueTheory/Dependence/SREGarch.lean",
+    "statement": "ExtremeValueTheory.SRE.GARCH.exists_tail_index {α₁ β₁ : ℝ} {ζ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure ζ] (hα₁ : 0 ≤ α₁) (hβ₁ : 0 ≤ β₁)\n  (hlog :\n    MeasureTheory.Integrable (fun z => Real.log (ExtremeValueTheory.SRE.GARCH.coeff α₁ β₁ z)) ζ)\n  (hneg : ∫ (z : ℝ), Real.log (ExtremeValueTheory.SRE.GARCH.coeff α₁ β₁ z) ∂ζ < 0)\n  (hA0 : ∀ᵐ (z : ℝ) ∂ζ, ExtremeValueTheory.SRE.GARCH.coeff α₁ β₁ z ≠ 0) {S : ℝ} (hS : 0 < S)\n  (hSi : MeasureTheory.Integrable (fun z => ExtremeValueTheory.SRE.GARCH.coeff α₁ β₁ z ^ S) ζ)\n  (hS1 : 1 < ∫ (z : ℝ), ExtremeValueTheory.SRE.GARCH.coeff α₁ β₁ z ^ S ∂ζ) :\n  ∃ κ ∈ Set.Ioo 0 S,\n    MeasureTheory.Integrable (fun z => ExtremeValueTheory.SRE.GARCH.coeff α₁ β₁ z ^ κ) ζ ∧\n      ∫ (z : ℝ), ExtremeValueTheory.SRE.GARCH.coeff α₁ β₁ z ^ κ ∂ζ = 1",
+    "status": "reduced",
+    "scope_note": "Only the existence of kappa solving E A^kappa = 1. The tail of the GARCH process itself is not stated.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "58488c50a9979e55455a7dc58d5905ee"
+  }
+]

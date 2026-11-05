@@ -1,0 +1,178 @@
+[
+  {
+    "id": "rv-representation",
+    "name": "f = x^rho L(x) with L slowly varying",
+    "source": "BGT Thm 1.4.1",
+    "lean_name": "ExtremeValueTheory.isRegularlyVarying_iff_exists_isSlowlyVarying",
+    "file": "ExtremeValueTheory/RegularVariation/Basic.lean",
+    "statement": "ExtremeValueTheory.isRegularlyVarying_iff_exists_isSlowlyVarying {f : ℝ → ℝ} {ρ : ℝ} :\n  ExtremeValueTheory.IsRegularlyVarying f ρ ↔\n    ∃ L, ExtremeValueTheory.IsSlowlyVarying L ∧ ∀ᶠ (x : ℝ) in Filter.atTop, f x = x ^ ρ * L x",
+    "status": "full",
+    "scope_note": "The equality holds eventually. Measurability is a separate hypothesis throughout the library, not part of the definition.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "e67b38a0b7db399701caeccdd57217a1"
+  },
+  {
+    "id": "uct-monotone",
+    "name": "Uniform convergence theorem, monotone case",
+    "source": "BGT Thm 1.5.2",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_of_isCompact",
+    "file": "ExtremeValueTheory/RegularVariation/Basic.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_of_isCompact {f : ℝ → ℝ} {ρ : ℝ}\n  (hf : ExtremeValueTheory.IsRegularlyVarying f ρ) {a : ℝ}\n  (hmono : MonotoneOn f (Set.Ici a) ∨ AntitoneOn f (Set.Ici a)) {K : Set ℝ} (hK : IsCompact K)\n  (hK0 : K ⊆ Set.Ioi 0) :\n  TendstoUniformlyOn (fun x c => f (c * x) / f x) (fun c => c ^ ρ) Filter.atTop K",
+    "status": "reduced",
+    "scope_note": "Assumes f monotone or antitone on some [a, infinity). The theorem for measurable f is uct-measurable.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "94e5cc43cdba0a6e4a4b8db97234224d"
+  },
+  {
+    "id": "uct-measurable",
+    "name": "Uniform convergence theorem",
+    "source": "BGT Thm 1.5.2, Thm 1.2.1",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_of_measurable",
+    "file": "ExtremeValueTheory/RegularVariation/UniformConvergence.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_of_measurable {f : ℝ → ℝ} {ρ : ℝ}\n  (hf : ExtremeValueTheory.IsRegularlyVarying f ρ) (hm : Measurable f) {K : Set ℝ}\n  (hK : IsCompact K) (hK0 : K ⊆ Set.Ioi 0) :\n  TendstoUniformlyOn (fun x c => f (c * x) / f x) (fun c => c ^ ρ) Filter.atTop K",
+    "status": "full",
+    "scope_note": "Measurable f on all of R, which is the book's hypothesis up to changing f far out.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "829f01ba531aef5ae6f91ee8608ba6a1"
+  },
+  {
+    "id": "potter-monotone",
+    "name": "Potter bounds, monotone case",
+    "source": "BGT Thm 1.5.6",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.potter_bound",
+    "file": "ExtremeValueTheory/RegularVariation/Basic.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.potter_bound {f : ℝ → ℝ} {ρ : ℝ}\n  (hf : ExtremeValueTheory.IsRegularlyVarying f ρ) {a : ℝ}\n  (hmono : MonotoneOn f (Set.Ici a) ∨ AntitoneOn f (Set.Ici a)) {δ A : ℝ} (hδ : 0 < δ)\n  (hA : 1 < A) :\n  ∃ x₀,\n    0 < x₀ ∧\n      (∀ x ≥ x₀, 0 < f x) ∧\n        ∀ x ≥ x₀, ∀ y ≥ x₀, f y / f x ≤ A * max ((y / x) ^ (ρ + δ)) ((y / x) ^ (ρ - δ))",
+    "status": "reduced",
+    "scope_note": "Assumes f eventually monotone or antitone, and gives only the upper bound. The general form is potter-measurable.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "b0782cefbe89415a62734e9c98229eb0"
+  },
+  {
+    "id": "potter-measurable",
+    "name": "Potter bounds, two-sided",
+    "source": "BGT Thm 1.5.6(iii)",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.potter_bounds_of_measurable",
+    "file": "ExtremeValueTheory/RegularVariation/UniformConvergence.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.potter_bounds_of_measurable {f : ℝ → ℝ} {ρ : ℝ}\n  (hf : ExtremeValueTheory.IsRegularlyVarying f ρ) (hm : Measurable f) {δ A : ℝ} (hδ : 0 < δ)\n  (hA : 1 < A) :\n  ∃ x₀,\n    0 < x₀ ∧\n      (∀ x ≥ x₀, 0 < f x) ∧\n        ∀ x ≥ x₀,\n          ∀ y ≥ x₀,\n            A⁻¹ * min ((y / x) ^ (ρ + δ)) ((y / x) ^ (ρ - δ)) ≤ f y / f x ∧\n              f y / f x ≤ A * max ((y / x) ^ (ρ + δ)) ((y / x) ^ (ρ - δ))",
+    "status": "full",
+    "scope_note": "Measurable f; adds the matching lower bound and positivity of f on [x0, infinity).",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "f92b3636e577d1f64484a370eadf82f0"
+  },
+  {
+    "id": "karamata-representation",
+    "name": "Karamata's representation theorem",
+    "source": "BGT Thm 1.3.1",
+    "lean_name": "ExtremeValueTheory.isSlowlyVarying_iff_exists_representation",
+    "file": "ExtremeValueTheory/RegularVariation/Representation.lean",
+    "statement": "ExtremeValueTheory.isSlowlyVarying_iff_exists_representation {L : ℝ → ℝ} (hm : Measurable L) :\n  ExtremeValueTheory.IsSlowlyVarying L ↔\n    ∃ a,\n      0 < a ∧\n        ∃ c ε,\n          Measurable c ∧\n            Measurable ε ∧\n              (∃ c₀, 0 < c₀ ∧ Filter.Tendsto c Filter.atTop (nhds c₀)) ∧\n                Filter.Tendsto ε Filter.atTop (nhds 0) ∧\n                  (∀ x ≥ a, IntervalIntegrable (fun t => ε t / t) MeasureTheory.volume a x) ∧\n                    ∀ x ≥ a, L x = c x * Real.exp (∫ (t : ℝ) in a..x, ε t / t)",
+    "status": "full",
+    "scope_note": "Measurability of L is a hypothesis on both sides, and interval integrability of eps(t)/t is stated so the integral is not a junk value.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "cdb9a071492661c3362d39583f9d7977"
+  },
+  {
+    "id": "karamata-tail-antitone",
+    "name": "Karamata's tail-integral theorem, antitone case",
+    "source": "BGT Prop 1.5.10",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_Ioi_div",
+    "file": "ExtremeValueTheory/RegularVariation/Karamata.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_Ioi_div {F : ℝ → ℝ} {α : ℝ} (hF : Antitone F)\n  (hRV : ExtremeValueTheory.IsRegularlyVarying F (-α)) (hα : 1 < α) :\n  Filter.Tendsto (fun x => (∫ (t : ℝ) in Set.Ioi x, F t) / (x * F x)) Filter.atTop\n    (nhds (1 / (α - 1)))",
+    "status": "reduced",
+    "scope_note": "Assumes F antitone on all of R, stronger than local boundedness. The measurable version is karamata-tail.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "20cab0f7378307f2e5b87a9c1b30726b"
+  },
+  {
+    "id": "karamata-tail",
+    "name": "Karamata's tail-integral theorem",
+    "source": "BGT Prop 1.5.10",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_Ioi_div_of_measurable",
+    "file": "ExtremeValueTheory/RegularVariation/KaramataConverse.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_Ioi_div_of_measurable {F : ℝ → ℝ} {α : ℝ}\n  (hm : Measurable F) (hRV : ExtremeValueTheory.IsRegularlyVarying F (-α)) (hα : 1 < α) :\n  Filter.Tendsto (fun x => (∫ (t : ℝ) in Set.Ioi x, F t) / (x * F x)) Filter.atTop\n    (nhds (1 / (α - 1)))",
+    "status": "full",
+    "scope_note": "Measurable F, no monotonicity. Direct half only; the converse is karamata-converse.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "773e031845eb577b3ad7986205841120"
+  },
+  {
+    "id": "karamata-converse",
+    "name": "Karamata's theorem, converse half",
+    "source": "BGT Thm 1.6.1",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi",
+    "file": "ExtremeValueTheory/RegularVariation/KaramataConverse.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi {F : ℝ → ℝ} {α a : ℝ}\n  (hF : Antitone F) (hint : MeasureTheory.IntegrableOn F (Set.Ioi a) MeasureTheory.volume)\n  (hα : 1 < α)\n  (h :\n    Filter.Tendsto (fun x => x * F x / ∫ (t : ℝ) in Set.Ioi x, F t) Filter.atTop (nhds (α - 1))) :\n  ExtremeValueTheory.IsRegularlyVarying F (-α)",
+    "status": "reduced",
+    "scope_note": "Assumes F antitone on R and integrable on a half-line; the book allows locally integrable F.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "25aea0b2185a264cc28cbd7294e3df88"
+  },
+  {
+    "id": "karamata-zero",
+    "name": "Karamata's theorem for integrals over [0, x]",
+    "source": "BGT Prop 1.5.8, Thm 1.5.11(i)",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_zero_div",
+    "file": "ExtremeValueTheory/RegularVariation/KaramataConverse.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_zero_div {f : ℝ → ℝ} {ρ : ℝ}\n  (hf : ExtremeValueTheory.IsRegularlyVarying f ρ) (hm : Measurable f) (hρ : -1 < ρ)\n  (hint : ∀ (x : ℝ), IntervalIntegrable f MeasureTheory.volume 0 x) :\n  Filter.Tendsto (fun x => (∫ (t : ℝ) in 0..x, f t) / (x * f x)) Filter.atTop (nhds (1 / (ρ + 1)))",
+    "status": "full",
+    "scope_note": "Integrates from 0 and so assumes interval integrability on every [0, x]; the book integrates from a large X, an equivalent setting because f can be changed on [0, X).",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "12675d907d1464517ff26a5cc8d03403"
+  },
+  {
+    "id": "breiman",
+    "name": "Breiman's lemma",
+    "source": "Breiman (1965); JM Lemma 4.2(1)",
+    "lean_name": "ExtremeValueTheory.tendsto_measure_mul_div_measure",
+    "file": "ExtremeValueTheory/RegularVariation/Breiman.lean",
+    "statement": "ExtremeValueTheory.tendsto_measure_mul_div_measure.{u_1} {Ω : Type u_1} [MeasurableSpace Ω]\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {X Y : Ω → ℝ}\n  (hX : Measurable X) (hY : Measurable Y) (hXY : ProbabilityTheory.IndepFun X Y P)\n  (hY0 : ∀ᵐ (ω : Ω) ∂P, 0 ≤ Y ω) {α ε : ℝ} (hα : 0 < α) (hε : 0 < ε)\n  (hRV : ExtremeValueTheory.IsRegularlyVarying (fun x => (P {ω | x < X ω}).toReal) (-α))\n  (hmom : MeasureTheory.Integrable (fun ω => Y ω ^ (α + ε)) P) :\n  Filter.Tendsto (fun x => (P {ω | x < X ω * Y ω}).toReal / (P {ω | x < X ω}).toReal) Filter.atTop\n    (nhds (∫ (ω : Ω), Y ω ^ α ∂P))",
+    "status": "full",
+    "scope_note": "No sign condition on X, as in the reference. Scalar X and Y only.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "d150fcb43ff64a4189bb71f27c6f2738"
+  }
+]
