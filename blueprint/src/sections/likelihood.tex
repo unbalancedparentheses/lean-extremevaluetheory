@@ -319,6 +319,13 @@ We follow Smith, \emph{Maximum likelihood estimation in a class of nonregular ca
   (the shape score of the Gumbel law is $-z + z^2(1 - e^{-z})/2$). The Gumbel Fisher information in $(\mu, \sigma)$ is
   $\sigma^{-2}\begin{pmatrix} 1 & -(1-\gamma) \ -(1-\gamma) & \pi^2/6 + (1-\gamma)^2 \end{pmatrix}$, positive definite.
 \end{theorem}
+
+\begin{theorem}[Wilks' theorem and profile-likelihood intervals for the GPD]
+  \label{thm:gpd-wilks}
+  \lean{ExtremeValueTheory.tendstoInDistribution_gpdDeviance, ExtremeValueTheory.tendstoInDistribution_gpdProfileDeviance, ExtremeValueTheory.tendsto_measure_mem_gpdReturnLevelProfileInterval}
+  \leanok
+  For an iid $\mathrm{GPD}(\xi_0,\sigma_0)$ sample with $\xi_0 > 0$, and maximizers over a compact set with the true parameter in its interior, the deviance converges to $\chi^2_2$ and the profile deviance of the shape, the scale or a return level to $\chi^2_1$, so the profile-likelihood sets have the coverage they claim.
+\end{theorem}
 \begin{proof}
   \leanok
   Second-order expansions of $\log(1 + \xi z)$ in $\xi$.

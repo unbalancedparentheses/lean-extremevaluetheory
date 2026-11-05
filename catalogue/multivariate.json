@@ -229,11 +229,15 @@
     "source": "dHF §7.2",
     "lean_name": "ExtremeValueTheory.tendstoInMeasure_empiricalStableTailDependence",
     "file": "ExtremeValueTheory/Statistics/StableTailDependence.lean",
-    "statement": "",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_empiricalStableTailDependence.{u_1, u_2} {ι : Type u_1}\n  {Ω : Type u_2} [Fintype ι] {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {μ : MeasureTheory.Measure (ι → ℝ)}\n  [MeasureTheory.IsProbabilityMeasure μ] {X : ℕ → Ω → ι → ℝ} (hX : ∀ (i : ℕ), Measurable (X i))\n  (hindep : ProbabilityTheory.iIndepFun X P)\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (X i) (X 0) P P)\n  (hlaw : MeasureTheory.Measure.map (X 0) P = μ)\n  (hc : ∀ (j : ι), Continuous ↑(ExtremeValueTheory.marginal μ j).toStieltjesFunction)\n  {ℓ : (ι → ℝ) → ℝ} (hℓ : ExtremeValueTheory.HasStableTailDependence μ ℓ) {k : ℕ → ℕ}\n  (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0)) {x : ι → ℝ}\n  (hx : ∀ (j : ι), 0 < x j) :\n  MeasureTheory.TendstoInMeasure P\n    (fun n ω => ExtremeValueTheory.empiricalStableTailDependence (fun i => X i ω) n (k n) x)\n    Filter.atTop fun x_1 => ℓ x",
     "status": "full",
     "scope_note": "Pointwise on positive coordinates, iid data, continuous margins, any dimension. Consistency only: no rate or limit law.",
-    "axioms": [],
-    "input_hash": ""
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "f1b3d0b15c3c026fdb515853a15a6aa0"
   },
   {
     "id": "stable-tail-dependence-uniform",
@@ -241,11 +245,15 @@
     "source": "dHF §7.2",
     "lean_name": "ExtremeValueTheory.tendsto_measure_exists_abs_empiricalStableTailDependence_sub",
     "file": "ExtremeValueTheory/Statistics/StableTailDependence.lean",
-    "statement": "",
+    "statement": "ExtremeValueTheory.tendsto_measure_exists_abs_empiricalStableTailDependence_sub.{u_1, u_2}\n  {ι : Type u_1} {Ω : Type u_2} [Fintype ι] {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {μ : MeasureTheory.Measure (ι → ℝ)}\n  [MeasureTheory.IsProbabilityMeasure μ] {X : ℕ → Ω → ι → ℝ} (hX : ∀ (i : ℕ), Measurable (X i))\n  (hindep : ProbabilityTheory.iIndepFun X P)\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (X i) (X 0) P P)\n  (hlaw : MeasureTheory.Measure.map (X 0) P = μ)\n  (hc : ∀ (j : ι), Continuous ↑(ExtremeValueTheory.marginal μ j).toStieltjesFunction)\n  {ℓ : (ι → ℝ) → ℝ} (hℓ : ExtremeValueTheory.HasStableTailDependence μ ℓ) {k : ℕ → ℕ}\n  (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0)) (T : ℝ) {ε : ℝ} (hε : 0 < ε) :\n  Filter.Tendsto\n    (fun n =>\n      P\n        {ω |\n          ∃ x,\n            (∀ (j : ι), 0 < x j ∧ x j ≤ T) ∧\n              ε ≤\n                |ExtremeValueTheory.empiricalStableTailDependence (fun i => X i ω) n (k n) x -\n                    ℓ x|})\n    Filter.atTop (nhds 0)",
     "status": "reduced",
     "scope_note": "Uniform on (0,T]^d, not [0,T]^d, and in outer probability, since the event's measurability is not proved.",
-    "axioms": [],
-    "input_hash": ""
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "e64925146764bf2984b165c482087b1e"
   },
   {
     "id": "tail-dependence-coefficient-estimator",
@@ -253,10 +261,14 @@
     "source": "dHF §7.2",
     "lean_name": "ExtremeValueTheory.tendstoInMeasure_tailDependenceEstimator",
     "file": "ExtremeValueTheory/Statistics/StableTailDependence.lean",
-    "statement": "",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_tailDependenceEstimator.{u_2} {Ω : Type u_2}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {μ : MeasureTheory.Measure (Fin 2 → ℝ)} [MeasureTheory.IsProbabilityMeasure μ]\n  {X : ℕ → Ω → Fin 2 → ℝ} (hX : ∀ (i : ℕ), Measurable (X i))\n  (hindep : ProbabilityTheory.iIndepFun X P)\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (X i) (X 0) P P)\n  (hlaw : MeasureTheory.Measure.map (X 0) P = μ)\n  (hc : ∀ (j : Fin 2), Continuous ↑(ExtremeValueTheory.marginal μ j).toStieltjesFunction)\n  {ℓ : (Fin 2 → ℝ) → ℝ} (hℓ : ExtremeValueTheory.HasStableTailDependence μ ℓ) {k : ℕ → ℕ}\n  (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0)) :\n  MeasureTheory.TendstoInMeasure P\n    (fun n ω => ExtremeValueTheory.tailDependenceEstimator (fun i => X i ω) n (k n)) Filter.atTop\n    fun x => 2 - ℓ fun x => 1",
     "status": "full",
     "scope_note": "Iid data, continuous margins. Consistency only.",
-    "axioms": [],
-    "input_hash": ""
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "8ee348fcd9293ab99c7adcc2d0c8ef6a"
   }
 ]

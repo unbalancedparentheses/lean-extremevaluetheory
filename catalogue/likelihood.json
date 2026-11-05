@@ -286,5 +286,37 @@
       "propext"
     ],
     "input_hash": "d9517a1b0a2e634ad53e90d9d6ccdbc0"
+  },
+  {
+    "id": "gpd-wilks",
+    "name": "Wilks' theorem for the GPD",
+    "source": "Coles §2.6.6; van der Vaart §16 (section level)",
+    "lean_name": "ExtremeValueTheory.tendstoInDistribution_gpdDeviance",
+    "file": "ExtremeValueTheory/Statistics/GPDWilks/Profile.lean",
+    "statement": "ExtremeValueTheory.tendstoInDistribution_gpdDeviance.{u_1, u_2} {Ω : Type u_1} {Ω' : Type u_2}\n  {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {P' : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure P'] {X : ℕ → Ω → ℝ} {ξ₀ σ₀ : ℝ} {K : Set (ℝ × ℝ)}\n  (hK : IsCompact K) (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K)\n  (hξ₀ : 0 < ξ₀) (hσ₀ : 0 < σ₀)\n  (hX : ∀ (i : ℕ), ProbabilityTheory.HasLaw (X i) (ExtremeValueTheory.gpdMeasure ξ₀ σ₀) P)\n  (hind : ProbabilityTheory.iIndepFun X P) {θh : ℕ → Ω → ℝ × ℝ}\n  (hθm : ∀ (n : ℕ), AEMeasurable (θh n) P) (hθK : ∀ (n : ℕ) (ω : Ω), θh n ω ∈ K)\n  (hmax :\n    ∀ (n : ℕ) (ω : Ω),\n      IsMaxOn (fun p => ExtremeValueTheory.gpdLogLikE p.1 p.2 fun i => X (↑i) ω) K (θh n ω))\n  {Z : Ω' → ℝ} (hZ : ProbabilityTheory.HasLaw Z (ProbabilityTheory.chiSquared 2) P') :\n  MeasureTheory.TendstoInDistribution\n    (fun n ω =>\n      2 *\n        (ExtremeValueTheory.gpdLogLikN (θh n ω).1 (θh n ω).2 (fun i => X i ω) n -\n          ExtremeValueTheory.gpdLogLikN ξ₀ σ₀ (fun i => X i ω) n))\n    Filter.atTop Z (fun x => P) P'",
+    "status": "reduced",
+    "scope_note": "GPD with ξ₀ > 0 only, narrower than the regular range ξ₀ > -1/2; exact iid sample; maximizers over a compact set with the truth in its interior.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "eee44c8c11cd8356b8c325532eb5bfc8"
+  },
+  {
+    "id": "gpd-profile-return-level",
+    "name": "Profile-likelihood interval for a GPD return level",
+    "source": "Coles §2.6.6; van der Vaart §16 (section level)",
+    "lean_name": "ExtremeValueTheory.tendsto_measure_mem_gpdReturnLevelProfileInterval",
+    "file": "ExtremeValueTheory/Statistics/GPDWilks/Coverage.lean",
+    "statement": "ExtremeValueTheory.tendsto_measure_mem_gpdReturnLevelProfileInterval.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {X : ℕ → Ω → ℝ} {ξ₀ σ₀ : ℝ} {K : Set (ℝ × ℝ)} (hK : IsCompact K)\n  (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K) (hξ₀ : 0 < ξ₀) (hσ₀ : 0 < σ₀)\n  (hX : ∀ (i : ℕ), ProbabilityTheory.HasLaw (X i) (ExtremeValueTheory.gpdMeasure ξ₀ σ₀) P)\n  (hind : ProbabilityTheory.iIndepFun X P) {u ζ N : ℝ} (hNζ : 1 < N * ζ) (c : ℝ) :\n  Filter.Tendsto\n    (fun n =>\n      P\n        {ω |\n          ExtremeValueTheory.gpdReturnLevel u ξ₀ σ₀ ζ N ∈\n            ExtremeValueTheory.gpdProfileInterval K\n              (fun p => ExtremeValueTheory.gpdReturnLevel u p.1 p.2 ζ N) c fun i => X (↑i) ω})\n    Filter.atTop (nhds ((ProbabilityTheory.chiSquared 1) (Set.Iic c)))",
+    "status": "reduced",
+    "scope_note": "GPD with ξ₀ > 0 only; exact iid sample; compact parameter set; u and ζ known constants. Proved to be a confidence set, not that it is an interval.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "fd36b5ba7029130c5cd313dc335d4d7d"
   }
 ]
