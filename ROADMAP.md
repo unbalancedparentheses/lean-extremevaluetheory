@@ -20,7 +20,7 @@ Everything still open in this file, in the order to do it. The ranking puts firs
 Each tier can run in parallel internally. The sections below give the details.
 
 **Tier 0: this week, mostly the maintainer (minutes each)**
-1. *you:* say go to resume the agents
+1. Done (2026-11-04): the agents are running again
 2. *you:* send [`docs/REVIEW.md`](docs/REVIEW.md) to two or three experts. Review takes weeks, so it
    should start before anything else (C)
 3. Merge [#4](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/4), one definition
@@ -185,11 +185,22 @@ posting, deciding).
 
 ### Work in flight
 
-**Status (2026-11-01): all agents paused.** The usage limit reset on 2026-10-31, but agents resume only
-when the maintainer says so. Every task's work, including files that were not committed when its agent
-stopped, is committed on one branch on GitHub. Each branch has a draft pull request (#4–#9): it lists what is
-done, the build status, what is missing and how to continue with Claude Code. The table is also the
-merge order: one definition per concept goes first, because the statistics branches use its names.
+**Status (2026-11-04): agents running again**, on the maintainer's go-ahead. Wave 1 is running; wave 2 starts once
+#4 is rebased and merged, because the statistics branches use its names. Agents push only to their own branches;
+the maintainer's session reviews and merges.
+
+| Wave | Task | Branch |
+|---|---|---|
+| 1 | One definition per concept (#4) | `wip/one-definition-per-concept` |
+| 1 | Review guide: the Bai–Kulik–Wang answer and the statistics | `wip/review-guide-extension` |
+| 1 | Comparison with Hirata's Isabelle statements | `wip/hirata-comparison` |
+| 1 | Comparator challenge, architecture checks, review deadline | `wip/comparator-and-ci` |
+| 1 | Contributor setup and issue drafts | `wip/contributor-setup` |
+| 1 | Tutorial, worked and applied examples | `wip/tutorial-and-examples` |
+| 2 | #7, #5, #6, #8, the seventh audit, the theorem catalogue | see the table below |
+
+The table below is the proof work paused until now, as it stood on 2026-11-01. The merge order still holds: one
+definition per concept goes first.
 
 Each task also has a git worktree under `.claude/worktrees/` on this machine. Delete the branch and the
 worktree after merging.
@@ -205,7 +216,6 @@ worktree after merging.
 
 ### Waiting on the maintainer
 
-- [ ] Say when to resume the agents (the usage limit reset on 2026-10-31)
 - [ ] Decide on the three Dependabot pull requests (#1–#3: nokogiri, faraday, concurrent-ruby for the
       website); an agent can check that the site still builds and merge them
 - [ ] Expert review: send [`docs/REVIEW.md`](docs/REVIEW.md) to two or three extreme value theorists
