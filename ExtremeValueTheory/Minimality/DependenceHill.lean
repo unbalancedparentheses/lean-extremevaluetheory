@@ -80,7 +80,8 @@ theorem not_tendstoInMeasure_hill_mixture (hα : 0 < α) (hp0 : 0 < P.real E) {k
 the constant/iid mixture with `P(E) > 0`, every `kₙ → ∞` with `kₙ / n → 0` and `rₙ = 0`:
 the sequence is stationary, its marginal tail is regularly varying with index `-α`, the cluster
 condition holds, but the Hill estimator is not consistent; consequently the mixing condition
-`(n / kₙ²) ∑_{0 < h < n} α(h) → 0` fails. -/
+`(n / kₙ²) ∑_{0 < h < n} α(h) → 0` fails. The block length here is `rₙ = 0`, where the cluster
+condition is an empty sum, so that the failure of mixing is isolated at that one `rₙ` only. -/
 theorem mixture_hill_needs_mixing (hE : MeasurableSet E)
     (hEZ : Indep (MeasurableSpace.generateFrom {E}) (innovationSigma Z) P) (hα : 0 < α)
     (hZ : ∀ t, Measurable (Z t)) (hind : iIndepFun Z P)

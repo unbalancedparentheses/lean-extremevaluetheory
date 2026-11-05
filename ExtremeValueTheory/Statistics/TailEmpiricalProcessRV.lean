@@ -1504,8 +1504,8 @@ element of `D([0, 1])` with the finite-dimensional distributions of Brownian mot
 `0 < ε ≤ 1`, `∫_ε^1 B(t) dt / t - B(1)` is centered Gaussian with variance `1 + 2 ε log ε`.
 The proof compares two limits of the truncated Hill functional of the uniform tail empirical
 process: the continuous mapping theorem in `D` and the triangular-array central limit theorem
-(`tendstoInDistribution_sum_hillSummand`). As `ε → 0` the variance tends to `1`, the variance of
-`∫_0^1 B(t) dt / t - B(1)`, the limit of the Hill statistic. -/
+(`tendstoInDistribution_sum_hillSummand`). As `ε → 0` the variance tends to `1`; the functional at
+`ε = 0` is not defined or identified here (`0 < ε` is a hypothesis). -/
 theorem map_hillFunctional_eq_gaussianReal {B : Ω' → SkorokhodSpace ℝ} (hB : Measurable B)
     (hBfdd : ∀ J : Finset unitInterval,
       (P'.map B).map (fun x : SkorokhodSpace ℝ ↦ fun t : J ↦ x t) =

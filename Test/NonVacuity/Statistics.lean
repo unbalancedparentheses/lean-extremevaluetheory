@@ -248,6 +248,26 @@ theorem test_nonvacuous_tendstoInDistribution_hill :
     ExtremeValueTheory.tendsto_sqrt_div
     tendsto_sqrt_mul_auxA HasLaw.id
 
+/-- **Non-vacuity of `ExtremeValueTheory.tendsto_measure_mem_hillInterval`** ([dHF, §3.2]): the iid
+shifted Pareto sample above (`γ = 1`, `ρ = -1`, `A(t) = -(t + 1)⁻¹`), `k n = ⌊√n⌋`, `√k A(n/k) → 0`;
+the coverage of `γ̂ ± z γ̂/√k` tends to `N(0, 1)[-z, z]`, for every `z`. All hypotheses discharged.
+Exact Pareto data do not qualify, since the second-order definition needs `A` eventually nonzero. -/
+theorem test_nonvacuous_tendsto_measure_mem_hillInterval :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ),
+      ∃ _ : IsProbabilityMeasure P, iIndepFun X P ∧ (∀ i, HasLaw (X i) spar P) ∧
+      ∀ z : ℝ, Tendsto (fun n => P {ω | (1 : ℝ) ∈ Icc
+        (hill (fun i : Fin n => X i ω) (Nat.sqrt n) -
+          z * hill (fun i : Fin n => X i ω) (Nat.sqrt n) / √(Nat.sqrt n : ℝ))
+        (hill (fun i : Fin n => X i ω) (Nat.sqrt n) +
+          z * hill (fun i : Fin n => X i ω) (Nat.sqrt n) / √(Nat.sqrt n : ℝ))})
+        atTop (𝓝 (gaussianReal 0 1 (Icc (-z) z))) := by
+  obtain ⟨Ω, _, P, X, hP, hXm, hind, hid, hlaw⟩ := exists_iid_seq spar
+  have := hP
+  refine ⟨Ω, _, P, X, hP, hind, hlaw, fun z => ?_⟩
+  exact tendsto_measure_mem_hillInterval hXm hind hid one_pos
+    (isSecondOrderRegularlyVarying_spar (hlaw 0)) ExtremeValueTheory.tendsto_sqrt_atTop
+    ExtremeValueTheory.tendsto_sqrt_div tendsto_sqrt_mul_auxA z
+
 /-! ### Weissman estimator: asymptotic normality -/
 
 /-- **Non-vacuity of `ExtremeValueTheory.tendstoInDistribution_weissman`** (asymptotic

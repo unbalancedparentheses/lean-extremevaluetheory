@@ -63,13 +63,16 @@ Standing hypotheses: `X` stationary (`IsStationary`) and measurable.
   to the candidate extremal index `ϑ` (the cluster ratio does so by `tendsto_blockRatio`).
 * `HasSpectralTailProcess.tendstoInMeasure_blocksEstimator`,
   `HasSpectralTailProcess.tendstoInMeasure_runsEstimator`: both estimators, applied to `|X|`,
-  converge to `ϑ` under anticlustering and the concentration conditions; `ϑ = θ` when the block
-  condition `𝒜(uₙ)` holds as well.
+  converge to `ϑ` under anticlustering and the concentration conditions. This is not a statement
+  about the extremal index: these theorems use levels with `n pₙ → ∞`, whereas `θ = ϑ`
+  (`HasSpectralTailProcess.hasExtremalIndex_abs`) needs anticlustering and `𝒜` at every level
+  with `n pₙ → τ`, which are separate hypotheses.
 * **The echo process** (`θ = 1/2`, `ϑ = 1`, geometrically strongly mixing, no anticlustering):
   - `logEcho_tendstoInMeasure_blocksEstimator`: with `log n = o(rₙ)` (and `rₙ = o(n pₙ)`,
     `log uₙ = o(rₙ)`, `rₙ uₙ^(-α) → 0`) the blocks estimator tends to `1/2 = θ`;
-  - `logEcho_tendstoInMeasure_runsEstimator`: with run lengths `rₙ = o(log uₙ)` the runs
-    estimator tends to `1 = ϑ`: **short runs are inconsistent** for `θ`.
+  - `logEcho_tendstoInMeasure_runsEstimator`: with run lengths `rₙ → ∞`, `rₙ = o(log uₙ)` the runs
+    estimator tends to `1 = ϑ`: **such short runs are inconsistent** for `θ`. A fixed run length
+    is not covered, and no theorem here says that long runs tend to `1/2`.
   The mixing conditions are verified from `alphaMixing_logEchoProcess_le`
   (`logEcho_tendsto_sum_alphaMixing_div`, `logEcho_tendsto_alphaMixing_div`).
 
@@ -649,7 +652,9 @@ Smith–Weissman 1994). Let `X` be stationary, `pₙ = P(X_0 > uₙ)` with `n p�
 * the cluster condition `∑_{1 ≤ h ≤ sₙ} P(X_0 > uₙ, X_h > uₙ) = o(n pₙ²)` for some `sₙ`;
 * the mixing conditions `∑_{sₙ < h < n} α(h) = o(n pₙ²)` and `α(rₙ + 1) = o((rₙ pₙ)²)`.
 
-Then `θ̂ᴮ = #{blocks with an exceedance} / #{exceedances} → θ` in probability. -/
+Then `θ̂ᴮ = #{blocks with an exceedance} / #{exceedances} → θ` in probability. Here `θ` is any real
+number, the assumed limit of the population ratio; the statement does not involve
+`HasExtremalIndex`. -/
 theorem tendstoInMeasure_blocksEstimator (hX : ∀ t, Measurable (X t)) (hs : IsStationary X P)
     {u : ℕ → ℝ} {r : ℕ → ℕ} {θ : ℝ} (hr : ∀ᶠ n in atTop, 0 < r n)
     (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
@@ -675,7 +680,8 @@ theorem tendstoInMeasure_blocksEstimator (hX : ∀ t, Measurable (X t)) (hs : Is
 * the cluster condition `∑_{1 ≤ h ≤ rₙ + sₙ} P(X_0 > uₙ, X_h > uₙ) = o(n pₙ²)` for some `sₙ`;
 * the mixing condition `∑_{sₙ < h < n} α(h) = o(n pₙ²)`.
 
-Then `θ̂ᴿ → θ` in probability. -/
+Then `θ̂ᴿ → θ` in probability. Here `θ` is any real number, the assumed limit of the population
+ratio; the statement does not involve `HasExtremalIndex`. -/
 theorem tendstoInMeasure_runsEstimator (hX : ∀ t, Measurable (X t)) (hs : IsStationary X P)
     {u : ℕ → ℝ} {r : ℕ → ℕ} {θ : ℝ} (hrn : Tendsto (fun n => (r n : ℝ) / n) atTop (𝓝 0))
     (hk : Tendsto (fun n : ℕ => n * P.real {ω | u n < X 0 ω}) atTop atTop)
@@ -980,9 +986,11 @@ theorem HasSpectralTailProcess.tendsto_runsRatio (hα : 0 < α) (hX : ∀ t, Mea
 /-- **The blocks estimator of `|X|` converges to the candidate extremal index** under
 anticlustering. For a stationary series with spectral tail process `Θ`, `uₙ → ∞`, `rₙ → ∞`, the
 forward anticlustering bound, and the concentration conditions of
-`tendstoInMeasure_blocksEstimator` for `|X|`, `θ̂ᴮ → ϑ` in probability. Under the block
-condition `𝒜(uₙ)` as well, `ϑ` is the extremal index `θ`
-(`HasSpectralTailProcess.hasExtremalIndex_abs`). -/
+`tendstoInMeasure_blocksEstimator` for `|X|`, `θ̂ᴮ → ϑ` in probability.
+
+The limit is `ϑ`, and the statement does not identify it with the extremal index `θ`: the levels
+here have `n pₙ → ∞`, whereas `HasSpectralTailProcess.hasExtremalIndex_abs` needs anticlustering
+and `𝒜` at every level with `n pₙ → τ`. Those hypotheses are separate from the ones here. -/
 theorem HasSpectralTailProcess.tendstoInMeasure_blocksEstimator (hα : 0 < α)
     (hX : ∀ t, Measurable (X t)) (hΘm : ∀ t, Measurable (Θ t))
     (hstat : HasShiftInvariantWindows P X) (h : HasSpectralTailProcess P X α Q Θ) {u : ℕ → ℝ}
@@ -1196,8 +1204,9 @@ include hα hZ hind hlaw hpos in
 /-- **The blocks estimator is consistent for the logarithmic echo process** (where `θ = 1/2`,
 `ϑ = 1`): with intermediate levels `n pₙ → ∞`, block lengths `rₙ = o(n pₙ)` with
 `log n = o(rₙ)` (so that the echo of an exceedance lands in its block), `log uₙ = o(rₙ)` and
-`rₙ uₙ^(-α) → 0`, `θ̂ᴮ → 1/2 = θ` in probability. The mixing conditions are verified from the
-geometric strong mixing of the echo process. -/
+`rₙ uₙ^(-α) → 0`, `θ̂ᴮ → 1/2` in probability; that `1/2` is `θ` is
+`logEchoProcess_theta_lt_vartheta`. The mixing conditions are verified from the geometric strong
+mixing of the echo process. -/
 theorem logEcho_tendstoInMeasure_blocksEstimator {u : ℕ → ℝ} (hu : Tendsto u atTop atTop)
     {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
     (hrb : Tendsto (fun n => (r n : ℝ) * u n ^ (-α)) atTop (𝓝 0))
@@ -1239,7 +1248,9 @@ include hα hZ hind hlaw hpos in
 warning). With intermediate levels `n pₙ → ∞` and run lengths `rₙ → ∞`, `rₙ = o(log uₙ)` (shorter
 than the echo lag of an exceedance), and auxiliary gaps `sₙ` with `log n = o(sₙ)` and
 `rₙ + sₙ = o(n pₙ)`, the runs estimator tends to `1 = ϑ`, not to the extremal index `θ = 1/2`:
-each echo is counted as a cluster of its own. -/
+each echo is counted as a cluster of its own. The statement gives only the limit `1`; `ϑ = 1` and
+`θ = 1/2` are `logEchoProcess_theta_lt_vartheta`. A fixed run length is not covered (`rₙ → ∞` is
+assumed), and no theorem here says that long runs tend to `1/2` on this process. -/
 theorem logEcho_tendstoInMeasure_runsEstimator {u : ℕ → ℝ} (hu : Tendsto u atTop atTop)
     {r : ℕ → ℕ} (hr : Tendsto r atTop atTop)
     (hrlog : Tendsto (fun n => (r n : ℝ) / Real.log (u n)) atTop (𝓝 0))

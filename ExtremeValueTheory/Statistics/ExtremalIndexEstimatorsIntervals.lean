@@ -28,9 +28,10 @@ behind the **intervals estimator**
 * `intervalsEstimator₁`, `intervalsEstimator₂`, `intervalsEstimator` (the combined rule,
   truncated at `1`), and `intervalsEstimator₁_smul`: `θ̂₁` is scale invariant, so it does not
   depend on the (unknown) normalization `F̄(uₙ)`.
-* `tendstoInMeasure_intervalsEstimator₁`: **consistency of `θ̂₁` from the moments**: if the
-  first two empirical moments of the normalized inter-exceedance times converge in probability to
-  the moments `1` and `2 / θ` of the Ferro–Segers law, then `θ̂₁ → θ` in probability.
+* `tendstoInMeasure_intervalsEstimator₁`: **the continuous mapping step**: if the first two
+  empirical moments of arbitrary arrays `T n i`, after normalization, converge in probability to
+  the moments `1` and `2 / θ` of the Ferro–Segers law, then `θ̂₁ → θ` in probability. No process,
+  no exceedance times and no extremal index appear in this statement.
 
 ## Not formalized
 
@@ -152,11 +153,14 @@ theorem intervalsEstimator₁_eq {m : ℕ} (hm : 0 < m) (T : Fin m → ℝ) :
 
 variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω}
 
-/-- **Consistency of the intervals estimator from the moments.** Let `m n → ∞` (or just
-`m n > 0` eventually) inter-exceedance times `T n i` be observed, and let `c n ≠ 0` be any
-normalization (e.g. `F̄(uₙ)`). If the empirical first and second moments of the normalized
-times `c n T n i` converge in probability to the moments `1` and `2 / θ` of the Ferro–Segers law,
-then `θ̂₁ → θ` in probability. -/
+/-- **The intervals estimator from assumed moment limits: the continuous mapping step.** Let
+`m n > 0` eventually, let `T n : Ω → ℝ^(m n)` be arbitrary functions (no process, no exceedance
+times, not even measurability) and let `c n ≠ 0` be any normalization. If the empirical first and
+second moments of the `c n T n i` converge in probability to the moments `1` and `2 / θ` of the
+Ferro–Segers law, then `θ̂₁ → θ` in probability. Here `θ > 0` is any real number; `HasExtremalIndex`
+does not appear. Since `θ̂₁ = 2 M₁² / M₂` is scale invariant, this is the continuous mapping
+theorem; that the two limits hold for the inter-exceedance times of a sequence (Ferro–Segers
+Theorem 1 and laws of large numbers) is not proved. -/
 theorem tendstoInMeasure_intervalsEstimator₁ {m : ℕ → ℕ} (hm : ∀ᶠ n in atTop, 0 < m n)
     {T : (n : ℕ) → Ω → Fin (m n) → ℝ} {c : ℕ → ℝ} (hc : ∀ᶠ n in atTop, c n ≠ 0)
     {θ : ℝ} (hθ0 : 0 < θ)

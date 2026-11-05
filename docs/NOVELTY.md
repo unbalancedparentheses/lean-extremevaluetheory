@@ -140,7 +140,7 @@ Condition 𝒜 fails when r_n → ∞ with r_n / log n bounded, and holds for lo
   - The mesoscopic index would then be a **step**: ϑ_ρ = 1 for ρ < ρ_0 and 1/2 for ρ > ρ_0. That contrasts with BKW's linear ϑ_ρ.
   - The β-mixing coefficients decay like h^{1 − 1/ρ_0}, which still allows A(u_n) for n^{ρ_0} ≪ r_n ≪ n.
   - This would **answer BKW's second question affirmatively for every ρ_0 ∈ (0,1)**. It is the strongest selling point available and should be proved before writing.
-- **Estimators (heuristic).**
+- **Estimators (heuristic; none of the bullets below is a Lean theorem).** What is proved is narrower: `logEcho_tendstoInMeasure_runsEstimator` for run lengths `rₙ → ∞`, `rₙ = o(log uₙ)` (limit `1`), and `logEcho_tendstoInMeasure_blocksEstimator` for long blocks (limit `1/2`). A fixed run length, long runs, K-gaps and the intervals estimator on this process are not proved.
   - In the echo, the normalized inter-exceedance times p_n T converge to (1 − θ)δ_0 + θ·Exp(θ), because echo gaps ~ log n are o(1/p_n). So the Ferro–Segers intervals estimator should be consistent for θ = 1/2.
   - The runs estimator with fixed run length, short blocks, and plausibly K-gaps with fixed K should converge to ϑ = 1, i.e. be inconsistent. K-gaps sees every echo gap as > K, so the MLE is pushed to 1.
   - A short simulation table would make this concrete. It is the part statisticians will care about.

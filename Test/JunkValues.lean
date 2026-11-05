@@ -107,4 +107,16 @@ theorem test_tail_compound_nonsummable :
   rw [this, tsum_const]
   simp
 
+/-! ### Documented: the Gumbel return level for `m ≤ 1`
+
+`tendstoInDistribution_gumbelReturnLevel` does not assume `m > 1`. For `m ≤ 1` the level
+`μ - σ log (-log (1 - 1/m))` is a junk value, not a quantile, since `1 - 1/m ≤ 0`. The theorem stays true,
+because the level is linear in `(μ, σ)` whatever the constant is. The GEV version assumes `m > 1`. -/
+
+/-- Junk: at `m = 1` and `m = 1/2` the "Gumbel return level" is `μ`, through `log 0 = 0` and
+`log (-1) = 0` (textbook: `m > 1` only). -/
+theorem test_gevReturnLevel_zero_of_le_one (μ σ : ℝ) :
+    gevReturnLevel 0 μ σ 1 = μ ∧ gevReturnLevel 0 μ σ (1 / 2) = μ := by
+  constructor <;> rw [gevReturnLevel_zero] <;> norm_num
+
 end JunkValuesTest

@@ -134,7 +134,8 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbability
 /-- **Anticlustering cannot be dropped from `tendsto_blockRatio`.** The logarithmic echo process
 satisfies every other hypothesis (stationarity, spectral tail process with `ϑ = 1`, `uₙ → ∞`,
 `rₙ → ∞`), but along `n P(X_0 > uₙ) → τ > 0` with `rₙ / n → 0` and `log n = o(rₙ)` its cluster
-ratio tends to `1/2`, not to `ϑ`; forward anticlustering fails. -/
+ratio does not tend to `ϑ`, and forward anticlustering fails. (The limit `1/2` is
+`logEchoProcess_hasLateReturnMass_of_tendsto`, not this statement.) -/
 theorem logEcho_blockRatio_ne (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
     (hind : iIndepFun Z P) (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α)
     (hpos : ∀ t ω, 0 ≤ Z t ω) {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)

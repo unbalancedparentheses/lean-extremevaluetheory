@@ -104,11 +104,14 @@ which anticlustering holds with `lim log rₙ / log n = ρ` only for `ρ` up to 
 echo process (lag `⌊Z^γ⌋ + 1`, `0 < γ < α`, iid Pareto(α) shocks) gives a positive answer for every
 `ρ₀ ∈ (0,1)`: `powEchoProcess_antiClustering_iff` proves that anticlustering at the normalizing levels holds
 iff `ρ < γ/α` (for `ρ ≠ γ/α`), and `powEchoProcess_polyBlocks` that the cluster ratio tends to `1` below and
-to `1/2 = θ` above the cutoff, with an explicit critical-scale value (`powEchoProcess_critical`; only the
-boundary case `κ = 1` there is open). The process has `θ = 1/2`, `ϑ = 1`, and is β-mixing
-(`isBetaMixing_echoProcess`; geometric for the log lag, `betaMixing_logEchoProcess_le`), and on every block
-scale anticlustering and condition `𝒜` fail to hold together (`powEchoProcess_not_conditionA_and_antiClustering`,
-`logEchoProcess_betaMixing_incompatible`). Novelty (literature check 2026-10-18, [`docs/NOVELTY2.md`](docs/NOVELTY2.md)): **new, answering
+to `1/2 = θ` above the cutoff, with an explicit critical-scale value along one level sequence
+(`powEchoProcess_critical`; the boundary case `κ = 1` at that one level sequence is open). The process has `θ = 1/2`, `ϑ = 1`, and is β-mixing
+(`isBetaMixing_echoProcess`; geometric for the log lag, `betaMixing_logEchoProcess_le`), and anticlustering and
+condition `𝒜` do not hold together on the block scales covered: for the power lag, `log rₙ / log n → ρ ∈ (0,1)`,
+`ρ ≠ γ/α` (`powEchoProcess_not_conditionA_and_antiClustering`; `𝒜` holding for `ρ > γ/α` is not proved); for the
+log lag, `rₙ / log n` with a limit in `[0, ∞]`, and `rₙ = o(n)` when the limit is `∞`
+(`logEchoProcess_betaMixing_incompatible`). At `ρ = γ/α`, `AC(rₙ)` at all levels holds iff `rₙ = o(n^{γ/α})`, for
+`rₙ / n^{γ/α}` convergent (`powEchoProcess_antiClustering_iff_critical`). Novelty (literature check 2026-10-18, [`docs/NOVELTY2.md`](docs/NOVELTY2.md)): **new, answering
 Bai–Kulik–Wang's second question as stated** (arXiv:2409.17966v2, §1.4), medium-high confidence; no earlier
 example of an anticlustering cutoff inside `(0,1)` was found. Their own model has, in effect, `ρ₀ = 0` and a
 linear rather than a step transition. The β-mixing result is **likely new as an explicit example** (Bai–Wang

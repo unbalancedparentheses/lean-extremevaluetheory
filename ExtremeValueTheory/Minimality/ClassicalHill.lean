@@ -186,7 +186,8 @@ theorem measure_hill_ge_le {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i
       congr 1
       field_simp
 
-/-- **`k(n) / n → 0` is necessary for the consistency of the Hill estimator.** Let `0 < c ≤ 1`
+/-- **`k(n) / n → 0` cannot be replaced by `k(n) ≥ c n`, over regularly varying laws.** The law
+depends on `c`, and for exact Pareto samples the condition is not necessary. Let `0 < c ≤ 1`
 and `b = log (8 / c)` (so `e^{-b} = c / 8`). If `X_0, X_1, …` are iid with law `hillLaw α b`
 (survival function `(c/8) x^{-α}` on `[1, ∞)`, regularly varying with index `-α`) and
 `c n ≤ k(n) < n` eventually, then `H_{k(n),n}` does not converge in probability to `1/α`:

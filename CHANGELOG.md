@@ -7,6 +7,15 @@
 - New in the library: domains of attraction of the GPD, GEV, Cauchy and Student t laws, explicit norming constants
   (`DomainOfAttraction/NamedLaws.lean`), reinsurance layers (`HeavyTails/Layer.lean`) and Hill consistency for a
   sample with a given law (`Statistics/HillOfLaw.lean`).
+- Seventh faithfulness audit: every result added since the sixth, new rows, and scope notes and docstrings
+  corrected where they outran their statements. Verdicts lowered to DIFFERS for the blocks, runs and intervals
+  estimators, return levels and GARCH.
+- `AC(rₙ)` at the critical scale: it fails for every `c > 0` when `rₙ ~ c n^{γ/α}`, and holds when
+  `rₙ = o(n^{γ/α})` (`powEchoProcess_antiClustering_iff_critical`).
+- The defining property of the POT return level (`gpdSurvivalAll_gpdReturnLevel_sub`); second and fourth
+  Gaussian moments.
+- Non-vacuity tests for return levels and intervals, the Hill interval, GARCH with Gaussian innovations and
+  the newest estimators of the extremal index; known answers from two worked examples of Coles (2001).
 - Non-vacuity tests for the answer to Bai–Kulik–Wang's question (on both sides of the cutoff), for mixing
   without `θ = ϑ` (at each of its three block scales) and for the warning about short runs (with all its
   rates realized).

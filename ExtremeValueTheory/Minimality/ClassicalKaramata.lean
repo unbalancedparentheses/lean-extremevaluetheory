@@ -34,8 +34,8 @@ The function `logTail a` (`= 1` on `(-∞, e)`, `= 1 / (x (log x)^a)` on `[e, �
 
 | hypothesis | status |
 |---|---|
-| `α > 1` | necessary: `α < 1` fails for every `F`; `α = 1` fails for every integrable `F` |
-| `Antitone F` | weakened to measurability + local boundedness in
+| `α > 1` | necessary at `α = 1` for integrable `F` (true divergence); for `α < 1` the limit cannot be the negative number `1/(α-1)`, which is only a sign argument |
+| `Antitone F` | weakened to measurability in
   `tendsto_integral_Ioi_div_of_measurable` (`KaramataConverse.lean`) |
 
 [BGT] N. H. Bingham, C. M. Goldie, J. L. Teugels, *Regular Variation*, CUP 1987.
@@ -185,8 +185,10 @@ theorem integrableOn_Ioi_logTail_two (x : ℝ) : IntegrableOn (logTail 2) (Ioi x
 
 /-! ### The case `α < 1` -/
 
-/-- **Karamata's theorem fails for every `α < 1`.** If `F` is antitone and regularly varying with
-index `-α`, `α < 1`, then `(∫ t in Ioi x, F t) / (x * F x)` does not tend to `1 / (α - 1)`. -/
+/-- **The formula of Karamata's theorem cannot hold for `α < 1`.** If `F` is antitone and regularly
+varying with index `-α`, `α < 1`, then `(∫ t in Ioi x, F t) / (x * F x)` does not tend to
+`1 / (α - 1)`. This is a sign argument: the ratio is nonnegative, and the target is negative. It does
+not express divergence of the integral, which is `max_rpow_karamata_counterexample` for one `F`. -/
 theorem not_tendsto_integral_Ioi_div_of_lt_one {F : ℝ → ℝ} {α : ℝ} (hF : Antitone F)
     (hRV : IsRegularlyVarying F (-α)) (hα : α < 1) :
     ¬ Tendsto (fun x => (∫ t in Ioi x, F t) / (x * F x)) atTop (𝓝 (1 / (α - 1))) := by
@@ -300,8 +302,8 @@ theorem logTail_two_karamata_counterexample :
     fun L => not_tendsto_nhds_of_tendsto_atTop h L⟩
 
 /-- **Concrete counterexample for `α < 1`.** For `0 ≤ α < 1`, `F x = max x 1 ^ (-α)` is antitone
-and regularly varying with index `-α`, its tail integrals diverge, and the conclusion of
-Karamata's theorem fails. -/
+and regularly varying with index `-α`, its tail integrals diverge, and the formula of Karamata's
+theorem fails (the Bochner integral is then the junk value `0`). -/
 theorem max_rpow_karamata_counterexample {α : ℝ} (hα0 : 0 ≤ α) (hα : α < 1) :
     Antitone (fun x : ℝ => max x 1 ^ (-α)) ∧
       IsRegularlyVarying (fun x : ℝ => max x 1 ^ (-α)) (-α) ∧

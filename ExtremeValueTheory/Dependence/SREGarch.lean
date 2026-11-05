@@ -21,14 +21,21 @@ Mikosch–Stărică 2000; BDM16, §4.3; EKM, §8.4]. ARCH(1) is the case `β₁ 
 
 * `SRE.GARCH.isStationary`, `SRE.GARCH.eq_stationaryLaw'`: under `E log(α₁ Z² + β₁) < 0` the
   squared volatility has a unique stationary law, and the chain started from it is stationary.
-* `SRE.GARCH.exists_tail_index`: existence of the **tail index** `κ > 0` solving
-  `E (α₁ Z² + β₁)^κ = 1` (unique by `SRE.kesten_exponent_unique`).
+* `SRE.GARCH.exists_tail_index`: existence of the **Kesten exponent** `κ > 0` solving
+  `E (α₁ Z² + β₁)^κ = 1` (unique by `SRE.kesten_exponent_unique`). The name "tail index" is the
+  literature's; here `κ` only bounds exponents, see below.
 * `SRE.GARCH.lintegral_rpow_lt_top`, `SRE.GARCH.lintegral_rpow_eq_top`,
   `SRE.GARCH.tail_bounds`: `E σ^{2s} < ∞` for `s < κ`, `= ∞` for `s > κ`;
   `P(σ² > x) = O(x^{-s})` for `s < κ` but not for `s > κ`.
 
-The sharp Kesten–Goldie asymptotics `P(σ² > x) ~ c x^{-κ}` would follow from Goldie's implicit
-renewal theorem, which is not formalized (see `Dependence/SREMoments.lean`).
+## Not formalized
+
+All this concerns the stationary law of the squared volatility `σ²`. Regular variation of its tail
+and the sharp Kesten–Goldie asymptotics `P(σ² > x) ~ c x^{-κ}` would follow from Goldie's implicit
+renewal theorem, which is not formalized (see `Dependence/SREMoments.lean`). Nothing is stated at
+`s = κ`, nor for the returns `X_t = σ_t Z_t`, whose tail, tail process and extremal index are not
+treated here. Gaussian innovations are instantiated only in
+`Test/NonVacuity/GarchGaussian.lean`, for one parameter pair.
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Real Set
@@ -166,8 +173,9 @@ theorem lintegral_rpow_lt_top {κ : ℝ} (hκ : 0 < κ)
     simpa [innov] using ENNReal.rpow_lt_top_of_nonneg hκ.le enorm_ne_top
 
 /-- **Infinite moments of the GARCH(1,1) squared volatility above the tail index**: with
-`α₀ > 0` and `κ` as in `lintegral_rpow_lt_top`, `E σ^{2s} = ∞` for every `s > κ`. Hence the
-tail index of `σ²` is exactly the solution `κ` of `E (α₁ Z² + β₁)^κ = 1`. -/
+`α₀ > 0` and `κ` as in `lintegral_rpow_lt_top`, `E σ^{2s} = ∞` for every `s > κ`. So the supremum
+of the moment exponents of `σ²` is `κ`, the solution of `E (α₁ Z² + β₁)^κ = 1`; nothing is stated
+at `s = κ`, and regular variation of the tail is not proved. -/
 theorem lintegral_rpow_eq_top (hα₀ : 0 < α₀) {κ : ℝ} (hκ : 0 < κ)
     (hκi : Integrable (fun z => coeff α₁ β₁ z ^ κ) ζ) (hκ1 : ∫ z, coeff α₁ β₁ z ^ κ ∂ζ = 1)
     (hnd : ¬ ∀ᵐ z ∂ζ, coeff α₁ β₁ z = 1) {s : ℝ} (hsκ : κ < s) :
@@ -185,7 +193,8 @@ theorem lintegral_rpow_eq_top (hα₀ : 0 < α₀) {κ : ℝ} (hκ : 0 < κ)
     simpa only [innov, abs_of_nonneg (coeff_nonneg hα₁ hβ₁ _)] using hnd
 
 /-- **Tail bounds for the GARCH(1,1) squared volatility**: `P(σ² > x) = O(x^{-s})` for every
-`s < κ`, but `P(σ² > x) ≠ O(x^{-s})` for every `s > κ`. -/
+`s < κ`, but `P(σ² > x) ≠ O(x^{-s})` for every `s > κ`. This is about the exponent only: it is not
+regular variation, says nothing at `s = κ`, and concerns `σ²`, not the returns `X_t`. -/
 theorem tail_bounds (hα₀ : 0 < α₀) {κ : ℝ} (hκ : 0 < κ)
     (hκi : Integrable (fun z => coeff α₁ β₁ z ^ κ) ζ) (hκ1 : ∫ z, coeff α₁ β₁ z ^ κ ∂ζ = 1)
     (hnd : ¬ ∀ᵐ z ∂ζ, coeff α₁ β₁ z = 1) :
@@ -203,11 +212,14 @@ theorem tail_bounds (hα₀ : 0 < α₀) {κ : ℝ} (hκ : 0 < κ)
   exact lt_irrefl _ hfin
 
 omit hlog hneg in
-/-- **Existence of the GARCH(1,1) tail index** ([BDM16, Theorem 4.3.1]; [Mikosch–Stărică 2000]):
-if `α₁ Z² + β₁ ≠ 0` a.s., `E log(α₁ Z² + β₁) < 0`, and `E (α₁ Z² + β₁)^S > 1` for some `S > 0`
-with `E (α₁ Z² + β₁)^S < ∞` (for instance for Gaussian `Z` and `α₁ > 0`), then there is a
-`κ ∈ (0, S)` with `E (α₁ Z² + β₁)^κ = 1`; it is unique when `α₁ Z² + β₁` is not a.s. `1`
-(`kesten_exponent_unique`). -/
+/-- **Existence of the GARCH(1,1) Kesten exponent** ([BDM16, Theorem 4.3.1];
+[Mikosch–Stărică 2000]): if `α₁ Z² + β₁ ≠ 0` a.s., `E log(α₁ Z² + β₁) < 0`, and
+`E (α₁ Z² + β₁)^S > 1` for some `S > 0` with `E (α₁ Z² + β₁)^S < ∞`, then there is a `κ ∈ (0, S)`
+with `E (α₁ Z² + β₁)^κ = 1`; it is unique when `α₁ Z² + β₁` is not a.s. `1`
+(`kesten_exponent_unique`). The literature calls `κ` the tail index, but here it is only the
+solution of this equation: `tail_bounds` is all that is proved about the tail of `σ²`. The
+hypotheses are instantiated for Gaussian `Z` only at `α₁ = 7/10`, `β₁ = 1/5`, `S = 2`
+(`Test/NonVacuity/GarchGaussian.lean`); they are not derived in general for Gaussian `Z`. -/
 theorem exists_tail_index (hlog : Integrable (fun z => log (coeff α₁ β₁ z)) ζ)
     (hneg : ∫ z, log (coeff α₁ β₁ z) ∂ζ < 0) (hA0 : ∀ᵐ z ∂ζ, coeff α₁ β₁ z ≠ 0) {S : ℝ}
     (hS : 0 < S) (hSi : Integrable (fun z => coeff α₁ β₁ z ^ S) ζ)

@@ -389,13 +389,16 @@ theorem logEchoProcess_antiClusteringAt_short {u : ℕ → ℝ} {τ : ℝ} (hτ0
 
 include hα hZ hind hlaw hpos in
 /-- **The logarithmic echo process: geometric `β`-mixing, yet anticlustering and the block
-condition never hold together.** It is stationary with `ϑ = 1`, `θ = 1/2` and
-`β(h) ≤ C e^(-α h)`. Along `n P(X_0 > uₙ) → τ > 0`:
-* for `rₙ → ∞`, `rₙ = o(log n)`: anticlustering holds, `A(uₙ)` fails;
-* for `rₙ / log n → c ∈ (0, ∞)`: `A(uₙ)` fails;
+condition do not hold together on the block scales below.** The statement gives
+`β(h) ≤ C e^(-α h)` for `h ≥ 1` and `β`-mixing, and along `n P(X_0 > uₙ) → τ > 0`, for `rₙ → ∞`:
+* for `rₙ = o(log n)`: anticlustering holds, `A(uₙ)` fails;
+* for `rₙ / log n → c ∈ (0, ∞)`: `A(uₙ)` fails (nothing is said about anticlustering);
 * for `log n = o(rₙ)`, `rₙ = o(n)`: `A(uₙ)` holds, forward anticlustering fails.
-So the mixing route to `𝒜(uₙ)` needs blocks longer than the echo lag `(1/α) log n`, while
-anticlustering needs blocks shorter than it. -/
+Sequences `rₙ` for which `rₙ / log n` has no limit in `[0, ∞]` are not covered, nor
+`log n = o(rₙ)` without `rₙ = o(n)`.
+
+Stationarity, `ϑ = 1` and `θ = 1/2` are not part of this statement; they are
+`logEchoProcess_theta_lt_vartheta`. -/
 theorem logEchoProcess_betaMixing_incompatible :
     (∀ h : ℕ, 1 ≤ h → (betaMixing (fun k : ℕ => echoProcess logLag Z k) P h).toReal ≤
         2 * (2 ^ α * Real.exp α / (1 - Real.exp (-α))) * Real.exp (-α) ^ h) ∧

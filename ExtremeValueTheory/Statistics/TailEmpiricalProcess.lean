@@ -1050,9 +1050,9 @@ lemma _root_.unitInterval.coe_toNNReal' (t : unitInterval) :
 converge weakly in the Skorokhod space `D([0, 1])` to a probability measure `μ` whose
 finite-dimensional distributions are those of Brownian motion: for every finite family of
 times `τ i ∈ [0, 1]`, the law of `(x (τ i))_i` under `μ` is `brownianFdd τ`, the centered
-Gaussian law with covariance `min (τ i) (τ j)`. Since the finite-dimensional distributions
-determine a law on `D([0, 1])` (`SkorokhodSpace.ext_of_forall_map_restrict_eq`), `μ` is unique:
-it is the law of Brownian motion on `D([0, 1])`. -/
+Gaussian law with covariance `min (τ i) (τ j)`. The conclusion is existence; uniqueness of such
+a `μ` follows from `SkorokhodSpace.ext_of_forall_map_restrict_eq`, and path continuity under `μ` is
+not stated. -/
 theorem exists_tendsto_tailEmpiricalPath [IsProbabilityMeasure P]
     (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
     (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))
@@ -1186,9 +1186,9 @@ theorem tendstoInDistribution_tailEmpiricalPath [IsProbabilityMeasure P]
   rw [e]
   exact hconv
 
-/-- **Uniqueness of the limit**: a probability measure on `D([0, 1])` with the
-finite-dimensional distributions of Brownian motion at all times is the weak limit of the laws of
-the tail empirical processes. -/
+/-- **Any law with the Brownian finite-dimensional distributions is the limit**: a probability
+measure on `D([0, 1])` with the finite-dimensional distributions of Brownian motion at all times is
+the weak limit of the laws of the tail empirical processes. -/
 theorem tendsto_tailEmpiricalPath_of_fdd [IsProbabilityMeasure P]
     (hU : ∀ i, Measurable (U i)) (hind : iIndepFun U P)
     (hlaw : ∀ i, P.map (U i) = volume.restrict (Set.Icc 0 1))

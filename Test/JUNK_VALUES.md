@@ -101,6 +101,7 @@ degenerate instance for a junk reason, or both sides become junk together.
 | `StableIntegral.integral_one_sub_cos_mul_rpow`, `integral_sin_mul_rpow`, `integral_comp_mul_mul_rpow`, `neg_mul_integral_one_sub_cos_mul_rpow` | These are scaling identities. Outside the integrable range of `α`, both sides are junk 0. | Harmless |
 | `stableExponent_mul_tan` (`StableLaws/Constants.lean`) | At `α = 1`, `tan (π/2) = 0` through `x / 0 = 0`. It is a rewriting lemma, used only with `α ≠ 1`. | Harmless |
 | `card_filter_range_add_one_div_mem_Ioc` (`PointProcess/Exceedances.lean`) | For `s > t`, truncated subtraction gives 0, which is the correct count. | Harmless |
+| `tendstoInDistribution_gumbelReturnLevel` | Does not assume `m > 1`. For `m ≤ 1` the level is a junk value (`test_gevReturnLevel_zero_of_le_one`), but the statement stays true because the level is linear in `(μ, σ)`. Harmless. |
 | `Minimality.mixture_hill_needs_mixing` | The cluster conjunct is instantiated with `rₙ = 0`, so it is an empty sum (`Icc 1 0 = ∅`). This is an explicit, documented choice, not a junk value. | Harmless |
 
 ## Convention-dependent definitions a reviewer should know
