@@ -6,22 +6,33 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23966372.svg)](https://doi.org/10.5281/zenodo.23966372)
 
 A library of extreme value theory in [Lean 4](https://lean-lang.org), built on
-[Mathlib](https://github.com/leanprover-community/mathlib4). It covers the limits of maxima, domains of
-attraction, regular variation, peaks over threshold, stable laws and heavy tails, the statistics of
-extremes (estimators, likelihood, return levels, confidence intervals), extremes of dependent sequences,
-multivariate extremes, point processes and the Skorokhod space.
+[Mathlib](https://github.com/leanprover-community/mathlib4): the mathematics of floods, heat waves, market crashes and
+insurance catastrophes, machine-checked. It covers the limits of maxima, domains of attraction, regular variation, peaks
+over threshold, stable laws and heavy tails, the statistics of extremes (estimators, likelihood, return levels, confidence
+intervals), extremes of dependent sequences, multivariate extremes, point processes and the Skorokhod space.
 
-The library has about 113,000 lines and 4,770 theorems and lemmas. It contains no `sorry`, and CI checks
-that all 10,677 of its declarations depend only on the axioms `propext`, `Classical.choice` and
-`Quot.sound`. Written audits compare 191 main statements and definitions with the literature: they record
-114 as faithful, 60 as faithful within a stated scope, and 17 as differing from the cited form while correct
-as stated ([`FAITHFULNESS.md`](FAITHFULNESS.md)). The [theorem catalogue](catalogue/) lists 232 headline results, each
-with its source, its statement as Lean reports it, and what it leaves out. Judged strictly against the result
-each is named after, 147 are `full`, 2 are `wrapper` (they restate Mathlib), and 83 are `reduced`: a special case,
-an extra hypothesis, or part of the conclusion assumed. The gap is widest in statistics and likelihood, where 36
-of 50 are `reduced`. **No human expert has reviewed the library yet.** The
-statements, tests and audits were written with AI assistance, so those audits are not independent; see
-[Limitations](#limitations).
+[Website](https://unbalancedparentheses.github.io/lean-extremevaluetheory/) ·
+[Blueprint](https://unbalancedparentheses.github.io/lean-extremevaluetheory/blueprint/) ·
+[API docs](https://unbalancedparentheses.github.io/lean-extremevaluetheory/docs/) ·
+[Tutorial](docs/TUTORIAL.md) ·
+[Review guide](docs/REVIEW.md) ·
+[Theorems](THEOREMS.md) ·
+[Roadmap](ROADMAP.md)
+
+**Status: no human expert has reviewed this library yet.** The statements, tests and audits were written with AI
+assistance, so a proof here shows that a conclusion follows from its hypotheses, but whether a statement says what the
+textbook says rests on checks that are not independent. Many results are also narrower than their textbook form, and the
+likelihood theorems describe exact models, not real data: see [Limitations](#limitations). Corrections are very welcome, and
+[`docs/REVIEW.md`](docs/REVIEW.md) needs no knowledge of Lean.
+
+| | |
+|---|---|
+| Size | about 113,000 lines; 4,770 theorems and lemmas |
+| Axioms | no `sorry`; CI checks that all 10,677 declarations use only `propext`, `Classical.choice`, `Quot.sound` |
+| [Theorem catalogue](catalogue/) | 232 headline results: 147 `full`, 2 `wrapper` (restate Mathlib), 83 `reduced` (a special case, an extra hypothesis, or part of the conclusion assumed), judged strictly; the gap is widest in statistics and likelihood, where 36 of 50 are `reduced` |
+| [Audits](FAITHFULNESS.md) | 191 statements compared with the literature: 114 faithful, 60 faithful within a stated scope, 17 differ from the cited form while correct as stated |
+| Tests | 139 non-vacuity and 253 known-answer tests |
+| [Challenge file](Challenge.lean) | four headline theorems stated using only Mathlib, checked by `lake comparator` |
 
 Here, for example, is the Fisher–Tippett–Gnedenko theorem, from
 [`SelfSimilarCDF.lean`](ExtremeValueTheory/SelfSimilarCDF.lean):
@@ -290,7 +301,7 @@ Create a Lean project with the same [`lean-toolchain`](lean-toolchain), and add 
 [[require]]
 name = "lean-extremevaluetheory"
 git = "https://github.com/unbalancedparentheses/lean-extremevaluetheory"
-rev = "v0.10.0"
+rev = "v0.9.0"
 ```
 
 Then fetch it and build:

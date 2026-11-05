@@ -34,23 +34,10 @@ results, 147 are `full` and 83 `reduced`, judged by an AI against the result eac
 | Point processes, functional limits | ~40% | A real topology, cluster processes, weighted processes |
 | Max-stable processes | ~20% | Brown–Resnick, Schlather, extremal-t |
 
-## Ranked plan (2026-11-04)
+## Ranked plan (2026-11-05)
 
-Everything still open in this file, in the order to do it. The ranking puts first what:
-
-- unblocks other work, or protects work already done;
-- has a long lead time (expert review, accounts);
-- costs little and buys a lot of trust.
-
-Each tier can run in parallel internally. The sections below give the details.
-
-**Tier 0: this week, mostly the maintainer (minutes each)**
-1. Done (2026-11-04): the agents are running again
-2. *you:* send [`docs/REVIEW.md`](docs/REVIEW.md) to two or three experts. Review takes weeks, so it
-   should start before anything else (C)
-3. Merge [#4](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/4), one definition
-   per concept. It already builds, and the statistics pull requests rebase on it
-4. Done (2026-11-04): the GitHub–Zenodo integration is enabled, so `v1.0.0` will get a DOI (H.1)
+Everything still open, in the order to do it. The sections below give the details. What was done up to now is in
+[`CHANGELOG.md`](CHANGELOG.md).
 
 **Next, in order (2026-11-05)**
 
@@ -81,105 +68,31 @@ Only the maintainer can do these:
   numbers and Coles's figures are from memory, and the novelty check needs Kulik–Soulier. Then review the specification against them (C)
 - [ ] Decide on the deprecation policy, the Code of Conduct contact, Palomar, and a Hugging Face account for the dataset
 
-**First release: `v0.9.0`, before the work in flight** (decided 2026-11-04). A citable release with
-honest limits now does more than waiting for every proof. It does not wait for #4–#9; those ship in 0.x
-and 1.0 releases.
-- [x] CI fails on `sorry` and extra axioms (`Test/AxiomAudit.lean`, `scripts/check_source.py`)
-- [x] Limitations section and "Use it in your project" in the README; downstream CI job
-- [x] Independent AI review of the statements and claims by Codex; fix what it finds. This is AI review,
-  and does not replace expert review
-- [x] Non-vacuity tests for `powEchoProcess_antiClustering_iff`, `logEchoProcess_betaMixing_incompatible`
-  and `logEcho_tendstoInMeasure_runsEstimator` (found by the Codex review; added after the release)
-- [x] `CHANGELOG.md`, the tag and [GitHub release `v0.9.0`](https://github.com/unbalancedparentheses/lean-extremevaluetheory/releases/tag/v0.9.0)
-  (2026-11-04), and the Zenodo DOI [10.5281/zenodo.23966373](https://doi.org/10.5281/zenodo.23966373), in `CITATION.cff` and the README
-- [>] Library paper [`paper/evt-lean.tex`](paper/evt-lean.tex): drafted and reviewed twice by Codex; *you*
-  submit to arXiv (check early whether you need an endorsement)
-- [ ] *you:* send the expert emails and post on the Lean Zulip, with the release and paper links
+**Then, for 1.0**
+- [ ] Close the design pass: split the `Statistics/` files, stop using `@[deprecated]` aliases inside the library, fix the Mathlib
+  deprecation warnings, do the cleanup list below
+- [ ] Merge [#9](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/9), the Mathlib v4.36 bump, once v4.36.0 is stable;
+  one tagged release per Mathlib bump
+- [ ] Dependabot pull requests #1–#3, after checking that the website builds
+- [ ] *you:* contact formal-mathfin and invite one or two collaborators (H.8); decide on Palomar (H.7); a Hugging Face account for the
+  dataset (H.3)
+- [ ] `v1.0.0` once the experts have replied, and a new version of the paper if their review changes it; announce on the Lean Zulip
 
-**Tier 1: finish the work in flight** (sunk cost; ordered by how close each is)
-5. [#7](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/7) Tail-dependence
-   estimation: theorems written, one file to fix
-6. [#5](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/5) Pickands and moment
-   estimator normality: one proof, then the general-sample theorem
-7. [#6](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/6) GEV three-parameter MLE
-   normality, then unconditional GEV return-level normality: the result practitioners rely on most
-8. [#8](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/8) Profile-likelihood
-   intervals
-9. [#9](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/9) Mathlib v4.36: only
-   once v4.36.0 is stable
-
-**Tier 2: trust that runs by itself** (independent of tier 1, so in parallel with it)
-10. Done (2026-11-04): axiom audit of every declaration in CI (H.7)
-11. Done (2026-11-04): Comparator challenge on four headline theorems, in CI (H.7)
-12. Architecture checks and the remaining gates against overclaiming (H.6, H.7)
-13. Done (2026-11-04): specification tests for the newest results, and the seventh faithfulness audit (C)
-
-**Tier 3: release 1.0**
-14. Close the design pass:
-    - split the `Statistics/` files;
-    - stop using the `@[deprecated]` aliases;
-    - fix the Mathlib deprecation warnings;
-    - do the cleanup list.
-
-    (Version 1.0, item 2)
-15. Documentation matches the code: `THEOREMS.md`, README, website, blueprint entries (item 3)
-16. Honest counts by status in the README (H.2); keep the Limitations section current
-17. `CONTRIBUTING.md`, `CLAUDE.md`, code of conduct, templates and the credit rules (H.4)
-18. `v1.0.0`, once the experts have replied and #4, #6 and #7 are in
-19. A new version of the library paper for 1.0, if the review changes it
-20. *you:* announce 1.0 on the Lean Zulip (F)
-21. *you:* contact formal-mathfin and invite one or two collaborators (H.8)
-22. Dependabot pull requests #1–#3, after checking that the website builds
-
-**Tier 4: after 1.0, users and contributors**
-23. Labels; the issue tracker as the only backlog; 10–15 good first issues; the open problems as
-    `EVT-OP-…` issues (H.4, H.5)
-24. A way in:
-    - tutorial;
-    - worked examples for the standard laws;
-    - applied examples;
-    - "how to find a result" guide;
-    - onboarding, beginners' manual and troubleshooting pages.
-
-    (D, H.4)
-25. The theorem catalogue, the Hugging Face dataset (*you* create the account), `formalization.yaml` and
-    the review deadline in CI (H.3, H.7)
-26. *you:* decide on registering with Palomar (H.7)
-27. One tagged release per Mathlib bump (E)
-
-**Tier 5: research** (B)
-28. Finish the novelty check of the Bai–Kulik–Wang answer, then the arXiv note on the echo process
-29. Practical open problem 1, block and run length for the extremal-index estimators; then problems 2–6
-30. Theoretical open problems, starting with the critical case `κ = 1` of the power-lag echo process
-
-**Tier 6: textbook gaps** (A; most-used statistics first)
-31. Statistics:
-    - Hill interval with bias;
-    - Ferro–Segers Theorem 1;
-    - likelihood at `ξ = 0`;
-    - GEV likelihood on the whole parameter space;
-    - L-moments follow-ups;
-    - bias-reduced estimators;
-    - a random number of exceedances.
-32. Processes and dependence:
-    - Davis–Hsing cluster processes and cluster functionals;
-    - the weighted tail empirical process and quantile process;
-    - Brown–Resnick, Schlather and extremal-t;
-    - hidden regular variation;
-    - stochastic volatility.
-33. Theory:
-    - the parametric stable family and its tails;
-    - Π-variation;
-    - two-sided second-order inequalities;
-    - rates of convergence of maxima;
-    - records;
-    - domains of attraction for processes;
-    - sharp Kesten–Goldie tails (needs the renewal theorem).
-
-**Tier 7: long term**
-34. Upstream `ForMathlib/` to Mathlib, then regular variation and the EVT core; a talk (F)
-35. Executable estimators cross-checked against R and Python (G)
-36. Optional: a Docker image, only if a contributor needs it (H.4)
+**After 1.0**
+1. Research (B): finish the novelty check of the Bai–Kulik–Wang answer, then the arXiv note on the echo process; block and run length for
+   the extremal-index estimators ([#19](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/19)), then the other
+   practical problems
+2. Textbook gaps (A), most-used statistics first:
+   - Hill interval with bias, Ferro–Segers Theorem 1, L-moments follow-ups, bias-reduced estimators, GEV likelihood on the whole
+     parameter space;
+   - Davis–Hsing cluster processes and cluster functionals, the weighted tail empirical process and quantile process, Brown–Resnick,
+     Schlather and extremal-t, hidden regular variation, stochastic volatility;
+   - the parametric stable family and its tails, Π-variation, two-sided second-order inequalities, rates of convergence of maxima, records,
+     domains of attraction for processes, sharp Kesten–Goldie tails (needs the renewal theorem).
+3. Upstream more of `ForMathlib/`, then regular variation and the EVT core; a talk (F)
+4. Executable estimators cross-checked against R and Python (G)
+5. Beyond the textbooks (I)
+6. Optional: a Docker image, only if a contributor needs it (H.4)
 
 ---
 
@@ -192,73 +105,50 @@ blocker: 1.0 waits for expert replies. Further textbook chapters, open problems 
 **Owner:** *agent* = done by Claude Code agents; *you* = needs the maintainer (sending, submitting,
 posting, deciding).
 
-1. [>] **Finish the work in flight** (*agent*; paused, one draft pull request per task, see the table below)
-   - [>] One definition per concept: `upperQuantile`/`survivalQuantile`/`survival` (`UpperQuantile.lean`)
-         and one GPD survival function done and building; the remaining duplicates of the audit are
-         listed in the pull request
-   - [>] Pickands and moment estimator normality: moment estimator `γ > 0` done; the Pickands theorem for
-         uniform samples is written but its last proof does not build yet
-   - [>] GEV three-parameter MLE normality (step 1 of 3, domination near the moving endpoint, mostly
-         done), then unconditional GEV return-level normality
-   - [>] Profile-likelihood intervals (Wilks' theorem, GPD first): early, the log-likelihood expansion
-   - [>] Nonparametric tail dependence: the consistency theorems for the empirical stable tail dependence
-         function, `χ̂` and the Pickands function estimator are written; the population file does not
-         build yet
-2. [ ] **Close the design pass** (*agent*)
-   - [ ] Split the oversized `Statistics/` files (waits for item 1)
+1. [~] **The statistics practitioners use** (*agent*)
+   - [x] GEV joint normality and return levels, Pickands normality, Wilks and profile likelihood for the GPD, nonparametric tail dependence
+   - [>] A computable GEV interval (#45), the Gumbel case (#42), block maxima from a domain of attraction (#41)
+   - [ ] Moment normality for `γ ≤ 0` (#43), Wilks for `ξ₀ ≤ 0` and the GEV (#44): wanted, not blockers
+2. [~] **Close the design pass** (*agent*)
+   - [x] One definition per concept, with deprecated aliases
+   - [ ] Split the oversized `Statistics/` files
    - [ ] Stop using `@[deprecated]` aliases inside the library and tests (the aliases stay for
          downstream users; [`docs/DESIGN.md`](docs/DESIGN.md) keeps them six months)
-   - [ ] Fix the Mathlib deprecation warnings in `Statistics/` and in the newly promoted files
-         (`GEVDomain.lean`, `ExtremalIndexEstimatorsIid.lean`: `dif_pos`, `if_pos`, `Set.mem_setOf_eq`)
-   - [ ] `CHANGELOG.md` and a tagged release `v1.0.0`
-3. [ ] **Documentation matches the code** (*agent*)
-   - [ ] [`THEOREMS.md`](THEOREMS.md), the README and the website list every merged result
-   - [ ] Every new file has a blueprint entry
-   - [ ] Specification tests for the newest results (return levels, intervals, SRE/GARCH,
-         extremal-index estimators, the 1.0 statistics results)
-   - [ ] Seventh faithfulness audit (everything since the sixth)
-4. [ ] **A way in for new users** (*agent*)
-   - [ ] Tutorial: your first extreme value theory proof in Lean
-   - [ ] Worked examples for the standard laws
-   - [ ] "How to find a result" guide
+   - [ ] Fix the Mathlib deprecation warnings
+3. [x] **Documentation matches the code** (*agent*): `THEOREMS.md`, README, website, blueprint entries, specification tests, eight audits.
+   Keep this true at each merge
+4. [x] **A way in for new users** (*agent*): tutorial, worked and applied examples, "how to find a result", onboarding, troubleshooting
 5. [ ] **Trust and visibility** (*you*, with drafts from an agent)
-   - [ ] Human expert review with [`docs/REVIEW.md`](docs/REVIEW.md) (see C)
+   - [ ] **Human expert review** with [`docs/REVIEW.md`](docs/REVIEW.md) (see C): the blocker for 1.0
+   - [ ] Review the specification against the books (see C)
+   - [ ] Submit the library paper; announce on the Lean Zulip (see F)
    - [ ] Finish the novelty check, then the arXiv note on the echo process (see B)
-   - [ ] Announce on the Lean Zulip (see F)
-
-6. [ ] **Ready for users and contributors** (*agent*, with accounts from *you*; details in H)
-   - [ ] Release `v0.9.0`, then `v1.0.0`, with a Zenodo DOI, badges and a "use it in your project" section,
-         checked by a downstream CI job (H.1)
-   - [~] Honest counts and a Limitations section in the README (H.2): Limitations done
-   - [ ] `CONTRIBUTING.md`, `CLAUDE.md`, labels, issues and the first good first issues (H.4)
-   - [ ] Open problems filed as numbered issues (H.5)
-   - [ ] Architecture checks in CI (H.6)
-   - [~] Axiom audit in the build (done), the Comparator challenge, the review deadline and the gates against
-         overclaiming (H.7)
+6. [~] **Ready for users and contributors** (details in H)
+   - [x] Release `v0.9.0` with a Zenodo DOI, badges, "use it in your project", a downstream CI job
+   - [>] `v0.10.0`; `v1.0.0` after the review
+   - [x] Counts by status and Limitations in the README; `CONTRIBUTING.md`, `CLAUDE.md`, labels, good first issues, open problems as issues;
+     architecture checks; axiom audit; Comparator challenge; review deadline; catalogue and its gates
 
 ### Work in flight
 
-**Status (2026-11-05):** nothing running. All the tasks are merged: #4–#8, the review guide, the comparison with Hirata and its
-improvements, the Comparator challenge, the catalogue, the seventh and eighth audits, the contributor docs and the
-examples.
+**Status (2026-11-05):** agents running, on the maintainer's go-ahead. They push only to their own branches; the maintainer's session
+reviews and merges. Each has a checkpoint on GitHub if the usage limit stops it.
+
+| Task | Branch or output | Note |
+|---|---|---|
+| Codex review of the specification | read-only report | `v0.10.0` waits for it |
+| Computable GEV interval ([#45](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/45)) | `wip/gev-plugin-interval` | |
+| Likelihood for block maxima ([#41](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/41)) | `wip/block-maxima-likelihood` | draft PR |
+| Gumbel case ([#42](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/42)) | `wip/gev-gumbel-normality` | draft PR |
+| First Mathlib pull requests, as drafts | `wip/mathlib-prs` | the maintainer opens them |
+| Mathlib v4.36 trial ([#9](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/9)) | `wip/mathlib-v4.36-trial` | merge once v4.36.0 is stable |
 
 ### Waiting on the maintainer
 
-- [ ] Decide on the three Dependabot pull requests (#1–#3: nokogiri, faraday, concurrent-ruby for the
-      website); an agent can check that the site still builds and merge them
-- [ ] Expert review: send [`docs/REVIEW.md`](docs/REVIEW.md) to two or three extreme value theorists
-      (an agent can draft the emails)
-- [ ] Novelty check of the Bai–Kulik–Wang answer against Kulik–Soulier's examples (needs the physical
-      book or an expert), then submit the arXiv note (an agent can draft it)
-- [ ] Post the Lean Zulip announcement (an agent can draft it)
-- [ ] Confirm the deprecation policy proposed in [`docs/DESIGN.md`](docs/DESIGN.md): aliases kept at
-      least six months and one Mathlib bump
-- [ ] Growth (H): create a Hugging Face account or organization for the dataset; approve and send the contact to formal-mathfin;
-      submit the library paper; decide on registering with Palomar; send the collaborator invitations
+See "Only the maintainer can do these" in the ranked plan. Also: the three Dependabot pull requests (#1–#3), which an agent can check and merge.
 
 ### Cleanup to do
 
-- [ ] Remove the five task worktrees (about 43 GB) once their work is merged
 - [ ] Fix the remaining Mathlib deprecation warnings (about 18: `Statistics/`, `GEVDomain.lean`,
       `ExtremalIndexEstimatorsIid.lean`) after the statistics agents finish
 - [ ] Rename the remaining `Statistics/` lemmas whose names still contain `gpdSurvival'`
@@ -266,20 +156,7 @@ examples.
       (`Test/NonVacuity/Multivariate.lean`) by the bridge's `hasLaw_measure_iff` and `measureReal_Iic`
 - [ ] `Statistics/Hill.lean` still converts by hand between `cdf (P.map Y)` and the survival function;
       use `CDFBridge` instead
-- [ ] Delete each `wip/…` branch on GitHub when its pull request is merged, and the seven superseded
-      branches now (`wip/<agent-id>`, `wip/<agent-id>-snapshot`, `wip/<task>-snapshot`), whose content
-      is in the task branches
-
-Done in the current round (merged to `main`): names and namespaces; oversized files split outside
-`Statistics/`; the law bridge (`CDFBridge.lean`); test helpers promoted and `docs/DESIGN.md`; the
-weekly Mathlib bump workflow and deprecation fixes; the second open-problems survey.
-
-### After 1.0
-
-In order: the remaining textbook gaps (parametric stable family, Davis–Hsing cluster processes,
-Brown–Resnick processes, bias-reduced estimators; see A); open problems, practical ones first (block
-and run length for extremal-index estimators, then the rest of B); upstreaming `ForMathlib/` to Mathlib
-(see F); executable estimators checked against R and Python (see G).
+- [ ] Delete each `wip/…` branch on GitHub when its work is merged, and its worktree
 
 ---
 

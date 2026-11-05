@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.10.0 (2026-11-05)
+## Unreleased (planned as v0.10.0)
 
 Still no human expert review: the statements, tests and audits were written with AI assistance. See the README's
 Limitations section.
