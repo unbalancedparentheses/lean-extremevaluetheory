@@ -37,7 +37,9 @@ Both return levels are written with the Box–Cox function `h_ξ(x) = (x^ξ - 1)
   `(σ ∂_ξ h, 1, h)`; `gevReturnLevelGrad_zero_eq` writes `σ ∂_ξ h` in Coles' form
   `σ ξ⁻² (1 - y^{-ξ}) - σ ξ⁻¹ y^{-ξ} log y`.
 * `tendstoInDistribution_gevReturnLevel`: if `√n (θ̂ₙ - θ₀) ⇒ N(0, V)` for GEV parameter
-  estimators, `ξ₀ ≠ 0`, then `√n (ẑ_m - z_m) ⇒ N(0, ∇zᵀ V ∇z)`.
+  estimators, `ξ₀ ≠ 0`, then `√n (ẑ_m - z_m) ⇒ N(0, ∇zᵀ V ∇z)`. For the maximum likelihood estimator
+  the normality is a theorem: see `ExtremeValueTheory.tendstoInDistribution_gevMLEReturnLevel` in
+  `ExtremeValueTheory.Statistics.GEVReturnLevelNormality`.
   `tendstoInDistribution_gumbelReturnLevel`: the same for the Gumbel model, `∇z = (1, -log y_m)`.
 * `tendstoInDistribution_gpdReturnLevel`: **the maximum likelihood return level of the GPD is
   asymptotically normal**, `√n (x̂_N - x_N) ⇒ N(0, ∇xᵀ I(θ₀)⁻¹ ∇x)`, from the joint normality
@@ -49,10 +51,12 @@ Both return levels are written with the Box–Cox function `h_ξ(x) = (x^ξ - 1)
 
 ## Deviations from the textbook
 
-* The library proves joint asymptotic normality for the GPD maximum likelihood estimator only
-  (`tendstoInDistribution_gpdMLE_all`). For the GEV and Gumbel models, and for the triple
-  `(ζ̂_u, ξ̂, σ̂)`, joint normality of the parameter estimators is a hypothesis (any covariance
-  `V`); Coles takes `V` block diagonal with `Var ζ̂_u = ζ_u (1 - ζ_u)/n`.
+* In this file joint normality of the parameter estimators is a hypothesis (any covariance `V`)
+  for the GEV and Gumbel models and for the triple `(ζ̂_u, ξ̂, σ̂)`; Coles takes `V` block diagonal
+  with `Var ζ̂_u = ζ_u (1 - ζ_u)/n`. The library proves it for the GPD maximum likelihood estimator
+  (`tendstoInDistribution_gpdMLE_all`) and for the three-parameter GEV maximum likelihood estimator
+  (`tendstoInDistribution_gevMLE`, used in `ExtremeValueTheory.Statistics.GEVReturnLevelNormality`).
+  It is not proved for the two-parameter Gumbel model, nor for `(ζ̂_u, ξ̂, σ̂)`.
 * Parameters are ordered `(ξ, μ, σ)` and `(ξ, σ)`, as in the rest of the library, rather than
   Coles' `(μ, σ, ξ)` and `(σ, ξ)`; the gradients are permuted accordingly.
 * In the GPD statement the excesses form an iid sample of size `n` with `ζ_u` known; the random

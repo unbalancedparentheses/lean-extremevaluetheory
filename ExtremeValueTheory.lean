@@ -195,6 +195,7 @@ import ExtremeValueTheory.Statistics.GEVMLECoordinates
 import ExtremeValueTheory.Statistics.GEVMLEDomination
 import ExtremeValueTheory.Statistics.GEVMLEInformation
 import ExtremeValueTheory.Statistics.GEVMLEPath
+import ExtremeValueTheory.Statistics.GEVMLENormality
 import ExtremeValueTheory.Statistics.GEVGumbelLimit
 import ExtremeValueTheory.Statistics.MeasurableArgmax
 import ExtremeValueTheory.Statistics.GPDJointNormalityNeg
@@ -232,6 +233,7 @@ import ExtremeValueTheory.ForMathlib.Probability.DeltaMethod
 import ExtremeValueTheory.ForMathlib.Probability.WaldInterval
 import ExtremeValueTheory.Statistics.ReturnLevelNormality
 import ExtremeValueTheory.Statistics.ConfidenceIntervals
+import ExtremeValueTheory.Statistics.GEVReturnLevelNormality
 import ExtremeValueTheory.Statistics.LMoments
 import ExtremeValueTheory.Statistics.LMomentsEstimators
 import ExtremeValueTheory.Statistics.MeanExcess

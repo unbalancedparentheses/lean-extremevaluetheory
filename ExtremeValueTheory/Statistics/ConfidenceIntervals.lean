@@ -23,8 +23,10 @@ which is `1 - α` for the two-sided standard normal quantile `z = z_{α/2}`
   `x̂_N ± z ŝ / √n` with the plug-in standard error `ŝ² = ∇x_Nᵀ I⁻¹ ∇x_N` evaluated at the
   MLE ([Coles, §4.3.3]);
 * **the GEV return level** (`tendsto_measure_mem_gevReturnLevelInterval`), given asymptotic
-  normality of the GEV parameter estimators and a consistent standard error (hypotheses, as the
-  library does not yet prove GEV MLE normality).
+  normality of the GEV parameter estimators and a consistent standard error (hypotheses). For the
+  maximum likelihood estimator the normality is a theorem:
+  `ExtremeValueTheory.tendsto_measure_mem_gevMLEReturnLevelInterval` in
+  `ExtremeValueTheory.Statistics.GEVReturnLevelNormality`.
 
 The intervals are the symmetric delta-method intervals; Coles' profile likelihood intervals are
 not covered.
