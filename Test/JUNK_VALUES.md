@@ -115,9 +115,9 @@ above.
   - `IsExtendedRegularlyVarying`, `HasTailProcess` and `HasSpectralTailProcess` divide by
     quantities that their own hypotheses keep positive.
 - **Quantiles.**
-  - `tailQuantile` (`DomainOfAttraction/Quantile.lean`, `Statistics/ExtremeQuantile.lean`) and
-    `survivalQuantile` are `sInf` on `ℝ`, which is junk 0 on empty or unbounded sets. The lemmas
-    assume `1 < t` or `p < F̄(M)`.
+  - `upperQuantile` (`UpperQuantile.lean`), and the return-period forms `survivalQuantile` and
+    `CumulativeDistributionFunction.tailQuantile` built on it, are `sInf` on `ℝ`, which is junk 0
+    on empty or unbounded sets. The lemmas assume `1 < t`, or `p < S M` and `S x ≤ p` somewhere.
 - **POT functions.**
   - `excessSurvival F u x = F (u + x) / F u` and `meanExcess F u = (∫_{Ioi u} F) / F u` are junk
     when `F u = 0`, and the mean excess is also junk when `F` is not integrable.

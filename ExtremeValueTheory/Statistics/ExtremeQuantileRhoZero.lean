@@ -424,11 +424,11 @@ theorem tendstoInMeasure_weissman_div_of_le {X : ℕ → Ω → ℝ}
     {a : ℕ → ℝ} (ha : ∀ᶠ n : ℕ in atTop, ∀ y ∈ Icc ((n : ℝ) / k n) (p n)⁻¹, |A y| ≤ a n)
     (hal : Tendsto (fun n => a n * (1 + Real.log ((k n : ℝ) / (n * p n)))) atTop (𝓝 0)) :
     TendstoInMeasure P (fun n ω => weissman (fun i : Fin n => X i ω) (k n) (p n) /
-      tailQuantile P (X 0) (p n)) atTop (fun _ => 1) := by
+      upperQuantile (survival P (X 0)) (p n)) atTop (fun _ => 1) := by
   have hα : 0 < 1 / γ := one_div_pos.2 hγ
   have hRV := h2.isRegularlyVarying_survival (hX 0) hγ
   have hrate := isBoundedInProbability_hill hX hindep hident hγ h2 hk hkn hlam
-  have hUm := measurable_tailQuantile (survival_anti (P := P) (X 0))
+  have hUm := measurable_survivalQuantile (survival_anti (P := P) (X 0))
     (continuousWithinAt_survival (P := P) (hX 0)) (tendsto_survival_atTop (P := P) (hX 0))
     (tendsto_survival_atBot (P := P) (hX 0))
   have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
@@ -440,8 +440,8 @@ theorem tendstoInMeasure_weissman_div_of_le {X : ℕ → Ω → ℝ}
   have h := h2.tendsto_div_mul_rpow_of_le hUm hnk hd1 (by
     filter_upwards [ha, hdt] with n hn hdn
     rwa [hdn]) hal
-  have hbias : Tendsto (fun n => tailQuantile P (X 0) (p n) /
-      (tailQuantile P (X 0) ((k n : ℝ) / n) * ((k n : ℝ) / (n * p n)) ^ γ)) atTop (𝓝 1) := by
+  have hbias : Tendsto (fun n => upperQuantile (survival P (X 0)) (p n) /
+      (upperQuantile (survival P (X 0)) ((k n : ℝ) / n) * ((k n : ℝ) / (n * p n)) ^ γ)) atTop (𝓝 1) := by
     refine h.congr' ?_
     filter_upwards [hkR.eventually_gt_atTop 0,
       (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0,
@@ -452,7 +452,7 @@ theorem tendstoInMeasure_weissman_div_of_le {X : ℕ → Ω → ℝ}
       rw [le_div_iff₀ hn0]
       linarith
     have hp1 : p n < 1 := hpk.trans_lt hkn1
-    rw [tailQuantile_eq_survivalQuantile hpn hp1, tailQuantile_eq_survivalQuantile hr0 hkn1]
+    rw [upperQuantile_eq_survivalQuantile hpn hp1, upperQuantile_eq_survivalQuantile hr0 hkn1]
     congr 3
     · field_simp
     · rw [inv_div]
@@ -475,7 +475,7 @@ theorem tendstoInMeasure_weissman_div_of_antitoneOn {X : ℕ → Ω → ℝ}
     (hp0 : ∀ᶠ n in atTop, 0 < p n) (hd1 : ∀ᶠ n in atTop, 1 ≤ (k n : ℝ) / (n * p n))
     (hd : Tendsto (fun n => Real.log ((k n : ℝ) / (n * p n)) / √(k n : ℝ)) atTop (𝓝 0)) :
     TendstoInMeasure P (fun n ω => weissman (fun i : Fin n => X i ω) (k n) (p n) /
-      tailQuantile P (X 0) (p n)) atTop (fun _ => 1) := by
+      upperQuantile (survival P (X 0)) (p n)) atTop (fun _ => 1) := by
   have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
   have hnk : Tendsto (fun n : ℕ => (n : ℝ) / k n) atTop atTop := tendsto_div_atTop_of_tendsto hk hkn
   refine tendstoInMeasure_weissman_div_of_le hX hindep hident hγ h2 hk hkn hlam hp0 hd1 hd
@@ -512,8 +512,8 @@ theorem tendstoInMeasure_tailProbEstimator_div_of_le {X : ℕ → Ω → ℝ}
     (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
     (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
     (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {y : ℕ → ℝ}
-    (hy : ∀ᶠ n in atTop, tailQuantile P (X 0) ((k n : ℝ) / n) ≤ y n)
-    (he : Tendsto (fun n => Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) /
+    (hy : ∀ᶠ n in atTop, upperQuantile (survival P (X 0)) ((k n : ℝ) / n) ≤ y n)
+    (he : Tendsto (fun n => Real.log (y n / upperQuantile (survival P (X 0)) ((k n : ℝ) / n)) /
       √(k n : ℝ)) atTop (𝓝 0)) {a : ℕ → ℝ}
     (ha : ∀ᶠ n : ℕ in atTop, ∀ z ∈ Icc ((n : ℝ) / k n) ((P {ω | y n < X 0 ω}).toReal)⁻¹,
       |A z| ≤ a n)
@@ -524,7 +524,7 @@ theorem tendstoInMeasure_tailProbEstimator_div_of_le {X : ℕ → Ω → ℝ}
   have hα : 0 < 1 / γ := one_div_pos.2 hγ
   have hRV := h2.isRegularlyVarying_survival (hX 0) hγ
   have hrate := isBoundedInProbability_hill hX hindep hident hγ h2 hk hkn hlam
-  have hUm := measurable_tailQuantile (survival_anti (P := P) (X 0))
+  have hUm := measurable_survivalQuantile (survival_anti (P := P) (X 0))
     (continuousWithinAt_survival (P := P) (hX 0)) (tendsto_survival_atTop (P := P) (hX 0))
     (tendsto_survival_atBot (P := P) (hX 0))
   have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
@@ -551,7 +551,7 @@ theorem tendstoInMeasure_tailProbEstimator_div_of_le {X : ℕ → Ω → ℝ}
       hkR.eventually_gt_atTop 0,
       (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop 0,
       hkn.eventually (gt_mem_nhds one_pos)] with n h1 h3 hk0 hn0 hkn1
-    rw [tailQuantile_eq_survivalQuantile (div_pos hk0 hn0) hkn1, inv_div] at h1
+    rw [upperQuantile_eq_survivalQuantile (div_pos hk0 hn0) hkn1, inv_div] at h1
     exact h3.trans_le h1
   exact tendstoInMeasure_tailProbEstimator_div_of_isBoundedInProbability hX hindep hident hα hRV
     hk hkn hy0 hrate he hbias
@@ -589,10 +589,10 @@ theorem tendstoInDistribution_weissman_of_rho_eq_zero {X : ℕ → Ω → ℝ}
       |A y / A (n / k n) - 1| ≤ η n)
     {Z : Ω' → ℝ} (hZ : HasLaw Z (gaussianReal 0 (γ ^ 2).toNNReal) P') :
     TendstoInDistribution (fun n ω => √(k n : ℝ) / Real.log ((k n : ℝ) / (n * p n)) *
-      (weissman (fun i : Fin n => X i ω) (k n) (p n) / tailQuantile P (X 0) (p n) - 1))
+      (weissman (fun i : Fin n => X i ω) (k n) (p n) / upperQuantile (survival P (X 0)) (p n) - 1))
       atTop Z (fun _ => P) P' := by
   set U := survivalQuantile (survival P (X 0)) with hUdef
-  have hUm := measurable_tailQuantile (survival_anti (P := P) (X 0))
+  have hUm := measurable_survivalQuantile (survival_anti (P := P) (X 0))
     (continuousWithinAt_survival (P := P) (hX 0)) (tendsto_survival_atTop (P := P) (hX 0))
     (tendsto_survival_atBot (P := P) (hX 0))
   have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
@@ -647,21 +647,21 @@ theorem tendstoInDistribution_tailProbEstimator_of_tendsto_bias {X : ℕ → Ω 
     (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
     (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
     (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {y : ℕ → ℝ}
-    (he : Tendsto (fun n => y n / tailQuantile P (X 0) ((k n : ℝ) / n)) atTop atTop)
-    (hek : Tendsto (fun n => Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) /
+    (he : Tendsto (fun n => y n / upperQuantile (survival P (X 0)) ((k n : ℝ) / n)) atTop atTop)
+    (hek : Tendsto (fun n => Real.log (y n / upperQuantile (survival P (X 0)) ((k n : ℝ) / n)) /
       √(k n : ℝ)) atTop (𝓝 0))
     {ν : ℝ} (hν : Tendsto (fun n => √(k n : ℝ) * Real.log ((k n : ℝ) / n *
-      (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) ^ (-(1 / γ)) /
+      (y n / upperQuantile (survival P (X 0)) ((k n : ℝ) / n)) ^ (-(1 / γ)) /
         (P {ω | y n < X 0 ω}).toReal) /
-      Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n))) atTop (𝓝 ν))
+      Real.log (y n / upperQuantile (survival P (X 0)) ((k n : ℝ) / n))) atTop (𝓝 ν))
     {Z : Ω' → ℝ} (hZ : HasLaw Z (gaussianReal (lam / (1 - ρ)) (γ ^ 2).toNNReal) P') :
     TendstoInDistribution (fun n ω => √(k n : ℝ) /
-      Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) *
+      Real.log (y n / upperQuantile (survival P (X 0)) ((k n : ℝ) / n)) *
       (tailProbEstimator (fun i : Fin n => X i ω) (k n) (y n) /
         (P {ω | y n < X 0 ω}).toReal - 1))
       atTop (fun ω => Z ω / γ ^ 2 + ν) (fun _ => P) P' := by
   set U := survivalQuantile (survival P (X 0)) with hUdef
-  set x0 : ℕ → ℝ := fun n => tailQuantile P (X 0) ((k n : ℝ) / n) with hx0_def
+  set x0 : ℕ → ℝ := fun n => upperQuantile (survival P (X 0)) ((k n : ℝ) / n) with hx0_def
   set ℓ : ℕ → ℝ := fun n => Real.log (y n / x0 n) with hℓ_def
   set h : ℕ → ℝ := fun n => ℓ n / √(k n : ℝ) with hh_def
   set pF : ℕ → ℝ := fun n => (P {ω | y n < X 0 ω}).toReal with hpF_def
@@ -673,11 +673,11 @@ theorem tendstoInDistribution_tailProbEstimator_of_tendsto_bias {X : ℕ → Ω 
   have hr0 : ∀ᶠ n : ℕ in atTop, (0 : ℝ) < k n / n := by
     filter_upwards [hkpos, hnpos] with n h1 h2; positivity
   have hRV := h2.isRegularlyVarying_survival (hX 0) hγ
-  obtain ⟨hs, -⟩ := tendsto_tailQuantile (hX 0) hRV hr0 hkn
+  obtain ⟨hs, -⟩ := tendsto_upperQuantile (hX 0) hRV hr0 hkn
   have hx0U : ∀ᶠ n in atTop, x0 n = U (n / k n) := by
     filter_upwards [hr0, hkn.eventually (gt_mem_nhds one_pos)] with n h1 h3
     simp only [hx0_def]
-    rw [tailQuantile_eq_survivalQuantile h1 h3, inv_div]
+    rw [upperQuantile_eq_survivalQuantile h1 h3, inv_div]
   have hℓ : Tendsto ℓ atTop atTop := tendsto_log_atTop.comp he
   have hℓinv : Tendsto (fun n => (ℓ n)⁻¹) atTop (𝓝 0) := tendsto_inv_atTop_zero.comp hℓ
   -- the random terms
@@ -781,7 +781,7 @@ theorem tendstoInDistribution_tailProbEstimator_of_tendsto_bias {X : ℕ → Ω 
   -- the event `X_{(k+1)} ≤ 0` is asymptotically negligible
   have hbad : Tendsto (fun n => P {ω | orderStat (fun i : Fin n => X i ω) (k n) ≤ 0}) atTop
       (𝓝 0) := by
-    have hloc := tendstoInMeasure_orderStat_div_tailQuantile hX hindep hident
+    have hloc := tendstoInMeasure_orderStat_div_upperQuantile hX hindep hident
       (one_div_pos.2 hγ) hRV hk hkn
     rw [tendstoInMeasure_iff_dist] at hloc
     refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds (hloc 1 one_pos)
@@ -789,7 +789,7 @@ theorem tendstoInDistribution_tailProbEstimator_of_tendsto_bias {X : ℕ → Ω 
     filter_upwards [hs.eventually_gt_atTop 0] with n hsn
     refine measure_mono fun ω hω => ?_
     simp only [mem_ofPred_eq, Real.dist_eq] at hω ⊢
-    have : orderStat (fun i : Fin n => X i ω) (k n) / tailQuantile P (X 0) ((k n : ℝ) / n) ≤ 0 :=
+    have : orderStat (fun i : Fin n => X i ω) (k n) / upperQuantile (survival P (X 0)) ((k n : ℝ) / n) ≤ 0 :=
       div_nonpos_of_nonpos_of_nonneg hω hsn.le
     rw [abs_sub_comm]
     exact (le_abs_self _).trans' (by linarith)
@@ -861,10 +861,10 @@ theorem tendsto_sqrt_mul_log_tailProb_bias_of_neg {Y : Ω → ℝ} (hY : Measura
     (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P Y)) γ ρ A) (hρ : ρ < 0)
     {k : ℕ → ℕ} (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
     (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {y : ℕ → ℝ}
-    (he : Tendsto (fun n => y n / tailQuantile P Y ((k n : ℝ) / n)) atTop atTop) :
+    (he : Tendsto (fun n => y n / upperQuantile (survival P Y) ((k n : ℝ) / n)) atTop atTop) :
     Tendsto (fun n => √(k n : ℝ) * Real.log ((k n : ℝ) / n *
-      (y n / tailQuantile P Y ((k n : ℝ) / n)) ^ (-(1 / γ)) / survival P Y (y n)) /
-      Real.log (y n / tailQuantile P Y ((k n : ℝ) / n))) atTop (𝓝 0) := by
+      (y n / upperQuantile (survival P Y) ((k n : ℝ) / n)) ^ (-(1 / γ)) / survival P Y (y n)) /
+      Real.log (y n / upperQuantile (survival P Y) ((k n : ℝ) / n))) atTop (𝓝 0) := by
   set F := survival P Y with hFdef
   set U := survivalQuantile F with hUdef
   have hF := survival_anti (P := P) Y
@@ -872,8 +872,8 @@ theorem tendsto_sqrt_mul_log_tailProb_bias_of_neg {Y : Ω → ℝ} (hY : Measura
   have hF0 := tendsto_survival_atTop (P := P) hY
   have hF1 := tendsto_survival_atBot (P := P) hY
   have hGal : ∀ {t : ℝ}, 1 < t → ∀ x, U t ≤ x ↔ F x ≤ t⁻¹ := fun ht x =>
-    tailQuantile_le_iff hF hrc hF0 hF1 ht x
-  have hUm := measurable_tailQuantile hF hrc hF0 hF1
+    survivalQuantile_le_iff hF hrc hF0 hF1 ht x
+  have hUm := measurable_survivalQuantile hF hrc hF0 hF1
   have hRV := h2.isRegularlyVarying_survival hY hγ
   have hFpos : ∀ z, 0 < F z := survival_pos hRV
   obtain ⟨B, hBm, h2B, hBA⟩ := h2.exists_measurable hUm
@@ -888,10 +888,10 @@ theorem tendsto_sqrt_mul_log_tailProb_bias_of_neg {Y : Ω → ℝ} (hY : Measura
     field_simp
   have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
   obtain ⟨T₀, hT₀⟩ := eventually_atTop.1 h2.eventually_pos
-  have hℓ : Tendsto (fun n => Real.log (y n / tailQuantile P Y ((k n : ℝ) / n))) atTop atTop :=
+  have hℓ : Tendsto (fun n => Real.log (y n / upperQuantile (survival P Y) ((k n : ℝ) / n))) atTop atTop :=
     tendsto_log_atTop.comp he
   have hb : Tendsto (fun n => 3 * |C| / γ * (|lam| + 1) *
-      (Real.log (y n / tailQuantile P Y ((k n : ℝ) / n)))⁻¹) atTop (𝓝 0) := by
+      (Real.log (y n / upperQuantile (survival P Y) ((k n : ℝ) / n)))⁻¹) atTop (𝓝 0) := by
     simpa using (tendsto_inv_atTop_zero.comp hℓ).const_mul (3 * |C| / γ * (|lam| + 1))
   refine squeeze_zero_norm' ?_ hb
   filter_upwards [hkR.eventually_gt_atTop 0,
@@ -904,8 +904,8 @@ theorem tendsto_sqrt_mul_log_tailProb_bias_of_neg {Y : Ω → ℝ} (hY : Measura
   have hs0 : 0 < s := one_pos.trans hs1
   have hst₀ : t₀ ≤ s := ((le_max_left _ _).trans (le_max_left _ _)).trans hs
   have hsT : T₀ ≤ s := ((le_max_right _ _).trans (le_max_left _ _)).trans hs
-  have hq : tailQuantile P Y ((k n : ℝ) / n) = U s := by
-    rw [tailQuantile_eq_survivalQuantile (div_pos hk0 hn0) hkn1, inv_div]
+  have hq : upperQuantile (survival P Y) ((k n : ℝ) / n) = U s := by
+    rw [upperQuantile_eq_survivalQuantile (div_pos hk0 hn0) hkn1, inv_div]
   rw [hq] at hen hℓ0 ⊢
   have hUs : 0 < U s := hT₀ s hsT
   have hy : U s < y n := by rwa [one_lt_div hUs] at hen
@@ -990,13 +990,13 @@ theorem tendstoInDistribution_tailProbEstimator {X : ℕ → Ω → ℝ}
     (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ ρ A) {k : ℕ → ℕ}
     (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
     (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {y : ℕ → ℝ}
-    (he : Tendsto (fun n => y n / tailQuantile P (X 0) ((k n : ℝ) / n)) atTop atTop)
-    (hek : Tendsto (fun n => Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) /
+    (he : Tendsto (fun n => y n / upperQuantile (survival P (X 0)) ((k n : ℝ) / n)) atTop atTop)
+    (hek : Tendsto (fun n => Real.log (y n / upperQuantile (survival P (X 0)) ((k n : ℝ) / n)) /
       √(k n : ℝ)) atTop (𝓝 0))
     {Z : Ω' → ℝ}
     (hZ : HasLaw Z (gaussianReal (lam / ((1 - ρ) * γ ^ 2)) (γ⁻¹ ^ 2).toNNReal) P') :
     TendstoInDistribution (fun n ω => √(k n : ℝ) /
-      Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) *
+      Real.log (y n / upperQuantile (survival P (X 0)) ((k n : ℝ) / n)) *
       (tailProbEstimator (fun i : Fin n => X i ω) (k n) (y n) /
         (P {ω | y n < X 0 ω}).toReal - 1))
       atTop Z (fun _ => P) P' := by
@@ -1027,13 +1027,13 @@ theorem tendsto_sqrt_mul_log_tailProb_bias_of_rho_eq_zero {Y : Ω → ℝ} (hY :
     (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P Y)) γ 0 A)
     {k : ℕ → ℕ} (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
     (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {y : ℕ → ℝ}
-    (he : Tendsto (fun n => y n / tailQuantile P Y ((k n : ℝ) / n)) atTop atTop)
+    (he : Tendsto (fun n => y n / upperQuantile (survival P Y) ((k n : ℝ) / n)) atTop atTop)
     {η : ℕ → ℝ} (hη : Tendsto η atTop (𝓝 0))
     (hAη : ∀ᶠ n : ℕ in atTop, ∀ z ∈ Icc ((n : ℝ) / k n) (survival P Y (y n))⁻¹,
       |A z / A (n / k n) - 1| ≤ η n) :
     Tendsto (fun n => √(k n : ℝ) * Real.log ((k n : ℝ) / n *
-      (y n / tailQuantile P Y ((k n : ℝ) / n)) ^ (-(1 / γ)) / survival P Y (y n)) /
-      Real.log (y n / tailQuantile P Y ((k n : ℝ) / n))) atTop (𝓝 (-(lam / γ ^ 2))) := by
+      (y n / upperQuantile (survival P Y) ((k n : ℝ) / n)) ^ (-(1 / γ)) / survival P Y (y n)) /
+      Real.log (y n / upperQuantile (survival P Y) ((k n : ℝ) / n))) atTop (𝓝 (-(lam / γ ^ 2))) := by
   set F := survival P Y with hFdef
   set U := survivalQuantile F with hUdef
   have hF := survival_anti (P := P) Y
@@ -1041,8 +1041,8 @@ theorem tendsto_sqrt_mul_log_tailProb_bias_of_rho_eq_zero {Y : Ω → ℝ} (hY :
   have hF0 := tendsto_survival_atTop (P := P) hY
   have hF1 := tendsto_survival_atBot (P := P) hY
   have hGal : ∀ {t : ℝ}, 1 < t → ∀ x, U t ≤ x ↔ F x ≤ t⁻¹ := fun ht x =>
-    tailQuantile_le_iff hF hrc hF0 hF1 ht x
-  have hUm := measurable_tailQuantile hF hrc hF0 hF1
+    survivalQuantile_le_iff hF hrc hF0 hF1 ht x
+  have hUm := measurable_survivalQuantile hF hrc hF0 hF1
   have hRV := h2.isRegularlyVarying_survival hY hγ
   have hFpos : ∀ z, 0 < F z := survival_pos hRV
   obtain ⟨B, hBm, h2B, hBA⟩ := h2.exists_measurable hUm
@@ -1056,7 +1056,7 @@ theorem tendsto_sqrt_mul_log_tailProb_bias_of_rho_eq_zero {Y : Ω → ℝ} (hY :
   have hkR : Tendsto (fun n => (k n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop.comp hk
   have hA0 : Tendsto (fun n : ℕ => A (n / k n)) atTop (𝓝 0) := h2.tendsto_zero.comp hnk
   set s : ℕ → ℝ := fun n => (n : ℝ) / k n with hs_def
-  set x0 : ℕ → ℝ := fun n => tailQuantile P Y ((k n : ℝ) / n) with hx0_def
+  set x0 : ℕ → ℝ := fun n => upperQuantile (survival P Y) ((k n : ℝ) / n) with hx0_def
   set ℓ : ℕ → ℝ := fun n => Real.log (y n / x0 n) with hℓ_def
   set τ : ℕ → ℝ := fun n => (F (y n))⁻¹ with hτ_def
   set D : ℕ → ℝ := fun n => τ n / s n with hD_def
@@ -1078,7 +1078,7 @@ theorem tendsto_sqrt_mul_log_tailProb_bias_of_rho_eq_zero {Y : Ω → ℝ} (hY :
     have hsT : T₀ ≤ s n := (le_max_left _ _).trans ((le_max_right _ _).trans hsn)
     have hq : x0 n = U (s n) := by
       simp only [hx0_def, hs_def]
-      rw [tailQuantile_eq_survivalQuantile (div_pos hk0 hn0) hkn1, inv_div]
+      rw [upperQuantile_eq_survivalQuantile (div_pos hk0 hn0) hkn1, inv_div]
     have hUs : 0 < U (s n) := hT₀ _ hsT
     have hy : U (s n) < y n := by
       have : 1 < y n / x0 n := hen
@@ -1288,15 +1288,15 @@ theorem tendstoInDistribution_tailProbEstimator_of_rho_eq_zero {X : ℕ → Ω �
     (h2 : IsSecondOrderRegularlyVarying (survivalQuantile (survival P (X 0))) γ 0 A) {k : ℕ → ℕ}
     (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
     (hlam : Tendsto (fun n => √(k n : ℝ) * A (n / k n)) atTop (𝓝 lam)) {y : ℕ → ℝ}
-    (he : Tendsto (fun n => y n / tailQuantile P (X 0) ((k n : ℝ) / n)) atTop atTop)
-    (hek : Tendsto (fun n => Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) /
+    (he : Tendsto (fun n => y n / upperQuantile (survival P (X 0)) ((k n : ℝ) / n)) atTop atTop)
+    (hek : Tendsto (fun n => Real.log (y n / upperQuantile (survival P (X 0)) ((k n : ℝ) / n)) /
       √(k n : ℝ)) atTop (𝓝 0))
     {η : ℕ → ℝ} (hη : Tendsto η atTop (𝓝 0))
     (hAη : ∀ᶠ n : ℕ in atTop, ∀ z ∈ Icc ((n : ℝ) / k n) ((P {ω | y n < X 0 ω}).toReal)⁻¹,
       |A z / A (n / k n) - 1| ≤ η n)
     {Z : Ω' → ℝ} (hZ : HasLaw Z (gaussianReal 0 (γ⁻¹ ^ 2).toNNReal) P') :
     TendstoInDistribution (fun n ω => √(k n : ℝ) /
-      Real.log (y n / tailQuantile P (X 0) ((k n : ℝ) / n)) *
+      Real.log (y n / upperQuantile (survival P (X 0)) ((k n : ℝ) / n)) *
       (tailProbEstimator (fun i : Fin n => X i ω) (k n) (y n) /
         (P {ω | y n < X 0 ω}).toReal - 1))
       atTop Z (fun _ => P) P' := by

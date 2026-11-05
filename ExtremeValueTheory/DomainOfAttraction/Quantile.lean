@@ -5,6 +5,7 @@ Authors: Federico Carrone
 -/
 import ExtremeValueTheory.RegularVariation.Extended
 import ExtremeValueTheory.PeaksOverThreshold.Converse
+import ExtremeValueTheory.UpperQuantile
 
 /-!
 # The quantile form of the domain of attraction condition
@@ -81,9 +82,22 @@ open ExtremeValueTheory
 variable (F : CumulativeDistributionFunction)
 
 /-- The **tail quantile function** `U(t) = F^←(1 - 1/t) = inf {y | 1 - F y ≤ 1/t}` (meaningful
-for `t > 1`). -/
+for `t > 1`): the canonical upper quantile `upperQuantile` of the survival function `1 - F` at
+level `1/t`, i.e. the return-period form of it on a distribution function. It agrees with
+`survivalQuantile (1 - F)` for `t > 1` (`tailQuantile_eq_survivalQuantile`). -/
 noncomputable def tailQuantile (t : ℝ) : ℝ :=
-  sInf {y | 1 - F y ≤ 1 / t}
+  upperQuantile (fun y => 1 - F y) (1 / t)
+
+theorem tailQuantile_def (t : ℝ) : F.tailQuantile t = sInf {y | 1 - F y ≤ 1 / t} := rfl
+
+theorem tailQuantile_eq_upperQuantile (t : ℝ) :
+    F.tailQuantile t = upperQuantile (fun y => 1 - F y) t⁻¹ := by
+  rw [tailQuantile, one_div]
+
+/-- On a distribution function, `tailQuantile` is `survivalQuantile` of `1 - F` for `t > 1`. -/
+theorem tailQuantile_eq_survivalQuantile {t : ℝ} (ht : 1 < t) :
+    F.tailQuantile t = survivalQuantile (fun y => 1 - F y) t := by
+  rw [survivalQuantile_of_one_lt ht, tailQuantile_eq_upperQuantile]
 
 /-- The tail quantile function is monotone on `(1, ∞)`. -/
 theorem tailQuantile_mono {s t : ℝ} (hs : 1 < s) (hst : s ≤ t) :
@@ -229,7 +243,7 @@ theorem tailQuantile_spec {t : ℝ} (ht : 1 < t) :
     (lt_mem_nhds (show 1 - 1 / t < 1 by linarith))).exists
   obtain ⟨y₀, hy₀⟩ := (F.tendsto_atBot.eventually
     (gt_mem_nhds (show (0 : ℝ) < 1 - 1 / t by linarith))).exists
-  exact Gumbel.quantile_spec (g := fun y => 1 - F y) (fun _ _ h => sub_le_sub_left (F.mono' h) 1)
+  exact upperQuantile_spec (S := fun y => 1 - F y) (fun _ _ h => sub_le_sub_left (F.mono' h) 1)
     (fun x => continuousWithinAt_const.sub (F.right_continuous x)) ⟨y₁, by linarith⟩
     ⟨y₀, by linarith⟩
 
@@ -588,7 +602,7 @@ theorem tendsto_one_sub_upperEndpointFilter_of_isExtendedRegularlyVarying {γ : 
       positivity
   have heq : ∀ᶠ t in atTop, F.tailQuantile (2 * t) - F.tailQuantile t = 0 := by
     filter_upwards [eventually_gt_atTop (1 / ε), eventually_gt_atTop 0] with t ht ht0
-    simp only [tailQuantile]
+    simp only [tailQuantile, upperQuantile]
     rw [hset t ht, hset (2 * t) (by linarith), sub_self]
   have h2 := hU.2 2 two_pos
   have h0 : Tendsto (fun t => (F.tailQuantile (2 * t) - F.tailQuantile t) / a t) atTop (𝓝 0) := by
