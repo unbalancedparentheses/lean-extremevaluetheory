@@ -5,7 +5,7 @@
     "source": "EKM Thm 3.2.3",
     "lean_name": "CumulativeDistributionFunction.IsExtremeValueDistr.classification",
     "file": "ExtremeValueTheory/SelfSimilarCDF.lean",
-    "statement": "CumulativeDistributionFunction.IsExtremeValueDistr.classification\n  {G : CumulativeDistributionFunction} (G_evd : G.IsExtremeValueDistr) :\n  (∃ A, A • G = standardGumbelCDF) ∨\n    (∃ A ξ, ∃ (hξ : 0 < ξ), A • G = standardFrechetCDF hξ) ∨\n      ∃ A ξ, ∃ (hξ : 0 < ξ), A • G = standardWeibullCDF hξ",
+    "statement": "CumulativeDistributionFunction.IsExtremeValueDistr.classification\n  {G : CumulativeDistributionFunction} (G_evd : G.IsExtremeValueDistr) :\n  (∃ A, A • G = standardGumbelCDF) ∨\n    (∃ A α, ∃ (hα : 0 < α), A • G = standardFrechetCDF hα) ∨\n      ∃ A α, ∃ (hα : 0 < α), A • G = standardWeibullCDF hα",
     "status": "full",
     "scope_note": "No extra hypotheses. Says every extreme value law is of Gumbel, Fréchet or Weibull type; it does not assert the normalizing constants of any particular F (that is the domains area).",
     "axioms": [
@@ -13,7 +13,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "3057fa6675067580aaf485d9d22b1dd3"
+    "input_hash": "4cce12ac755d837d6403beff7baced25"
   },
   {
     "id": "jenkinson-von-mises",

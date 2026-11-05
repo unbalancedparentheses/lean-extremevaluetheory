@@ -22,7 +22,10 @@ import ExtremeValueTheory.RegularVariation.Breiman
 import ExtremeValueTheory.DomainOfAttraction.Frechet
 import ExtremeValueTheory.PeaksOverThreshold.Frechet
 import ExtremeValueTheory.RegularVariation.UniformConvergence
+import ExtremeValueTheory.RegularVariation.UniformConvergenceTails
+import ExtremeValueTheory.RegularVariation.Composition
 import ExtremeValueTheory.RegularVariation.Representation
+import ExtremeValueTheory.RegularVariation.RepresentationIndex
 import ExtremeValueTheory.DomainOfAttraction.Weibull
 import ExtremeValueTheory.HeavyTails.Subexponential
 import ExtremeValueTheory.HeavyTails.RandomSums
@@ -52,6 +55,7 @@ import ExtremeValueTheory.StableLaws.GeneralizedCLT.CharFun
 import ExtremeValueTheory.StableLaws.GeneralizedCLT
 import ExtremeValueTheory.StableLaws.Constants
 import ExtremeValueTheory.RegularVariation.KaramataConverse
+import ExtremeValueTheory.RegularVariation.KaramataIntegrals
 import ExtremeValueTheory.DomainOfAttraction.VonMises
 import ExtremeValueTheory.StableLaws.GeneralizedCLTOne
 import ExtremeValueTheory.StableLaws.EulerConstant
@@ -98,6 +102,10 @@ import ExtremeValueTheory.Statistics.HillNormality
 import ExtremeValueTheory.RegularVariation.Extended
 import ExtremeValueTheory.DomainOfAttraction.Quantile
 import ExtremeValueTheory.DomainOfAttraction.GEVDomain
+import ExtremeValueTheory.DomainOfAttraction.SampleMaxima
+import ExtremeValueTheory.DomainOfAttraction.Examples
+import ExtremeValueTheory.DomainOfAttraction.Norming
+import ExtremeValueTheory.DomainOfAttraction.VonMisesUnified
 import ExtremeValueTheory.Statistics.MomentGeneral
 import ExtremeValueTheory.ForMathlib.Probability.PoissonLimit
 import ExtremeValueTheory.ForMathlib.Probability.PointProcessConvergence

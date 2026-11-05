@@ -529,7 +529,7 @@ theorem tendsto_minSqMoment_div_sq_mul_absTail {α : ℝ} (hα2 : α < 2)
   have hfi : ∀ x, IntervalIntegrable f volume 0 x := fun x =>
     (GCLT.absTail_antitone (μ := μ)).intervalIntegrable.continuousOn_mul
       (by fun_prop : Continuous fun u : ℝ => 2 * u).continuousOn
-  have hK := IsRegularlyVarying.tendsto_integral_zero_div hf hfm (by linarith) hfi
+  have hK := IsRegularlyVarying.tendsto_integral_interval_div hf hfm (by linarith) fun x _ => hfi x
   rw [show 1 + -α + 1 = 2 - α by ring] at hK
   have := hK.const_mul 2
   rw [show 2 * (1 / (2 - α)) = 2 / (2 - α) by ring] at this

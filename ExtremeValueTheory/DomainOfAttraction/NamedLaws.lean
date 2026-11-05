@@ -7,7 +7,7 @@ import ExtremeValueTheory.DomainOfAttraction.GEVDomain
 import ExtremeValueTheory.DomainOfAttraction.OfMeasure
 import ExtremeValueTheory.GEV.Family
 import ExtremeValueTheory.GEV.MaxStable
-import ExtremeValueTheory.RegularVariation.KaramataConverse
+import ExtremeValueTheory.RegularVariation.KaramataIntegrals
 import ExtremeValueTheory.Statistics.GPDLikelihood
 import Mathlib.Probability.Distributions.Cauchy
 
@@ -54,32 +54,13 @@ namespace ExtremeValueTheory
 
 /-- **The tail integral of a regularly varying function** ([BGT, Proposition 1.5.10]): if `f` is
 measurable and regularly varying with index `-(α + 1)`, `α > 0`, then `x ↦ ∫ₓ^∞ f` is regularly
-varying with index `-α`. -/
+varying with index `-α`. The case of `IsRegularlyVarying.integral_Ioi_of_measurableNearTop` for
+globally measurable `f`, with the index written `-(α + 1)`. -/
 theorem IsRegularlyVarying.integral_Ioi {f : ℝ → ℝ} {α : ℝ} (hm : Measurable f)
     (hRV : IsRegularlyVarying f (-(α + 1))) (hα : 0 < α) :
     IsRegularlyVarying (fun x => ∫ t in Ioi x, f t) (-α) := by
-  have hK : Tendsto (fun x => (∫ t in Ioi x, f t) / (x * f x)) atTop (𝓝 (1 / α)) := by
-    have := IsRegularlyVarying.tendsto_integral_Ioi_div_of_measurable hm hRV (by linarith)
-    simpa using this
-  have hL : (0 : ℝ) < 1 / α := one_div_pos.2 hα
-  have hx0 : ∀ᶠ x : ℝ in atTop, 0 < x := eventually_gt_atTop 0
-  refine ⟨?_, fun c hc => ?_⟩
-  · filter_upwards [(tendsto_order.1 hK).1 0 hL, hRV.1, hx0] with x h1 h2 h3
-    exact (div_pos_iff_of_pos_right (mul_pos h3 h2)).1 h1
-  · have hcx : Tendsto (fun x : ℝ => c * x) atTop atTop := tendsto_id.const_mul_atTop hc
-    have h := (((hK.comp hcx).div hK hL.ne').mul (hRV.2 c hc)).const_mul c
-    have hlim : c * (1 / α / (1 / α) * c ^ (-(α + 1))) = c ^ (-α) := by
-      rw [div_self hL.ne', one_mul, Real.rpow_neg hc.le, Real.rpow_neg hc.le,
-        Real.rpow_add hc, Real.rpow_one]
-      have := (Real.rpow_pos_of_pos hc α).ne'
-      field_simp
-    rw [hlim] at h
-    refine h.congr' ?_
-    filter_upwards [(tendsto_order.1 hK).1 0 hL, hRV.1, hx0, hcx.eventually hRV.1,
-      hcx.eventually hx0] with x h1 h2 h3 h4 h5
-    have hT : 0 < ∫ t in Ioi x, f t := (div_pos_iff_of_pos_right (mul_pos h3 h2)).1 h1
-    simp only [Function.comp_apply, Pi.div_apply]
-    field_simp
+  have h := hRV.integral_Ioi_of_measurableNearTop hm.measurableNearTop (by linarith)
+  rwa [show 1 - (α + 1) = -α by ring] at h
 
 /-- The tail of a law with density `f`, as an integral of `f`. -/
 theorem measureReal_withDensity_Ioi {f : ℝ → ℝ} (hf0 : ∀ x, 0 ≤ f x) (hi : Integrable f)

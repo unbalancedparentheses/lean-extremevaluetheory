@@ -75,7 +75,7 @@ Fréchet domain of attraction (Chapter~\ref{chap:domains-of-attraction}).
 \begin{theorem}[Karamata's theorem, converse half]
   \label{thm:karamata-converse}
   \uses{thm:karamata-representation}
-  \lean{ExtremeValueTheory.IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi, ExtremeValueTheory.IsRegularlyVarying.of_log_sub_eq_integral,
+  \lean{ExtremeValueTheory.IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi_of_pos, ExtremeValueTheory.IsRegularlyVarying.of_log_sub_eq_integral,
     ExtremeValueTheory.IsRegularlyVarying.of_tendsto_mul_deriv_div, ExtremeValueTheory.IsRegularlyVarying.of_abs_log_sub_le, ExtremeValueTheory.IsRegularlyVarying.of_tendsto}
   \leanok
   Let $F$ be antitone and integrable on $(a, \infty)$, and $\alpha > 1$. If
@@ -88,13 +88,13 @@ Fréchet domain of attraction (Chapter~\ref{chap:domains-of-attraction}).
   The representation theorem gives $I \in RV_{1-\alpha}$, and $F = (I/x) \cdot (x F/I)$.
 \end{proof}
 
-\begin{theorem}[{Karamata's theorem for integrals over $[0, x]$}]
+\begin{theorem}[{Karamata's theorem for integrals over $[a, x]$}]
   \label{thm:karamata-zero}
   \uses{thm:karamata-relaxed}
-  \lean{ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_zero_div}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_interval_div}
   \leanok
-  If $f \in RV_\rho$ is measurable and locally integrable on $[0, \infty)$ and $\rho > -1$, then
-  $\int_0^x f / (x f(x)) \to 1/(\rho + 1)$ [BGT, Proposition~1.5.8].
+  If $f \in RV_\rho$ is measurable and integrable on $[a, x]$ for $x \ge a$, and $\rho > -1$, then
+  $\int_a^x f / (x f(x)) \to 1/(\rho + 1)$ [BGT, Proposition~1.5.8].
 \end{theorem}
 \begin{proof}
   \leanok

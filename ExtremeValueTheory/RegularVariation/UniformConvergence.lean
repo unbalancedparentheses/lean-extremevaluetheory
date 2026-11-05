@@ -16,9 +16,10 @@ import Mathlib.MeasureTheory.Function.SpecialFunctions.Basic
 
 Following Bingham, Goldie and Teugels, *Regular Variation* (Cambridge University Press, 1987),
 henceforth [BGT], we prove the **uniform convergence theorem** ([BGT, Theorem 1.2.1]) for
-*measurable* slowly varying functions, without any monotonicity assumption, together with its
-version for regularly varying functions ([BGT, Theorem 1.5.2]) and the general **Potter bounds**
-([BGT, Theorem 1.5.6]). The Karamata representation theorem ([BGT, Theorem 1.3.1]) is proved in
+*measurable* slowly varying functions, without any monotonicity assumption, together with the compact
+part of its version for regularly varying functions ([BGT, Theorem 1.5.2]) and the general **Potter
+bounds** ([BGT, Theorem 1.5.6]). The rest of [BGT, Theorem 1.5.2], the ranges `[a, ∞)` and `(0, b]`,
+and measurability only near `∞`, are in `ExtremeValueTheory.RegularVariation.UniformConvergenceTails`. The Karamata representation theorem ([BGT, Theorem 1.3.1]) is proved in
 `ExtremeValueTheory.RegularVariation.Representation`.
 
 ## Main results
@@ -27,7 +28,8 @@ version for regularly varying functions ([BGT, Theorem 1.5.2]) and the general *
   measurable and `h (x + u) - h x → 0` as `x → ∞` for every `u`, then the convergence is uniform
   in `u` on compact sets.
 * `ExtremeValueTheory.IsSlowlyVarying.tendstoUniformlyOn_of_measurable`: [BGT, Theorem 1.2.1].
-* `ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_of_measurable`: [BGT, Theorem 1.5.2].
+* `ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_of_measurable`: the compact part of
+  [BGT, Theorem 1.5.2].
 * `ExtremeValueTheory.IsRegularlyVarying.potter_bound_of_measurable`: [BGT, Theorem 1.5.6].
 
 ## Proof
@@ -165,10 +167,11 @@ theorem tendsto_log_comp_exp_sub (hf : IsRegularlyVarying f ρ) (u : ℝ) :
   rw [exp_add, mul_comm (exp t), log_div ht2.ne' ht1.ne']
   ring
 
-/-- **Uniform convergence theorem** for measurable regularly varying functions
-([BGT, Theorem 1.5.2], deduced from [BGT, Theorem 1.2.1]): if `f` is measurable and regularly
-varying with index `ρ`, then `f (c * x) / f x → c ^ ρ` uniformly in `c` on every compact subset
-`K` of `(0, ∞)`. No monotonicity is assumed. -/
+/-- **Uniform convergence theorem** for measurable regularly varying functions, compact part
+(the compact part of [BGT, Theorem 1.5.2], deduced from [BGT, Theorem 1.2.1]): if `f` is measurable
+and regularly varying with index `ρ`, then `f (c * x) / f x → c ^ ρ` uniformly in `c` on every compact
+subset `K` of `(0, ∞)`. No monotonicity is assumed. The other two ranges of the book's theorem are
+`tendstoUniformlyOn_Ici_of_measurableNearTop` and `tendstoUniformlyOn_Ioc_of_measurableNearTop`. -/
 theorem tendstoUniformlyOn_of_measurable (hf : IsRegularlyVarying f ρ) (hm : Measurable f)
     {K : Set ℝ} (hK : IsCompact K) (hK0 : K ⊆ Ioi 0) :
     TendstoUniformlyOn (fun x c => f (c * x) / f x) (fun c => c ^ ρ) atTop K := by

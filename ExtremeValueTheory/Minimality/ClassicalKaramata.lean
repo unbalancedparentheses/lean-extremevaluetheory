@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.RegularVariation.Karamata
+import ExtremeValueTheory.RegularVariation.KaramataIntegrals
 
 /-!
 # Minimality of the hypotheses of Karamata's theorem
@@ -218,56 +219,12 @@ theorem not_integrableOn_Ioi_max_rpow {α : ℝ} (hα : α < 1) (x : ℝ) :
 
 /-- **Karamata's theorem at index `-1`** ([BGT, Proposition 1.5.9b]): if `F` is antitone,
 regularly varying with index `-1` and integrable on a half-line, then
-`(∫ t in Ioi x, F t) / (x * F x) → ∞`. -/
+`(∫ t in Ioi x, F t) / (x * F x) → ∞`. The antitone special case of
+`IsRegularlyVarying.tendsto_integral_Ioi_div_atTop_of_neg_one`. -/
 theorem tendsto_integral_Ioi_div_atTop_of_neg_one {F : ℝ → ℝ} (hF : Antitone F)
     (hRV : IsRegularlyVarying F (-1)) {x₀ : ℝ} (hint : IntegrableOn F (Ioi x₀)) :
-    Tendsto (fun x => (∫ t in Ioi x, F t) / (x * F x)) atTop atTop := by
-  have hFpos := IsRegularlyVarying.pos_of_antitone hF hRV.1
-  have hFm : Measurable F := hF.measurable
-  -- Change of variables `t = x * u`.
-  have hsub : ∀ x > 0,
-      ∫ u in Ioi (1 : ℝ), F (x * u) / F x = (∫ t in Ioi x, F t) / (x * F x) := by
-    intro x hx
-    rw [integral_div, integral_comp_mul_left_Ioi F 1 hx, mul_one, smul_eq_mul, inv_mul_eq_div,
-      div_div]
-  have hintx : ∀ x > max x₀ 0, IntegrableOn (fun u => F (x * u) / F x) (Ioi 1) := by
-    intro x hx
-    have hx0 : 0 < x := (le_max_right _ _).trans_lt hx
-    have h1 : IntegrableOn F (Ioi (x * 1)) :=
-      hint.mono_set (Ioi_subset_Ioi (by rw [mul_one]; exact (le_max_left _ _).trans hx.le))
-    have := (integrableOn_Ioi_comp_mul_left_iff F 1 hx0).2 h1
-    exact this.div_const _
-  refine tendsto_atTop.2 fun M => ?_
-  -- Truncate at `R = exp (M + 1)` and use dominated convergence on `(1, R]`.
-  set R := exp (|M| + 1) with hR
-  have hR1 : 1 < R := one_lt_exp_iff.2 (by positivity)
-  have hlimR : Tendsto (fun x => ∫ u in Ioc 1 R, F (x * u) / F x) atTop
-      (𝓝 (∫ u in Ioc 1 R, u ^ (-1 : ℝ))) := by
-    refine tendsto_integral_filter_of_dominated_convergence (fun _ => 1) ?_ ?_ ?_ ?_
-    · exact Eventually.of_forall fun x =>
-        ((hFm.comp (measurable_id.const_mul x)).div_const _).aestronglyMeasurable
-    · filter_upwards [eventually_gt_atTop 0] with x hx
-      refine ae_restrict_of_forall_mem measurableSet_Ioc fun u hu => ?_
-      rw [Real.norm_eq_abs, abs_of_pos (div_pos (hFpos _) (hFpos _)), div_le_one (hFpos _)]
-      exact hF (le_mul_of_one_le_right hx.le hu.1.le)
-    · exact integrableOn_const measure_Ioc_lt_top.ne
-    · refine ae_restrict_of_forall_mem measurableSet_Ioc fun u hu => ?_
-      exact (hRV.2 u (zero_lt_one.trans hu.1)).congr fun x => by rw [mul_comm]
-  have hval : ∫ u in Ioc 1 R, u ^ (-1 : ℝ) = |M| + 1 := by
-    rw [← intervalIntegral.integral_of_le hR1.le]
-    have : ∫ u in (1 : ℝ)..R, u ^ (-1 : ℝ) = ∫ u in (1 : ℝ)..R, u⁻¹ :=
-      intervalIntegral.integral_congr fun u _ => rpow_neg_one u
-    rw [this, integral_inv_of_pos one_pos (by linarith), div_one, hR, log_exp]
-  rw [hval] at hlimR
-  have hev := hlimR.eventually (lt_mem_nhds (show |M| < |M| + 1 by linarith))
-  filter_upwards [hev, eventually_gt_atTop (max x₀ 0)] with x h1 h2
-  have hx0 : 0 < x := (le_max_right _ _).trans_lt h2
-  rw [← hsub x hx0]
-  have hle : ∫ u in Ioc 1 R, F (x * u) / F x ≤ ∫ u in Ioi 1, F (x * u) / F x :=
-    setIntegral_mono_set (hintx x h2)
-      (ae_of_all _ fun u => (div_pos (hFpos _) (hFpos _)).le)
-      (Ioc_subset_Ioi_self.eventuallyLE)
-  linarith [le_abs_self M]
+    Tendsto (fun x => (∫ t in Ioi x, F t) / (x * F x)) atTop atTop :=
+  hRV.tendsto_integral_Ioi_div_atTop_of_neg_one hF.measurable.measurableNearTop hint
 
 /-- **Karamata's theorem fails at `α = 1`.** For every antitone `F`, regularly varying with
 index `-1` and integrable on a half-line, the ratio does not tend to `1 / (1 - 1) = 0` (it tends

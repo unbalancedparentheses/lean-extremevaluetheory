@@ -26,6 +26,9 @@ general Potter bounds ([BGT, Theorem 1.5.6]) are in
 * `ExtremeValueTheory.IsSlowlyVarying.exists_representation`: (⇒), for measurable `L`.
 * `ExtremeValueTheory.isSlowlyVarying_iff_exists_representation`: [BGT, Theorem 1.3.1].
 
+The case of index `ρ`, for functions measurable near `∞`, is in
+`ExtremeValueTheory.RegularVariation.RepresentationIndex`.
+
 ## Proof of (⇒)
 
 Write `ℓ = log ∘ L` and `g t = ℓ t / t`. By the uniform convergence theorem,
