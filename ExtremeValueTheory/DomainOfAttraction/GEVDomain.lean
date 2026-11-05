@@ -4,8 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.PeaksOverThreshold.Balkema
+import ExtremeValueTheory.DomainOfAttraction.Quantile
 import ExtremeValueTheory.DomainOfAttraction.VonMises
 import ExtremeValueTheory.GEV.Family
+import ExtremeValueTheory.StableLaws.GaussianDomain.Necessity
 import ExtremeValueTheory.Statistics.GEVLikelihood
 
 /-!
@@ -26,6 +28,7 @@ and places the textbook examples in it, with the de Haan–Ferreira sign convent
   the literal form of weak convergence; `gevCDF ξ` is continuous, so the two agree.
 * `exists_isInMDAGEV_of_tendsto`: a nondegenerate limit of normalized maxima places `F` in some
   `MDA(H_ξ)`.
+* `IsInMDAGEV.unique`: the shape `ξ` of a domain of attraction is unique.
 * `isInMDAGEV_paretoCDF`: Pareto(`α`) is in `MDA(H_{1/α})`.
 * `isInMDAGEV_powerCDF`: `1 - (1 - x)^α` (uniform for `α = 1`) is in `MDA(H_{-1/α})`.
 * `isInMDAGEV_standardExponentialCDF`: the standard exponential law is in `MDA(H_0)`.
@@ -172,5 +175,31 @@ theorem exists_isInMDAGEV_of_tendsto {G : CumulativeDistributionFunction}
     exact (continuous_gevCDF ξ).comp (by fun_prop)
   have := h (A⁻¹ x) hGc.continuousAt
   simpa only [mul_smul, mulAction_apply_eq, ← hA] using this
+
+/-- **The shape parameter is unique**: if `F` is in `MDA(H_ξ)` and in `MDA(H_η)`, then `ξ = η`. The
+domains of attraction of the `H_ξ` are disjoint.
+
+The proof compares two auxiliary functions of the tail quantile function `U`
+(`isExtendedRegularlyVarying_tailQuantile`). Both `a` and `a'` are regularly varying, with indices `ξ`
+and `η`, and `(U (2 t) - U t) / a t` and `(U (2 t) - U t) / a' t` have positive limits, so `a' / a` has a
+positive limit. -/
+theorem IsInMDAGEV.unique {ξ η : ℝ} (hξ : F.IsInMDAGEV ξ) (hη : F.IsInMDAGEV η) : ξ = η := by
+  obtain ⟨a, ha⟩ := (F.isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile ξ).1 hξ
+  obtain ⟨b, hb⟩ := (F.isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile η).1 hη
+  have hξ2 : 0 < extRVLimit ξ 2 := extRVLimit_pos one_lt_two
+  have hη2 : 0 < extRVLimit η 2 := extRVLimit_pos one_lt_two
+  have hratio := (ha.tendsto two_pos).div (hb.tendsto two_pos) hη2.ne'
+  have hab : Tendsto (fun t ↦ b t / a t) atTop (𝓝 (extRVLimit ξ 2 / extRVLimit η 2)) := by
+    refine hratio.congr' ?_
+    have hU : ∀ᶠ t in atTop, 0 < (F.tailQuantile (2 * t) - F.tailQuantile t) / b t :=
+      (hb.tendsto two_pos).eventually (lt_mem_nhds hη2)
+    filter_upwards [ha.eventually_pos, hb.eventually_pos, hU] with t hat hbt hUt
+    have hne : F.tailQuantile (2 * t) - F.tailQuantile t ≠ 0 := by
+      intro h0
+      rw [h0, zero_div] at hUt
+      exact lt_irrefl _ hUt
+    simp only [Pi.div_apply]
+    field_simp
+  exact (ha.isRegularlyVarying.of_tendsto_div hab (div_pos hξ2 hη2)).index_eq hb.isRegularlyVarying
 
 end CumulativeDistributionFunction
