@@ -5,6 +5,7 @@ Authors: Federico Carrone
 -/
 import ExtremeValueTheory.GEV.Family
 import ExtremeValueTheory.CDFBridge
+import ExtremeValueTheory.RegularVariation.Extended
 import Mathlib.NumberTheory.Harmonic.GammaDeriv
 import Mathlib.Probability.Moments.Variance
 
@@ -77,11 +78,6 @@ namespace ExtremeValueTheory
 /-- The standard exponential law, as the measure `e^{-t} dt` on `(0, ∞)`. -/
 noncomputable def stdExpMeasure : Measure ℝ :=
   (volume.restrict (Ioi 0)).withDensity fun t ↦ ENNReal.ofReal (exp (-t))
-
-/-- The transformation `t ↦ (t ^ (-ξ) - 1) / ξ` (`-log t` for `ξ = 0`) carrying the standard
-exponential law to `H_ξ`. -/
-noncomputable def gevTransform (ξ t : ℝ) : ℝ :=
-  if ξ = 0 then -log t else (t ^ (-ξ) - 1) / ξ
 
 lemma measurable_gevTransform (ξ : ℝ) : Measurable (gevTransform ξ) := by
   by_cases h : ξ = 0

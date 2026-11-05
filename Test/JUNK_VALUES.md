@@ -125,7 +125,7 @@ above.
   - `conditionalExcessCDF`, `tailDependenceRatio`, `tailLaw` and `scaledLaw` divide by a
     probability that can be 0.
 - **Shape-parameter families.**
-  - `gevCDF`, `IsInMDAGEV`, `gpdSurvivalInv` and `boxCox` split off shape 0 with an explicit
+  - `gevCDF`, `IsInMDAGEV`, `gevTransform` and `boxCox` split off shape 0 with an explicit
     `if`, so they are junk-free.
   - `gpdSurvivalAll` (`PeaksOverThreshold/Frechet.lean`) truncates with `max (·, 0)`, so for `ξ < 0`
     it is `0` past the endpoint `-β/ξ`. For `x < 0` it is the analytic extension
