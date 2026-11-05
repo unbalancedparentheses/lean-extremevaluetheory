@@ -3,6 +3,7 @@ Copyright (c) 2026 Federico Carrone.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
+import ExtremeValueTheory.UpperQuantile
 import ExtremeValueTheory.Dependence.MDependentExamples
 import ExtremeValueTheory.HeavyTails.LinearProcessSeries
 
@@ -104,10 +105,11 @@ theorem tendsto_measureReal_process_div_of_summable_rpow (hZ : ∀ i, Measurable
     (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
     (hδα : δ < α) (hδ1 : δ < 1)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) :
     Tendsto (fun x => P.real {ω | x < process ψ Z 0 ω} / P.real {ω | x < Z 0 ω}) atTop
       (𝓝 (∑' j, ψ j ^ α)) := by
+  replace hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α) := hL
   have hL' : IsRegularlyVarying (fun x => P.real {ω | x < |Z 0 ω|}) (-α) := by
     simpa only [setOf_lt_abs_eq hZ0] using hL
   have hp : Tendsto (fun x => P.real {ω | x < Z 0 ω} / P.real {ω | x < |Z 0 ω|}) atTop
@@ -137,11 +139,12 @@ needed. -/
 theorem exists_measureReal_abs_sub_gt_le_of_summable_rpow (hZ : ∀ i, Measurable (Z i))
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
     (hδα : δ < α) (hδ1 : δ < 1)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) :
     ∃ K x₀ : ℝ, ∃ m₀ : ℕ, 0 < K ∧ 0 < x₀ ∧ ∀ m ≥ m₀, ∀ t : ℤ, ∀ y ≥ x₀,
       P.real {ω | y < |process ψ Z t ω - MovingAverage.process m ψ Z t ω|} ≤
         K * (∑' j, ψ (j + (m + 1)) ^ δ) * P.real {ω | y < Z 0 ω} := by
+  replace hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α) := hL
   have hL' : IsRegularlyVarying (fun x => P.real {ω | x < |Z 0 ω|}) (-α) := by
     simpa only [setOf_lt_abs_eq hZ0] using hL
   obtain ⟨K, x₀, hK, hx₀, hR⟩ :=
@@ -173,7 +176,7 @@ theorem exists_measureReal_abs_sub_gt_le_of_summable_rpow (hZ : ∀ i, Measurabl
 theorem tendsto_measureReal_process_div (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
     (hδα : δ < α) (hα1 : α < 1)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) :
     Tendsto (fun x => P.real {ω | x < process ψ Z 0 ω} / P.real {ω | x < Z 0 ω}) atTop
       (𝓝 (∑' j, ψ j ^ α)) :=
@@ -186,7 +189,7 @@ case `α < 1` of `exists_measureReal_abs_sub_gt_le_of_summable_rpow`. -/
 theorem exists_measureReal_abs_sub_gt_le (hZ : ∀ i, Measurable (Z i))
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
     (hδα : δ < α) (hα1 : α < 1)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) :
     ∃ K x₀ : ℝ, ∃ m₀ : ℕ, 0 < K ∧ 0 < x₀ ∧ ∀ m ≥ m₀, ∀ t : ℤ, ∀ y ≥ x₀,
       P.real {ω | y < |process ψ Z t ω - MovingAverage.process m ψ Z t ω|} ≤
@@ -274,9 +277,10 @@ remainder bound `exists_measureReal_abs_sub_gt_le_of_summable_rpow`. -/
 theorem hasExtremalIndex_of_summable_rpow (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
     (hδα : δ < α) (hδ1 : δ < 1)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
     HasExtremalIndex (fun n : ℕ => process ψ Z n) P ((⨆ j, ψ j) ^ α / ∑' j, ψ j ^ α) := by
+  replace hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α) := hL
   have hα : 0 < α := hδ.trans hδα
   have hS : Summable fun j => ψ j ^ α := summable_rpow hψ0 hδ hδα.le hψ
   obtain ⟨k, hk0, hk⟩ := exists_forall_le hψ0 hδ hψ hpos
@@ -457,7 +461,7 @@ theorem hasExtremalIndex_of_summable_rpow (hZ : ∀ i, Measurable (Z i)) (hind :
 theorem hasExtremalIndex (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
     (hδα : δ < α) (hα1 : α < 1)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
     HasExtremalIndex (fun n : ℕ => process ψ Z n) P ((⨆ j, ψ j) ^ α / ∑' j, ψ j ^ α) :=
   hasExtremalIndex_of_summable_rpow hZ hind hident hZ0 hδ hδα (hδα.trans hα1) hL hψ0 hψ hpos

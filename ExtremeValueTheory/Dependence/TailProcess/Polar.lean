@@ -3,6 +3,7 @@ Copyright (c) 2026 Federico Carrone.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
+import ExtremeValueTheory.UpperQuantile
 import ExtremeValueTheory.RegularVariation.Basic
 import ExtremeValueTheory.ForMathlib.MeasureTheory.Measure.Portmanteau
 import Mathlib.Probability.Distributions.Pareto
@@ -227,10 +228,11 @@ omit [IsProbabilityMeasure P] [NormedSpace ℝ E] in
 /-- The basic test functions `1{r > u} g(θ)`, `u ≥ 1`: here
 `E[1{Z > u x} g(T) | Z > x] = P(Z > u x) / P(Z > x) · E[g(T) | Z > u x] → u^(-α) ∫ g dμ`. -/
 private lemma polarGood_indicator (hα : 0 < α) (hZ : Measurable Z) (_hT : Measurable T)
-    (hRV : IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α))
+    (hRV : IsRegularlyVarying (survival P Z) (-α))
     (hconv : TendstoLawCond P (fun x => {ω | x < Z ω}) (fun _ => T) atTop μ)
     {u : ℝ} (hu : 1 ≤ u) {g : E → ℝ} (hg : Continuous g) {C : ℝ} (hgC : ∀ θ, |g θ| ≤ C) :
     PolarGood P Z T μ α (fun p => (Ioi u).indicator 1 p.1 * g p.2) := by
+  replace hRV : IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α) := hRV
   have := isProbabilityMeasure_paretoMeasure one_pos hα
   have hu0 : 0 < u := one_pos.trans_le hu
   have hC0 : 0 ≤ C := (abs_nonneg _).trans (hgC 0)
@@ -326,10 +328,11 @@ the grid `uᵢ = 1 + i δ`, `δ = 1/(n+1)`, `i ≤ (n+1)²`, writing the discret
 sum of basic functions `1{r > uᵢ} gᵢ(θ)`; the error is at most
 `min(2M, K δ ‖θ‖) + 2M · 1{r > n + 2}`. -/
 private lemma polarGood_lipschitz (hα : 0 < α) (hZ : Measurable Z) (hT : Measurable T)
-    (hRV : IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α))
+    (hRV : IsRegularlyVarying (survival P Z) (-α))
     (hconv : TendstoLawCond P (fun x => {ω | x < Z ω}) (fun _ => T) atTop μ)
     {f : E → ℝ} {M : ℝ} (hfM : ∀ y, |f y| ≤ M) {K : ℝ≥0} (hfK : LipschitzWith K f) :
     PolarGood P Z T μ α (fun p => f (p.1 • p.2)) := by
+  replace hRV : IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α) := hRV
   have := isProbabilityMeasure_paretoMeasure one_pos hα
   have hM : 0 ≤ M := (abs_nonneg _).trans (hfM 0)
   have hfc := hfK.continuous
@@ -488,10 +491,11 @@ index `-α`, `α > 0`, and let `T` be a random vector such that the law of `T` g
 converges weakly to `μ`. Then the law of `(Z / x) • T` given `Z > x` converges weakly to the law of
 `R • Θ`, where `R` is Pareto(`α`) and independent of `Θ ∼ μ`. -/
 theorem tendstoLawCond_smul (hα : 0 < α) (hZ : Measurable Z) (hT : Measurable T)
-    (hRV : IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α))
+    (hRV : IsRegularlyVarying (survival P Z) (-α))
     (hconv : TendstoLawCond P (fun x => {ω | x < Z ω}) (fun _ => T) atTop μ) :
     TendstoLawCond P (fun x => {ω | x < Z ω}) (fun x ω => (Z ω / x) • T ω) atTop
       (((paretoMeasure 1 α).prod μ).map fun p => p.1 • p.2) := by
+  replace hRV : IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α) := hRV
   have := isProbabilityMeasure_paretoMeasure one_pos hα
   have hsmul : Measurable fun p : ℝ × E => p.1 • p.2 := continuous_smul.measurable
   have hY : ∀ x : ℝ, Measurable fun ω => (Z ω / x) • T ω := fun x =>
@@ -537,10 +541,11 @@ regularly varying with index `-α`, `α > 0`, and the law of `V / Z` given `Z > 
 to `μ`, then the law of `(Z / x, V / x)` given `Z > x` converges weakly to the law of `(R, R • Θ)`,
 with `R` Pareto(`α`) independent of `Θ ∼ μ`. -/
 theorem tendstoLawCond_polar {V : Ω → E} (hα : 0 < α) (hZ : Measurable Z) (hV : Measurable V)
-    (hRV : IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α))
+    (hRV : IsRegularlyVarying (survival P Z) (-α))
     (hconv : TendstoLawCond P (fun x => {ω | x < Z ω}) (fun _ ω => (Z ω)⁻¹ • V ω) atTop μ) :
     TendstoLawCond P (fun x => {ω | x < Z ω}) (fun x ω => (Z ω / x, x⁻¹ • V ω)) atTop
       (((paretoMeasure 1 α).prod μ).map fun p => (p.1, p.1 • p.2)) := by
+  replace hRV : IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α) := hRV
   have hg : Continuous fun θ : E => ((1 : ℝ), θ) := continuous_const.prodMk continuous_id
   have hc' := hconv.comp hg
   have := isProbabilityMeasure_paretoMeasure one_pos hα
@@ -582,7 +587,8 @@ Pareto(`α`), then `P(Z > x)` is regularly varying with index `-α`. -/
 theorem isRegularlyVarying_of_tendstoLawCond (hα : 0 < α) (hZ : Measurable Z)
     (hV : Measurable V) (hν : ν.map Prod.fst = paretoMeasure 1 α)
     (h : TendstoLawCond P (fun x => {ω | x < Z ω}) (fun x ω => (Z ω / x, x⁻¹ • V ω)) atTop ν) :
-    IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α) := by
+    IsRegularlyVarying (survival P Z) (-α) := by
+  change IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α)
   have hS : ∀ y : ℝ, MeasurableSet {ω | y < Z ω} := fun y => measurableSet_lt measurable_const hZ
   have hne := h.eventually_measure_ne_zero
   have hpos : ∀ᶠ x in atTop, 0 < P.real {ω | x < Z ω} := by
@@ -696,7 +702,7 @@ The following are equivalent, for `α > 0`:
 * the law of `(Z / x, V / x)` given `Z > x` converges weakly to some probability measure with
   Pareto(`α`) first marginal. -/
 theorem polar_iff (hα : 0 < α) (hZ : Measurable Z) (hV : Measurable V) :
-    (IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α) ∧
+    (IsRegularlyVarying (survival P Z) (-α) ∧
       ∃ μ : Measure E, IsProbabilityMeasure μ ∧
         TendstoLawCond P (fun x => {ω | x < Z ω}) (fun _ ω => (Z ω)⁻¹ • V ω) atTop μ) ↔
     ∃ ν : Measure (ℝ × E), IsProbabilityMeasure ν ∧ ν.map Prod.fst = paretoMeasure 1 α ∧

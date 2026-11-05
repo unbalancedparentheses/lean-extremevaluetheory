@@ -3,6 +3,7 @@ Copyright (c) 2026 Federico Carrone.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
+import ExtremeValueTheory.UpperQuantile
 import ExtremeValueTheory.HeavyTails.Subexponential
 import Mathlib.Probability.Independence.Basic
 import Mathlib.Probability.IdentDistrib
@@ -66,7 +67,7 @@ theorem tendsto_comp_mul_div {F L : ℝ → ℝ} {α a : ℝ} (hL : IsRegularlyV
 
 /-- The tail `P(Y > x)` of a random variable tends to `0`. -/
 theorem tendsto_measureReal_lt [IsProbabilityMeasure P] {Y : Ω → ℝ} (hY : Measurable Y) :
-    Tendsto (fun x => P.real {ω | x < Y ω}) atTop (𝓝 0) := by
+    Tendsto (survival P Y) atTop (𝓝 0) := by
   refine (Subexp.tendsto_tail_atTop (μ := P.map Y)).congr fun x => ?_
   rw [tail, measureReal_def, Measure.map_apply hY measurableSet_Ioi]
   rfl

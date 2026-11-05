@@ -3,6 +3,7 @@ Copyright (c) 2026 Federico Carrone.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
+import ExtremeValueTheory.UpperQuantile
 import ExtremeValueTheory.Dependence.InfiniteMovingAverage
 
 /-!
@@ -476,7 +477,7 @@ windows `(X_t / x)_{t ∈ S}` and `(X^{(m)}_t / x)_{t ∈ S}` are `ε`-close off
 theorem eventually_approx_of_summable_rpow (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
     (hδα : δ < α) (hδ1 : δ < 1)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) (S : Finset ℤ) {ε η : ℝ}
     (hε : 0 < ε) (hη : 0 < η) :
     ∀ᶠ m in atTop, ∀ᶠ x in atTop, ∃ D : Set Ω, MeasurableSet D ∧
@@ -486,6 +487,7 @@ theorem eventually_approx_of_summable_rpow (hZ : ∀ i, Measurable (Z i)) (hind 
         P.real ({ω | x < |MovingAverage.process m ψ Z 0 ω|} \ {ω | x < |process ψ Z 0 ω|}) +
         P.real ({ω | x < |process ψ Z 0 ω|} ∩ D) ≤
         η * P.real {ω | x < |process ψ Z 0 ω|} := by
+  replace hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α) := hL
   have hα : 0 < α := hδ.trans hδα
   have hS := summable_rpow hψ0 hδ hδα.le hψ
   obtain ⟨k, hk⟩ := hpos
@@ -627,10 +629,11 @@ under the hypotheses of `hasExtremalIndex_of_summable_rpow`, `X_t = ∑_j ψ_j Z
 theorem hasTailProcess_of_summable_rpow (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
     (hδα : δ < α) (hδ1 : δ < 1)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
     HasTailProcess P (process ψ Z) α ((paretoMeasure 1 α).prod (indexLaw ψ α))
       (fun t p => p.1 * spectral ψ t p.2) := by
+  replace hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α) := hL
   have hα : 0 < α := hδ.trans hδα
   have hS := summable_rpow hψ0 hδ hδα.le hψ
   obtain ⟨k, hk⟩ := hpos
@@ -691,9 +694,10 @@ tail process `Θ_t = ψ_{J+t} / ψ_J`, `P(J = j) = ψ_j^α / ∑_i ψ_i^α`, `J 
 theorem hasSpectralTailProcess_of_summable_rpow (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
     (hδα : δ < α) (hδ1 : δ < 1)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
     HasSpectralTailProcess P (process ψ Z) α (indexLaw ψ α) (spectral ψ) := by
+  replace hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α) := hL
   have hα : 0 < α := hδ.trans hδα
   have hS := summable_rpow hψ0 hδ hδα.le hψ
   obtain ⟨k, hk⟩ := hpos
@@ -731,7 +735,7 @@ theorem hasSpectralTailProcess_of_summable_rpow (hZ : ∀ i, Measurable (Z i)) (
 theorem eventually_approx (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
     (hδα : δ < α) (hα1 : α < 1)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) (S : Finset ℤ) {ε η : ℝ}
     (hε : 0 < ε) (hη : 0 < η) :
     ∀ᶠ m in atTop, ∀ᶠ x in atTop, ∃ D : Set Ω, MeasurableSet D ∧
@@ -750,7 +754,7 @@ case `α < 1` of `hasTailProcess_of_summable_rpow`. -/
 theorem hasTailProcess (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
     (hδα : δ < α) (hα1 : α < 1)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
     HasTailProcess P (process ψ Z) α ((paretoMeasure 1 α).prod (indexLaw ψ α))
       (fun t p => p.1 * spectral ψ t p.2) :=
@@ -765,7 +769,7 @@ varying with index `-α`, `0 < δ < α < 1`, and let `ψ_j ≥ 0`, not all zero,
 theorem hasSpectralTailProcess (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
     (hδα : δ < α) (hα1 : α < 1)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
     HasSpectralTailProcess P (process ψ Z) α (indexLaw ψ α) (spectral ψ) :=
   hasSpectralTailProcess_of_summable_rpow hZ hind hident hZ0 hδ hδα (hδα.trans hα1) hL hψ0 hψ hpos
@@ -902,11 +906,12 @@ theorem hasSpectralTailProcess_and_hasExtremalIndex_of_summable_rpow [IsProbabil
     (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
     (hδα : δ < α) (hδ1 : δ < 1)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
     HasSpectralTailProcess P (process ψ Z) α (indexLaw ψ α) (spectral ψ) ∧
       HasExtremalIndex (fun n : ℕ => process ψ Z n) P
         (candidateExtremalIndex (indexLaw ψ α) (spectral ψ) α).toReal := by
+  replace hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α) := hL
   refine ⟨hasSpectralTailProcess_of_summable_rpow hZ hind hident hZ0 hδ hδα hδ1 hL hψ0 hψ hpos, ?_⟩
   rw [candidateExtremalIndex_spectral hψ0 hδ hψ hδα.le hpos, ENNReal.toReal_ofReal]
   · exact hasExtremalIndex_of_summable_rpow hZ hind hident hZ0 hδ hδα hδ1 hL hψ0 hψ hpos
@@ -925,7 +930,7 @@ theorem hasSpectralTailProcess_and_hasExtremalIndex [IsProbabilityMeasure P]
     (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
     (hδα : δ < α) (hα1 : α < 1)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
     HasSpectralTailProcess P (process ψ Z) α (indexLaw ψ α) (spectral ψ) ∧
       HasExtremalIndex (fun n : ℕ => process ψ Z n) P

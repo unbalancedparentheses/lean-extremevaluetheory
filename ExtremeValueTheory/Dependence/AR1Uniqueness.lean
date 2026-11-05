@@ -3,6 +3,7 @@ Copyright (c) 2026 Federico Carrone.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
+import ExtremeValueTheory.UpperQuantile
 import ExtremeValueTheory.Dependence.AR1
 import ExtremeValueTheory.Dependence.InfiniteMovingAverageTailProcess
 
@@ -180,10 +181,11 @@ the AR(1) recursion with identically distributed marginals is the moving average
 `∑_j φ^j Z_{t-j}`, almost surely at every time. -/
 theorem ae_eq_process {α : ℝ} (hY : ∀ t, Measurable (Y t)) (hZ : ∀ i, Measurable (Z i))
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hα : 0 < α)
-    (hα1 : α < 1) (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α))
+    (hα1 : α < 1) (hL : IsRegularlyVarying (survival P (Z 0)) (-α))
     (hφ0 : 0 < φ) (hφ1 : φ < 1) (hrec : ∀ᵐ ω ∂P, ∀ t, Y t ω = φ * Y (t - 1) ω + Z t ω)
     (hid : ∀ t, IdentDistrib (Y t) (Y 0) P P) (t : ℤ) :
     Y t =ᵐ[P] process φ Z t := by
+  replace hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α) := hL
   have hL' : IsRegularlyVarying (fun x => P.real {ω | x < |Z 0 ω|}) (-α) := by
     simpa only [InfiniteMovingAverage.setOf_lt_abs_eq hZ0] using hL
   have hδ : 0 < α / 2 := by positivity
