@@ -370,4 +370,39 @@ theorem test_lSkewness_uniform : lSkewness (gpdMeasure (-1) 1) = 0 := by
   rw [lSkewness_gpdMeasure one_pos (by norm_num)]
   norm_num
 
+/-- The asymptotic variance of the Pickands estimator at `γ = 0` ([dHF, Theorem 3.3.5]):
+`3 / (4 (log 2)⁴)`. -/
+theorem test_pickandsVariance_zero : pickandsVariance 0 = 3 / (4 * Real.log 2 ^ 4) :=
+  pickandsVariance_zero
+
+/-- The asymptotic variance at `γ = 1`: `γ² (2^{2γ+1} + 1) / (2 (2^γ - 1) log 2)² =
+9 / (4 (log 2)²)`. -/
+theorem test_pickandsVariance_one : pickandsVariance 1 = 9 / (4 * Real.log 2 ^ 2) := by
+  rw [pickandsVariance_of_ne one_ne_zero]
+  norm_num
+  ring
+
+/-- The asymptotic variance at `γ = -1`, the uniform case:
+`γ² (2^{2γ+1} + 1) / (2 (2^γ - 1) log 2)² = 3 / (2 (log 2)²)`. -/
+theorem test_pickandsVariance_neg_one : pickandsVariance (-1) = 3 / (2 * Real.log 2 ^ 2) := by
+  rw [pickandsVariance_of_ne (by norm_num)]
+  norm_num [Real.rpow_neg_one]
+  ring
+
+/-- The Pickands statistic of an exact generalized Pareto spacing recovers `γ`: the map at the
+centering point `(-1, -2, -4)` is `γ log 2`. -/
+theorem test_pickandsMap_center (γ : ℝ) : pickandsMap γ pickandsCenter = γ * Real.log 2 :=
+  pickandsMap_center γ
+
+/-- The Pickands bias at `γ = 1`, `ρ = -1`: `D_0(2) / D_1(2) · 2 (1 - 2) / (-log 2) = 2`. -/
+theorem test_pickandsBias_one_neg_one : pickandsBias 1 (-1) = 2 := by
+  have hL : Real.log 2 ≠ 0 := (Real.log_pos one_lt_two).ne'
+  rw [pickandsBias_of_ne 1 (by norm_num : (-1 : ℝ) ≠ 0),
+    show (1 : ℝ) + -1 = 0 by norm_num, extRVLimit_zero_left, extRVLimit_of_ne one_ne_zero]
+  norm_num
+
+/-- The Pickands bias for `ρ = 0` does not depend on `γ`: `b_{γ,0} = 1`. -/
+theorem test_pickandsBias_zero_right (γ : ℝ) : pickandsBias γ 0 = 1 :=
+  pickandsBias_zero_right γ
+
 end Test.KnownAnswers.Statistics
