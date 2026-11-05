@@ -1,6 +1,7 @@
 import ExtremeValueTheory.DomainOfAttraction.Examples
 import ExtremeValueTheory.DomainOfAttraction.GEVDomain
 import ExtremeValueTheory.DomainOfAttraction.Norming
+import ExtremeValueTheory.DomainOfAttraction.VonMisesUnified
 import ExtremeValueTheory.DomainOfAttraction.SampleMaxima
 
 /-!
@@ -200,5 +201,64 @@ theorem test_exists_tendsto_div_tail_pareto :
   refine ⟨f, hf, ?_⟩
   have := h (-1 / 2) (by rw [hval]; norm_num)
   rwa [hval] at this
+
+/-! ### The unified von Mises condition -/
+
+/-- Exercises `isInMDAGEV_of_vonMises` on Pareto(`1`), `F x = 1 - x⁻¹`: with `F' = x⁻²`, `F'' = -2 x⁻³`
+the ratio `(1 - F) F'' / (F')²` is `-2 = -γ - 1`, so `γ = 1 = 1 / α`, the textbook shape. -/
+theorem test_vonMises_pareto : (paretoCDF (one_pos : (0 : ℝ) < 1)).IsInMDAGEV 1 := by
+  refine (paretoCDF one_pos).isInMDAGEV_of_vonMises (z := 1) (γ := 1) zero_le_one
+    (F₁ := fun x ↦ (x ^ 2)⁻¹) (F₂ := fun x ↦ -2 * (x ^ 3)⁻¹) (fun x hx ↦ ?_) (fun x hx ↦ ?_)
+    (fun x hx ↦ ?_) ?_
+  · have hx0 : x ≠ 0 := by linarith
+    have h : HasDerivAt (fun y : ℝ ↦ 1 - y⁻¹) (x ^ 2)⁻¹ x := by
+      simpa using (hasDerivAt_inv hx0).const_sub 1
+    refine h.congr_of_eventuallyEq ?_
+    filter_upwards [lt_mem_nhds hx] with y hy
+    rw [paretoCDF_apply_of_one_le one_pos hy.le, rpow_neg_one]
+  · have hx0 : x ≠ 0 := by linarith
+    have h := (hasDerivAt_pow 2 x).fun_inv (pow_ne_zero 2 hx0)
+    convert h using 1
+    norm_num
+    field_simp
+  · have : (0 : ℝ) < x := by linarith
+    positivity
+  · refine (tendsto_const_nhds (x := (-1 - 1 : ℝ))).congr' ?_
+    filter_upwards [eventually_gt_atTop 1] with x hx
+    have hx0 : x ≠ 0 := by linarith
+    rw [paretoCDF_apply_of_one_le one_pos hx.le, sub_sub_cancel, rpow_neg_one]
+    field_simp
+    ring
+
+/-- Exercises `isInMDAGEV_of_vonMises_nhdsLT` on `F x = 1 - (1 - x)²` on `[0, 1]`: with `F' = 2 (1 - x)`,
+`F'' = -2`, the ratio is `-1/2 = -γ - 1`, so `γ = -1/2 = -1 / α`, the textbook shape. -/
+theorem test_vonMises_power : (powerCDF (two_pos : (0 : ℝ) < 2)).IsInMDAGEV (-1 / 2) := by
+  have hF : ∀ y ∈ Ioo (0 : ℝ) 1, powerCDF two_pos y = 1 - (1 - y) ^ 2 := fun y hy ↦ by
+    rw [powerCDF_apply_of_mem_Icc two_pos (Ioo_subset_Icc_self hy), rpow_two]
+  refine (powerCDF two_pos).isInMDAGEV_of_vonMises_nhdsLT (z := 0) (xF := 1) (γ := -1 / 2) one_pos
+    (by norm_num) (F₁ := fun x ↦ 2 * (1 - x)) (F₂ := fun _ ↦ -2) (fun x hx ↦ ?_) (fun x _ ↦ ?_)
+    (fun x hx ↦ ?_) ?_ ?_
+  · have h : HasDerivAt (fun y : ℝ ↦ 1 - (1 - y) ^ 2) (2 * (1 - x)) x := by
+      have := (((hasDerivAt_id x).const_sub 1).pow 2).const_sub 1
+      convert this using 1 <;> simp
+    refine h.congr_of_eventuallyEq ?_
+    filter_upwards [Ioo_mem_nhds hx.1 hx.2] with y hy using hF y hy
+  · have := ((hasDerivAt_id x).const_sub 1).const_mul 2
+    simpa using this
+  · have := hx.2
+    show 0 < 2 * (1 - x)
+    linarith
+  · have hc : Tendsto (fun y : ℝ ↦ 1 - (1 - y) ^ 2) (𝓝[<] 1) (𝓝 (1 - (1 - 1) ^ 2)) :=
+      (Continuous.tendsto (by fun_prop) 1).mono_left nhdsWithin_le_nhds
+    norm_num at hc
+    refine hc.congr' ?_
+    filter_upwards [Ioo_mem_nhdsLT (show (0 : ℝ) < 1 from one_pos)] with y hy
+    exact (hF y hy).symm
+  · refine (tendsto_const_nhds (x := (-(-1 / 2) - 1 : ℝ))).congr' ?_
+    filter_upwards [Ioo_mem_nhdsLT (show (0 : ℝ) < 1 from one_pos)] with y hy
+    have h1 : 1 - y ≠ 0 := by linarith [hy.2]
+    rw [hF y hy, sub_sub_cancel]
+    field_simp
+    ring
 
 end Test.KnownAnswers.DomainExamples

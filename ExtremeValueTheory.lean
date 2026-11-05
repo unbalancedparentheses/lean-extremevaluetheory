@@ -105,6 +105,7 @@ import ExtremeValueTheory.DomainOfAttraction.GEVDomain
 import ExtremeValueTheory.DomainOfAttraction.SampleMaxima
 import ExtremeValueTheory.DomainOfAttraction.Examples
 import ExtremeValueTheory.DomainOfAttraction.Norming
+import ExtremeValueTheory.DomainOfAttraction.VonMisesUnified
 import ExtremeValueTheory.Statistics.MomentGeneral
 import ExtremeValueTheory.ForMathlib.Probability.PoissonLimit
 import ExtremeValueTheory.ForMathlib.Probability.PointProcessConvergence
