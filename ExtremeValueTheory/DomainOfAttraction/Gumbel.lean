@@ -123,7 +123,7 @@ theorem tendsto_mul_of_auxiliary {g f : ℝ → ℝ} {L : Filter ℝ}
 
 /-- Basic properties of the generalized quantile `sInf {x | g x ≤ c}` of an antitone,
 right-continuous function `g`; this is `upperQuantile_spec`. -/
-@[deprecated upperQuantile_spec (since := "2026-10-23")]
+@[deprecated upperQuantile_spec (since := "2026-11-05")]
 theorem quantile_spec {g : ℝ → ℝ} (hg : Antitone g)
     (hgr : ∀ x, ContinuousWithinAt g (Ici x) x) {c : ℝ} (hne : ∃ x, g x ≤ c)
     (hbdd : ∃ y, c < g y) :

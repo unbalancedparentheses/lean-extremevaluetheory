@@ -401,7 +401,7 @@ section Threshold
 
 /-- The generalized inverse `sInf {x | F x ≤ p}` of a right-continuous antitone function; this
 is `upperQuantile_spec_of_tendsto_atTop`. -/
-@[deprecated upperQuantile_spec_of_tendsto_atTop (since := "2026-10-23")]
+@[deprecated upperQuantile_spec_of_tendsto_atTop (since := "2026-11-05")]
 theorem threshold_spec {F : ℝ → ℝ} (hF : Antitone F) (hrc : ∀ x, ContinuousWithinAt F (Ici x) x)
     (h0 : Tendsto F atTop (𝓝 0)) {p M : ℝ} (hp : 0 < p) (hM : p < F M) :
     F (sInf {x | F x ≤ p}) ≤ p ∧ (∀ x < sInf {x | F x ≤ p}, p < F x) ∧

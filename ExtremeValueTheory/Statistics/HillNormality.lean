@@ -1288,9 +1288,9 @@ end Normality
 
 /-! Deprecated names: these lemmas are about `survivalQuantile` (the return-period form `U(t)`). -/
 
-@[deprecated (since := "2026-10-23")] alias tailQuantile_le_iff := survivalQuantile_le_iff
-@[deprecated (since := "2026-10-23")] alias monotoneOn_tailQuantile := monotoneOn_survivalQuantile
-@[deprecated (since := "2026-10-23")] alias measurable_tailQuantile := measurable_survivalQuantile
-@[deprecated (since := "2026-10-23")] alias map_eq_expMeasure_map_tailQuantile := map_eq_expMeasure_map_survivalQuantile
+@[deprecated (since := "2026-11-05")] alias tailQuantile_le_iff := survivalQuantile_le_iff
+@[deprecated (since := "2026-11-05")] alias monotoneOn_tailQuantile := monotoneOn_survivalQuantile
+@[deprecated (since := "2026-11-05")] alias measurable_tailQuantile := measurable_survivalQuantile
+@[deprecated (since := "2026-11-05")] alias map_eq_expMeasure_map_tailQuantile := map_eq_expMeasure_map_survivalQuantile
 
 end ExtremeValueTheory
