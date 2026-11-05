@@ -226,3 +226,6 @@ import ExtremeValueTheory.Statistics.ConfidenceIntervals
 import ExtremeValueTheory.Statistics.LMoments
 import ExtremeValueTheory.Statistics.LMomentsEstimators
 import ExtremeValueTheory.Statistics.MeanExcess
+import ExtremeValueTheory.DomainOfAttraction.NamedLaws
+import ExtremeValueTheory.HeavyTails.Layer
+import ExtremeValueTheory.Statistics.HillOfLaw
