@@ -161,6 +161,7 @@ import ExtremeValueTheory.Dependence.StrictExtremalIndexAll
 import ExtremeValueTheory.Multivariate.Dependence
 import ExtremeValueTheory.Multivariate.TailDependence
 import ExtremeValueTheory.Multivariate.PickandsEstimator
+import ExtremeValueTheory.Multivariate.StableTailDependence
 import ExtremeValueTheory.Multivariate.DomainOfAttractionBasic
 import ExtremeValueTheory.Multivariate.DomainOfAttraction
 import ExtremeValueTheory.Multivariate.DomainOfAttractionStandardized
@@ -204,6 +205,7 @@ import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.ModulusCompact
 import ExtremeValueTheory.ForMathlib.Topology.Skorokhod.BlockOscillation
 import ExtremeValueTheory.ForMathlib.Probability.SkorokhodBlockTightness
 import ExtremeValueTheory.Statistics.TailEmpiricalProcessRV
+import ExtremeValueTheory.Statistics.StableTailDependence
 import ExtremeValueTheory.ForMathlib.Probability.SkorokhodFunctionals
 import ExtremeValueTheory.Minimality.DependenceBlockRatio
 import ExtremeValueTheory.Minimality.DependenceLeadbetter

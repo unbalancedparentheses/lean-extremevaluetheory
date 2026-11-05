@@ -19,6 +19,10 @@ where `X ∼ μ` ([dHF, §6.1.5 and §7.2]; [Huang 1992]; [Drees–Huang 1998]; 
 upper tail. We record its existence as the predicate `HasStableTailDependence μ ℓ`, for `x` with
 positive coordinates.
 
+Two differences from the textbook definition. The textbook also has `x_j = 0`, the value there
+being the limit from the interior; here `ℓ` is unconstrained on those faces. Some sources write
+`F_j(X_j) ≥ 1 - t x_j`; for continuous `F_j` that differs from the event here by a null set.
+
 ## Main results
 
 * `measureReal_one_sub_lt_marginal`: for a continuous marginal, `P(F_j(X_j) > 1 - s) = s` for
@@ -27,7 +31,7 @@ positive coordinates.
   `|ℓ(x) - ℓ(y)| ≤ ∑_j |x_j - y_j|`.
 * `IsMDAWith.hasStableTailDependence`: **in the domain of attraction**, `ℓ` exists and
   `ℓ(x) = V₀(1 / x_1, …, 1 / x_d)`, where `V₀ = -log G₀` is the exponent function of the unit
-  Fréchet standardization `G₀` of the limit ([dHF, Theorem 6.1.1 and (6.1.31)]).
+  Fréchet standardization `G₀` of the limit ([dHF, §6.1]).
 * `HasStableTailDependence.hasUpperTailDependence`: in dimension two the upper tail dependence
   coefficient exists and equals `χ = 2 - ℓ(1, 1)`.
 * `IsMDAWith.hasUpperTailDependence`: in the domain of attraction, `χ = 2 - θ`, where `θ` is the
@@ -62,8 +66,8 @@ noncomputable def tailUnionProb (t : ℝ) (x : ι → ℝ) : ℝ :=
   μ.real {y | ∃ j, 1 - t * x j < marginal μ j (y j)}
 
 /-- `μ` has **stable tail dependence function** `ℓ`: for every `x` with positive coordinates,
-`t⁻¹ P(∃ j, F_j(X_j) > 1 - t x_j) → ℓ(x)` as `t ↓ 0` ([dHF, (6.1.31) and §7.2];
-[Drees–Huang 1998]; [BGST04, (8.17)]). -/
+`t⁻¹ P(∃ j, F_j(X_j) > 1 - t x_j) → ℓ(x)` as `t ↓ 0` ([dHF, §6.1 and §7.2];
+[Drees–Huang 1998]; [BGST04, §8.2.2]). It says nothing about `ℓ` when some `x_j ≤ 0`. -/
 def HasStableTailDependence (ℓ : (ι → ℝ) → ℝ) : Prop :=
   ∀ x : ι → ℝ, (∀ j, 0 < x j) →
     Tendsto (fun t ↦ t⁻¹ * tailUnionProb μ t x) (𝓝[>] 0) (𝓝 (ℓ x))
@@ -171,7 +175,8 @@ lemma eventually_mul_mem_Ioo [Finite ι] {x : ι → ℝ} (hx : ∀ j, 0 < x j) 
   exact ⟨mul_pos ht1 (hx j), ht2⟩
 
 /-- **The stable tail dependence function is Lipschitz**:
-`|ℓ(x) - ℓ(y)| ≤ ∑_j |x_j - y_j|` ([dHF, Proposition 6.1.21]; [BGST04, §8.2.2]). -/
+`|ℓ(x) - ℓ(y)| ≤ ∑_j |x_j - y_j|` for `x, y` with positive coordinates ([dHF, §6.1];
+[BGST04, §8.2.2]). -/
 theorem HasStableTailDependence.abs_sub_le [Fintype ι] {ℓ : (ι → ℝ) → ℝ}
     (h : HasStableTailDependence μ ℓ) (hc : ∀ j, Continuous (marginal μ j)) {x y : ι → ℝ}
     (hx : ∀ j, 0 < x j) (hy : ∀ j, 0 < y j) : |ℓ x - ℓ y| ≤ ∑ j, |x j - y j| := by
@@ -275,8 +280,8 @@ lemma tailUnionProb_inv_natCast (hc : ∀ j, Continuous (marginal μ j)) {n : �
   rw [hsame, measureReal_eq_measureReal_of_null_sdiff hsub hnull, probReal_compl_eq_one_sub hA]
   ring
 
-/-- **The stable tail dependence function in the domain of attraction** ([dHF, Theorem 6.1.1 and
-(6.1.31)]; [BGST04, §8.2.2]): if `μ` is in the domain of attraction of `ν` and both have
+/-- **The stable tail dependence function in the domain of attraction** ([dHF, §6.1];
+[BGST04, §8.2.2]): if `μ` is in the domain of attraction of `ν` and both have
 continuous marginals, then `μ` has stable tail dependence function
 `ℓ(x) = V₀(1 / x_1, …, 1 / x_d)`, where `V₀ = -log G₀` is the exponent function of the unit
 Fréchet standardization `G₀` of `ν`. -/
@@ -304,7 +309,7 @@ section Bivariate
 
 variable {μ : Measure (Fin 2 → ℝ)} [IsProbabilityMeasure μ]
 
-/-- **The upper tail dependence coefficient is `χ = 2 - ℓ(1, 1)`** ([BGST04, (9.66)];
+/-- **The upper tail dependence coefficient is `χ = 2 - ℓ(1, 1)`** ([BGST04, §9.4];
 [dHF, §7.2]; [Coles–Heffernan–Tawn 1999]): if `μ` has continuous marginals and stable tail
 dependence function `ℓ`, then for `(X, Y) ∼ μ`, `P(F_Y(Y) > u | F_X(X) > u) → 2 - ℓ(1, 1)` as
 `u ↑ 1`. -/
