@@ -3,6 +3,9 @@ import ExtremeValueTheory.DomainOfAttraction.GEVDomain
 import ExtremeValueTheory.DomainOfAttraction.Norming
 import ExtremeValueTheory.DomainOfAttraction.VonMisesUnified
 import ExtremeValueTheory.DomainOfAttraction.SampleMaxima
+import ExtremeValueTheory.DomainOfAttraction.NamedLaws
+import ExtremeValueTheory.HeavyTails.Layer
+import ExtremeValueTheory.Statistics.HillOfLaw
 
 /-!
 # Known answers and non-vacuity: `IsInMDAGEV` against `gevCDF`, and the standard laws
@@ -260,5 +263,37 @@ theorem test_vonMises_power : (powerCDF (two_pos : (0 : ℝ) < 2)).IsInMDAGEV (-
     rw [hF y hy, sub_sub_cancel]
     field_simp
     ring
+
+/-! ### Named laws, a reinsurance layer, Hill estimation of a law -/
+
+/-- Student's t law with one degree of freedom is Mathlib's standard Cauchy law. -/
+theorem test_studentTMeasure_one : studentTMeasure 1 = cauchyMeasure 0 1 := studentTMeasure_one
+
+/-- Student's t law with `ν = 3` is in the Fréchet domain with `α = 3`, so the shape is `ξ = 1/3`
+([EKM, Table 3.4.2]). -/
+theorem test_isInMDAGEV_studentT_three : (ofMeasure (studentTMeasure 3)).IsInMDAGEV (1 / 3) :=
+  (isInMDAFrechet_ofMeasure_studentTMeasure (by norm_num : (0 : ℝ) < 3)).isInMDAGEV
+
+/-- The expected payout of the layer above `d = 1` of height `l = 1` under Pareto(`t = 1`, `r = 2`) is
+`∫₁² s⁻² ds = 1/2`. -/
+theorem test_integral_layerPayout_pareto : ∫ x, layerPayout 1 1 x ∂paretoMeasure 1 2 = 1 / 2 := by
+  rw [integral_layerPayout_paretoMeasure one_pos two_pos (by norm_num) (by norm_num) (by norm_num),
+    Real.one_rpow, one_mul, show (1 - 2 : ℝ) = -1 by norm_num, Real.rpow_neg_one, Real.rpow_neg_one]
+  norm_num
+
+/-- Exercises `tendstoInMeasure_hill_of_hasLaw` and its inverse form on an iid Pareto(`1`, `2`) sample
+with `k n = ⌊√n⌋`: the Hill estimator tends to `1/2` and its inverse to the tail index `2`. -/
+theorem test_nonvacuous_hill_of_hasLaw :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (_ : IsProbabilityMeasure P) (X : ℕ → Ω → ℝ),
+      TendstoInMeasure P (fun n ω => hill (fun i : Fin n => X i ω) (Nat.sqrt n)) atTop
+        (fun _ => 1 / 2) ∧
+      TendstoInMeasure P (fun n ω => (hill (fun i : Fin n => X i ω) (Nat.sqrt n))⁻¹) atTop
+        (fun _ => 2) := by
+  have := isProbabilityMeasure_paretoMeasure (t := 1) (r := 2) one_pos two_pos
+  obtain ⟨Ω, _, P, X, hX, hlaw, hind, hP⟩ := exists_iid ℕ (paretoMeasure 1 2)
+  have hRV := isRegularlyVarying_tail_paretoMeasure (t := 1) (r := 2) one_pos two_pos
+  exact ⟨Ω, _, P, hP, X,
+    tendstoInMeasure_hill_of_hasLaw hX hlaw hind two_pos hRV tendsto_sqrt_atTop tendsto_sqrt_div,
+    tendstoInMeasure_inv_hill_of_hasLaw hX hlaw hind two_pos hRV tendsto_sqrt_atTop tendsto_sqrt_div⟩
 
 end Test.KnownAnswers.DomainExamples

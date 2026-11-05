@@ -330,3 +330,38 @@ We follow Smith, \emph{Maximum likelihood estimation in a class of nonregular ca
   \leanok
   Second-order expansions of $\log(1 + \xi z)$ in $\xi$.
 \end{proof}
+
+\begin{theorem}[Joint normality of the GEV maximum likelihood estimator]
+  \label{thm:gev-mle-normality}
+  \uses{thm:gev-mle, thm:gev-fisher-3}
+  \lean{ExtremeValueTheory.gevMLECov, ExtremeValueTheory.tendstoInDistribution_gevLocalMLE,
+    ExtremeValueTheory.tendstoInDistribution_gevMLE, ExtremeValueTheory.tendstoInDistribution_gevMLE_muSigmaXi,
+    ExtremeValueTheory.exists_measurable_gevMLE, ExtremeValueTheory.exists_gevMLE_tendstoInDistribution}
+  \leanok
+  For an iid $\mathrm{GEV}(\xi_0, \mu_0, \sigma_0)$ sample with $\xi_0 > -1/2$, $\xi_0 \ne 0$, and maximizers over a
+  compact $K \subset \{\xi > -1, \sigma > 0\}$ with the true parameter in its interior,
+  $\sqrt{n}(\hat\theta_n - \theta_0) \Rightarrow N(0, I(\theta_0)^{-1})$ [Smith (1985)]. Measurable maximizers
+  exist. The case $\xi_0 = 0$ is not covered, nor is the maximizer over the whole parameter space.
+\end{theorem}
+\begin{proof}
+  \leanok
+  The moving lower or upper endpoint is controlled by the largest $1/U$, which is $o_P(\sqrt{n})$ exactly
+  for $\xi_0 > -1/2$. A second-order expansion on a path, with a dominated remainder, and the score CLT.
+\end{proof}
+
+\begin{theorem}[Return levels from the GEV maximum likelihood estimator]
+  \label{thm:gev-mle-return-level}
+  \uses{thm:gev-mle-normality, thm:delta-method}
+  \lean{ExtremeValueTheory.gevReturnLevelVar, ExtremeValueTheory.gevReturnLevelVar_pos,
+    ExtremeValueTheory.tendstoInDistribution_gevMLEReturnLevel,
+    ExtremeValueTheory.exists_gevMLE_returnLevel_tendstoInDistribution,
+    ExtremeValueTheory.tendsto_measure_mem_gevMLEReturnLevelInterval}
+  \leanok
+  In the same setting, for $m > 1$, $\sqrt{n}(\hat z_m - z_m) \Rightarrow N(0, \nabla z^\top V \nabla z)$, a
+  nondegenerate limit, with no normality assumed. The Wald interval has the nominal coverage for any consistent
+  standard error [Coles, \S3.3.3].
+\end{theorem}
+\begin{proof}
+  \leanok
+  The delta method applied to the previous theorem.
+\end{proof}

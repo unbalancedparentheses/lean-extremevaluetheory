@@ -4,6 +4,6 @@
 # Update this file only in the commit that records a new audit in FAITHFULNESS.md: set `audit` to its
 # heading and `theorems` to the output of `python3 scripts/check_architecture.py --count`.
 #
-theorems: 2752
+theorems: 3015
 margin: 150
-audit: Seventh audit
+audit: Eighth audit

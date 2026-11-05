@@ -1,6 +1,8 @@
 # Comparison with Hirata's Isabelle formalization
 
-Date: 2026-11-04.
+Date: 2026-11-04. The improvements list at the end and the table below were updated on 2026-11-05, after the
+gaps were closed; the section-by-section text still describes the library on the original date, and says so
+where it matters.
 
 Michikazu Hirata independently formalized extreme value theory in Isabelle/HOL, in two entries of
 the Archive of Formal Proofs (AFP), both dated 11 September 2026:
@@ -43,12 +45,12 @@ In quotations, Isabelle symbols such as `\<gamma>` are written `γ`.
 | Pickands–Balkema–de Haan | `Pickands_Balkema_de_Haan` | `isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival` | Equivalent. Same filter, no condition on the endpoint |
 | Regular variation, definition | `regularly_varying` | `IsRegularlyVarying` | Differ by design; equivalent up to measurability and changing `f` away from `∞` |
 | Uniform convergence on compacts | `regularly_varying_UCT_interval` | `tendstoUniformlyOn_of_measurable` | Equivalent by truncation |
-| Uniform convergence on `(0,a]`, `[a,∞)` | `regularly_varying_pos_UCT`, `_neg_UCT` | not found | **Ours lacks it** |
-| Representation | all indices `ρ` | slowly varying only | Equal at `ρ = 0`; **ours weaker in form** |
+| Uniform convergence on `(0,a]`, `[a,∞)` | `regularly_varying_pos_UCT`, `_neg_UCT` | `tendstoUniformlyOn_Ioc_of_measurableNearTop`, `tendstoUniformlyOn_Ici_of_measurableNearTop` | Equivalent (closed 2026-11-05) |
+| Representation | all indices `ρ` | `isRegularlyVarying_iff_exists_representation`, `exists_representation` | Equivalent (closed 2026-11-05) |
 | Karamata, tail integrals, `ρ < -1` | `Karamata_theorem_half2` | `tendsto_integral_Ioi_div_of_measurable` | Equivalent by truncation |
-| Karamata, `∫_a^t`, `ρ > -1` | `Karamata_theorem_half1` | `tendsto_integral_zero_div` | **Ours weaker**: lower limit `0`, stronger integrability |
-| Karamata, `ρ = -1` | general | tail side only, antitone only | **Ours weaker** |
-| Karamata, converse | `ρ < -1` and `ρ > -1`, no monotonicity | `α > 1`, antitone only | **Ours weaker** (already recorded in `FAITHFULNESS.md`) |
+| Karamata, `∫_a^t`, `ρ > -1` | `Karamata_theorem_half1`, `_half1_ex` | `tendsto_integral_div_of_measurableNearTop`, `eventually_tendsto_integral_div_of_measurableNearTop` | Equivalent (closed 2026-11-05; `tendsto_integral_zero_div` is deprecated) |
+| Karamata, `ρ = -1` | general | `tendsto_integral_div_atTop_of_neg_one`, `tendsto_integral_Ioi_div_atTop_of_neg_one` | Equivalent (closed 2026-11-05) |
+| Karamata, converse | `ρ < -1` and `ρ > -1`, no monotonicity | `of_tendsto_mul_div_integral_Ioi_of_pos`, `of_tendsto_mul_div_integral` | Equivalent, except that his also concludes integrability, which ours does not state (closed 2026-11-05) |
 | Potter bounds | `Potter_bounds`, `_lower` | `potter_bounds_of_measurable` | Equivalent |
 | Gnedenko's conditions, `γ ≠ 0` | `MDA_regularly_varying_pos`, `_neg` | `isInMDAFrechet_iff`, `isInMDAWeibull_iff` | Equivalent |
 | Quantile form (dHF 1.1.6) | `MDA_iff_tail_quantile'` | `isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile` | Equivalent |
@@ -576,38 +578,43 @@ second-order regular variation, Breiman's lemma and multivariate regular variati
 `Minimality/`, and uniqueness of the normalizing map (`unique_orientationPreservingAffineEquiv_smul_eq_not_isDegenerate`).
 His development has no estimators, no dependence and no multivariate results.
 
-**Neither has:** a statement that `ξ` is unique, `MDA(H_ξ) ∩ MDA(H_ξ') ≠ ∅ → ξ = ξ'`. It is a short consequence of
+**Neither had, on the original date** (ours now has it: `IsInMDAGEV.unique`)**:** a statement that `ξ` is unique, `MDA(H_ξ) ∩ MDA(H_ξ') ≠ ∅ → ξ = ξ'`. It is a short consequence of
 convergence of types, or of comparing `boxCox` at two points. (The parameters of the law itself are identified in
 ours: `gev_params_eq_of_measure_eq`.)
 
 ## Differences that suggest a problem or an improvement in our library
 
-In order of value. None of these is an error in a statement.
+In order of value. None of these is an error in a statement. **Status on 2026-11-05: items 1 to 14 are closed**, in
+the merge of `wip/hirata-gaps`; item 15 is partly closed. Statements are compared in `FAITHFULNESS.md`, and the text
+above each verdict describes the library before the merge.
 
-1. **Prove `F.IsInMDAGEV ξ ↔ ∃ As, ∀ x, Tendsto (fun n ↦ ((As n • F) x) ^ n) atTop (𝓝 (gevCDF ξ x))`.** This is the only
-   gap in the chain from our Pickands–Balkema–de Haan theorem to the textbook statement. It takes a few lines from
-   `mkOfCoefs_smul_gevCDF_of_pos` and `_of_neg`. With it, state the analogue of `Fisher_Tippett_Gnedenko_MDA`: a nondegenerate
-   limit means `∃ ξ, F.IsInMDAGEV ξ`.
-2. **Generalize `tendsto_integral_zero_div`.** Arbitrary lower limit, and integrability only on `[a, x]` with `x ≥ a`. Better, an
-   existential form with no integrability hypothesis, like `Karamata_theorem_half1_ex`. The present `∀ x` over negative `x` is
-   an artefact.
-3. **Remove `Antitone` from `of_tendsto_mul_div_integral_Ioi`, and add the `ρ > -1` converse** (BGT Theorem 1.6.1, in full). He shows
-   that only positivity and measurability are needed.
-4. **Add the tails of the UCT:** `[a, ∞)` for `ρ < 0`, `(0, a]` for `ρ > 0` with local boundedness. These are in the theorem the docstring
-   cites, and the docstring should say it proves only the compact part until then.
-5. **State the `ρ = -1` Karamata results without monotonicity**, including `∫_a^t` (BGT Proposition 1.5.9a), and state that integrals of
-   regularly varying functions are regularly varying.
-6. **Weaken `Measurable f` to measurability near `∞`** in `tendstoUniformlyOn_of_measurable`, the Potter bounds, the representation theorem
-   and Karamata, or add `of_measurableOn` wrappers. BGT's hypothesis is on `[X, ∞)`.
-7. **State the representation theorem for index `ρ`** (`r → ρ`), a direct corollary, with `ε` bounded on `[a, ∞)`.
-8. **Add random-variable forms:** Fisher–Tippett–Gnedenko for i.i.d. sample maxima and Pickands–Balkema–de Haan for conditional
-   probabilities. They are what a user expects to read, and both follow easily.
-9. **Add standard examples:** the normal law in `MDA(H_0)` with its explicit constants, Gamma or Erlang, and Cauchy. The normal case is the
-   most commonly cited example in the subject and we do not have it. The Cauchy case follows from `isInMDAFrechet_of_vonMises`.
-10. **Add canonical norming constants** for every `γ`, including de Haan–Ferreira Corollary 1.2.4, and the stated equivalences `MDA_iff_divide_tail`,
-    `MDA_iff_tail_probability'`.
-11. **Add the unified von Mises condition** for all `γ`, using our weaker hypotheses where possible.
-12. **Add to `RegularVariation/Basic.lean`:** composition; the limit-is-a-power theorem; `ρ > 0` gives `f → ∞`, `ρ < 0` gives `f → 0`, without monotonicity.
-13. **Add uniqueness of `ξ`.**
-14. **Rename the bound variable `ξ` to `α`** in `classification`. It is the tail index, and `ξ` means the shape everywhere else.
-15. **Check two citations against the books:** de Haan–Ferreira 1.1.8 in `DomainOfAttraction/VonMises.lean`, and BGT 1.4.1 and 1.5.2 where our theorem covers only part of what is cited.
+1. **Closed.** `isInMDAGEV_iff_exists_tendsto_gevCDF` (with `_of_continuousAt`), and the analogue of
+   `Fisher_Tippett_Gnedenko_MDA`, `exists_isInMDAGEV_of_tendsto`.
+2. **Closed.** `tendsto_integral_interval_div` and `tendsto_integral_div_of_measurableNearTop` (any lower limit, integrability on `[a, x]`),
+   and `eventually_tendsto_integral_div_of_measurableNearTop`, with no integrability hypothesis, for all large `a`, in place of an
+   existential form. `tendsto_integral_zero_div` is deprecated.
+3. **Closed.** `of_tendsto_mul_div_integral_Ioi_of_pos` (only eventual positivity: not even measurability, which goes further than
+   the comparison asked), `of_tendsto_mul_div_integral`, and the weighted forms `of_tendsto_rpow_mul_div_integral`, `_Ioi`. The older
+   `of_tendsto_mul_div_integral_Ioi` keeps its `Antitone`. His conclusion that `U` is integrable on a half-line is not stated separately.
+4. **Closed.** `tendstoUniformlyOn_Ici_of_measurableNearTop`, `tendstoUniformlyOn_Ioc_of_measurableNearTop`.
+5. **Closed.** `tendsto_integral_div_atTop_of_neg_one`, `tendsto_integral_Ioi_div_atTop_of_neg_one`, `integral`, `integral_of_neg_one`,
+   `integral_Ioi_of_measurableNearTop`, `integral_Ioi_of_neg_one`, all in the `IsRegularlyVarying` namespace.
+6. **Closed.** `MeasurableNearTop`, with `tendstoUniformlyOn_of_measurableNearTop`, `potter_bound_of_measurableNearTop`,
+   `potter_bounds_of_measurableNearTop`, `exists_representation` and the Karamata forms above. `isSlowlyVarying_iff_exists_representation`
+   keeps its global hypothesis; `isRegularlyVarying_iff_exists_representation` at `ρ = 0` does not need it.
+7. **Closed.** `IsRegularlyVarying.exists_representation` (`r → ρ`, `r` bounded on `[a, ∞)`), `of_representation`,
+   `isRegularlyVarying_iff_exists_representation`.
+8. **Closed.** `exists_isInMDAGEV_and_smul_eq_of_tendsto_sampleMax`, `isInMDAGEV_iff_exists_tendsto_sampleMax` and
+   `isInMDAGEV_iff_exists_tendstoUniformlyOn_cond`.
+9. **Closed.** `tendsto_standardNormalCDF_pow`, `isInMDAGEV_ofMeasure_gaussianReal`; `tendsto_gammaCDF_pow`, `isInMDAGEV_gammaCDF`, for every real shape;
+   `tendsto_standardCauchyCDF_pow`, `isInMDAFrechet_ofMeasure_cauchyMeasure`. Explicit constants only for the standard normal and Cauchy laws.
+10. **Closed.** `tendsto_pow_norming_tailQuantile`, `exists_tendsto_pow_norming_tailQuantile`, `tendsto_pow_tailQuantile_mul_of_pos`,
+    `exists_tendsto_pow_tailQuantile_of_neg`, `tendsto_pow_spacing_of_zero`; `isInMDAGEV_iff_exists_tendsto_div_tail`,
+    `isInMDAGEV_iff_exists_tendsto_mul_one_sub`.
+11. **Closed.** `isInMDAGEV_of_vonMises` (`γ ≥ 0`, `x_F = ∞`), `isInMDAGEV_of_vonMises_nhdsLT` (`γ ≤ 0`, `x_F` finite).
+12. **Closed.** `IsRegularlyVarying.comp` and `exists_isRegularlyVarying_of_tendsto`, in `RegularVariation/Composition.lean`;
+    `tendsto_atTop_of_measurableNearTop`, `tendsto_zero_of_measurableNearTop`, in `RegularVariation/UniformConvergenceTails.lean`.
+13. **Closed.** `IsInMDAGEV.unique`.
+14. **Closed.** The bound variable in `classification` is `α`.
+15. **Partly closed.** The docstrings of the uniform convergence theorems and of BGT 1.4.1 now say which part they prove. The citations
+    themselves, including de Haan–Ferreira 1.1.8, have still not been checked against the books.

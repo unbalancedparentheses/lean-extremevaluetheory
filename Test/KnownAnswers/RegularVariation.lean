@@ -189,6 +189,29 @@ theorem test_integral_Ioi_inv_sq :
   IsRegularlyVarying.integral_Ioi_of_measurableNearTop (Measurable.measurableNearTop (by fun_prop))
     (IsRegularlyVarying.rpow_id (-2)) (by norm_num)
 
+/-- Karamata's constant at `α = 2`, from `tendsto_integral_Ioi_div_of_measurableNearTop`:
+`∫ₓ^∞ t⁻² dt / (x x⁻²) → 1/(2 - 1) = 1`, the exact value, since `∫ₓ^∞ t⁻² dt = x⁻¹`. -/
+theorem test_tendsto_integral_Ioi_div_inv_sq :
+    Tendsto (fun x : ℝ => (∫ t in Ioi x, t ^ (-2 : ℝ)) / (x * x ^ (-2 : ℝ))) atTop (𝓝 1) := by
+  have h := IsRegularlyVarying.tendsto_integral_Ioi_div_of_measurableNearTop (α := 2)
+    (F := fun t : ℝ => t ^ (-2 : ℝ)) (Measurable.measurableNearTop (by fun_prop))
+    (IsRegularlyVarying.rpow_id (-2)) (by norm_num)
+  rwa [show (1 : ℝ) / (2 - 1) = 1 by norm_num] at h
+
+/-- Exercises `tendsto_integral_div_of_measurableNearTop`: from the lower limit `a = 2`, where
+`singularAtZero` is integrable although it is not near `0`, the ratio tends to `1/(ρ + 1)` with
+`ρ = 0`; the exact value, since the function is `1` on `(1, ∞)`. -/
+theorem test_tendsto_integral_div_singularAtZero_of_measurableNearTop :
+    Tendsto (fun x : ℝ => (∫ t in (2 : ℝ)..x, singularAtZero t) / (x * singularAtZero x)) atTop
+      (𝓝 (1 / (0 + 1))) :=
+  isRegularlyVarying_singularAtZero.tendsto_integral_div_of_measurableNearTop
+    measurable_singularAtZero.measurableNearTop (by norm_num) fun x hx => by
+      refine (intervalIntegrable_const (c := (1 : ℝ))).congr ?_
+      rw [uIoc_of_le hx]
+      intro t ht
+      have ht1 : ¬ t ≤ 1 := by linarith [ht.1]
+      simp [singularAtZero, ht1]
+
 /-! ### The representation theorem for index `ρ` -/
 
 /-- Exercises `IsRegularlyVarying.of_representation` on the known representation of `x ^ ρ`:

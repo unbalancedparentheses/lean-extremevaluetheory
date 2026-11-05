@@ -313,6 +313,78 @@ works additively, with $h(t) = \log f(e^t) - \rho t$.
   Hence $c(x) = L(x) \exp\big(-\int_a^x \frac{\eps(t)}{t} \, \ud t\big) \to \exp\big(\int_a^{ea} g(t)\, \ud t\big) > 0$.
 \end{proof}
 
+\section{Hypotheses near infinity, tails of the uniform convergence theorem, and composition}
+
+\begin{definition}[Measurable near infinity]
+  \label{def:measurable-near-top}
+  \lean{ExtremeValueTheory.MeasurableNearTop, Measurable.measurableNearTop, MonotoneOn.measurableNearTop,
+    AntitoneOn.measurableNearTop}
+  \leanok
+  $f$ is measurable near infinity if $f \mathbf{1}_{[X, \infty)}$ is Borel measurable for some $X$, the
+  hypothesis of [BGT].
+\end{definition}
+
+\begin{theorem}[Uniform convergence and Potter bounds near infinity]
+  \label{thm:rv-uct-near-top}
+  \uses{def:measurable-near-top, thm:rv-uct-measurable, thm:rv-potter-measurable}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_of_measurableNearTop,
+    ExtremeValueTheory.IsRegularlyVarying.potter_bound_of_measurableNearTop,
+    ExtremeValueTheory.IsRegularlyVarying.potter_bounds_of_measurableNearTop,
+    ExtremeValueTheory.IsRegularlyVarying.tendsto_atTop_of_measurableNearTop,
+    ExtremeValueTheory.IsRegularlyVarying.tendsto_zero_of_measurableNearTop}
+  \leanok
+  If $f \in RV_\rho$ is measurable near infinity, the uniform convergence theorem on compacts of $(0,
+  \infty)$ and Potter's bounds hold; and $f \to \infty$ for $\rho > 0$, $f \to 0$ for $\rho < 0$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Truncate, and apply the measurable forms.
+\end{proof}
+
+\begin{theorem}[The tails of the uniform convergence theorem]
+  \label{thm:rv-uct-tails}
+  \uses{thm:rv-uct-near-top}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_Ici_of_measurableNearTop,
+    ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_Ioc_of_measurableNearTop}
+  \leanok
+  $f(cx)/f(x) \to c^\rho$ uniformly in $c \in [a, \infty)$, $a > 0$, for $\rho < 0$, and uniformly in
+  $c \in (0, b]$ for $\rho > 0$ if $f$ is bounded on every $(0, b]$ [BGT, Theorem~1.5.2].
+\end{theorem}
+\begin{proof}
+  \leanok
+  On a compact part this is the theorem above; the rest is small, by Potter's bounds.
+\end{proof}
+
+\begin{theorem}[The representation theorem for index $\rho$]
+  \label{thm:rv-representation-index}
+  \uses{thm:karamata-representation, def:measurable-near-top}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.of_representation,
+    ExtremeValueTheory.IsRegularlyVarying.exists_representation,
+    ExtremeValueTheory.isRegularlyVarying_iff_exists_representation}
+  \leanok
+  If $f$ is measurable near infinity, $f \in RV_\rho$ if and only if
+  $f(x) = c(x) \exp \int_a^x r(t)/t \, dt$ with $c \to c_0 > 0$ and $r \to \rho$. Then $r$ can be taken
+  bounded on $[a, \infty)$ [BGT, Theorems~1.3.1, 1.4.1].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Apply the slowly varying representation to $x^{-\rho} f(x) \mathbf{1}_{[X, \infty)}(x)$.
+\end{proof}
+
+\begin{theorem}[Composition, and limits are powers]
+  \label{thm:rv-composition}
+  \uses{thm:rv-uct-near-top}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.comp, ExtremeValueTheory.exists_isRegularlyVarying_of_tendsto}
+  \leanok
+  If $f \in RV_\rho$ is measurable near infinity, $g \in RV_\eta$ and $g \to \infty$, then
+  $f \circ g \in RV_{\rho \eta}$. If $f(cx)/f(x) \to k(c) > 0$ for every $c > 0$, then $k(c) = c^\rho$ for some
+  $\rho$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Uniform convergence on compacts, and Cauchy's functional equation for a measurable $k$.
+\end{proof}
+
 \section{Extended and second-order regular variation}
 
 \begin{definition}[Extended regular variation]

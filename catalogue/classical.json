@@ -334,5 +334,21 @@
       "propext"
     ],
     "input_hash": "ffc64c689e6e54a171553a59f57ecfa5"
+  },
+  {
+    "id": "fisher-tippett-gnedenko-sample-maxima",
+    "name": "Fisher-Tippett-Gnedenko for iid sample maxima",
+    "source": "EKM Thm 3.2.3; dHF Thm 1.1.3",
+    "lean_name": "CumulativeDistributionFunction.exists_isInMDAGEV_and_smul_eq_of_tendsto_sampleMax",
+    "file": "ExtremeValueTheory/DomainOfAttraction/SampleMaxima.lean",
+    "statement": "CumulativeDistributionFunction.exists_isInMDAGEV_and_smul_eq_of_tendsto_sampleMax.{u_1}\n  {Ω : Type u_1} {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω}\n  {F G : CumulativeDistributionFunction} {X : ℕ → Ω → ℝ}\n  (hF : ∀ (x : ℝ), ↑F.toStieltjesFunction x = P.real {ω | X 0 ω ≤ x})\n  (hind : ProbabilityTheory.iIndepFun X P)\n  (hid : ∀ (t : ℕ), ProbabilityTheory.IdentDistrib (X t) (X 0) P P) {a b : ℕ → ℝ}\n  (ha : ∀ (n : ℕ), 0 < a n) (hG : ¬G.IsDegenerate)\n  (h :\n    ∀ (x : ℝ),\n      ContinuousAt (↑G.toStieltjesFunction) x →\n        Filter.Tendsto (fun n => P.real {ω | (ExtremeValueTheory.blockMax X n 0 ω - b n) / a n ≤ x})\n          Filter.atTop (nhds (↑G.toStieltjesFunction x))) :\n  (∃ ξ, F.IsInMDAGEV ξ) ∧ ∃ A ξ, A • G = ExtremeValueTheory.gevCDF ξ",
+    "status": "full",
+    "scope_note": "Random-variable form: a nondegenerate limit G of (M_n - b_n)/a_n, at continuity points of G, is of type gevCDF xi, and F is in MDA(H_xi). Iid variables with c.d.f. F; a_n > 0 for all n.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "b88fafe6dc5e8cba56cab3f3b9af2ccf"
   }
 ]

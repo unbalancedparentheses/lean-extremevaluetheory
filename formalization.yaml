@@ -128,26 +128,26 @@ axioms:
     - "propext"
   audit: "Test/AxiomAudit.lean fails the build if any declaration of the library uses another axiom"
 catalogue:
-  entries: 209
+  entries: 232
   by_status:
-    full: 131
+    full: 147
     wrapper: 2
-    reduced: 76
+    reduced: 83
   by_area:
     classical:
-      full: 17
+      full: 18
       wrapper: 2
       reduced: 2
     domains:
-      full: 8
-      wrapper: 0
-      reduced: 2
-    regular-variation:
-      full: 7
+      full: 17
       wrapper: 0
       reduced: 4
+    regular-variation:
+      full: 12
+      wrapper: 0
+      reduced: 9
     pot:
-      full: 4
+      full: 5
       wrapper: 0
       reduced: 6
     stable:

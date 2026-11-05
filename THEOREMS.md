@@ -23,10 +23,13 @@ for proofs sketches and dependencies.
 - **Karamata's tail-integral theorem** (`IsRegularlyVarying.tendsto_integral_Ioi_div`): for an
   antitone survival function regularly varying with index `-α`, `α > 1`,
   `∫ₓ^∞ F̄(t) dt / (x F̄(x)) → 1/(α-1)`. Proved, standard axioms only.
-- **Karamata's theorem, both halves and the `[0, x]` version**
-  (`IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi`, `tendsto_integral_zero_div`,
-  `tendsto_integral_Ioi_div_of_measurable`): the converse half, integrals over `[0, x]`, and the
-  tail-integral theorem for measurable (not necessarily monotone) functions.
+- **Karamata's theorem without monotonicity** (`RegularVariation/KaramataIntegrals.lean`,
+  `KaramataConverse.lean`): direct half for functions measurable near `∞`, from any lower limit
+  (`tendsto_integral_Ioi_div_of_measurableNearTop`, `tendsto_integral_div_of_measurableNearTop`), the boundary index
+  `ρ = -1` (`tendsto_integral_div_atTop_of_neg_one`, `tendsto_integral_Ioi_div_atTop_of_neg_one`), integrals of regularly
+  varying functions are regularly varying (`IsRegularlyVarying.integral`, `integral_Ioi_of_measurableNearTop`), and the
+  converse from eventual positivity alone, with weights (`of_tendsto_mul_div_integral_Ioi_of_pos`,
+  `of_tendsto_mul_div_integral`, `of_tendsto_rpow_mul_div_integral`, `of_tendsto_rpow_mul_div_integral_Ioi`).
 - **Breiman's lemma** (`tendsto_measure_mul_div_measure`): for independent `X`, `Y ≥ 0` with
   `P(X > x)` regularly varying with index `-α` and `E[Y^(α+ε)] < ∞`,
   `P(XY > x) / P(X > x) → E[Y^α]`. Proved, standard axioms only.
@@ -220,6 +223,11 @@ for proofs sketches and dependencies.
   `IsStable.existsUnique_isStableIndex`), every non-degenerate limit of normalized sums is stable, and
   the domain of attraction of the normal law is characterized by slow variation of the truncated second
   moment (`domainOfAttraction_gaussianReal_iff`).
+- **Joint normality of the GEV maximum likelihood estimator** (`Statistics/GEVMLENormality.lean`,
+  `GEVReturnLevelNormality.lean`): for an exact iid GEV sample, `ξ₀ > −1/2`, `ξ₀ ≠ 0`, and maximizers over a compact set with
+  the truth in its interior, `√n(θ̂ − θ₀) ⇒ N(0, I⁻¹)` (`tendstoInDistribution_gevMLE`); measurable maximizers exist
+  (`exists_gevMLE_tendstoInDistribution`), and the return level is normal with no normality assumed
+  (`tendstoInDistribution_gevMLEReturnLevel`, `tendsto_measure_mem_gevMLEReturnLevelInterval`). `ξ₀ = 0` is not covered.
 - **Nonparametric tail dependence** (`Multivariate/StableTailDependence.lean`, `Statistics/StableTailDependence.lean`):
   the empirical stable tail dependence function is consistent, pointwise (`tendstoInMeasure_empiricalStableTailDependence`)
   and uniformly (`tendsto_measure_exists_abs_empiricalStableTailDependence_sub`), and `χ̂ → 2 − ℓ(1,1)`
@@ -237,4 +245,20 @@ for proofs sketches and dependencies.
 - **Uniform convergence theorem and Karamata's representation theorem** for measurable slowly
   and regularly varying functions (no monotonicity), with two-sided Potter bounds
   (`isSlowlyVarying_iff_exists_representation`, `potter_bounds_of_measurable`).
+- **Regular variation near infinity** (`RegularVariation/UniformConvergenceTails.lean`, `RepresentationIndex.lean`,
+  `Composition.lean`): the hypothesis `MeasurableNearTop`; the uniform convergence theorem on `[a, ∞)` for `ρ < 0` and on
+  `(0, b]` for `ρ > 0` (`tendstoUniformlyOn_Ici_of_measurableNearTop`, `tendstoUniformlyOn_Ioc_of_measurableNearTop`); `f → ∞`,
+  `f → 0`; the representation theorem for every index (`isRegularlyVarying_iff_exists_representation`); composition
+  (`IsRegularlyVarying.comp`), and a limit of `f(cx)/f(x)` at every `c` is a power (`exists_isRegularlyVarying_of_tendsto`).
+- **Domains of attraction in textbook form** (`DomainOfAttraction/GEVDomain.lean`, `SampleMaxima.lean`, `Norming.lean`,
+  `VonMisesUnified.lean`): `IsInMDAGEV ξ` is convergence of normalized powers to `gevCDF ξ` itself
+  (`isInMDAGEV_iff_exists_tendsto_gevCDF`), `ξ` is unique (`IsInMDAGEV.unique`), Fisher–Tippett–Gnedenko for iid sample
+  maxima (`exists_isInMDAGEV_and_smul_eq_of_tendsto_sampleMax`), Pickands–Balkema–de Haan for conditional probabilities
+  (`isInMDAGEV_iff_exists_tendstoUniformlyOn_cond`), canonical norming constants for every `γ`
+  (`exists_tendsto_pow_norming_tailQuantile`), the equivalents `isInMDAGEV_iff_exists_tendsto_mul_one_sub` and
+  `isInMDAGEV_iff_exists_tendsto_div_tail`, and the unified von Mises condition (`isInMDAGEV_of_vonMises`,
+  `isInMDAGEV_of_vonMises_nhdsLT`).
+- **Standard laws with explicit constants** (`DomainOfAttraction/Examples.lean`): the standard normal
+  (`tendsto_standardNormalCDF_pow`) and every normal law (`isInMDAGEV_ofMeasure_gaussianReal`), every Gamma law
+  (`tendsto_gammaCDF_pow`), and the standard Cauchy law (`tendsto_standardCauchyCDF_pow`).
 - Regular variation API: closure properties and the elementary monotone versions of the above.

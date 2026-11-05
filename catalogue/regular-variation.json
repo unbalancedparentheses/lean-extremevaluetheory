@@ -147,17 +147,17 @@
     "id": "karamata-zero",
     "name": "Karamata's theorem for integrals over [a, x]",
     "source": "BGT Prop 1.5.8, Thm 1.5.11(i)",
-    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_interval_div",
-    "file": "ExtremeValueTheory/RegularVariation/KaramataConverse.lean",
-    "statement": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_interval_div {f : ℝ → ℝ} {ρ a : ℝ}\n  (hf : ExtremeValueTheory.IsRegularlyVarying f ρ) (hm : Measurable f) (hρ : -1 < ρ)\n  (hint : ∀ x ≥ a, IntervalIntegrable f MeasureTheory.volume a x) :\n  Filter.Tendsto (fun x => (∫ (t : ℝ) in a..x, f t) / (x * f x)) Filter.atTop (nhds (1 / (ρ + 1)))",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_div_of_measurableNearTop",
+    "file": "ExtremeValueTheory/RegularVariation/KaramataIntegrals.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_div_of_measurableNearTop {f : ℝ → ℝ}\n  {ρ a : ℝ} (hf : ExtremeValueTheory.IsRegularlyVarying f ρ)\n  (hm : ExtremeValueTheory.MeasurableNearTop f) (hρ : -1 < ρ)\n  (hint : ∀ x ≥ a, IntervalIntegrable f MeasureTheory.volume a x) :\n  Filter.Tendsto (fun x => (∫ (t : ℝ) in a..x, f t) / (x * f x)) Filter.atTop (nhds (1 / (ρ + 1)))",
     "status": "full",
-    "scope_note": "Any lower limit a, with integrability on [a, x]. Assumes f Borel measurable on all of R; tendsto_integral_div_of_measurableNearTop assumes it only near infinity.",
+    "scope_note": "Any lower limit a, with integrability on [a, x] (implied by the book local boundedness), and measurability only near infinity. tendsto_integral_interval_div is the same for f Borel measurable on all of R; tendsto_integral_zero_div is deprecated.",
     "axioms": [
       "Classical.choice",
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "f3727b23a80aaed1fa124babefe0ed1e"
+    "input_hash": "212cd29b953e73224d3f2a2328a18ddf"
   },
   {
     "id": "breiman",
@@ -174,5 +174,165 @@
       "propext"
     ],
     "input_hash": "d150fcb43ff64a4189bb71f27c6f2738"
+  },
+  {
+    "id": "karamata-converse-weighted-tail",
+    "name": "Karamata converse, weighted tail integrals",
+    "source": "BGT Thm 1.6.1",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.of_tendsto_rpow_mul_div_integral_Ioi",
+    "file": "ExtremeValueTheory/RegularVariation/KaramataConverse.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.of_tendsto_rpow_mul_div_integral_Ioi {f : ℝ → ℝ} {ρ σ : ℝ}\n  (hpos : ∀ᶠ (x : ℝ) in Filter.atTop, 0 < f x) (hσ : σ + ρ < -1)\n  (h :\n    Filter.Tendsto (fun x => x ^ (σ + 1) * f x / ∫ (t : ℝ) in Set.Ioi x, t ^ σ * f t) Filter.atTop\n      (nhds (-(σ + ρ + 1)))) :\n  ExtremeValueTheory.IsRegularlyVarying f ρ",
+    "status": "reduced",
+    "scope_note": "The range sigma + rho < -1 only; the range > -1 is karamata-converse-weighted. Only eventual positivity is assumed. The book statement was recalled, not checked.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "f2defc8aa3c50ae55a0911ac54f04edd"
+  },
+  {
+    "id": "karamata-converse-weighted",
+    "name": "Karamata converse, weighted integrals from a",
+    "source": "BGT Thm 1.6.1",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.of_tendsto_rpow_mul_div_integral",
+    "file": "ExtremeValueTheory/RegularVariation/KaramataConverse.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.of_tendsto_rpow_mul_div_integral {f : ℝ → ℝ} {ρ σ a : ℝ}\n  (hpos : ∀ᶠ (x : ℝ) in Filter.atTop, 0 < f x) (hσ : -1 < σ + ρ)\n  (h :\n    Filter.Tendsto (fun x => x ^ (σ + 1) * f x / ∫ (t : ℝ) in a..x, t ^ σ * f t) Filter.atTop\n      (nhds (σ + ρ + 1))) :\n  ExtremeValueTheory.IsRegularlyVarying f ρ",
+    "status": "reduced",
+    "scope_note": "The range sigma + rho > -1 only; the range < -1 is karamata-converse-weighted-tail. Only eventual positivity is assumed. The book statement was recalled, not checked.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "2c33ada9ed5961d4c2c651132f1d6677"
+  },
+  {
+    "id": "karamata-tail-near-top",
+    "name": "Karamata's tail-integral theorem, measurable near infinity",
+    "source": "BGT Prop 1.5.10",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_Ioi_div_of_measurableNearTop",
+    "file": "ExtremeValueTheory/RegularVariation/KaramataIntegrals.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_Ioi_div_of_measurableNearTop {F : ℝ → ℝ}\n  {α : ℝ} (hm : ExtremeValueTheory.MeasurableNearTop F)\n  (hRV : ExtremeValueTheory.IsRegularlyVarying F (-α)) (hα : 1 < α) :\n  Filter.Tendsto (fun x => (∫ (t : ℝ) in Set.Ioi x, F t) / (x * F x)) Filter.atTop\n    (nhds (1 / (α - 1)))",
+    "status": "full",
+    "scope_note": "Measurable only on some [X, infinity), the book hypothesis; no monotonicity or local boundedness. Direct half.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "22bfd221489eb6e39c96042b01155c44"
+  },
+  {
+    "id": "karamata-neg-one",
+    "name": "Karamata at index -1, integrals from a",
+    "source": "BGT Prop 1.5.9a",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_div_atTop_of_neg_one",
+    "file": "ExtremeValueTheory/RegularVariation/KaramataIntegrals.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_div_atTop_of_neg_one {f : ℝ → ℝ}\n  (hf : ExtremeValueTheory.IsRegularlyVarying f (-1)) (hm : ExtremeValueTheory.MeasurableNearTop f)\n  {a : ℝ} (hnn : ∀ x ≥ a, 0 ≤ f x) (hint : ∀ x ≥ a, IntervalIntegrable f MeasureTheory.volume a x) :\n  Filter.Tendsto (fun x => (∫ (t : ℝ) in a..x, f t) / (x * f x)) Filter.atTop Filter.atTop",
+    "status": "full",
+    "scope_note": "Measurable near infinity, f >= 0 on [a, infinity) and interval integrable from a. Available for every large a. The citation is as given in docs/HIRATA_COMPARISON.md.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "063d3e3cde3d384c3a24a292d8ba4346"
+  },
+  {
+    "id": "integral-is-rv",
+    "name": "Integrals of regularly varying functions are regularly varying",
+    "source": "BGT Prop 1.5.8",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.integral",
+    "file": "ExtremeValueTheory/RegularVariation/KaramataIntegrals.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.integral {f : ℝ → ℝ} {ρ : ℝ}\n  (hf : ExtremeValueTheory.IsRegularlyVarying f ρ) (hm : ExtremeValueTheory.MeasurableNearTop f)\n  (hρ : -1 < ρ) {a : ℝ} (hint : ∀ x ≥ a, IntervalIntegrable f MeasureTheory.volume a x) :\n  ExtremeValueTheory.IsRegularlyVarying (fun x => ∫ (t : ℝ) in a..x, f t) (ρ + 1)",
+    "status": "full",
+    "scope_note": "rho > -1. The tail form is integral_Ioi_of_measurableNearTop, and index -1 is integral_of_neg_one, integral_Ioi_of_neg_one.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "c8d3162694efbeac65424df8002eb09a"
+  },
+  {
+    "id": "uct-tail-negative",
+    "name": "Uniform convergence on [a, infinity), rho < 0",
+    "source": "BGT Thm 1.5.2",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_Ici_of_measurableNearTop",
+    "file": "ExtremeValueTheory/RegularVariation/UniformConvergenceTails.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_Ici_of_measurableNearTop {f : ℝ → ℝ}\n  {ρ : ℝ} (hf : ExtremeValueTheory.IsRegularlyVarying f ρ)\n  (hm : ExtremeValueTheory.MeasurableNearTop f) (hρ : ρ < 0) {a : ℝ} (ha : 0 < a) :\n  TendstoUniformlyOn (fun x c => f (c * x) / f x) (fun c => c ^ ρ) Filter.atTop (Set.Ici a)",
+    "status": "reduced",
+    "scope_note": "The range rho < 0 only; compacts are uct-measurable, rho > 0 is uct-tail-positive. Measurable near infinity.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "6d4ed3b979a49a64c380499b5550ef4c"
+  },
+  {
+    "id": "uct-tail-positive",
+    "name": "Uniform convergence on (0, b], rho > 0",
+    "source": "BGT Thm 1.5.2",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_Ioc_of_measurableNearTop",
+    "file": "ExtremeValueTheory/RegularVariation/UniformConvergenceTails.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_Ioc_of_measurableNearTop {f : ℝ → ℝ}\n  {ρ : ℝ} (hf : ExtremeValueTheory.IsRegularlyVarying f ρ)\n  (hm : ExtremeValueTheory.MeasurableNearTop f) (hρ : 0 < ρ)\n  (hbd : ∀ (b : ℝ), ∃ B, ∀ y ∈ Set.Ioc 0 b, |f y| ≤ B) (b : ℝ) :\n  TendstoUniformlyOn (fun x c => f (c * x) / f x) (fun c => c ^ ρ) Filter.atTop (Set.Ioc 0 b)",
+    "status": "reduced",
+    "scope_note": "The range rho > 0 only, with f bounded on every (0, b]; the converse direction of the book, that boundedness is necessary, is not stated.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "4d26aa583bf4412285e4ddc4ee7a266c"
+  },
+  {
+    "id": "rv-karamata-representation",
+    "name": "Karamata's representation for index rho",
+    "source": "BGT Thm 1.3.1, Thm 1.4.1",
+    "lean_name": "ExtremeValueTheory.isRegularlyVarying_iff_exists_representation",
+    "file": "ExtremeValueTheory/RegularVariation/RepresentationIndex.lean",
+    "statement": "ExtremeValueTheory.isRegularlyVarying_iff_exists_representation {f : ℝ → ℝ} {ρ : ℝ}\n  (hm : ExtremeValueTheory.MeasurableNearTop f) :\n  ExtremeValueTheory.IsRegularlyVarying f ρ ↔\n    ∃ a,\n      0 < a ∧\n        ∃ c r,\n          Measurable c ∧\n            Measurable r ∧\n              (∃ c₀, 0 < c₀ ∧ Filter.Tendsto c Filter.atTop (nhds c₀)) ∧\n                Filter.Tendsto r Filter.atTop (nhds ρ) ∧\n                  (∀ x ≥ a, IntervalIntegrable (fun t => r t / t) MeasureTheory.volume a x) ∧\n                    ∀ x ≥ a, f x = c x * Real.exp (∫ (t : ℝ) in a..x, r t / t)",
+    "status": "full",
+    "scope_note": "Every rho, measurable near infinity. The forward direction with r bounded on [a, infinity) is IsRegularlyVarying.exists_representation.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "e9db28e167a62dad29befd545ee4b161"
+  },
+  {
+    "id": "rv-composition",
+    "name": "Composition of regularly varying functions",
+    "source": "BGT Prop 1.5.7",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.comp",
+    "file": "ExtremeValueTheory/RegularVariation/Composition.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.comp {f g : ℝ → ℝ} {ρ η : ℝ}\n  (hf : ExtremeValueTheory.IsRegularlyVarying f ρ) (hm : ExtremeValueTheory.MeasurableNearTop f)\n  (hg : ExtremeValueTheory.IsRegularlyVarying g η)\n  (hgtop : Filter.Tendsto g Filter.atTop Filter.atTop) :\n  ExtremeValueTheory.IsRegularlyVarying (fun x => f (g x)) (ρ * η)",
+    "status": "full",
+    "scope_note": "g -> infinity; f measurable near infinity. The book number was recalled, not checked.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "e6839e91e43d8ee0dee2539b96adf4d3"
+  },
+  {
+    "id": "rv-limit-is-power",
+    "name": "A limit of f(cx)/f(x) is a power",
+    "source": "BGT Thm 1.4.1",
+    "lean_name": "ExtremeValueTheory.exists_isRegularlyVarying_of_tendsto",
+    "file": "ExtremeValueTheory/RegularVariation/Composition.lean",
+    "statement": "ExtremeValueTheory.exists_isRegularlyVarying_of_tendsto {f k : ℝ → ℝ}\n  (hpos : ∀ᶠ (x : ℝ) in Filter.atTop, 0 < f x) (hm : ExtremeValueTheory.MeasurableNearTop f)\n  (hk : ∀ (c : ℝ), 0 < c → 0 < k c)\n  (h : ∀ (c : ℝ), 0 < c → Filter.Tendsto (fun x => f (c * x) / f x) Filter.atTop (nhds (k c))) :\n  ∃ ρ, ExtremeValueTheory.IsRegularlyVarying f ρ ∧ ∀ (c : ℝ), 0 < c → k c = c ^ ρ",
+    "status": "reduced",
+    "scope_note": "Assumes a positive limit for every c > 0; the book needs it only on a set of positive measure.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "68915a782cf317b5211229fe8f62cc9c"
   }
 ]

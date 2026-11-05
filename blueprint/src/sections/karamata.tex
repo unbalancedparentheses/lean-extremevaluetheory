@@ -100,3 +100,75 @@ Fréchet domain of attraction (Chapter~\ref{chap:domains-of-attraction}).
   \leanok
   Uniform convergence on compacts and Potter bounds near $0$ after rescaling $t = x s$.
 \end{proof}
+
+\section{Karamata's theorem without monotonicity}
+
+\begin{theorem}[Karamata's theorem, measurable near infinity]
+  \label{thm:karamata-near-top}
+  \uses{thm:karamata-relaxed, thm:karamata-zero, thm:rv-uct-near-top}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_mul_mul_div,
+    ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_Ioi_div_of_measurableNearTop,
+    ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_div_of_measurableNearTop,
+    ExtremeValueTheory.IsRegularlyVarying.eventually_tendsto_integral_div_of_measurableNearTop,
+    ExtremeValueTheory.IsRegularlyVarying.exists_integrableOn_Ioi_of_measurableNearTop}
+  \leanok
+  If $f \in RV_\rho$ is measurable on some $[X, \infty)$, then
+  $\int_{px}^{qx} f / (x f(x)) \to \int_p^q u^\rho \, du$ for $p, q > 0$. For $\rho > -1$,
+  $\int_a^x f / (x f(x)) \to 1/(\rho + 1)$, for every $a$ with $f$ integrable on $[a, x]$, and for every
+  large $a$ with no integrability hypothesis. For $\rho < -1$, $\int_x^\infty f / (x f(x)) \to -1/(\rho + 1)$
+  [BGT, Propositions~1.5.8, 1.5.10].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Replace $f$ by $f \mathbf{1}_{[X, \infty)}$, which changes neither the index nor the limits, and apply
+  the measurable forms.
+\end{proof}
+
+\begin{theorem}[Karamata's theorem at the index $-1$]
+  \label{thm:karamata-neg-one}
+  \uses{thm:karamata-near-top}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_div_atTop_of_neg_one,
+    ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_Ioi_div_atTop_of_neg_one}
+  \leanok
+  If $f \in RV_{-1}$ is measurable near infinity, then $\int_a^x f / (x f(x)) \to \infty$ when $f \ge 0$ on
+  $[a, \infty)$ and integrable on $[a, x]$, and $\int_x^\infty f / (x f(x)) \to \infty$ when $f$ is integrable
+  on some half-line [BGT, Proposition~1.5.9].
+\end{theorem}
+\begin{proof}
+  \leanok
+  For each $M$, $\int_{x/M}^{x} f / (x f(x)) \to \log M$, and $f \ge 0$ eventually.
+\end{proof}
+
+\begin{theorem}[Integrals of regularly varying functions are regularly varying]
+  \label{thm:rv-integrals}
+  \uses{thm:karamata-near-top, thm:karamata-neg-one}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.integral, ExtremeValueTheory.IsRegularlyVarying.integral_of_neg_one,
+    ExtremeValueTheory.IsRegularlyVarying.integral_Ioi_of_measurableNearTop,
+    ExtremeValueTheory.IsRegularlyVarying.integral_Ioi_of_neg_one}
+  \leanok
+  With $f \in RV_\rho$ measurable near infinity: $x \mapsto \int_a^x f \in RV_{\rho + 1}$ for $\rho > -1$,
+  $x \mapsto \int_x^\infty f \in RV_{\rho + 1}$ for $\rho < -1$, and both are slowly varying at $\rho = -1$
+  [BGT, Propositions~1.5.8--1.5.10].
+\end{theorem}
+\begin{proof}
+  \leanok
+  The integral is asymptotic to a regularly varying function, by Karamata's theorem. At $\rho = -1$, the
+  ratio of the integrals at $x$ and $cx$ differs from $1$ by a term that tends to $0$.
+\end{proof}
+
+\begin{theorem}[Karamata's converse with weights]
+  \label{thm:karamata-converse-weighted}
+  \uses{thm:karamata-converse}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.of_tendsto_mul_div_integral,
+    ExtremeValueTheory.IsRegularlyVarying.of_tendsto_rpow_mul_div_integral,
+    ExtremeValueTheory.IsRegularlyVarying.of_tendsto_rpow_mul_div_integral_Ioi}
+  \leanok
+  If $f$ is eventually positive and $x^{\sigma + 1} f(x) / \int_a^x t^\sigma f \to \sigma + \rho + 1 > 0$, or
+  $x^{\sigma + 1} f(x) / \int_x^\infty t^\sigma f \to -(\sigma + \rho + 1) > 0$, then $f \in RV_\rho$
+  [BGT, Theorem~1.6.1].
+\end{theorem}
+\begin{proof}
+  \leanok
+  A nonzero limit forces integrability, since a non-integrable integrand gives the value $0$. The
+  logarithm of the integral then has the logarithmic derivative that the representation theorem needs.
+\end{proof}

@@ -439,12 +439,12 @@
     "file": "ExtremeValueTheory/Statistics/PickandsNormality.lean",
     "statement": "ExtremeValueTheory.tendstoInDistribution_pickands.{u_1, u_2} {Ω : Type u_1} {Ω' : Type u_2}\n  {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {P' : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure P'] {X : ℕ → Ω → ℝ} (hX : ∀ (i : ℕ), Measurable (X i))\n  (hindep : ProbabilityTheory.iIndepFun X P)\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ} {a A : ℝ → ℝ}\n  (h2 :\n    ExtremeValueTheory.IsExtSecondOrderRegularlyVarying\n      (ExtremeValueTheory.survivalQuantile (ExtremeValueTheory.survival P (X 0))) γ ρ a A)\n  {k : ℕ → ℕ} (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0))\n  (hlam : Filter.Tendsto (fun n => √↑(k n) * A (↑n / ↑(k n))) Filter.atTop (nhds lam)) {Z : Ω' → ℝ}\n  (hZ :\n    ProbabilityTheory.HasLaw Z\n      (ProbabilityTheory.gaussianReal (lam * ExtremeValueTheory.pickandsBias γ ρ)\n        (ExtremeValueTheory.pickandsVariance γ).toNNReal)\n      P') :\n  MeasureTheory.TendstoInDistribution\n    (fun n ω => √↑(k n) * (ExtremeValueTheory.pickands (fun i => X (↑i) ω) (k n) - γ)) Filter.atTop\n    Z (fun x => P) P'",
     "status": "reduced",
-    "scope_note": "Every shape. The second-order hypothesis assumes locally uniform convergence, formally stronger than the pointwise textbook condition, and k indexes X_(k), X_(2k), X_(4k).",
+    "scope_note": "Every shape. The second-order hypothesis assumes locally uniform convergence, formally stronger than the pointwise textbook condition. k is the smallest index: X_(k+1), X_(2k+1), X_(4k+1) in decreasing order.",
     "axioms": [
       "Classical.choice",
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "0f8fccfaa52f1c92eafc5e1d7d65763d"
+    "input_hash": "c4757c638ece4664f225c662068a9ef8"
   }
 ]

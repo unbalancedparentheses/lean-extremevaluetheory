@@ -195,6 +195,42 @@ theorem test_nonvacuous_exists_gevMLE_returnLevel :
     (mem_interior_gevK (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (by norm_num)) (by norm_num) (by norm_num) hσ (by norm_num) hlaw hind HasLaw.id
 
+/-- Exercises `tendsto_measure_mem_gevMLEReturnLevelInterval` (Wald coverage of the maximum likelihood
+return level): iid `GEV(ξ = 1/4, μ = 1/2, σ = 3/2)` samples, measurable maximizers from
+`exists_measurable_gevMLE`, and the true standard deviation as the consistent standard error, which
+is the one hypothesis the theorem does not discharge. -/
+theorem test_nonvacuous_tendsto_measure_mem_gevMLEReturnLevelInterval (z : ℝ) :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ)
+      (_ : IsProbabilityMeasure P), iIndepFun X P ∧
+      ∃ g : (n : ℕ) → (Fin n → ℝ) → ℝ × ℝ × ℝ, (∀ n, Measurable (g n)) ∧
+        (∀ n x, g n x ∈ gevK ∧
+          IsMaxOn (fun p : ℝ × ℝ × ℝ => gevLogLikE p.1 p.2.1 p.2.2 x) gevK (g n x)) ∧
+        Tendsto (fun n : ℕ => P {ω | gevReturnLevel (1 / 4) (1 / 2) (3 / 2) 100 ∈ Icc
+          (gevReturnLevel (g n (fun i : Fin n => X i ω)).1 (g n (fun i : Fin n => X i ω)).2.1
+              (g n (fun i : Fin n => X i ω)).2.2 100 -
+            z * √(gevReturnLevelVar (1 / 4) (3 / 2) 100) / √(n : ℝ))
+          (gevReturnLevel (g n (fun i : Fin n => X i ω)).1 (g n (fun i : Fin n => X i ω)).2.1
+              (g n (fun i : Fin n => X i ω)).2.2 100 +
+            z * √(gevReturnLevelVar (1 / 4) (3 / 2) 100) / √(n : ℝ))})
+          atTop (𝓝 (gaussianReal 0 1 (Icc (-z) z))) := by
+  have hσ : (0 : ℝ) < 3 / 2 := by norm_num
+  obtain ⟨Ω, _, P, X, -, hlaw, hind, hP⟩ :=
+    exists_iid ℕ (gevLocScaleCDF (1 / 4) (1 / 2) hσ).measure
+  have := hP
+  have hint := mem_interior_gevK (ξ := 1 / 4) (μ := 1 / 2) (σ := 3 / 2) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  choose g hgm hg using exists_measurable_gevMLE isCompact_gevK gevK_sub ⟨_, interior_subset hint⟩
+  refine ⟨Ω, _, P, X, hP, hind, g, hgm, hg, ?_⟩
+  exact tendsto_measure_mem_gevMLEReturnLevelInterval isCompact_gevK gevK_sub hint
+    (by norm_num) (by norm_num) hσ (by norm_num) hlaw hind
+    (θh := fun n ω => g n fun i : Fin n => X i ω)
+    (fun n => (hgm n).comp_aemeasurable (AEMeasurable.of_eval fun i => (hlaw i).aemeasurable))
+    (fun n ω => (hg n _).1) (fun n ω => (hg n _).2)
+    (S := fun _ _ => √(gevReturnLevelVar (1 / 4) (3 / 2) 100))
+    (tendstoInMeasure_of_tendsto_ae (fun _ => aestronglyMeasurable_const)
+      (ae_of_all _ fun _ => tendsto_const_nhds))
+    (fun _ => aemeasurable_const) z
+
 /-- The asymptotic covariance is the inverse of the information, in the order `(ξ, μ, σ)`: the
 `(ξ, ξ)` entry of `gevMLECov` is the `(ξ, ξ)` entry of the inverse of `gevFisherInfo`, whose order
 is `(μ, σ, ξ)`, and likewise for the other coordinates. -/

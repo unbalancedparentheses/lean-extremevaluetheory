@@ -167,13 +167,13 @@
     "file": "ExtremeValueTheory/Statistics/GEVFisherInformation.lean",
     "statement": "ExtremeValueTheory.tendstoInDistribution_gevScoreVec3.{u_1, u_2} {ξ μ σ : ℝ} {Ω : Type u_1}\n  {Ω' : Type u_2} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {P' : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure P'] {X : ℕ → Ω → ℝ} (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0)\n  (hσ : 0 < σ)\n  (hX :\n    ∀ (i : ℕ), ProbabilityTheory.HasLaw (X i) (ExtremeValueTheory.gevLocScaleCDF ξ μ hσ).measure P)\n  (hind : ProbabilityTheory.iIndepFun X P) {Z : Ω' → EuclideanSpace ℝ (Fin 3)}\n  (hZ :\n    ProbabilityTheory.HasLaw Z\n      (ProbabilityTheory.multivariateGaussian 0 (ExtremeValueTheory.gevFisherInfo ξ σ)) P') :\n  MeasureTheory.TendstoInDistribution\n    (fun n ω => (√↑n)⁻¹ • ∑ i ∈ Finset.range n, ExtremeValueTheory.gevScoreVec3 ξ μ σ (X i ω))\n    Filter.atTop Z (fun x => P) P'",
     "status": "reduced",
-    "scope_note": "xi > -1/2, xi != 0. It is the CLT for the score at the true parameter. It is not asymptotic normality of the MLE, which the library does not have for the GEV.",
+    "scope_note": "xi > -1/2, xi != 0. It is the CLT for the score at the true parameter. Asymptotic normality of the MLE is the separate entry gev-mle-joint-normality.",
     "axioms": [
       "Classical.choice",
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "a6310dae183a3f3819350566e686358b"
+    "input_hash": "e269095c7cfff4d9de9e8906bf7460af"
   },
   {
     "id": "gev-information-identity",
@@ -231,13 +231,13 @@
     "file": "ExtremeValueTheory/Statistics/ReturnLevelNormality.lean",
     "statement": "ExtremeValueTheory.tendstoInDistribution_gevReturnLevel.{u_1, u_2, u_3} {Ω : Type u_1}\n  {Ω' : Type u_2} {Ω'' : Type u_3} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}\n  {mΩ'' : MeasurableSpace Ω''} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {P' : MeasureTheory.Measure Ω'} [MeasureTheory.IsProbabilityMeasure P']\n  {P'' : MeasureTheory.Measure Ω''} [MeasureTheory.IsProbabilityMeasure P''] {ξ₀ μ₀ σ₀ m : ℝ}\n  (hξ₀ : ξ₀ ≠ 0) (hm : 1 < m) {θh : ℕ → Ω → ℝ × ℝ × ℝ} (hθm : ∀ (n : ℕ), AEMeasurable (θh n) P)\n  {V : Matrix (Fin 3) (Fin 3) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 3)}\n  (h :\n    MeasureTheory.TendstoInDistribution\n      (fun n ω => √↑n • !₂[(θh n ω).1 - ξ₀, (θh n ω).2.1 - μ₀, (θh n ω).2.2 - σ₀]) Filter.atTop Z\n      (fun x => P) P')\n  (hZ : ProbabilityTheory.HasLaw Z (ProbabilityTheory.multivariateGaussian 0 V) P') {W : Ω'' → ℝ}\n  (hW :\n    ProbabilityTheory.HasLaw W\n      (ProbabilityTheory.gaussianReal 0\n        ((ExtremeValueTheory.gevReturnLevelGrad ξ₀ σ₀ m).ofLp ⬝ᵥ\n            V.mulVec (ExtremeValueTheory.gevReturnLevelGrad ξ₀ σ₀ m).ofLp).toNNReal)\n      P'') :\n  MeasureTheory.TendstoInDistribution\n    (fun n ω =>\n      √↑n *\n        (ExtremeValueTheory.gevReturnLevel (θh n ω).1 (θh n ω).2.1 (θh n ω).2.2 m -\n          ExtremeValueTheory.gevReturnLevel ξ₀ μ₀ σ₀ m))\n    Filter.atTop W (fun x => P) P''",
     "status": "reduced",
-    "scope_note": "Asymptotic normality of the parameter estimators is a hypothesis, so this is the delta method: that step is not proved, and no GEV estimator is shown to satisfy it. Also xi0 != 0.",
+    "scope_note": "Asymptotic normality of the parameter estimators is a hypothesis, so this is the delta method. For the maximum likelihood estimator, where normality is proved, see gev-mle-return-level-normality. Also xi0 != 0.",
     "axioms": [
       "Classical.choice",
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "0c3aceafae0f9a51cd6d63b95ec9a79e"
+    "input_hash": "49b159293f09a10e8383af92f9e9a0fc"
   },
   {
     "id": "gev-return-level-interval",
@@ -279,13 +279,13 @@
     "file": "ExtremeValueTheory/Statistics/ConfidenceIntervals.lean",
     "statement": "ExtremeValueTheory.tendsto_measure_mem_gpdReturnLevelInterval.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {ξ₀ σ₀ u ζ N : ℝ} {X : ℕ → Ω → ℝ} {K : Set (ℝ × ℝ)} (hK : IsCompact K)\n  (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K) (hξ₀ : -1 / 2 < ξ₀)\n  (hξ₀0 : ξ₀ ≠ 0) (hσ₀ : 0 < σ₀)\n  (hX : ∀ (i : ℕ), ProbabilityTheory.HasLaw (X i) (ExtremeValueTheory.gpdMeasure ξ₀ σ₀) P)\n  (hind : ProbabilityTheory.iIndepFun X P) {θh : ℕ → Ω → ℝ × ℝ}\n  (hθm : ∀ (n : ℕ), AEMeasurable (θh n) P) (hθK : ∀ (n : ℕ) (ω : Ω), θh n ω ∈ K)\n  (hmax :\n    ∀ (n : ℕ) (ω : Ω),\n      IsMaxOn (fun p => ExtremeValueTheory.gpdLogLikE p.1 p.2 fun i => X (↑i) ω) K (θh n ω))\n  (hNζ : 1 < N * ζ) (z : ℝ) :\n  Filter.Tendsto\n    (fun n =>\n      P\n        {ω |\n          ExtremeValueTheory.gpdReturnLevel u ξ₀ σ₀ ζ N ∈\n            Set.Icc\n              (ExtremeValueTheory.gpdReturnLevel u (θh n ω).1 (θh n ω).2 ζ N -\n                z * √(ExtremeValueTheory.gpdReturnLevelVar (θh n ω).1 (θh n ω).2 ζ N) / √↑n)\n              (ExtremeValueTheory.gpdReturnLevel u (θh n ω).1 (θh n ω).2 ζ N +\n                z * √(ExtremeValueTheory.gpdReturnLevelVar (θh n ω).1 (θh n ω).2 ζ N) / √↑n)})\n    Filter.atTop (nhds ((ProbabilityTheory.gaussianReal 0 1) (Set.Icc (-z) z)))",
     "status": "reduced",
-    "scope_note": "Same setting as gpd-return-level-normality: exact GPD excesses, known zeta, compact K, xi0 != 0. Wald intervals only; profile likelihood intervals are not covered.",
+    "scope_note": "Same setting as gpd-return-level-normality: exact GPD excesses, known zeta, compact K, xi0 != 0. Wald intervals; profile likelihood intervals are gpd-profile-return-level.",
     "axioms": [
       "Classical.choice",
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "eedbaaa98eda841e61c4dcfc7393f83d"
+    "input_hash": "2dbce77701217c7a1ddab4f3e562320e"
   },
   {
     "id": "gpd-wilks",
@@ -311,13 +311,13 @@
     "file": "ExtremeValueTheory/Statistics/GPDWilks/Coverage.lean",
     "statement": "ExtremeValueTheory.tendsto_measure_mem_gpdReturnLevelProfileInterval.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {X : ℕ → Ω → ℝ} {ξ₀ σ₀ : ℝ} {K : Set (ℝ × ℝ)} (hK : IsCompact K)\n  (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K) (hξ₀ : 0 < ξ₀) (hσ₀ : 0 < σ₀)\n  (hX : ∀ (i : ℕ), ProbabilityTheory.HasLaw (X i) (ExtremeValueTheory.gpdMeasure ξ₀ σ₀) P)\n  (hind : ProbabilityTheory.iIndepFun X P) {u ζ N : ℝ} (hNζ : 1 < N * ζ) (c : ℝ) :\n  Filter.Tendsto\n    (fun n =>\n      P\n        {ω |\n          ExtremeValueTheory.gpdReturnLevel u ξ₀ σ₀ ζ N ∈\n            ExtremeValueTheory.gpdProfileInterval K\n              (fun p => ExtremeValueTheory.gpdReturnLevel u p.1 p.2 ζ N) c fun i => X (↑i) ω})\n    Filter.atTop (nhds ((ProbabilityTheory.chiSquared 1) (Set.Iic c)))",
     "status": "reduced",
-    "scope_note": "GPD with ξ₀ > 0 only; exact iid sample; compact parameter set; u and ζ known constants. Proved to be a confidence set, not that it is an interval.",
+    "scope_note": "GPD with ξ₀ > 0 only; exact iid sample; compact parameter set; u and ζ known constants. The set requires a finite maximized likelihood and is empty otherwise. Proved to be a confidence set, not that it is an interval.",
     "axioms": [
       "Classical.choice",
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "20a8bb30e31ef3337d70b124a025c294"
+    "input_hash": "b1b66b8ad08e53f2f49b4322f8dbec85"
   },
   {
     "id": "gev-mle-joint-normality",

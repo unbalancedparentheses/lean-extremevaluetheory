@@ -350,6 +350,40 @@ follow de Haan and Ferreira, \emph{Extreme Value Theory: An Introduction}, Sprin
   of the first log-moment.
 \end{proof}
 
+\begin{theorem}[Asymptotic normality of the Pickands estimator]
+  \label{thm:pickands-normality}
+  \uses{def:pickands, def:second-order-rv}
+  \lean{ExtremeValueTheory.IsExtSecondOrderRegularlyVarying, ExtremeValueTheory.pickandsVariance,
+    ExtremeValueTheory.pickandsBias, ExtremeValueTheory.tendstoInDistribution_pickands_uniform,
+    ExtremeValueTheory.tendstoInDistribution_pickands,
+    ExtremeValueTheory.tendstoInDistribution_pickands_of_tendsto_zero}
+  \leanok
+  Under locally uniform second-order extended regular variation with $\sqrt{k} A(n/k) \to \lambda$, for every
+  $\gamma$, $\sqrt{k}(\hat\gamma_P - \gamma) \Rightarrow N(\lambda b, v)$, with
+  $v = \gamma^2 (2^{2\gamma + 1} + 1) / (2 (2^\gamma - 1) \log 2)^2$ [dHF, Theorem~3.3.5].
+\end{theorem}
+\begin{proof}
+  \leanok
+  The tail empirical process gives the joint limit of the three order statistics as Brownian motion at times
+  $1, 2, 4$; then the delta method.
+\end{proof}
+
+\begin{theorem}[Asymptotic normality of the moment estimator for a positive index]
+  \label{thm:moment-normality}
+  \uses{def:moment-estimator, def:second-order-rv}
+  \lean{ExtremeValueTheory.momentBias, ExtremeValueTheory.tendstoInDistribution_momentEstimator,
+    ExtremeValueTheory.tendstoInDistribution_momentEstimator_of_tendsto_zero}
+  \leanok
+  For $\gamma > 0$, under second-order regular variation of $U$ in ratio form,
+  $\sqrt{k}(\hat\gamma_M - \gamma) \Rightarrow N(\lambda b, 1 + \gamma^2)$ [dHF, Theorem~3.5.4]. The case
+  $\gamma \le 0$ is not covered.
+\end{theorem}
+\begin{proof}
+  \leanok
+  The R\'enyi representation and an algebraic expansion of the estimator around $(\gamma, 2\gamma^2)$ reduce it
+  to the central limit theorem for a mean of a function of the exponential spacings.
+\end{proof}
+
 \section{Extreme quantiles and tail probabilities}
 
 \begin{definition}[Weissman and tail-probability estimators]

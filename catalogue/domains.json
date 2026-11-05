@@ -158,5 +158,181 @@
       "propext"
     ],
     "input_hash": "d1eb18943e921489866636f8b860c654"
+  },
+  {
+    "id": "gev-cdf-link",
+    "name": "IsInMDAGEV is convergence to gevCDF",
+    "source": "EKM Thm 3.4.5; dHF Thm 1.1.3",
+    "lean_name": "CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendsto_gevCDF",
+    "file": "ExtremeValueTheory/DomainOfAttraction/GEVDomain.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendsto_gevCDF\n  {F : CumulativeDistributionFunction} (ξ : ℝ) :\n  F.IsInMDAGEV ξ ↔\n    ∃ As,\n      ∀ (x : ℝ),\n        Filter.Tendsto (fun n => ↑(As n • F).toStieltjesFunction x ^ n) Filter.atTop\n          (nhds (↑(ExtremeValueTheory.gevCDF ξ).toStieltjesFunction x))",
+    "status": "full",
+    "scope_note": "For every xi and every x. The form at continuity points is isInMDAGEV_iff_exists_tendsto_gevCDF_of_continuousAt; gevCDF xi is continuous, so they agree.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "fb8e487a9ffa84b8d83fad6f3b21a3f8"
+  },
+  {
+    "id": "mda-shape-unique",
+    "name": "The shape of a domain of attraction is unique",
+    "source": "EKM Thm 3.4.5; dHF Thm 1.1.3",
+    "lean_name": "CumulativeDistributionFunction.IsInMDAGEV.unique",
+    "file": "ExtremeValueTheory/DomainOfAttraction/GEVDomain.lean",
+    "statement": "CumulativeDistributionFunction.IsInMDAGEV.unique {F : CumulativeDistributionFunction} {ξ η : ℝ}\n  (hξ : F.IsInMDAGEV ξ) (hη : F.IsInMDAGEV η) : ξ = η",
+    "status": "full",
+    "scope_note": "Nothing left out.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "6ac4a9cf7147a89ba68c256e99e67ff4"
+  },
+  {
+    "id": "normal-in-gumbel-domain",
+    "name": "Normal laws are in the Gumbel domain",
+    "source": "EKM §3.3.3, Table 3.4.4 (recalled, not checked)",
+    "lean_name": "CumulativeDistributionFunction.isInMDAGEV_ofMeasure_gaussianReal",
+    "file": "ExtremeValueTheory/DomainOfAttraction/Examples.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAGEV_ofMeasure_gaussianReal (m : ℝ) {v : NNReal} (hv : v ≠ 0) :\n  (CumulativeDistributionFunction.ofMeasure (ProbabilityTheory.gaussianReal m v)).IsInMDAGEV 0",
+    "status": "full",
+    "scope_note": "Every mean and every positive variance. Membership only: the explicit constants are normal-norming-constants, for N(0,1).",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "78af70c2684eae2b016b7145a46b7898"
+  },
+  {
+    "id": "normal-norming-constants",
+    "name": "Norming constants of the standard normal law",
+    "source": "EKM Ex. 3.3.29, Table 3.4.4 (recalled, not checked)",
+    "lean_name": "CumulativeDistributionFunction.tendsto_standardNormalCDF_pow",
+    "file": "ExtremeValueTheory/DomainOfAttraction/Examples.lean",
+    "statement": "CumulativeDistributionFunction.tendsto_standardNormalCDF_pow (x : ℝ) :\n  Filter.Tendsto\n    (fun n =>\n      ↑CumulativeDistributionFunction.standardNormalCDF.toStieltjesFunction\n          (CumulativeDistributionFunction.normalScale n * x +\n            CumulativeDistributionFunction.normalLocation n) ^\n        n)\n    Filter.atTop (nhds (↑standardGumbelCDF.toStieltjesFunction x))",
+    "status": "full",
+    "scope_note": "The textbook constants, for N(0,1), the law the book gives them for. The formulas are junk for small n, which does not matter in the limit.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "4e2058c1b99bfd501e09d59319949d3c"
+  },
+  {
+    "id": "gamma-norming-constants",
+    "name": "Norming constants of the Gamma law",
+    "source": "EKM Table 3.4.4 (recalled, not checked)",
+    "lean_name": "CumulativeDistributionFunction.tendsto_gammaCDF_pow",
+    "file": "ExtremeValueTheory/DomainOfAttraction/Examples.lean",
+    "statement": "CumulativeDistributionFunction.tendsto_gammaCDF_pow {a r : ℝ} (ha : 0 < a) (hr : 0 < r) (x : ℝ) :\n  Filter.Tendsto\n    (fun n =>\n      ↑(CumulativeDistributionFunction.gammaCDF a r).toStieltjesFunction\n          (r⁻¹ * x +\n            (Real.log ↑n + (a - 1) * Real.log (Real.log ↑n) - Real.log (Real.Gamma a)) / r) ^\n        n)\n    Filter.atTop (nhds (↑standardGumbelCDF.toStieltjesFunction x))",
+    "status": "full",
+    "scope_note": "Every real shape a > 0 and rate r > 0, not only Erlang. isInMDAGEV_gammaCDF is the membership statement.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "8943064a4fd6c29d7b96c49ed54ac7a8"
+  },
+  {
+    "id": "cauchy-norming-constants",
+    "name": "Norming constants of the standard Cauchy law",
+    "source": "EKM Table 3.4.2 (recalled, not checked)",
+    "lean_name": "CumulativeDistributionFunction.tendsto_standardCauchyCDF_pow",
+    "file": "ExtremeValueTheory/DomainOfAttraction/Examples.lean",
+    "statement": "CumulativeDistributionFunction.tendsto_standardCauchyCDF_pow (x : ℝ) :\n  Filter.Tendsto\n    (fun n =>\n      ↑CumulativeDistributionFunction.standardCauchyCDF.toStieltjesFunction (↑n / Real.pi * x) ^ n)\n    Filter.atTop (nhds (↑(standardFrechetCDF ⋯).toStieltjesFunction x))",
+    "status": "full",
+    "scope_note": "The standard law. Membership for every location and scale is cauchy-in-frechet-domain.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "0eec86e95102145c9dc3dbb2db933ebb"
+  },
+  {
+    "id": "cauchy-in-frechet-domain",
+    "name": "Cauchy laws are in the Fréchet domain",
+    "source": "EKM Table 3.4.2 (recalled, not checked)",
+    "lean_name": "CumulativeDistributionFunction.isInMDAFrechet_ofMeasure_cauchyMeasure",
+    "file": "ExtremeValueTheory/DomainOfAttraction/NamedLaws.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAFrechet_ofMeasure_cauchyMeasure (x₀ : ℝ) {γ : NNReal}\n  (hγ : γ ≠ 0) :\n  (CumulativeDistributionFunction.ofMeasure (ProbabilityTheory.cauchyMeasure x₀ γ)).IsInMDAFrechet ⋯",
+    "status": "full",
+    "scope_note": "Every location and every nonzero scale, index 1. No explicit constants for these.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "a110ed31c83271677a120a0c4d2cbda0"
+  },
+  {
+    "id": "sample-maxima-iff",
+    "name": "IsInMDAGEV for iid sample maxima",
+    "source": "EKM Thm 3.4.5; dHF Thm 1.1.3",
+    "lean_name": "CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendsto_sampleMax",
+    "file": "ExtremeValueTheory/DomainOfAttraction/SampleMaxima.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendsto_sampleMax.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} {F : CumulativeDistributionFunction}\n  {X : ℕ → Ω → ℝ} (hF : ∀ (x : ℝ), ↑F.toStieltjesFunction x = P.real {ω | X 0 ω ≤ x})\n  (hind : ProbabilityTheory.iIndepFun X P)\n  (hid : ∀ (t : ℕ), ProbabilityTheory.IdentDistrib (X t) (X 0) P P) (ξ : ℝ) :\n  F.IsInMDAGEV ξ ↔\n    ∃ a b,\n      (∀ (n : ℕ), 0 < a n) ∧\n        ∀ (x : ℝ),\n          Filter.Tendsto\n            (fun n => P.real {ω | (ExtremeValueTheory.blockMax X n 0 ω - b n) / a n ≤ x})\n            Filter.atTop (nhds (↑(ExtremeValueTheory.gevCDF ξ).toStieltjesFunction x))",
+    "status": "full",
+    "scope_note": "The law of the sample maximum, normalized by a_n > 0 for all n. Iid random variables with c.d.f. F.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "28674b6d69ee13ff99cb1153367cde73"
+  },
+  {
+    "id": "canonical-norming",
+    "name": "Canonical norming constants",
+    "source": "dHF Cor 1.2.4 (number not checked)",
+    "lean_name": "CumulativeDistributionFunction.exists_tendsto_pow_norming_tailQuantile",
+    "file": "ExtremeValueTheory/DomainOfAttraction/Norming.lean",
+    "statement": "CumulativeDistributionFunction.exists_tendsto_pow_norming_tailQuantile\n  {F : CumulativeDistributionFunction} {γ : ℝ} (hF : F.IsInMDAGEV γ) :\n  ∃ a,\n    ExtremeValueTheory.IsExtendedRegularlyVarying F.tailQuantile γ a ∧\n      ∀ (x : ℝ),\n        Filter.Tendsto (fun n => ↑F.toStieltjesFunction (a ↑n * x + F.tailQuantile ↑n) ^ n)\n          Filter.atTop (nhds (↑(ExtremeValueTheory.gevCDF γ).toStieltjesFunction x))",
+    "status": "full",
+    "scope_note": "Every shape: F(a(n) x + U(n))^n -> gevCDF(x), for every x, with a the auxiliary function of the tail quantile function U.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "ab20fde4657f2b8a45e8aaf7f8c3d7c4"
+  },
+  {
+    "id": "von-mises-unified-infinite",
+    "name": "The unified von Mises condition, infinite endpoint",
+    "source": "dHF Thm 1.1.8",
+    "lean_name": "CumulativeDistributionFunction.isInMDAGEV_of_vonMises",
+    "file": "ExtremeValueTheory/DomainOfAttraction/VonMisesUnified.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAGEV_of_vonMises (F : CumulativeDistributionFunction) {z γ : ℝ}\n  (hγ : 0 ≤ γ) {F₁ F₂ : ℝ → ℝ} (h1 : ∀ x > z, HasDerivAt (↑F.toStieltjesFunction) (F₁ x) x)\n  (h2 : ∀ x > z, HasDerivAt F₁ (F₂ x) x) (hpos : ∀ x > z, 0 < F₁ x)\n  (hvm :\n    Filter.Tendsto (fun t => (1 - ↑F.toStieltjesFunction t) * F₂ t / F₁ t ^ 2) Filter.atTop\n      (nhds (-γ - 1))) :\n  F.IsInMDAGEV γ",
+    "status": "reduced",
+    "scope_note": "gamma >= 0 and x_F = infinity only, with the sign as a hypothesis (gamma < 0 should be impossible here, which is not mechanized): the cited theorem also covers finite x_F, which is the separate entry von-mises-unified-finite.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "7e042b18532234727410414ea276c905"
+  },
+  {
+    "id": "von-mises-unified-finite",
+    "name": "The unified von Mises condition, finite endpoint",
+    "source": "dHF Thm 1.1.8",
+    "lean_name": "CumulativeDistributionFunction.isInMDAGEV_of_vonMises_nhdsLT",
+    "file": "ExtremeValueTheory/DomainOfAttraction/VonMisesUnified.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAGEV_of_vonMises_nhdsLT (F : CumulativeDistributionFunction)\n  {z xF γ : ℝ} (hz : z < xF) (hγ : γ ≤ 0) {F₁ F₂ : ℝ → ℝ}\n  (h1 : ∀ x ∈ Set.Ioo z xF, HasDerivAt (↑F.toStieltjesFunction) (F₁ x) x)\n  (h2 : ∀ x ∈ Set.Ioo z xF, HasDerivAt F₁ (F₂ x) x) (hpos : ∀ x ∈ Set.Ioo z xF, 0 < F₁ x)\n  (hF1 : Filter.Tendsto (↑F.toStieltjesFunction) (nhdsWithin xF (Set.Iio xF)) (nhds 1))\n  (hvm :\n    Filter.Tendsto (fun t => (1 - ↑F.toStieltjesFunction t) * F₂ t / F₁ t ^ 2)\n      (nhdsWithin xF (Set.Iio xF)) (nhds (-γ - 1))) :\n  F.IsInMDAGEV γ",
+    "status": "reduced",
+    "scope_note": "gamma <= 0 and x_F finite only, with F -> 1 at x_F and the sign as hypotheses (gamma > 0 should be impossible here, which is not mechanized). The infinite endpoint is von-mises-unified-infinite.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "a5e25057f389cc9970b3535f17ad0c82"
   }
 ]

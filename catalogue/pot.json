@@ -158,5 +158,21 @@
       "propext"
     ],
     "input_hash": "b5b6e8e7dc9438dc5cfbe311750677eb"
+  },
+  {
+    "id": "pbdh-conditional",
+    "name": "Pickands-Balkema-de Haan for conditional probabilities",
+    "source": "EKM Thm 3.4.13(b); dHF Thm 1.1.6",
+    "lean_name": "CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendstoUniformlyOn_cond",
+    "file": "ExtremeValueTheory/DomainOfAttraction/SampleMaxima.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendstoUniformlyOn_cond.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} {F : CumulativeDistributionFunction}\n  {X : Ω → ℝ} [MeasureTheory.IsProbabilityMeasure P] (hX : Measurable X)\n  (hF : ∀ (x : ℝ), ↑F.toStieltjesFunction x = P.real {ω | X ω ≤ x}) (ξ : ℝ) :\n  F.IsInMDAGEV ξ ↔\n    ∃ β,\n      (∀ᶠ (u : ℝ) in F.upperEndpointFilter, 0 < β u) ∧\n        TendstoUniformlyOn (fun u x => P[|X ⁻¹' Set.Ioi u].real {ω | β u * x < X ω - u})\n          (ExtremeValueTheory.gpdSurvivalAll ξ 1) F.upperEndpointFilter (Set.Ici 0)",
+    "status": "full",
+    "scope_note": "Random-variable form of pbdh: equivalence for every xi, with P(X - u > beta(u) x | X > u) and an arbitrary eventually positive scale. Written after the change of variable, as pbdh is.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "49c2eebf93c3e0b325562b2756b3d997"
   }
 ]

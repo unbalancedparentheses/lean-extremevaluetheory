@@ -602,3 +602,129 @@ for $F$ is a function $f$, positive for $t$ near $x_F$, such that
   \leanok
   In each case $F$ at the norming point is eventually $1 + t / n$; use $(1 + t / n)^n \to e^t$.
 \end{proof}
+
+\section{The GEV form of a domain of attraction, and sample maxima}
+
+\begin{theorem}[{$\mathrm{MDA}(H_\xi)$ is convergence to $H_\xi$}]
+  \label{thm:mda-gev-link}
+  \uses{prop:gev-own-domain}
+  \lean{CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendsto_gevCDF,
+    CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendsto_gevCDF_of_continuousAt,
+    CumulativeDistributionFunction.continuous_gevCDF, CumulativeDistributionFunction.exists_isInMDAGEV_of_tendsto,
+    CumulativeDistributionFunction.IsInMDAGEV.unique}
+  \leanok
+  $F$ is in the domain of attraction of $H_\xi$ if and only if the normalized powers of $F$ converge to
+  $H_\xi$ pointwise, equivalently at continuity points, and $\xi$ is unique. A nondegenerate limit gives some
+  $\xi$ [EKM, Theorem~3.4.5], [dHF, Theorem~1.1.3].
+\end{theorem}
+\begin{proof}
+  \leanok
+  The affine maps between $H_\xi$ and the three standard laws. Uniqueness: convergence of types, or the
+  values of the limit at two points.
+\end{proof}
+
+\begin{theorem}[Fisher--Tippett--Gnedenko for iid sample maxima]
+  \label{thm:ftg-sample-maxima}
+  \uses{thm:mda-gev-link}
+  \lean{CumulativeDistributionFunction.blockMax_zero_le_iff,
+    CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendsto_sampleMax,
+    CumulativeDistributionFunction.exists_isInMDAGEV_and_smul_eq_of_tendsto_sampleMax}
+  \leanok
+  For iid $X_i$ with c.d.f.\ $F$, and $a_n > 0$: if $(\max_{i < n} X_i - b_n)/a_n$ has a nondegenerate limit law
+  $G$, then $F$ is in some $\mathrm{MDA}(H_\xi)$ and $G$ is of the type of $H_\xi$
+  [EKM, Theorem~3.2.3].
+\end{theorem}
+\begin{proof}
+  \leanok
+  Independence gives $P(\max_{i < n} X_i \le x) = F(x)^n$.
+\end{proof}
+
+\begin{theorem}[Pickands--Balkema--de Haan for conditional probabilities]
+  \label{thm:pbdh-conditional}
+  \uses{thm:pbdh-iff}
+  \lean{CumulativeDistributionFunction.measureReal_cond_lt_sub,
+    CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendstoUniformlyOn_cond}
+  \leanok
+  $F \in \mathrm{MDA}(H_\xi)$ if and only if there is $\beta > 0$ with
+  $P(X - u > \beta(u) x \mid X > u) \to \bar G_{\xi, 1}(x)$ uniformly in $x \ge 0$, as $u \uparrow x_F$
+  [EKM, Theorem~3.4.13(b)].
+\end{theorem}
+\begin{proof}
+  \leanok
+  The conditional probability is the ratio of survival functions in the existing theorem.
+\end{proof}
+
+\section{Standard laws with explicit norming constants}
+
+\begin{theorem}[The normal law]
+  \label{thm:normal-mda}
+  \uses{lem:mda-gumbel-of-tendsto-mul}
+  \lean{CumulativeDistributionFunction.standardNormalCDF, CumulativeDistributionFunction.normalScale,
+    CumulativeDistributionFunction.normalLocation, CumulativeDistributionFunction.tendsto_standardNormalCDF_pow,
+    CumulativeDistributionFunction.isInMDAGEV_standardNormalCDF,
+    CumulativeDistributionFunction.isInMDAGEV_ofMeasure_gaussianReal}
+  \leanok
+  $\Phi^n(a_n x + b_n) \to \Lambda(x)$ with $a_n = (2 \log n)^{-1/2}$ and
+  $b_n = \sqrt{2 \log n} - (\log\log n + \log 4\pi)/(2 \sqrt{2 \log n})$. Every $N(m, v)$, $v \ne 0$, is in
+  $\mathrm{MDA}(H_0)$ [EKM, Table~3.4.4].
+\end{theorem}
+\begin{proof}
+  \leanok
+  The Mills ratio.
+\end{proof}
+
+\begin{theorem}[The Gamma and Cauchy laws]
+  \label{thm:gamma-cauchy-mda}
+  \uses{lem:mda-gumbel-of-tendsto-mul, thm:von-mises-frechet}
+  \lean{CumulativeDistributionFunction.gammaCDF, CumulativeDistributionFunction.tendsto_gammaCDF_pow,
+    CumulativeDistributionFunction.isInMDAGEV_gammaCDF, CumulativeDistributionFunction.standardCauchyCDF,
+    CumulativeDistributionFunction.tendsto_standardCauchyCDF_pow,
+    CumulativeDistributionFunction.isInMDAGEV_standardCauchyCDF}
+  \leanok
+  For $\mathrm{Gamma}(a, r)$: $a_n = 1/r$, $b_n = (\log n + (a - 1) \log\log n - \log \Gamma(a))/r$, limit
+  $\Lambda$. For the standard Cauchy law: $F^n(n x/\pi) \to \Phi_1(x)$ [EKM, Tables~3.4.2, 3.4.4].
+\end{theorem}
+\begin{proof}
+  \leanok
+  The tail of the Gamma law is asymptotic to its density over $r$; the Cauchy tail is
+  $\pi^{-1} (\pi/2 - \arctan x)$.
+\end{proof}
+
+\begin{theorem}[Canonical norming constants]
+  \label{thm:canonical-norming}
+  \uses{thm:mda-quantile, thm:mda-gev-link}
+  \lean{CumulativeDistributionFunction.tendsto_pow_norming_tailQuantile,
+    CumulativeDistributionFunction.exists_tendsto_pow_norming_tailQuantile,
+    CumulativeDistributionFunction.tendsto_pow_of_norming_equiv,
+    CumulativeDistributionFunction.tendsto_pow_tailQuantile_mul_of_pos,
+    CumulativeDistributionFunction.exists_tendsto_pow_tailQuantile_of_neg,
+    CumulativeDistributionFunction.tendsto_pow_spacing_of_zero,
+    CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendsto_mul_one_sub,
+    CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendsto_div_tail}
+  \leanok
+  If $U$ is the tail quantile function, $F \in \mathrm{MDA}(H_\gamma)$ and $a$ its auxiliary function, then
+  $F(a(n) x + U(n))^n \to H_\gamma(x)$ for all $x$ [dHF, Corollary~1.2.4]. Also the classical constants in each
+  domain, and the equivalent forms $n(1 - F(a_n x + b_n)) \to \bar G_{\xi, 1}(x)$ and
+  $\bar F(t + f(t) x)/\bar F(t) \to \bar G_{\xi, 1}(x)$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Invert the extended regular variation of $U$ at each level.
+\end{proof}
+
+\begin{theorem}[The unified von Mises condition]
+  \label{thm:von-mises-unified}
+  \uses{thm:von-mises, thm:von-mises-finite, thm:von-mises-frechet, thm:von-mises-weibull}
+  \lean{CumulativeDistributionFunction.isInMDAGEV_of_vonMises,
+    CumulativeDistributionFunction.isInMDAGEV_of_vonMises_nhdsLT}
+  \leanok
+  If $F'' $ exists near $x_F$, $F' > 0$ and $(1 - F) F'' / (F')^2 \to -\gamma - 1$ as $x \uparrow x_F$, then
+  $F \in \mathrm{MDA}(H_\gamma)$, for $\gamma \ge 0$ with $x_F = \infty$, and for $\gamma \le 0$ with $x_F$
+  finite and $F \to 1$ at $x_F$ [dHF, Theorem~1.1.8]. The other pairs of sign and endpoint should be impossible,
+  and this is not proved, so the sign is a hypothesis.
+\end{theorem}
+\begin{proof}
+  \leanok
+  For $\gamma \ne 0$ the condition implies the first-order Fr\'echet and Weibull conditions, and $\gamma = 0$ is
+  the Gumbel one.
+\end{proof}

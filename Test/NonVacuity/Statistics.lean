@@ -248,6 +248,24 @@ theorem test_nonvacuous_tendstoInDistribution_hill :
     ExtremeValueTheory.tendsto_sqrt_div
     tendsto_sqrt_mul_auxA HasLaw.id
 
+/-- **Non-vacuity of `ExtremeValueTheory.tendstoInDistribution_momentEstimator_of_tendsto_zero`**
+(moment estimator normality, `γ > 0`): on the same shifted Pareto sample, `γ = 1`, `ρ = -1`,
+`k n = ⌊√n⌋`, `√k (γ̂ₙ - 1) ⇒ N(0, 1 + γ²) = N(0, 2)`. The second-order hypothesis of the theorem is
+the ratio form, satisfied here by `A(t) = -(t + 1)⁻¹`. -/
+theorem test_nonvacuous_tendstoInDistribution_momentEstimator :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ),
+      ∃ _ : IsProbabilityMeasure P, iIndepFun X P ∧ (∀ i, HasLaw (X i) spar P) ∧
+      TendstoInDistribution
+        (fun n ω => √(Nat.sqrt n : ℝ) * (momentEstimator (fun i : Fin n => X i ω) (Nat.sqrt n) - 1))
+        atTop id (fun _ => P) (gaussianReal 0 ((1 : ℝ) + 1 ^ 2).toNNReal) := by
+  obtain ⟨Ω, _, P, X, hP, hXm, hind, hid, hlaw⟩ := exists_iid_seq spar
+  have := hP
+  refine ⟨Ω, _, P, X, hP, hind, hlaw, ?_⟩
+  exact tendstoInDistribution_momentEstimator_of_tendsto_zero hXm hind hid one_pos
+    (isSecondOrderRegularlyVarying_spar (hlaw 0)) ExtremeValueTheory.tendsto_sqrt_atTop
+    ExtremeValueTheory.tendsto_sqrt_div
+    tendsto_sqrt_mul_auxA HasLaw.id
+
 /-- **Non-vacuity of `ExtremeValueTheory.tendsto_measure_mem_hillInterval`** ([dHF, §3.2]): the iid
 shifted Pareto sample above (`γ = 1`, `ρ = -1`, `A(t) = -(t + 1)⁻¹`), `k n = ⌊√n⌋`, `√k A(n/k) → 0`;
 the coverage of `γ̂ ± z γ̂/√k` tends to `N(0, 1)[-z, z]`, for every `z`. All hypotheses discharged.
