@@ -71,9 +71,7 @@ Fréchet or Weibull.
 
 - **Peaks over threshold (Pickands–Balkema–de Haan).** For every $`\xi \in \mathbb{R}`$, $`F \in \mathrm{MDA}(H_\xi)`$ if and only if there is a scale $`\beta(u) > 0`$ with
 
-  ```math
-  \frac{\bar F(u+\beta(u)x)}{\bar F(u)} \to \bar G_{\xi,1}(x)
-  ```
+  $$\frac{\bar F(u+\beta(u)x)}{\bar F(u)} \to \bar G_{\xi,1}(x)$$
 
   uniformly in $`x \ge 0`$ as $`u \uparrow x_F`$
   ([`isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival`](ExtremeValueTheory/PeaksOverThreshold/Converse.lean)).
@@ -88,7 +86,7 @@ Fréchet or Weibull.
 - **Stable laws.** The generalized central limit theorem with textbook constants. For example, for
   $`1 < \alpha < 2`$, with a regularly varying tail of index $`-\alpha`$ and tail balance $`p`$, the laws of
   $`(X_1+\dots+X_n-nEX)/a_n`$ converge to the stable law with characteristic function
-  $`\exp\big(-\Gamma(1-\alpha)\cos(\pi\alpha/2)|t|^\alpha(1-i(2p-1)\operatorname{sign}(t)\tan(\pi\alpha/2))\big)`$
+  $`\exp\big(-\Gamma(1-\alpha)\cos(\pi\alpha/2)|t|^\alpha(1-i(2p-1)\mathrm{sign}(t)\tan(\pi\alpha/2))\big)`$
   ([`tendsto_map_convPow_sub_of_isRegularlyVarying_of_one_lt'`](ExtremeValueTheory/StableLaws/Constants.lean)).
 
 - **Heavy tails and ruin.** If $`\mu`$ is subexponential and the count $`N`$ has an exponential moment, then
@@ -101,9 +99,7 @@ Fréchet or Weibull.
 - **Tail estimators.** For iid data with a second-order regularly varying tail quantile function,
   $`k \to \infty`$, $`k/n \to 0`$ and $`\sqrt{k}A(n/k) \to \lambda`$, the Hill estimator satisfies
 
-  ```math
-  \sqrt{k}\,(H_{k,n}-\gamma) \Rightarrow \mathcal{N}\Big(\frac{\lambda}{1-\rho},\ \gamma^2\Big)
-  ```
+  $$\sqrt{k}(H_{k,n}-\gamma) \Rightarrow \mathcal{N}\Big(\frac{\lambda}{1-\rho},\ \gamma^2\Big)$$
 
   ([`tendstoInDistribution_hill`](ExtremeValueTheory/Statistics/HillNormality.lean)). The Pickands estimator is
   asymptotically normal for every shape
