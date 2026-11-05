@@ -222,5 +222,41 @@
       "propext"
     ],
     "input_hash": "1b9cda11fe2bac08860b74ddbb75c3f5"
+  },
+  {
+    "id": "stable-tail-dependence-consistent",
+    "name": "Consistency of the empirical stable tail dependence function",
+    "source": "dHF §7.2",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_empiricalStableTailDependence",
+    "file": "ExtremeValueTheory/Statistics/StableTailDependence.lean",
+    "statement": "",
+    "status": "full",
+    "scope_note": "Pointwise on positive coordinates, iid data, continuous margins, any dimension. Consistency only: no rate or limit law.",
+    "axioms": [],
+    "input_hash": ""
+  },
+  {
+    "id": "stable-tail-dependence-uniform",
+    "name": "Uniform consistency of the empirical stable tail dependence function",
+    "source": "dHF §7.2",
+    "lean_name": "ExtremeValueTheory.tendsto_measure_exists_abs_empiricalStableTailDependence_sub",
+    "file": "ExtremeValueTheory/Statistics/StableTailDependence.lean",
+    "statement": "",
+    "status": "reduced",
+    "scope_note": "Uniform on (0,T]^d, not [0,T]^d, and in outer probability, since the event's measurability is not proved.",
+    "axioms": [],
+    "input_hash": ""
+  },
+  {
+    "id": "tail-dependence-coefficient-estimator",
+    "name": "Consistency of the tail dependence coefficient estimator",
+    "source": "dHF §7.2",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_tailDependenceEstimator",
+    "file": "ExtremeValueTheory/Statistics/StableTailDependence.lean",
+    "statement": "",
+    "status": "full",
+    "scope_note": "Iid data, continuous margins. Consistency only.",
+    "axioms": [],
+    "input_hash": ""
   }
 ]

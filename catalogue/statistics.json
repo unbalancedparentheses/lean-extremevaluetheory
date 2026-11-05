@@ -430,5 +430,17 @@
       "propext"
     ],
     "input_hash": "a349309efcb21f05374ed9e588c389ae"
+  },
+  {
+    "id": "pickands-normality",
+    "name": "Asymptotic normality of the Pickands estimator",
+    "source": "dHF Thm 3.3.5 (from memory, not checked against the book)",
+    "lean_name": "ExtremeValueTheory.tendstoInDistribution_pickands",
+    "file": "ExtremeValueTheory/Statistics/PickandsNormality.lean",
+    "statement": "",
+    "status": "reduced",
+    "scope_note": "Every shape. The second-order hypothesis assumes locally uniform convergence, formally stronger than the pointwise textbook condition, and k indexes X_(k), X_(2k), X_(4k).",
+    "axioms": [],
+    "input_hash": ""
   }
 ]

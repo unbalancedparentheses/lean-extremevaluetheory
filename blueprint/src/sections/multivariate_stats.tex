@@ -114,6 +114,14 @@ Values}, Springer (2001), Ch.~8.
   converges to $(\log G(x \wedge 0) - \log G(x))/\log G(0)$ [Rootz\'en and Tajvidi 2006, Theorem~2.1]. On the unit Fr\'echet
   scale the limit $H_0(y) = (V(y \wedge 1) - V(y))/V(1)$ is threshold stable.
 \end{theorem}
+
+\begin{theorem}[Consistency of the empirical stable tail dependence function]
+  \label{thm:stable-tail-dependence-consistent}
+  \uses{def:pickands-dependence}
+  \lean{ExtremeValueTheory.tendstoInMeasure_empiricalStableTailDependence, ExtremeValueTheory.tendsto_measure_exists_abs_empiricalStableTailDependence_sub, ExtremeValueTheory.tendstoInMeasure_tailDependenceEstimator}
+  \leanok
+  For iid vectors with continuous margins and a stable tail dependence function $\ell$, if $k \to \infty$ and $k/n \to 0$ then $\hat\ell_n(x) \to \ell(x)$ in probability, uniformly on $(0,T]^d$ in outer probability, and $\hat\chi \to 2 - \ell(1,1)$.
+\end{theorem}
 \begin{proof}
   \leanok
   Write the conditional probability as a ratio of exceedance probabilities and use the domain-of-attraction limit.

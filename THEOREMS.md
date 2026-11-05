@@ -90,6 +90,8 @@ for proofs sketches and dependencies.
 - **Extended regular variation and the quantile characterization**
   (`isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile`): `F ∈ MDA(H_γ)` iff `U` is
   extended regularly varying with index `γ`.
+- **Pickands estimator normality for every ξ** (`tendstoInDistribution_pickands`): under extended second-order
+  regular variation with locally uniform convergence and `√k A(n/k) → λ`, `√k (γ̂_P − γ)` is asymptotically normal.
 - **Pickands estimator consistency for every ξ** (`tendstoInMeasure_pickands`): for `F` in the
   domain of attraction of `H_ξ`, `ξ ∈ ℝ`, the Pickands estimator converges to `ξ` in probability.
   The **moment estimator** (Dekkers–Einmahl–de Haan) is consistent for every `ξ`
@@ -218,6 +220,10 @@ for proofs sketches and dependencies.
   `IsStable.existsUnique_isStableIndex`), every non-degenerate limit of normalized sums is stable, and
   the domain of attraction of the normal law is characterized by slow variation of the truncated second
   moment (`domainOfAttraction_gaussianReal_iff`).
+- **Nonparametric tail dependence** (`Multivariate/StableTailDependence.lean`, `Statistics/StableTailDependence.lean`):
+  the empirical stable tail dependence function is consistent, pointwise (`tendstoInMeasure_empiricalStableTailDependence`)
+  and uniformly (`tendsto_measure_exists_abs_empiricalStableTailDependence_sub`), and `χ̂ → 2 − ℓ(1,1)`
+  (`tendstoInMeasure_tailDependenceEstimator`).
 - **Bivariate extremes** (`Multivariate/`): the Pickands dependence function `A` (bounds, spectral form
   and convexity), the extremal coefficient `θ_E = 2A(1/2)`, the upper tail dependence coefficient
   `λ_U = 2 − θ_E`, tail dependence of regularly varying vectors, and a.s. consistency of the Pickands
