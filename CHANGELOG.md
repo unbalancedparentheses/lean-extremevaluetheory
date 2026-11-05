@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## v0.10.0 (2026-11-05)
+
+Still no human expert review: the statements, tests and audits were written with AI assistance. See the README's
+Limitations section.
 
 - **GEV likelihood:** joint asymptotic normality of the three-parameter maximum likelihood estimator and unconditional
   return-level normality, for `ξ₀ > −1/2`, `ξ₀ ≠ 0`.

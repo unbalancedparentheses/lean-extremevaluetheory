@@ -290,7 +290,7 @@ Create a Lean project with the same [`lean-toolchain`](lean-toolchain), and add 
 [[require]]
 name = "lean-extremevaluetheory"
 git = "https://github.com/unbalancedparentheses/lean-extremevaluetheory"
-rev = "v0.9.0"
+rev = "v0.10.0"
 ```
 
 Then fetch it and build:

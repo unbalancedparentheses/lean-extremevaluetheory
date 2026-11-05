@@ -3,8 +3,8 @@ message: "If you use this library, please cite it as below."
 title: "Extreme Value Theory in Lean"
 type: software
 doi: 10.5281/zenodo.23966372
-version: 0.9.0
-date-released: 2026-11-04
+version: 0.10.0
+date-released: 2026-11-05
 authors:
   - family-names: Carrone
     given-names: Federico
