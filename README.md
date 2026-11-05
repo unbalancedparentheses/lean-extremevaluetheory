@@ -11,12 +11,12 @@ attraction, regular variation, peaks over threshold, stable laws and heavy tails
 extremes (estimators, likelihood, return levels, confidence intervals), extremes of dependent sequences,
 multivariate extremes, point processes and the Skorokhod space.
 
-The library has about 100,000 lines and 4,300 theorems and lemmas. It contains no `sorry`, and CI checks
-that all 9,487 of its declarations depend only on the axioms `propext`, `Classical.choice` and
-`Quot.sound`. A written audit compares 133 main statements and definitions with the literature: it records
-87 as faithful, 34 as faithful within a stated scope, and 12 as differing from the cited form while correct
+The library has about 100,000 lines and 4,350 theorems and lemmas. It contains no `sorry`, and CI checks
+that all 9,614 of its declarations depend only on the axioms `propext`, `Classical.choice` and
+`Quot.sound`. Written audits compare 166 main statements and definitions with the literature: they record
+100 as faithful, 51 as faithful within a stated scope, and 15 as differing from the cited form while correct
 as stated ([`FAITHFULNESS.md`](FAITHFULNESS.md)). **No human expert has reviewed the library yet.** The
-statements, tests and audits were written with AI assistance, so that audit is not independent; see
+statements, tests and audits were written with AI assistance, so those audits are not independent; see
 [Limitations](#limitations).
 
 Here, for example, is the Fisher–Tippett–Gnedenko theorem, from
@@ -129,7 +129,7 @@ Fréchet or Weibull.
 | Heavy tails | subexponential laws, random sums, Pollaczek–Khinchine ruin asymptotics |
 | Estimators | order statistics; Hill, Pickands, moment and Weissman; probability-weighted moments and L-moments; blocks, runs and intervals estimators of the extremal index |
 | Likelihood and return levels | Wald consistency, GPD and GEV likelihood, Fisher information, GPD joint normality, the delta method, return levels, Wald intervals |
-| Dependence | Leadbetter's theorem, the extremal index, the tail process, mixing, AR(1), ARMAX, linear processes, Markov chains, `X = AX + B`, GARCH(1,1) tail indices, the echo processes |
+| Dependence | Leadbetter's theorem, the extremal index, the tail process, mixing, AR(1), ARMAX, linear processes, Markov chains, `X = AX + B`, GARCH(1,1) tail exponent bounds, the echo processes |
 | Multivariate extremes | multivariate regular variation, converse Cramér–Wold, max-stable vectors and their spectral representation, domains of attraction, the multivariate generalized Pareto law, tail dependence |
 | Processes | Poisson random measures, exceedance point processes, the Skorokhod space, the tail empirical process |
 | Sharpness of hypotheses | counterexamples showing that hypotheses of Karamata, Breiman, von Mises, the generalized CLT, Hill, Leadbetter and `θ = ϑ` are needed |
@@ -146,7 +146,7 @@ that way; their novelty has been checked against the literature
   does so for every `ρ₀ ∈ (0,1)` (`powEchoProcess_antiClustering_iff`).
 - **Mixing does not give `θ = ϑ`.** The same processes are β-mixing, yet their extremal index
   `θ = 1/2` differs from the value `ϑ = 1` read off the tail process
-  (`logEchoProcess_betaMixing_incompatible`).
+  (`logEchoProcess_betaMixing_incompatible`, `logEchoProcess_theta_lt_vartheta`).
 - **The echo process.** A simple stationary sequence with `θ < ϑ`, apparently only the second known
   mechanism after Bai and Wang's (`logEchoProcess_theta_lt_vartheta`), with a phase transition in the
   block length (`logEchoProcess_phase_transition`).
@@ -186,7 +186,7 @@ statement matches its textbook. The new results' novelty has not been confirmed 
 
 **Tail estimators**
 - Normality of the Pickands and moment estimators is not proved. Hill intervals are only without bias
-  (`λ = 0`), and there are no bias-reduced estimators.
+  (`λ = 0`) and exclude exact Pareto data, and there are no bias-reduced estimators.
 - The basic far-tail Weissman theorems assume the rate and the bias condition; second-order versions
   derive them, for `ρ < 0`, and with extra regularity at `ρ = 0`.
 - The blocks and runs estimators (`tendstoInMeasure_blocksEstimator`, `tendstoInMeasure_runsEstimator`)
@@ -194,8 +194,10 @@ statement matches its textbook. The new results' novelty has not been confirmed 
   extremal index, and on the echo process it is not (`logEcho_tendstoInMeasure_runsEstimator`).
 - The intervals estimator (`tendstoInMeasure_intervalsEstimator₁`) assumes the two empirical-moment limits.
   Deriving them from a sequence's actual inter-exceedance times (Ferro–Segers Theorem 1) is not proved.
-- The non-vacuity tests of the dependent-data Hill theorem and of the intervals estimator use iid data.
-  Hill does have a dependent application in the library (`MovingAverage.tendstoInMeasure_hill`).
+- The non-vacuity tests of the α-mixing Hill theorems and of the intervals estimator use iid data, and those
+  of the GEV and Gumbel return levels a synthetic estimator `θ₀ + Z/√n`, which shows only that the hypotheses
+  can hold together. Hill does have dependent applications in the library (`tendstoInMeasure_hill_movingMax`,
+  `MovingAverage.tendstoInMeasure_hill`).
 - These are asymptotic statements. The library says nothing about finite samples or how to choose a
   threshold, a block length or `k`.
 
@@ -203,7 +205,8 @@ statement matches its textbook. The new results' novelty has not been confirmed 
 - The ruin probability `pkRuin` is *defined* by the Pollaczek–Khinchine formula. It is not derived from
   the Cramér–Lundberg process.
 - `X = AX + B` and GARCH(1,1): the tail is bounded by `O(x^{−s})` for `s < κ` and shown not to be for
-  `s > κ`. The sharp Kesten–Goldie asymptotics `c x^{−κ}` is not proved.
+  `s > κ`. Regular variation, the sharp Kesten–Goldie asymptotics `c x^{−κ}` and anything at `s = κ` are not
+  proved, and GARCH concerns the squared volatility only, not the returns.
 - The parametric stable family `S(α, β, σ, μ)` and the tails of stable laws are not developed.
 
 **Dependence**
@@ -229,6 +232,8 @@ statement matches its textbook. The new results' novelty has not been confirmed 
   and extremal-t processes are not formalized.
 
 **Classical theory**
+- Parts of regular variation are narrower than Hirata's Isabelle development and BGT
+  ([`docs/HIRATA_COMPARISON.md`](docs/HIRATA_COMPARISON.md)), and the normal law is not yet shown to be in the Gumbel domain.
 - Karamata's direct half has versions for measurable `F` and for `F` antitone on `[a, ∞)`, but
   its converse `IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi` assumes `F` antitone on all of `ℝ`.
 
@@ -286,10 +291,17 @@ the axiom audit, and CI runs them on every push.
   `con-leche`, an independent kernel with a machine-checked proof that it never accepts `False`. It
   accepted all 719,515 declarations of the library and its dependencies on 2026-11-04.
 
-- **Non-vacuity tests.** [95 tests](Test/README.md) apply headline theorems to concrete objects, which shows
+- **Comparator.** [`Challenge.lean`](Challenge.lean) states Fisher–Tippett–Gnedenko, Pickands–Balkema–de Haan, Hill
+  consistency and the answer to Bai–Kulik–Wang using only Mathlib, with every definition written out, and says where
+  each stops short of the literature. So a sceptic can read that one file instead of trusting this library's
+  definitions. [`lake comparator`](comparator.json) checks that [`Solution.lean`](Solution.lean) proves those exact
+  statements from the standard axioms. A [workflow](.github/workflows/comparator.yml) runs it, in the sandbox and with
+  several kernels, and also checks that a tampered statement is rejected.
+
+- **Non-vacuity tests.** [109 tests](Test/README.md) apply headline theorems to concrete objects, which shows
   that their hypotheses can hold together. They include the echo-process theorems named under New results.
 
-- **Known-answer tests.** [161 tests](Test/README.md) check definitions against textbook values, such as
+- **Known-answer tests.** [178 tests](Test/README.md) check definitions against textbook values, such as
   Gumbel moments, Smith's Fisher information and extremal indices. These catch sign and parametrization slips.
 
 - **Junk values.** A [scan of 3,718 theorems](Test/JUNK_VALUES.md), by a script outside CI, looked for statements
@@ -298,8 +310,14 @@ the axiom audit, and CI runs them on every push.
 - **Mutation checks.** A [script outside CI](Test/MUTATION.md) tried 323 perturbed statements with their
   proofs kept, to catch theorems proved for a trivial reason. None revealed a weakness.
 
-- **Faithfulness audits.** [Six written audits](FAITHFULNESS.md) compare statements with the literature and record
-  each deviation. Results merged since the sixth have not been audited in the same way.
+- **Faithfulness audits.** [Seven written audits](FAITHFULNESS.md) compare statements with the literature and record
+  each deviation. The seventh read the roughly 1,050 declarations added since the sixth at headline level. CI
+  fails when the library has outgrown the last audit by more than a set margin
+  ([`Test/AUDIT_BASELINE`](Test/AUDIT_BASELINE)).
+
+- **Independent statements.** [`docs/HIRATA_COMPARISON.md`](docs/HIRATA_COMPARISON.md) compares our statements with
+  Hirata's independent Isabelle ones. By an argument we wrote, not a mechanized one, both main theorems are equivalent;
+  his regular variation is more complete than ours in places.
 
 - **AI review.** Codex, a second AI system, reviewed the headline statements and public claims of `v0.9.0`. It
   found no blocking problem in the statements it read and several overstated claims, which were corrected.
@@ -315,6 +333,7 @@ the axiom audit, and CI runs them on every push.
 | A practitioner using `evd`, `ismev`, `extRemes`, `POT`, `ReIns`, `pyextremes` or `scipy.stats` | [`docs/PRACTITIONERS.md`](docs/PRACTITIONERS.md): which theorem justifies each function, under which assumptions, and the conventions that trip people up (scipy's GEV shape is `c = −ξ`) |
 | An extreme value theorist checking the statements | [`docs/REVIEW.md`](docs/REVIEW.md), written for readers who do not use Lean, and [`FAITHFULNESS.md`](FAITHFULNESS.md) |
 | A researcher | [`RESEARCH.md`](RESEARCH.md), [`docs/PRACTICAL_OPEN_PROBLEMS.md`](docs/PRACTICAL_OPEN_PROBLEMS.md) and [`docs/OPEN_PROBLEMS_SURVEY2.md`](docs/OPEN_PROBLEMS_SURVEY2.md) |
+| New to the library | [`docs/TUTORIAL.md`](docs/TUTORIAL.md), [`docs/FINDING_RESULTS.md`](docs/FINDING_RESULTS.md) and the [applied examples](Examples/Applications) (a 100-year flood, a reinsurance layer, a Hill tail index) |
 | A Lean or Mathlib user | The [blueprint](https://unbalancedparentheses.github.io/lean-extremevaluetheory/blueprint/), the [API documentation](https://unbalancedparentheses.github.io/lean-extremevaluetheory/docs/), [`THEOREMS.md`](THEOREMS.md), [`docs/DESIGN.md`](docs/DESIGN.md) and the [`ForMathlib` plan](ExtremeValueTheory/ForMathlib/UPSTREAMING.md) |
 
 [`ROADMAP.md`](ROADMAP.md) says what comes next and [`CHANGELOG.md`](CHANGELOG.md) what has changed. The

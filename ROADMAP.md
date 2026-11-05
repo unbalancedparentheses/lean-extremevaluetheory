@@ -32,7 +32,7 @@ honest limits now does more than waiting for every proof. It does not wait for #
 and 1.0 releases.
 - [x] CI fails on `sorry` and extra axioms (`Test/AxiomAudit.lean`, `scripts/check_source.py`)
 - [x] Limitations section and "Use it in your project" in the README; downstream CI job
-- [>] Independent AI review of the statements and claims by Codex; fix what it finds. This is AI review,
+- [x] Independent AI review of the statements and claims by Codex; fix what it finds. This is AI review,
   and does not replace expert review
 - [x] Non-vacuity tests for `powEchoProcess_antiClustering_iff`, `logEchoProcess_betaMixing_incompatible`
   and `logEcho_tendstoInMeasure_runsEstimator` (found by the Codex review; added after the release)
@@ -56,9 +56,9 @@ and 1.0 releases.
 
 **Tier 2: trust that runs by itself** (independent of tier 1, so in parallel with it)
 10. Done (2026-11-04): axiom audit of every declaration in CI (H.7)
-11. Comparator challenge on four headline theorems, in CI (H.7)
+11. Done (2026-11-04): Comparator challenge on four headline theorems, in CI (H.7)
 12. Architecture checks and the remaining gates against overclaiming (H.6, H.7)
-13. Specification tests for the newest results, and the seventh faithfulness audit (C)
+13. Done (2026-11-04): specification tests for the newest results, and the seventh faithfulness audit (C)
 
 **Tier 3: release 1.0**
 14. Close the design pass:
@@ -564,7 +564,7 @@ small contributions together, so direct outreach (H.8) matters at least as much 
 - [ ] `CONTRIBUTING.md`: setup with the Mathlib cache, where things go, the rules (no `sorry`, standard
       axioms, faithful docstrings, reuse before writing, register new files), and the pull request
       checklist (`lake build`, `lake build Test`, blueprint names)
-- [ ] `CODE_OF_CONDUCT.md`, a pull request template and issue templates (bug in a statement, missing
+- [x] `CODE_OF_CONDUCT.md`, a pull request template and issue templates (bug in a statement, missing
       result, proof request)
 - [ ] `CLAUDE.md`, plus an `AGENTS.md` that points to it: the agent workflow used here. It covers:
       - worktrees and the instant `.lake` clone;

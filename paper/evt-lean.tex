@@ -24,7 +24,7 @@ We describe a Lean~4 library, built on Mathlib, that formalizes the core of extr
 the Fisher--Tippett--Gnedenko theorem, domains of attraction, regular variation, the
 Pickands--Balkema--de Haan theorem, estimators and likelihood theory for the tail, stable laws and
 heavy tails, extremes of dependent sequences, multivariate extremes and point processes. The library
-has about 100,000 lines and 4,300 theorems and lemmas, uses no \texttt{sorry} and depends only on Lean's three standard
+has about 100,000 lines and 4,350 theorems and lemmas, uses no \texttt{sorry} and depends only on Lean's three standard
 axioms, which continuous integration checks for every declaration. Since a formal proof does not
 show that a statement matches the literature, the library also carries specification tests, mutation
 checks and written audits, and it records where its statements are narrower than their textbook forms.
@@ -134,7 +134,7 @@ Estimators & Hill (consistency, normality, dependent data), Pickands and moment 
 Likelihood & GPD and GEV maximum likelihood: consistency, Fisher information; GPD joint normality \\
 Return levels & Asymptotic normality, Wald intervals with asymptotic coverage, the delta method \\
 Dependence & Leadbetter's theorem; extremal index; tail process; $\theta=\vartheta$ under anticlustering and $A(u_n)$ \\
-Time series & AR(1), ARMAX, linear processes, Markov chains; $X=AX+B$ and GARCH(1,1) tail indices \\
+Time series & AR(1), ARMAX, linear processes, Markov chains; $X=AX+B$ and GARCH(1,1) tail exponent bounds \\
 Multivariate & Regular variation, converse Cram\'er--Wold, spectral representation, the multivariate GPD \\
 Processes & Poisson random measures; exceedance point processes; $D[0,1]$ is Polish; tail empirical process \\
 \bottomrule
@@ -167,22 +167,23 @@ function is $0$, so a statement can be true for an unintended reason. Several st
 project this library started from were false as written and have been corrected. We use the following
 checks, all but the last of which can be rerun from the repository.
 \begin{description}
-  \item[Axiom audit.] Continuous integration fails if any of the library's 9,487 declarations depends on an
+  \item[Axiom audit.] Continuous integration fails if any of the library's 9,614 declarations depends on an
     axiom other than \lean{propext}, \lean{Classical.choice} and \lean{Quot.sound}.
   \item[Independent kernel.] A nightly job rechecks all declarations, including those of
     Mathlib, with \texttt{con-leche}, a second kernel.
-  \item[Non-vacuity tests.] 95 tests apply a headline theorem to a concrete object, showing that its
+  \item[Comparator.] A file that imports only Mathlib states four headline theorems with every definition written out, and \texttt{lake comparator} checks that the library proves exactly those statements. It lets a reader check them without trusting our definitions.
+  \item[Non-vacuity tests.] 109 tests apply a headline theorem to a concrete object, showing that its
     hypotheses can hold together. They include the theorems named in Section~\ref{sec:new}.
-  \item[Known-answer tests.] 159 tests check definitions against textbook values, which catches sign
+  \item[Known-answer tests.] 178 tests check definitions against textbook values, which catches sign
     and parametrization errors.
   \item[Junk-value audit.] A scanner, not part of continuous integration, examined 3,718 theorems for statements that hold only through a
     totalization convention. Reviewing the 740 it flagged found one such statement, now fixed.
   \item[Mutation checks.] A script, not part of continuous integration, tried 323 perturbations of the statements of 45 headline theorems with their proofs kept.
     A perturbation that still compiles suggests a theorem proved for a trivial reason. One survived, and we
     judged it harmless.
-  \item[Faithfulness audits.] Six written comparisons of statements with the literature, recording each deviation.
+  \item[Faithfulness audits.] Seven written comparisons of statements with the literature, recording each deviation.
 \end{description}
-Table~\ref{tab:audit} gives the audits' verdicts on the 133 statements and definitions in their main table. These records can lag the code: the Codex review of this release (Section~\ref{sec:built}) found some scope notes that later theorems had overtaken.
+Table~\ref{tab:audit} gives the audits' verdicts on the 166 statements and definitions in their main table. These records can lag the code: the Codex review of this release (Section~\ref{sec:built}) found some scope notes that later theorems had overtaken.
 
 \begin{table}[ht]
 \centering\small
@@ -190,9 +191,9 @@ Table~\ref{tab:audit} gives the audits' verdicts on the 133 statements and defin
 \toprule
 Verdict recorded in \texttt{FAITHFULNESS.md} & Count \\
 \midrule
-Faithful: the statement matches the cited result & 87 \\
-Faithful within a stated scope, such as a special case or an extra hypothesis & 34 \\
-Differs from the cited form, but correct as stated & 12 \\
+Faithful: the statement matches the cited result & 100 \\
+Faithful within a stated scope, such as a special case or an extra hypothesis & 51 \\
+Differs from the cited form, but correct as stated & 15 \\
 \bottomrule
 \end{tabular}
 \caption{Audit verdicts. They are the judgement of AI-assisted audits, not of experts.}
@@ -227,12 +228,12 @@ $P(M_n\le u_n)\to e^{-\tau/2}$ whenever $nP(X_0>u_n)\to\tau$, which gives $\thet
 Bai, Kulik and Wang~\cite[arXiv v2, \S1.4]{bkw} ask whether there are models for which anticlustering
 holds with $\lim\log r_n/\log n=\rho$ only for $\rho$ up to some $\rho_0<1$. Given $\rho_0\in(0,1)$, take the lag
 $\lfloor z^\gamma\rfloor+1$ with $\gamma=\alpha\rho_0$. For $0<\rho<1$ with $\rho\ne\rho_0$, anticlustering at the normalizing levels holds if and only if
-$\rho<\rho_0$ (\lean{powEchoProcess_antiClustering_iff}). The formal statement uses one level for both the conditioning event and the
+$\rho<\rho_0$ (\lean{powEchoProcess_antiClustering_iff}). At the critical scale $r_n\sim cn^{\rho_0}$ it fails for every $c>0$ (\lean{powEchoProcess_not_antiClustering_critical}). The formal statement uses one level for both the conditioning event and the
 exceedance, where their condition allows two. The two forms are equivalent by an elementary argument from regular variation, which is not formalized.
 
 \paragraph{Mixing and a warning for estimators.}
 The echo processes are $\beta$-mixing, geometrically for the logarithmic lag, and still have $\theta\neq\vartheta$
-(\lean{logEchoProcess_betaMixing_incompatible}). This illustrates the classical point that anticlustering and mixing must
+(\lean{logEchoProcess_betaMixing_incompatible}, \lean{logEchoProcess_theta_lt_vartheta}). This illustrates the classical point that anticlustering and mixing must
 hold at a common block length. On the logarithmic-lag process, write $p_n=P(X_0>u_n)$ for thresholds $u_n\to\infty$. If $np_n\to\infty$, $r_n\to\infty$,
 $r_n=o(\log u_n)$, and there are gaps $s_n\to\infty$ with $\log n=o(s_n)$ and $r_n+s_n=o(np_n)$, then the runs estimator converges in
 probability to $1=\vartheta$, not to $\theta=1/2$ (\lean{logEcho_tendstoInMeasure_runsEstimator}).
@@ -287,7 +288,7 @@ Many results are narrower than their textbook forms. The README and \texttt{FAIT
 
 \section{Evaluation and reproducibility}\label{sec:repro}
 
-\paragraph{Evidence.} The library has about 100,000 lines and 4,300 theorems and lemmas, in 9,487 declarations counted by the axiom audit. On the latest run before this release, the independent kernel accepted all 719,515 declarations of the library and its dependencies. A build that passes in continuous integration is itself the evidence for the axiom claim.
+\paragraph{Evidence.} The library has about 100,000 lines and 4,350 theorems and lemmas, in 9,614 declarations counted by the axiom audit. On the latest run before this release, the independent kernel accepted all 719,515 declarations of the library and its dependencies. A build that passes in continuous integration is itself the evidence for the axiom claim.
 
 \paragraph{To reproduce.} Release \release{} (\doi) pins Lean v4.35.0 and Mathlib v4.35.0 (commit \texttt{56a00585}) in \lean{lean-toolchain} and \lean{lake-manifest.json}. Then:
 \begin{alltt}\small
@@ -311,8 +312,7 @@ Section~\ref{sec:trust} and for the request below.
 \section{Conclusion}
 
 We would most value review by extreme value theorists. The repository's \texttt{docs/REVIEW.md} translates the main statements into ordinary mathematics,
-so no knowledge of Lean is needed, and corrections are very welcome. It does not yet cover the answer to Bai, Kulik and Wang's question, return levels, confidence
-intervals or the extremal-index estimators; \texttt{FAITHFULNESS.md} lists those. Next come the missing likelihood results, contributing the general
+so no knowledge of Lean is needed, and corrections are very welcome. It covers the answer to Bai, Kulik and Wang's question, return levels, confidence intervals and the extremal-index estimators, with their caveats. Next come the missing likelihood results, contributing the general
 results to Mathlib, and executable estimators cross-checked against R and Python packages.
 
 What this library is not is part of the point. It is not software for analysing data, it says nothing about finite samples, and it does not replace statistical judgement about thresholds, block lengths or whether a model fits. It provides a checked account of what the asymptotic theory says and under exactly which hypotheses.

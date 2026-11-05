@@ -4,10 +4,6 @@
 # Update this file only in the commit that records a new audit in FAITHFULNESS.md: set `audit` to its
 # heading and `theorems` to the output of `python3 scripts/check_architecture.py --count`.
 #
-# `theorems` was not counted at the audit named below. It is the count on 2026-11-04, when this check
-# started: the sixth audit (713bca9, 2026-10-17) was at 1950 theorems, so 749 of these have not been
-# through a numbered audit. To start from the audit instead, set it to 1950: CI then fails until a
-# seventh audit is recorded.
-theorems: 2699
+theorems: 2752
 margin: 150
-audit: Sixth audit
+audit: Seventh audit
