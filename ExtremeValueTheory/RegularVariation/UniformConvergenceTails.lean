@@ -13,11 +13,13 @@ convergence theorem for functions measurable on all of `ℝ`. This file complete
 Bingham, Goldie and Teugels, *Regular Variation* (Cambridge University Press, 1987), henceforth
 [BGT]:
 
-* measurability is asked only on some `[X, ∞)`, which is the hypothesis in the book;
-* the two remaining ranges of [BGT, Theorem 1.5.2] are added: `[a, ∞)` for `ρ < 0`, and `(0, b]`
-  for `ρ > 0` when `f` is bounded on each `(0, b]`.
+* measurability is asked only on some `[X, ∞)`;
+* the two remaining ranges of [BGT, Theorem 1.5.2] (as we recall that theorem; the book was not
+  available to check it) are added: `[a, ∞)` for `ρ < 0`, and `(0, b]` for `ρ > 0` when `f` is bounded
+  on each `(0, b]`.
 
-"Measurable" means Borel measurable. A function that is only Lebesgue measurable is not covered.
+"Measurable" means Borel measurable. [BGT] allows Lebesgue measurable functions, as we recall, and a
+function that is only Lebesgue measurable is not covered here.
 
 ## Main definitions
 
@@ -137,8 +139,8 @@ theorem potter_bounds_of_measurableNearTop (hf : IsRegularlyVarying f ρ)
   · have := hP x (h₀.trans hx) y (h₀.trans hy)
     rwa [hg x hx, hg y hy] at this
 
-/-- **A regularly varying function of positive index tends to `∞`** (compare [BGT, Proposition
-1.5.1]), for `f` measurable near `∞`. No monotonicity is assumed. Some measurability is needed for
+/-- **A regularly varying function of positive index tends to `∞`** (compare [BGT, §1.5]), for `f`
+measurable near `∞`. No monotonicity is assumed. Some measurability is needed for
 the proof, which goes through the Potter bounds. -/
 theorem tendsto_atTop_of_measurableNearTop (hf : IsRegularlyVarying f ρ)
     (hm : MeasurableNearTop f) (hρ : 0 < ρ) : Tendsto f atTop atTop := by
@@ -155,8 +157,8 @@ theorem tendsto_atTop_of_measurableNearTop (hf : IsRegularlyVarying f ρ)
     show ρ - ρ / 2 = ρ / 2 by ring, le_div_iff₀ hfx₀] at h
   linarith
 
-/-- **A regularly varying function of negative index tends to `0`** (compare [BGT, Proposition
-1.5.1]), for `f` measurable near `∞`. No monotonicity is assumed. -/
+/-- **A regularly varying function of negative index tends to `0`** (compare [BGT, §1.5]), for `f`
+measurable near `∞`. No monotonicity is assumed. -/
 theorem tendsto_zero_of_measurableNearTop (hf : IsRegularlyVarying f ρ)
     (hm : MeasurableNearTop f) (hρ : ρ < 0) : Tendsto f atTop (𝓝 0) := by
   have hm' : MeasurableNearTop fun x => (f x)⁻¹ := by

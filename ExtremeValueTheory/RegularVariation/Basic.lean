@@ -31,11 +31,15 @@ This file develops the basic theory, following Bingham, Goldie and Teugels,
 * `IsRegularlyVarying.mul`, `IsRegularlyVarying.inv`, `IsRegularlyVarying.div`,
   `IsRegularlyVarying.rpow`: closure properties.
 * `isRegularlyVarying_iff_exists_isSlowlyVarying`: the representation `f x = x ^ ρ * L x` with
-  `L` slowly varying ([BGT, Theorem 1.4.1]).
-* `IsRegularlyVarying.tendstoUniformlyOn_of_isCompact`: the uniform convergence theorem for
-  eventually monotone (or antitone) regularly varying functions ([BGT, §1.5.2 and
+  `L` slowly varying (a part of [BGT, Theorem 1.4.1]; that the limit must be a power is
+  `exists_isRegularlyVarying_of_tendsto`, in `RegularVariation/Composition.lean`).
+* `IsRegularlyVarying.tendstoUniformlyOn_of_isCompact`: the compact part of the uniform convergence
+  theorem for eventually monotone (or antitone) regularly varying functions ([BGT, §1.5.2 and
   Theorem 1.5.2]). For monotone functions an elementary sandwich argument suffices, and no
   measurability / Egorov-type argument is needed.
+
+Facts that need measurability are elsewhere: `f → ∞` for `ρ > 0` and `f → 0` for `ρ < 0` in
+`RegularVariation/UniformConvergenceTails.lean`, composition in `RegularVariation/Composition.lean`.
 * `IsRegularlyVarying.potter_bound`: Potter-type bounds for eventually monotone (or antitone)
   regularly varying functions ([BGT, Theorem 1.5.6]).
 -/
@@ -171,8 +175,8 @@ theorem isSlowlyVarying_log : IsSlowlyVarying Real.log := by
   filter_upwards [eventually_gt_atTop 1] with x hx
   rw [log_mul hc.ne' (by linarith), add_div, div_self (log_pos hx).ne']
 
-/-- **Representation of regularly varying functions** ([BGT, Theorem 1.4.1]): `f` is regularly
-varying with index `ρ` if and only if `f x = x ^ ρ * L x` for large `x`, with `L` slowly
+/-- **Representation of regularly varying functions** (a part of [BGT, Theorem 1.4.1]): `f` is
+regularly varying with index `ρ` if and only if `f x = x ^ ρ * L x` for large `x`, with `L` slowly
 varying. -/
 theorem isRegularlyVarying_iff_exists_isSlowlyVarying :
     IsRegularlyVarying f ρ ↔ ∃ L : ℝ → ℝ, IsSlowlyVarying L ∧ ∀ᶠ x in atTop, f x = x ^ ρ * L x := by
@@ -276,8 +280,8 @@ theorem tendstoLocallyUniformlyOn (hf : IsRegularlyVarying f ρ) {a : ℝ}
   rw [abs_lt] at g3 k3 ⊢
   constructor <;> linarith
 
-/-- **Uniform convergence theorem** (monotone case) ([BGT, Theorem 1.5.2]): if `f` is
-regularly varying with index `ρ` and monotone or antitone on some interval `[a, ∞)`, then
+/-- **Uniform convergence theorem** (monotone case, the compact part of [BGT, Theorem 1.5.2]): if `f`
+is regularly varying with index `ρ` and monotone or antitone on some interval `[a, ∞)`, then
 `f (c * x) / f x → c ^ ρ` uniformly in `c` on every compact subset `K` of `(0, ∞)`.
 
 For (eventually) monotone `f` this follows from an elementary sandwich argument, see
