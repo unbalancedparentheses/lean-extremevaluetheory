@@ -4,10 +4,35 @@ What it takes to be the best extreme value theory library, in six tracks: the **
 **research** (with priority to problems practitioners care about), **verification** (evidence that the
 statements are the right ones, including review by human experts), **code quality and usability**,
 **maintenance**, and **outreach**, plus one distinctive extra: a link to real EVT software, and a
-**growth** track (H) that turns the library into something people use, cite and contribute to. See [`THEOREMS.md`](THEOREMS.md) for what is proved
+**growth** track (H) that turns the library into something people use, cite and contribute to, and what lies beyond the textbooks (I). See [`THEOREMS.md`](THEOREMS.md) for what is proved
 and [`RESEARCH.md`](RESEARCH.md) for the research results.
 
 `[x]` done, `[~]` partial, `[>]` in progress, `[ ]` missing.
+
+## Scope and target
+
+"All of extreme value theory" is not a goal: it is an open research field. The target is:
+
+- **Version 1.0:** the core of the standard textbooks (de Haan–Ferreira, Embrechts–Klüppelberg–Mikosch, Coles), the statistics
+  practitioners actually use, stated faithfully, and **reviewed by human experts**. One expert confirming the statements is worth more
+  now than another hundred theorems.
+- **After 1.0:** theorems that apply to real data, not only to exact models; then the areas in section I.
+
+Rough coverage of the standard textbooks (2026-11-05), a judgement and not a measurement. The catalogue gives a harder number: of 232 headline
+results, 147 are `full` and 83 `reduced`, judged by an AI against the result each is named after.
+
+| Area | Covered | Main gaps |
+|---|---|---|
+| Limits of maxima, domains of attraction | ~95% | Rates of convergence |
+| Peaks over threshold (the theorem) | ~95% | |
+| Regular variation | ~85% | Π-variation in full, two-sided second-order inequalities |
+| Stable laws, heavy tails | ~65% | The parametric stable family and its tails |
+| Tail estimators | ~65% | Moment for `γ ≤ 0`, bias reduction, intervals with bias |
+| Dependent sequences | ~55% | Sharp Kesten–Goldie tails, cluster functionals, estimators that reach `θ` |
+| Likelihood and return levels | ~50% | Real block maxima and excesses, `ξ₀ = 0`, Wilks beyond the GPD |
+| Multivariate extremes | ~50% | Normality of estimators, hidden regular variation |
+| Point processes, functional limits | ~40% | A real topology, cluster processes, weighted processes |
+| Max-stable processes | ~20% | Brown–Resnick, Schlather, extremal-t |
 
 ## Ranked plan (2026-11-04)
 
@@ -28,15 +53,33 @@ Each tier can run in parallel internally. The sections below give the details.
 4. Done (2026-11-04): the GitHub–Zenodo integration is enabled, so `v1.0.0` will get a DOI (H.1)
 
 **Next, in order (2026-11-05)**
-1. *you:* read the paper, send the expert emails, submit to arXiv, post on the Lean Zulip; cut `v0.10.0` first so they point
-   to a release with the GEV and Wilks results
-2. *you:* get de Haan–Ferreira, Embrechts et al., Coles and Kulik–Soulier, to check citations (the agents had no access to the
-   books; some theorem numbers and Coles's figures are from memory) and finish the novelty check
-3. **Likelihood for approximate models, the main gap for practice:** block maxima from a law in a domain of attraction
-   (Dombry–Ferreira 2019), then threshold excesses with a random number of exceedances
-4. The Gumbel case `ξ₀ = 0` of GEV normality, consistency of the plug-in standard error, Wilks for `ξ₀ ≤ 0` and the GEV
-5. Moment estimator normality for `γ ≤ 0`
-6. First pull requests to Mathlib from `ForMathlib/`, then the link to R and Python (G)
+
+Ours, running or next:
+1. [>] Codex review of the specification (`Challenge.lean`, core definitions, `full` labels, tests); fix what holds up
+2. [>] `v0.10.0`, after that review and the downstream check, with the DOI in `CITATION.cff`, the README and the paper
+3. [>] [#45](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/45) a computable GEV interval
+4. [>] [#41](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/41) likelihood for block maxima from a domain of
+   attraction: **the main gap for practice**
+5. [>] [#42](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/42) the Gumbel case `ξ₀ = 0`
+6. [>] The first Mathlib pull requests, as drafts (`upstream/mathlib/`)
+7. [ ] Peaks over threshold for real data: excesses from a law in a domain of attraction, a random number of exceedances, `ζ` estimated
+8. [ ] [#43](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/43) moment normality for `γ ≤ 0`;
+   [#44](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/44) Wilks for `ξ₀ ≤ 0` and the GEV;
+   [#46](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/46) the full Fisher information against a published value
+9. [ ] Run the mutation checks and the junk-value scan on the new results (they predate them and are not in CI), and decide whether to
+   run them on a schedule
+10. [ ] Non-vacuity tests where a headline still lacks its own: `tendstoInDistribution_gevLocalMLE`,
+    `tendstoInDistribution_gpdProfileDeviance`, `powEchoProcess_polyBlocks`, `powEchoProcess_critical`, the moment bias term
+11. [ ] Blocks and runs estimators that reach the extremal index, on concrete models; whether long runs reach `θ = 1/2` on the echo process
+12. [ ] A plain theorem for each hypothesis that is still a structure field or a chart: the implicit-function step behind `IsGPDProfileChart`
+
+Only the maintainer can do these:
+- [ ] Read the paper, then submit it to arXiv (check early whether an endorsement is needed)
+- [ ] Send the expert emails (drafted), and the one to Hirata
+- [ ] Post on the Lean Zulip, and open the Mathlib pull requests
+- [ ] Get de Haan–Ferreira, Embrechts et al., Coles and Kulik–Soulier: the agents had no access to the books, so some theorem numbers and
+  Coles's figures are from memory, and the novelty check needs Kulik–Soulier
+- [ ] Decide on the deprecation policy, the Code of Conduct contact, Palomar, and a Hugging Face account for the dataset
 
 **First release: `v0.9.0`, before the work in flight** (decided 2026-11-04). A citable release with
 honest limits now does more than waiting for every proof. It does not wait for #4–#9; those ship in 0.x
@@ -142,10 +185,9 @@ and 1.0 releases.
 
 ## Version 1.0
 
-What "finished" means for a first release: the running work merged, a consistent design, documentation
-that matches the code, a way in for new users, and review by people other than the AI that wrote the
-statements. Everything after that (further textbook chapters, open problems, upstreaming, executable
-estimators) is listed in sections A–G and is not needed for 1.0. Updated 2026-11-04.
+What "finished" means for 1.0: a consistent design, documentation that matches the code, a way in for new users, the statistics
+practitioners use with their limits stated, and **review by people other than the AI that wrote the statements**. That last one is the
+blocker: 1.0 waits for expert replies. Further textbook chapters, open problems and section I are not needed for 1.0. Updated 2026-11-05.
 
 **Owner:** *agent* = done by Claude Code agents; *you* = needs the maintainer (sending, submitting,
 posting, deciding).
@@ -263,8 +305,9 @@ Regular Variation and Point Processes* (1987) and *Heavy-Tail Phenomena* (2007);
 - [x] Pickands–Balkema–de Haan (equivalence, every shape)
 - [x] GPD / GEV densities, Wald consistency, Fisher information, joint normality (GPD `ξ ≠ 0`)
 - [x] GEV: full 3×3 Fisher information (digamma), positive definite, `E[∇²ℓ] = −I`, trivariate score CLT
-- [>] GEV: joint normality of the 3-parameter MLE (missing: Hessian domination near a moving endpoint,
-      a preliminary √n rate, a 3×3 Slutsky step); then GEV return-level normality becomes unconditional
+- [x] GEV: joint normality of the 3-parameter MLE and unconditional return levels, for `ξ₀ > −1/2`, `ξ₀ ≠ 0`, exact iid sample
+      (`tendstoInDistribution_gevMLE`, `tendstoInDistribution_gevMLEReturnLevel`)
+- [>] GEV likelihood for block maxima from a domain of attraction (#41), and at `ξ₀ = 0` (#42); a computable interval (#45)
 - [~] Likelihood at `ξ = 0`: GEV/GPD log-densities and scores continuous at 0 and true derivatives there;
       Gumbel (μ, σ) Fisher information and score CLT. Missing: the σξ and ξξ entries at 0 (need
       `ψ''(1) = −2ζ(3)`, not in Mathlib), Hessian continuity, MLE normality at `ξ = 0`
@@ -279,12 +322,12 @@ Regular Variation and Point Processes* (1987) and *Heavy-Tail Phenomena* (2007);
 
 ### 3. Statistics of extremes
 - [x] Hill: consistency, normality, dependent data; Pickands; moment estimator; Weissman
-- [>] Asymptotic normality of the Pickands and moment estimators (dHF Thms 3.3.5, 3.5.4)
+- [x] Pickands normality for every `γ` (`tendstoInDistribution_pickands`)
+- [~] Moment normality: `γ > 0` done, `γ ≤ 0` missing (#43)
 - [x] Delta method (general and Gaussian), Wald intervals with asymptotic coverage; Hill and POT
       return-level intervals
-- [~] Return levels: POT normality unconditional (from GPD MLE); GEV/Gumbel conditional on GEV MLE
-      normality (in progress, see A.2)
-- [>] Profile-likelihood intervals (Coles §2.6.6)
+- [~] Return levels: POT and GEV normality unconditional, for exact samples; real block maxima and excesses missing (#41)
+- [~] Wilks and profile-likelihood intervals: GPD with `ξ₀ > 0` done; `ξ₀ ≤ 0` and the GEV missing (#44)
 - [ ] Hill confidence interval with bias (`λ ≠ 0`)
 - [ ] Bias-reduced estimators (second-order: Gomes et al., Feuerverger–Hall), and their normality
 - [~] Extremal-index estimators: blocks and runs consistent (general, m-dependent, via the tail
@@ -314,8 +357,8 @@ Regular Variation and Point Processes* (1987) and *Heavy-Tail Phenomena* (2007);
 - [x] Max-stable vectors: spectral representation (existence, uniqueness), Pickands function
 - [x] Multivariate domains of attraction (dHF ch. 6.2)
 - [x] Multivariate POT and the multivariate GPD (Rootzén–Tajvidi; sequence thresholds, pointwise)
-- [>] Nonparametric estimation: empirical tail dependence function / stable tail dependence
-      function, CFG and Pickands estimators with estimated margins, and their consistency
+- [x] Nonparametric estimation: the empirical stable tail dependence function and `χ̂` are consistent, pointwise and uniformly
+- [ ] Their normality; the CFG and madogram estimators
 - [ ] Hidden regular variation and asymptotic independence (Resnick 2002, Ledford–Tawn)
 
 ### 7. Point processes and functional limits
@@ -382,14 +425,16 @@ Second survey (2026-10-25, [`docs/OPEN_PROBLEMS_SURVEY2.md`](docs/OPEN_PROBLEMS_
 
 ## C. Verification
 
-- [x] Lean kernel at build time; independent re-check of all 718,274 declarations with `con-leche`
+- [x] Lean kernel at build time; independent re-check of all 719,954 declarations with `con-leche`
       (nightly and on every code change)
-- [x] Six faithfulness audits against the textbooks ([`FAITHFULNESS.md`](FAITHFULNESS.md))
-- [x] Specification tests in CI ([`Test/`](Test/README.md)): non-vacuity (92), known answers (158),
+- [x] Eight faithfulness audits against the textbooks ([`FAITHFULNESS.md`](FAITHFULNESS.md))
+- [x] Specification tests in CI ([`Test/`](Test/README.md)): non-vacuity (139), known answers (253),
       junk-value audit (one bug found and fixed), mutation checks (323 mutants, no real weakness)
-- [ ] Specification tests for the newest results: return levels, confidence intervals, SRE/GARCH,
-      extremal-index estimators, and each statistics result as it lands
-- [ ] Seventh faithfulness audit covering everything added since the sixth
+- [x] Specification tests for return levels, confidence intervals, SRE/GARCH and extremal-index estimators
+- [x] Comparison with Hirata's independent Isabelle statements ([`docs/HIRATA_COMPARISON.md`](docs/HIRATA_COMPARISON.md))
+- [x] A review deadline in CI, the Comparator challenge, and the catalogue's check
+- [ ] A mechanized comparison with Hirata's statements is out of reach across provers; ask Hirata to read ours instead
+- [ ] Check every citation against the books (no agent had access), and record which were checked
 - [ ] **Human expert review** with [`docs/REVIEW.md`](docs/REVIEW.md): the one check that is
       independent of the AI that wrote the statements. Send to two or three extreme value theorists
       (e.g. Kulik, Segers, Drees, Kytölä's group), fix what they find, and list the reviewers and the
@@ -472,6 +517,22 @@ sign of scipy's GEV shape, rather than only document them in
 - [ ] Executable (`Float`) versions of the estimators, each linked to the definition it implements
 - [ ] Cross-check scripts against R and Python on shared test data, run in CI
 - [ ] A report of any disagreements with the packages
+
+---
+
+## I. Beyond the textbooks
+
+Largely outside the library so far, and not needed for 1.0. These are the areas people use most that the library does not reach; in order:
+
+- [ ] **Finite-sample results.** The library has none. Concentration or Berry–Esseen-type bounds for Hill and for block maxima would be new
+      for formal mathematics, and useful for choosing `k`
+- [ ] **Threshold selection** (B, problem 6), still an open research area
+- [ ] **Non-stationary extremes and regression**: GEV and GPD with covariates, as used for climate trends. First a consistency theorem
+      for a linear trend in the location
+- [ ] **Spatial extremes**: Brown–Resnick, Schlather and extremal-t (A.8), Pareto processes, composite likelihood
+- [ ] **Bayesian extremes**: posterior consistency for the GEV and GPD (Bernstein–von Mises)
+- [ ] **Gaussian processes and random fields**: Rice-type results, Pickands constants
+- [ ] **Further heavy-tailed theory** (Kulik–Soulier, Resnick 2007): sums via point processes, cluster functionals
 
 ---
 
