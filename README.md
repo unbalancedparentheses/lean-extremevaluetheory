@@ -285,6 +285,11 @@ participants of the Aalto University course MS-EV0029 *Introduction to Formalize
 in Lean*. Several of its statements were false as written and have been corrected; see
 [`TRIAGE.md`](TRIAGE.md). Derived files keep their original copyright headers; see [`NOTICE`](NOTICE).
 
+Independently, Michikazu Hirata has formalized
+[Fisher–Tippett–Gnedenko and Pickands–Balkema–de Haan](https://isa-afp.org/entries/Extreme_Value_Theory.html)
+and [regular variation](https://isa-afp.org/entries/Regular_Variation.html) in Isabelle, in the Archive of
+Formal Proofs.
+
 ## License
 
 Apache 2.0, see [`LICENSE`](LICENSE).

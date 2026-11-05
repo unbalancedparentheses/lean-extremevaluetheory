@@ -63,8 +63,9 @@ structures, theorem names describe the statement). Library-specific rules:
 
 ## One representation of laws
 
-A probability law on `ℝ` appears in three forms; `ExtremeValueTheory/CDFBridge.lean` is the
-single bridge between them, and no other file proves conversions.
+A probability law on `ℝ` appears in three forms; `ExtremeValueTheory/CDFBridge.lean`
+collects the bridges to Mathlib's distribution functions and laws, on top of the equivalence with
+probability measures in `CumulativeDistributionFunction.lean`. No other file should prove conversions.
 
 1. **`μ : Measure ℝ` with `[IsProbabilityMeasure μ]`** is the canonical *law*, as in Mathlib.
    Random variables carry their law as `HasLaw X μ P` (Mathlib). `ProbabilityMeasure ℝ` is used

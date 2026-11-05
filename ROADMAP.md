@@ -656,6 +656,11 @@ small contributions together, so direct outreach (H.8) matters at least as much 
       (value-at-risk, expected shortfall) are where extreme value theory is used. Propose that they
       depend on this library for extremes, or a bridge file between the two (*agent* drafts, *you*
       send)
+- [ ] Compare our statements of Fisher–Tippett–Gnedenko, Pickands–Balkema–de Haan and Karamata with
+      Hirata's independent Isabelle developments ([Extreme Value Theory](https://isa-afp.org/entries/Extreme_Value_Theory.html),
+      [Regular Variation](https://isa-afp.org/entries/Regular_Variation.html), Archive of Formal Proofs,
+      September 2026), which the first related-work search missed. Two independent statements of one theorem
+      are a real check on faithfulness. Then contact Hirata (*agent* drafts, *you* send)
 - [ ] Search for other Lean projects with results on extremes, regular variation or heavy tails, and
       port or link them with credit to their authors. Porting can also bring in the author: formal-mathfin
       ported Robert Martin's American put and SVI work, and lists them as a contributor
