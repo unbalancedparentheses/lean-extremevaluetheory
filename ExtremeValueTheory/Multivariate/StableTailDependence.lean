@@ -3,7 +3,7 @@ Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import ExtremeValueTheory.Multivariate.DomainOfAttractionStandardized
+import ExtremeValueTheory.Multivariate.DomainOfAttractionConverse
 import ExtremeValueTheory.Multivariate.TailDependence
 
 /-!
@@ -101,9 +101,9 @@ theorem measureReal_one_sub_lt_marginal {j : ι} (hc : Continuous (marginal μ j
     simp only [mem_setOf_eq] at hy
     linarith
   have hnull : μ.real ({y : ι → ℝ | t < y j} \ {y | 1 - s < marginal μ j (y j)}) = 0 := by
-    refine measureReal_eq_zero_iff.2 (measure_mono_null (fun y hy ↦ ?_)
+    refine (measureReal_eq_zero_iff (measure_ne_top _ _)).2 (measure_mono_null (fun y hy ↦ ?_)
       (measure_lt_and_marginal_le_eq_zero hc t))
-    simp only [mem_sdiff, mem_setOf_eq, not_lt] at hy
+    simp only [Set.mem_sdiff, mem_setOf_eq, not_lt] at hy
     exact ⟨hy.1, ht ▸ hy.2⟩
   rw [measureReal_eq_measureReal_of_null_sdiff hsub hnull, measureReal_lt_apply, ht]
   ring
@@ -116,8 +116,8 @@ lemma tailUnionProb_mono {x : ι → ℝ} (hx : ∀ j, 0 ≤ x j) {s t : ℝ} (h
   refine measureReal_mono fun y ⟨j, hj⟩ ↦ ⟨j, lt_of_le_of_lt ?_ hj⟩
   nlinarith [hx j]
 
-/-- The union bound `P(A_x) ≤ P(A_y) + t ∑_j |x_j - y_j|`, for `t x_j, t y_j ∈ (0, 1)`. -/
-theorem tailUnionProb_le_add [Fintype ι] (hc : ∀ j, Continuous (marginal μ j)) {t : ℝ}
+/-- The union bound `P(A_x) ≤ P(A_y) + t ∑_j |x_j - y_j|`, for `t > 0` and `t x_j, t y_j ∈ (0, 1)`. -/
+theorem tailUnionProb_le_add [Fintype ι] (hc : ∀ j, Continuous (marginal μ j)) {t : ℝ} (ht : 0 < t)
     {x y : ι → ℝ} (hx : ∀ j, 0 < t * x j ∧ t * x j < 1) (hy : ∀ j, 0 < t * y j ∧ t * y j < 1) :
     tailUnionProb μ t x ≤ tailUnionProb μ t y + t * ∑ j, |x j - y j| := by
   set D : ι → Set (ι → ℝ) := fun j ↦
@@ -131,37 +131,24 @@ theorem tailUnionProb_le_add [Fintype ι] (hc : ∀ j, Continuous (marginal μ j
   have hD : ∀ j, μ.real (D j) ≤ t * |x j - y j| := by
     intro j
     rcases le_total (y j) (x j) with hxy | hxy
-    · have hs : {z : ι → ℝ | 1 - t * y j < marginal μ j (z j)} ⊆
+    · have hmul : t * y j ≤ t * x j := mul_le_mul_of_nonneg_left hxy ht.le
+      have hs : {z : ι → ℝ | 1 - t * y j < marginal μ j (z j)} ⊆
           {z | 1 - t * x j < marginal μ j (z j)} := fun z hz ↦ by
         simp only [mem_setOf_eq] at hz ⊢
-        nlinarith [(hy j).1, (hx j).1]
-      have ht : 0 < t := by
-        by_contra h
-        have := (hx j).1
-        have := (hy j).1
-        nlinarith [not_lt.1 h]
+        linarith
       rw [measureReal_sdiff hs (measurableSet_one_sub_lt_marginal j _),
         measureReal_one_sub_lt_marginal (hc j) (hx j).1 (hx j).2,
         measureReal_one_sub_lt_marginal (hc j) (hy j).1 (hy j).2, abs_of_nonneg (by linarith)]
-      ring_nf
-      exact le_rfl
-    · have hempty : D j = ∅ := by
+      linarith [mul_sub t (x j) (y j)]
+    · have hmul : t * x j ≤ t * y j := mul_le_mul_of_nonneg_left hxy ht.le
+      have hempty : D j = ∅ := by
         ext z
-        simp only [D, mem_sdiff, mem_setOf_eq, mem_empty_iff_false, iff_false, not_and,
+        simp only [D, Set.mem_sdiff, mem_setOf_eq, mem_empty_iff_false, iff_false, not_and,
           not_not]
         intro hz
-        have ht : 0 ≤ t := by
-          by_contra h
-          have := (hx j).1
-          have := (hy j).1
-          nlinarith [not_le.1 h]
-        nlinarith
+        linarith
       rw [hempty, measureReal_empty]
-      exact mul_nonneg (by
-        by_contra h
-        have := (hx j).1
-        have := (hy j).1
-        nlinarith [not_le.1 h]) (abs_nonneg _)
+      positivity
   calc tailUnionProb μ t x ≤ μ.real ({z | ∃ j, 1 - t * y j < marginal μ j (z j)} ∪ ⋃ j, D j) :=
         measureReal_mono hsub
     _ ≤ tailUnionProb μ t y + μ.real (⋃ j, D j) := measureReal_union_le _ _
@@ -176,9 +163,9 @@ lemma eventually_mul_mem_Ioo [Finite ι] {x : ι → ℝ} (hx : ∀ j, 0 < x j) 
   refine eventually_all.2 fun j ↦ ?_
   have h1 : ∀ᶠ t in 𝓝[>] (0 : ℝ), 0 < t := self_mem_nhdsWithin
   have h2 : ∀ᶠ t in 𝓝[>] (0 : ℝ), t * x j < 1 := by
+    have hcont : Continuous fun t : ℝ ↦ t * x j := by fun_prop
     have : Tendsto (fun t : ℝ ↦ t * x j) (𝓝[>] 0) (𝓝 0) := by
-      simpa using ((continuous_id.mul continuous_const).tendsto (0 : ℝ)).mono_left
-        nhdsWithin_le_nhds
+      simpa using (hcont.tendsto (0 : ℝ)).mono_left nhdsWithin_le_nhds
     exact this.eventually (gt_mem_nhds one_pos)
   filter_upwards [h1, h2] with t ht1 ht2
   exact ⟨mul_pos ht1 (hx j), ht2⟩
@@ -193,7 +180,7 @@ theorem HasStableTailDependence.abs_sub_le [Fintype ι] {ℓ : (ι → ℝ) → 
     refine le_of_tendsto_of_tendsto (h x hx) ((h y hy).add_const _) ?_
     filter_upwards [eventually_mul_mem_Ioo hx, eventually_mul_mem_Ioo hy, self_mem_nhdsWithin]
       with t htx hty (ht : 0 < t)
-    have := tailUnionProb_le_add hc htx hty
+    have := tailUnionProb_le_add hc ht htx hty
     have hinv : 0 < t⁻¹ := inv_pos.2 ht
     calc t⁻¹ * tailUnionProb μ t x ≤ t⁻¹ * (tailUnionProb μ t y + t * ∑ j, |x j - y j|) :=
           mul_le_mul_of_nonneg_left this hinv.le
@@ -224,7 +211,7 @@ theorem tendsto_inv_mul_of_tendsto_natCast_mul {f : ℝ → ℝ} (hmono : Monoto
     simpa using (tendsto_natCast_div_add_atTop (1 : ℝ)).mul
       (h.comp (tendsto_add_atTop_nat 1))
   have hev : ∀ᶠ t in 𝓝[>] (0 : ℝ), 0 < t ∧ 1 ≤ m t :=
-    (self_mem_nhdsWithin).and (hm.eventually_ge_atTop 1)
+    eventually_mem_nhdsWithin.and (hm.eventually_ge_atTop 1)
   refine tendsto_of_tendsto_of_tendsto_of_le_of_le' (hlow.comp hm) (hup.comp hm) ?_ ?_
   · filter_upwards [hev] with t ⟨ht, hmt⟩
     simp only [Function.comp_apply]
@@ -248,7 +235,7 @@ theorem tendsto_inv_mul_of_tendsto_natCast_mul {f : ℝ → ℝ} (hmono : Monoto
     have hf : f t ≤ f (m t : ℝ)⁻¹ := hmono (mem_Ioi.2 ht) (mem_Ioi.2 (by positivity)) h1
     have hft := hf0 t ht
     calc t⁻¹ * f t ≤ ((m t : ℝ) + 1) * f (m t : ℝ)⁻¹ := mul_le_mul hlt.le hf hft (by positivity)
-      _ = (1 + (m t : ℝ)⁻¹) * ((m t : ℝ) * f (m t : ℝ)⁻¹) := by field_simp; ring
+      _ = (1 + (m t : ℝ)⁻¹) * ((m t : ℝ) * f (m t : ℝ)⁻¹) := by field_simp
 
 /-! ### The domain of attraction case -/
 
@@ -275,7 +262,7 @@ lemma tailUnionProb_inv_natCast (hc : ∀ j, Continuous (marginal μ j)) {n : �
   have hsub : Iic U ⊆ Aᶜ := fun y hy ↦ by
     rw [hAc]; exact fun j ↦ marginal_mono j (hy j)
   have hnull : μ.real (Aᶜ \ Iic U) = 0 := by
-    refine measureReal_eq_zero_iff.2 (measure_mono_null ?_ (measure_iUnion_null fun j ↦
+    refine (measureReal_eq_zero_iff (measure_ne_top _ _)).2 (measure_mono_null ?_ (measure_iUnion_null fun j ↦
       measure_lt_and_marginal_le_eq_zero (hc j) (U j)))
     intro y hy
     rw [hAc] at hy
@@ -284,8 +271,8 @@ lemma tailUnionProb_inv_natCast (hc : ∀ j, Continuous (marginal μ j)) {n : �
     obtain ⟨j, hj⟩ := hy2
     exact mem_iUnion.2 ⟨j, hj, hy1 j⟩
   have hA : MeasurableSet A := measurableSet_tailUnion _ _
-  rw [tailUnionProb, ← measureReal_eq_measureReal_of_null_sdiff hsub hnull,
-    probReal_compl_eq_one_sub hA]
+  have hsame : tailUnionProb μ (n : ℝ)⁻¹ x = μ.real A := rfl
+  rw [hsame, measureReal_eq_measureReal_of_null_sdiff hsub hnull, probReal_compl_eq_one_sub hA]
   ring
 
 /-- **The stable tail dependence function in the domain of attraction** ([dHF, Theorem 6.1.1 and
