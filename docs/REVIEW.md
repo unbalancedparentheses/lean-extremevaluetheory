@@ -2,22 +2,29 @@
 
 Repository: `https://github.com/unbalancedparentheses/lean-extremevaluetheory` (blueprint:
 `https://unbalancedparentheses.github.io/lean-extremevaluetheory`). Snapshot: release `v0.9.0` and later
-commits up to `99fe16a`.
+commits up to `ace7f0e`.
 
 **What this guide covers.** Parts I and II were written at commit `9a3bfe3` (2026-10-18). Every Lean
-name in them still exists, but their line numbers can be off by a few lines, so search by name. Part I-B
-(the answer to Bai–Kulik–Wang's question, mixing without `θ = ϑ`, the short-runs warning) and Part III
-(return levels, Wald intervals, the delta method, extremal-index estimators, likelihood, GARCH) were
-written at commit `99fe16a` (2026-11-04), by reading each statement and its definitions in the Lean
-source.
+name in them still exists (one, in C9, is now deprecated), but their line numbers can be off by a few
+lines, so search by name. Part I-B (the answer to Bai–Kulik–Wang's question, mixing without `θ = ϑ`, the
+short-runs warning) and entries S1 to S9 of Part III (return levels, Wald intervals, the delta method,
+extremal-index estimators, likelihood, GARCH) were written at commit `99fe16a` (2026-11-04). Entries R14a
+and S10 to S16 (GEV joint normality, GEV return levels without assumed normality, Wilks and profile
+likelihood, Pickands and moment normality, nonparametric tail dependence, the critical scale, the textbook
+form of the domains of attraction) were written at commit `ace7f0e` (2026-11-05), and R14, C9, C14, C26, S2,
+S4 and S7 were corrected to match. All of these were written by reading each statement and its definitions
+in the Lean source, not the docstrings.
 
 **What it does not cover.** Results in the library with no entry here include the multivariate domain
-of attraction (`isMDAWith_iff`), subexponential laws and ruin (`IsSubexponential.tendsto_tail_compound_div`,
-`tendsto_pkRuin_div_mul_tail`), the counterexamples in `ExtremeValueTheory/Minimality/` (apart from those
-named below), Pickands dependence (`pickandsDependence`), L-moments (`lSkewness_gevCDF_hosking`), the
-tail-probability estimator (`tailProbEstimator`) and the general stochastic recurrence
-(`SRE.eq_stationaryLaw`). `FAITHFULNESS.md` lists those, and the README's Limitations section lists known
-restrictions.
+of attraction as a theorem (`isMDAWith_iff`; S15 only uses its definition), subexponential laws and ruin
+(`IsSubexponential.tendsto_tail_compound_div`, `tendsto_pkRuin_div_mul_tail`), the counterexamples in
+`ExtremeValueTheory/Minimality/` (apart from those named below), the properties of Pickands dependence
+(`convexOn_pickandsDependence`; S15 covers only its rank-based estimator), L-moments
+(`lSkewness_gevCDF_hosking`), the tail-probability estimator (`tailProbEstimator`), the general stochastic
+recurrence (`SRE.eq_stationaryLaw`), the norming constants of the other named laws (`tendsto_gammaCDF_pow`,
+`tendsto_pow_norming_tailQuantile`), the unified von Mises criterion (`isInMDAGEV_of_vonMises`), and the
+scale profile interval and the level-`1 − α` forms, which S12 only names. `FAITHFULNESS.md` lists those, and
+the README's Limitations section lists known restrictions.
 
 ## What we are asking
 
@@ -47,15 +54,25 @@ attributions were *not* all verified against the original papers. They are marke
 provisional: `docs/NOVELTY.md` and `docs/NOVELTY2.md` record what was searched and what could not be read,
 and we claim no priority.
 
-If you have limited time, please review them in this order and skip the rest:
+S10 is also marked ★, for a different reason. It is classical, not new, but it is the theorem practitioners
+rely on whenever they fit a GEV by maximum likelihood and quote a standard error, so an error in its
+statement would matter most in practice.
 
-1. **Part I-B** (entries R14, R15, R16), about 2 hours: about 30 minutes for the definitions D1 to D7 of
-   Part I, which it depends on, then about an hour for R14 with [BKW24, §1.4] open, and about 30 minutes
-   for R15 and R16. If you have only 30 minutes, read R14 and answer its first two questions.
-2. **Part I** (entries R1 to R13), about 2 to 3 hours.
+**If you have limited time**, pick the line that fits you and skip the rest. The times are estimates, and a
+partial answer is useful.
 
-Part III (about 2 hours) is for statisticians; its caveats say how much each theorem assumes. Part II is
-classical and is the lowest priority.
+| Your time and interest | Read | Time |
+|---|---|---|
+| Dependence, very little time | R14, its first two questions | 30 minutes |
+| Statistics, very little time | S10: the matrix, then its questions 1 to 3, with Prescott–Walden or Smith open | 45 minutes |
+| Dependence | Part I-B: D1 to D7 (30 minutes), R14 and R14a with [BKW24, §1.4] open (about an hour), R15 and R16 (30 minutes) | about 2 hours |
+| Statistics | S10 and S11 (1 hour), S12 (45 minutes), S13 and S14 (45 minutes) | about 2.5 hours |
+| Dependence, thorough | Part I, R1 to R13, after Part I-B | 2 to 3 hours more |
+| Statistics, thorough | S15 and S16 (45 minutes), S1 to S9 (about 2 hours), after the above | about 3 hours more |
+
+Each caveat in Part III says how much its theorem assumes, and the summary table at the end collects them.
+Part II is classical and is the lowest priority: S16 and C25, C26 are the entries to read if you want to
+check how it connects to Part III.
 
 References used throughout: [EKM] Embrechts–Klüppelberg–Mikosch, *Modelling Extremal Events*;
 [dHF] de Haan–Ferreira, *Extreme Value Theory: An Introduction*; [BGT] Bingham–Goldie–Teugels,
@@ -619,11 +636,7 @@ hold:
 
 Lean: `ExtremeValueTheory.powEchoProcess_critical`, `Dependence/EchoPowerLag.lean:726`.
 
-*The boundary at all levels.* Let `aₙ` be real with `n P(X_0 > aₙ) → τ`, `τ > 0`, and let `rₙ ∈ ℕ` with `rₙ
-/ n^{γ/α} → c`, `c ≥ 0`. Then `AntiClustering P X a r ⟺ c = 0`. Lean:
-`ExtremeValueTheory.powEchoProcess_antiClustering_iff_critical`, `Dependence/EchoPowerLag.lean`; the two
-halves are `powEchoProcess_not_antiClustering_critical` and `powEchoProcess_antiClustering_of_tendsto_zero`.
-Instantiated in `test_nonvacuous_powEchoProcess_not_antiClustering_critical`.
+*The boundary at all levels.* See R14a: `AntiClustering` at the scale `ρ = γ/α` is decided there.
 
 *The setting.* Under (E) and `0 < γ < α`: `X` is stationary (D1), has spectral tail process `Θ_t = 1{t =
 0}` with index `α`, `ϑ = 1`, and `(X_n)_{n≥0}` has extremal index `θ = 1/2` (D4). Lean:
@@ -639,23 +652,17 @@ sides.
    at every level. If `y ≥ x`, then `P(max > b_n x, X_0 > b_n y) ≤ P(max > b_n x, X_0 > b_n x)`, and
    `P(X_0 > b_n x)/P(X_0 > b_n y) → (y/x)^α` by regular variation. If `y < x`, then `{max > b_n x} ⊂
    {max > b_n y}`. Please check this.
-2. *The failure is stronger than the negation.* The proof of "AC fails" uses only `x = 1` and only the
-   forward half, so the failure already holds at `aₙ` itself for positive lags. The levels `aₙ` with `τ
-   = 1` are `b_n`.
-3. *Range of the equivalence.* `ρ = 0`, `ρ = 1` and `ρ = γ/α` are excluded, and `log rₙ / log n` must
-   converge. Filling in `ρ = 0` (with `rₙ → ∞`) and `ρ = 1` by monotonicity of `AC` in the block length
-   is easy on paper but not formalized.
-4. *The critical theorem is about one level sequence, and `AC` at all levels fails there for every `c`.*
-   `powEchoProcess_critical` concludes `AntiClusteringAt` at `(uₙ, rₙ)`, not `AntiClustering`. At the
-   level `aₙ x`, for which `n P(X_0 > aₙ x) → τ x^{−α}`, it gives `κ(x) = x^γ (2/τ)^{γ/α} / c`, which is
-   below `1` for small `x`. So if `rₙ / n^{γ/α} → c > 0`, then `AntiClustering` fails for **every**
-   `c > 0` (`powEchoProcess_not_antiClustering_critical`), and if `rₙ / n^{γ/α} → 0` it holds
-   (`powEchoProcess_antiClustering_of_tendsto_zero`; `rₙ → ∞` is not assumed). Together:
-   `powEchoProcess_antiClustering_iff_critical`, `AntiClustering ⟺ c = 0`, for `c ≥ 0`. That it is one
-   level sequence, not `AC(d_n, b_n)` in the sense of [BKW24], is caveat 1. This does not affect the
-   answer, since the question concerns ranges of `ρ`. The case `κ = 1` at a single level is undecided:
-   there `CRₙ → 1` and the late-return mass is `0`, but anticlustering at that level is not settled.
-   `rₙ / n^{γ/α} → ∞` with `log rₙ / log n → γ/α` is not covered.
+2. *The failure is stronger than the negation, away from the critical scale.* For `ρ > γ/α`, the proof of
+   "AC fails" uses only `x = 1` and only the forward half, so the failure already holds at `aₙ` itself for
+   positive lags. The levels `aₙ` with `τ = 1` are `b_n`. This is not so at `ρ = γ/α`: see R14a, caveat 1.
+3. *Range of the equivalence.* `ρ = 0` and `ρ = 1` are excluded, and `log rₙ / log n` must converge.
+   Filling these in by monotonicity of `AC` in the block length is easy on paper but not formalized. `ρ =
+   γ/α` is excluded from this theorem and treated separately in R14a.
+4. *The critical theorem is about one level sequence.* `powEchoProcess_critical` concludes
+   `AntiClusteringAt` at `(uₙ, rₙ)`, not `AntiClustering` at all levels; that is R14a. So its dependence on
+   `c` does not give a value of `c` for which `AC` holds, and this does not affect the answer, since the
+   question concerns ranges of `ρ`. The case `κ = 1` at a single level is undecided: there `CRₙ → 1` and
+   the late-return mass is `0`, but anticlustering at that level is not settled.
 5. *Normalizing levels only.* The equivalence uses `n P(X_0 > aₙ) → τ`. Anticlustering at intermediate
    levels in the style of [KS20] (`rₙ P(X_0 > cₙ) → 0`) is not characterized.
 6. *The transition is a step.* `CRₙ` passes from `1` to `1/2` at `ρ₀`, whereas the transition in [BKW24]
@@ -670,9 +677,55 @@ sides.
 2. **Does it answer what they meant?** Does the power-lag echo answer the second question of [BKW24,
    §1.4] as intended, or does the question implicitly exclude such a model?
 3. Is the one-level `AntiClustering` equivalent to `AC(d_n, b_n)` by caveat 1?
-4. Is the wording "`AC` fails at `ρ₀` when `rₙ ~ c n^{ρ₀}`, and holds when `rₙ = o(n^{ρ₀})`"
-   (`powEchoProcess_antiClustering_iff_critical`) the right description of the boundary?
-5. Would a theorem at intermediate levels be needed for this to count as an answer?
+4. Would a theorem at intermediate levels be needed for this to count as an answer?
+
+## R14a. Anticlustering on the critical scale `rₙ ~ c n^{γ/α}` ★ (new)
+
+**(a) Literature.** None; new, and novelty is provisional as for R14. The question quoted in R14 concerns
+`ρ` up to `ρ₀` and says nothing about the boundary. The condition is [BKW24]'s `AC(d_n, b_n)`, quoted in
+R14, up to R14, caveat 1.
+
+**(b) Lean, in math.** Hypotheses (E) of D8, `0 < γ < α`, `X = echoProcess (powLag γ) Z`. Let `aₙ` be
+real with `n P(X_0 > aₙ) → τ`, `τ > 0`, and let `rₙ ∈ ℕ`.
+
+*Failure on the whole scale.* If `rₙ / n^{γ/α} → c` with `c > 0`, then `AntiClustering P X a r` (D9) is
+false. Lean: `ExtremeValueTheory.powEchoProcess_not_antiClustering_critical`,
+`Dependence/EchoPowerLag.lean:828`.
+
+*Below the scale.* If `rₙ / n^{γ/α} → 0`, then `AntiClustering P X a r` holds. `rₙ → ∞` is not assumed,
+and `log rₙ / log n` need not converge, so this includes `rₙ ~ n^{γ/α} / log n`, for which `ρ = γ/α`.
+Lean: `ExtremeValueTheory.powEchoProcess_antiClustering_of_tendsto_zero`,
+`Dependence/EchoPowerLag.lean:861`.
+
+*Together.* If `rₙ / n^{γ/α} → c` with `c ≥ 0`, then `AntiClustering P X a r ⟺ c = 0`. Lean:
+`ExtremeValueTheory.powEchoProcess_antiClustering_iff_critical`, `Dependence/EchoPowerLag.lean:916`.
+
+Instantiated in `test_nonvacuous_powEchoProcess_not_antiClustering_critical`
+(`Test/NonVacuity/Dependence.lean`), with `τ = 1`, `γ = α/2`, `rₙ = ⌊c √n⌋ + 1`, for every `c > 0`. The
+other two theorems have no test of their own.
+
+**(c) Caveats.**
+1. *The failure is at a level that depends on `c`, not necessarily at `aₙ`.* The proof applies
+   `powEchoProcess_critical` (R14) at the level `aₙ x`, where `n P(X_0 > aₙ x) → τ x^{−α}`, so that
+   `κ(x) = x^γ (2/τ)^{γ/α} / c`, and takes `x` with `κ(x) = 1/2`. It is the failure of the forward half
+   at this one `x`. At `x = 1`, R14 gives anticlustering when `κ(1) > 1`, that is for small `c`. So for
+   small `c` and `τ = 1`, the condition holds at `b_n` itself and fails at `b_n x` for small `x`: the
+   "for all `x`" in the definition is doing the work, and any statement of the boundary at one level
+   would read differently.
+2. *Relation to [BKW24].* `AC(d_n, b_n)` with `x = y` is `AntiClustering` at `a = b`, so the failure
+   passes to their condition directly, by the easy direction of R14, caveat 1. The positive half needs
+   the other direction of that caveat, which is not formalized.
+3. *Not covered.* Sequences for which `rₙ / n^{γ/α}` has no limit in `[0, ∞)`, in particular
+   `rₙ / n^{γ/α} → ∞` with `log rₙ / log n → γ/α`. Failure there should follow on paper by monotonicity
+   of `AC` in the block length, comparing with `min(rₙ, ⌊n^{γ/α}⌋)`, but this is not formalized.
+4. *This overtakes* an earlier description in this library, that at `ρ = ρ₀` "the answer depends on the
+   constant". That is true of one level sequence only, and it is what `powEchoProcess_critical` says.
+
+**(d) Questions.**
+1. Is "`AC` fails when `rₙ ~ c n^{ρ₀}` for every `c > 0`, and holds when `rₙ = o(n^{ρ₀})`" the right
+   description of the boundary, given that it comes from small `x`?
+2. Should a boundary statement quantify over all `x`, as here and in [BKW24], or is the behaviour at
+   `x = 1` the more natural object?
 
 ## R15. β-mixing without `θ = ϑ` ★ (new example)
 
@@ -939,14 +992,20 @@ junk.  **(d)** None.
 *Converse*: `F` antitone on `ℝ`, integrable on some `(a, ∞)`, `α > 1`, and
 `x F(x)/∫_{(x,∞)} F → α − 1` ⇒ `F` is regularly varying with index `−α`.
 
+*Converse, no monotonicity*: `F` eventually positive, `α > 1`, and `x F(x)/∫_{(x,∞)} F → α − 1` ⇒ `F` is
+regularly varying with index `−α`.
+
 Lean: `ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_Ioi_div_of_measurable`
-(`RegularVariation/KaramataConverse.lean:396`);
-`ExtremeValueTheory.IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi` (`KaramataConverse.lean:196`).
+(`RegularVariation/KaramataConverse.lean`);
+`ExtremeValueTheory.IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi` (antitone, deprecated) and
+`ExtremeValueTheory.IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi_of_pos`
+(`KaramataConverse.lean:299`).
 
 **(c)** In the direct half, a non-integrable `F` would make the integral junk `0` and the conclusion
-false, so integrability is necessarily proved. The converse assumes `F` antitone, a special case of
-BGT's locally integrable `f`.  **(d)** 1. Is the antitone converse enough for EVT uses (survival
-functions)?
+false, so integrability is necessarily proved. The antitone converse is superseded by the third statement.
+In that one neither measurability nor integrability is assumed: if `∫_{(x,∞)} F` were junk `0`, the ratio
+would be junk `0`, which contradicts the limit `α − 1 > 0`. This was added after this entry was written, and
+was read only as a statement.  **(d)** None.
 
 ### C10. Breiman's lemma
 
@@ -1048,7 +1107,10 @@ measurable and iid with c.d.f. `F` and `F ∈ MDA(H_ξ)` for some `ξ ∈ ℝ`, 
 If the `X_i` are iid, `F ∈ MDA(H_γ)` and `F(y) < 1` for some `y > 0` (`x_F > 0`), then `γ̂ → γ` in
 probability.
 
-**(c)** The Pickands indexing follows dHF, one off from EKM.  **(d)** None.
+**(c)** Consistency only here; normality is S13 and S14. The `+1` in the indices is one off from EKM.
+Whether
+`k` is the smallest or the largest of the three indices differs between sources, which does not affect
+consistency, but does affect the variance in S13.  **(d)** None.
 
 ### C15. Weissman extreme-quantile estimator: asymptotic normality
 
@@ -1239,7 +1301,7 @@ extended-real ones are used here).
 `ξ > −1`, `σ > 0` on `K`, `θ₀ ∈ K`, and the `X_i` independent with law GPD`(θ₀)`. Then almost surely
 the following holds: for every sequence `θ̂ₙ ∈ K` and every `εₙ → 0` with
 `ℓₙ(θ₀) ≤ ℓₙ(θ̂ₙ) + n εₙ` eventually, we have `θ̂ₙ → θ₀`.
-*GEV* (`ae_tendsto_gevMLE`, `Statistics/GEVMLE.lean:602`): the same, with parameters `(ξ, μ, σ)`
+*GEV* (`ae_tendsto_gevMLE`, `Statistics/GEVMLE.lean:607`): the same, with parameters `(ξ, μ, σ)`
 and `ξ > −1`, `σ > 0` on `K`.
 
 **(c)** The null set does not depend on the estimator sequence. The approximate-maximizer condition
@@ -1261,18 +1323,19 @@ Lean: `ExtremeValueTheory.exists_gpdMLE_tendstoInDistribution`, `Statistics/GPDM
 
 **(c)** This theorem states existence of *some* measurable maximizer that is asymptotically normal.
 Every almost everywhere measurable maximizer is covered by `tendstoInDistribution_gpdMLE_all` (see S8).
-`ξ₀ = 0` is not covered. For the GEV, only the location–scale Fisher information and its score CLT are
-done (no joint GEV normality).
+`ξ₀ = 0` is not covered. Joint normality for the GEV is S10.
 **(d)** 1. Is the measurable-maximizer form of S8 adequate? 2. How important is `ξ₀ = 0`?
 
 ---
 
-# Part III — Statistics: return levels, intervals, estimators of `θ`, likelihood, GARCH
+# Part III — Statistics: return levels, intervals, estimators of `θ`, likelihood, GARCH, tail dependence
 
 All files are in `ExtremeValueTheory/Statistics/` unless stated otherwise. The scope of these results is
 often narrower than the name of the theorem suggests: several are the continuous mapping theorem or the
 delta method applied to a hypothesis. The caveats say so. References in (a) come from the Lean source
-and were **not** checked against the texts.
+and were **not** checked against the texts. The entries are numbered in the order they were written, so
+S10, the main likelihood theorem, comes after S7, on which it builds. S16 is classical, and is here because
+it connects the library's definition of a domain of attraction with the textbook's.
 
 Notation. `TendstoInDistribution` compares a sequence on `(Ω, P)` with a limit on another space; below
 we write `⇒`. `N(0, V)` is `multivariateGaussian 0 V`, or `gaussianReal 0 v` in dimension one, where the
@@ -1300,39 +1363,46 @@ not a higher-order expansion; second-order delta is not covered.
 
 **(d) Questions.** None specific.
 
-## S2. GEV and Gumbel return levels: normality assumed for the parameters
+## S2. GEV and Gumbel return levels: the delta method, with parameter normality assumed
+
+The theorem with no such assumption, for the maximum likelihood estimator, is S11. This entry is the general
+form it is derived from, and it is still the only form for `ξ₀ = 0`.
 
 **(a) Literature.** [Coles, §3.3.3]. `z_m = μ − (σ/ξ)(1 − y_m^{−ξ})`, `y_m = −log(1 − 1/m)` (`z_m = μ −
 σ log y_m` at `ξ = 0`), and `√n(ẑ_m − z_m) ⇒ N(0, ∇zᵀV∇z)`.
 
 **(b) Lean, in math.** Definitions: `gevReturnLevel ξ μ σ m = μ + σ r(ξ, m)`, with `r(ξ, m) = (y_m^{−ξ}
-− 1)/ξ`, and `r(0, m) = −log y_m` (`ReturnLevelNormality.lean:156`, `ExtremeQuantile.lean:752`).
+− 1)/ξ`, and `r(0, m) = −log y_m` (`ReturnLevelNormality.lean:160`, `ExtremeQuantile.lean:752`).
 Gradient in `(ξ, μ, σ)`: `∇z = (σ ∂_ξ h_ξ(1/y_m), 1, r(ξ, m))`, with `∂_ξ h_ξ(x) = x^ξ log x / ξ − (x^ξ
 − 1)/ξ²` (`gevReturnLevelGrad`).
 
 *GEV.* Let `ξ₀ ≠ 0`, `m > 1`; `θ̂ₙ = (ξ̂ₙ, μ̂ₙ, σ̂ₙ)` almost everywhere measurable on `(Ω, P)`; `V`
 positive semidefinite; `Z ~ N(0, V)`; `√n(ξ̂ₙ − ξ₀, μ̂ₙ − μ₀, σ̂ₙ − σ₀) ⇒ Z`; `W ~ N(0, ∇zᵀV∇z)`, with
 `∇z` at `(ξ₀, σ₀, m)`. Then `√n(gevReturnLevel θ̂ₙ m − gevReturnLevel ξ₀ μ₀ σ₀ m) ⇒ W`. Lean:
-`ExtremeValueTheory.tendstoInDistribution_gevReturnLevel`, `ReturnLevelNormality.lean:443`.
+`ExtremeValueTheory.tendstoInDistribution_gevReturnLevel`, `ReturnLevelNormality.lean:448`.
 
 *Gumbel.* Let `θ̂ₙ = (μ̂ₙ, σ̂ₙ)` be almost everywhere measurable, `V` positive semidefinite, `Z ~ N(0,
 V)`, `√n(μ̂ₙ − μ₀, σ̂ₙ − σ₀) ⇒ Z`, and `W ~ N(0, aᵀVa)` with `a = (1, −log y_m)`. Then
 `√n(gevReturnLevel 0 μ̂ₙ σ̂ₙ m − gevReturnLevel 0 μ₀ σ₀ m) ⇒ W`. Lean:
-`ExtremeValueTheory.tendstoInDistribution_gumbelReturnLevel`, `ReturnLevelNormality.lean:470`.
+`ExtremeValueTheory.tendstoInDistribution_gumbelReturnLevel`, `ReturnLevelNormality.lean:477`.
 
 **(c) Caveats.**
 1. **No data appear in these statements.** Parameter normality is a hypothesis, `θ̂ₙ` is any estimator,
-   and `V` is any matrix. They are the delta method for a specific `g`. In particular they do not say
-   that the GEV MLE is normal, which is not proved (II.9).
+   and `V` is any positive semidefinite matrix. They are the delta method for a specific `g`. The hypothesis
+   is discharged for the GEV maximum likelihood estimator at `ξ₀ ≠ 0` by S10, which gives S11. At `ξ₀ = 0`,
+   nothing in the library discharges it, for either statement: the Gumbel statement here has the shape
+   fixed at `0`, and joint normality at `ξ₀ = 0` is not proved.
 2. `σ₀ > 0` is not assumed, and the Gumbel statement does not assume `m > 1`; for `m ≤ 1` the level is a
    junk value, though the statement is still true, since `z` is linear in `(μ, σ)`.
 3. `m` is fixed as `n → ∞`, so there is no extrapolation with `m = mₙ → ∞`. The three-parameter version
    at `ξ₀ = 0` is not covered.
 4. The non-vacuity tests (`Test/NonVacuity/StatisticsReturnLevels.lean`) use a synthetic estimator `θ₀ +
    Z/√n`, `Z ~ N(0, V)`, for every positive semidefinite `V`: since no data appear in the statements, this
-   only shows that the hypotheses are jointly satisfiable. No statistical estimator is shown to satisfy
-   them. The known answers (`Test/KnownAnswers/ReturnLevels.lean`) reproduce Coles' Port Pirie level and
-   variance.
+   only shows that the hypotheses are jointly satisfiable. The GEV maximum likelihood estimator satisfies
+   them
+   at `ξ₀ ≠ 0`, by S10. The known answers (`Test/KnownAnswers/ReturnLevels.lean`) reproduce Coles' Port
+   Pirie
+   level and variance, from his own covariance matrix, not from `gevMLECov`.
 
 **(d) Questions.** 1. Is the Gumbel statement (shape fixed at `0`) the form you would use?
 
@@ -1341,8 +1411,8 @@ V)`, `√n(μ̂ₙ − μ₀, σ̂ₙ − σ₀) ⇒ Z`, and `W ~ N(0, aᵀVa)` 
 **(a) Literature.** [Coles, (4.12), §4.3.3]; Smith (1985). `x_N = u + (σ/ξ)((Nζ)^ξ − 1)`, with `ζ = P(X
 > u)`.
 
-**(b) Lean, in math.** `gpdReturnLevel u ξ σ ζ N = u + σ h_ξ(Nζ)` (`ReturnLevelNormality.lean:274`).
-`gpdReturnLevelVar ξ σ ζ N` (`:356`) is `(1 + ξ)((1 + ξ)a² − 2σab + 2σ²b²)`, with `a = σ ∂_ξ h_ξ(Nζ)`,
+**(b) Lean, in math.** `gpdReturnLevel u ξ σ ζ N = u + σ h_ξ(Nζ)` (`ReturnLevelNormality.lean:278`).
+`gpdReturnLevelVar ξ σ ζ N` (`:360`) is `(1 + ξ)((1 + ξ)a² − 2σab + 2σ²b²)`, with `a = σ ∂_ξ h_ξ(Nζ)`,
 `b = h_ξ(Nζ)`; it equals `∇xᵀ I⁻¹ ∇x` by `dotProduct_gpdReturnLevelGrad`, with `I⁻¹` as in C26.
 
 Let `K ⊂ ℝ²` be compact, with `ξ > −1` and `σ > 0` on `K`; `(ξ₀, σ₀)` in the interior of `K`; `ξ₀ >
@@ -1353,14 +1423,14 @@ almost everywhere measurable, with `θ̂ₙ(ω) ∈ K` and `θ̂ₙ(ω)` a maxim
 
   `√n(gpdReturnLevel u θ̂ₙ ζ N − gpdReturnLevel u ξ₀ σ₀ ζ N) ⇒ W`.
 
-Lean: `ExtremeValueTheory.tendstoInDistribution_gpdReturnLevel`, `ReturnLevelNormality.lean:539`.
+Lean: `ExtremeValueTheory.tendstoInDistribution_gpdReturnLevel`, `ReturnLevelNormality.lean:548`.
 
 **(c) Caveats.**
 1. **The data are exactly GPD excesses.** `X_i` is an exact iid GPD sample of deterministic size `n`.
    There is no parent law `F` and no hypothesis linking `ζ` or `u` to the data: `ζ` is a known constant
    and `u` an additive constant. The random number of exceedances, the approximation error of the GPD
    above a finite threshold, and the estimation of `ζ` are not accounted for.
-2. With estimated `ζ`, `tendstoInDistribution_gpdReturnLevel₃` (`ReturnLevelNormality.lean:569`) assumes
+2. With estimated `ζ`, `tendstoInDistribution_gpdReturnLevel₃` (`ReturnLevelNormality.lean:579`) assumes
    joint normality of `(ζ̂, ξ̂, σ̂)` as a hypothesis.
 3. `N` is fixed as `n → ∞`. `Nζ > 0` allows `Nζ = 1`, where the gradient vanishes and the limit is a
    point mass, and `Nζ < 1`, where the level lies below `u`. `Nζ > 1` is what the interval in S4 needs.
@@ -1381,7 +1451,7 @@ Lean: `ExtremeValueTheory.tendstoInDistribution_gpdReturnLevel`, `ReturnLevelNor
   `P(x_N ∈ [x̂_N − z ŝₙ/√n, x̂_N + z ŝₙ/√n]) → N(0, 1)[−z, z]`,
 
 where `x_N = gpdReturnLevel u ξ₀ σ₀ ζ N` and `x̂_N = gpdReturnLevel u θ̂ₙ ζ N`. Lean:
-`ExtremeValueTheory.tendsto_measure_mem_gpdReturnLevelInterval`, `ConfidenceIntervals.lean:116`.
+`ExtremeValueTheory.tendsto_measure_mem_gpdReturnLevelInterval`, `ConfidenceIntervals.lean:120`.
 
 *Hill.* Let `X_i` be measurable, mutually independent, identically distributed; `γ > 0`; `U(t) = inf{x :
 P(X_0 > x) ≤ 1/t}` for `t > 1` (and `0` otherwise); `U` second-order regularly varying with indices `(γ,
@@ -1390,10 +1460,11 @@ estimator (C13),
 
   `P(γ ∈ [γ̂ₙ − z γ̂ₙ/√kₙ, γ̂ₙ + z γ̂ₙ/√kₙ]) → N(0, 1)[−z, z]`.
 
-Lean: `ExtremeValueTheory.tendsto_measure_mem_hillInterval`, `ConfidenceIntervals.lean:54`.
+Lean: `ExtremeValueTheory.tendsto_measure_mem_hillInterval`, `ConfidenceIntervals.lean:57`.
 
-A third version, `tendsto_measure_mem_gevReturnLevelInterval` (`ConfidenceIntervals.lean:173`), assumes
-parameter normality and a consistent standard error `Ŝₙ → s > 0`.
+A third version, `tendsto_measure_mem_gevReturnLevelInterval` (`ConfidenceIntervals.lean:177`), assumes
+parameter normality and a consistent standard error `Ŝₙ → s > 0`. For the maximum likelihood estimator
+the first assumption is removed in S11; the second is not.
 
 **(c) Caveats.**
 1. Return level: all caveats of S3. At `ξ̂ₙ = 0` the plug-in variance uses a junk derivative (`∂_ξ h`
@@ -1401,8 +1472,10 @@ parameter normality and a consistent standard error `Ŝₙ → s > 0`.
 2. Hill: no bias only (`λ = 0`). The second-order definition requires `A` to have an eventually constant
    nonzero sign, so **exact Pareto data do not satisfy it** (`FAITHFULNESS.md`), and the theorem does
    not apply to them.
-3. Symmetric Wald intervals only. Profile-likelihood intervals, which [Coles] also discusses for return
-   levels, are not covered. Coverage is pointwise at a fixed parameter, not uniform.
+3. Symmetric Wald intervals only in this entry. Profile-likelihood sets for the POT return level are S12,
+   for
+   `ξ₀ > 0`; for the GEV return level they are not covered. Coverage is pointwise at a fixed parameter, not
+   uniform.
 4. Non-vacuity: `test_nonvacuous_tendsto_measure_mem_gpdReturnLevelInterval` (iid `GPD(1/4, 3/2)`, the
    library's measurable maximizers), `test_nonvacuous_tendsto_measure_mem_hillInterval` (shifted Pareto,
    `U(t) = t + 1`), and `test_nonvacuous_tendsto_measure_mem_gevReturnLevelInterval` (synthetic estimator,
@@ -1507,7 +1580,7 @@ density is `0`; `h` is the standard GEV density, with the Gumbel density at `ξ 
 surely: for every sequence `θ̂ₙ ∈ K` and every real `εₙ → 0` with `ℓₙ(θ₀) ≤ ℓₙ(θ̂ₙ) + n εₙ` eventually,
 `θ̂ₙ → θ₀`.
 
-Lean: `ExtremeValueTheory.ae_tendsto_gevMLE`, `GEVMLE.lean:601`. (Also C25.) Exact maximizers exist:
+Lean: `ExtremeValueTheory.ae_tendsto_gevMLE`, `GEVMLE.lean:607`. (Also C25.) Exact maximizers exist:
 `exists_isMaxOn_gevLogLikE`.
 
 **(c) Caveats.**
@@ -1515,11 +1588,11 @@ Lean: `ExtremeValueTheory.ae_tendsto_gevMLE`, `GEVMLE.lean:601`. (Also C25.) Exa
    and dependent block maxima, are not covered.
 2. The null set does not depend on the estimator, and `θ̂ₙ` need not be measurable. `θ₀` need not be
    interior to `K`.
-3. Consistency only. Joint normality of the GEV MLE is not proved, so S2 does not apply to it
-   unconditionally. Likelihood over the whole parameter space is not proved.
+3. Consistency only in this entry; unlike S10, it also covers `ξ₀ = 0` and `ξ₀ ≤ −1/2`, down to `ξ₀ > −1`.
+   Joint normality for `ξ₀ > −1/2`, `ξ₀ ≠ 0`, is S10, which uses this theorem. Likelihood over the whole
+   parameter space is not proved.
 
-**(d) Questions.** 1. Is the block-maximum misspecification the main gap for you, and what form of
-theorem would you want?
+**(d) Questions.** 1. See S10, question 5.
 
 ## S8. GPD likelihood: joint asymptotic normality
 
@@ -1586,6 +1659,543 @@ Lean: `ExtremeValueTheory.SRE.GARCH.tail_bounds`, `Dependence/SREGarch.lean:198`
 **(d) Questions.** 1. Without Kesten–Goldie, is the name "tail index" misleading? 2. Is the two-sided
 bound useful to you?
 
+## S10. GEV likelihood: joint asymptotic normality ★
+
+**In one paragraph.** This is the theorem behind the standard errors of a GEV fit. It is proved for an
+exact iid GEV sample, with `ξ₀ > −1/2`, `ξ₀ ≠ 0`, and maximizers over a compact set `K` with the truth in
+its interior. Block maxima from a law that is merely in a domain of attraction are **not** covered: that
+is the case a practitioner actually has.
+
+**(a) Literature.** Smith, Biometrika 72 (1985); Prescott–Walden, Biometrika 67 (1980), for the
+information matrix; Bücher–Segers, Extremes 20 (2017); [Coles, §3.3.3]. No theorem numbers were checked.
+For iid data from `GEV(ξ₀, μ₀, σ₀)` in the regular range `ξ₀ > −1/2`, `√n(θ̂ₙ − θ₀) ⇒ N(0, I(θ₀)⁻¹)`.
+
+**(b) Lean, in math.** Data and likelihood are those of S7: `gevLocScaleCDF ξ μ σ` is the law with c.d.f.
+`gevFun ξ ((x − μ)/σ)`; `ℓₙ(θ; x) = gevLogLikE` is the sum in `[−∞, ∞)` of `log(σ⁻¹ h((xᵢ − μ)/σ))`, with
+value `−∞` where the density `h` vanishes. Points of `ℝ³` are written `(ξ, μ, σ)`.
+
+*The information matrix.* `gevFisherInfo ξ σ` (`GEVFisherInformation.lean:522`) is, **in the order
+`(μ, σ, ξ)`**, the symmetric matrix with
+
+  `I_μμ = p/σ²`,  `I_μσ = (Γ(2 + ξ) − p)/(ξ σ²)`,  `I_σσ = (1 − 2Γ(2 + ξ) + p)/(ξ² σ²)`,
+
+  `I_μξ = −(q − p/ξ)/(σ ξ)`,  `I_σξ = −(1 − γ_E + (1 − Γ(2 + ξ))/ξ − q + p/ξ)/(σ ξ²)`,
+
+  `I_ξξ = (π²/6 + (1 − γ_E + 1/ξ)² − 2q/ξ + p/ξ²)/ξ²`,
+
+where `p = (1 + ξ)² Γ(1 + 2ξ)` (`gevInfoP`), `q = Γ(2 + ξ)(ψ(1 + ξ) + (1 + ξ)/ξ)` (`gevInfoQ`),
+`ψ = Γ'/Γ` (`realDigamma`), and `γ_E` is Euler's constant. For `σ > 0`, `ξ ≠ 0`, `ξ > −1/2`, it is proved
+that this is the covariance of the score, `E[∂_i ℓ ∂_j ℓ] = I_ij` (`integral_gevScore_mul_gevScore`,
+`:718`), minus the expected Hessian (`integral_gevHess_eq_neg_gevFisherInfo`, `GEVHessian.lean:527`), and
+positive definite (`posDef_gevFisherInfo`, `:808`).
+
+*The covariance.* `gevMLECov ξ σ` (`GEVMLENormality.lean:575`) is `I⁻¹` with rows and columns rearranged
+to **the order `(ξ, μ, σ)`**: writing `J = (gevFisherInfo ξ σ)⁻¹` in the order `(μ, σ, ξ)`,
+
+  `gevMLECov = [[J_ξξ, J_ξμ, J_ξσ], [J_μξ, J_μμ, J_μσ], [J_σξ, J_σμ, J_σσ]]`.
+
+*The theorem.* Let `K ⊂ ℝ³` be compact, with `ξ > −1` and `σ > 0` on `K`; `θ₀ = (ξ₀, μ₀, σ₀)` in the
+interior of `K`; `−1/2 < ξ₀`, `ξ₀ ≠ 0`, `σ₀ > 0`; `(X_i)` mutually independent, each with law
+`gevLocScaleCDF ξ₀ μ₀ σ₀`; `θ̂ₙ : Ω → ℝ³` almost everywhere measurable, with `θ̂ₙ(ω) ∈ K` and `θ̂ₙ(ω)` a
+maximizer over `K` of `ℓₙ(·; X_0(ω), …, X_{n−1}(ω))`, for **all** `n` and `ω`; and `W` on another
+probability space, with law `N(0, gevMLECov ξ₀ σ₀)`. Then
+
+  `√n(ξ̂ₙ − ξ₀, μ̂ₙ − μ₀, σ̂ₙ − σ₀) ⇒ W`.
+
+Lean: `ExtremeValueTheory.tendstoInDistribution_gevMLE`, `GEVMLENormality.lean:775`. The same in the
+order `(μ, σ, ξ)`, with limit `N(0, I⁻¹)`: `tendstoInDistribution_gevMLE_muSigmaXi` (`:792`).
+
+*Existence.* Under the same hypotheses on `K`, `θ₀`, `X` and `W`, there are measurable `gₙ : ℝⁿ → ℝ³`
+such that, for all `n` and **all** `x ∈ ℝⁿ`, `gₙ(x) ∈ K` and `gₙ(x)` maximizes `ℓₙ(·; x)` over `K`; and
+`√n(gₙ(X_0, …, X_{n−1}) − θ₀) ⇒ W`. Lean: `ExtremeValueTheory.exists_gevMLE_tendstoInDistribution`,
+`GEVMLENormality.lean:834`.
+
+*Local maximizers, no `K`.* Let `−1/2 < ξ₀`, `ξ₀ ≠ 0`, `σ₀ > 0`, `(X_i)` and `W` as above, and let `θ̂ₙ`
+be almost everywhere measurable, such that:
+- almost surely, `θ̂ₙ → θ₀` (strong consistency is a hypothesis);
+- almost surely, for all large `n`, `θ̂ₙ` is a local maximizer of `ℓₙ(·; X_0, …, X_{n−1})` on `ℝ³`;
+- almost surely, for all large `n` and all `i < n`, `1 + ξ̂ₙ (X_i − μ̂ₙ)/σ̂ₙ > 0` (`gevU`).
+
+Then `√n(ξ̂ₙ − ξ₀, μ̂ₙ − μ₀, σ̂ₙ − σ₀) ⇒ W`. Lean:
+`ExtremeValueTheory.tendstoInDistribution_gevLocalMLE`, `GEVMLENormality.lean:691`.
+
+**(c) Caveats.**
+1. **Exact GEV data.** The `X_i` are iid with exactly a GEV law. Maxima of finite blocks from a law in a
+   domain of attraction, with the resulting bias, and dependent block maxima, are not covered.
+2. **`ξ₀ = 0` is excluded**, although `K` may contain points with `ξ = 0` (the test's `K` does): the
+   excluded thing is a true Gumbel law. The scores and `gevFisherInfo` have `ξ` in denominators, and
+   their limit at `ξ = 0` is not formalized. For `ξ₀ = 0`, S7 gives consistency only.
+3. **`ξ₀ ≤ −1/2` is excluded**: the boundary, and the nonregular case `−1 < ξ₀ < −1/2`, where the rate is
+   not `√n`. `K` itself may extend below `−1/2`, and only `ξ > −1` is required on it.
+4. **Compact `K`, truth in the interior.** The global statement is about maximizers over `K`, not over
+   the whole parameter space. In the local statement, consistency is assumed, and the existence of a
+   consistent sequence of local maximizers without a compact `K` is not formalized. So the only
+   unconditional statement is the one over `K`. The local theorem has no test of its own; it is exercised
+   through the global one, which it implies. The third local hypothesis is needed: at a parameter where
+   some observation is off the support, `ℓₙ = −∞`, and if that holds on a neighbourhood the point is
+   trivially a "local maximizer".
+5. **Every `ω`.** The maximizer property is required for all `n` and all `ω`, not almost surely. This is
+   stronger than a statement about laws needs, but it is satisfiable, by `exists_measurable_gevMLE`.
+6. **No closed form for the covariance.** `⁻¹` is Mathlib's matrix inverse, which is junk `0` for a
+   singular matrix; positive definiteness rules that out under the hypotheses. No entry of `J` is written
+   out.
+7. **Order.** `I` is `(μ, σ, ξ)`; `gevMLECov` and the theorem are `(ξ, μ, σ)`. The permutation is checked
+   by an `example` at the end of `Test/NonVacuity/StatisticsLikelihood.lean`, with the entries `ξξ`,
+   `μμ`, `σσ` and `ξμ`.
+8. **What was tested, and what was not.** `test_nonvacuous_exists_gevMLE_tendstoInDistribution_pos`
+   (`ξ₀ = 1/4`, `μ₀ = 1/2`, `σ₀ = 3/2`, `K = [−1/2, 1/2] × [0, 1] × [1, 2]`) and
+   `test_nonvacuous_exists_gevMLE_tendstoInDistribution_neg` (`ξ₀ = −2/5`) discharge all hypotheses. **No
+   Lean test compares the full matrix with a number from outside.** `test_gevFisherInfoMuSigma` covers
+   the `2 × 2` block, and `test_gevReturnLevelVariance_portPirie` uses Coles' covariance, not
+   `gevMLECov`. As an informal check outside the repository, in floating point: the closed form agrees
+   with a finite-difference Fisher information of the density, to relative error `5 × 10⁻⁵` or better, at
+   `(ξ, σ) = (1/4, 3/2), (1/10, 1), (−1/20, 0.198), (−1/5, 2)`. At Coles' Port Pirie estimates
+   (`ξ = −0.05`, `σ = 0.198`, `n = 65`), `I⁻¹/n` has variances `0.000747, 0.000379, 0.00674` for
+   `(μ, σ, ξ)`, and covariances with the same signs as his matrix (as copied in
+   `Test/KnownAnswers/ReturnLevels.lean`), whose variances are `0.000780, 0.000410, 0.00965`. Coles uses
+   observed information, which may explain the `30%` gap on `ξ` at `n = 65`, but we have not shown that
+   it does.
+9. Nothing here is about estimating `I` from data: no plug-in `I(θ̂ₙ)`, no Wald interval for the
+   parameters. The convergence is at a fixed `θ₀`, and is not uniform.
+
+**(d) Questions.**
+1. **Fisher information.** Is the matrix above the one of Prescott–Walden (1980), entry by entry? As we
+   recall, they parametrize by `k = −ξ`, so the signs of `I_μξ` and `I_σξ` deserve attention. The source
+   cites the paper, which was not checked. Since the matrix is proved equal to the covariance of the
+   score, an error here would be in the citation, or in the score, not in the algebra.
+2. **Covariance order.** Do you agree with the order of the limit, `(ξ, μ, σ)`, against `(μ, σ, ξ)` for
+   the matrix? Does a statement with two orders invite a mistake that a single order would avoid?
+3. **Smith's regularity range.** Is `ξ₀ > −1/2` with the rate `√n` exactly Smith's regular case, under
+   the translation of his shape to `ξ`? Is anything in his hypotheses missed by this statement, or does
+   it matter that `K` may extend into `(−1, −1/2]`?
+4. **Form.** Is "maximizers over a compact `K` with the truth in its interior" a form you would cite, or
+   do you need the local-root form without assuming consistency? What does Bücher–Segers (2017) state
+   exactly?
+5. **The main gaps.** Which matters most: `ξ₀ = 0`, or block maxima from a domain of attraction, and what
+   form of theorem would you want for the latter?
+
+## S11. GEV return levels: unconditional normality for the maximum likelihood estimator
+
+**(a) Literature.** [Coles, §3.3.3]; Smith (1985). `√n(ẑ_m − z_m) ⇒ N(0, ∇zᵀV∇z)`, with `V` the
+asymptotic covariance of the maximum likelihood estimator, and the interval `ẑ_m ± z ŝ/√n`.
+
+**(b) Lean, in math.** `gevReturnLevel` and `gevReturnLevelGrad` are as in S2, in the order `(ξ, μ, σ)`,
+the same as `gevMLECov`. Define `gevReturnLevelVar ξ σ m = ∇zᵀ (gevMLECov ξ σ) ∇z`, with
+`∇z = gevReturnLevelGrad ξ σ m = (σ ∂_ξ h_ξ(1/y_m), 1, r(ξ, m))` (`GEVReturnLevelNormality.lean:58`). It
+is positive for `σ > 0`, `ξ ≠ 0`, `ξ > −1/2` and every real `m` (`gevReturnLevelVar_pos`), since the `μ`
+component of `∇z` is `1`.
+
+*Normality.* Let `K`, `θ₀`, `(X_i)` and `θ̂ₙ` be exactly as in S10; let `m > 1`, and let `W` be on
+another probability space, with law `N(0, gevReturnLevelVar ξ₀ σ₀ m)`. Then
+
+  `√n(gevReturnLevel θ̂ₙ m − gevReturnLevel θ₀ m) ⇒ W`.
+
+Lean: `ExtremeValueTheory.tendstoInDistribution_gevMLEReturnLevel`, `GEVReturnLevelNormality.lean:105`.
+With existence of the estimator: `exists_gevMLE_returnLevel_tendstoInDistribution`. For consistent local
+maximizers, under the hypotheses of the local theorem of S10:
+`tendstoInDistribution_gevLocalMLEReturnLevel`.
+
+*Interval.* Let `K`, `θ₀`, `(X_i)`, `θ̂ₙ` and `m` be as above. **Let `Sₙ : Ω → ℝ` be almost everywhere
+measurable, with `Sₙ → √(gevReturnLevelVar ξ₀ σ₀ m)` in probability.** Let `z` be any real number. Then
+
+  `P(z_m ∈ [ẑ_m − z Sₙ/√n, ẑ_m + z Sₙ/√n]) → N(0, 1)[−z, z]`,
+
+where `z_m = gevReturnLevel θ₀ m` and `ẑ_m = gevReturnLevel θ̂ₙ m`. Lean:
+`ExtremeValueTheory.tendsto_measure_mem_gevMLEReturnLevelInterval`, `GEVReturnLevelNormality.lean:147`.
+
+**(c) Caveats.**
+1. All the caveats of S10 apply: this is S10 plus the delta method (S1).
+2. **The consistency of the standard error is an assumption.** `Sₙ` is any measurable sequence with the
+   right limit in probability. **No estimator is shown to satisfy it**: the plug-in
+   `√(gevReturnLevelVar θ̂ₙ m)` needs the continuity of `gevFisherInfo` in the parameters, which is not
+   formalized. The non-vacuity test (`test_nonvacuous_tendsto_measure_mem_gevMLEReturnLevelInterval`)
+   takes `Sₙ` to be the true value, a constant that a statistician does not know. So, unlike S4 for the
+   GPD, this theorem does **not** yet justify any computable interval.
+3. `m > 1` is fixed as `n → ∞`, where `n` is the number of blocks. Extrapolation with `m = mₙ → ∞` is not
+   covered. Block size does not appear: the data are exact GEV.
+4. `ξ₀ = 0` is out of scope (S2 has only the delta method there). Symmetric Wald form only; there are no
+   profile-likelihood sets for the GEV. The profile sets of S12 are for the GPD.
+5. Non-vacuity: `test_nonvacuous_exists_gevMLE_returnLevel` (`ξ₀ = 1/4`, `m = 100`).
+
+**(d) Questions.**
+1. Is the plug-in standard error, or the profile likelihood, the more valuable thing to add?
+2. Does the fact that `√n` counts blocks and `m` is fixed match how you read Coles' statement?
+
+## S12. Wilks' theorem and profile likelihood for the GPD, `ξ₀ > 0`
+
+**(a) Literature.** [Coles, §2.6.5–2.6.6, §4.3.3]; [vdV, §16]. The deviance at the true parameter is
+asymptotically `χ²_d`, and the profile deviance `χ²_1`. The set `{ψ : D_p(ψ) ≤ c}` is the
+profile-likelihood interval, usually preferred to Wald for return levels. These hold in the regular case,
+`ξ₀ > −1/2`.
+
+**(b) Lean, in math.** `chiSquared k` (`ForMathlib/Probability/ChiSquared.lean:48`) is the law of `‖Z‖²`,
+`Z` standard Gaussian in `ℝᵏ`. `gpdLogLikE` is `ℓₙ` of II.9, valued in `[−∞, ∞)`.
+`gpdLogLikN ξ σ x n = Σ_{i<n} log gpdDensity ξ σ (x_i)` is real-valued, with the junk `log 0 = 0` off the
+support.
+
+Throughout, *hypotheses (W)*: `K ⊂ ℝ²` compact, with `ξ > −1`, `σ > 0` on `K`; `(ξ₀, σ₀)` in the interior
+of `K`; **`ξ₀ > 0`**, `σ₀ > 0`; `(X_i)` mutually independent, each with law GPD(`ξ₀, σ₀`).
+
+*Wilks.* Assume (W). Let `θ̂ₙ : Ω → ℝ²` be almost everywhere measurable, with `θ̂ₙ(ω) ∈ K` a maximizer
+over `K` of `gpdLogLikE(·; X_0(ω), …, X_{n−1}(ω))`, for all `n` and `ω`, and let `Z` have law
+`chiSquared 2`. Then
+
+  `2(gpdLogLikN θ̂ₙ X n − gpdLogLikN (ξ₀, σ₀) X n) ⇒ Z`.
+
+Lean: `ExtremeValueTheory.tendstoInDistribution_gpdDeviance`, `GPDWilks/Profile.lean:309`.
+
+*Chart.* `IsGPDProfileChart g ξ₀ σ₀ s₀ φ γ₁ γ₂ t₁ t₂` (`GPDWilks/Profile.lean:330`), with `g, φ : ℝ² → ℝ`
+and `γ₁, γ₂, t₁, t₂ : ℝ → ℝ`, means: `φ(ξ₀, σ₀) = s₀`; `φ` is continuous at `(ξ₀, σ₀)`; for `p` near
+`(ξ₀, σ₀)`, if `g(p) = g(ξ₀, σ₀)` then `(γ₁, γ₂)(φ(p)) = p`; for `s` near `s₀`,
+`g(γ₁(s), γ₂(s)) = g(ξ₀, σ₀)`; for `s` near `s₀`, `γ₁` and `γ₂` are differentiable at `s`, with
+derivatives `t₁(s)`, `t₂(s)`; `t₁`, `t₂` are continuous at `s₀`; and `(t₁(s₀), t₂(s₀)) ≠ 0`. Three are
+constructed: the shape (`isGPDProfileChart_shape`, `g(ξ, σ) = ξ`), the scale (`isGPDProfileChart_scale`,
+`g(ξ, σ) = σ`), and, for `ξ₀ ≠ 0` and `Nζ > 1`, the return level (`isGPDProfileChart_returnLevel`,
+`g = gpdReturnLevel u · · ζ N`, curve `s ↦ (s, σ₀ h_{ξ₀}(Nζ)/h_s(Nζ))`).
+
+*Profile Wilks.* Assume (W), let `g` be continuous on `K` with a chart as above, and let `θ̂ₙ` be as in
+Wilks. Let `θ̃ₙ : Ω → ℝ²` be almost everywhere measurable, with `θ̃ₙ(ω) ∈ K ∩ {g = g(ξ₀, σ₀)}` a
+maximizer of `gpdLogLikE` over that set, for all `n` and `ω`, and let `Z` have law `chiSquared 1`. Then
+
+  `2(gpdLogLikN θ̂ₙ X n − gpdLogLikN θ̃ₙ X n) ⇒ Z`.
+
+Lean: `ExtremeValueTheory.tendstoInDistribution_gpdProfileDeviance`, `GPDWilks/Profile.lean:436`.
+
+*The sets, defined from data.* For `x ∈ ℝⁿ`, `gpdMaxLogLik K x = sup_{p∈K} gpdLogLikE(p; x)`, in
+`[−∞, ∞]`, with `sup ∅ = −∞`, and `gpdProfileLogLik K g ψ x = gpdMaxLogLik (K ∩ {g = ψ}) x`. Then, for
+real `c`:
+
+  `gpdProfileInterval K g c x = {ψ ∈ ℝ : −∞ < sup_K ℓ < ∞ and 2(sup_K ℓ − ℓ_p(ψ)) ≤ c}`
+  (`GPDWilks/Coverage.lean:66`),
+
+  `gpdDevianceRegion K c x = {θ ∈ K : −∞ < sup_K ℓ < ∞ and 2(sup_K ℓ − ℓ(θ)) ≤ c}` (`Coverage.lean:76`).
+
+Differences are in `[−∞, ∞]`, so a `ψ` not attained on `K` has `ℓ_p(ψ) = −∞`, deviance `+∞`, and is
+excluded.
+
+*Coverage.* Assume (W), and let `c` be any real number. Then:
+- for `g`, continuous on `K` with a chart: `P(g(ξ₀, σ₀) ∈ gpdProfileInterval K g c X) → χ²₁((−∞, c])`
+  (`tendsto_measure_mem_gpdProfileInterval`, `Coverage.lean:145`);
+- for the shape: `P(ξ₀ ∈ gpdProfileInterval K fst c X) → χ²₁((−∞, c])`
+  (`tendsto_measure_mem_gpdShapeProfileInterval`, `Coverage.lean:204`), and likewise for the scale
+  (`tendsto_measure_mem_gpdScaleProfileInterval`, `:215`);
+- for the POT return level, with `u, ζ, N` real and `Nζ > 1`:
+  `P(gpdReturnLevel u ξ₀ σ₀ ζ N ∈ gpdProfileInterval K (p ↦ gpdReturnLevel u p ζ N) c X) → χ²₁((−∞, c])`
+  (`ExtremeValueTheory.tendsto_measure_mem_gpdReturnLevelProfileInterval`, `Coverage.lean:229`);
+- for the full parameter: `P((ξ₀, σ₀) ∈ gpdDevianceRegion K c X) → χ²₂((−∞, c])`
+  (`tendsto_measure_mem_gpdDevianceRegion`, `:247`).
+
+No estimator appears in the coverage statements. Level forms: for `α ∈ (0, 1)` there is `c > 0` with
+`χ²₁((−∞, c]) = 1 − α` (`exists_tendsto_measure_mem_gpdProfileInterval`), and `c = −2 log α` for the
+region (`tendsto_measure_mem_gpdDevianceRegion_of_alpha`).
+
+**(c) Caveats.**
+1. **`ξ₀ > 0` only.** This is narrower than S8 and the literature, which have `ξ₀ > −1/2`. For every `ξ`
+   near `ξ₀ > 0`, the support is `[0, ∞)`, so the moving endpoint, which is the difficult part of S10,
+   does not arise. The case `−1/2 < ξ₀ < 0`, and `ξ₀ = 0`, are not covered. There is no Wilks theorem for
+   the GEV.
+2. **Exact GPD data.** All of S3, caveat 1: exact iid GPD excesses, deterministic `n`, with `u` and `ζ`
+   known constants.
+3. **Confidence sets, not shown to be intervals.** Despite the name `gpdProfileInterval`, nothing proves
+   that the set is an interval, that the profile likelihood is unimodal, or that the set is asymmetric.
+   The docstring of the return-level theorem says the set "can be asymmetric": that is a remark, not a
+   theorem.
+4. **A chart, not a smooth `g`.** The implicit function theorem step is not formalized, so a new interest
+   parameter needs a new chart. `g` itself need not be differentiable, and a nonzero gradient is not a
+   hypothesis.
+5. **Two likelihoods.** The maximizers are of `gpdLogLikE`, and the deviance limits are stated with the
+   real-valued `gpdLogLikN`. On data in the support of `(ξ₀, σ₀)`, `ξ₀ > 0`, a maximizer has finite
+   likelihood, so the two agree; the coverage proofs establish this. The sets are stated with
+   `gpdLogLikE`.
+6. **A definition that was wrong.** `gpdProfileInterval` was all of `ℝ` for an empty `K`, or a sample
+   impossible on `K`, because `⊥ − ⊥ = ⊥` in `EReal`, and `gpdDevianceRegion` contained points outside
+   `K`. An independent review found this; the eighth audit records it, and both now have the finiteness
+   conditions and membership in `K` shown above. The coverage theorems were not affected. Tests:
+   `test_gpdProfileInterval_empty`, `test_gpdProfileInterval_of_neg`,
+   `test_gpdProfileInterval_beyond_endpoint`, `test_gpdDevianceRegion_subset`.
+7. **The sets depend on `K`.** They lie in `g(K)` or in `K`, so in a finite sample a set can be cut off
+   at the boundary of `K`. Coverage is at a fixed parameter, not uniform.
+8. **Critical values.** `χ²₁` quantiles exist (`exists_chiSquared_one_Iic_eq`), but no numerical value
+   such as `3.84` is in these statements. `tendsto_measure_le_of_noAtoms` is used with no-atom instances
+   for `k = 1, 2` only.
+9. Non-vacuity (`Test/NonVacuity/ProfileLikelihood.lean`): iid GPD(`1/4, 3/2`),
+   `K = [1/8, 1/2] × [1, 2]`, for the deviance, the shape, the scale, the region, and the return level at
+   `u = 5`, `ζ = 1/2`, `N = 10`. The profile deviance theorem itself is exercised through the coverage
+   theorems. `test_gpdDeviance_singleton` checks the deviance at the MLE of a one-point model.
+
+**(d) Questions.**
+1. How much is lost for you by `ξ₀ > 0`? Is `−1/2 < ξ₀ < 0` the case that matters, for bounded tails?
+2. Is the definition of the set, with `sup_K ℓ` and `ℓ_p(ψ)` both over the compact `K`, the one you would
+   use? Should empty and infinite cases be treated otherwise?
+3. Is a chart an acceptable substitute for "smooth with nonzero gradient"?
+4. Would you want a proof that the set is an interval, under what condition on the likelihood, or do you
+   regard it as a side issue?
+
+## S13. Pickands estimator: asymptotic normality
+
+**(a) Literature.** Pickands (1975); Dekkers–de Haan, Ann. Statist. 17 (1989); [dHF, Thm 3.3.5] (not
+checked against the book). `√k(γ̂_P − γ) ⇒ N(λ b_{γ,ρ}, σ²_γ)`, under a second-order condition with
+`√k A(n/k) → λ`.
+
+**(b) Lean, in math.**
+`γ̂_P = pickands x k = (log 2)⁻¹ log((X_{(k+1)} − X_{(2k+1)})/(X_{(2k+1)} − X_{(4k+1)}))`, with
+`X_{(j+1)}` the `(j+1)`-th largest of `x` (`orderStat x j`; junk `0` if `j ≥ n`) (`Pickands.lean:59`).
+`U = survivalQuantile (survival P X_0)`: `U(t) = inf{x : P(X_0 > x) ≤ 1/t}` for `t > 1`, and `0`
+otherwise. `D_γ = boxCox γ`.
+
+*Second-order condition.* `extSecondOrderLimit γ ρ x = H_{γ,ρ}(x) = ∫_1^x s^{γ−1} D_ρ(s) ds`
+(`PickandsNormality.lean:399`). `IsExtSecondOrderRegularlyVarying U γ ρ a A`
+(`PickandsNormality.lean:415`) means: `a(t) > 0` eventually; `A(t) → 0`; `A(t) ≠ 0` eventually; and
+
+  `((U(xt) − U(t))/a(t) − D_γ(x))/A(t) → H_{γ,ρ}(x)` as `t → ∞`, **locally uniformly** in `x ∈ (0, ∞)`.
+
+*Constants.* `pickandsVariance γ = (2 · 2^{2γ} + 1)/(4 D_γ(2)² (log 2)²)` (`PickandsNormality.lean:804`),
+which is `γ²(2^{2γ+1} + 1)/(2(2^γ − 1) log 2)²` for `γ ≠ 0` (`pickandsVariance_of_ne`), and
+`3/(4 (log 2)⁴)` for `γ = 0` (`pickandsVariance_zero`).
+
+`pickandsBias γ ρ = (log 2)⁻¹ [(H(1) − H(1/2))/(D_γ(1) − D_γ(1/2)) − (H(1/2) − H(1/4))/(D_γ(1/2) − D_γ(1/4))]`
+(`PickandsNormality.lean:631`), which is `D_{γ+ρ}(2)/D_γ(2) · 2^{−ρ}(1 − 2^{−ρ})/(ρ log 2)` for `ρ ≠ 0`
+(`pickandsBias_of_ne`), and `1` for `ρ = 0` (`pickandsBias_zero_right`).
+
+*The theorem.* Let `X_i` be measurable, mutually independent and identically distributed; `γ, ρ, λ` real;
+`a, A` with `IsExtSecondOrderRegularlyVarying U γ ρ a A`; `kₙ ∈ ℕ`, `kₙ → ∞`, `kₙ/n → 0`,
+`√kₙ A(n/kₙ) → λ`; and `Z` on another probability space with law
+`N(λ pickandsBias γ ρ, pickandsVariance γ)`. Then
+
+  `√kₙ (γ̂_P − γ) ⇒ Z`.
+
+Lean: `ExtremeValueTheory.tendstoInDistribution_pickands`, `PickandsNormality.lean:1058`. For `λ = 0`:
+`tendstoInDistribution_pickands_of_tendsto_zero`.
+
+**(c) Caveats.**
+1. **Uniformity is assumed.** According to the Lean source, [dHF, Def 2.3.1] is pointwise in `x`, and
+   uniformity is a theorem there. That implication is not formalized, so this hypothesis is formally
+   stronger.
+2. **Indexing.** `k` is the **smallest** of the three indices, and it is the `k` in `√k` and in `A(n/k)`.
+   If instead the largest index is called `K = 4k`, then on paper the variance is multiplied by `4`, and
+   if `|A|` is regularly varying of index `ρ`, the mean becomes `λ_K 4^ρ b_{γ,ρ}`, with
+   `λ_K = lim √K A(n/K)`. This translation is a remark in the source, not a theorem, and nor is the
+   version with `⌊K/4⌋, ⌊K/2⌋, K`. The Lean docstrings attribute the closed form of the variance to [dHF,
+   Thm 3.3.5]. The book was not available, so if it indexes by the largest order statistic, that
+   attribution needs the factor just described.
+3. **The definition has less in it than the textbook.** `ρ` is an unconstrained real, and neither a
+   constant sign of `A` nor regular variation of `|A|` is assumed or used. According to the Lean source,
+   the book assumes the sign, and concludes `ρ ≤ 0` and the regular variation ([dHF, Thm 2.3.3]). The
+   limit is exactly `H_{γ,ρ}`, with no free constants, which fixes the normalization of `a` and `A`.
+4. **Exact GPD data do not satisfy it.** If `U = D_γ` then
+   `(U(xt) − U(t))/a(t) − D_γ(x) = (t^γ/a(t) − 1) D_γ(x)`, so the limit would be a multiple of `D_γ`, and
+   `H_{γ,ρ}` is not. This is our own remark, not a theorem in the library. The second-order framework is
+   the same as in the book; it just means the theorem says nothing for a sample with no second-order
+   term.
+5. Junk: order statistics with `4k ≥ n`, and `log` of a nonpositive ratio or of `0`, occur on events of
+   vanishing probability. `k` is a deterministic sequence; no choice of `k` from data.
+6. Non-vacuity: for every `γ`, the model `U = D_γ + D_{γ−1}`, with `kₙ = ⌊√n⌋` and `λ = 0`
+   (`test_nonvacuous_tendstoInDistribution_pickands`), and `kₙ = ⌊n^{2/3}⌋` and `λ = −1`
+   (`test_nonvacuous_tendstoInDistribution_pickands_bias`). `isExtSecondOrderRegularlyVarying_add_boxCox`
+   proves the hypothesis for `U = D_γ + c D_{γ+ρ}`, `ρ < 0`, `c > 0`. No named law other than this model
+   is verified.
+
+**(d) Questions.**
+1. **Locally uniform.** Is assuming locally uniform convergence acceptable? Could any law of interest
+   satisfy the pointwise condition, but fail the uniform one in a way that matters?
+2. **Indexing.** Is `k, 2k, 4k`, with `√k` and `A(n/k)` at the smallest index, consistent with your
+   source? In particular, which index does [dHF, Thm 3.3.5] use, and does its variance match
+   `γ²(2^{2γ+1} + 1)/(2(2^γ − 1) log 2)²` at that index?
+3. Is `H_{γ,ρ}`, with exactly this normalization, the form in your source, or does your source's bias
+   differ by a constant from `b_{γ,ρ}` for that reason?
+
+## S14. Moment estimator: asymptotic normality, `γ > 0`, ratio form
+
+**(a) Literature.** Dekkers–Einmahl–de Haan (1989); [dHF, Thm 3.5.4] (not checked against the book). For
+`γ > 0`, `√k(γ̂_M − γ) ⇒ N(λ (γ − γρ + ρ)/(γ(1 − ρ)²), 1 + γ²)`.
+
+**(b) Lean, in math.** `γ̂_M = momentEstimator x k = M₁ + 1 − ½(1 − M₁²/M₂)⁻¹`, with
+`M_j = k⁻¹ Σ_{i<k} (log X_{(i+1)} − log X_{(k+1)})^j` (`Moment.lean:77`). `U` is as in S13.
+`IsSecondOrderRegularlyVarying U γ ρ A` (`RegularVariation/SecondOrder.lean:96`) is the **ratio form**:
+`U(t) > 0` eventually; `ρ ≤ 0`; `A(t) → 0`; `A` of eventually constant sign; `|A|` regularly varying with
+index `ρ`; and for every `x > 0`,
+
+  `(U(xt)/U(t) − x^γ)/A(t) → x^γ D_ρ(x)` as `t → ∞`.
+
+`momentBias γ ρ = (γ − γρ + ρ)/(γ(1 − ρ)²)` (`MomentNormality.lean:394`).
+
+Let `X_i` be measurable, mutually independent and identically distributed; **`γ > 0`**; `ρ, λ` real;
+`IsSecondOrderRegularlyVarying U γ ρ A`; `kₙ → ∞`, `kₙ/n → 0`, `√kₙ A(n/kₙ) → λ`; and `Z` on another
+probability space with law `N(λ momentBias γ ρ, 1 + γ²)`. Then
+
+  `√kₙ (γ̂_M − γ) ⇒ Z`.
+
+Lean: `ExtremeValueTheory.tendstoInDistribution_momentEstimator`, `MomentNormality.lean:766`.
+
+**(c) Caveats.**
+1. **`γ > 0` only.** `γ ≤ 0`, where the estimator is chiefly of interest, is not proved. C14 has
+   consistency for every `γ`, but there is no normality outside `γ > 0`. Pickands normality (S13) does
+   cover every `γ`.
+2. **The ratio form.** The textbook states its condition through `(U(xt) − U(t))/a(t)`. The two have
+   different auxiliary functions, so `λ` and `momentBias` here are those of the ratio form, not stated in
+   terms of the textbook's `A`. The translation is not formalized.
+3. As in C13, `|A| ∈ RV_ρ` and constant sign are in the definition, and exact Pareto data do not satisfy
+   it (S4, caveat 2).
+4. Non-vacuity: `test_nonvacuous_tendstoInDistribution_momentEstimator`: shifted Pareto, `γ = 1`,
+   `ρ = −1`, `kₙ = ⌊√n⌋`, `λ = 0`, through `tendstoInDistribution_momentEstimator_of_tendsto_zero`. The
+   bias term has no test of its own.
+
+**(d) Questions.**
+1. Does `momentBias` agree with [dHF, Thm 3.5.4] at `γ > 0` once the two auxiliary functions are related,
+   and how are they related?
+2. How much is `γ ≤ 0` worth to you, compared with what S13 gives there?
+
+## S15. Nonparametric tail dependence: consistency of the rank-based estimators
+
+**(a) Literature.** Huang (1992); Drees–Huang, JMVA 64 (1998); [dHF, §7.2];
+Beirlant–Goegebeur–Segers–Teugels, *Statistics of Extremes* (2004), §8.2.2, §9.4.1. The empirical stable
+tail dependence function is consistent for `k → ∞`, `k/n → 0`.
+
+**(b) Lean, in math.** Throughout `ι` is a finite type, and `X_i : Ω → ℝ^ι`. Files:
+`Statistics/StableTailDependence.lean`, `Multivariate/StableTailDependence.lean`.
+
+*The empirical function* (`Statistics/StableTailDependence.lean:94–106`). With ranks
+`R_i^j = #{m < n : X_m^j ≤ X_i^j}`,
+
+  `ℓ̂ₙ(x) = empiricalStableTailDependence X n k x = k⁻¹ #{i < n : R_i^j > n − k x_j for some j}`.
+
+The comparison is in `ℝ`, and `k⁻¹ = 0` at `k = 0`. Equivalently (`empiricalTailCount_eq`), fewer than
+`k x_j` observations are strictly above `X_i^j`, for some `j`.
+
+*The population function.* `marginal μ j` is the c.d.f. of the `j`-th coordinate of `μ`.
+`HasStableTailDependence μ ℓ` (`Multivariate/StableTailDependence.lean:71`) means: for every `x` with all
+`x_j > 0`,
+
+  `t⁻¹ μ{y : F_j(y_j) > 1 − t x_j for some j} → ℓ(x)` as `t ↓ 0`.
+
+It says nothing about `ℓ` where some `x_j ≤ 0`.
+
+*Common hypotheses (T).* `P` and `μ` probability measures, `μ` on `ℝ^ι`; `X_i` measurable, mutually
+independent, identically distributed, with `X_0` of law `μ`; `marginal μ j` continuous for every `j`;
+`kₙ ∈ ℕ`, `kₙ → ∞`, `kₙ/n → 0`.
+
+*Pointwise.* Assume (T) and `HasStableTailDependence μ ℓ`, and let all `x_j > 0`. Then `ℓ̂ₙ(x) → ℓ(x)` in
+probability. Lean: `ExtremeValueTheory.tendstoInMeasure_empiricalStableTailDependence`,
+`Statistics/StableTailDependence.lean:462`.
+
+*Uniform.* Assume (T) and `HasStableTailDependence μ ℓ`, and let `T` be real and `ε > 0`. Then
+
+  `P(∃ x ∈ (0, T]^ι with |ℓ̂ₙ(x) − ℓ(x)| ≥ ε) → 0`,
+
+with `P` the outer measure, since measurability of the event is not needed. Lean:
+`ExtremeValueTheory.tendsto_measure_exists_abs_empiricalStableTailDependence_sub`,
+`Statistics/StableTailDependence.lean:585`.
+
+*Tail dependence coefficient.* `ι = {0, 1}`; `χ̂ₙ = tailDependenceEstimator X n k = 2 − ℓ̂ₙ(1, 1)`.
+Assume (T) and `HasStableTailDependence μ ℓ`. Then `χ̂ₙ → 2 − ℓ(1, 1)` in probability. Lean:
+`ExtremeValueTheory.tendstoInMeasure_tailDependenceEstimator`, `:888`. That `2 − ℓ(1, 1)` is the limit of
+`P(F_1(X_1) > u | F_0(X_0) > u)` as `u ↑ 1` is `HasStableTailDependence.hasUpperTailDependence`.
+
+*Domain of attraction.* `IsMDAWith μ ν a b` (`Multivariate/DomainOfAttraction.lean:128`) means:
+`a_n^j > 0` for all `n`, `j`, and `μ(y ≤ a_n x + b_n)^n → ν(y ≤ x)` at every continuity point `x` of the
+c.d.f. of `ν`, coordinatewise. Non-degeneracy is not part of it. `frechetStandardization ν` is the law of
+`(−1/log G_j(Y_j))_j`, `Y ~ ν`. `V(y) = maxStableExponent ν₀ y = −log ν₀(z ≤ y)`.
+
+Let `ι = {0, 1}`, `IsMDAWith μ ν a b`, with `ν` a probability measure and the marginals of **both** `μ`
+and `ν` continuous; `X` and `k` as in (T); `0 < t < 1`. Put
+`Âₙ(t) = pickandsRankEstimator X n k t = ℓ̂ₙ(t, 1 − t)`, and let `ν₀ = frechetStandardization ν`. Then
+
+  `Âₙ(t) → pickandsDependence ν₀ t` in probability,
+
+where `pickandsDependence ν₀ t = V(1/t, 1/(1 − t))` for `0 < t < 1`. Lean:
+`ExtremeValueTheory.IsMDAWith.tendstoInMeasure_pickandsRankEstimator`,
+`Statistics/StableTailDependence.lean:916`. Under the same hypotheses, for any finite `ι` and `x > 0`,
+`ℓ̂ₙ(x) → V(1/x)` (`IsMDAWith.tendstoInMeasure_empiricalStableTailDependence`, `:835`, with a uniform
+version at `:850`), and for `ι = {0, 1}`, `χ̂ₙ → 2 − V(1, 1)`
+(`IsMDAWith.tendstoInMeasure_tailDependenceEstimator`, `:902`).
+
+**(c) Caveats.**
+1. **Consistency only.** No rate, no second-order condition, no asymptotic normality of `ℓ̂ₙ` or `χ̂ₙ`
+   (for which the literature has results). iid data only.
+2. **Faces are left out.** The textbook supremum runs over the closed box `[0, T]^ι`. Here it is over
+   `(0, T]^ι`, since `ℓ` is unconstrained on the faces. It is uniform up to them.
+3. **Continuous marginals are assumed**, for `μ`, and in the domain-of-attraction forms for `ν`. For `ν`,
+   it is what the standardization uses. A limit with nondegenerate margins has them automatically, but
+   `IsMDAWith` does not exclude degenerate ones, so it is a hypothesis.
+4. **Conventions.** `n − k x_j` here; others write `n + 1/2 − k x_j`, or use order statistics.
+   `tendstoInMeasure_empiricalStableTailDependence_of_tendsto` covers convergence along `yₙ → x`, and
+   `tendstoInMeasure_empiricalStableTailDependenceOrderStat` is the order-statistics form. The library's
+   Pickands function puts the weight `t` on coordinate `0` (C20), a mirror of some texts.
+5. **Not the same as Pickands' 1981 estimator**, which has known margins (`pickandsDependenceEstimator`),
+   and has no entry here. `Âₙ` is only pointwise in `t`, and no convexity is imposed on it.
+6. The limit `2 − ℓ(1, 1)` need not be positive: `χ = 0` for asymptotic independence is consistent with
+   the theorem, which says nothing about testing it.
+7. Non-vacuity: iid bivariate comonotone and independent Gumbel sequences, `kₙ = ⌊√n⌋`
+   (`test_nonvacuous_tendstoInMeasure_empiricalStableTailDependence_comono`,
+   `test_nonvacuous_tendstoInMeasure_empiricalStableTailDependence_indep`,
+   `test_nonvacuous_tendstoInMeasure_tailDependenceEstimator_indep`,
+   `test_nonvacuous_isMDAWith_pickandsRankEstimator`). Known answers: `ℓ̂ₙ(1, 1) = 1` on a comonotone
+   sample, and `2` on a countermonotone one (`test_empiricalStableTailDependence_comonotone`,
+   `test_empiricalStableTailDependence_countermonotone`).
+
+**(d) Questions.**
+1. Is the definition of `ℓ̂ₙ`, with `>` and `R_i^j = #{m : X_m^j ≤ X_i^j}`, the one in your source? Is
+   any convention difference more than `o_P(1)`?
+2. Is the open box acceptable, given that `ℓ` on the faces is determined by the limit from the interior?
+3. Is `Âₙ(t) = ℓ̂ₙ(t, 1 − t)` the estimator you mean by "rank-based Pickands", with `t` on the first
+   coordinate?
+
+## S16. Domains of attraction: the textbook form, the normal law, sample maxima, uniqueness
+
+**(a) Literature.** [dHF, Thm 1.1.3]; [EKM, Thm 3.2.3, Thm 3.4.5]; for the normal constants, [EKM, Ex.
+3.3.29], as recalled and not checked.
+
+**(b) Lean, in math.** `IsInMDAGEV ξ`, for a c.d.f. `F`, is defined by the sign of `ξ` (C6):
+`MDA(Φ_{1/ξ})`, `MDA(Ψ_{−1/ξ})` or `MDA(Λ)`. `gevCDF ξ` is the c.d.f. `H_ξ` of C2. `A • F` is as in the
+Primer, with `(A • F)(x) = F(A⁻¹x)`. Files are in `ExtremeValueTheory/DomainOfAttraction/`.
+
+*Textbook form.* For every c.d.f. `F` and `ξ ∈ ℝ`: `IsInMDAGEV F ξ` `⟺` there are affine `Aₙ` with
+`((Aₙ • F)(x))^n → H_ξ(x)` for every `x`. That is, `F(aₙx + bₙ)^n → H_ξ(x)` with `aₙ > 0` for every `n`.
+Lean: `CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendsto_gevCDF`, `GEVDomain.lean:127`. The
+form at continuity points is `isInMDAGEV_iff_exists_tendsto_gevCDF_of_continuousAt`, and every point is a
+continuity point (`continuous_gevCDF`).
+
+*Uniqueness.* If `IsInMDAGEV F ξ` and `IsInMDAGEV F η`, then `ξ = η`. Lean:
+`CumulativeDistributionFunction.IsInMDAGEV.unique`, `GEVDomain.lean:186`.
+
+*Sample maxima.* Let `F` be a c.d.f., `X : ℕ → Ω → ℝ`, with `F(x) = P(X_0 ≤ x)` for every `x`, `(X_i)`
+mutually independent, and each `X_t` identically distributed with `X_0`; let `ξ ∈ ℝ`. Then
+`IsInMDAGEV F ξ` `⟺` there are real `aₙ, bₙ` with `aₙ > 0` for all `n` and, for every `x`,
+
+  `P((M_n − bₙ)/aₙ ≤ x) → H_ξ(x)`,
+
+where `M_n = blockMax X n 0 = max_{i<n} X_i` (junk `0` for `n = 0`). Lean:
+`CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendsto_sampleMax`, `SampleMaxima.lean:73`.
+
+*The normal law.* Let `Φ = standardNormalCDF`, `aₙ = normalScale n = (2 log n)^{−1/2}`, and
+`bₙ = normalLocation n = √(2 log n) − (log log n + log 4π)/(2√(2 log n))`. Then for every `x`,
+
+  `Φ(aₙx + bₙ)^n → exp(−e^{−x})`.
+
+Lean: `CumulativeDistributionFunction.tendsto_standardNormalCDF_pow`, `Examples.lean:194`. Membership:
+`isInMDAGEV_standardNormalCDF`, and `isInMDAGEV_ofMeasure_gaussianReal` for `N(m, v)`, `v ≠ 0`.
+
+**(c) Caveats.**
+1. These are bridges, not new theorems: they show that the library's case-split `IsInMDAGEV` is the
+   textbook definition. C6, C7 and C14 use the case-split form.
+2. `P` is not declared a probability measure in the sample-maxima theorem; the hypotheses on `F` and
+   independence are what the proof uses. It is stated for `aₙ > 0` at **every** `n`, which is no
+   restriction, since finitely many `n` do not matter.
+3. Explicit constants exist only for the **standard** normal law here. `N(m, v)` is a membership
+   statement. The formulas are junk for small `n` (`log 0 = 0`, so `a₀ = a₁ = 0`, and `log log n` is junk
+   or negative for `n ≤ 2`), which does not affect the limit. So, for this statement, `aₙ > 0` holds only
+   eventually, and passing to the textbook form uses `isInMDAGumbel_of_tendsto_mul_one_sub`.
+4. The sign convention is `ξ = 1/α` (Fréchet), `ξ = −1/α` (Weibull). `test_isInMDAGEV_sign_convention`
+   tests it. `test_normal_not_isInMDAGEV` and `test_cauchy_not_isInMDAGEV_zero` use uniqueness on
+   concrete laws.
+
+**(d) Questions.**
+1. Are the normal constants as in your reference, in particular the `log 4π`, and are you content with
+   `aₙ` as a formula valid only for large `n`?
+2. Is there any variant of the domain of attraction you use, for example a limit of the type of `H_ξ`
+   rather than `H_ξ` itself, that these forms do not reach?
+   (`exists_isInMDAGEV_and_smul_eq_of_tendsto_sampleMax` handles a general limit `G`.)
+
 ---
 
 ## Summary of known deviations (from `FAITHFULNESS.md` and this guide)
@@ -1593,7 +2203,7 @@ bound useful to you?
 | Area | Deviation | Effect |
 |---|---|---|
 | Regular variation | measurability separate from the definition | hypothesis added where needed |
-| Karamata converse | `F` antitone | special case of BGT |
+| Karamata converse | none now: `F` eventually positive (the antitone version is deprecated) | as in BGT for `α > 1` (C9) |
 | Second-order RV | `|A| ∈ RV_ρ` and constant sign assumed | one derived property built in |
 | Weissman (far tail) | `ρ < 0` (or extra regularity at `ρ = 0`) | special case |
 | Hill (α-mixing) | cluster condition assumed; simple mixing rate | sufficient, not sharp |
@@ -1602,16 +2212,24 @@ bound useful to you?
 | Point processes | fdd-count convergence on interval classes | weaker formulation |
 | Tail empirical process | uniform, unweighted | special case |
 | GPD MLE normality | `ξ₀ ≠ 0`; measurable maximizers on compact `K` | stated scope |
-| Answer to [BKW24] | one level instead of two; `ρ ∉ {0, 1, γ/α}`; normalizing levels only | **please check** (R14) |
+| Answer to [BKW24] | one level instead of two; `ρ ∉ {0, 1}`; at `ρ = γ/α` only when `rₙ/n^{γ/α}` has a finite limit; normalizing levels only | **please check** (R14, R14a) |
 | Echo, mixing | `𝒜` on long blocks for the power lag not proved; no rate for the power lag | sufficient for the example (R15) |
-| GEV, Gumbel return levels | parameter normality is a hypothesis | delta method only (S2) |
+| GEV, Gumbel return levels, general form | parameter normality is a hypothesis; discharged by S10 for the GEV MLE at `ξ₀ ≠ 0`, nowhere at `ξ₀ = 0` | delta method only (S2) |
+| GEV return level, MLE | as for S10; `m > 1` fixed | stated scope (S11) |
+| GEV return level interval | consistency of the standard error assumed; no estimator shown to satisfy it, and the test uses the true value | **no computable interval justified yet** (S11) |
 | POT return level, interval | exact iid GPD excesses, deterministic `n`, `ζ` known, `N` fixed, Wald form only | idealized (S3, S4) |
 | Hill interval | `λ = 0`; exact Pareto excluded by the second-order definition | special case (S4) |
 | Blocks, runs estimators | population limit assumed, not identified with the extremal index | **weaker than the name** (S5) |
 | Intervals estimator | empirical moment limits assumed; no process in the statement | **weaker than the name** (S6) |
-| GEV MLE | exact iid GEV sample, compact `K`, consistency only | stated scope (S7) |
+| GEV MLE, consistency | exact iid GEV sample, compact `K` | stated scope (S7) |
+| GEV MLE, joint normality | exact iid GEV sample, `ξ₀ > −1/2`, `ξ₀ ≠ 0`, compact `K` with truth interior; block maxima from a domain of attraction not covered; information matrix not compared numerically in Lean with an outside source | **please check** (S10) |
+| GPD Wilks, profile likelihood | `ξ₀ > 0`, narrower than the literature's `ξ₀ > −1/2`; exact GPD; a chart in place of a smooth `g`; confidence sets, not shown to be intervals | special case (S12) |
+| Pickands normality | locally uniform second-order condition assumed; `k` is the smallest index; exact GPD excluded by the condition | **please check** (S13) |
+| Moment normality | `γ > 0` only; second-order condition in ratio form, not translated to the textbook's `A` | special case (S14) |
+| Nonparametric tail dependence | consistency only, iid, continuous margins; open box `(0, T]^ι` | stated scope (S15) |
+| Normal norming constants | standard normal only; junk for small `n` | special case (S16) |
 | GARCH(1,1) | squared volatility only; exponent bounds, not `c x^{−κ}` | **weaker than Kesten–Goldie** (S9) |
-| Literature checks | [KS20, Lemma 7.5.4], [PS18, Lemma 4.1] and the [BS09] erratum not read directly; [BKW24] published version and Part III references not checked | **please check** |
+| Literature checks | [KS20, Lemma 7.5.4], [PS18, Lemma 4.1] and the [BS09] erratum not read directly; [BKW24] published version and Part III references, in particular Smith (1985), Prescott–Walden (1980), Bücher–Segers (2017) and [dHF, Thms 3.3.5, 3.5.4], not checked | **please check** |
 
 ## How to send feedback
 
