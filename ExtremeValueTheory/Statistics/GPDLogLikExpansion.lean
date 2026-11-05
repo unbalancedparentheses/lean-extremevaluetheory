@@ -51,8 +51,10 @@ lemma measurable_gpdDensity₃ :
   unfold gpdDensity
   refine Measurable.ite ?_ (Measurable.ite (measurableSet_eq_fun (by fun_prop) (by fun_prop))
     (by fun_prop) (by fun_prop)) measurable_const
-  exact (measurableSet_le measurable_const (by fun_prop)).inter
-    (measurableSet_lt measurable_const (by fun_prop))
+  exact (measurableSet_le (f := fun _ => (0 : ℝ)) (g := fun q : ℝ × ℝ × ℝ => q.2.2)
+    measurable_const (by fun_prop)).inter
+    (measurableSet_lt (f := fun _ => (0 : ℝ))
+      (g := fun q : ℝ × ℝ × ℝ => 1 + q.1 * q.2.2 / q.2.1) measurable_const (by fun_prop))
 
 /-- The log-likelihood of the first `n` observations is jointly measurable. -/
 lemma measurable_gpdLogLikN (n : ℕ) :
@@ -68,42 +70,38 @@ section Line
 
 variable {ξ σ a b x s : ℝ}
 
-/-- The derivative of the log-density along the line `s ↦ (ξ + s a, σ + s b)` is
-`a ∂_ξ ℓ + b ∂_σ ℓ`. -/
-theorem hasDerivAt_log_gpdDensity_line (hξ : ξ + s * a ≠ 0) (hσ : 0 < σ + s * b) (hx : 0 ≤ x)
-    (hu : 0 < (σ + s * b) + (ξ + s * a) * x) :
-    HasDerivAt (fun s => log (gpdDensity (ξ + s * a) (σ + s * b) x))
-      (a * gpdScoreXi (ξ + s * a) (σ + s * b) x + b * gpdScoreSigma (ξ + s * a) (σ + s * b) x)
-      s := by
+/-- **Chain rule for the log-density along a curve.** If `A` and `B` are differentiable at `s`
+with `A s ≠ 0`, `B s > 0` and `B s + A s x > 0`, `x ≥ 0`, then the derivative of
+`s ↦ log g_{A s, B s}(x)` at `s` is `A' ∂_ξ ℓ + B' ∂_σ ℓ`. -/
+theorem hasDerivAt_log_gpdDensity_curve {A B : ℝ → ℝ} {a b : ℝ} (hA : HasDerivAt A a s)
+    (hB : HasDerivAt B b s) (hξ : A s ≠ 0) (hσ : 0 < B s) (hx : 0 ≤ x)
+    (hu : 0 < B s + A s * x) :
+    HasDerivAt (fun s => log (gpdDensity (A s) (B s) x))
+      (a * gpdScoreXi (A s) (B s) x + b * gpdScoreSigma (A s) (B s) x) s := by
   have hu' := one_add_mul_div_pos hσ hu
-  have hev : (fun t => log (gpdDensity (ξ + t * a) (σ + t * b) x)) =ᶠ[𝓝 s]
-      fun t => -log (σ + t * b) -
-        (1 / (ξ + t * a) + 1) * log (1 + (ξ + t * a) * x / (σ + t * b)) := by
-    have hc1 : Continuous fun t : ℝ => ξ + t * a := by fun_prop
-    have hc2 : Continuous fun t : ℝ => σ + t * b := by fun_prop
-    have hc3 : Continuous fun t : ℝ => (σ + t * b) + (ξ + t * a) * x := by fun_prop
-    filter_upwards [hc1.continuousAt.eventually (isOpen_ne.mem_nhds hξ),
-      hc2.continuousAt.eventually (lt_mem_nhds hσ),
-      hc3.continuousAt.eventually (lt_mem_nhds hu)] with t h1 h2 h3
+  have hev : (fun t => log (gpdDensity (A t) (B t) x)) =ᶠ[𝓝 s]
+      fun t => -log (B t) - (1 / A t + 1) * log (1 + A t * x / B t) := by
+    have hc1 : ContinuousAt A s := hA.continuousAt
+    have hc2 : ContinuousAt B s := hB.continuousAt
+    have hc3 : ContinuousAt (fun t => B t + A t * x) s :=
+      hc2.add (hc1.mul continuousAt_const)
+    filter_upwards [hc1.eventually (isOpen_ne.mem_nhds hξ),
+      hc2.eventually (lt_mem_nhds hσ), hc3.eventually (lt_mem_nhds hu)] with t h1 h2 h3
     exact log_gpdDensity h2 h1 hx (one_add_mul_div_pos h2 h3)
   refine HasDerivAt.congr_of_eventuallyEq ?_ hev
-  have hA : HasDerivAt (fun s => ξ + s * a) a s := by
-    simpa using ((hasDerivAt_id s).mul_const a).const_add ξ
-  have hB : HasDerivAt (fun s => σ + s * b) b s := by
-    simpa using ((hasDerivAt_id s).mul_const b).const_add σ
-  have hR : HasDerivAt (fun s => (ξ + s * a) * x / (σ + s * b))
-      ((a * x * (σ + s * b) - (ξ + s * a) * x * b) / (σ + s * b) ^ 2) s :=
+  have hR : HasDerivAt (fun s => A s * x / B s)
+      ((a * x * B s - A s * x * b) / B s ^ 2) s :=
     (hA.mul_const x).div hB hσ.ne'
   have hL := (hR.const_add 1).log hu'.ne'
-  have hI : HasDerivAt (fun s => 1 / (ξ + s * a) + 1) (-(a / (ξ + s * a) ^ 2)) s := by
+  have hI : HasDerivAt (fun s => 1 / A s + 1) (-(a / A s ^ 2)) s := by
     have := (hA.inv hξ).add_const 1
     exact (this.congr_deriv (by ring)).congr_of_eventuallyEq
       (Eventually.of_forall fun s => by simp [one_div])
   have := ((hB.log hσ.ne').neg).sub (hI.mul hL)
   refine this.congr_deriv ?_
   unfold gpdScoreXi gpdScoreSigma
-  generalize ξ + s * a = p at hξ hu hu' ⊢
-  generalize σ + s * b = q at hσ hu hu' ⊢
+  generalize A s = p at hξ hu hu' ⊢
+  generalize B s = q at hσ hu hu' ⊢
   generalize log (1 + p * x / q) = L
   have := hσ.ne'
   have h1 : q + p * x ≠ 0 := hu.ne'
@@ -112,6 +110,19 @@ theorem hasDerivAt_log_gpdDensity_line (hξ : ξ + s * a ≠ 0) (hσ : 0 < σ + 
   have h4 : q + x * p ≠ 0 := by rw [mul_comm]; exact h1
   field_simp
   ring
+
+/-- The derivative of the log-density along the line `s ↦ (ξ + s a, σ + s b)` is
+`a ∂_ξ ℓ + b ∂_σ ℓ`. -/
+theorem hasDerivAt_log_gpdDensity_line (hξ : ξ + s * a ≠ 0) (hσ : 0 < σ + s * b) (hx : 0 ≤ x)
+    (hu : 0 < (σ + s * b) + (ξ + s * a) * x) :
+    HasDerivAt (fun s => log (gpdDensity (ξ + s * a) (σ + s * b) x))
+      (a * gpdScoreXi (ξ + s * a) (σ + s * b) x + b * gpdScoreSigma (ξ + s * a) (σ + s * b) x)
+      s := by
+  have hA : HasDerivAt (fun s => ξ + s * a) a s := by
+    simpa using ((hasDerivAt_id s).mul_const a).const_add ξ
+  have hB : HasDerivAt (fun s => σ + s * b) b s := by
+    simpa using ((hasDerivAt_id s).mul_const b).const_add σ
+  exact hasDerivAt_log_gpdDensity_curve hA hB hξ hσ hx hu
 
 end Line
 
@@ -199,7 +210,7 @@ theorem abs_log_gpdDensity_expansion_le {K : ℝ} (hK0 : 0 ≤ K) (hK : ∀ θ �
     ring
   set M := K * ρ ^ 3 * L
   have hF''Q : ∀ s ∈ Icc (0 : ℝ) 1, |F'' s - Q| ≤ M := fun s hs => by
-    obtain ⟨h1, h2, h3⟩ := hK _ (hmem s hs) x hx
+    obtain ⟨h₁, h₂, h₃⟩ := hK _ (hmem s hs) x hx
     have hmono : K * gpdDist ξ₀ σ₀ (θ.1 + s * a, θ.2 + s * b) * L ≤ K * ρ * L := by
       gcongr
       exact hdist s hs
@@ -225,7 +236,7 @@ theorem abs_log_gpdDensity_expansion_le {K : ℝ} (hK0 : 0 ≤ K) (hK : ∀ θ �
     have h2 : HasDerivAt (fun s : ℝ => s ^ 2 / 2 * Q) (s * Q) s := by
       have := (((hasDerivAt_id s).pow 2).div_const 2).mul_const Q
       refine this.congr_deriv ?_
-      simp; ring
+      simp
     have := (((hF s hs).sub_const (F 0)).sub ((hasDerivAt_id s).mul_const (F' 0))).sub h2
     exact (this.congr_deriv (by simp [G'])).hasDerivWithinAt
   have hM0 : 0 ≤ M := (abs_nonneg _).trans (hF''Q 0 ⟨le_rfl, zero_le_one⟩)
@@ -244,6 +255,28 @@ theorem abs_log_gpdDensity_expansion_le {K : ℝ} (hK0 : 0 ≤ K) (hK : ∀ θ �
   simp only [G, e1, e0, e', one_pow, one_mul] at hG
   convert hG using 2
   ring
+
+/-- **Second-order expansion of the sample log-likelihood.** With the notation of
+`abs_log_gpdDensity_expansion_le`, for nonnegative observations and `θ ∈ gpdNbhd ξ₀ σ₀`,
+`|ℓₙ(θ₀) - ℓₙ(θ) - ∑ᵢ ∇ℓ(θ, xᵢ)·Δ - ½ ∑ᵢ Δᵀ H(θ₀, xᵢ) Δ| ≤ K ρ(θ)³ ∑ᵢ (1 + log(1 + ξ₀ xᵢ/σ₀))`. -/
+theorem abs_gpdLogLikN_expansion_le {K : ℝ} (hK0 : 0 ≤ K) (hK : ∀ θ ∈ gpdNbhd ξ₀ σ₀, ∀ x, 0 ≤ x →
+      |gpdHessXiXi θ.1 θ.2 x - gpdHessXiXi ξ₀ σ₀ x| ≤
+          K * gpdDist ξ₀ σ₀ θ * (1 + log (1 + ξ₀ * x / σ₀)) ∧
+      |gpdHessXiSigma θ.1 θ.2 x - gpdHessXiSigma ξ₀ σ₀ x| ≤
+          K * gpdDist ξ₀ σ₀ θ * (1 + log (1 + ξ₀ * x / σ₀)) ∧
+      |gpdHessSigmaSigma θ.1 θ.2 x - gpdHessSigmaSigma ξ₀ σ₀ x| ≤
+          K * gpdDist ξ₀ σ₀ θ * (1 + log (1 + ξ₀ * x / σ₀)))
+    {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhd ξ₀ σ₀) {x : ℕ → ℝ} (hx : ∀ i, 0 ≤ x i) (n : ℕ) :
+    |gpdLogLikN ξ₀ σ₀ x n - gpdLogLikN θ.1 θ.2 x n -
+        ∑ i ∈ Finset.range n, ((ξ₀ - θ.1) * gpdScoreXi θ.1 θ.2 (x i) +
+          (σ₀ - θ.2) * gpdScoreSigma θ.1 θ.2 (x i)) -
+        ∑ i ∈ Finset.range n, gpdHessQuad ξ₀ σ₀ (ξ₀ - θ.1) (σ₀ - θ.2) (x i) / 2| ≤
+      K * gpdDist ξ₀ σ₀ θ ^ 3 * ∑ i ∈ Finset.range n, (1 + log (1 + ξ₀ * x i / σ₀)) := by
+  rw [Finset.mul_sum]
+  unfold gpdLogLikN
+  rw [← Finset.sum_sub_distrib, ← Finset.sum_sub_distrib, ← Finset.sum_sub_distrib]
+  exact (Finset.abs_sum_le_sum_abs _ _).trans (Finset.sum_le_sum fun i _ =>
+    abs_log_gpdDensity_expansion_le hξ₀ hσ₀ hK0 hK hθ (hx i))
 
 end Expansion
 
