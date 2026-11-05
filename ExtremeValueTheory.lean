@@ -23,6 +23,7 @@ import ExtremeValueTheory.DomainOfAttraction.Frechet
 import ExtremeValueTheory.PeaksOverThreshold.Frechet
 import ExtremeValueTheory.RegularVariation.UniformConvergence
 import ExtremeValueTheory.RegularVariation.UniformConvergenceTails
+import ExtremeValueTheory.RegularVariation.Composition
 import ExtremeValueTheory.RegularVariation.Representation
 import ExtremeValueTheory.RegularVariation.RepresentationIndex
 import ExtremeValueTheory.DomainOfAttraction.Weibull

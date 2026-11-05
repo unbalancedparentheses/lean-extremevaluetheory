@@ -9,6 +9,7 @@ import Test.NonVacuity.GarchGaussian
 import Test.KnownAnswers.Classical
 import Test.KnownAnswers.DomainOfAttraction
 import Test.KnownAnswers.DomainExamples
+import Test.KnownAnswers.RegularVariation
 import Test.KnownAnswers.HeavyTails
 import Test.JunkValues
 import Test.NonVacuity.Dependence
