@@ -187,7 +187,7 @@ private theorem survivalQuantile_eq {F : ℝ → ℝ} (hF2 : ∀ x, 2 ≤ x → 
       constructor
       · intro h; exact absurd h (not_le.2 (inv_lt_one_of_one_lt₀ ht))
       · intro h; linarith
-  rw [survivalQuantile, ite_eq_left_iff.mpr (fun h => absurd ht h), hS, csInf_Ici]
+  rw [survivalQuantile_of_one_lt ht, upperQuantile_def, hS, csInf_Ici]
 
 /-- Test-specific: the auxiliary function `A(t) = -1/(t + 1)` of
 `isSecondOrderRegularlyVarying_add_const` with `c = 1`. -/
@@ -260,7 +260,7 @@ theorem test_nonvacuous_tendstoInDistribution_weissman :
       TendstoInDistribution (fun n ω =>
         √(Nat.sqrt n : ℝ) / Real.log ((Nat.sqrt n : ℝ) / (n * (1 / n : ℝ))) *
           (weissman (fun i : Fin n => X i ω) (Nat.sqrt n) (1 / n) /
-            tailQuantile P (X 0) (1 / n) - 1))
+            upperQuantile (survival P (X 0)) (1 / n) - 1))
         atTop id (fun _ => P) hillLimit := by
   obtain ⟨Ω, _, P, X, hP, hXm, hind, hid, hlaw⟩ := exists_iid_seq spar
   have := hP

@@ -65,7 +65,7 @@ finite-sample bias, coverage of confidence intervals, or how to choose `k` or th
 | Pickands | `pickands x k` | uses `X₍ₖ₊₁₎, X₍₂ₖ₊₁₎, X₍₄ₖ₊₁₎` (de Haan–Ferreira indexing; EKM is one off) |
 | Weissman | `weissman x k p` | `X₍ₖ₊₁₎ · (k/(np))^γ̂_Hill` |
 | Tail probability | `tailProbEstimator x k y` | `(k/n)·(y/X₍ₖ₊₁₎)^(−1/γ̂_Hill)` |
-| Tail quantile | `tailQuantile P X p` | `inf{x : P(X > x) ≤ p}` |
+| Tail quantile | `upperQuantile (survival P X) p` (`UpperQuantile.lean`); return-period form `survivalQuantile S t`, `F.tailQuantile t` | `inf{x : P(X > x) ≤ p}`; `U(t) = x_{1/t}` |
 
 So in the library **`ξ > 0` is the heavy (Fréchet) tail, `ξ < 0` a finite endpoint (Weibull
 domain), `ξ = 0` Gumbel/exponential**. Note `IsInMDAGEV ξ` maps `ξ > 0` to `MDA(Φ_{1/ξ})` and

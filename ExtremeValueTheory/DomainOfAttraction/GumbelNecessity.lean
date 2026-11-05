@@ -311,14 +311,14 @@ theorem exists_rightEndpoint_of_not_lt_one (F : CumulativeDistributionFunction)
   push Not at hF
   obtain ⟨x₁, hx₁⟩ := hF
   obtain ⟨y₀, hy₀⟩ := (F.tendsto_atBot.eventually (gt_mem_nhds one_pos)).exists
-  have hq := Gumbel.quantile_spec (c := 0) F.gumbelNec_antitone_one_sub
+  have hq := upperQuantile_spec (p := 0) F.gumbelNec_antitone_one_sub
     (fun x ↦ continuousWithinAt_const.sub (F.right_continuous x))
     ⟨x₁, by show 1 - F x₁ ≤ 0; linarith⟩ ⟨y₀, by show 0 < 1 - F y₀; linarith⟩
-  refine ⟨sInf {x | 1 - F x ≤ 0}, fun x hx ↦ ?_, ?_⟩
+  refine ⟨upperQuantile (fun x ↦ 1 - F x) 0, fun x hx ↦ ?_, ?_⟩
   · have := hq.2 x hx
     linarith
   · have := hq.1
-    linarith [F.apply_le_one (sInf {x | 1 - F x ≤ 0})]
+    linarith [F.apply_le_one (upperQuantile (fun x ↦ 1 - F x) 0)]
 
 /-- **De Haan's characterization of the Gumbel domain of attraction** ([dHF, Theorems 1.1.8
 and 1.2.5], [EKM, Theorem 3.3.26], [Resnick, Propositions 1.1 and 1.4]): `F` is in the Gumbel
