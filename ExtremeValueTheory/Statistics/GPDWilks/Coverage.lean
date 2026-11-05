@@ -22,7 +22,8 @@ the deviance does not depend on the selection.
 * `tendsto_measure_mem_gpdShapeProfileInterval`, `tendsto_measure_mem_gpdScaleProfileInterval`,
   `tendsto_measure_mem_gpdReturnLevelProfileInterval`: the shape, the scale, the POT return level.
 * `tendsto_measure_mem_gpdDevianceRegion`: coverage `χ²₂((-∞, c])` of the deviance region for the
-  full parameter.
+  full parameter; `tendsto_measure_mem_gpdDevianceRegion_of_alpha` is the form with critical value
+  `-2 log α` and limit `1 - α`.
 
 ## References
 
@@ -242,6 +243,19 @@ theorem tendsto_measure_mem_gpdDevianceRegion {K : Set (ℝ × ℝ)} (hK : IsCom
   rw [gpdMaxLogLik_eq_of_isMaxOn (hG n _).1 (hG n _).2]
   exact (deviance_le_iff (x := fun i => X i ω) hξ₀ hσ₀ (interior_subset hθ₀) (mem_singleton _) hx
     (hG n _).2 hm₀ c).symm
+
+/-- **The deviance region at level `1 - α`** ([Coles, §2.6.5]): since `χ²₂` is exponential with mean
+`2`, the critical value is explicit, and `P(θ₀ ∈ {θ : D(θ) ≤ -2 log α}) → 1 - α`. -/
+theorem tendsto_measure_mem_gpdDevianceRegion_of_alpha {K : Set (ℝ × ℝ)} (hK : IsCompact K)
+    (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K)
+    (hξ₀ : 0 < ξ₀) (hσ₀ : 0 < σ₀)
+    (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ₀ σ₀) P) (hind : iIndepFun X P) {α : ℝ} (hα0 : 0 < α)
+    (hα1 : α ≤ 1) :
+    Tendsto (fun n : ℕ => P {ω | (ξ₀, σ₀) ∈
+        gpdDevianceRegion K (-2 * log α) (fun i : Fin n => X i ω)})
+      atTop (𝓝 (ENNReal.ofReal (1 - α))) := by
+  rw [← chiSquared_two_real_Iic_log hα0 hα1, ofReal_measureReal]
+  exact tendsto_measure_mem_gpdDevianceRegion hK hKS hθ₀ hξ₀ hσ₀ hX hind _
 
 end Coverage
 
