@@ -161,13 +161,6 @@ section Count
 
 variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
 
-omit [IsProbabilityMeasure P] in
-private lemma integral_ite_lt' (X : Ω → ℝ) (hX : Measurable X) (a : ℝ) :
-    ∫ ω, (if a < X ω then (1 : ℝ) else 0) ∂P = (P {ω | a < X ω}).toReal := by
-  have : (fun ω => if a < X ω then (1 : ℝ) else 0) = {ω | a < X ω}.indicator 1 := by
-    ext ω; simp [Set.indicator]
-  rw [this, integral_indicator_one (measurableSet_lt measurable_const hX), measureReal_def]
-
 /-- **Exceedance counts over moving thresholds.** If the `X_i` are iid and the deterministic
 thresholds `a_n` satisfy `n P(X_0 > a_n) / k_n → c` with `k_n → ∞`, then the number of
 exceedances `#{i < n | X_i > a_n}`, divided by `k_n`, converges in probability to `c`. -/
@@ -200,12 +193,12 @@ theorem tendsto_measure_abs_exceedCount_div_sub {X : ℕ → Ω → ℝ} (hX : �
     · split_ifs <;> norm_num
   · refine hc.congr fun n => ?_
     simp only
-    rw [integral_ite_lt' (X 0) (hX 0)]
+    rw [integral_ite_lt' (hX 0), survival]
   · have h := hc.mul hkinv
     rw [mul_zero] at h
     refine h.congr fun n => ?_
     simp only [hsq]
-    rw [integral_ite_lt' (X 0) (hX 0)]
+    rw [integral_ite_lt' (hX 0), survival]
     field_simp
 
 end Count

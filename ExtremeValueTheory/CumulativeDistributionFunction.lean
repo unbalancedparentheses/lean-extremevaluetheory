@@ -245,6 +245,10 @@ lemma eq_of_forall_dense_eq {S : Set ℝ} (S_dense : Dense S) (F G : CumulativeD
   obtain ⟨x', x'_mem_S, x'_mem_Ioo⟩ := S_dense.exists_between hu
   use x', x'_mem_S, le_of_lt x'_mem_Ioo.1, Ico_subset_s (mem_Ico_of_Ioo x'_mem_Ioo)
 
+/-- The tail `1 - F` of a c.d.f. is antitone. -/
+theorem antitone_one_sub (F : CumulativeDistributionFunction) : Antitone (fun x ↦ 1 - F x) :=
+  fun _ _ h ↦ sub_le_sub_left (F.mono' h) 1
+
 end CumulativeDistributionFunction
 
 end cdf_def

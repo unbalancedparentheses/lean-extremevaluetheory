@@ -87,13 +87,6 @@ theorem memLp_ite_lt [IsFiniteMeasure P] {Y : Ω → ℝ} (hY : Measurable Y) (u
   MemLp.of_bound (measurable_ite_lt hY u).aestronglyMeasurable 1
     (Eventually.of_forall fun ω => by split_ifs <;> norm_num)
 
-theorem integral_ite_lt' {Y : Ω → ℝ} (hY : Measurable Y) (u : ℝ) :
-    ∫ ω, (if u < Y ω then (1 : ℝ) else 0) ∂P = survival P Y u := by
-  have : (fun ω => if u < Y ω then (1 : ℝ) else 0) = {ω | u < Y ω}.indicator 1 := by
-    ext ω; simp [Set.indicator]
-  rw [this, integral_indicator_one (measurableSet_lt measurable_const hY), measureReal_def]
-  rfl
-
 variable {X : ℕ → Ω → ℝ}
 
 theorem measurable_tailCount (hX : ∀ i, Measurable (X i)) (n : ℕ) (u : ℝ) :

@@ -207,9 +207,6 @@ open ExtremeValueTheory
 
 variable (F : CumulativeDistributionFunction)
 
-private lemma balkema_antitone : Antitone (fun x ↦ 1 - F x) :=
-  fun _ _ h ↦ sub_le_sub_left (F.mono' h) 1
-
 private lemma balkema_nonneg (x : ℝ) : 0 ≤ 1 - F x := by linarith [F.apply_le_one x]
 
 private lemma excess_nonneg (u b : ℝ) : 0 ≤ excessSurvival (fun y ↦ 1 - F y) u b :=
@@ -217,13 +214,13 @@ private lemma excess_nonneg (u b : ℝ) : 0 ≤ excessSurvival (fun y ↦ 1 - F 
 
 private lemma excess_le_one {u b : ℝ} (hb : 0 ≤ b) :
     excessSurvival (fun y ↦ 1 - F y) u b ≤ 1 :=
-  div_le_one_of_le₀ (F.balkema_antitone (le_add_of_nonneg_right hb)) (F.balkema_nonneg _)
+  div_le_one_of_le₀ (F.antitone_one_sub (le_add_of_nonneg_right hb)) (F.balkema_nonneg _)
 
 private lemma excess_antitoneOn {u β : ℝ} (hβ : 0 ≤ β) :
     AntitoneOn (fun x ↦ excessSurvival (fun y ↦ 1 - F y) u (β * x)) (Ici 0) := by
   intro x _ y _ hxy
   exact div_le_div_of_nonneg_right
-    (F.balkema_antitone (add_le_add le_rfl (mul_le_mul_of_nonneg_left hxy hβ)))
+    (F.antitone_one_sub (add_le_add le_rfl (mul_le_mul_of_nonneg_left hxy hβ)))
     (F.balkema_nonneg _)
 
 private lemma abs_sub_le_one_of_mem {a b : ℝ} (ha : 0 ≤ a) (ha1 : a ≤ 1) (hb : 0 ≤ b)
@@ -243,7 +240,7 @@ theorem isInMDAFrechet_iff_tendstoUniformlyOn_excessSurvival {α : ℝ} (hα : 0
   rw [F.isInMDAFrechet_iff hα]
   constructor
   · intro hRV
-    exact IsRegularlyVarying.tendstoUniformlyOn_excessSurvival F.balkema_antitone hRV hα
+    exact IsRegularlyVarying.tendstoUniformlyOn_excessSurvival F.antitone_one_sub hRV hα
   · intro hU
     have hpt : ∀ x, 0 ≤ x → Tendsto (fun u ↦ excessSurvival (fun y ↦ 1 - F y) u (u / α * x))
         atTop (𝓝 ((1 + x / α) ^ (-α))) := fun x hx ↦ by
@@ -506,7 +503,7 @@ theorem exists_tendstoUniformlyOn_excessSurvival_of_isInMDAGEV {ξ : ℝ} (hF : 
   · -- Fréchet
     have hα : 0 < 1 / ξ := one_div_pos.2 hξ
     have hRV := (F.isInMDAFrechet_iff hα).1 hF
-    have hpos := IsRegularlyVarying.pos_of_antitone F.balkema_antitone hRV.1
+    have hpos := IsRegularlyVarying.pos_of_antitone F.antitone_one_sub hRV.1
     have hlt : ∀ x, F x < 1 := fun x ↦ by linarith [hpos x]
     rw [F.upperEndpointFilter_eq_atTop hlt]
     refine ⟨fun u ↦ u / (1 / ξ), ?_, ?_⟩

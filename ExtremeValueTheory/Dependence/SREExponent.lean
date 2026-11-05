@@ -62,7 +62,7 @@ theorem integrable_abs_rpow_of_le (hAm : Measurable A) {S : ℝ} (hSi : Integrab
     {t : ℝ} (ht : 0 ≤ t) (htS : t ≤ S) : Integrable (fun p => |A p| ^ t) μ :=
   ((integrable_const 1).add hSi).mono' (by fun_prop) (ae_of_all _ fun p => by
     rw [Real.norm_eq_abs, abs_of_nonneg (rpow_nonneg (abs_nonneg _) _)]
-    exact rpow_le_one_add_rpow (abs_nonneg _) ht htS)
+    exact ExtremeValueTheory.rpow_le_one_add_rpow (abs_nonneg _) ht htS)
 
 /-- If `E log |A| < 0` (and `A ≠ 0` a.s.), then `E|A|^t < 1` for some small `t > 0`: the right
 derivative of `t ↦ E|A|^t` at `0` is `E log |A|`. -/
@@ -116,7 +116,7 @@ theorem continuousOn_integral_abs_rpow (hAm : Measurable A) {S t₀ : ℝ} (ht�
     (fun t ht => ae_of_all _ fun p => ?_) ((integrable_const 1).add hSi)
     (ae_of_all _ fun p => fun t ht => ?_)
   · rw [Real.norm_eq_abs, abs_of_nonneg (rpow_nonneg (abs_nonneg _) _)]
-    exact rpow_le_one_add_rpow (abs_nonneg _) (ht₀.le.trans ht.1) ht.2
+    exact ExtremeValueTheory.rpow_le_one_add_rpow (abs_nonneg _) (ht₀.le.trans ht.1) ht.2
   · exact (continuousAt_const_rpow' (ht₀.trans_le ht.1).ne').continuousWithinAt
 
 /-- **Existence of the Kesten exponent** ([BDM16, §2.4]; [EKM, §8.4]): if `A ≠ 0` a.s.,

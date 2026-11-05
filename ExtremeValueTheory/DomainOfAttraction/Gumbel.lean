@@ -154,10 +154,6 @@ private lemma neg_log_standardGumbelCDF (x : ℝ) :
     -Real.log (standardGumbelCDF x) = Real.exp (-x) := by
   rw [standardGumbelCDF_apply_eq, Real.log_exp, neg_neg]
 
-private lemma antitone_one_sub (F : CumulativeDistributionFunction) :
-    Antitone (fun x ↦ 1 - F x) :=
-  fun _ _ h ↦ sub_le_sub_left (F.mono' h) 1
-
 private lemma rightContinuous_one_sub (F : CumulativeDistributionFunction) :
     ∀ x, ContinuousWithinAt (fun x ↦ 1 - F x) (Ici x) x :=
   fun x ↦ continuousWithinAt_const.sub (F.right_continuous x)

@@ -231,9 +231,6 @@ open ExtremeValueTheory
 
 variable (F : CumulativeDistributionFunction)
 
-private lemma conv_antitone : Antitone (fun x ↦ 1 - F x) :=
-  fun _ _ h ↦ sub_le_sub_left (F.mono' h) 1
-
 private lemma conv_rightContinuous : ∀ x, ContinuousWithinAt (fun x ↦ 1 - F x) (Ici x) x :=
   fun x ↦ continuousWithinAt_const.sub (F.right_continuous x)
 
@@ -304,7 +301,7 @@ theorem tendsto_tail_zero_of_tendstoUniformlyOn_excessSurvival :
   suffices h : ∃ y, F y < 1 ∧ 1 - F y < ε by
     obtain ⟨y, hy1, hy2⟩ := h
     filter_upwards [F.eventually_gt_upperEndpointFilter hy1] with u hu
-    exact (F.conv_antitone hu.1.le).trans_lt hy2
+    exact (F.antitone_one_sub hu.1.le).trans_lt hy2
   by_contra hcon
   push Not at hcon
   set S := (fun y ↦ 1 - F y) '' {y | F y < 1} with hS
@@ -318,7 +315,7 @@ theorem tendsto_tail_zero_of_tendstoUniformlyOn_excessSurvival :
   have hlt : sInf S < sInf S / κ := by rw [lt_div_iff₀ hκ0]; nlinarith
   obtain ⟨_, ⟨y, hy, rfl⟩, hyc⟩ := exists_lt_of_csInf_lt hne hlt
   obtain ⟨u, ⟨h1, h2, h3, h4⟩, hu⟩ := (hA.and (F.eventually_gt_upperEndpointFilter hy)).exists
-  have hGu : 1 - F u ≤ 1 - F y := F.conv_antitone hu.1.le
+  have hGu : 1 - F u ≤ 1 - F y := F.antitone_one_sub hu.1.le
   rw [div_pos_iff_of_pos_right h2] at h3
   rw [div_lt_iff₀ h2] at h4
   have hmem : F (u + β u * w) < 1 := by linarith
@@ -344,13 +341,13 @@ private lemma conv_quantile_spec {lam : ℝ} (hlo : ∃ y, lam < 1 - F y)
       (∀ y < sInf {y | 1 - F y ≤ lam}, lam < 1 - F y) ∧
       0 < 1 - F (sInf {y | 1 - F y ≤ lam}) := by
   obtain ⟨y₁, hy₁, hy₁'⟩ := hhi
-  have hq := upperQuantile_spec F.conv_antitone F.conv_rightContinuous ⟨y₁, hy₁'⟩ hlo
+  have hq := upperQuantile_spec F.antitone_one_sub F.conv_rightContinuous ⟨y₁, hy₁'⟩ hlo
   refine ⟨hq.1, hq.2, ?_⟩
   have hle : sInf {y | 1 - F y ≤ lam} ≤ y₁ := by
     by_contra hcon
     have := hq.2 y₁ (not_le.1 hcon)
     linarith
-  exact hy₁.trans_le (F.conv_antitone hle)
+  exact hy₁.trans_le (F.antitone_one_sub hle)
 
 omit hU in
 /-- **No relative jumps at the quantiles.** For every `θ < 1` there is `x₀ < x_F` such that,
@@ -397,7 +394,7 @@ private lemma conv_claimJ (hU : TendstoUniformlyOn
     by_contra hcon'
     push Not at hcon'
     obtain ⟨-, -, h3, -⟩ := hgood t ht
-    have h4 : 1 - F (t + β t * δ) ≤ 1 - F q := F.conv_antitone hcon'
+    have h4 : 1 - F (t + β t * δ) ≤ 1 - F q := F.antitone_one_sub hcon'
     have h5 : θ * lam < θ * (1 - F t) := mul_lt_mul_of_pos_left (hq t ht.2) hθ0
     linarith
   set S := (fun y ↦ 1 - F y) '' Ioo x₀ q with hS
@@ -439,7 +436,7 @@ theorem tendsto_quantile_of_tendstoUniformlyOn_excessSurvival {κ : Type*} {l : 
       (exists_tail_pos_le_of_tendstoUniformlyOn_excessSurvival hβ hU hk1)
     refine ⟨hk1, h1, h2, h3, ?_⟩
     by_contra hcon
-    have := F.conv_antitone (not_lt.1 hcon)
+    have := F.antitone_one_sub (not_lt.1 hcon)
     simp only at this
     linarith
   refine ⟨?_, ?_, hspec⟩
@@ -570,7 +567,7 @@ private lemma conv_step {c : ℝ} (hc : 1 < c) :
     have : s t ≤ t + β t * x := by
       have := (div_pos_iff_of_pos_right h2.2.2.1).1 h1
       linarith
-    exact (F.conv_antitone this).trans h3.2.1
+    exact (F.antitone_one_sub this).trans h3.2.1
   · have hneg : c⁻¹ ^ (-ξ) * (x - gevTransform ξ c) < 0 :=
       mul_neg_of_pos_of_neg hρ (by linarith)
     filter_upwards [(hlin x).eventually (gt_mem_nhds hneg), hst, hsp] with t h1 h2 h3
@@ -690,7 +687,7 @@ theorem isRegularlyVarying_of_tendstoUniformlyOn_excessSurvival (hξ : 0 < ξ)
       (gpdSurvivalAll ξ 1) F.upperEndpointFilter (Ici 0)) :
     IsRegularlyVarying (fun x ↦ 1 - F x) (-(1 / ξ)) := by
   obtain ⟨a, b, ha, hseq⟩ := conv_seq hβ hU
-  refine Frechet.isRegularlyVarying_of_tendsto_mul_affine F.conv_antitone (one_div_pos.2 hξ)
+  refine Frechet.isRegularlyVarying_of_tendsto_mul_affine F.antitone_one_sub (one_div_pos.2 hξ)
     (a := fun n ↦ a n / ξ) (b := fun n ↦ b n - a n / ξ) (fun n ↦ div_pos (ha n) hξ)
     fun y hy ↦ ?_
   have hrel : Tendsto (fun t ↦ (1 - F (t + β t * ((y - 1) / ξ))) / (1 - F t))
@@ -816,7 +813,7 @@ theorem isInMDAGEV_iff_exists_tendsto_sup_excessSurvival (ξ : ℝ) :
   have h1 : 0 ≤ excessSurvival (fun y ↦ 1 - F y) u (β u * x) :=
     div_nonneg (F.conv_nonneg _) (F.conv_nonneg _)
   have h2 : excessSurvival (fun y ↦ 1 - F y) u (β u * x) ≤ 1 :=
-    div_le_one_of_le₀ (F.conv_antitone (le_add_of_nonneg_right (mul_nonneg hu.le hx')))
+    div_le_one_of_le₀ (F.antitone_one_sub (le_add_of_nonneg_right (mul_nonneg hu.le hx')))
       (F.conv_nonneg _)
   have h3 := gpdSurvivalAll_nonneg ξ 1 x
   have h4 := gpdSurvivalAll_le_one (ξ := ξ) one_pos hx'

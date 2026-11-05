@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
 import ExtremeValueTheory.Dependence.SRE
+import ExtremeValueTheory.RegularVariation.Basic
 import Mathlib.Analysis.MeanInequalitiesPow
 import Mathlib.MeasureTheory.Integral.MeanInequalities
 import Mathlib.Analysis.Convex.SpecificFunctions.Pow
@@ -197,13 +198,7 @@ theorem lintegral_enorm_rpow_stationaryLaw_lt_top
 
 /-! ### The Kesten exponent: `E |A|^κ = 1` -/
 
-/-- `x^t ≤ 1 + x^S` for `x ≥ 0`, `0 ≤ t ≤ S`. -/
-theorem rpow_le_one_add_rpow {x t S : ℝ} (hx : 0 ≤ x) (ht : 0 ≤ t) (htS : t ≤ S) :
-    x ^ t ≤ 1 + x ^ S := by
-  rcases le_total x 1 with h | h
-  · linarith [Real.rpow_le_one hx h ht, Real.rpow_nonneg hx S]
-  · linarith [Real.rpow_le_rpow_of_exponent_le h htS]
-
+/-- `x ^ q ≤ 1 + x` for `x ≥ 0`, `0 ≤ q ≤ 1`. -/
 theorem rpow_le_one_add {x q : ℝ} (hx : 0 ≤ x) (hq0 : 0 ≤ q) (hq1 : q ≤ 1) :
     x ^ q ≤ 1 + x := by
   simpa using rpow_le_one_add_rpow hx hq0 hq1
@@ -546,6 +541,9 @@ theorem not_stationaryLaw_tail_le
   rw [lintegral_enorm_rpow_stationaryLaw_eq_top_of_lt hA hneg hB hApos hBpos hB0 hκ h1 hnd hr]
     at hfin
   exact lt_irrefl _ hfin
+
+@[deprecated (since := "2026-11-05")]
+alias rpow_le_one_add_rpow := ExtremeValueTheory.rpow_le_one_add_rpow
 
 end SRE
 

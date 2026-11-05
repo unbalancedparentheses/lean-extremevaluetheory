@@ -48,15 +48,6 @@ private lemma pos_of_antitone' {F : ℝ → ℝ} (hF : Antitone F) (hpos : ∀�
   obtain ⟨s, hs, hts⟩ := (hpos.and (eventually_ge_atTop t)).exists
   exact hs.trans_le (hF hts)
 
-private lemma rpow_le_one_add_rpow {y p q : ℝ} (hy : 0 < y) (hp : 0 ≤ p) (hpq : p ≤ q) :
-    y ^ p ≤ 1 + y ^ q := by
-  rcases le_total y 1 with h | h
-  · have := rpow_le_one hy.le h hp
-    have := rpow_nonneg hy.le q
-    linarith
-  · have := rpow_le_rpow_of_exponent_le h hpq
-    linarith
-
 namespace IsRegularlyVarying
 
 variable {F : ℝ → ℝ} {α : ℝ}
@@ -114,8 +105,8 @@ theorem tendsto_integral_div (hF : Antitone F) (hRV : IsRegularlyVarying F (-α)
         rw [div_div_cancel_left' hx0.ne', inv_rpow hy0.le, rpow_neg hy0.le]
       rw [hinv, hinv, show -(-α + δ) = α - δ by ring, show -(-α - δ) = α + δ by ring] at h
       have hm : max (y ^ (α - δ)) (y ^ (α + δ)) ≤ 1 + y ^ (α + ε) :=
-        max_le (rpow_le_one_add_rpow hy0 (by linarith) (by linarith))
-          (rpow_le_one_add_rpow hy0 (by linarith) (by linarith))
+        max_le (rpow_le_one_add_rpow hy0.le (by linarith) (by linarith))
+          (rpow_le_one_add_rpow hy0.le (by linarith) (by linarith))
       calc F (x / y) / F x ≤ 2 * max (y ^ (α - δ)) (y ^ (α + δ)) := h
         _ ≤ 2 * (1 + y ^ (α + ε)) := by linarith
         _ ≤ K * (1 + y ^ (α + ε)) :=
@@ -128,7 +119,7 @@ theorem tendsto_integral_div (hF : Antitone F) (hRV : IsRegularlyVarying F (-α)
       have h2 : (x / x₀) ^ (α + δ) ≤ y ^ (α + δ) :=
         rpow_le_rpow (div_pos hx0 hx₀).le hxx (by linarith)
       have h3 : y ^ (α + δ) ≤ 1 + y ^ (α + ε) :=
-        rpow_le_one_add_rpow hy0 (by linarith) (by linarith)
+        rpow_le_one_add_rpow hy0.le (by linarith) (by linarith)
       have hFx0 := hFpos x₀
       have e : F (x / y) / F x = F (x / y) / F x₀ * (F x₀ / F x) := by
         field_simp

@@ -270,20 +270,6 @@ lemma skorokhodEDist_eq_zero_of_billingsleyEDist_eq_zero (h : billingsleyEDist x
   have := skorokhodEDist_le_exp_billingsleyEDist_sub_one (h ▸ ENNReal.zero_ne_top)
   simpa [h] using this
 
-private lemma exists_pos_separated (S : Finset I) :
-    ∃ η > (0 : ℝ), ∀ a ∈ S, ∀ b ∈ S, a ≠ b → 4 * η ≤ dist a b := by
-  classical
-  set P := (S ×ˢ S).filter fun p : I × I ↦ p.1 ≠ p.2
-  rcases P.eq_empty_or_nonempty with hP | hP
-  · refine ⟨1, one_pos, fun a ha b hb hab ↦ ?_⟩
-    have : (a, b) ∈ P := Finset.mem_filter.2 ⟨Finset.mem_product.2 ⟨ha, hb⟩, hab⟩
-    simp [hP] at this
-  · obtain ⟨p₀, hp₀, hmin⟩ := P.exists_min_image (fun p ↦ dist p.1 p.2) hP
-    have hne := dist_pos.2 (Finset.mem_filter.1 hp₀).2
-    refine ⟨dist p₀.1 p₀.2 / 4, by positivity, fun a ha b hb hab ↦ ?_⟩
-    have := hmin (a, b) (Finset.mem_filter.2 ⟨Finset.mem_product.2 ⟨ha, hb⟩, hab⟩)
-    linarith
-
 /-- **Billingsley, Theorem 12.1.** For a càdlàg function `x` and `ε > 0` there is `δ > 0` such
 that every `y` at Skorokhod distance less than `δ` from `x` is at Billingsley distance less than
 `ε` from `x`. -/

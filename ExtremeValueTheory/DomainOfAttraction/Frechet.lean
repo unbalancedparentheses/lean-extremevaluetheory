@@ -247,18 +247,18 @@ private lemma tendsto_of_doubling {A B : ℝ → ℝ} {ρ : ℝ} (hρ : 1 < ρ)
   have : M ≤ |M| := le_abs_self M
   nlinarith
 
-/-- If `t * g (p t) → μ` and `t * g (q t) → ν` with `ν < μ` and `g` antitone, then
-eventually `p t < q t`. -/
-private lemma eventually_lt_of_tendsto_mul {g : ℝ → ℝ} (hg : Antitone g) {p q : ℝ → ℝ}
-    {μ ν : ℝ} (hp : Tendsto (fun t ↦ t * g (p t)) atTop (𝓝 μ))
-    (hq : Tendsto (fun t ↦ t * g (q t)) atTop (𝓝 ν)) (hμν : ν < μ) :
-    ∀ᶠ t in atTop, p t < q t := by
+/-- If `g` is antitone, `s i * g (p i) → μ`, `s i * g (q i) → ν` with `ν < μ`, and `s ≥ 0`
+eventually, then eventually `p i < q i`. -/
+theorem eventually_lt_of_tendsto_mul {ι : Type*} {L : Filter ι} {s : ι → ℝ} {g : ℝ → ℝ}
+    (hg : Antitone g) {p q : ι → ℝ} {μ ν : ℝ} (hs : ∀ᶠ i in L, 0 ≤ s i)
+    (hp : Tendsto (fun i ↦ s i * g (p i)) L (𝓝 μ))
+    (hq : Tendsto (fun i ↦ s i * g (q i)) L (𝓝 ν)) (hμν : ν < μ) :
+    ∀ᶠ i in L, p i < q i := by
   filter_upwards [hp.eventually (lt_mem_nhds (show (μ + ν) / 2 < μ by linarith)),
-    hq.eventually (gt_mem_nhds (show ν < (μ + ν) / 2 by linarith)), eventually_gt_atTop 0]
-    with t h1 h2 ht
+    hq.eventually (gt_mem_nhds (show ν < (μ + ν) / 2 by linarith)), hs] with i h1 h2 hi
   by_contra hcon
   push Not at hcon
-  have := mul_le_mul_of_nonneg_left (hg hcon) ht.le
+  have := mul_le_mul_of_nonneg_left (hg hcon) hi
   linarith
 
 private lemma tendsto_real_of_tendsto_nat {φ : ℕ → ℝ} {L : ℝ}
@@ -410,13 +410,17 @@ theorem isRegularlyVarying_of_tendsto_mul_affine {g : ℝ → ℝ} (hg : Antiton
     intro δ hδ hδκ
     have p1 : 0 < κ - δ := by linarith
     have p3 : 0 < 2 * κ - δ := by linarith
-    have q1 := eventually_lt_of_tendsto_mul hg (hreal (κ - δ) p1) (hdbl 1 one_pos)
+    have q1 := eventually_lt_of_tendsto_mul (s := fun t : ℝ ↦ t) hg
+      ((eventually_gt_atTop 0).mono fun _ h ↦ h.le) (hreal (κ - δ) p1) (hdbl 1 one_pos)
       (by rw [hone, ← hκα]; exact Real.rpow_lt_rpow_of_neg p1 (by linarith) hnα)
-    have q2 := eventually_lt_of_tendsto_mul hg (hdbl 1 one_pos) (hreal (κ + δ) (by linarith))
+    have q2 := eventually_lt_of_tendsto_mul (s := fun t : ℝ ↦ t) hg
+      ((eventually_gt_atTop 0).mono fun _ h ↦ h.le) (hdbl 1 one_pos) (hreal (κ + δ) (by linarith))
       (by rw [hone, ← hκα]; exact Real.rpow_lt_rpow_of_neg hκpos (by linarith) hnα)
-    have q3 := eventually_lt_of_tendsto_mul hg (hreal (2 * κ - δ) p3) (hdbl 2 two_pos)
+    have q3 := eventually_lt_of_tendsto_mul (s := fun t : ℝ ↦ t) hg
+      ((eventually_gt_atTop 0).mono fun _ h ↦ h.le) (hreal (2 * κ - δ) p3) (hdbl 2 two_pos)
       (by rw [← h2κα]; exact Real.rpow_lt_rpow_of_neg p3 (by linarith) hnα)
-    have q4 := eventually_lt_of_tendsto_mul hg (hdbl 2 two_pos) (hreal (2 * κ + δ) (by linarith))
+    have q4 := eventually_lt_of_tendsto_mul (s := fun t : ℝ ↦ t) hg
+      ((eventually_gt_atTop 0).mono fun _ h ↦ h.le) (hdbl 2 two_pos) (hreal (2 * κ + δ) (by linarith))
       (by rw [← h2κα]; exact Real.rpow_lt_rpow_of_neg (by linarith) (by linarith) hnα)
     filter_upwards [q1, q2, q3, q4] with t r1 r2 r3 r4
     have hA2 : A (2 * t) < A t * (κ + 2 * δ) := by linarith
@@ -493,10 +497,6 @@ private lemma standardFrechetCDF_mem_Ioo {α x : ℝ} (hα : 0 < α) (hx : 0 < x
 private lemma neg_log_standardFrechetCDF {α x : ℝ} (hα : 0 < α) (hx : 0 < x) :
     -Real.log (standardFrechetCDF hα x) = x ^ (-α) := by
   rw [standardFrechetCDF_apply_pos_eq hα hx, Real.log_exp, neg_neg, Real.rpow_eq_pow]
-
-private lemma antitone_one_sub (F : CumulativeDistributionFunction) :
-    Antitone (fun x ↦ 1 - F x) :=
-  fun _ _ h ↦ sub_le_sub_left (F.mono' h) 1
 
 /-- **Gnedenko's theorem, sufficiency**: if the tail `1 - F` is regularly varying with index
 `-α`, then `F` is in the maximum domain of attraction of the Fréchet distribution `Φ_α`. -/

@@ -8,6 +8,7 @@ import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Topology.UniformSpace.LocallyUniformConvergence
 import Mathlib.Topology.MetricSpace.Pseudo.Lemmas
 
+import Mathlib.Analysis.SpecialFunctions.ImproperIntegrals
 /-!
 # Regularly and slowly varying functions
 
@@ -43,6 +44,19 @@ This file develops the basic theory, following Bingham, Goldie and Teugels,
 open Filter Topology Set Real
 
 namespace ExtremeValueTheory
+
+/-- `x ^ t ≤ 1 + x ^ S` for `x ≥ 0` and `0 ≤ t ≤ S`. -/
+theorem rpow_le_one_add_rpow {x t S : ℝ} (hx : 0 ≤ x) (ht : 0 ≤ t) (htS : t ≤ S) :
+    x ^ t ≤ 1 + x ^ S := by
+  rcases le_total x 1 with h | h
+  · linarith [Real.rpow_le_one hx h ht, Real.rpow_nonneg hx S]
+  · linarith [Real.rpow_le_rpow_of_exponent_le h htS]
+
+/-- `∫_0^∞ e^{-α u} du = 1 / α` for `α > 0`. -/
+theorem integral_exp_neg_mul_Ioi {α : ℝ} (hα : 0 < α) :
+    ∫ u in Ioi 0, Real.exp (-α * u) = 1 / α := by
+  rw [integral_exp_mul_Ioi (neg_lt_zero.2 hα) 0]
+  simp only [mul_zero, Real.exp_zero, neg_div_neg_eq]
 
 /-- A function `f : ℝ → ℝ` is *slowly varying* (at `+∞`) if it is eventually positive and
 `f (c * x) / f x → 1` as `x → ∞`, for every `c > 0`. See [BGT, §1.2]. -/
