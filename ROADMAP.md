@@ -557,13 +557,13 @@ small contributions together, so direct outreach (H.8) matters at least as much 
       - the `lake` path, and retrying on "too many open files";
       - checkpoint commits pushed to a `wip/<task>` branch with a draft pull request;
       - the verification list before merging.
-- [ ] Labels: `area:*` (classical, POT, statistics, dependence, multivariate, processes, heavy tails,
+- [x] Labels: `area:*` (classical, POT, statistics, dependence, multivariate, processes, heavy tails,
       ForMathlib), `type:*` (proof, refactor, docs, tooling, research), `difficulty:*` (small, medium,
       hard), `status:*` (ready, blocked-upstream, research), `open-problem`, `good first issue`.
       Document them in `docs/ISSUE_LABELS.md` and create them with `gh label create`
 - [ ] Make the issue tracker the only backlog: move the open items of A–G into issues, and keep only the
       strategy in this file, linking the issues
-- [ ] 10–15 `good first issue` items, for example:
+- [x] 9 `good first issue` items, filed as issues,, for example:
       - a worked example for one standard law (see D, Usability);
       - known-answer tests for a recent result;
       - the unbiasedness of the sample probability-weighted moments `b_r` (A.2);
@@ -590,7 +590,7 @@ small contributions together, so direct outreach (H.8) matters at least as much 
       compiles from source; we depend only on Mathlib, so `lake exe cache get` should be enough
 
 ### H.5 Open problems as issues
-- [ ] One issue per problem in [`docs/PRACTICAL_OPEN_PROBLEMS.md`](docs/PRACTICAL_OPEN_PROBLEMS.md)
+- [x] One issue per problem that the surveys mark as explicitly open (those resolved, unverified or out of scope stay in the surveys) in [`docs/PRACTICAL_OPEN_PROBLEMS.md`](docs/PRACTICAL_OPEN_PROBLEMS.md)
       and [`docs/OPEN_PROBLEMS_SURVEY2.md`](docs/OPEN_PROBLEMS_SURVEY2.md), numbered `EVT-OP-001`, …,
       labelled `open-problem`. Each issue gives the source and quote, why it matters, and what the
       library already has
