@@ -49,8 +49,8 @@ with `p = (1 + ξ)² Γ(1 + 2ξ)` (`gevFisherInfoMuSigma`).
 The shape score `∂_ξ ℓ` involves `log t`, and its moments involve the digamma function and
 `π²/6`; the shape row of the information matrix and the trivariate score CLT are in
 `ExtremeValueTheory.Statistics.GEVFisherInformation`, the information identity (expected
-Hessian) in `ExtremeValueTheory.Statistics.GEVHessian`. The joint asymptotic normality of the
-three-parameter MLE (Bücher–Segers 2017) is not formalized.
+Hessian) in `ExtremeValueTheory.Statistics.GEVHessian`, and the joint asymptotic normality of the
+three-parameter MLE in `ExtremeValueTheory.Statistics.GEVMLENormality`.
 
 ## References
 

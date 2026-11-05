@@ -105,4 +105,102 @@ theorem test_nonvacuous_ae_tendsto_gevMLE :
     ⟨⟨by norm_num, by norm_num⟩, ⟨by norm_num, by norm_num⟩, ⟨by norm_num, by norm_num⟩⟩
   exact ae_tendsto_gevMLE (θ₀ := ((1 / 4 : ℝ), (1 / 2 : ℝ), (3 / 2 : ℝ))) hK hKS hθ hσ hlaw hind
 
+/-- Test-specific: `gevK` is compact. -/
+private theorem isCompact_gevK : IsCompact gevK :=
+  isCompact_Icc.prod (isCompact_Icc.prod isCompact_Icc)
+
+/-- Test-specific: `gevK` lies in the admissible region `ξ > -1`, `σ > 0`. -/
+private theorem gevK_sub : ∀ p ∈ gevK, -1 < p.1 ∧ 0 < p.2.2 := by
+  rintro ⟨a, b, c⟩ ⟨⟨ha, -⟩, -, ⟨hc, -⟩⟩
+  exact ⟨by simp only at ha ⊢; linarith, by simp only at hc ⊢; linarith⟩
+
+/-- Test-specific: a parameter with `|ξ| < 1/2`, `0 < μ < 1`, `1 < σ < 2` is interior to `gevK`. -/
+private theorem mem_interior_gevK {ξ μ σ : ℝ} (h1 : -1 / 2 < ξ) (h2 : ξ < 1 / 2) (h3 : 0 < μ)
+    (h4 : μ < 1) (h5 : 1 < σ) (h6 : σ < 2) : (ξ, μ, σ) ∈ interior gevK := by
+  rw [gevK, interior_prod_eq, interior_prod_eq, interior_Icc, interior_Icc, interior_Icc]
+  exact ⟨⟨h1, h2⟩, ⟨h3, h4⟩, ⟨h5, h6⟩⟩
+
+/-- Exercises `exists_gevMLE_tendstoInDistribution` (joint asymptotic normality of the
+three-parameter GEV MLE) for a **positive shape**, the moving lower endpoint: iid
+`GEV(ξ = 1/4, μ = 1/2, σ = 3/2)` samples, `K = [-1/2, 1/2] × [0, 1] × [1, 2]`. All hypotheses
+discharged: a measurable maximum likelihood estimator exists and is asymptotically normal. -/
+theorem test_nonvacuous_exists_gevMLE_tendstoInDistribution_pos :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ)
+      (_ : IsProbabilityMeasure P), iIndepFun X P ∧
+      ∃ g : (n : ℕ) → (Fin n → ℝ) → ℝ × ℝ × ℝ, (∀ n, Measurable (g n)) ∧
+        (∀ n x, g n x ∈ gevK ∧
+          IsMaxOn (fun p : ℝ × ℝ × ℝ => gevLogLikE p.1 p.2.1 p.2.2 x) gevK (g n x)) ∧
+        TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
+            !₂[(g n (fun i : Fin n => X i ω)).1 - 1 / 4,
+              (g n (fun i : Fin n => X i ω)).2.1 - 1 / 2,
+              (g n (fun i : Fin n => X i ω)).2.2 - 3 / 2])
+          atTop (id : EuclideanSpace ℝ (Fin 3) → EuclideanSpace ℝ (Fin 3)) (fun _ => P)
+          (multivariateGaussian 0 (gevMLECov (1 / 4) (3 / 2))) := by
+  have hσ : (0 : ℝ) < 3 / 2 := by norm_num
+  obtain ⟨Ω, _, P, X, -, hlaw, hind, hP⟩ :=
+    exists_iid ℕ (gevLocScaleCDF (1 / 4) (1 / 2) hσ).measure
+  have := hP
+  refine ⟨Ω, _, P, X, hP, hind, ?_⟩
+  exact exists_gevMLE_tendstoInDistribution isCompact_gevK gevK_sub
+    (mem_interior_gevK (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num)) (by norm_num) (by norm_num) hσ hlaw hind HasLaw.id
+
+/-- Exercises `exists_gevMLE_tendstoInDistribution` for a **negative shape** in the regular range,
+the moving upper endpoint: iid `GEV(ξ = -2/5, μ = 1/2, σ = 3/2)` samples, `-1/2 < ξ < 0`,
+`K = [-1/2, 1/2] × [0, 1] × [1, 2]`. All hypotheses discharged. -/
+theorem test_nonvacuous_exists_gevMLE_tendstoInDistribution_neg :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ)
+      (_ : IsProbabilityMeasure P), iIndepFun X P ∧
+      ∃ g : (n : ℕ) → (Fin n → ℝ) → ℝ × ℝ × ℝ, (∀ n, Measurable (g n)) ∧
+        (∀ n x, g n x ∈ gevK ∧
+          IsMaxOn (fun p : ℝ × ℝ × ℝ => gevLogLikE p.1 p.2.1 p.2.2 x) gevK (g n x)) ∧
+        TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
+            !₂[(g n (fun i : Fin n => X i ω)).1 - -(2 / 5),
+              (g n (fun i : Fin n => X i ω)).2.1 - 1 / 2,
+              (g n (fun i : Fin n => X i ω)).2.2 - 3 / 2])
+          atTop (id : EuclideanSpace ℝ (Fin 3) → EuclideanSpace ℝ (Fin 3)) (fun _ => P)
+          (multivariateGaussian 0 (gevMLECov (-(2 / 5)) (3 / 2))) := by
+  have hσ : (0 : ℝ) < 3 / 2 := by norm_num
+  obtain ⟨Ω, _, P, X, -, hlaw, hind, hP⟩ :=
+    exists_iid ℕ (gevLocScaleCDF (-(2 / 5)) (1 / 2) hσ).measure
+  have := hP
+  refine ⟨Ω, _, P, X, hP, hind, ?_⟩
+  exact exists_gevMLE_tendstoInDistribution isCompact_gevK gevK_sub
+    (mem_interior_gevK (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num)) (by norm_num) (by norm_num) hσ hlaw hind HasLaw.id
+
+/-- Exercises `exists_gevMLE_returnLevel_tendstoInDistribution` (the unconditional normality of the
+maximum likelihood return level): the `100`-block return level for iid
+`GEV(ξ = 1/4, μ = 1/2, σ = 3/2)` samples. The limit is a nondegenerate Gaussian, since
+`gevReturnLevelVar_pos`. All hypotheses discharged. -/
+theorem test_nonvacuous_exists_gevMLE_returnLevel :
+    0 < gevReturnLevelVar (1 / 4) (3 / 2) 100 ∧
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ)
+      (_ : IsProbabilityMeasure P), iIndepFun X P ∧
+      ∃ g : (n : ℕ) → (Fin n → ℝ) → ℝ × ℝ × ℝ, (∀ n, Measurable (g n)) ∧
+        (∀ n x, g n x ∈ gevK ∧
+          IsMaxOn (fun p : ℝ × ℝ × ℝ => gevLogLikE p.1 p.2.1 p.2.2 x) gevK (g n x)) ∧
+        TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) *
+          (gevReturnLevel (g n (fun i : Fin n => X i ω)).1 (g n (fun i : Fin n => X i ω)).2.1
+            (g n (fun i : Fin n => X i ω)).2.2 100 - gevReturnLevel (1 / 4) (1 / 2) (3 / 2) 100))
+          atTop (id : ℝ → ℝ) (fun _ => P)
+          (gaussianReal 0 (gevReturnLevelVar (1 / 4) (3 / 2) 100).toNNReal) := by
+  have hσ : (0 : ℝ) < 3 / 2 := by norm_num
+  refine ⟨gevReturnLevelVar_pos hσ (by norm_num) (by norm_num) 100, ?_⟩
+  obtain ⟨Ω, _, P, X, -, hlaw, hind, hP⟩ :=
+    exists_iid ℕ (gevLocScaleCDF (1 / 4) (1 / 2) hσ).measure
+  have := hP
+  refine ⟨Ω, _, P, X, hP, hind, ?_⟩
+  exact exists_gevMLE_returnLevel_tendstoInDistribution (m := 100) isCompact_gevK gevK_sub
+    (mem_interior_gevK (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num)) (by norm_num) (by norm_num) hσ (by norm_num) hlaw hind HasLaw.id
+
+/-- The asymptotic covariance is the inverse of the information, in the order `(ξ, μ, σ)`: the
+`(ξ, ξ)` entry of `gevMLECov` is the `(ξ, ξ)` entry of the inverse of `gevFisherInfo`, whose order
+is `(μ, σ, ξ)`, and likewise for the other coordinates. -/
+example (ξ σ : ℝ) :
+    gevMLECov ξ σ 0 0 = (gevFisherInfo ξ σ)⁻¹ 2 2 ∧ gevMLECov ξ σ 1 1 = (gevFisherInfo ξ σ)⁻¹ 0 0 ∧
+      gevMLECov ξ σ 2 2 = (gevFisherInfo ξ σ)⁻¹ 1 1 ∧ gevMLECov ξ σ 0 1 = (gevFisherInfo ξ σ)⁻¹ 2 0 :=
+  ⟨rfl, rfl, rfl, rfl⟩
+
 end ExtremeValueTheory.Test.NonVacuity
