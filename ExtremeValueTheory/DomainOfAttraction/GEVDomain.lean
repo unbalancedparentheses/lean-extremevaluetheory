@@ -5,6 +5,8 @@ Authors: Federico Carrone
 -/
 import ExtremeValueTheory.PeaksOverThreshold.Balkema
 import ExtremeValueTheory.DomainOfAttraction.VonMises
+import ExtremeValueTheory.GEV.Family
+import ExtremeValueTheory.Statistics.GEVLikelihood
 
 /-!
 # The unified domain of attraction `MDA(H_ξ)`: API and examples
@@ -18,6 +20,12 @@ and places the textbook examples in it, with the de Haan–Ferreira sign convent
 
 * `isInMDAGEV_iff_of_pos`, `isInMDAGEV_iff_of_neg`, `isInMDAGEV_zero_iff`: the three cases.
 * `IsInMDAFrechet.isInMDAGEV`, `IsInMDAWeibull.isInMDAGEV`, `IsInMDAGumbel.isInMDAGEV`.
+* `isInMDAGEV_iff_exists_tendsto_gevCDF`: `IsInMDAGEV ξ` is the textbook statement, convergence of
+  the normalized `F ^ n` to `gevCDF ξ` itself.
+* `isInMDAGEV_iff_exists_tendsto_gevCDF_of_continuousAt`: the same at continuity points, which is
+  the literal form of weak convergence; `gevCDF ξ` is continuous, so the two agree.
+* `exists_isInMDAGEV_of_tendsto`: a nondegenerate limit of normalized maxima places `F` in some
+  `MDA(H_ξ)`.
 * `isInMDAGEV_paretoCDF`: Pareto(`α`) is in `MDA(H_{1/α})`.
 * `isInMDAGEV_powerCDF`: `1 - (1 - x)^α` (uniform for `α = 1`) is in `MDA(H_{-1/α})`.
 * `isInMDAGEV_standardExponentialCDF`: the standard exponential law is in `MDA(H_0)`.
@@ -30,7 +38,7 @@ and places the textbook examples in it, with the de Haan–Ferreira sign convent
   Finance*, Springer (1997), Tables 3.4.2–3.4.4 [EKM].
 -/
 
-open Real
+open Real Filter Topology ExtremeValueTheory
 
 namespace CumulativeDistributionFunction
 
@@ -80,5 +88,89 @@ theorem isInMDAGEV_powerCDF {α : ℝ} (hα : 0 < α) : (powerCDF hα).IsInMDAGE
 /-- **The standard exponential law is in `MDA(H_0)`** ([EKM, Table 3.4.4]). -/
 theorem isInMDAGEV_standardExponentialCDF : standardExponentialCDF.IsInMDAGEV 0 :=
   isInMDAGumbel_standardExponentialCDF.isInMDAGEV
+
+/-! ### The link with `gevCDF` -/
+
+/-- Replacing the limit `G` by a member `A • G` of its type does not change membership in the
+domain of attraction: the norming maps change by the fixed map `A`. -/
+private lemma exists_tendsto_smul_of_exists_tendsto {G : CumulativeDistributionFunction}
+    (A : AffineIncrEquiv)
+    (h : ∃ As : ℕ → AffineIncrEquiv, ∀ x, Tendsto (fun n : ℕ ↦ ((As n • F) x) ^ n) atTop (𝓝 (G x))) :
+    ∃ As : ℕ → AffineIncrEquiv,
+      ∀ x, Tendsto (fun n : ℕ ↦ ((As n • F) x) ^ n) atTop (𝓝 ((A • G) x)) := by
+  obtain ⟨As, hAs⟩ := h
+  refine ⟨fun n ↦ A * As n, fun x ↦ ?_⟩
+  simpa only [mul_smul, mulAction_apply_eq] using hAs (A⁻¹ x)
+
+/-- `exists_tendsto_smul_of_exists_tendsto` as an equivalence. -/
+private lemma exists_tendsto_iff_exists_tendsto_smul {G : CumulativeDistributionFunction}
+    (A : AffineIncrEquiv) :
+    (∃ As : ℕ → AffineIncrEquiv, ∀ x, Tendsto (fun n : ℕ ↦ ((As n • F) x) ^ n) atTop (𝓝 (G x))) ↔
+      ∃ As : ℕ → AffineIncrEquiv,
+        ∀ x, Tendsto (fun n : ℕ ↦ ((As n • F) x) ^ n) atTop (𝓝 ((A • G) x)) := by
+  refine ⟨exists_tendsto_smul_of_exists_tendsto A, fun h ↦ ?_⟩
+  simpa only [inv_smul_smul] using exists_tendsto_smul_of_exists_tendsto A⁻¹ h
+
+/-- **`IsInMDAGEV ξ` is the textbook domain of attraction of `H_ξ`** (compare [dHF, Theorem 1.1.3]):
+`F` belongs to `MDA(H_ξ)` if and only if the normalized powers `F (a_n x + b_n) ^ n` converge to
+`gevCDF ξ x` for every `x`.
+
+`IsInMDAGEV` is defined as a case split on the sign of `ξ` against the standard Fréchet, Weibull and
+Gumbel laws. This theorem shows that the split is only a change of normalization, by the fixed
+affine maps of `mkOfCoefs_smul_gevCDF_of_pos` and `mkOfCoefs_smul_gevCDF_of_neg`.
+
+Convergence is stated for every `x`. The limit is continuous, so this is the same as convergence at
+continuity points (`isInMDAGEV_iff_exists_tendsto_gevCDF_of_continuousAt`). -/
+theorem isInMDAGEV_iff_exists_tendsto_gevCDF (ξ : ℝ) :
+    F.IsInMDAGEV ξ ↔ ∃ As : ℕ → AffineIncrEquiv,
+      ∀ x, Tendsto (fun n : ℕ ↦ ((As n • F) x) ^ n) atTop (𝓝 (gevCDF ξ x)) := by
+  rcases lt_trichotomy ξ 0 with hξ | rfl | hξ
+  · rw [isInMDAGEV_iff_of_neg hξ, exists_tendsto_iff_exists_tendsto_smul
+      (AffineIncrEquiv.mkOfCoefs (neg_pos.2 hξ) (-1)), mkOfCoefs_smul_gevCDF_of_neg hξ]
+    rfl
+  · rw [isInMDAGEV_zero_iff, gevCDF_zero]
+    rfl
+  · rw [isInMDAGEV_iff_of_pos hξ, exists_tendsto_iff_exists_tendsto_smul
+      (AffineIncrEquiv.mkOfCoefs hξ 1), mkOfCoefs_smul_gevCDF_of_pos hξ]
+    rfl
+
+/-- `H_ξ` is continuous, as a c.d.f. -/
+theorem continuous_gevCDF (ξ : ℝ) : Continuous (gevCDF ξ) := by
+  rw [coe_gevCDF]
+  exact continuous_gevFun ξ
+
+/-- **`IsInMDAGEV ξ` as weak convergence**: `F` is in `MDA(H_ξ)` if and only if the normalized
+powers `F (a_n x + b_n) ^ n` converge to `gevCDF ξ x` at every continuity point `x` of `gevCDF ξ`.
+Every point is a continuity point (`continuous_gevCDF`). -/
+theorem isInMDAGEV_iff_exists_tendsto_gevCDF_of_continuousAt (ξ : ℝ) :
+    F.IsInMDAGEV ξ ↔ ∃ As : ℕ → AffineIncrEquiv, ∀ x, ContinuousAt (gevCDF ξ) x →
+      Tendsto (fun n : ℕ ↦ ((As n • F) x) ^ n) atTop (𝓝 (gevCDF ξ x)) := by
+  rw [isInMDAGEV_iff_exists_tendsto_gevCDF]
+  exact exists_congr fun As ↦ forall_congr' fun x ↦
+    ⟨fun h _ ↦ h, fun h ↦ h (continuous_gevCDF ξ).continuousAt⟩
+
+/-- **Fisher–Tippett–Gnedenko, domain of attraction form** ([dHF, Theorem 1.1.3]): if the normalized
+powers `F (a_n x + b_n) ^ n` converge at the continuity points of a nondegenerate c.d.f. `G`, then
+`F` is in `MDA(H_ξ)` for some `ξ`.
+
+`G` itself is of the type of `gevCDF ξ`: see `IsExtremeValueDistr.exists_smul_eq_gevCDF`. -/
+theorem exists_isInMDAGEV_of_tendsto {G : CumulativeDistributionFunction}
+    (hG : ¬G.IsDegenerate) {As : ℕ → AffineIncrEquiv}
+    (h : ∀ x, ContinuousAt G x → Tendsto (fun n : ℕ ↦ ((As n • F) x) ^ n) atTop (𝓝 (G x))) :
+    ∃ ξ, F.IsInMDAGEV ξ := by
+  obtain ⟨A, ξ, hA⟩ := IsExtremeValueDistr.exists_smul_eq_gevCDF
+    (show G.IsExtremeValueDistr from ⟨hG, F, As, h⟩)
+  refine ⟨ξ, (isInMDAGEV_iff_exists_tendsto_gevCDF ξ).2 ⟨fun n ↦ A * As n, fun x ↦ ?_⟩⟩
+  -- `G = H_ξ ∘ A` is continuous, since `H_ξ` and `A` are
+  have hGc : Continuous G := by
+    have hAy : ∀ y, A⁻¹ (A y) = y := fun y ↦ by
+      rw [← AffineIncrEquiv.mul_apply_eq_comp_apply, inv_mul_cancel, AffineIncrEquiv.one_apply]
+    have : (G : ℝ → ℝ) = fun y ↦ gevCDF ξ (A.coefs.1 * y + A.coefs.2) := by
+      funext y
+      rw [← AffineIncrEquiv.apply_eq, ← hA, mulAction_apply_eq, hAy]
+    rw [this]
+    exact (continuous_gevCDF ξ).comp (by fun_prop)
+  have := h (A⁻¹ x) hGc.continuousAt
+  simpa only [mul_smul, mulAction_apply_eq, ← hA] using this
 
 end CumulativeDistributionFunction
