@@ -356,4 +356,18 @@ theorem test_recordCount :
         norm_num
   rw [recordCount, this]; rfl
 
+/-! ### L-moments -/
+
+/-- The L-skewness of the exponential law, `GPD(0, 1)`, is `τ₃ = 1/3` (Hosking, *L-moments*,
+JRSS B 52 (1990)). -/
+theorem test_lSkewness_exponential : lSkewness (gpdMeasure 0 1) = 1 / 3 := by
+  rw [lSkewness_gpdMeasure one_pos (by norm_num)]
+  norm_num
+
+/-- The uniform law on `[0, 1]`, `GPD(-1, 1)`, is symmetric, so its L-skewness is `τ₃ = 0`
+(Hosking, *L-moments*, JRSS B 52 (1990)). -/
+theorem test_lSkewness_uniform : lSkewness (gpdMeasure (-1) 1) = 0 := by
+  rw [lSkewness_gpdMeasure one_pos (by norm_num)]
+  norm_num
+
 end Test.KnownAnswers.Statistics
