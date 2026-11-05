@@ -97,8 +97,8 @@ theorem exists_lintegral_trunc_le [IsProbabilityMeasure P] {Z : Ω → ℝ} (hZ 
         ENNReal.ofReal (K * y * P.real {ω | y < |Z ω|}) := by
   set L : ℝ → ℝ := fun x => P.real {ω | x < |Z ω|} with hL_def
   have hanti : Antitone L := antitone_measureReal_lt_abs Z
-  have hK := hL.tendsto_integral_zero_div hanti.measurable (by linarith)
-    (fun x => hanti.intervalIntegrable)
+  have hK := hL.tendsto_integral_interval_div hanti.measurable (by linarith)
+    (a := 0) (fun _ _ => hanti.intervalIntegrable)
   set K := 1 / (-α + 1) + 1 with hK_def
   have hK0 : 0 < K := by
     have : 0 < 1 / (-α + 1) := by apply div_pos one_pos; linarith

@@ -31,9 +31,11 @@ logarithmic derivative, and use them to prove the **converse half of Karamata's 
 * `ExtremeValueTheory.IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi`: **Karamata's theorem,
   converse half** ([BGT, Theorem 1.6.1]): if `F` is antitone with `∫ t in Ioi a, F t < ∞` and
   `x F(x) / ∫ t in Ioi x, F t → α - 1 > 0`, then `F ∈ RV_{-α}`.
-* `ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_zero_div`: **Karamata's theorem for
-  `∫ t in 0..x`** ([BGT, Proposition 1.5.8]): if `f` is measurable, locally integrable on
-  `[0, ∞)` and `f ∈ RV_ρ` with `ρ > -1`, then `(∫ t in 0..x, f t) / (x f x) → 1 / (ρ + 1)`.
+* `ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_interval_div`: **Karamata's theorem for
+  `∫ t in a..x`** ([BGT, Proposition 1.5.8]): if `f` is measurable, integrable on `[a, x]` for
+  `x ≥ a`, and `f ∈ RV_ρ` with `ρ > -1`, then `(∫ t in a..x, f t) / (x f x) → 1 / (ρ + 1)`.
+* `ExtremeValueTheory.IsRegularlyVarying.exists_tendsto_integral_interval_div`: the same with no
+  integrability hypothesis, for all large `a`.
 * `ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_Ioi_div_of_measurable` and
   `ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_Ioi_div_of_antitoneOn`: Karamata's
   theorem for tail integrals ([BGT, Proposition 1.5.10]) for measurable, resp. eventually
@@ -280,21 +282,64 @@ theorem of_tendsto_mul_div_integral_Ioi {F : ℝ → ℝ} {α a : ℝ} (hF : Ant
   rw [rpow_neg_one]
   field_simp
 
-/-- **Karamata's theorem for integrals over `[0, x]`** (the direct half, [BGT, Proposition 1.5.8]
-and [BGT, Theorem 1.5.11 (i)]): if `f` is measurable, integrable on every `[0, x]` and regularly
-varying with index `ρ > -1`, then `(∫ t in 0..x, f t) / (x * f x) → 1 / (ρ + 1)` as `x → ∞`.
+/-- A measurable regularly varying function is positive and locally integrable near `∞`: there is
+`x₀ > 0` such that `f > 0` on `[x₀, ∞)` and `f` is interval integrable between any two points of
+`[x₀, ∞)`. The local bound comes from the Potter bounds, so the uniform convergence theorem is what
+provides integrability ([BGT, §1.5.1]; no monotonicity is assumed). -/
+theorem exists_intervalIntegrable_of_measurable {f : ℝ → ℝ} {ρ : ℝ} (hf : IsRegularlyVarying f ρ)
+    (hm : Measurable f) :
+    ∃ x₀ : ℝ, 0 < x₀ ∧ (∀ x ≥ x₀, 0 < f x) ∧
+      ∀ u ≥ x₀, ∀ v ≥ x₀, IntervalIntegrable f volume u v := by
+  obtain ⟨x₀, hx₀, hfpos, hP⟩ := hf.potter_bound_of_measurable hm one_pos one_lt_two
+  refine ⟨x₀, hx₀, hfpos, ?_⟩
+  -- on `[x₀, v]`, `f` is below the continuous function given by the Potter bound
+  have key : ∀ v ≥ x₀, IntervalIntegrable f volume x₀ v := by
+    intro v hv
+    rw [intervalIntegrable_iff_integrableOn_Ioc_of_le hv]
+    set g : ℝ → ℝ := fun y => f x₀ * (2 * max ((y / x₀) ^ (ρ + 1)) ((y / x₀) ^ (ρ - 1))) with hg
+    have hgc : ContinuousOn g (Icc x₀ v) := by
+      have h0 : ∀ y ∈ Icc x₀ v, y / x₀ ≠ 0 := fun y hy =>
+        (div_pos (hx₀.trans_le hy.1) hx₀).ne'
+      refine continuousOn_const.mul (continuousOn_const.mul (ContinuousOn.sup ?_ ?_)) <;>
+        exact (continuousOn_id.div_const x₀).rpow_const fun y hy => Or.inl (h0 y hy)
+    have hgi : IntegrableOn g (Ioc x₀ v) :=
+      (hgc.integrableOn_compact isCompact_Icc).mono_set Ioc_subset_Icc_self
+    refine Integrable.mono' hgi hm.aestronglyMeasurable
+      (ae_restrict_of_forall_mem measurableSet_Ioc fun y hy => ?_)
+    have hy' : x₀ ≤ y := hy.1.le
+    have h := hP x₀ le_rfl y hy'
+    rw [div_le_iff₀ (hfpos x₀ le_rfl)] at h
+    rw [Real.norm_eq_abs, abs_of_pos (hfpos y hy'), hg]
+    linarith
+  exact fun u hu v hv => (key u hu).symm.trans (key v hv)
+
+/-- **Karamata's theorem for integrals from any lower limit** (the direct half, [BGT, Proposition
+1.5.8] and [BGT, Theorem 1.5.11 (i)]): if `f` is measurable, integrable on every `[a, x]`, `x ≥ a`,
+and regularly varying with index `ρ > -1`, then `(∫ t in a..x, f t) / (x * f x) → 1 / (ρ + 1)` as
+`x → ∞`. The lower limit `a` is arbitrary, and nothing is assumed of `f` below `a`.
+`exists_tendsto_integral_interval_div` gives a form without any integrability hypothesis.
+
+The integrability hypothesis cannot be dropped for a given `a`: if `f` is not integrable near `a`,
+the Bochner integral is `0`.
 
 After the substitution `t = x u`, the part of the integral over `[x₀, x]` becomes
 `∫ u in Ioc 0 1, 1_{u > x₀ / x} f (x u) / f x`, which converges to `∫ u in 0..1, u ^ ρ` by
 dominated convergence with the Potter bound `2 u ^ (ρ - δ)`, `δ = (ρ + 1) / 2`; the part over
-`[0, x₀]` is negligible since `x f x → ∞`. -/
-theorem tendsto_integral_zero_div {f : ℝ → ℝ} {ρ : ℝ} (hf : IsRegularlyVarying f ρ)
-    (hm : Measurable f) (hρ : -1 < ρ) (hint : ∀ x, IntervalIntegrable f volume 0 x) :
-    Tendsto (fun x => (∫ t in (0 : ℝ)..x, f t) / (x * f x)) atTop (𝓝 (1 / (ρ + 1))) := by
+`[a, x₀]` is negligible since `x f x → ∞`. -/
+theorem tendsto_integral_interval_div {f : ℝ → ℝ} {ρ a : ℝ} (hf : IsRegularlyVarying f ρ)
+    (hm : Measurable f) (hρ : -1 < ρ) (hint : ∀ x ≥ a, IntervalIntegrable f volume a x) :
+    Tendsto (fun x => (∫ t in a..x, f t) / (x * f x)) atTop (𝓝 (1 / (ρ + 1))) := by
   set δ := (ρ + 1) / 2 with hδ_def
   have hδ : 0 < δ := by rw [hδ_def]; linarith
   have hexp : -1 < ρ - δ := by rw [hδ_def]; linarith
-  obtain ⟨x₀, hx₀, hfpos, hP⟩ := hf.potter_bound_of_measurable hm hδ one_lt_two
+  obtain ⟨x₁, hx₁, hfpos₁, hP₁⟩ := hf.potter_bound_of_measurable hm hδ one_lt_two
+  set x₀ := max x₁ a with hx₀_def
+  have hx₁₀ : x₁ ≤ x₀ := le_max_left _ _
+  have hax₀ : a ≤ x₀ := le_max_right _ _
+  have hx₀ : 0 < x₀ := hx₁.trans_le hx₁₀
+  have hfpos : ∀ x ≥ x₀, 0 < f x := fun x hx => hfpos₁ x (hx₁₀.trans hx)
+  have hP : ∀ x ≥ x₀, ∀ y ≥ x₀, f y / f x ≤ 2 * max ((y / x) ^ (ρ + δ)) ((y / x) ^ (ρ - δ)) :=
+    fun x hx y hy => hP₁ x (hx₁₀.trans hx) y (hx₁₀.trans hy)
   -- `x f x → ∞`
   have hxf : Tendsto (fun x => x * f x) atTop atTop := by
     have hfx₀ := hfpos x₀ le_rfl
@@ -358,9 +403,9 @@ theorem tendsto_integral_zero_div {f : ℝ → ℝ} {ρ : ℝ} (hf : IsRegularly
         rw [div_lt_iff₀ hu0] at hx
         linarith
       simp only [hg_def, indicator_of_mem hmem]
-  -- the part over `[0, x₀]` is negligible
-  have hconst : Tendsto (fun x => (∫ t in (0 : ℝ)..x₀, f t) / (x * f x)) atTop (𝓝 0) := by
-    have := (tendsto_inv_atTop_zero.comp hxf).const_mul (∫ t in (0 : ℝ)..x₀, f t)
+  -- the part over `[a, x₀]` is negligible
+  have hconst : Tendsto (fun x => (∫ t in a..x₀, f t) / (x * f x)) atTop (𝓝 0) := by
+    have := (tendsto_inv_atTop_zero.comp hxf).const_mul (∫ t in a..x₀, f t)
     rw [mul_zero] at this
     exact this.congr fun x => (div_eq_mul_inv _ _).symm
   have := hconst.add hmain
@@ -369,8 +414,8 @@ theorem tendsto_integral_zero_div {f : ℝ → ℝ} {ρ : ℝ} (hf : IsRegularly
   filter_upwards [eventually_ge_atTop x₀] with x hx
   have hx0 : 0 < x := hx₀.trans_le hx
   have hfx := hfpos x hx
-  have hsplit := intervalIntegral.integral_add_adjacent_intervals (hint x₀)
-    ((hint x₀).symm.trans (hint x))
+  have hsplit := intervalIntegral.integral_add_adjacent_intervals (hint x₀ hax₀)
+    ((hint x₀ hax₀).symm.trans (hint x (hax₀.trans hx)))
   have hset : Ioc (0 : ℝ) 1 ∩ Ioi (x₀ / x) = Ioc (x₀ / x) 1 := by
     ext u
     simp only [mem_inter_iff, mem_Ioc, mem_Ioi]
@@ -387,6 +432,28 @@ theorem tendsto_integral_zero_div {f : ℝ → ℝ} {ρ : ℝ} (hf : IsRegularly
       smul_eq_mul]
     field_simp
   rw [hsub, ← hsplit, add_div]
+
+/-- **Karamata's theorem, direct half, with no integrability hypothesis** (compare
+[BGT, Proposition 1.5.8]): if `f` is measurable and regularly varying with index `ρ > -1`, then for
+every large enough `a`, `f` is integrable on every `[a, x]`, `x ≥ a`, and
+`(∫ t in a..x, f t) / (x * f x) → 1 / (ρ + 1)`. -/
+theorem exists_tendsto_integral_interval_div {f : ℝ → ℝ} {ρ : ℝ} (hf : IsRegularlyVarying f ρ)
+    (hm : Measurable f) (hρ : -1 < ρ) :
+    ∀ᶠ a in atTop, (∀ x ≥ a, IntervalIntegrable f volume a x) ∧
+      Tendsto (fun x => (∫ t in a..x, f t) / (x * f x)) atTop (𝓝 (1 / (ρ + 1))) := by
+  obtain ⟨x₀, -, -, hi⟩ := hf.exists_intervalIntegrable_of_measurable hm
+  filter_upwards [eventually_ge_atTop x₀] with a ha
+  have hint : ∀ x ≥ a, IntervalIntegrable f volume a x := fun x hx => hi a ha x (ha.trans hx)
+  exact ⟨hint, hf.tendsto_integral_interval_div hm hρ hint⟩
+
+/-- Karamata's theorem for integrals over `[0, x]`. Deprecated: the hypothesis asks for integrability
+on `[x, 0]` for negative `x` too, which says nothing about the conclusion. Use
+`IsRegularlyVarying.tendsto_integral_interval_div` with `a = 0`. -/
+@[deprecated tendsto_integral_interval_div +typeChanged (since := "2026-11-05")]
+theorem tendsto_integral_zero_div {f : ℝ → ℝ} {ρ : ℝ} (hf : IsRegularlyVarying f ρ)
+    (hm : Measurable f) (hρ : -1 < ρ) (hint : ∀ x, IntervalIntegrable f volume 0 x) :
+    Tendsto (fun x => (∫ t in (0 : ℝ)..x, f t) / (x * f x)) atTop (𝓝 (1 / (ρ + 1))) :=
+  hf.tendsto_integral_interval_div hm hρ fun x _ => hint x
 
 /-- **Karamata's theorem** for tail integrals, measurable version ([BGT, Proposition 1.5.10]): if
 `F` is measurable and regularly varying with index `-α`, `α > 1` (no monotonicity is assumed),
