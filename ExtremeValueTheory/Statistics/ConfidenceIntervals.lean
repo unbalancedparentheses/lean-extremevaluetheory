@@ -26,8 +26,8 @@ which is `1 - α` for the two-sided standard normal quantile `z = z_{α/2}`
   normality of the GEV parameter estimators and a consistent standard error (hypotheses, as the
   library does not yet prove GEV MLE normality).
 
-The intervals are the symmetric delta-method intervals; Coles' profile likelihood intervals are
-not covered.
+The intervals here are the symmetric delta-method intervals; Coles' profile likelihood intervals
+for the GPD are in `ExtremeValueTheory.Statistics.GPDWilks`.
 
 ## References
 
