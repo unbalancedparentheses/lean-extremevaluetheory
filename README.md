@@ -289,7 +289,7 @@ the axiom audit, and CI runs them on every push.
 - **Non-vacuity tests.** [95 tests](Test/README.md) apply headline theorems to concrete objects, which shows
   that their hypotheses can hold together. They include the echo-process theorems named under New results.
 
-- **Known-answer tests.** [159 tests](Test/README.md) check definitions against textbook values, such as
+- **Known-answer tests.** [161 tests](Test/README.md) check definitions against textbook values, such as
   Gumbel moments, Smith's Fisher information and extremal indices. These catch sign and parametrization slips.
 
 - **Junk values.** A [scan of 3,718 theorems](Test/JUNK_VALUES.md), by a script outside CI, looked for statements
@@ -339,8 +339,9 @@ the axiom audit, and CI runs them on every push.
 ## Contributing
 
 The most useful contribution is a correction: if a formal statement does not say what its textbook
-counterpart says, please open an issue. Open problems with precise targets are listed in
-[`ROADMAP.md`](ROADMAP.md) and [`RESEARCH.md`](RESEARCH.md).
+counterpart says, please open an issue. No knowledge of Lean is needed for that.
+[`CONTRIBUTING.md`](CONTRIBUTING.md) explains how to add a theorem, and
+[`docs/ONBOARDING.md`](docs/ONBOARDING.md) walks through a first contribution.
 
 ## Citation
 

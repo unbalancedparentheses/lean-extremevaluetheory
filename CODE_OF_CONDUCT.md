@@ -10,7 +10,7 @@ acceptable.
 
 ## Reporting
 
-Report unacceptable behaviour to: **[maintainer: add a contact]**
+Report unacceptable behaviour to: **the maintainer through their [GitHub profile](https://github.com/unbalancedparentheses)**
 
 You can also use GitHub's **Report content** option in the menu of any issue, pull request or comment. Reports
 are handled in confidence, and maintainers may remove content or restrict participation, following the
