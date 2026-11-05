@@ -24,7 +24,7 @@ We describe a Lean~4 library, built on Mathlib, that formalizes the core of extr
 the Fisher--Tippett--Gnedenko theorem, domains of attraction, regular variation, the
 Pickands--Balkema--de Haan theorem, estimators and likelihood theory for the tail, stable laws and
 heavy tails, extremes of dependent sequences, multivariate extremes and point processes. The library
-has about 100,000 lines and 4,350 theorems and lemmas, uses no \texttt{sorry} and depends only on Lean's three standard
+has about 113,000 lines and 4,770 theorems and lemmas, uses no \texttt{sorry} and depends only on Lean's three standard
 axioms, which continuous integration checks for every declaration. Since a formal proof does not
 show that a statement matches the literature, the library also carries specification tests, mutation
 checks and written audits, and it records where its statements are narrower than their textbook forms.
@@ -84,7 +84,7 @@ Dependent sequences & Yes & -- & -- & -- \\
 \label{tab:related}
 \end{table}
 
-\paragraph{Extremes.} Hirata's entries in the Archive of Formal Proofs~\cite{hirataevt,hiratarv}, dated September 2026, prove Fisher--Tippett--Gnedenko and Pickands--Balkema--de Haan in Isabelle, following de Haan--Ferreira and Embrechts et al. They are independent of this library, which makes them valuable. We compared the two formal statements of each theorem (\texttt{docs/HIRATA\_COMPARISON.md}). By an argument we wrote, not a mechanized one, the statements of both main theorems are equivalent. His regular variation is more complete than ours in places, and we found no error in either. A note on the Extreme Value Theory entry says that more than 95\% of its code was written by generative AI, so ours is not the only development made this way.
+\paragraph{Extremes.} Hirata's entries in the Archive of Formal Proofs~\cite{hirataevt,hiratarv}, dated September 2026, prove Fisher--Tippett--Gnedenko and Pickands--Balkema--de Haan in Isabelle, following de Haan--Ferreira and Embrechts et al. They are independent of this library, which makes them valuable. We compared the two formal statements of each theorem (\texttt{docs/HIRATA\_COMPARISON.md}). By an argument we wrote, not a mechanized one, the statements of both main theorems are equivalent, and we found no error in either. The comparison also showed that parts of our regular variation were weaker than his, and led us to strengthen them and to add the normal law's domain of attraction. A note on the Extreme Value Theory entry says that more than 95\% of its code was written by generative AI, so ours is not the only development made this way.
 
 Our Fisher--Tippett--Gnedenko development and its blueprint are based on ExtremeValueProject~\cite{evp}, from which this library began. MathFin~\cite{coelho}
 is a Lean library of mathematical finance. It has about 900 lines on extremes, connected to its risk measures: GEV max-stability, concrete domains of attraction, GPD threshold stability and a Poisson--GPD--GEV identity. Its source states that neither Fisher--Tippett--Gnedenko nor Pickands--Balkema--de Haan
@@ -130,9 +130,9 @@ Peaks over threshold & Pickands--Balkema--de Haan as an equivalence for every sh
 Regular variation & Karamata (both halves), Potter bounds, representation theorem, Breiman's lemma \\
 Stable laws & Generalized CLT for $0<\alpha<2$; domains of attraction; uniqueness of the index \\
 Heavy tails & Subexponential laws, random sums, Embrechts--Veraverbeke ruin asymptotics \\
-Estimators & Hill (consistency, normality, dependent data), Pickands and moment consistency, Weissman \\
-Likelihood & GPD and GEV maximum likelihood: consistency, Fisher information; GPD joint normality \\
-Return levels & Asymptotic normality, Wald intervals with asymptotic coverage, the delta method \\
+Estimators & Hill (consistency, normality, dependent data), Pickands normality for every shape, moment normality for $\gamma>0$, Weissman \\
+Likelihood & GPD and GEV maximum likelihood: consistency, Fisher information, joint normality; Wilks' theorem for the GPD \\
+Return levels & Asymptotic normality, Wald and profile-likelihood intervals with asymptotic coverage, the delta method \\
 Dependence & Leadbetter's theorem; extremal index; tail process; $\theta=\vartheta$ under anticlustering and $A(u_n)$ \\
 Time series & AR(1), ARMAX, linear processes, Markov chains; $X=AX+B$ and GARCH(1,1) tail exponent bounds \\
 Multivariate & Regular variation, converse Cram\'er--Wold, spectral representation, the multivariate GPD \\
@@ -167,23 +167,23 @@ function is $0$, so a statement can be true for an unintended reason. Several st
 project this library started from were false as written and have been corrected. We use the following
 checks, all but the last of which can be rerun from the repository.
 \begin{description}
-  \item[Axiom audit.] Continuous integration fails if any of the library's 9,614 declarations depends on an
+  \item[Axiom audit.] Continuous integration fails if any of the library's 10,677 declarations depends on an
     axiom other than \lean{propext}, \lean{Classical.choice} and \lean{Quot.sound}.
   \item[Independent kernel.] A nightly job rechecks all declarations, including those of
     Mathlib, with \texttt{con-leche}, a second kernel.
   \item[Comparator.] A file that imports only Mathlib states four headline theorems with every definition written out, and \texttt{lake comparator} checks that the library proves exactly those statements. It lets a reader check them without trusting our definitions.
-  \item[Non-vacuity tests.] 109 tests apply a headline theorem to a concrete object, showing that its
+  \item[Non-vacuity tests.] 139 tests apply a headline theorem to a concrete object, showing that its
     hypotheses can hold together. They include the theorems named in Section~\ref{sec:new}.
-  \item[Known-answer tests.] 178 tests check definitions against textbook values, which catches sign
+  \item[Known-answer tests.] 253 tests check definitions against textbook values, which catches sign
     and parametrization errors.
   \item[Junk-value audit.] A scanner, not part of continuous integration, examined 3,718 theorems for statements that hold only through a
     totalization convention. Reviewing the 740 it flagged found one such statement, now fixed.
   \item[Mutation checks.] A script, not part of continuous integration, tried 323 perturbations of the statements of 45 headline theorems with their proofs kept.
     A perturbation that still compiles suggests a theorem proved for a trivial reason. One survived, and we
     judged it harmless.
-  \item[Faithfulness audits.] Seven written comparisons of statements with the literature, recording each deviation.
+  \item[Faithfulness audits.] Eight written comparisons of statements with the literature, recording each deviation.
 \end{description}
-Table~\ref{tab:audit} gives the audits' verdicts on the 166 statements and definitions in their main table. These records can lag the code: the Codex review of this release (Section~\ref{sec:built}) found some scope notes that later theorems had overtaken.
+Table~\ref{tab:audit} gives the audits' verdicts on the 191 statements and definitions in their main table. These records can lag the code: the Codex review of this release (Section~\ref{sec:built}) found some scope notes that later theorems had overtaken.
 
 \begin{table}[ht]
 \centering\small
@@ -191,9 +191,9 @@ Table~\ref{tab:audit} gives the audits' verdicts on the 166 statements and defin
 \toprule
 Verdict recorded in \texttt{FAITHFULNESS.md} & Count \\
 \midrule
-Faithful: the statement matches the cited result & 100 \\
-Faithful within a stated scope, such as a special case or an extra hypothesis & 51 \\
-Differs from the cited form, but correct as stated & 15 \\
+Faithful: the statement matches the cited result & 114 \\
+Faithful within a stated scope, such as a special case or an extra hypothesis & 60 \\
+Differs from the cited form, but correct as stated & 17 \\
 \bottomrule
 \end{tabular}
 \caption{Audit verdicts. They are the judgement of AI-assisted audits, not of experts.}
@@ -269,13 +269,11 @@ read a lemma of Planini\'c and Soulier~\cite{ps18} as saying that $|Y_t|\to0$ co
 Many results are narrower than their textbook forms. The README and \texttt{FAITHFULNESS.md} give the full list; the most important are the following.
 \begin{itemize}
   \item \textbf{No expert review.} This matters most, and the rest of this list may be incomplete because of it.
-  \item \textbf{GEV likelihood.} Maximum likelihood consistency is proved on a compact parameter set and for an exact iid GEV sample, not for block maxima from a law in a domain of attraction.
-    Joint normality of the three-parameter estimator is not proved, so GEV and Gumbel return-level normality
-    assume parameter normality as a hypothesis.
+  \item \textbf{The main gap for practice.} The likelihood results describe exact models: an exact iid GEV or GPD sample. What practitioners fit are block maxima and threshold excesses that are only approximately GEV or GPD, and that step is not formalized.
+  \item \textbf{GEV likelihood.} Consistency and joint normality are on a compact parameter set with the true parameter in its interior, and normality needs $\xi_0>-1/2$ and $\xi_0\ne 0$. The Gumbel case $\xi_0=0$, though widely fitted, is outside it. The Wald interval assumes a consistent standard error.
   \item \textbf{GPD likelihood and return levels.} Joint normality needs $\xi_0>-1/2$, $\xi_0\neq 0$ and a compact parameter
     set. Peaks-over-threshold return levels treat the excesses as an exact iid GPD sample with a known exceedance probability.
-  \item \textbf{Estimators.} Normality of the Pickands and moment estimators is not proved, and neither are
-    profile-likelihood intervals. The blocks and runs estimators of the extremal index assume that their population ratio converges to $\theta$, and the intervals estimator assumes its empirical-moment limits.
+  \item \textbf{Estimators.} Pickands normality assumes locally uniform second-order regular variation, and moment normality is for $\gamma>0$ only. Wilks' theorem and profile-likelihood sets are for the GPD with $\xi_0>0$ only. The blocks and runs estimators of the extremal index assume that their population ratio converges to $\theta$, and the intervals estimator assumes its empirical-moment limits.
   \item \textbf{Ruin.} The ruin probability is defined by the Pollaczek--Khinchine formula, not derived from the risk process.
   \item \textbf{Stochastic recurrence.} The tail of $X=AX+B$ is identified through moment bounds. The sharp Kesten--Goldie
     asymptotics is not proved.
@@ -288,7 +286,7 @@ Many results are narrower than their textbook forms. The README and \texttt{FAIT
 
 \section{Evaluation and reproducibility}\label{sec:repro}
 
-\paragraph{Evidence.} The library has about 100,000 lines and 4,350 theorems and lemmas, in 9,614 declarations counted by the axiom audit. On the latest run before this release, the independent kernel accepted all 719,515 declarations of the library and its dependencies. A build that passes in continuous integration is itself the evidence for the axiom claim.
+\paragraph{Evidence.} The library has about 113,000 lines and 4,770 theorems and lemmas, in 10,677 declarations counted by the axiom audit. On the latest run before this release, the independent kernel accepted all 719,954 declarations of the library and its dependencies. A build that passes in continuous integration is itself the evidence for the axiom claim.
 
 \paragraph{To reproduce.} Release \release{} (\doi) pins Lean v4.35.0 and Mathlib v4.35.0 (commit \texttt{56a00585}) in \lean{lean-toolchain} and \lean{lake-manifest.json}. Then:
 \begin{alltt}\small
@@ -305,7 +303,7 @@ A weekly job builds a fresh project that requires the repository and imports onl
 \section{How it was built}\label{sec:built}
 
 Most of the code, tests and documents were written by AI coding agents (Claude Code), directed and reviewed by the author, on top of the
-Aalto project. Codex, a second AI system, reviewed the statements and claims of this release. This changes what evidence the library
+Aalto project. Codex, a second AI system, reviewed the statements and claims. It found several overstated claims and one definition that was wrong in a junk case, which our audits had missed; all were corrected. This changes what evidence the library
 can offer. The proofs need no trust in the agents, because the kernel checks them. The statements do, and that is the reason for
 Section~\ref{sec:trust} and for the request below.
 

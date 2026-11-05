@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **GEV likelihood:** joint asymptotic normality of the three-parameter maximum likelihood estimator and unconditional
+  return-level normality, for `ξ₀ > −1/2`, `ξ₀ ≠ 0`.
+- **Wilks' theorem and profile-likelihood intervals** for the GPD with `ξ₀ > 0`, and a chi-squared law.
+- **Pickands estimator normality** for every shape, and nonparametric tail dependence estimation.
+- The normal, Gamma and Cauchy laws' domains of attraction with explicit constants, and stronger regular variation
+  (Karamata without monotonicity, uniform-convergence tails), after comparison with Hirata's Isabelle development.
+- One definition per concept, with deprecated aliases. `gpdSurvivalNonneg` is deprecated; `extRVLimit`, `gpdSurvivalInv`,
+  `gaussianTail` and `stdExpMeasure` give way to `boxCox`, `gevTransform`, `tail` and `expMeasure 1`.
+- Comparator challenge, theorem catalogue with CI checks, review deadline, architecture checks, contributor docs.
+- Seventh and eighth faithfulness audits, and tutorial, worked and applied examples.
 - A new `Examples` library, built in CI and importing only the umbrella: a tutorial (`docs/TUTORIAL.md`), the
   standard laws and three applied problems. A guide to finding results (`docs/FINDING_RESULTS.md`).
 - New in the library: domains of attraction of the GPD, GEV, Cauchy and Student t laws, explicit norming constants

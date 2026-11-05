@@ -11,11 +11,15 @@ attraction, regular variation, peaks over threshold, stable laws and heavy tails
 extremes (estimators, likelihood, return levels, confidence intervals), extremes of dependent sequences,
 multivariate extremes, point processes and the Skorokhod space.
 
-The library has about 100,000 lines and 4,350 theorems and lemmas. It contains no `sorry`, and CI checks
-that all 9,614 of its declarations depend only on the axioms `propext`, `Classical.choice` and
-`Quot.sound`. Written audits compare 166 main statements and definitions with the literature: they record
-100 as faithful, 51 as faithful within a stated scope, and 15 as differing from the cited form while correct
-as stated ([`FAITHFULNESS.md`](FAITHFULNESS.md)). **No human expert has reviewed the library yet.** The
+The library has about 113,000 lines and 4,770 theorems and lemmas. It contains no `sorry`, and CI checks
+that all 10,677 of its declarations depend only on the axioms `propext`, `Classical.choice` and
+`Quot.sound`. Written audits compare 191 main statements and definitions with the literature: they record
+114 as faithful, 60 as faithful within a stated scope, and 17 as differing from the cited form while correct
+as stated ([`FAITHFULNESS.md`](FAITHFULNESS.md)). The [theorem catalogue](catalogue/) lists 232 headline results, each
+with its source, its statement as Lean reports it, and what it leaves out. Judged strictly against the result
+each is named after, 147 are `full`, 2 are `wrapper` (they restate Mathlib), and 83 are `reduced`: a special case,
+an extra hypothesis, or part of the conclusion assumed. The gap is widest in statistics and likelihood, where 36
+of 50 are `reduced`. **No human expert has reviewed the library yet.** The
 statements, tests and audits were written with AI assistance, so those audits are not independent; see
 [Limitations](#limitations).
 
@@ -51,6 +55,8 @@ Fréchet or Weibull.
   ([`isInMDAGumbel_iff`](ExtremeValueTheory/DomainOfAttraction/GumbelNecessity.lean)), and $`F \in \mathrm{MDA}(H_\gamma)`$ if and only if the tail quantile function is extended regularly varying with
   index $`\gamma`$
   ([`isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile`](ExtremeValueTheory/DomainOfAttraction/Quantile.lean)).
+  The normal law is in the Gumbel domain, with explicit norming constants
+  ([`tendsto_standardNormalCDF_pow`](ExtremeValueTheory/DomainOfAttraction/Examples.lean)).
 
 - **Peaks over threshold (Pickands–Balkema–de Haan).** For every $`\xi \in \mathbb{R}`$, $`F \in \mathrm{MDA}(H_\xi)`$ if and only if there is a scale $`\beta(u) > 0`$ with
 
@@ -88,8 +94,22 @@ Fréchet or Weibull.
   \sqrt{k}\,(H_{k,n}-\gamma) \Rightarrow \mathcal{N}\Big(\frac{\lambda}{1-\rho},\ \gamma^2\Big)
   ```
 
-  ([`tendstoInDistribution_hill`](ExtremeValueTheory/Statistics/HillNormality.lean)). Pickands, moment and
-  Weissman estimators are also covered.
+  ([`tendstoInDistribution_hill`](ExtremeValueTheory/Statistics/HillNormality.lean)). The Pickands estimator is
+  asymptotically normal for every shape
+  ([`tendstoInDistribution_pickands`](ExtremeValueTheory/Statistics/PickandsNormality.lean)), and the moment
+  estimator for $`\gamma > 0`$. Weissman's extreme quantile estimator is also covered.
+
+- **GEV likelihood.** For an iid GEV sample with $`\xi_0 > -1/2`$, $`\xi_0 \ne 0`$, a maximum likelihood estimator on
+  a compact parameter set with the true parameter in its interior is jointly asymptotically normal, with the
+  inverse Fisher information as its covariance
+  ([`tendstoInDistribution_gevMLE`](ExtremeValueTheory/Statistics/GEVMLENormality.lean)), and so is the return level
+  ([`tendstoInDistribution_gevMLEReturnLevel`](ExtremeValueTheory/Statistics/GEVReturnLevelNormality.lean)).
+
+- **Wilks' theorem and profile likelihood.** For an iid GPD sample with $`\xi_0 > 0`$, the deviance converges to
+  $`\chi^2_2`$ and the profile deviance to $`\chi^2_1`$
+  ([`tendstoInDistribution_gpdProfileDeviance`](ExtremeValueTheory/Statistics/GPDWilks/Profile.lean)), so the
+  profile-likelihood sets for the shape, the scale and a return level have the coverage they claim
+  ([`tendsto_measure_mem_gpdReturnLevelProfileInterval`](ExtremeValueTheory/Statistics/GPDWilks/Coverage.lean)).
 
 - **Likelihood and return levels.** For an iid $`\mathrm{GPD}(\xi_0,\sigma_0)`$ sample, $`\xi_0 > -1/2`$,
   $`\xi_0 \ne 0`$, there is a measurable maximum likelihood estimator on a compact parameter set with the true
@@ -110,7 +130,9 @@ Fréchet or Weibull.
   direction given a large norm converges
   ([`isRegVarVector_iff`](ExtremeValueTheory/RegularVariation/Multivariate/Polar.lean)). With continuous
   margins, a law is in a multivariate domain of attraction if and only if each margin is and the standardized
-  joint tail converges ([`isMDAWith_iff`](ExtremeValueTheory/Multivariate/DomainOfAttractionConverse.lean)).
+  joint tail converges ([`isMDAWith_iff`](ExtremeValueTheory/Multivariate/DomainOfAttractionConverse.lean)). The
+  empirical stable tail dependence function is consistent, pointwise and uniformly, in any finite dimension
+  ([`tendstoInMeasure_empiricalStableTailDependence`](ExtremeValueTheory/Statistics/StableTailDependence.lean)).
 
 - **Processes.** $`D([0,1],E)`$ with the $`J_1`$ topology is Polish for complete separable $`E`$
   ([`SkorokhodSpace.instPolishSpace`](ExtremeValueTheory/ForMathlib/Topology/Skorokhod/Complete.lean)). The
@@ -127,10 +149,10 @@ Fréchet or Weibull.
 | Peaks over threshold | Pickands–Balkema–de Haan, the generalized Pareto law, mean excess |
 | Stable laws | the generalized central limit theorem, domains of attraction, uniqueness of the index |
 | Heavy tails | subexponential laws, random sums, Pollaczek–Khinchine ruin asymptotics |
-| Estimators | order statistics; Hill, Pickands, moment and Weissman; probability-weighted moments and L-moments; blocks, runs and intervals estimators of the extremal index |
-| Likelihood and return levels | Wald consistency, GPD and GEV likelihood, Fisher information, GPD joint normality, the delta method, return levels, Wald intervals |
+| Estimators | order statistics; Hill, Pickands, moment and Weissman, with asymptotic normality; probability-weighted moments and L-moments; blocks, runs and intervals estimators of the extremal index |
+| Likelihood and return levels | Wald consistency, GPD and GEV likelihood, Fisher information, joint normality of the GPD and GEV estimators, Wilks' theorem, the delta method, return levels, Wald and profile-likelihood intervals |
 | Dependence | Leadbetter's theorem, the extremal index, the tail process, mixing, AR(1), ARMAX, linear processes, Markov chains, `X = AX + B`, GARCH(1,1) tail exponent bounds, the echo processes |
-| Multivariate extremes | multivariate regular variation, converse Cramér–Wold, max-stable vectors and their spectral representation, domains of attraction, the multivariate generalized Pareto law, tail dependence |
+| Multivariate extremes | multivariate regular variation, converse Cramér–Wold, max-stable vectors and their spectral representation, domains of attraction, the multivariate generalized Pareto law, tail dependence and its nonparametric estimation |
 | Processes | Poisson random measures, exceedance point processes, the Skorokhod space, the tail empirical process |
 | Sharpness of hypotheses | counterexamples showing that hypotheses of Karamata, Breiman, von Mises, the generalized CLT, Hill, Leadbetter and `θ = ϑ` are needed |
 
@@ -171,21 +193,28 @@ statement matches its textbook. The new results' novelty has not been confirmed 
 **Maximum likelihood and return levels**
 - GEV: consistency only on a compact parameter set `K ⊂ {ξ > −1, σ > 0}`, and only for an exact iid GEV
   sample. Fitting finite-block maxima from a law in a domain of attraction, or dependent block maxima, is
-  not covered. Joint normality of the
-  three-parameter estimator is not proved, so GEV and Gumbel return-level normality
-  (`tendstoInDistribution_gevReturnLevel`) assume parameter normality as a hypothesis.
+  not covered. Joint normality (`tendstoInDistribution_gevMLE`) needs `ξ₀ > −1/2` and `ξ₀ ≠ 0`, and the same exact
+  sample. The GEV Wald interval assumes a consistent standard error: no plug-in is proved to be one.
+  `tendstoInDistribution_gevReturnLevel` and its Gumbel version are only the delta method applied to an assumed normal
+  estimator; `tendstoInDistribution_gevMLEReturnLevel` assumes no normality.
 - GPD: also on a compact set, with the true parameter in its interior. Joint normality needs
   `ξ₀ > −1/2` and `ξ₀ ≠ 0`.
 - `ξ = 0`: the likelihood is only partly covered. With the shape known to be `0`, the scale estimator is
-  normal (`tendstoInDistribution_sampleMean_gpd_zero`). Joint estimation when the true shape is `0` is not
-  proved.
+  normal (`tendstoInDistribution_sampleMean_gpd_zero`). `ξ₀ = 0` is outside every three-parameter GEV result and every
+  joint GPD result, even though the Gumbel model is widely fitted.
 - Peaks-over-threshold return levels treat the excesses as an exact iid GPD sample with a known exceedance
   probability `ζ`. The number of exceedances is not random, and neither the error of the GPD
   approximation above a finite threshold nor the estimation of `ζ` is accounted for.
-- Not proved: profile-likelihood intervals, and likelihood over the whole parameter space.
+- Profile-likelihood intervals and Wilks' theorem are proved for the GPD with `ξ₀ > 0` only, narrower than the regular
+  range `ξ₀ > −1/2`, on a compact set, and as confidence sets: that they are intervals is not proved. There is no GEV
+  version.
+- **The main gap for practice:** these likelihood results describe exact models. What practitioners fit are block
+  maxima and threshold excesses that are only approximately GEV or GPD. Likelihood over the whole parameter space
+  is also not proved.
 
 **Tail estimators**
-- Normality of the Pickands and moment estimators is not proved. Hill intervals are only without bias
+- Pickands normality assumes locally uniform second-order regular variation, formally stronger than the pointwise
+  textbook condition. Moment estimator normality is proved for `γ > 0` only, in ratio form. Hill intervals are only without bias
   (`λ = 0`) and exclude exact Pareto data, and there are no bias-reduced estimators.
 - The basic far-tail Weissman theorems assume the rate and the bias condition; second-order versions
   derive them, for `ρ < 0`, and with extra regularity at `ρ = 0`.
@@ -224,7 +253,7 @@ statement matches its textbook. The new results' novelty has not been confirmed 
   for unit-Fréchet-standardized limits; use `IsMDAWith.tendsto_conditionalExcess_tailQuantile` for those.
 - The multivariate domain-of-attraction equivalence assumes continuous margins.
 - The Pickands dependence estimator assumes known unit Fréchet margins. Nonparametric tail-dependence
-  estimation is not finished.
+  estimation is consistency only, with no rates or limit law, uniformly on `(0,T]^d` rather than `[0,T]^d`.
 - Point-process convergence is stated through joint laws of counts on finite families of disjoint sets,
   with no topology on the space of measures.
 - The functional limit of the tail empirical process is for uniform observations in unweighted `D[0,1]`;
@@ -232,8 +261,8 @@ statement matches its textbook. The new results' novelty has not been confirmed 
   and extremal-t processes are not formalized.
 
 **Classical theory**
-- Parts of regular variation are narrower than Hirata's Isabelle development and BGT
-  ([`docs/HIRATA_COMPARISON.md`](docs/HIRATA_COMPARISON.md)), and the normal law is not yet shown to be in the Gumbel domain.
+- Explicit norming constants exist only for the standard normal and standard Cauchy laws and for Gamma laws. The unified
+  von Mises condition takes the sign of `γ` as a hypothesis.
 - Karamata's direct half has versions for measurable `F` and for `F` antitone on `[a, ∞)`, but
   its converse `IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi` assumes `F` antitone on all of `ℝ`.
 
@@ -289,7 +318,7 @@ the axiom audit, and CI runs them on every push.
 
 - **Independent kernel.** A nightly [workflow](.github/workflows/kernel-check.yml) rechecks everything with
   `con-leche`, an independent kernel with a machine-checked proof that it never accepts `False`. It
-  accepted all 719,515 declarations of the library and its dependencies on 2026-11-04.
+  accepted all 719,954 declarations of the library and its dependencies on the run of 2026-11-05.
 
 - **Comparator.** [`Challenge.lean`](Challenge.lean) states Fisher–Tippett–Gnedenko, Pickands–Balkema–de Haan, Hill
   consistency and the answer to Bai–Kulik–Wang using only Mathlib, with every definition written out, and says where
@@ -298,10 +327,10 @@ the axiom audit, and CI runs them on every push.
   statements from the standard axioms. A [workflow](.github/workflows/comparator.yml) runs it, in the sandbox and with
   several kernels, and also checks that a tampered statement is rejected.
 
-- **Non-vacuity tests.** [109 tests](Test/README.md) apply headline theorems to concrete objects, which shows
+- **Non-vacuity tests.** [139 tests](Test/README.md) apply headline theorems to concrete objects, which shows
   that their hypotheses can hold together. They include the echo-process theorems named under New results.
 
-- **Known-answer tests.** [178 tests](Test/README.md) check definitions against textbook values, such as
+- **Known-answer tests.** [253 tests](Test/README.md) check definitions against textbook values, such as
   Gumbel moments, Smith's Fisher information and extremal indices. These catch sign and parametrization slips.
 
 - **Junk values.** A [scan of 3,718 theorems](Test/JUNK_VALUES.md), by a script outside CI, looked for statements
@@ -310,18 +339,22 @@ the axiom audit, and CI runs them on every push.
 - **Mutation checks.** A [script outside CI](Test/MUTATION.md) tried 323 perturbed statements with their
   proofs kept, to catch theorems proved for a trivial reason. None revealed a weakness.
 
-- **Faithfulness audits.** [Seven written audits](FAITHFULNESS.md) compare statements with the literature and record
-  each deviation. The seventh read the roughly 1,050 declarations added since the sixth at headline level. CI
+- **Faithfulness audits.** [Eight written audits](FAITHFULNESS.md) compare statements with the literature and record
+  each deviation. The last two read new results at headline level, not every supporting lemma. CI
   fails when the library has outgrown the last audit by more than a set margin
   ([`Test/AUDIT_BASELINE`](Test/AUDIT_BASELINE)).
 
 - **Independent statements.** [`docs/HIRATA_COMPARISON.md`](docs/HIRATA_COMPARISON.md) compares our statements with
-  Hirata's independent Isabelle ones. By an argument we wrote, not a mechanized one, both main theorems are equivalent;
-  his regular variation is more complete than ours in places.
+  Hirata's independent Isabelle ones. By an argument we wrote, not a mechanized one, both main theorems are equivalent.
+  The comparison also led to stronger regular variation results here, and to the normal law's domain of attraction.
 
-- **AI review.** Codex, a second AI system, reviewed the headline statements and public claims of `v0.9.0`. It
-  found no blocking problem in the statements it read and several overstated claims, which were corrected.
-  This is not expert review.
+- **AI review.** Codex, a second AI system, reviewed the headline statements and public claims, and later the GEV, Wilks,
+  Pickands and tail-dependence statements. It found no blocking problem in the statements it read, several overstated
+  claims, and one definition that was wrong in a junk case, which the audits had missed; all were corrected. This is not
+  expert review.
+
+- **Catalogue.** CI fails if a statement in [`catalogue/`](catalogue/), or a definition it reaches, changes without its entry
+  being re-checked, and if a `full` entry rests on `rfl` or on unfolding a definition. The statuses are an AI's judgement.
 
 - **Downstream.** A weekly [workflow](.github/workflows/downstream.yml) builds a fresh project that requires this
   repository and imports only `ExtremeValueTheory`.

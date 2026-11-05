@@ -27,6 +27,17 @@ Each tier can run in parallel internally. The sections below give the details.
    per concept. It already builds, and the statistics pull requests rebase on it
 4. Done (2026-11-04): the GitHub–Zenodo integration is enabled, so `v1.0.0` will get a DOI (H.1)
 
+**Next, in order (2026-11-05)**
+1. *you:* read the paper, send the expert emails, submit to arXiv, post on the Lean Zulip; cut `v0.10.0` first so they point
+   to a release with the GEV and Wilks results
+2. *you:* get de Haan–Ferreira, Embrechts et al., Coles and Kulik–Soulier, to check citations (the agents had no access to the
+   books; some theorem numbers and Coles's figures are from memory) and finish the novelty check
+3. **Likelihood for approximate models, the main gap for practice:** block maxima from a law in a domain of attraction
+   (Dombry–Ferreira 2019), then threshold excesses with a random number of exceedances
+4. The Gumbel case `ξ₀ = 0` of GEV normality, consistency of the plug-in standard error, Wilks for `ξ₀ ≤ 0` and the GEV
+5. Moment estimator normality for `γ ≤ 0`
+6. First pull requests to Mathlib from `ForMathlib/`, then the link to R and Python (G)
+
 **First release: `v0.9.0`, before the work in flight** (decided 2026-11-04). A citable release with
 honest limits now does more than waiting for every proof. It does not wait for #4–#9; those ship in 0.x
 and 1.0 releases.
@@ -185,34 +196,9 @@ posting, deciding).
 
 ### Work in flight
 
-**Status (2026-11-04): agents running again**, on the maintainer's go-ahead. Wave 1 is running; wave 2 starts once
-#4 is rebased and merged, because the statistics branches use its names. Agents push only to their own branches;
-the maintainer's session reviews and merges.
-
-| Wave | Task | Branch |
-|---|---|---|
-| 1 | One definition per concept (#4) | `wip/one-definition-per-concept` |
-| 1 | Review guide: the Bai–Kulik–Wang answer and the statistics | `wip/review-guide-extension` |
-| 1 | Comparison with Hirata's Isabelle statements | `wip/hirata-comparison` |
-| 1 | Comparator challenge, architecture checks, review deadline | `wip/comparator-and-ci` |
-| 1 | Contributor setup and issue drafts | `wip/contributor-setup` |
-| 1 | Tutorial, worked and applied examples | `wip/tutorial-and-examples` |
-| 2 | #7, #5, #6, #8, the seventh audit, the theorem catalogue | see the table below |
-
-The table below is the proof work paused until now, as it stood on 2026-11-01. The merge order still holds: one
-definition per concept goes first.
-
-Each task also has a git worktree under `.claude/worktrees/` on this machine. Delete the branch and the
-worktree after merging.
-
-| Task | Branch on GitHub | Worktree (`.claude/worktrees/`) | Pull request | State (2026-11-01) |
-|---|---|---|---|---|
-| One definition per concept | `wip/one-definition-per-concept` | `agent-a56e6c64e2876ca08` | [#4](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/4) (draft) | `lake build` and `lake build Test` green; rest of the duplicate audit to do; 10 commits behind `main` |
-| Pickands and moment normality | `wip/pickands-moment-normality` | `agent-a752c6f656f0f5787` | [#5](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/5) (draft) | moment `γ > 0` done; Pickands: last proof has 4 errors, then the general-sample theorem; 30 behind |
-| GEV 3-parameter MLE normality | `wip/gev-mle-normality` | `agent-adb4e909bd47d4918` | [#6](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/6) (draft) | step 1 of 3; `GEVMLEDomination.lean` has 3 errors; 6 behind |
-| Tail-dependence estimation | `wip/tail-dependence-estimation` | `agent-abbc402ee0bc82e16` | [#7](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/7) (draft) | headline theorems written; `Multivariate/StableTailDependence.lean` has 16 errors; 6 behind |
-| Profile-likelihood intervals | `wip/profile-likelihood` | `agent-a1f2496f3e30ac917` | [#8](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/8) (draft) | early: log-likelihood expansion, 7 errors; 6 behind |
-| Mathlib v4.36 trial | `wip/mathlib-v4.36-trial` | none | [#9](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/9) (draft) | builds on v4.36.0-rc1; v4.36.0 is not stable yet (rc2 out); merge after it is |
+**Status (2026-11-05):** nothing running. All the tasks are merged: #4–#8, the review guide, the comparison with Hirata and its
+improvements, the Comparator challenge, the catalogue, the seventh and eighth audits, the contributor docs and the
+examples.
 
 ### Waiting on the maintainer
 
