@@ -188,6 +188,9 @@ import ExtremeValueTheory.Statistics.GPDLikelihoodNormality
 import ExtremeValueTheory.Statistics.GPDScaleMLE
 import ExtremeValueTheory.Statistics.GPDFisherInformation
 import ExtremeValueTheory.Statistics.GPDJointNormality
+import ExtremeValueTheory.Statistics.GPDLogLikExpansion
+import ExtremeValueTheory.Statistics.GPDWilks
+import ExtremeValueTheory.ForMathlib.Probability.ChiSquared
 import ExtremeValueTheory.Statistics.GEVMLE
 import ExtremeValueTheory.Statistics.GEVMLEFisher
 import ExtremeValueTheory.Statistics.GEVFisherInformation
