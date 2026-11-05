@@ -520,7 +520,7 @@ small contributions together, so direct outreach (H.8) matters at least as much 
 - [x] The GitHub–Zenodo integration is enabled, so every GitHub release gets a permanent DOI (no test
       releases), and [`.zenodo.json`](.zenodo.json) holds the metadata
 - [x] The DOI is in [`CITATION.cff`](CITATION.cff) and the README
-- [ ] README badges: build, kernel check, DOI, then arXiv and the dataset when they exist
+- [~] README badges: build, kernel check, blueprint and DOI done; then arXiv and the dataset when they exist
 - [x] README section "Use it in your project": the `require` lines for `lakefile.toml`,
       `lake exe cache get`, `import ExtremeValueTheory`
 - [x] `Downstream/`: a client project that only imports the library and states one headline theorem,

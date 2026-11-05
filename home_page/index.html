@@ -225,17 +225,22 @@ layout: null
 <main id="main" class="column">
 
 <section aria-labelledby="trust">
-  <h2 id="trust">Why you can trust it</h2>
+  <h2 id="trust">How it is checked</h2>
   <dl class="facts">
     <dt>Every proof is checked twice</dt>
     <dd>Lean’s kernel checks each proof at build time, and every night the whole library is re-checked by
     <em>con-leche</em>, an independent kernel checker that itself comes with a machine-checked proof that it
     never accepts a proof of <code>False</code>.</dd>
     <dt>No gaps, no extra axioms</dt>
-    <dd>About 80,000 lines with no <code>sorry</code>; the main theorems use only Lean’s three standard axioms.</dd>
+    <dd>About 100,000 lines with no <code>sorry</code>. CI checks that all 9,487 declarations use only Lean’s three standard axioms.</dd>
     <dt>Statements are compared with the literature</dt>
-    <dd>Six independent audits compared each formal statement with its textbook source. Every known
-    difference is recorded in <a href="https://github.com/unbalancedparentheses/lean-extremevaluetheory/blob/main/FAITHFULNESS.md">the faithfulness report</a>.</dd>
+    <dd>Six written audits compared main statements with their textbook sources, and recorded each known
+    difference in <a href="https://github.com/unbalancedparentheses/lean-extremevaluetheory/blob/main/FAITHFULNESS.md">the faithfulness report</a>. Specification tests check that
+    hypotheses can hold together and that definitions give textbook values.</dd>
+    <dt>Not yet reviewed by experts</dt>
+    <dd>The statements, tests and audits were written with AI assistance, so they are not independent of each
+    other. No human expert has checked them, and many results are narrower than their textbook form: see the
+    <a href="https://github.com/unbalancedparentheses/lean-extremevaluetheory#limitations">limitations</a>.</dd>
   </dl>
 </section>
 
@@ -247,9 +252,11 @@ layout: null
 <pre><code>theorem IsExtremeValueDistr.classification
     {G : CumulativeDistributionFunction}
     (hG : G.IsExtremeValueDistr) :
-    (∃ A, A • G = standardGumbelCDF) ∨
-      (∃ A ξ, ∃ (hξ : 0 &lt; ξ), A • G = standardFrechetCDF hξ) ∨
-      (∃ A ξ, ∃ (hξ : 0 &lt; ξ), A • G = standardWeibullCDF hξ)</code></pre>
+    (∃ (A : AffineIncrEquiv), A • G = standardGumbelCDF) ∨
+      (∃ (A : AffineIncrEquiv) (ξ : ℝ) (hξ : 0 &lt; ξ),
+        A • G = standardFrechetCDF hξ) ∨
+      (∃ (A : AffineIncrEquiv) (ξ : ℝ) (hξ : 0 &lt; ξ),
+        A • G = standardWeibullCDF hξ)</code></pre>
 </section>
 
 <section aria-labelledby="covered">
@@ -274,7 +281,7 @@ layout: null
   <p>Making every hypothesis explicit turned up a simple stationary sequence, the <em>echo process</em>,
   in which each large shock reappears once after a lag that grows with its size. Its tail process looks
   exactly like that of independent data, yet its extremal index is ½ rather than 1. As far as we can tell
-  it is only the second known mechanism of this kind. <a href="https://github.com/unbalancedparentheses/lean-extremevaluetheory/blob/main/RESEARCH.md">Research notes</a>.</p>
+  it is only the second known mechanism of this kind, though no expert has confirmed that yet. <a href="https://github.com/unbalancedparentheses/lean-extremevaluetheory/blob/main/RESEARCH.md">Research notes</a>.</p>
 </section>
 
 <section aria-labelledby="use">
@@ -284,16 +291,19 @@ layout: null
     <li><a href="https://github.com/unbalancedparentheses/lean-extremevaluetheory/blob/main/docs/REVIEW.md">For extreme value theorists</a>: a guide to checking the formal statements without knowing Lean.</li>
     <li><a href="blueprint.pdf">The blueprint as a PDF</a>, and its <a href="blueprint/dep_graph_document.html">dependency graph</a>.</li>
   </ul>
-<pre><code>lake exe cache get
-lake build</code></pre>
+<pre><code>[[require]]
+name = "lean-extremevaluetheory"
+git = "https://github.com/unbalancedparentheses/lean-extremevaluetheory"
+rev = "v0.9.0"</code></pre>
 </section>
 
 </main>
 
 <footer class="column">
   <p>Apache 2.0. Builds on <a href="https://github.com/kkytola/ExtremeValueProject">ExtremeValueProject</a> by
-  Kalle Kytölä and the participants of the Aalto course MS-EV0029.
-  <a href="https://github.com/unbalancedparentheses/lean-extremevaluetheory/blob/main/CITATION.cff">How to cite</a>.</p>
+  Kalle Kytölä and the participants of the Aalto course MS-EV0029. Hirata has independently formalized the
+  <a href="https://isa-afp.org/entries/Extreme_Value_Theory.html">two central theorems in Isabelle</a>.
+  Cite as <a href="https://doi.org/10.5281/zenodo.23966372">doi:10.5281/zenodo.23966372</a>.</p>
 </footer>
 </body>
 </html>

@@ -5,6 +5,8 @@
 - Non-vacuity tests for the answer to Bai–Kulik–Wang's question (on both sides of the cutoff), for mixing
   without `θ = ϑ` (at each of its three block scales) and for the warning about short runs (with all its
   rates realized).
+- README, website and repository description rewritten in a plainer style, with the main results as
+  mathematics and a Verification section.
 
 ## v0.9.0 (2026-11-04)
 
