@@ -71,30 +71,18 @@ namespace ExtremeValueTheory
 
 section StdExp
 
+lemma expMeasure_one_Ioi {c : ℝ} (hc : 0 ≤ c) :
+    expMeasure 1 (Ioi c) = ENNReal.ofReal (exp (-c)) := by
+  rw [expMeasure_one_eq_withDensity, withDensity_apply _ measurableSet_Ioi,
+    Measure.restrict_restrict measurableSet_Ioi, Ioi_inter_Ioi, sup_eq_left.2 hc,
+    ← ofReal_integral_eq_lintegral_ofReal (integrableOn_exp_neg_Ioi c)
+      (ae_of_all _ fun t ↦ (exp_pos (-t)).le), integral_exp_neg_Ioi]
+
+set_option linter.deprecated false in
+@[deprecated expMeasure_one_Ioi (since := "2026-11-05")]
 lemma stdExpMeasure_Ioi {c : ℝ} (hc : 0 ≤ c) :
     stdExpMeasure (Ioi c) = ENNReal.ofReal (exp (-c)) := by
-  rw [stdExpMeasure, withDensity_apply _ measurableSet_Ioi, Measure.restrict_restrict
-    measurableSet_Ioi, Ioi_inter_Ioi, sup_eq_left.2 hc, ← ofReal_integral_eq_lintegral_ofReal
-    (integrableOn_exp_neg_Ioi c) (ae_of_all _ fun t ↦ (exp_pos (-t)).le), integral_exp_neg_Ioi]
-
-instance : IsProbabilityMeasure stdExpMeasure := by
-  constructor
-  have h := stdExpMeasure_Ioi le_rfl
-  rw [neg_zero, exp_zero, ENNReal.ofReal_one] at h
-  rw [← h, stdExpMeasure, withDensity_apply _ MeasurableSet.univ, withDensity_apply _
-    measurableSet_Ioi, Measure.restrict_univ, Measure.restrict_restrict measurableSet_Ioi,
-    inter_self]
-
-/-- The measure `e^{-t} dt` on `(0, ∞)` is Mathlib's exponential law of rate `1`. -/
-theorem stdExpMeasure_eq_expMeasure : stdExpMeasure = expMeasure 1 := by
-  rw [stdExpMeasure, expMeasure, gammaMeasure, ← withDensity_indicator measurableSet_Ioi]
-  refine withDensity_congr_ae ?_
-  have h0 : ∀ᵐ x : ℝ ∂volume, x ≠ 0 := by simp [ae_iff, measure_singleton]
-  filter_upwards [h0] with x hx
-  simp only [gammaPDF, gammaPDFReal, Set.indicator, mem_Ioi]
-  rcases lt_or_gt_of_ne hx with h | h
-  · simp [h.not_ge, h.not_gt]
-  · simp [h.le, h]
+  rw [stdExpMeasure_eq_expMeasure, expMeasure_one_Ioi hc]
 
 end StdExp
 
@@ -112,7 +100,7 @@ noncomputable def gpdTransform (ξ σ t : ℝ) : ℝ :=
 /-- The **generalized Pareto law** `GPD(ξ, σ)`, defined as the law of `σ (e^{ξ E} - 1) / ξ`
 for a standard exponential `E`. Its survival function is `gpdSurvivalAll ξ σ`
 (`gpdMeasure_Ioi`) and its density is `gpdDensity ξ σ` (`gpdMeasure_eq_withDensity`). -/
-noncomputable def gpdMeasure (ξ σ : ℝ) : Measure ℝ := stdExpMeasure.map (gpdTransform ξ σ)
+noncomputable def gpdMeasure (ξ σ : ℝ) : Measure ℝ := (expMeasure 1).map (gpdTransform ξ σ)
 
 /-- The distribution function of `GPD(ξ, σ)`: `1 - gpdSurvivalAll ξ σ x` for `x ≥ 0`, and `0`
 for `x < 0`. -/
@@ -164,13 +152,13 @@ theorem gpdMeasure_Ioi (hσ : 0 < σ) (hx : 0 ≤ x) :
   rw [gpdMeasure, Measure.map_apply hm measurableSet_Ioi]
   -- the preimage, inside `(0, ∞)`, is a half-line `(τ, ∞)`
   have key : ∀ τ : ℝ, 0 ≤ τ → gpdTransform ξ σ τ = x →
-      stdExpMeasure (gpdTransform ξ σ ⁻¹' Ioi x) = ENNReal.ofReal (exp (-τ)) := by
+      expMeasure 1 (gpdTransform ξ σ ⁻¹' Ioi x) = ENNReal.ofReal (exp (-τ)) := by
     intro τ hτ hτx
     have : gpdTransform ξ σ ⁻¹' Ioi x = Ioi τ := by
       ext t
       simp only [mem_preimage, mem_Ioi, ← hτx]
       exact (gpdTransform_strictMono hσ).lt_iff_lt
-    rw [this, stdExpMeasure_Ioi hτ]
+    rw [this, expMeasure_one_Ioi hτ]
   by_cases hξ : ξ = 0
   · subst hξ
     rw [key (x / σ) (div_nonneg hx hσ.le) (by simp [gpdTransform]; field_simp)]
@@ -210,7 +198,7 @@ theorem gpdMeasure_Ioi (hσ : 0 < σ) (hx : 0 ≤ x) :
       have h3 := exp_pos (ξ * t)
       linarith
     have hne : -(1 / ξ) ≠ 0 := by simp [hξ]
-    rw [stdExpMeasure, withDensity_apply _ hS, Measure.restrict_restrict hS, hempty,
+    rw [expMeasure_one_eq_withDensity, withDensity_apply _ hS, Measure.restrict_restrict hS, hempty,
       Measure.restrict_empty, lintegral_zero_measure, gpdSurvivalAll, ite_eq_right hξ,
       max_eq_right (not_lt.1 hu), zero_rpow hne, ENNReal.ofReal_zero]
 
@@ -336,13 +324,13 @@ theorem integral_gpdDensity (hσ : 0 < σ) : ∫ x, gpdDensity ξ σ x = 1 :=
 /-- Integrals against `GPD(ξ, σ)` through the exponential representation. -/
 theorem integral_gpdMeasure {f : ℝ → ℝ} (hf : Measurable f) :
     ∫ x, f x ∂gpdMeasure ξ σ = ∫ x, f (gpdTransform ξ σ x) ∂expMeasure 1 := by
-  rw [gpdMeasure, stdExpMeasure_eq_expMeasure, integral_map
+  rw [gpdMeasure, integral_map
     (measurable_gpdTransform ξ σ).aemeasurable hf.aestronglyMeasurable]
 
 /-- Integrability against `GPD(ξ, σ)` through the exponential representation. -/
 theorem integrable_gpdMeasure_iff {f : ℝ → ℝ} (hf : Measurable f) :
     Integrable f (gpdMeasure ξ σ) ↔ Integrable (fun t => f (gpdTransform ξ σ t)) (expMeasure 1) := by
-  rw [gpdMeasure, stdExpMeasure_eq_expMeasure, integrable_map_measure hf.aestronglyMeasurable
+  rw [gpdMeasure, integrable_map_measure hf.aestronglyMeasurable
     (measurable_gpdTransform ξ σ).aemeasurable]
   rfl
 
@@ -437,7 +425,7 @@ lemma gpdTransform_zero (σ : ℝ) : gpdTransform 0 σ = fun t => σ * t := by
   funext t; simp [gpdTransform]
 
 lemma gpdMeasure_zero_eq_map (σ : ℝ) : gpdMeasure 0 σ = (expMeasure 1).map (fun t => σ * t) := by
-  rw [gpdMeasure, stdExpMeasure_eq_expMeasure, gpdTransform_zero]
+  rw [gpdMeasure, gpdTransform_zero]
 
 lemma integrable_id_gpdMeasure_zero (σ : ℝ) : Integrable id (gpdMeasure 0 σ) := by
   rw [integrable_gpdMeasure_iff measurable_id, gpdTransform_zero]
@@ -691,18 +679,18 @@ section Consistency
 variable {ξ σ σ₀ : ℝ}
 
 lemma ae_pos_expMeasure : ∀ᵐ t ∂expMeasure 1, 0 < t := by
-  rw [← stdExpMeasure_eq_expMeasure, ae_iff]
+  rw [ae_iff]
   have h1 : {t : ℝ | ¬ 0 < t} = Iic 0 := by ext; simp
   have h2 : Iic (0 : ℝ) ∩ Ioi 0 = ∅ := Set.ext fun t => by
     simp only [mem_inter_iff, mem_Iic, mem_Ioi, mem_empty_iff_false, iff_false, not_and, not_lt]
     exact id
-  rw [h1, stdExpMeasure, withDensity_apply _ measurableSet_Iic,
+  rw [h1, expMeasure_one_eq_withDensity, withDensity_apply _ measurableSet_Iic,
     Measure.restrict_restrict measurableSet_Iic, h2, Measure.restrict_empty,
     lintegral_zero_measure]
 
 /-- `GPD(ξ, σ)` is carried by its support `{x > 0, σ + ξ x > 0}`. -/
 lemma ae_gpdMeasure (hσ : 0 < σ) : ∀ᵐ y ∂gpdMeasure ξ σ, 0 < y ∧ 0 < σ + ξ * y := by
-  rw [gpdMeasure, stdExpMeasure_eq_expMeasure]
+  rw [gpdMeasure]
   refine (ae_map_iff (measurable_gpdTransform ξ σ).aemeasurable ?_).2 ?_
   · exact (measurableSet_lt measurable_const measurable_id).inter
       (measurableSet_lt measurable_const (show Measurable fun y : ℝ => σ + ξ * y by fun_prop))

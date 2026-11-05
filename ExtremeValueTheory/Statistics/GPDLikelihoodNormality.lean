@@ -100,7 +100,7 @@ lemma gpdScoreDeriv_gpdTransform (hσ₀ : 0 < σ₀) (hξ : ξ ≠ 0) (t : ℝ)
 /-- The score is square integrable for `ξ > -1/2`. -/
 lemma memLp_gpdScorePsi (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ₀ : 0 < σ₀) :
     MemLp (gpdScorePsi ξ σ₀) 2 (gpdMeasure ξ σ₀) := by
-  rw [gpdMeasure, stdExpMeasure_eq_expMeasure, memLp_map_measure_iff
+  rw [gpdMeasure, memLp_map_measure_iff
     (measurable_gpdScorePsi ξ σ₀).aestronglyMeasurable
     (measurable_gpdTransform ξ σ₀).aemeasurable]
   have he : MemLp (fun t => exp ((-ξ) * t)) 2 (expMeasure 1) := by
