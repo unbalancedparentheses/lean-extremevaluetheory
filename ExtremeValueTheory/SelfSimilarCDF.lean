@@ -583,8 +583,8 @@ Any extreme value distribution is of Gumbel, Fréchet, or Weibull type.
 theorem classification {G : CumulativeDistributionFunction}
     (G_evd : G.IsExtremeValueDistr) :
     (∃ (A : AffineIncrEquiv), A • G = standardGumbelCDF) ∨
-      (∃ (A : AffineIncrEquiv) (ξ : ℝ) (hξ : 0 < ξ) , A • G = standardFrechetCDF hξ) ∨
-      (∃ (A : AffineIncrEquiv) (ξ : ℝ) (hξ : 0 < ξ) , A • G = standardWeibullCDF hξ) := by
+      (∃ (A : AffineIncrEquiv) (α : ℝ) (hα : 0 < α), A • G = standardFrechetCDF hα) ∨
+      (∃ (A : AffineIncrEquiv) (α : ℝ) (hα : 0 < α), A • G = standardWeibullCDF hα) := by
   obtain ⟨f, f_nontriv, f_mble, hf⟩ := IsExtremeValueDistr.self_similar G_evd
   cases' homomorphism_from_Real_characterization_of_nontrivial f_nontriv f_mble with h₀ h₁
   · left -- **the Gumbel case**
