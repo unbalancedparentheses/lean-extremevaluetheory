@@ -30,7 +30,7 @@ Let `X_0, X_1, …` be iid with tail quantile function `U(t) = F^←(1 - 1/t)`, 
   `b_{γ,ρ} = D_{γ+ρ}(2) / D_γ(2) · 2^{-ρ} (1 - 2^{-ρ}) / (ρ log 2)` for `ρ ≠ 0` and `b_{γ,0} = 1`.
 * `tendstoInDistribution_sqrt_smul_tailTime`: joint normality of intermediate uniform order
   statistics at integer multiples of `k`.
-* `isExtSecondOrderRegularlyVarying_add_extRVLimit`: the model `U = D_γ + c D_{γ+ρ}`, which
+* `isExtSecondOrderRegularlyVarying_add_boxCox`: the model `U = D_γ + c D_{γ+ρ}`, which
   satisfies the hypothesis for every `γ` and every `ρ < 0`.
 
 ## Comparison with the source
@@ -417,7 +417,7 @@ structure IsExtSecondOrderRegularlyVarying (U : ℝ → ℝ) (γ ρ : ℝ) (a A 
   tendsto_zero : Tendsto A atTop (𝓝 0)
   eventually_ne_zero : ∀ᶠ t in atTop, A t ≠ 0
   tendstoLocallyUniformlyOn : TendstoLocallyUniformlyOn
-    (fun t x => ((U (x * t) - U t) / a t - extRVLimit γ x) / A t) (extSecondOrderLimit γ ρ)
+    (fun t x => ((U (x * t) - U t) / a t - boxCox γ x) / A t) (extSecondOrderLimit γ ρ)
     atTop (Ioi 0)
 
 theorem continuousOn_rpow_mul_boxCox (γ ρ : ℝ) :
@@ -447,28 +447,28 @@ end SecondOrder
 
 section PickandsMap
 
-theorem hasDerivAt_extRVLimit (γ : ℝ) {x : ℝ} (hx : 0 < x) :
-    HasDerivAt (extRVLimit γ) (x ^ (γ - 1)) x := by
+theorem hasDerivAt_boxCox (γ : ℝ) {x : ℝ} (hx : 0 < x) :
+    HasDerivAt (boxCox γ) (x ^ (γ - 1)) x := by
   by_cases hγ : γ = 0
   · subst hγ
-    have : extRVLimit 0 = Real.log := funext extRVLimit_zero_left
+    have : boxCox 0 = Real.log := funext boxCox_zero
     rw [this, zero_sub, rpow_neg_one]
     exact hasDerivAt_log hx.ne'
-  · have : extRVLimit γ = fun y => (y ^ γ - 1) / γ := funext (extRVLimit_of_ne hγ)
+  · have : boxCox γ = fun y => (y ^ γ - 1) / γ := funext (boxCox_of_ne hγ)
     rw [this]
     have h := ((hasDerivAt_rpow_const (p := γ) (Or.inl hx.ne')).sub_const 1).div_const γ
     convert h using 1
     field_simp
 
-theorem hasDerivAt_extRVLimit_four_div (γ : ℝ) {y : ℝ} (hy : y < 0) :
-    HasDerivAt (fun y => extRVLimit γ (4 / -y)) ((4 / -y) ^ (γ - 1) * (4 / y ^ 2)) y := by
+theorem hasDerivAt_boxCox_four_div (γ : ℝ) {y : ℝ} (hy : y < 0) :
+    HasDerivAt (fun y => boxCox γ (4 / -y)) ((4 / -y) ^ (γ - 1) * (4 / y ^ 2)) y := by
   have h1 : HasDerivAt (fun y : ℝ => -4 * y⁻¹) (-4 * -(y ^ 2)⁻¹) y :=
     (hasDerivAt_inv hy.ne).const_mul (-4)
   have e : (fun y : ℝ => -4 * y⁻¹) = fun y => 4 / -y := by
     funext y; rw [div_neg, div_eq_mul_inv]; ring
   rw [e] at h1
   have hpos : 0 < 4 / -y := div_pos (by norm_num) (by linarith)
-  have h2 := (hasDerivAt_extRVLimit γ hpos).comp y h1
+  have h2 := (hasDerivAt_boxCox γ hpos).comp y h1
   refine h2.congr_deriv ?_
   congr 1
   field_simp
@@ -478,8 +478,8 @@ theorem hasDerivAt_extRVLimit_four_div (γ : ℝ) {y : ℝ} (hy : y < 0) :
 `y_i = -(n/k)(1 - U_{(τ_i k + 1)})`, `τ = (1, 2, 4)`, this is `log 2 ×` the Pickands estimator of
 an exact generalized Pareto sample. -/
 noncomputable def pickandsMap (γ : ℝ) (y : EuclideanSpace ℝ (Fin 3)) : ℝ :=
-  Real.log (extRVLimit γ (4 / -y 0) - extRVLimit γ (4 / -y 1)) -
-    Real.log (extRVLimit γ (4 / -y 1) - extRVLimit γ (4 / -y 2))
+  Real.log (boxCox γ (4 / -y 0) - boxCox γ (4 / -y 1)) -
+    Real.log (boxCox γ (4 / -y 1) - boxCox γ (4 / -y 2))
 
 /-- The times `1, 2, 4` of the Pickands estimator. -/
 def pickandsTimes : Fin 3 → ℕ := ![1, 2, 4]
@@ -490,27 +490,27 @@ noncomputable def pickandsCenter : EuclideanSpace ℝ (Fin 3) :=
 
 /-- The gradient of `pickandsMap γ` at `pickandsCenter`. -/
 noncomputable def pickandsGrad (γ : ℝ) : EuclideanSpace ℝ (Fin 3) :=
-  WithLp.toLp 2 ![2 ^ γ / extRVLimit γ 2, -(1 + 2 ^ γ) / (2 * extRVLimit γ 2),
-    1 / (4 * extRVLimit γ 2)]
+  WithLp.toLp 2 ![2 ^ γ / boxCox γ 2, -(1 + 2 ^ γ) / (2 * boxCox γ 2),
+    1 / (4 * boxCox γ 2)]
 
-theorem extRVLimit_four (γ : ℝ) :
-    extRVLimit γ 4 - extRVLimit γ 2 = 2 ^ γ * extRVLimit γ 2 := by
-  have h := extRVLimit_mul (γ := γ) (x := 2) (y := 2) two_pos two_pos
+theorem boxCox_four (γ : ℝ) :
+    boxCox γ 4 - boxCox γ 2 = 2 ^ γ * boxCox γ 2 := by
+  have h := boxCox_mul (γ := γ) (x := 2) (y := 2) two_pos two_pos
   norm_num at h
   linarith
 
 theorem pickandsMap_center (γ : ℝ) : pickandsMap γ pickandsCenter = γ * Real.log 2 := by
-  have hd : 0 < extRVLimit γ 2 := extRVLimit_pos one_lt_two
+  have hd : 0 < boxCox γ 2 := boxCox_pos_of_one_lt one_lt_two
   simp only [pickandsMap, pickandsCenter, pickandsTimes, WithLp.ofLp_toLp]
   norm_num
-  rw [extRVLimit_one, sub_zero, extRVLimit_four, Real.log_mul (by positivity) hd.ne',
+  rw [boxCox_one, sub_zero, boxCox_four, Real.log_mul (by positivity) hd.ne',
     Real.log_rpow two_pos]
   ring
 
 theorem hasGradientAt_pickandsMap (γ : ℝ) :
     HasGradientAt (pickandsMap γ) (pickandsGrad γ) pickandsCenter := by
-  set D := extRVLimit γ with hD
-  have hd : 0 < D 2 := extRVLimit_pos one_lt_two
+  set D := boxCox γ with hD
+  have hd : 0 < D 2 := boxCox_pos_of_one_lt one_lt_two
   have hv0 : pickandsCenter 0 = -1 := by simp [pickandsCenter, pickandsTimes]
   have hv1 : pickandsCenter 1 = -2 := by simp [pickandsCenter, pickandsTimes]
   have hv2 : pickandsCenter 2 = -4 := by simp [pickandsCenter, pickandsTimes]
@@ -519,13 +519,13 @@ theorem hasGradientAt_pickandsMap (γ : ℝ) :
   have hu : ∀ i, HasFDerivAt (fun v : EuclideanSpace ℝ (Fin 3) => D (4 / -v i))
       (((4 / -pickandsCenter i) ^ (γ - 1) * (4 / pickandsCenter i ^ 2)) •
         EuclideanSpace.proj (𝕜 := ℝ) i) pickandsCenter := fun i =>
-    (hasDerivAt_extRVLimit_four_div γ (hc i)).comp_hasFDerivAt
+    (hasDerivAt_boxCox_four_div γ (hc i)).comp_hasFDerivAt
       (f := (EuclideanSpace.proj (𝕜 := ℝ) i : EuclideanSpace ℝ (Fin 3) → ℝ))
       pickandsCenter (EuclideanSpace.proj (𝕜 := ℝ) i).hasFDerivAt
   have hN : D (4 / -pickandsCenter 0) - D (4 / -pickandsCenter 1) = 2 ^ γ * D 2 := by
-    rw [hv0, hv1]; norm_num; exact extRVLimit_four γ
+    rw [hv0, hv1]; norm_num; exact boxCox_four γ
   have hN' : D (4 / -pickandsCenter 1) - D (4 / -pickandsCenter 2) = D 2 := by
-    rw [hv1, hv2]; norm_num [hD, extRVLimit_one]
+    rw [hv1, hv2]; norm_num [hD, boxCox_one]
   have h2γ : (0 : ℝ) < 2 ^ γ := by positivity
   have hF := ((hu 0).sub (hu 1)).log (by simp only [Pi.sub_apply]; rw [hN]; positivity) |>.sub
     (((hu 1).sub (hu 2)).log (by simp only [Pi.sub_apply]; rw [hN']; positivity))
@@ -551,8 +551,8 @@ theorem hasGradientAt_pickandsMap (γ : ℝ) :
 /-- The asymptotic variance `aᵀ S a` of the Pickands map, `S = (min (τ_i, τ_j))`. -/
 theorem pickandsGrad_quadForm (γ : ℝ) :
     (pickandsGrad γ) ⬝ᵥ (brownianCovMatrix fun i => (pickandsTimes i : ℝ≥0)) *ᵥ
-      (pickandsGrad γ) = (2 * (2 ^ γ) ^ 2 + 1) / (4 * extRVLimit γ 2 ^ 2) := by
-  have hd : 0 < extRVLimit γ 2 := extRVLimit_pos one_lt_two
+      (pickandsGrad γ) = (2 * (2 ^ γ) ^ 2 + 1) / (4 * boxCox γ 2 ^ 2) := by
+  have hd : 0 < boxCox γ 2 := boxCox_pos_of_one_lt one_lt_two
   simp only [dotProduct, Matrix.mulVec, brownianCovMatrix, Fin.sum_univ_three, pickandsGrad,
     pickandsTimes, Matrix.of_apply, WithLp.ofLp_toLp, Matrix.cons_val_zero, Matrix.cons_val_one,
     Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons]
@@ -612,11 +612,11 @@ theorem tendsto_comp_of_tendstoLocallyUniformlyOn {β : Type*} {F : ℝ → ℝ 
     exact ⟨t, ht, hφ.eventually hev⟩
   exact h'.tendsto_comp hf hx hg
 
-theorem strictMonoOn_extRVLimit (γ : ℝ) : StrictMonoOn (extRVLimit γ) (Ioi 0) := by
+theorem strictMonoOn_boxCox (γ : ℝ) : StrictMonoOn (boxCox γ) (Ioi 0) := by
   refine strictMonoOn_of_deriv_pos (convex_Ioi 0)
-    (fun x hx => (hasDerivAt_extRVLimit γ hx).continuousAt.continuousWithinAt) fun x hx => ?_
+    (fun x hx => (hasDerivAt_boxCox γ hx).continuousAt.continuousWithinAt) fun x hx => ?_
   rw [interior_Ioi] at hx
-  rw [(hasDerivAt_extRVLimit γ hx).deriv]
+  rw [(hasDerivAt_boxCox γ hx).deriv]
   exact rpow_pos_of_pos hx _
 
 /-- The log-ratio of spacings of `U` at the points `x_i t`, `x_i = 1/(-y_i)`:
@@ -630,9 +630,9 @@ noncomputable def pickandsLog (U : ℝ → ℝ) (t : ℝ) (y : EuclideanSpace �
 with `D = D_γ` and `H = H_{γ,ρ}`. -/
 noncomputable def pickandsBias (γ ρ : ℝ) : ℝ :=
   ((extSecondOrderLimit γ ρ 1 - extSecondOrderLimit γ ρ (1 / 2)) /
-      (extRVLimit γ 1 - extRVLimit γ (1 / 2)) -
+      (boxCox γ 1 - boxCox γ (1 / 2)) -
     (extSecondOrderLimit γ ρ (1 / 2) - extSecondOrderLimit γ ρ (1 / 4)) /
-      (extRVLimit γ (1 / 2) - extRVLimit γ (1 / 4))) / Real.log 2
+      (boxCox γ (1 / 2) - boxCox γ (1 / 4))) / Real.log 2
 
 /-- **The second-order remainder of the Pickands statistic.** Under second-order extended regular
 variation, `(pickandsLog U t y - pickandsMap γ y) / A(t) → b log 2` as `t → ∞` and `y` tends to
@@ -643,7 +643,7 @@ theorem tendsto_pickandsLog_sub_div {U : ℝ → ℝ} {γ ρ : ℝ} {a A : ℝ �
       (pickandsLog U p.1 p.2 - pickandsMap γ p.2) / A p.1)
       (atTop ×ˢ 𝓝 pickandsCenter) (𝓝 (pickandsBias γ ρ * Real.log 2)) := by
   set l : Filter (ℝ × EuclideanSpace ℝ (Fin 3)) := atTop ×ˢ 𝓝 pickandsCenter with hl
-  set D := extRVLimit γ with hD
+  set D := boxCox γ with hD
   set H := extSecondOrderLimit γ ρ with hH
   set F : ℝ → ℝ → ℝ := fun t x => ((U (x * t) - U t) / a t - D x) / A t with hF
   have hfst : Tendsto (fun p : ℝ × EuclideanSpace ℝ (Fin 3) => p.1) l atTop := tendsto_fst
@@ -667,8 +667,8 @@ theorem tendsto_pickandsLog_sub_div {U : ℝ → ℝ} {γ ρ : ℝ} {a A : ℝ �
       (tendsto_nhdsWithin_iff.2 ⟨hxlim i, hxpos i⟩)
   have hDl : ∀ i, Tendsto (fun p : ℝ × EuclideanSpace ℝ (Fin 3) => D (-p.2 i)⁻¹) l
       (𝓝 (D (pickandsTimes i : ℝ)⁻¹)) := fun i =>
-    (hasDerivAt_extRVLimit γ (inv_pos.2 (hτ i))).continuousAt.tendsto.comp (hxlim i)
-  have hmono := strictMonoOn_extRVLimit γ
+    (hasDerivAt_boxCox γ (inv_pos.2 (hτ i))).continuousAt.tendsto.comp (hxlim i)
+  have hmono := strictMonoOn_boxCox γ
   have hd01 : 0 < D (pickandsTimes 0 : ℝ)⁻¹ - D (pickandsTimes 1 : ℝ)⁻¹ := by
     have := hmono (show (0 : ℝ) < 1 / 2 by norm_num) (show (0 : ℝ) < 1 by norm_num)
       (by norm_num)
@@ -747,7 +747,7 @@ theorem tendsto_pickandsLog_sub_div {U : ℝ → ℝ} {γ ρ : ℝ} {a A : ℝ �
       D (4 / -p.2 i) = D 4 + 4 ^ γ * D (-p.2 i)⁻¹ := by
     intro i hi
     rw [div_eq_mul_inv]
-    exact extRVLimit_mul (by norm_num) hi
+    exact boxCox_mul (by norm_num) hi
   have h4 : (0 : ℝ) < 4 ^ γ := by positivity
   have hM : pickandsMap γ p.2 = Real.log (D (-p.2 0)⁻¹ - D (-p.2 1)⁻¹) -
       Real.log (D (-p.2 1)⁻¹ - D (-p.2 2)⁻¹) := by
@@ -777,15 +777,15 @@ end Remainder
 
 section Normality
 
-theorem measurable_extRVLimit (γ : ℝ) : Measurable (extRVLimit γ) := by
+theorem measurable_boxCox_right (γ : ℝ) : Measurable (boxCox γ) := by
   by_cases hγ : γ = 0
-  · rw [show extRVLimit γ = Real.log from funext fun x => by simp [extRVLimit, hγ]]
+  · rw [show boxCox γ = Real.log from funext fun x => by simp [boxCox, hγ]]
     exact measurable_log
-  · rw [show extRVLimit γ = fun x => (x ^ γ - 1) / γ from funext (extRVLimit_of_ne hγ)]
+  · rw [show boxCox γ = fun x => (x ^ γ - 1) / γ from funext (boxCox_of_ne hγ)]
     fun_prop
 
 theorem measurable_pickandsMap (γ : ℝ) : Measurable (pickandsMap γ) := by
-  have := measurable_extRVLimit γ
+  have := measurable_boxCox_right γ
   unfold pickandsMap
   fun_prop
 
@@ -802,18 +802,18 @@ theorem measurable_pickands_pi (n k : ℕ) : Measurable fun y : Fin n → ℝ =>
 `(2 · 2^{2γ} + 1) / (4 D_γ(2)² (log 2)²)`; see `pickandsVariance_of_ne` and
 `pickandsVariance_zero` for the closed forms of [dHF, Theorem 3.3.5]. -/
 noncomputable def pickandsVariance (γ : ℝ) : ℝ :=
-  (2 * (2 ^ γ) ^ 2 + 1) / (4 * extRVLimit γ 2 ^ 2 * Real.log 2 ^ 2)
+  (2 * (2 ^ γ) ^ 2 + 1) / (4 * boxCox γ 2 ^ 2 * Real.log 2 ^ 2)
 
 /-- For `γ ≠ 0` the asymptotic variance of the Pickands estimator is
 `γ² (2^{2γ+1} + 1) / (2 (2^γ - 1) log 2)²` ([dHF, Theorem 3.3.5]). -/
 theorem pickandsVariance_of_ne {γ : ℝ} (hγ : γ ≠ 0) :
     pickandsVariance γ = γ ^ 2 * (2 ^ (2 * γ + 1) + 1) / (2 * (2 ^ γ - 1) * Real.log 2) ^ 2 := by
-  have hd := extRVLimit_pos (γ := γ) one_lt_two
-  rw [extRVLimit_of_ne hγ] at hd
+  have hd := boxCox_pos_of_one_lt (ρ := γ) one_lt_two
+  rw [boxCox_of_ne hγ] at hd
   have h1 : (2 : ℝ) ^ γ - 1 ≠ 0 := by
     intro h; rw [h, zero_div] at hd; exact lt_irrefl _ hd
   have hl : Real.log 2 ≠ 0 := (Real.log_pos one_lt_two).ne'
-  rw [pickandsVariance, extRVLimit_of_ne hγ, rpow_add two_pos, rpow_one,
+  rw [pickandsVariance, boxCox_of_ne hγ, rpow_add two_pos, rpow_one,
     show 2 * γ = γ + γ by ring, rpow_add two_pos]
   field_simp
   ring
@@ -821,7 +821,7 @@ theorem pickandsVariance_of_ne {γ : ℝ} (hγ : γ ≠ 0) :
 /-- For `γ = 0` the asymptotic variance of the Pickands estimator is `3 / (4 (log 2)⁴)`
 ([dHF, Theorem 3.3.5]). -/
 theorem pickandsVariance_zero : pickandsVariance 0 = 3 / (4 * Real.log 2 ^ 4) := by
-  rw [pickandsVariance, extRVLimit_zero_left]
+  rw [pickandsVariance, boxCox_zero]
   norm_num
   ring
 
@@ -1095,35 +1095,35 @@ theorem tendstoInDistribution_pickands_of_tendsto_zero {X : ℕ → Ω → ℝ}
 
 /-- `H_{γ,ρ} = (D_{γ+ρ} - D_γ) / ρ` on `(0, ∞)` for `ρ ≠ 0`. -/
 theorem extSecondOrderLimit_of_ne {γ ρ : ℝ} (hρ : ρ ≠ 0) {x : ℝ} (hx : 0 < x) :
-    extSecondOrderLimit γ ρ x = (extRVLimit (γ + ρ) x - extRVLimit γ x) / ρ := by
+    extSecondOrderLimit γ ρ x = (boxCox (γ + ρ) x - boxCox γ x) / ρ := by
   have hsub : Set.uIcc (1 : ℝ) x ⊆ Ioi 0 := fun s hs => by
     rcases Set.mem_uIcc.1 hs with h | h <;> simp only [mem_Ioi] <;> linarith [h.1]
-  have hd : ∀ s ∈ Set.uIcc (1 : ℝ) x, HasDerivAt (fun s => (extRVLimit (γ + ρ) s -
-      extRVLimit γ s) / ρ) (s ^ (γ - 1) * boxCox ρ s) s := fun s hs => by
+  have hd : ∀ s ∈ Set.uIcc (1 : ℝ) x, HasDerivAt (fun s => (boxCox (γ + ρ) s -
+      boxCox γ s) / ρ) (s ^ (γ - 1) * boxCox ρ s) s := fun s hs => by
     have hs0 : 0 < s := hsub hs
-    refine (((hasDerivAt_extRVLimit (γ + ρ) hs0).sub (hasDerivAt_extRVLimit γ hs0)).div_const
+    refine (((hasDerivAt_boxCox (γ + ρ) hs0).sub (hasDerivAt_boxCox γ hs0)).div_const
       ρ).congr_deriv ?_
     have hb : boxCox ρ s = (s ^ ρ - 1) / ρ := by simp [boxCox, hρ]
     rw [hb, show γ + ρ - 1 = (γ - 1) + ρ by ring, rpow_add hs0]
     ring
   have hii : IntervalIntegrable (fun s : ℝ => s ^ (γ - 1) * boxCox ρ s) volume 1 x :=
     ((continuousOn_rpow_mul_boxCox γ ρ).mono hsub).intervalIntegrable
-  rw [extSecondOrderLimit, intervalIntegral.integral_eq_sub_of_hasDerivAt hd hii, extRVLimit_one,
-    extRVLimit_one]
+  rw [extSecondOrderLimit, intervalIntegral.integral_eq_sub_of_hasDerivAt hd hii, boxCox_one,
+    boxCox_one]
   ring
 
 /-- Spacing of `D_γ` at `1, 1/2`. -/
-theorem extRVLimit_one_sub_half (γ : ℝ) :
-    extRVLimit γ 1 - extRVLimit γ (1 / 2) = (2 : ℝ) ^ (-γ) * extRVLimit γ 2 := by
-  have h := extRVLimit_mul (γ := γ) (x := 1 / 2) (y := 2) (by norm_num) two_pos
+theorem boxCox_one_sub_half (γ : ℝ) :
+    boxCox γ 1 - boxCox γ (1 / 2) = (2 : ℝ) ^ (-γ) * boxCox γ 2 := by
+  have h := boxCox_mul (γ := γ) (x := 1 / 2) (y := 2) (by norm_num) two_pos
   rw [show (1 / 2 : ℝ) * 2 = 1 by norm_num] at h
   rw [h, rpow_neg two_pos.le, one_div, inv_rpow two_pos.le]
   ring
 
 /-- Spacing of `D_γ` at `1/2, 1/4`. -/
-theorem extRVLimit_half_sub_quarter (γ : ℝ) :
-    extRVLimit γ (1 / 2) - extRVLimit γ (1 / 4) = ((2 : ℝ) ^ (-γ)) ^ 2 * extRVLimit γ 2 := by
-  have h := extRVLimit_mul (γ := γ) (x := 1 / 4) (y := 2) (by norm_num) two_pos
+theorem boxCox_half_sub_quarter (γ : ℝ) :
+    boxCox γ (1 / 2) - boxCox γ (1 / 4) = ((2 : ℝ) ^ (-γ)) ^ 2 * boxCox γ 2 := by
+  have h := boxCox_mul (γ := γ) (x := 1 / 4) (y := 2) (by norm_num) two_pos
   rw [show (1 / 4 : ℝ) * 2 = 1 / 2 by norm_num] at h
   have e : ((1 : ℝ) / 4) ^ γ = ((2 : ℝ) ^ (-γ)) ^ 2 := by
     rw [show (1 : ℝ) / 4 = 2⁻¹ * 2⁻¹ by norm_num, mul_rpow (by norm_num) (by norm_num),
@@ -1135,33 +1135,33 @@ theorem extRVLimit_half_sub_quarter (γ : ℝ) :
 /-- **Closed form of the Pickands bias**, `ρ ≠ 0`:
 `b_{γ,ρ} = D_{γ+ρ}(2) / D_γ(2) · 2^{-ρ} (1 - 2^{-ρ}) / (ρ log 2)`. -/
 theorem pickandsBias_of_ne (γ : ℝ) {ρ : ℝ} (hρ : ρ ≠ 0) :
-    pickandsBias γ ρ = extRVLimit (γ + ρ) 2 / extRVLimit γ 2 *
+    pickandsBias γ ρ = boxCox (γ + ρ) 2 / boxCox γ 2 *
       ((2 : ℝ) ^ (-ρ) * (1 - (2 : ℝ) ^ (-ρ))) / (ρ * Real.log 2) := by
   have hl : Real.log 2 ≠ 0 := (Real.log_pos one_lt_two).ne'
-  have hD : extRVLimit γ 2 ≠ 0 := (extRVLimit_pos one_lt_two).ne'
+  have hD : boxCox γ 2 ≠ 0 := (boxCox_pos_of_one_lt one_lt_two).ne'
   have hp : (2 : ℝ) ^ (-γ) ≠ 0 := (rpow_pos_of_pos two_pos _).ne'
   have e : (2 : ℝ) ^ (-(γ + ρ)) = 2 ^ (-γ) * 2 ^ (-ρ) := by
     rw [neg_add, rpow_add two_pos]
   unfold pickandsBias
   rw [extSecondOrderLimit_of_ne hρ one_pos, extSecondOrderLimit_of_ne hρ (by norm_num),
-    extSecondOrderLimit_of_ne hρ (by norm_num), extRVLimit_one_sub_half γ,
-    extRVLimit_half_sub_quarter γ,
-    show (extRVLimit (γ + ρ) 1 - extRVLimit γ 1) / ρ - (extRVLimit (γ + ρ) (1 / 2) -
-      extRVLimit γ (1 / 2)) / ρ = ((extRVLimit (γ + ρ) 1 - extRVLimit (γ + ρ) (1 / 2)) -
-      (extRVLimit γ 1 - extRVLimit γ (1 / 2))) / ρ by ring,
-    show (extRVLimit (γ + ρ) (1 / 2) - extRVLimit γ (1 / 2)) / ρ - (extRVLimit (γ + ρ) (1 / 4) -
-      extRVLimit γ (1 / 4)) / ρ = ((extRVLimit (γ + ρ) (1 / 2) - extRVLimit (γ + ρ) (1 / 4)) -
-      (extRVLimit γ (1 / 2) - extRVLimit γ (1 / 4))) / ρ by ring,
-    extRVLimit_one_sub_half γ, extRVLimit_one_sub_half (γ + ρ), extRVLimit_half_sub_quarter γ,
-    extRVLimit_half_sub_quarter (γ + ρ), e]
+    extSecondOrderLimit_of_ne hρ (by norm_num), boxCox_one_sub_half γ,
+    boxCox_half_sub_quarter γ,
+    show (boxCox (γ + ρ) 1 - boxCox γ 1) / ρ - (boxCox (γ + ρ) (1 / 2) -
+      boxCox γ (1 / 2)) / ρ = ((boxCox (γ + ρ) 1 - boxCox (γ + ρ) (1 / 2)) -
+      (boxCox γ 1 - boxCox γ (1 / 2))) / ρ by ring,
+    show (boxCox (γ + ρ) (1 / 2) - boxCox γ (1 / 2)) / ρ - (boxCox (γ + ρ) (1 / 4) -
+      boxCox γ (1 / 4)) / ρ = ((boxCox (γ + ρ) (1 / 2) - boxCox (γ + ρ) (1 / 4)) -
+      (boxCox γ (1 / 2) - boxCox γ (1 / 4))) / ρ by ring,
+    boxCox_one_sub_half γ, boxCox_one_sub_half (γ + ρ), boxCox_half_sub_quarter γ,
+    boxCox_half_sub_quarter (γ + ρ), e]
   field_simp
   ring
 
 /-- `H_{γ,ρ}` is exact for the model `U = D_γ + c D_{γ+ρ}`, which is therefore of second-order
 extended regular variation, with `a(t) = t^γ (1 + c t^ρ)` and `A(t) = ρ c t^ρ / (1 + c t^ρ)`. This
 is the standard example with a nontrivial second-order term; it covers all `γ ∈ ℝ`, `ρ < 0`. -/
-theorem isExtSecondOrderRegularlyVarying_add_extRVLimit {γ ρ c : ℝ} (hρ : ρ < 0) (hc : 0 < c)
-    {U : ℝ → ℝ} (hU : ∀ᶠ t in atTop, U t = extRVLimit γ t + c * extRVLimit (γ + ρ) t) :
+theorem isExtSecondOrderRegularlyVarying_add_boxCox {γ ρ c : ℝ} (hρ : ρ < 0) (hc : 0 < c)
+    {U : ℝ → ℝ} (hU : ∀ᶠ t in atTop, U t = boxCox γ t + c * boxCox (γ + ρ) t) :
     IsExtSecondOrderRegularlyVarying U γ ρ (fun t => t ^ γ * (1 + c * t ^ ρ))
       (fun t => ρ * (c * t ^ ρ) / (1 + c * t ^ ρ)) := by
   have hto : Tendsto (fun t : ℝ => c * t ^ ρ) atTop (𝓝 0) := by
@@ -1193,10 +1193,10 @@ theorem isExtSecondOrderRegularlyVarying_add_extRVLimit {γ ρ c : ℝ} (hρ : �
       exact h1.trans h2
     have hw : 0 < c * t ^ ρ := by positivity
     have htγ : 0 < t ^ γ := by positivity
-    have key : ((U (y * t) - U t) / (t ^ γ * (1 + c * t ^ ρ)) - extRVLimit γ y) /
+    have key : ((U (y * t) - U t) / (t ^ γ * (1 + c * t ^ ρ)) - boxCox γ y) /
         (ρ * (c * t ^ ρ) / (1 + c * t ^ ρ)) = extSecondOrderLimit γ ρ y := by
       rw [extSecondOrderLimit_of_ne hρ.ne hy0, hT _ hyt, hT _ htT, mul_comm y t,
-        extRVLimit_mul ht hy0, extRVLimit_mul ht hy0, rpow_add ht]
+        boxCox_mul ht hy0, boxCox_mul ht hy0, rpow_add ht]
       have h1w : 1 + c * t ^ ρ ≠ 0 := by positivity
       have h2 : t ^ ρ ≠ 0 := by positivity
       field_simp
@@ -1223,21 +1223,21 @@ theorem extSecondOrderLimit_zero_zero {x : ℝ} (hx : 0 < x) :
 
 /-- `H_{γ,0}(x) = (x^γ log x - D_γ(x)) / γ` on `(0, ∞)` for `γ ≠ 0`. -/
 theorem extSecondOrderLimit_zero_right {γ : ℝ} (hγ : γ ≠ 0) {x : ℝ} (hx : 0 < x) :
-    extSecondOrderLimit γ 0 x = (x ^ γ * Real.log x - extRVLimit γ x) / γ := by
+    extSecondOrderLimit γ 0 x = (x ^ γ * Real.log x - boxCox γ x) / γ := by
   have hsub : Set.uIcc (1 : ℝ) x ⊆ Ioi 0 := fun s hs => by
     rcases Set.mem_uIcc.1 hs with h | h <;> simp only [mem_Ioi] <;> linarith [h.1]
-  have hd : ∀ s ∈ Set.uIcc (1 : ℝ) x, HasDerivAt (fun s => (s ^ γ * Real.log s - extRVLimit γ s) / γ)
+  have hd : ∀ s ∈ Set.uIcc (1 : ℝ) x, HasDerivAt (fun s => (s ^ γ * Real.log s - boxCox γ s) / γ)
       (s ^ (γ - 1) * boxCox 0 s) s := fun s hs => by
     have hs0 : 0 < s := hsub hs
     refine ((((hasDerivAt_rpow_const (p := γ) (Or.inl hs0.ne')).mul (hasDerivAt_log hs0.ne')).sub
-      (hasDerivAt_extRVLimit γ hs0)).div_const γ).congr_deriv ?_
+      (hasDerivAt_boxCox γ hs0)).div_const γ).congr_deriv ?_
     rw [boxCox_zero, rpow_sub_one hs0.ne']
     field_simp
     ring
   have hii : IntervalIntegrable (fun s : ℝ => s ^ (γ - 1) * boxCox 0 s) volume 1 x :=
     ((continuousOn_rpow_mul_boxCox γ 0).mono hsub).intervalIntegrable
   rw [extSecondOrderLimit, intervalIntegral.integral_eq_sub_of_hasDerivAt hd hii, log_one,
-    extRVLimit_one]
+    boxCox_one]
   simp
 
 /-- **The Pickands bias for `ρ = 0`**: `b_{γ,0} = 1` for every `γ`. This is also the limit of
@@ -1253,39 +1253,39 @@ theorem pickandsBias_zero_right (γ : ℝ) : pickandsBias γ 0 = 1 := by
     unfold pickandsBias
     rw [extSecondOrderLimit_zero_zero one_pos, extSecondOrderLimit_zero_zero (by norm_num),
       extSecondOrderLimit_zero_zero (by norm_num), log_one, hlh, hlq]
-    simp only [extRVLimit_zero_left, log_one, hlh, hlq]
+    simp only [boxCox_zero, log_one, hlh, hlq]
     generalize Real.log 2 = L at hL ⊢
     field_simp
     ring_nf
     rw [pow_two, mul_assoc, mul_inv_cancel₀ hL]
     ring
   · have hp : (2 : ℝ) ^ (-γ) ≠ 0 := (rpow_pos_of_pos two_pos _).ne'
-    have hD : extRVLimit γ 2 ≠ 0 := (extRVLimit_pos one_lt_two).ne'
+    have hD : boxCox γ 2 ≠ 0 := (boxCox_pos_of_one_lt one_lt_two).ne'
     have hh : ((1 : ℝ) / 2) ^ γ = 2 ^ (-γ) := by
       rw [one_div, inv_rpow two_pos.le, rpow_neg two_pos.le]
     have hq : ((1 : ℝ) / 4) ^ γ = (2 ^ (-γ)) ^ 2 := by
       rw [show (1 : ℝ) / 4 = 2⁻¹ * 2⁻¹ by norm_num, mul_rpow (by norm_num) (by norm_num),
         inv_rpow two_pos.le, rpow_neg two_pos.le]
       ring
-    have h1 := extRVLimit_one_sub_half γ
-    have h2 := extRVLimit_half_sub_quarter γ
-    have hD1 : extRVLimit γ (1 / 2) = -(2 ^ (-γ) * extRVLimit γ 2) := by
-      rw [extRVLimit_one] at h1
+    have h1 := boxCox_one_sub_half γ
+    have h2 := boxCox_half_sub_quarter γ
+    have hD1 : boxCox γ (1 / 2) = -(2 ^ (-γ) * boxCox γ 2) := by
+      rw [boxCox_one] at h1
       linarith
-    have hD2 : extRVLimit γ (1 / 4) =
-        -(2 ^ (-γ) * extRVLimit γ 2) - (2 ^ (-γ)) ^ 2 * extRVLimit γ 2 := by
+    have hD2 : boxCox γ (1 / 4) =
+        -(2 ^ (-γ) * boxCox γ 2) - (2 ^ (-γ)) ^ 2 * boxCox γ 2 := by
       rw [hD1] at h2
       linarith
-    have hDγ : extRVLimit γ 2 = (2 ^ γ - 1) / γ := extRVLimit_of_ne hγ 2
+    have hDγ : boxCox γ 2 = (2 ^ γ - 1) / γ := boxCox_of_ne hγ 2
     have h2γ : (2 : ℝ) ^ γ * 2 ^ (-γ) = 1 := by
       rw [← rpow_add two_pos, add_neg_cancel, rpow_zero]
     unfold pickandsBias
     rw [h1, h2, extSecondOrderLimit_zero_right hγ one_pos,
       extSecondOrderLimit_zero_right hγ (by norm_num),
       extSecondOrderLimit_zero_right hγ (by norm_num), hh, hq, hlh, hlq, hD1, hD2, log_one,
-      extRVLimit_one]
+      boxCox_one]
     set p : ℝ := 2 ^ (-γ) with hpdef
-    set D : ℝ := extRVLimit γ 2 with hDdef
+    set D : ℝ := boxCox γ 2 with hDdef
     have hγD : γ * D = 1 / p - 1 := by
       have h1p : 1 / p = 2 ^ γ := by
         rw [div_eq_iff hp]

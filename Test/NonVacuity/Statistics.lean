@@ -303,23 +303,23 @@ theorem test_nonvacuous_tendstoInDistribution_weissman :
 /-! ### Pickands estimator: asymptotic normality -/
 
 /-- Test-specific: the model `U = D_γ + D_{γ-1}`, whose second-order term is exact. -/
-private noncomputable def modelU (γ t : ℝ) : ℝ := extRVLimit γ t + 1 * extRVLimit (γ + -1) t
+private noncomputable def modelU (γ t : ℝ) : ℝ := boxCox γ t + 1 * boxCox (γ + -1) t
 
 private theorem measurable_modelU (γ : ℝ) : Measurable (modelU γ) :=
-  (measurable_extRVLimit γ).add ((measurable_extRVLimit _).const_mul 1)
+  (measurable_boxCox_right γ).add ((measurable_boxCox_right _).const_mul 1)
 
 private theorem strictMonoOn_modelU (γ : ℝ) : StrictMonoOn (modelU γ) (Set.Ici 1) := fun x hx y _ h => by
   have hx0 : (0 : ℝ) < x := one_pos.trans_le hx
   have hy0 : (0 : ℝ) < y := hx0.trans h
-  have h1 := strictMonoOn_extRVLimit γ hx0 hy0 h
-  have h2 := strictMonoOn_extRVLimit (γ + -1) hx0 hy0 h
+  have h1 := strictMonoOn_boxCox γ hx0 hy0 h
+  have h2 := strictMonoOn_boxCox (γ + -1) hx0 hy0 h
   simp only [modelU]
   linarith
 
 private theorem continuousOn_modelU (γ : ℝ) : ContinuousOn (modelU γ) (Set.Ici 1) := fun x hx => by
   have hx0 : (0 : ℝ) < x := one_pos.trans_le hx
-  exact (((hasDerivAt_extRVLimit γ hx0).continuousAt).add
-    (continuousAt_const.mul (hasDerivAt_extRVLimit (γ + -1) hx0).continuousAt)).continuousWithinAt
+  exact (((hasDerivAt_boxCox γ hx0).continuousAt).add
+    (continuousAt_const.mul (hasDerivAt_boxCox (γ + -1) hx0).continuousAt)).continuousWithinAt
 
 /-- Test-specific: the auxiliary function `A` of the model, `A(t) = -t⁻¹ / (1 + t⁻¹)`. -/
 private noncomputable def modelA (t : ℝ) : ℝ :=
@@ -345,11 +345,11 @@ private theorem pickands_model (γ lam : ℝ) {k : ℕ → ℕ} (hk : Tendsto k 
   have hid : ∀ i, IdentDistrib (X i) (X 0) P P := fun i =>
     ((hE i).identDistrib (hE 0)).comp hg
   have hU : ∀ᶠ t in atTop, survivalQuantile (survival P (X 0)) t =
-      extRVLimit γ t + 1 * extRVLimit (γ + -1) t := by
+      boxCox γ t + 1 * boxCox (γ + -1) t := by
     filter_upwards [eventually_gt_atTop 1] with t ht
     exact survivalQuantile_survival_comp_exp (hE 0) (strictMonoOn_modelU γ)
       (continuousOn_modelU γ) ht
-  have h2 := isExtSecondOrderRegularlyVarying_add_extRVLimit (γ := γ) (ρ := -1) (c := 1)
+  have h2 := isExtSecondOrderRegularlyVarying_add_boxCox (γ := γ) (ρ := -1) (c := 1)
     (by norm_num) one_pos hU
   refine ⟨Ω, _, P, hP, X, hindX, hid, ?_⟩
   exact tendstoInDistribution_pickands hXm hindX hid h2 hk hkn hlam HasLaw.id

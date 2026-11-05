@@ -37,7 +37,7 @@
     "source": "EKM Thm 3.4.13(b)",
     "lean_name": "CumulativeDistributionFunction.isInMDAFrechet_iff_tendstoUniformlyOn_excessSurvival",
     "file": "ExtremeValueTheory/PeaksOverThreshold/Balkema.lean",
-    "statement": "CumulativeDistributionFunction.isInMDAFrechet_iff_tendstoUniformlyOn_excessSurvival\n  (F : CumulativeDistributionFunction) {α : ℝ} (hα : 0 < α) :\n  F.IsInMDAFrechet hα ↔\n    TendstoUniformlyOn\n      (fun u x =>\n        ExtremeValueTheory.excessSurvival (fun y => 1 - ↑F.toStieltjesFunction y) u (u / α * x))\n      (ExtremeValueTheory.gpdSurvivalNonneg (1 / α) 1) Filter.atTop (Set.Ici 0)",
+    "statement": "CumulativeDistributionFunction.isInMDAFrechet_iff_tendstoUniformlyOn_excessSurvival\n  (F : CumulativeDistributionFunction) {α : ℝ} (hα : 0 < α) :\n  F.IsInMDAFrechet hα ↔\n    TendstoUniformlyOn\n      (fun u x =>\n        ExtremeValueTheory.excessSurvival (fun y => 1 - ↑F.toStieltjesFunction y) u (u / α * x))\n      (ExtremeValueTheory.gpdSurvivalAll (1 / α) 1) Filter.atTop (Set.Ici 0)",
     "status": "reduced",
     "scope_note": "xi > 0 only, with the canonical scale beta(u) = u/alpha on both sides: the converse is weaker than the book's, which allows any scale.",
     "axioms": [
@@ -45,7 +45,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "69d8a29f8b58adc64dad2b63b56a4af6"
+    "input_hash": "509c5873e0a931789cff59024f0ce694"
   },
   {
     "id": "pbdh-weibull",
@@ -85,7 +85,7 @@
     "source": "EKM Thm 3.4.13",
     "lean_name": "ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_excessSurvival",
     "file": "ExtremeValueTheory/PeaksOverThreshold/Frechet.lean",
-    "statement": "ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_excessSurvival {F : ℝ → ℝ} {α : ℝ}\n  (hF : Antitone F) (hRV : ExtremeValueTheory.IsRegularlyVarying F (-α)) (hα : 0 < α) :\n  TendstoUniformlyOn (fun u x => ExtremeValueTheory.excessSurvival F u (u / α * x))\n    (ExtremeValueTheory.gpdSurvivalNonneg (1 / α) 1) Filter.atTop (Set.Ici 0)",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_excessSurvival {F : ℝ → ℝ} {α : ℝ}\n  (hF : Antitone F) (hRV : ExtremeValueTheory.IsRegularlyVarying F (-α)) (hα : 0 < α) :\n  TendstoUniformlyOn (fun u x => ExtremeValueTheory.excessSurvival F u (u / α * x))\n    (ExtremeValueTheory.gpdSurvivalAll (1 / α) 1) Filter.atTop (Set.Ici 0)",
     "status": "reduced",
     "scope_note": "Forward direction, xi > 0 only, with the explicit scale u/alpha, for an antitone regularly varying function.",
     "axioms": [
@@ -93,7 +93,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "342ece1e16dcf4c25e069597224a3270"
+    "input_hash": "1560f5b22689e980120d7d1cbb621223"
   },
   {
     "id": "mean-excess-rv",

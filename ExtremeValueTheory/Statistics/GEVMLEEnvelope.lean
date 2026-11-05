@@ -147,10 +147,7 @@ theorem ae_gevU_pos (hξ : ξ ≠ 0) (hσ : 0 < σ) :
     ∀ᵐ x ∂(gevLocScaleCDF ξ μ hσ).measure, 0 < gevU ξ μ σ x := by
   rw [measure_gevLocScaleCDF_eq_map, ae_map_iff (measurable_affine_gevTransform ξ μ σ).aemeasurable
     (measurableSet_lt measurable_const (measurable_gevU ξ μ σ))]
-  have : ∀ᵐ t ∂stdExpMeasure, t ∈ Ioi (0 : ℝ) := by
-    rw [stdExpMeasure]
-    exact (withDensity_absolutelyContinuous _ _).ae_le (ae_restrict_mem measurableSet_Ioi)
-  filter_upwards [this] with t ht
+  filter_upwards [ae_pos_expMeasure] with t ht
   rw [gevU_transform hσ hξ ht]
   exact rpow_pos_of_pos ht _
 

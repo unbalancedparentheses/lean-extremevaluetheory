@@ -45,7 +45,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "484e1f9d7255aa4067cbe25f1d1fce66"
+    "input_hash": "3109b1ba8847cbecda8b32d6618c2ac3"
   },
   {
     "id": "gpd-scale-consistency",
@@ -61,7 +61,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "a675aaf27a490b8460bd43b6a1833297"
+    "input_hash": "808c212dcd63c4278bcd266e7e8a5107"
   },
   {
     "id": "exponential-mle-normality",
@@ -77,7 +77,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "5856c6af9140289697b0e6b42d01879d"
+    "input_hash": "2271d8b8691328b963905ddbe9ef6039"
   },
   {
     "id": "gpd-scale-normality",
@@ -93,7 +93,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "554f7958ae30ba32c40d9e72325c429a"
+    "input_hash": "38a19f3392baac1c8ca6c846db6b08dd"
   },
   {
     "id": "gpd-mle-normality",
@@ -109,7 +109,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "2700b1c677b79753e375254fb56ed913"
+    "input_hash": "8929cf3c1e110cdeda3dbffacd35a4f4"
   },
   {
     "id": "gev-mle-consistency",
@@ -237,7 +237,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "c52b1fd0e58f8056fa32360d736a8b96"
+    "input_hash": "0c3aceafae0f9a51cd6d63b95ec9a79e"
   },
   {
     "id": "gev-return-level-interval",
@@ -253,7 +253,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "29dc49589d6605e0cd4554fc1b6cf9ab"
+    "input_hash": "af39f8a6efb147f3b86627263e422d99"
   },
   {
     "id": "gpd-return-level-normality",
@@ -269,7 +269,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "b0dae786ba64a1cefd1a6210cf3afd29"
+    "input_hash": "9b9a4d17cfe54627c9cd8dfdc04a077c"
   },
   {
     "id": "gpd-return-level-interval",
@@ -285,7 +285,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "d9517a1b0a2e634ad53e90d9d6ccdbc0"
+    "input_hash": "eedbaaa98eda841e61c4dcfc7393f83d"
   },
   {
     "id": "gpd-wilks",
@@ -301,7 +301,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "eee44c8c11cd8356b8c325532eb5bfc8"
+    "input_hash": "0555742c6b1b36fa044dc2aad5ec800e"
   },
   {
     "id": "gpd-profile-return-level",
@@ -317,6 +317,38 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "fd36b5ba7029130c5cd313dc335d4d7d"
+    "input_hash": "20a8bb30e31ef3337d70b124a025c294"
+  },
+  {
+    "id": "gev-mle-joint-normality",
+    "name": "Joint asymptotic normality of the GEV maximum likelihood estimator",
+    "source": "Smith (1985); Prescott–Walden (1980); Bücher–Segers (2017) (no theorem numbers checked)",
+    "lean_name": "ExtremeValueTheory.tendstoInDistribution_gevMLE",
+    "file": "ExtremeValueTheory/Statistics/GEVMLENormality.lean",
+    "statement": "ExtremeValueTheory.tendstoInDistribution_gevMLE.{u_1, u_2} {ξ₀ μ₀ σ₀ : ℝ} {Ω : Type u_1}\n  {Ω' : Type u_2} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {P' : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure P'] {X : ℕ → Ω → ℝ} {K : Set (ℝ × ℝ × ℝ)} (hK : IsCompact K)\n  (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2.2) (hθ₀ : (ξ₀, μ₀, σ₀) ∈ interior K) (hξ₀ : -1 / 2 < ξ₀)\n  (hξ₀0 : ξ₀ ≠ 0) (hσ₀ : 0 < σ₀)\n  (hX :\n    ∀ (i : ℕ),\n      ProbabilityTheory.HasLaw (X i) (ExtremeValueTheory.gevLocScaleCDF ξ₀ μ₀ hσ₀).measure P)\n  (hind : ProbabilityTheory.iIndepFun X P) {θh : ℕ → Ω → ℝ × ℝ × ℝ}\n  (hθm : ∀ (n : ℕ), AEMeasurable (θh n) P) (hθK : ∀ (n : ℕ) (ω : Ω), θh n ω ∈ K)\n  (hmax :\n    ∀ (n : ℕ) (ω : Ω),\n      IsMaxOn (fun p => ExtremeValueTheory.gevLogLikE p.1 p.2.1 p.2.2 fun i => X (↑i) ω) K (θh n ω))\n  {W : Ω' → EuclideanSpace ℝ (Fin 3)}\n  (hW :\n    ProbabilityTheory.HasLaw W\n      (ProbabilityTheory.multivariateGaussian 0 (ExtremeValueTheory.gevMLECov ξ₀ σ₀)) P') :\n  MeasureTheory.TendstoInDistribution\n    (fun n ω => √↑n • !₂[(θh n ω).1 - ξ₀, (θh n ω).2.1 - μ₀, (θh n ω).2.2 - σ₀]) Filter.atTop W\n    (fun x => P) P'",
+    "status": "reduced",
+    "scope_note": "ξ₀ > -1/2 and ξ₀ ≠ 0; exact iid GEV sample; maximizers over a compact set with the truth in its interior. ξ₀ = 0 is not covered, and block maxima from a law in a domain of attraction are not covered.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "1063e4e1ad4c46340070edfb0f37cd7d"
+  },
+  {
+    "id": "gev-mle-return-level-normality",
+    "name": "Unconditional asymptotic normality of the GEV return level",
+    "source": "Coles §3.3.3",
+    "lean_name": "ExtremeValueTheory.tendstoInDistribution_gevMLEReturnLevel",
+    "file": "ExtremeValueTheory/Statistics/GEVReturnLevelNormality.lean",
+    "statement": "ExtremeValueTheory.tendstoInDistribution_gevMLEReturnLevel.{u_1, u_2} {ξ₀ μ₀ σ₀ m : ℝ}\n  {Ω : Type u_1} {Ω'' : Type u_2} {mΩ : MeasurableSpace Ω} {mΩ'' : MeasurableSpace Ω''}\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {P'' : MeasureTheory.Measure Ω''} [MeasureTheory.IsProbabilityMeasure P''] {X : ℕ → Ω → ℝ}\n  {K : Set (ℝ × ℝ × ℝ)} (hK : IsCompact K) (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2.2)\n  (hθ₀ : (ξ₀, μ₀, σ₀) ∈ interior K) (hξ₀ : -1 / 2 < ξ₀) (hξ₀0 : ξ₀ ≠ 0) (hσ₀ : 0 < σ₀) (hm : 1 < m)\n  (hX :\n    ∀ (i : ℕ),\n      ProbabilityTheory.HasLaw (X i) (ExtremeValueTheory.gevLocScaleCDF ξ₀ μ₀ hσ₀).measure P)\n  (hind : ProbabilityTheory.iIndepFun X P) {θh : ℕ → Ω → ℝ × ℝ × ℝ}\n  (hθm : ∀ (n : ℕ), AEMeasurable (θh n) P) (hθK : ∀ (n : ℕ) (ω : Ω), θh n ω ∈ K)\n  (hmax :\n    ∀ (n : ℕ) (ω : Ω),\n      IsMaxOn (fun p => ExtremeValueTheory.gevLogLikE p.1 p.2.1 p.2.2 fun i => X (↑i) ω) K (θh n ω))\n  {W : Ω'' → ℝ}\n  (hW :\n    ProbabilityTheory.HasLaw W\n      (ProbabilityTheory.gaussianReal 0 (ExtremeValueTheory.gevReturnLevelVar ξ₀ σ₀ m).toNNReal)\n      P'') :\n  MeasureTheory.TendstoInDistribution\n    (fun n ω =>\n      √↑n *\n        (ExtremeValueTheory.gevReturnLevel (θh n ω).1 (θh n ω).2.1 (θh n ω).2.2 m -\n          ExtremeValueTheory.gevReturnLevel ξ₀ μ₀ σ₀ m))\n    Filter.atTop W (fun x => P) P''",
+    "status": "reduced",
+    "scope_note": "Same scope as the GEV likelihood theorem, with 1 < m fixed. No normality is assumed. Coverage of the Wald interval (tendsto_measure_mem_gevMLEReturnLevelInterval) still assumes consistency of the standard error.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "9c8953c8b3304264e2150880ed306bd2"
   }
 ]

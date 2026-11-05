@@ -85,7 +85,7 @@
     "source": "BS09 Thm 2.1",
     "lean_name": "ExtremeValueTheory.polar_iff",
     "file": "ExtremeValueTheory/Dependence/TailProcess/Polar.lean",
-    "statement": "ExtremeValueTheory.polar_iff.{u_1, u_2} {Ω : Type u_1} {E : Type u_2} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] [NormedAddCommGroup E]\n  [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E] [SecondCountableTopology E] {Z : Ω → ℝ}\n  {V : Ω → E} {α : ℝ} (hα : 0 < α) (hZ : Measurable Z) (hV : Measurable V) :\n  (ExtremeValueTheory.IsRegularlyVarying (fun x => P.real {ω | x < Z ω}) (-α) ∧\n      ∃ μ,\n        MeasureTheory.IsProbabilityMeasure μ ∧\n          ExtremeValueTheory.TendstoLawCond P (fun x => {ω | x < Z ω}) (fun x ω => (Z ω)⁻¹ • V ω)\n            Filter.atTop μ) ↔\n    ∃ ν,\n      MeasureTheory.IsProbabilityMeasure ν ∧\n        MeasureTheory.Measure.map Prod.fst ν = ProbabilityTheory.paretoMeasure 1 α ∧\n          ExtremeValueTheory.TendstoLawCond P (fun x => {ω | x < Z ω})\n            (fun x ω => (Z ω / x, x⁻¹ • V ω)) Filter.atTop ν",
+    "statement": "ExtremeValueTheory.polar_iff.{u_1, u_2} {Ω : Type u_1} {E : Type u_2} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] [NormedAddCommGroup E]\n  [NormedSpace ℝ E] [MeasurableSpace E] [BorelSpace E] [SecondCountableTopology E] {Z : Ω → ℝ}\n  {V : Ω → E} {α : ℝ} (hα : 0 < α) (hZ : Measurable Z) (hV : Measurable V) :\n  (ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.survival P Z) (-α) ∧\n      ∃ μ,\n        MeasureTheory.IsProbabilityMeasure μ ∧\n          ExtremeValueTheory.TendstoLawCond P (fun x => {ω | x < Z ω}) (fun x ω => (Z ω)⁻¹ • V ω)\n            Filter.atTop μ) ↔\n    ∃ ν,\n      MeasureTheory.IsProbabilityMeasure ν ∧\n        MeasureTheory.Measure.map Prod.fst ν = ProbabilityTheory.paretoMeasure 1 α ∧\n          ExtremeValueTheory.TendstoLawCond P (fun x => {ω | x < Z ω})\n            (fun x ω => (Z ω / x, x⁻¹ • V ω)) Filter.atTop ν",
     "status": "reduced",
     "scope_note": "Only (ii) <=> (iii) of the cited theorem, for one vector (Z, V). The statement for the whole series is hasTailProcess and related lemmas. The BS09 erratum was not consulted.",
     "axioms": [
@@ -93,7 +93,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "3251d1eea58f2699e821ba29961bbf4f"
+    "input_hash": "e74fe3c7847dcb603bd3c4ec3a12bd3c"
   },
   {
     "id": "spectral-to-tail-process",
@@ -197,7 +197,7 @@
     "source": "EKM §8.1; DR85; KS20 §15.3",
     "lean_name": "ExtremeValueTheory.MovingAverage.hasExtremalIndex",
     "file": "ExtremeValueTheory/Dependence/MDependentExamples.lean",
-    "statement": "ExtremeValueTheory.MovingAverage.hasExtremalIndex.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} {Z : ℤ → Ω → ℝ} [MeasureTheory.IsProbabilityMeasure P] {α : ℝ}\n  {m : ℕ} {ψ : ℕ → ℝ} (hZ : ∀ (i : ℤ), Measurable (Z i)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hident : ∀ (i : ℤ), ProbabilityTheory.IdentDistrib (Z i) (Z 0) P P)\n  (hZ0 : ∀ (i : ℤ) (ω : Ω), 0 ≤ Z i ω) (hα : 0 < α)\n  (hL : ExtremeValueTheory.IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α))\n  (hψ0 : ∀ (j : ℕ), 0 ≤ ψ j) (hψm : ∀ (j : ℕ), m < j → ψ j = 0)\n  (hW : 0 < ExtremeValueTheory.MovingAverage.weightSum m ψ α) :\n  ExtremeValueTheory.HasExtremalIndex (fun n => ExtremeValueTheory.MovingAverage.process m ψ Z ↑n) P\n    ((Finset.range (m + 1)).sup' ⋯ ψ ^ α / ∑ j ∈ Finset.range (m + 1), ψ j ^ α)",
+    "statement": "ExtremeValueTheory.MovingAverage.hasExtremalIndex.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} {Z : ℤ → Ω → ℝ} [MeasureTheory.IsProbabilityMeasure P] {α : ℝ}\n  {m : ℕ} {ψ : ℕ → ℝ} (hZ : ∀ (i : ℤ), Measurable (Z i)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hident : ∀ (i : ℤ), ProbabilityTheory.IdentDistrib (Z i) (Z 0) P P)\n  (hZ0 : ∀ (i : ℤ) (ω : Ω), 0 ≤ Z i ω) (hα : 0 < α)\n  (hL : ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.survival P (Z 0)) (-α))\n  (hψ0 : ∀ (j : ℕ), 0 ≤ ψ j) (hψm : ∀ (j : ℕ), m < j → ψ j = 0)\n  (hW : 0 < ExtremeValueTheory.MovingAverage.weightSum m ψ α) :\n  ExtremeValueTheory.HasExtremalIndex (fun n => ExtremeValueTheory.MovingAverage.process m ψ Z ↑n) P\n    ((Finset.range (m + 1)).sup' ⋯ ψ ^ α / ∑ j ∈ Finset.range (m + 1), ψ j ^ α)",
     "status": "reduced",
     "scope_note": "Finite order, nonnegative coefficients and noise nonnegative at every point; the books allow signs.",
     "axioms": [
@@ -205,7 +205,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "ad9ba3289aed0803ea64df108d274782"
+    "input_hash": "f5c2b9f826ab7b8348787b6683689417"
   },
   {
     "id": "infinite-moving-average",
@@ -213,7 +213,7 @@
     "source": "DR85; KS20 Ch. 15",
     "lean_name": "ExtremeValueTheory.InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_summable_rpow",
     "file": "ExtremeValueTheory/Dependence/InfiniteMovingAverageTailProcess.lean",
-    "statement": "ExtremeValueTheory.InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_summable_rpow.{u_1}\n  {Ω : Type u_1} {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} {Z : ℤ → Ω → ℝ} {ψ : ℕ → ℝ}\n  {α δ : ℝ} [MeasureTheory.IsProbabilityMeasure P] (hZ : ∀ (i : ℤ), Measurable (Z i))\n  (hind : ProbabilityTheory.iIndepFun Z P)\n  (hident : ∀ (i : ℤ), ProbabilityTheory.IdentDistrib (Z i) (Z 0) P P)\n  (hZ0 : ∀ (i : ℤ) (ω : Ω), 0 ≤ Z i ω) (hδ : 0 < δ) (hδα : δ < α) (hδ1 : δ < 1)\n  (hL : ExtremeValueTheory.IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α))\n  (hψ0 : ∀ (j : ℕ), 0 ≤ ψ j) (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :\n  ExtremeValueTheory.HasSpectralTailProcess P (ExtremeValueTheory.InfiniteMovingAverage.process ψ Z)\n      α (ExtremeValueTheory.InfiniteMovingAverage.indexLaw ψ α)\n      (ExtremeValueTheory.InfiniteMovingAverage.spectral ψ) ∧\n    ExtremeValueTheory.HasExtremalIndex\n      (fun n => ExtremeValueTheory.InfiniteMovingAverage.process ψ Z ↑n) P\n      (ExtremeValueTheory.candidateExtremalIndex\n          (ExtremeValueTheory.InfiniteMovingAverage.indexLaw ψ α)\n          (ExtremeValueTheory.InfiniteMovingAverage.spectral ψ) α).toReal",
+    "statement": "ExtremeValueTheory.InfiniteMovingAverage.hasSpectralTailProcess_and_hasExtremalIndex_of_summable_rpow.{u_1}\n  {Ω : Type u_1} {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} {Z : ℤ → Ω → ℝ} {ψ : ℕ → ℝ}\n  {α δ : ℝ} [MeasureTheory.IsProbabilityMeasure P] (hZ : ∀ (i : ℤ), Measurable (Z i))\n  (hind : ProbabilityTheory.iIndepFun Z P)\n  (hident : ∀ (i : ℤ), ProbabilityTheory.IdentDistrib (Z i) (Z 0) P P)\n  (hZ0 : ∀ (i : ℤ) (ω : Ω), 0 ≤ Z i ω) (hδ : 0 < δ) (hδα : δ < α) (hδ1 : δ < 1)\n  (hL : ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.survival P (Z 0)) (-α))\n  (hψ0 : ∀ (j : ℕ), 0 ≤ ψ j) (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :\n  ExtremeValueTheory.HasSpectralTailProcess P (ExtremeValueTheory.InfiniteMovingAverage.process ψ Z)\n      α (ExtremeValueTheory.InfiniteMovingAverage.indexLaw ψ α)\n      (ExtremeValueTheory.InfiniteMovingAverage.spectral ψ) ∧\n    ExtremeValueTheory.HasExtremalIndex\n      (fun n => ExtremeValueTheory.InfiniteMovingAverage.process ψ Z ↑n) P\n      (ExtremeValueTheory.candidateExtremalIndex\n          (ExtremeValueTheory.InfiniteMovingAverage.indexLaw ψ α)\n          (ExtremeValueTheory.InfiniteMovingAverage.spectral ψ) α).toReal",
     "status": "reduced",
     "scope_note": "Nonnegative coefficients and noise; sum psi^delta < infinity for some delta < min(alpha, 1), which for alpha > 1 is stronger than the optimal condition.",
     "axioms": [
@@ -221,7 +221,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "65528bbb0fca2ed7b50c8f10e9e87e65"
+    "input_hash": "861809141a1f37c0a185ce44349d26a9"
   },
   {
     "id": "ar1-extremal-index",
@@ -229,7 +229,7 @@
     "source": "EKM §8.1; KS20 Ch. 15",
     "lean_name": "ExtremeValueTheory.AR1.hasExtremalIndex_of_pos",
     "file": "ExtremeValueTheory/Dependence/AR1.lean",
-    "statement": "ExtremeValueTheory.AR1.hasExtremalIndex_of_pos.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} {Z : ℤ → Ω → ℝ} {φ α : ℝ} [MeasureTheory.IsProbabilityMeasure P]\n  (hZ : ∀ (i : ℤ), Measurable (Z i)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hident : ∀ (i : ℤ), ProbabilityTheory.IdentDistrib (Z i) (Z 0) P P)\n  (hZ0 : ∀ (i : ℤ) (ω : Ω), 0 ≤ Z i ω) (hα : 0 < α)\n  (hL : ExtremeValueTheory.IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hφ0 : 0 < φ)\n  (hφ1 : φ < 1) :\n  ExtremeValueTheory.HasExtremalIndex (fun n => ExtremeValueTheory.AR1.process φ Z ↑n) P (1 - φ ^ α)",
+    "statement": "ExtremeValueTheory.AR1.hasExtremalIndex_of_pos.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} {Z : ℤ → Ω → ℝ} {φ α : ℝ} [MeasureTheory.IsProbabilityMeasure P]\n  (hZ : ∀ (i : ℤ), Measurable (Z i)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hident : ∀ (i : ℤ), ProbabilityTheory.IdentDistrib (Z i) (Z 0) P P)\n  (hZ0 : ∀ (i : ℤ) (ω : Ω), 0 ≤ Z i ω) (hα : 0 < α)\n  (hL : ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.survival P (Z 0)) (-α))\n  (hφ0 : 0 < φ) (hφ1 : φ < 1) :\n  ExtremeValueTheory.HasExtremalIndex (fun n => ExtremeValueTheory.AR1.process φ Z ↑n) P (1 - φ ^ α)",
     "status": "reduced",
     "scope_note": "0 < phi < 1 and nonnegative noise: the negative coefficient and signed noise cases of Chernick are left out.",
     "axioms": [
@@ -237,7 +237,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "2c3c12bc6c92d9ddb4434b702ad7359f"
+    "input_hash": "968dd6c01be0aa894631afa59edb9b70"
   },
   {
     "id": "stationary-markov-chain",
