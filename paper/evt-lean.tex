@@ -71,19 +71,20 @@ not exhaustive: our first pass missed the Isabelle entries below, which a review
  & This work & Hirata~\cite{hirataevt,hiratarv} & ExtremeValue\-Project~\cite{evp} & MathFin~\cite{mathfin} \\
 \midrule
 Prover & Lean 4 & Isabelle/HOL & Lean 4 & Lean 4 \\
-Focus & Extreme value theory & The two central theorems and regular variation & A course project & Mathematical finance \\
-Fisher--Tippett--Gnedenko & Proved & Proved & The project's target; our development starts from it & Max-stability and concrete domains; no general classification \\
-Peaks over threshold & Equivalence, every shape & Equivalence & -- & GPD properties; not the theorem \\
-Regular variation & Yes, with Breiman and multivariate & Uniform convergence, representation, Karamata & -- & -- \\
+Focus & Extreme value theory & The two central theorems, domains of attraction, regular variation & A course project & Mathematical finance \\
+Fisher--Tippett--Gnedenko & Proved & Proved, also for iid samples & The project's target; our development starts from it & Max-stability and concrete domains; no general classification \\
+Domains of attraction & Gnedenko's conditions, quantile form, von Mises & Gnedenko's conditions, quantile forms, von Mises, canonical constants; normal, Erlang, uniform and Cauchy & -- & Concrete domains \\
+Peaks over threshold & Equivalence, every shape & Equivalence, every shape & -- & GPD properties; not the theorem \\
+Regular variation & Yes, with Breiman and multivariate & Uniform convergence, representation, Potter bounds, Karamata (direct and converse) & -- & -- \\
 Statistics of extremes & Yes & -- & -- & -- \\
 Dependent sequences & Yes & -- & -- & -- \\
 \bottomrule
 \end{tabular}
-\caption{The nearest formalizations we found. A dash means we did not find this in the project. For Hirata's entries, this rests on their abstracts and theory lists: we have not read the proofs or compared the statements. Entries describe the versions we read in November 2026.}
+\caption{The nearest formalizations we found. A dash means we did not find this in the project. For Hirata's entries, this rests on reading their statements and definitions, not most of their proofs; \texttt{docs/HIRATA\_COMPARISON.md} compares them. Entries describe the versions we read in November 2026.}
 \label{tab:related}
 \end{table}
 
-\paragraph{Extremes.} Hirata's entries in the Archive of Formal Proofs~\cite{hirataevt,hiratarv}, dated September 2026, prove Fisher--Tippett--Gnedenko and Pickands--Balkema--de Haan in Isabelle, following de Haan--Ferreira and Embrechts et al. They are independent of this library, which makes them valuable: a comparison of the two formal statements of each theorem would be a useful check, and we have not yet done one. A note on the entry says that more than 95\% of its code was written by generative AI, so ours is not the only development made this way.
+\paragraph{Extremes.} Hirata's entries in the Archive of Formal Proofs~\cite{hirataevt,hiratarv}, dated September 2026, prove Fisher--Tippett--Gnedenko and Pickands--Balkema--de Haan in Isabelle, following de Haan--Ferreira and Embrechts et al. They are independent of this library, which makes them valuable. We compared the two formal statements of each theorem (\texttt{docs/HIRATA\_COMPARISON.md}). By an argument we wrote, not a mechanized one, the statements of both main theorems are equivalent. His regular variation is more complete than ours in places, and we found no error in either. A note on the Extreme Value Theory entry says that more than 95\% of its code was written by generative AI, so ours is not the only development made this way.
 
 Our Fisher--Tippett--Gnedenko development and its blueprint are based on ExtremeValueProject~\cite{evp}, from which this library began. MathFin~\cite{coelho}
 is a Lean library of mathematical finance. It has about 900 lines on extremes, connected to its risk measures: GEV max-stability, concrete domains of attraction, GPD threshold stability and a Poisson--GPD--GEV identity. Its source states that neither Fisher--Tippett--Gnedenko nor Pickands--Balkema--de Haan
