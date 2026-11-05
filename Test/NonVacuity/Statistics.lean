@@ -300,4 +300,155 @@ theorem test_nonvacuous_tendstoInDistribution_weissman :
   · exact (tendsto_log_div_sqrt_atTop.comp tendsto_natCast_sqrt_atTop).congr'
       (hd.mono fun n h => by simp only [Function.comp_apply, h])
 
+/-! ### Pickands estimator: asymptotic normality -/
+
+/-- Test-specific: the model `U = D_γ + D_{γ-1}`, whose second-order term is exact. -/
+private noncomputable def modelU (γ t : ℝ) : ℝ := extRVLimit γ t + 1 * extRVLimit (γ + -1) t
+
+private theorem measurable_modelU (γ : ℝ) : Measurable (modelU γ) :=
+  (measurable_extRVLimit γ).add ((measurable_extRVLimit _).const_mul 1)
+
+private theorem strictMonoOn_modelU (γ : ℝ) : StrictMonoOn (modelU γ) (Set.Ici 1) := fun x hx y _ h => by
+  have hx0 : (0 : ℝ) < x := one_pos.trans_le hx
+  have hy0 : (0 : ℝ) < y := hx0.trans h
+  have h1 := strictMonoOn_extRVLimit γ hx0 hy0 h
+  have h2 := strictMonoOn_extRVLimit (γ + -1) hx0 hy0 h
+  simp only [modelU]
+  linarith
+
+private theorem continuousOn_modelU (γ : ℝ) : ContinuousOn (modelU γ) (Set.Ici 1) := fun x hx => by
+  have hx0 : (0 : ℝ) < x := one_pos.trans_le hx
+  exact (((hasDerivAt_extRVLimit γ hx0).continuousAt).add
+    (continuousAt_const.mul (hasDerivAt_extRVLimit (γ + -1) hx0).continuousAt)).continuousWithinAt
+
+/-- Test-specific: the auxiliary function `A` of the model, `A(t) = -t⁻¹ / (1 + t⁻¹)`. -/
+private noncomputable def modelA (t : ℝ) : ℝ :=
+  -1 * (1 * t ^ (-1 : ℝ)) / (1 + 1 * t ^ (-1 : ℝ))
+
+/-- Test-specific: for every `γ` and every sequence `k` for which `√k A(n/k) → λ`, the sample
+`U(e^{E_i})` of the model satisfies all hypotheses of `tendstoInDistribution_pickands`. -/
+private theorem pickands_model (γ lam : ℝ) {k : ℕ → ℕ} (hk : Tendsto k atTop atTop)
+    (hkn : Tendsto (fun n => (k n : ℝ) / n) atTop (𝓝 0))
+    (hlam : Tendsto (fun n => √(k n : ℝ) * modelA (n / k n)) atTop (𝓝 lam)) :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (_ : IsProbabilityMeasure P)
+      (X : ℕ → Ω → ℝ), iIndepFun X P ∧ (∀ i, IdentDistrib (X i) (X 0) P P) ∧
+      TendstoInDistribution (fun (n : ℕ) ω =>
+          √(k n : ℝ) * (pickands (fun i : Fin n => X i ω) (k n) - γ)) atTop
+        (id : ℝ → ℝ) (fun _ => P)
+        (gaussianReal (lam * pickandsBias γ (-1)) (pickandsVariance γ).toNNReal) := by
+  obtain ⟨Ω, _, P, E, hEm, hE, hind, hP⟩ := exists_iid ℕ (expMeasure 1)
+  have hg : Measurable fun e : ℝ => modelU γ (Real.exp e) :=
+    (measurable_modelU γ).comp Real.measurable_exp
+  set X : ℕ → Ω → ℝ := fun i ω => modelU γ (Real.exp (E i ω)) with hXdef
+  have hXm : ∀ i, Measurable (X i) := fun i => hg.comp (hEm i)
+  have hindX : iIndepFun X P := hind.comp (fun _ e => modelU γ (Real.exp e)) fun _ => hg
+  have hid : ∀ i, IdentDistrib (X i) (X 0) P P := fun i =>
+    ((hE i).identDistrib (hE 0)).comp hg
+  have hU : ∀ᶠ t in atTop, survivalQuantile (survival P (X 0)) t =
+      extRVLimit γ t + 1 * extRVLimit (γ + -1) t := by
+    filter_upwards [eventually_gt_atTop 1] with t ht
+    exact survivalQuantile_survival_comp_exp (hE 0) (strictMonoOn_modelU γ)
+      (continuousOn_modelU γ) ht
+  have h2 := isExtSecondOrderRegularlyVarying_add_extRVLimit (γ := γ) (ρ := -1) (c := 1)
+    (by norm_num) one_pos hU
+  refine ⟨Ω, _, P, hP, X, hindX, hid, ?_⟩
+  exact tendstoInDistribution_pickands hXm hindX hid h2 hk hkn hlam HasLaw.id
+
+/-- Test-specific: `|A(t)| ≤ t⁻¹` for `t > 0`. -/
+private theorem abs_modelA_le {t : ℝ} (ht : 0 < t) : |modelA t| ≤ t⁻¹ := by
+  have hi : 0 < t⁻¹ := inv_pos.2 ht
+  simp only [modelA, Real.rpow_neg_one, one_mul, neg_mul]
+  rw [abs_div, abs_neg, abs_of_pos hi, abs_of_pos (by linarith)]
+  exact div_le_self hi.le (by linarith)
+
+/-- **Non-vacuity of `ExtremeValueTheory.tendstoInDistribution_pickands`, unbiased case.** For
+*every* `γ ∈ ℝ`, the model `U = D_γ + D_{γ-1}` with `k n = ⌊√n⌋` satisfies all the hypotheses with
+`λ = 0`. -/
+theorem test_nonvacuous_tendstoInDistribution_pickands (γ : ℝ) :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (_ : IsProbabilityMeasure P)
+      (X : ℕ → Ω → ℝ), iIndepFun X P ∧ (∀ i, IdentDistrib (X i) (X 0) P P) ∧
+      TendstoInDistribution (fun (n : ℕ) ω =>
+          √(Nat.sqrt n : ℝ) * (pickands (fun i : Fin n => X i ω) (Nat.sqrt n) - γ)) atTop
+        (id : ℝ → ℝ) (fun _ => P)
+        (gaussianReal (0 * pickandsBias γ (-1)) (pickandsVariance γ).toNNReal) := by
+  refine pickands_model γ 0 tendsto_sqrt_atTop tendsto_sqrt_div ?_
+  have hs : Tendsto (fun n : ℕ => (√(Nat.sqrt n : ℝ))⁻¹) atTop (𝓝 0) :=
+    tendsto_inv_atTop_zero.comp (Real.tendsto_sqrt_atTop.comp tendsto_natCast_sqrt_atTop)
+  refine squeeze_zero_norm' ?_ hs
+  filter_upwards [tendsto_sqrt_atTop.eventually_gt_atTop 0] with n hn
+  have hk : (0 : ℝ) < Nat.sqrt n := by exact_mod_cast hn
+  have hle : (Nat.sqrt n : ℝ) ≤ n / Nat.sqrt n := by
+    rw [le_div_iff₀ hk]
+    exact sqrt_mul_self_le n
+  have ht : (0 : ℝ) < n / Nat.sqrt n := hk.trans_le hle
+  have hsq : 0 < √(Nat.sqrt n : ℝ) := Real.sqrt_pos.2 hk
+  rw [Real.norm_eq_abs, abs_mul, abs_of_pos hsq]
+  calc √(Nat.sqrt n : ℝ) * |modelA (n / Nat.sqrt n)|
+      ≤ √(Nat.sqrt n : ℝ) * (Nat.sqrt n : ℝ)⁻¹ := by
+        gcongr
+        exact (abs_modelA_le ht).trans (inv_anti₀ hk hle)
+    _ = (√(Nat.sqrt n : ℝ))⁻¹ := by
+        nth_rw 2 [← Real.mul_self_sqrt hk.le]
+        field_simp
+
+/-- **Non-vacuity of the bias term of `ExtremeValueTheory.tendstoInDistribution_pickands`.** For
+every `γ ∈ ℝ`, the same model with `k n = ⌊n^{2/3}⌋` has `√k A(n/k) → -1 ≠ 0`, so the limit law is
+`N(-b_{γ,-1}, σ²_γ)`. -/
+theorem test_nonvacuous_tendstoInDistribution_pickands_bias (γ : ℝ) :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (_ : IsProbabilityMeasure P)
+      (X : ℕ → Ω → ℝ), iIndepFun X P ∧ (∀ i, IdentDistrib (X i) (X 0) P P) ∧
+      TendstoInDistribution (fun (n : ℕ) ω =>
+          √(⌊(n : ℝ) ^ ((2 : ℝ) / 3)⌋₊ : ℝ) *
+            (pickands (fun i : Fin n => X i ω) ⌊(n : ℝ) ^ ((2 : ℝ) / 3)⌋₊ - γ)) atTop
+        (id : ℝ → ℝ) (fun _ => P)
+        (gaussianReal (-1 * pickandsBias γ (-1)) (pickandsVariance γ).toNNReal) := by
+  set e : ℕ → ℝ := fun n => (n : ℝ) ^ ((2 : ℝ) / 3) with he
+  have hN : Tendsto (fun n : ℕ => (n : ℝ)) atTop atTop := tendsto_natCast_atTop_atTop
+  have heT : Tendsto e atTop atTop := (tendsto_rpow_atTop (by norm_num)).comp hN
+  have hk : Tendsto (fun n => ⌊e n⌋₊) atTop atTop := tendsto_nat_floor_atTop.comp heT
+  have hr : Tendsto (fun n => (⌊e n⌋₊ : ℝ) / e n) atTop (𝓝 1) :=
+    (tendsto_nat_floor_div_atTop (R := ℝ)).comp heT
+  have hen : Tendsto (fun n : ℕ => e n / n) atTop (𝓝 0) := by
+    have h := (tendsto_rpow_neg_atTop (y := (1 : ℝ) / 3) (by norm_num)).comp hN
+    refine h.congr' ?_
+    filter_upwards [eventually_gt_atTop 0] with n hn
+    have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+    simp only [Function.comp_apply, he]
+    have hsub := Real.rpow_sub hn' ((2 : ℝ) / 3) 1
+    rw [Real.rpow_one] at hsub
+    rw [← hsub]
+    norm_num
+  have hkn : Tendsto (fun n => (⌊e n⌋₊ : ℝ) / n) atTop (𝓝 0) := by
+    have := hr.mul hen
+    rw [one_mul] at this
+    refine this.congr' ?_
+    filter_upwards [heT.eventually_gt_atTop 0] with n hn
+    field_simp
+  have hlam : Tendsto (fun n => √(⌊e n⌋₊ : ℝ) * modelA (n / ⌊e n⌋₊)) atTop (𝓝 (-1)) := by
+    have h : Tendsto (fun n => -1 * ((⌊e n⌋₊ : ℝ) / e n * √((⌊e n⌋₊ : ℝ) / e n)) /
+        (1 + (⌊e n⌋₊ : ℝ) / n)) atTop (𝓝 (-1 * (1 * √1) / (1 + 0))) :=
+      (tendsto_const_nhds.mul (hr.mul hr.sqrt)).div (tendsto_const_nhds.add hkn) (by norm_num)
+    have hval : (-1 : ℝ) * (1 * √1) / (1 + 0) = -1 := by norm_num
+    rw [hval] at h
+    refine h.congr' ?_
+    filter_upwards [heT.eventually_gt_atTop 0, hk.eventually_gt_atTop 0,
+      eventually_gt_atTop 0] with n h0 hk0 hn
+    have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+    have hk' : (0 : ℝ) < ⌊e n⌋₊ := by exact_mod_cast hk0
+    have hse : √(e n) * e n = n := by
+      have : √(e n) = (n : ℝ) ^ ((1 : ℝ) / 3) := by
+        rw [Real.sqrt_eq_rpow, ← Real.rpow_mul hn'.le]
+        norm_num
+      rw [this, ← Real.rpow_add hn']
+      norm_num
+    have hsr : √((⌊e n⌋₊ : ℝ) / e n) = √(⌊e n⌋₊ : ℝ) / √(e n) :=
+      Real.sqrt_div hk'.le _
+    have hs0 : √(e n) ≠ 0 := (Real.sqrt_pos.2 h0).ne'
+    simp only [modelA, Real.rpow_neg_one, one_mul, inv_div]
+    rw [hsr]
+    have h1 : (1 : ℝ) + (⌊e n⌋₊ : ℝ) / n ≠ 0 := by positivity
+    rw [← hse] at h1 ⊢
+    field_simp
+  exact pickands_model γ (-1) hk hkn hlam
+
 end Test.NonVacuity.Statistics
