@@ -544,7 +544,7 @@ The supremum is a real `⨆`, which would be the junk value `0` if unbounded; th
 *Hypotheses (E):* `α > 0`; each `Z_t` measurable; `(Z_t)` mutually independent; each `Z_t` has law
 Pareto(`α`) (`P(Z_t > z) = z^{−α}` for `z ≥ 1`); and `Z_t(ω) ≥ 0` for **every** `t` and `ω`, not only
 almost surely. Two lags are used: `logLag z = ⌊log z⌋₊ + 1` (`EchoProcess.lean:273`) and `powLag γ z =
-⌊z^γ⌋₊ + 1` (`EchoPowerLag.lean:294`). In all theorems below `X ≥ 0`, so `|X| = X`.
+⌊z^γ⌋₊ + 1` (`EchoPowerLag.lean:303`). In all theorems below `X ≥ 0`, so `|X| = X`.
 
 **D9. Two-sided anticlustering.** `AntiClusteringAt P X u r` (`Anticlustering/Basic.lean:71`): for every
 `ε > 0` there is `m` such that eventually in `n`,
@@ -557,7 +557,7 @@ conditioning level and the exceedance level are the same (see R14, caveat 1). `F
 is D5.
 
 **D10. Critical shape.** `echoShape β κ = (β min(κ, 1) − min(κ, 1)^β) / (β − 1)`
-(`EchoPowerLag.lean:94`), written `φ_β(κ)`. For `β > 1`: `φ_β(0) = 0`, `φ_β` is continuous, `φ_β(κ) < 1`
+(`EchoPowerLag.lean:103`), written `φ_β(κ)`. For `β > 1`: `φ_β(0) = 0`, `φ_β` is continuous, `φ_β(κ) < 1`
 for `0 ≤ κ < 1`, and `φ_β(κ) = 1` for `κ ≥ 1`. By direct integration it equals `E[min(κV, 1)]` for `V`
 Pareto(`β`).
 
@@ -567,7 +567,7 @@ P(Aᵢ)P(Bⱼ)|`. For `X : ℕ → Ω → ℝ`, `betaMixing X P h = sup_{s∈ℕ
 (`Mixing.lean:244`). The index set is `ℕ`, so the past starts at time `0`. `IsBetaMixing X P` means
 `β(h) → 0` (`Mixing.lean:252`), with no rate.
 
-**D12. Blocks and runs estimators** (`ExtremeValueTheory/Statistics/ExtremalIndexEstimators.lean:175,
+**D12. Blocks and runs estimators** (`ExtremeValueTheory/Statistics/ExtremalIndexEstimators.lean:178,
 181`), for `X : ℕ → Ω → ℝ`, sample size `n`, block or run length `r` and threshold `u`:
 
   `blocksEstimator X n r u = #{j < ⌊n/r⌋ : max_{jr ≤ t < jr + r} X_t > u} / #{i < n : X_i > u}`,
@@ -599,7 +599,7 @@ and let `rₙ ∈ ℕ` with `log rₙ / log n → ρ`. Then
 
   `AntiClustering P X a r`  ⟺  `ρ < γ/α`.
 
-Lean: `ExtremeValueTheory.powEchoProcess_antiClustering_iff`, `Dependence/EchoPowerLag.lean:680`. Since
+Lean: `ExtremeValueTheory.powEchoProcess_antiClustering_iff`, `Dependence/EchoPowerLag.lean:689`. Since
 `γ ∈ (0, α)` is free, `γ/α` takes every value `ρ₀ ∈ (0, 1)` (take `γ = ρ₀ α`).
 
 *The cluster ratio on both sides.* Let `uₙ` be real with `n P(X_0 > uₙ) → τ`, `τ > 0`; let `ρ ∈ (0, 1)`,
@@ -607,7 +607,7 @@ and `rₙ ∈ ℕ` with `log rₙ / log n → ρ`. Then:
 1. if `ρ < γ/α`: `CRₙ → 1`, and `AntiClusteringAt P X u r` holds;
 2. if `ρ > γ/α`: `CRₙ → 1/2`, and `ForwardAntiClusteringAt P X u r` fails.
 
-Lean: `ExtremeValueTheory.powEchoProcess_polyBlocks`, `Dependence/EchoPowerLag.lean:642`.
+Lean: `ExtremeValueTheory.powEchoProcess_polyBlocks`, `Dependence/EchoPowerLag.lean:651`.
 
 *The critical scale.* Let `uₙ` be real with `n P(X_0 > uₙ) → τ`, `τ > 0`; let `rₙ ∈ ℕ` with `rₙ /
 n^{γ/α} → c`, `c > 0`. Put `κ = (2/τ)^{γ/α} / c` and `φ = φ_{α/γ}` (D10). Then all of the following
@@ -617,11 +617,17 @@ hold:
 3. if `κ < 1`, `ForwardAntiClusteringAt P X u r` fails;
 4. if `κ > 1`, `AntiClusteringAt P X u r` holds.
 
-Lean: `ExtremeValueTheory.powEchoProcess_critical`, `Dependence/EchoPowerLag.lean:716`.
+Lean: `ExtremeValueTheory.powEchoProcess_critical`, `Dependence/EchoPowerLag.lean:726`.
+
+*The boundary at all levels.* Let `aₙ` be real with `n P(X_0 > aₙ) → τ`, `τ > 0`, and let `rₙ ∈ ℕ` with `rₙ
+/ n^{γ/α} → c`, `c ≥ 0`. Then `AntiClustering P X a r ⟺ c = 0`. Lean:
+`ExtremeValueTheory.powEchoProcess_antiClustering_iff_critical`, `Dependence/EchoPowerLag.lean`; the two
+halves are `powEchoProcess_not_antiClustering_critical` and `powEchoProcess_antiClustering_of_tendsto_zero`.
+Instantiated in `test_nonvacuous_powEchoProcess_not_antiClustering_critical`.
 
 *The setting.* Under (E) and `0 < γ < α`: `X` is stationary (D1), has spectral tail process `Θ_t = 1{t =
 0}` with index `α`, `ϑ = 1`, and `(X_n)_{n≥0}` has extremal index `θ = 1/2` (D4). Lean:
-`ExtremeValueTheory.powEchoProcess_theta_lt_vartheta`, `Dependence/EchoPowerLag.lean:475`. The
+`ExtremeValueTheory.powEchoProcess_theta_lt_vartheta`, `Dependence/EchoPowerLag.lean:484`. The
 equivalence is instantiated on a concrete process in `test_nonvacuous_powEchoProcess_antiClustering_iff`
 (`Test/NonVacuity/Dependence.lean`), with `τ = 1`, `rₙ = ⌊√n⌋`, and `γ = 3α/4`, `γ = α/4` on the two
 sides.
@@ -640,15 +646,16 @@ sides.
    converge. Filling in `ρ = 0` (with `rₙ → ∞`) and `ρ = 1` by monotonicity of `AC` in the block length
    is easy on paper but not formalized.
 4. *The critical theorem is about one level sequence, and `AC` at all levels fails there for every `c`.*
-   `powEchoProcess_critical` concludes `AntiClusteringAt` at `(uₙ, rₙ)`, not `AntiClustering`. Applying
-   it by hand at the level `aₙ x`, for which `n P(X_0 > aₙ x) → τ x^{−α}`, gives `κ(x) = x^γ (2/τ)^{γ/α}
-   / c`, which is below `1` for small `x`. So if `rₙ ~ c n^{γ/α}`, forward anticlustering fails at the
-   level `aₙ x` for small `x`, and `AntiClustering` (hence `AC(d_n, b_n)` in the sense of [BKW24]) fails
-   for **every** `c > 0`. Therefore "at `ρ = ρ₀` the answer depends on the constant `c`", as written in
-   `docs/NOVELTY2.md` and in a remark in `EchoPowerLag.lean`, is true only of a single level sequence.
-   This corollary is **not** a Lean theorem; please check it. It does not affect the answer, since the
-   question concerns ranges of `ρ`. The case `κ = 1` at a single level is undecided: there `CRₙ → 1` and
-   the late-return mass is `0`, but anticlustering is not settled.
+   `powEchoProcess_critical` concludes `AntiClusteringAt` at `(uₙ, rₙ)`, not `AntiClustering`. At the
+   level `aₙ x`, for which `n P(X_0 > aₙ x) → τ x^{−α}`, it gives `κ(x) = x^γ (2/τ)^{γ/α} / c`, which is
+   below `1` for small `x`. So if `rₙ / n^{γ/α} → c > 0`, then `AntiClustering` fails for **every**
+   `c > 0` (`powEchoProcess_not_antiClustering_critical`), and if `rₙ / n^{γ/α} → 0` it holds
+   (`powEchoProcess_antiClustering_of_tendsto_zero`; `rₙ → ∞` is not assumed). Together:
+   `powEchoProcess_antiClustering_iff_critical`, `AntiClustering ⟺ c = 0`, for `c ≥ 0`. That it is one
+   level sequence, not `AC(d_n, b_n)` in the sense of [BKW24], is caveat 1. This does not affect the
+   answer, since the question concerns ranges of `ρ`. The case `κ = 1` at a single level is undecided:
+   there `CRₙ → 1` and the late-return mass is `0`, but anticlustering at that level is not settled.
+   `rₙ / n^{γ/α} → ∞` with `log rₙ / log n → γ/α` is not covered.
 5. *Normalizing levels only.* The equivalence uses `n P(X_0 > aₙ) → τ`. Anticlustering at intermediate
    levels in the style of [KS20] (`rₙ P(X_0 > cₙ) → 0`) is not characterized.
 6. *The transition is a step.* `CRₙ` passes from `1` to `1/2` at `ρ₀`, whereas the transition in [BKW24]
@@ -663,9 +670,8 @@ sides.
 2. **Does it answer what they meant?** Does the power-lag echo answer the second question of [BKW24,
    §1.4] as intended, or does the question implicitly exclude such a model?
 3. Is the one-level `AntiClustering` equivalent to `AC(d_n, b_n)` by caveat 1?
-4. Is caveat 4 correct, and is the wording "`AC` fails at `ρ₀` when `rₙ ~ c n^{ρ₀}`, and holds when `rₙ
-   = o(n^{ρ₀})`" (the second half also by hand, from `antiClusteringAt_powEchoProcess`) the right
-   description of the boundary?
+4. Is the wording "`AC` fails at `ρ₀` when `rₙ ~ c n^{ρ₀}`, and holds when `rₙ = o(n^{ρ₀})`"
+   (`powEchoProcess_antiClustering_iff_critical`) the right description of the boundary?
 5. Would a theorem at intermediate levels be needed for this to count as an answer?
 
 ## R15. β-mixing without `θ = ϑ` ★ (new example)
@@ -698,7 +704,7 @@ with `n P(X_0 > uₙ) → τ`, and all `rₙ → ∞`:
 2. if `rₙ / log n → c` with `c > 0`: `𝒜(u, r)` fails;
 3. if `rₙ / n → 0` and `log n / rₙ → 0`: `𝒜(u, r)` holds and `ForwardAntiClusteringAt P X u r` fails.
 
-Lean: `ExtremeValueTheory.logEchoProcess_betaMixing_incompatible`, `Dependence/EchoMixing.lean:399`.
+Lean: `ExtremeValueTheory.logEchoProcess_betaMixing_incompatible`, `Dependence/EchoMixing.lean:402`.
 Instantiated in `test_nonvacuous_logEchoProcess_betaMixing_incompatible`
 (`Test/NonVacuity/Dependence.lean`).
 
@@ -709,7 +715,7 @@ do not both hold. Lean: `ExtremeValueTheory.powEchoProcess_not_conditionA_and_an
 
 **(c) Caveats.**
 1. *`θ` and `ϑ` are not in these statements.* The incompatibility theorem does not itself state
-   stationarity, `ϑ = 1` or `θ = 1/2`, although its docstring lists them. Those come from R9
+   stationarity, `ϑ = 1` or `θ = 1/2`. Those come from R9
    (`logEchoProcess_theta_lt_vartheta`). A single bundled statement with α-mixing in place of β-mixing
    is `Minimality.logEcho_alphaMixing_theta_ne_vartheta` (`Minimality/DependenceMixing.lean:344`).
 2. *What the theorem it is compared with assumes.* `θ = ϑ` needs anticlustering **and** `𝒜(uₙ)` along a
@@ -722,8 +728,7 @@ do not both hold. Lean: `ExtremeValueTheory.powEchoProcess_not_conditionA_and_an
    In case 2 the theorem says nothing about anticlustering.
 4. *Power lag: less is proved than the log lag.* `𝒜` is shown to **fail** for `ρ < γ/α`, and `AC` to
    fail for `ρ > γ/α`. `𝒜` holding for `ρ > γ/α` is **not** proved, so "each holds on its own range of
-   scales" (`docs/NOVELTY2.md`) is not a Lean statement for this lag. The scale `ρ = γ/α` is excluded,
-   although `RESEARCH.md` says "on every block scale". The rate `β(h) ≲ h^{1 − α/γ}` is a heuristic from
+   scales" is a statement about the log lag only. The scale `ρ = γ/α` is excluded. The rate `β(h) ≲ h^{1 − α/γ}` is a heuristic from
    the coupling bound `betaMixing_echoProcess_le`, not a theorem, and `IsBetaMixing` carries no rate.
 5. *One-sided mixing.* D11 uses `(X_k)_{k≥0}`. The two-sided coefficient of the stationary sequence
    `(X_t)_{t∈ℤ}` should agree, but this is not stated.
@@ -754,14 +759,14 @@ depends on the scale of `rₙ`.
 Then `runsEstimator (X_k)_{k≥0} n rₙ uₙ → 1` in probability (D12).
 
 Lean: `ExtremeValueTheory.logEcho_tendstoInMeasure_runsEstimator`,
-`Statistics/ExtremalIndexEstimators.lean:1243`. Instantiated in
+`Statistics/ExtremalIndexEstimators.lean:1254`. Instantiated in
 `test_nonvacuous_logEcho_tendstoInMeasure_runsEstimator` (`Test/NonVacuity/Dependence.lean`), with `uₙ =
 n^{1/(4α)}`, `rₙ = ⌊√(log n)⌋`, `sₙ = ⌊√n⌋`.
 
 Companion, for blocks: assume (E), `L = logLag`, `uₙ → ∞`, `rₙ → ∞`, `rₙ uₙ^{−α} → 0`, `log uₙ / rₙ →
 0`, `log n / rₙ → 0`, `n pₙ → ∞` and `rₙ/(n pₙ) → 0`. Then `blocksEstimator (X_k)_{k≥0} n rₙ uₙ → 1/2`
 in probability. Lean: `ExtremeValueTheory.logEcho_tendstoInMeasure_blocksEstimator`,
-`Statistics/ExtremalIndexEstimators.lean:1201`.
+`Statistics/ExtremalIndexEstimators.lean:1210`.
 
 **(c) Caveats.**
 1. The statement only gives the limit `1`. That this differs from the extremal index needs R9 (`θ =
@@ -1308,12 +1313,12 @@ Gradient in `(ξ, μ, σ)`: `∇z = (σ ∂_ξ h_ξ(1/y_m), 1, r(ξ, m))`, with 
 *GEV.* Let `ξ₀ ≠ 0`, `m > 1`; `θ̂ₙ = (ξ̂ₙ, μ̂ₙ, σ̂ₙ)` almost everywhere measurable on `(Ω, P)`; `V`
 positive semidefinite; `Z ~ N(0, V)`; `√n(ξ̂ₙ − ξ₀, μ̂ₙ − μ₀, σ̂ₙ − σ₀) ⇒ Z`; `W ~ N(0, ∇zᵀV∇z)`, with
 `∇z` at `(ξ₀, σ₀, m)`. Then `√n(gevReturnLevel θ̂ₙ m − gevReturnLevel ξ₀ μ₀ σ₀ m) ⇒ W`. Lean:
-`ExtremeValueTheory.tendstoInDistribution_gevReturnLevel`, `ReturnLevelNormality.lean:414`.
+`ExtremeValueTheory.tendstoInDistribution_gevReturnLevel`, `ReturnLevelNormality.lean:443`.
 
 *Gumbel.* Let `θ̂ₙ = (μ̂ₙ, σ̂ₙ)` be almost everywhere measurable, `V` positive semidefinite, `Z ~ N(0,
 V)`, `√n(μ̂ₙ − μ₀, σ̂ₙ − σ₀) ⇒ Z`, and `W ~ N(0, aᵀVa)` with `a = (1, −log y_m)`. Then
 `√n(gevReturnLevel 0 μ̂ₙ σ̂ₙ m − gevReturnLevel 0 μ₀ σ₀ m) ⇒ W`. Lean:
-`ExtremeValueTheory.tendstoInDistribution_gumbelReturnLevel`, `ReturnLevelNormality.lean:441`.
+`ExtremeValueTheory.tendstoInDistribution_gumbelReturnLevel`, `ReturnLevelNormality.lean:470`.
 
 **(c) Caveats.**
 1. **No data appear in these statements.** Parameter normality is a hypothesis, `θ̂ₙ` is any estimator,
@@ -1323,7 +1328,11 @@ V)`, `√n(μ̂ₙ − μ₀, σ̂ₙ − σ₀) ⇒ Z`, and `W ~ N(0, aᵀVa)` 
    junk value, though the statement is still true, since `z` is linear in `(μ, σ)`.
 3. `m` is fixed as `n → ∞`, so there is no extrapolation with `m = mₙ → ∞`. The three-parameter version
    at `ξ₀ = 0` is not covered.
-4. There is no non-vacuity test for these theorems.
+4. The non-vacuity tests (`Test/NonVacuity/StatisticsReturnLevels.lean`) use a synthetic estimator `θ₀ +
+   Z/√n`, `Z ~ N(0, V)`, for every positive semidefinite `V`: since no data appear in the statements, this
+   only shows that the hypotheses are jointly satisfiable. No statistical estimator is shown to satisfy
+   them. The known answers (`Test/KnownAnswers/ReturnLevels.lean`) reproduce Coles' Port Pirie level and
+   variance.
 
 **(d) Questions.** 1. Is the Gumbel statement (shape fixed at `0`) the form you would use?
 
@@ -1333,7 +1342,7 @@ V)`, `√n(μ̂ₙ − μ₀, σ̂ₙ − σ₀) ⇒ Z`, and `W ~ N(0, aᵀVa)` 
 > u)`.
 
 **(b) Lean, in math.** `gpdReturnLevel u ξ σ ζ N = u + σ h_ξ(Nζ)` (`ReturnLevelNormality.lean:274`).
-`gpdReturnLevelVar ξ σ ζ N` (`:327`) is `(1 + ξ)((1 + ξ)a² − 2σab + 2σ²b²)`, with `a = σ ∂_ξ h_ξ(Nζ)`,
+`gpdReturnLevelVar ξ σ ζ N` (`:356`) is `(1 + ξ)((1 + ξ)a² − 2σab + 2σ²b²)`, with `a = σ ∂_ξ h_ξ(Nζ)`,
 `b = h_ξ(Nζ)`; it equals `∇xᵀ I⁻¹ ∇x` by `dotProduct_gpdReturnLevelGrad`, with `I⁻¹` as in C26.
 
 Let `K ⊂ ℝ²` be compact, with `ξ > −1` and `σ > 0` on `K`; `(ξ₀, σ₀)` in the interior of `K`; `ξ₀ >
@@ -1344,14 +1353,14 @@ almost everywhere measurable, with `θ̂ₙ(ω) ∈ K` and `θ̂ₙ(ω)` a maxim
 
   `√n(gpdReturnLevel u θ̂ₙ ζ N − gpdReturnLevel u ξ₀ σ₀ ζ N) ⇒ W`.
 
-Lean: `ExtremeValueTheory.tendstoInDistribution_gpdReturnLevel`, `ReturnLevelNormality.lean:510`.
+Lean: `ExtremeValueTheory.tendstoInDistribution_gpdReturnLevel`, `ReturnLevelNormality.lean:539`.
 
 **(c) Caveats.**
 1. **The data are exactly GPD excesses.** `X_i` is an exact iid GPD sample of deterministic size `n`.
    There is no parent law `F` and no hypothesis linking `ζ` or `u` to the data: `ζ` is a known constant
    and `u` an additive constant. The random number of exceedances, the approximation error of the GPD
    above a finite threshold, and the estimation of `ζ` are not accounted for.
-2. With estimated `ζ`, `tendstoInDistribution_gpdReturnLevel₃` (`ReturnLevelNormality.lean:540`) assumes
+2. With estimated `ζ`, `tendstoInDistribution_gpdReturnLevel₃` (`ReturnLevelNormality.lean:569`) assumes
    joint normality of `(ζ̂, ξ̂, σ̂)` as a hypothesis.
 3. `N` is fixed as `n → ∞`. `Nζ > 0` allows `Nζ = 1`, where the gradient vanishes and the limit is a
    point mass, and `Nζ < 1`, where the level lies below `u`. `Nζ > 1` is what the interval in S4 needs.
@@ -1394,8 +1403,10 @@ parameter normality and a consistent standard error `Ŝₙ → s > 0`.
    not apply to them.
 3. Symmetric Wald intervals only. Profile-likelihood intervals, which [Coles] also discusses for return
    levels, are not covered. Coverage is pointwise at a fixed parameter, not uniform.
-4. There is no non-vacuity test for these theorems. The hypotheses are close to those of the tested
-   theorems `tendstoInDistribution_hill` and `exists_gpdMLE_tendstoInDistribution`.
+4. Non-vacuity: `test_nonvacuous_tendsto_measure_mem_gpdReturnLevelInterval` (iid `GPD(1/4, 3/2)`, the
+   library's measurable maximizers), `test_nonvacuous_tendsto_measure_mem_hillInterval` (shifted Pareto,
+   `U(t) = t + 1`), and `test_nonvacuous_tendsto_measure_mem_gevReturnLevelInterval` (synthetic estimator,
+   as in S2).
 
 **(d) Questions.** 1. Is the form `γ̂ ± zγ̂/√k` the one you use? 2. Is the absence of a uniform
 statement significant?
@@ -1415,7 +1426,7 @@ and `θ` is **any real number**.
 - `α(rₙ + 1) / (rₙ pₙ)² → 0`.
 
 Then `blocksEstimator X n rₙ uₙ → θ` in probability. Lean:
-`ExtremeValueTheory.tendstoInMeasure_blocksEstimator`, `ExtremalIndexEstimators.lean:653`.
+`ExtremeValueTheory.tendstoInMeasure_blocksEstimator`, `ExtremalIndexEstimators.lean:658`.
 
 *Runs.* Assume there is `sₙ ∈ ℕ` with:
 - `P(X_0 > uₙ, X_1 ≤ uₙ, …, X_{rₙ} ≤ uₙ) / pₙ → θ`;
@@ -1423,10 +1434,10 @@ Then `blocksEstimator X n rₙ uₙ → θ` in probability. Lean:
 - `Σ_{sₙ<h<n} α(h) / (n pₙ²) → 0`.
 
 Then `runsEstimator X n rₙ uₙ → θ` in probability. Lean:
-`ExtremeValueTheory.tendstoInMeasure_runsEstimator`, `ExtremalIndexEstimators.lean:679`.
+`ExtremeValueTheory.tendstoInMeasure_runsEstimator`, `ExtremalIndexEstimators.lean:685`.
 
-*Limit `ϑ`.* `HasSpectralTailProcess.tendstoInMeasure_blocksEstimator` (`:986`) and
-`HasSpectralTailProcess.tendstoInMeasure_runsEstimator` (`:1014`): for `X : ℤ → Ω → ℝ` measurable with
+*Limit `ϑ`.* `HasSpectralTailProcess.tendstoInMeasure_blocksEstimator` (`:994`) and
+`HasSpectralTailProcess.tendstoInMeasure_runsEstimator` (`:1022`): for `X : ℤ → Ω → ℝ` measurable with
 shift-invariant windows (D1) and spectral tail process `Θ`, `α > 0`, `uₙ → ∞`, `rₙ → ∞`, forward
 anticlustering at `(uₙ, rₙ)`, `rₙ/n → 0`, `n P(|X_0| > uₙ) → ∞`, and the conditions above for `|X|`
 except the first bullet, the estimator applied to `|X|` tends to `ϑ`.
@@ -1435,8 +1446,7 @@ except the first bullet, the estimator applied to `|X|` tends to `ϑ`.
 1. **The limit is not identified with the extremal index.** `θ` above is only the assumed limit of the
    population ratio. Nothing in the first two theorems involves `HasExtremalIndex`. On the echo process
    the two limits differ: blocks with long blocks give `1/2`, and short runs give `1` (R16).
-2. **The bridge to `θ` is not a corollary.** A docstring in the source says that under `𝒜(uₙ)` the limit
-   `ϑ` is `θ`. But these theorems use levels with `n pₙ → ∞`, whereas R5 needs anticlustering and `𝒜`
+2. **The bridge to `θ` is not a corollary.** These theorems use levels with `n pₙ → ∞`, whereas R5 needs anticlustering and `𝒜`
    along a common block sequence at **every** level with `n pₙ → τ`. Those are different hypotheses, to
    be verified separately.
 3. `rₙ → ∞` is not assumed in the first two theorems. It is needed in practice for the population ratio
@@ -1444,7 +1454,8 @@ except the first bullet, the estimator applied to `|X|` tends to `ϑ`.
 4. The cluster and mixing conditions are hypotheses. They are automatic for `m`-dependent sequences
    (`tendstoInMeasure_blocksEstimator_of_isMDependent`,
    `tendstoInMeasure_runsEstimator_of_isMDependent`) and verified on the logarithmic echo (R16). The
-   non-vacuity tests of S5 use an iid exponential sequence. No GARCH or ARMA example is treated. The
+   non-vacuity tests of the first two theorems use an iid exponential sequence, and those of the limit `ϑ`
+   the moving maximum (`ϑ = 1/2`). No GARCH or ARMA example is treated. The
    mixing rate is simple, not sharp.
 5. No rate of convergence, and no choice of `uₙ` or `rₙ`.
 
@@ -1460,7 +1471,7 @@ except the first bullet, the estimator applied to `|X|` tends to `ϑ`.
 inter-exceedance times `T`, which leads to `θ̂₁ = 2(Σ T_i)²/(m Σ T_i²)`.
 
 **(b) Lean, in math.** `ferroSegersLaw θ = (1 − θ)⁺ δ₀ + θ⁺ Exp(mean 1/θ)`
-(`ExtremalIndexEstimatorsIntervals.lean:60`), with first moment `1` and second moment `2/θ` for `θ > 0`
+(`ExtremalIndexEstimatorsIntervals.lean:61`), with first moment `1` and second moment `2/θ` for `θ > 0`
 (`integral_id_ferroSegersLaw`, `integral_sq_ferroSegersLaw`). `intervalsEstimator₁ T = 2(Σ_i T_i)²/(m
 Σ_i T_i²)` for `T ∈ ℝ^m`.
 
@@ -1469,7 +1480,7 @@ Let `mₙ > 0` eventually; let `Tₙ : Ω → ℝ^{mₙ}` be arbitrary; `cₙ �
   `mₙ⁻¹ Σ_i cₙ Tₙ,ᵢ → ∫ x dFS(θ)` and `mₙ⁻¹ Σ_i (cₙ Tₙ,ᵢ)² → ∫ x² dFS(θ)` in probability,
 
 then `intervalsEstimator₁ Tₙ → θ` in probability. Lean:
-`ExtremeValueTheory.tendstoInMeasure_intervalsEstimator₁`, `ExtremalIndexEstimatorsIntervals.lean:160`.
+`ExtremeValueTheory.tendstoInMeasure_intervalsEstimator₁`, `ExtremalIndexEstimatorsIntervals.lean:164`.
 
 **(c) Caveats.**
 1. **No process, no exceedance times and no extremal index appear.** `Tₙ` are any functions, without
@@ -1527,8 +1538,8 @@ Lean: `ExtremeValueTheory.exists_gpdMLE_tendstoInDistribution`, `GPDMLENormality
 Lean: `ExtremeValueTheory.tendstoInDistribution_gpdMLE_all`, `GPDMLENormality.lean:175`.
 
 **(c) Caveats.**
-1. The first statement's conclusion is an existence; "every such estimator" in its docstring is the
-   second theorem.
+1. The first statement's conclusion is an existence; the statement for every maximizer is the second
+   theorem.
 2. The maximizer property must hold for **every** `ω`, not eventually or almost surely, which is
    stronger than a theorem about laws needs, although the first theorem shows that such maximizers
    exist.
@@ -1549,7 +1560,7 @@ with `(A_i)` iid (`Dependence/SRE.lean:256`).
 
 *Existence of `κ`.* Let `α₁ ≥ 0`, `β₁ ≥ 0`, `log A` integrable, `E log A < 0`, `A ≠ 0` a.s., `S > 0`,
 `A^S` integrable, `E A^S > 1`. Then there is `κ ∈ (0, S)` with `A^κ` integrable and `E A^κ = 1`. Lean:
-`ExtremeValueTheory.SRE.GARCH.exists_tail_index`, `Dependence/SREGarch.lean:211`. Uniqueness:
+`ExtremeValueTheory.SRE.GARCH.exists_tail_index`, `Dependence/SREGarch.lean:223`. Uniqueness:
 `SRE.kesten_exponent_unique` (when `A` is not a.s. `1`).
 
 *Tail bounds.* Let `α₁ ≥ 0`, `β₁ ≥ 0`, `log A` integrable, `E log A < 0`, `α₀ > 0`, `κ > 0`, `A^κ`
@@ -1558,7 +1569,7 @@ integrable, `E A^κ = 1`, and not `A = 1` a.s. With `Y` having the stationary la
 2. for every `s > κ` there are **no** `C ≥ 0` and `x₀ > 0` with `P(|Y| > x) ≤ C x^{−s}` for all `x ≥
    x₀`.
 
-Lean: `ExtremeValueTheory.SRE.GARCH.tail_bounds`, `Dependence/SREGarch.lean:189`.
+Lean: `ExtremeValueTheory.SRE.GARCH.tail_bounds`, `Dependence/SREGarch.lean:198`.
 
 **(c) Caveats.**
 1. **`κ` is an exponent, not a proved regular-variation index.** The sharp Kesten–Goldie asymptotics `c
@@ -1568,9 +1579,9 @@ Lean: `ExtremeValueTheory.SRE.GARCH.tail_bounds`, `Dependence/SREGarch.lean:189`
    `X_t`, no tail process and no extremal index of GARCH are proved.
 3. `log 0 = 0` in Lean, so `E log A < 0` is stronger than the textbook condition when `P(A = 0) > 0`
    (`FAITHFULNESS.md`).
-4. The non-vacuity test uses a two-point `Z` (values `1/3` and `2`) with `α₁ = 1`, `β₁ = 0`, i.e.
-   ARCH(1) with `S = 1`. The Gaussian case mentioned in a docstring is not instantiated, so `E A^S > 1`
-   is not derived for it.
+4. Non-vacuity: a two-point `Z` (values `1/3` and `2`) with `α₁ = 1`, `β₁ = 0`, i.e. ARCH(1) with `S = 1`;
+   and `test_nonvacuous_garch_gaussian`: `Z ~ N(0, 1)`, `α₁ = 7/10`, `β₁ = 1/5`, `S = 2`, where `E A² =
+   179/100`. That is one parameter pair; `E A^S > 1` is not derived for Gaussian `Z` in general.
 
 **(d) Questions.** 1. Without Kesten–Goldie, is the name "tail index" misleading? 2. Is the two-sided
 bound useful to you?

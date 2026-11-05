@@ -4,6 +4,8 @@ import Test.NonVacuity.Classical
 import Test.NonVacuity.Statistics
 import Test.NonVacuity.StatisticsLikelihood
 import Test.NonVacuity.StatisticsClusters
+import Test.NonVacuity.StatisticsReturnLevels
+import Test.NonVacuity.GarchGaussian
 import Test.KnownAnswers.Classical
 import Test.KnownAnswers.DomainOfAttraction
 import Test.KnownAnswers.HeavyTails
@@ -15,3 +17,4 @@ import Test.KnownAnswers.Dependence
 import Test.KnownAnswers.Multivariate
 import Test.KnownAnswers.Processes
 import Test.KnownAnswers.Statistics
+import Test.KnownAnswers.ReturnLevels

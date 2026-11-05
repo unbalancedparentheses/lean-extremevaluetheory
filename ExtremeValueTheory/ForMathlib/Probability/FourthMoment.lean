@@ -89,7 +89,8 @@ theorem integral_sum_range_sq_eq (hX : ∀ i, Measurable (X i)) (hind : iIndepFu
     have ih' : ∫ ω, S ω ^ 2 ∂P = ∑ i ∈ range n, ∫ ω, X i ω ^ 2 ∂P := ih
     rw [ih', Finset.sum_range_succ]
 
-/-- **Fourth moment of a sum of independent centered random variables**:
+/-- **Fourth moment of a sum of independent centered random variables, bounded for every `ω`**
+(`|X i ω| ≤ C`, a hypothesis stronger than the finite fourth moments the inequality needs):
 `E (∑_{i < n} X i) ^ 4 ≤ ∑_{i < n} E (X i) ^ 4 + 3 (∑_{i < n} E (X i) ^ 2) ^ 2`. -/
 theorem integral_sum_range_pow_four_le (hX : ∀ i, Measurable (X i)) (hind : iIndepFun X P)
     (hC : ∀ i ω, |X i ω| ≤ C) (h0 : ∀ i, ∫ ω, X i ω ∂P = 0) (n : ℕ) :

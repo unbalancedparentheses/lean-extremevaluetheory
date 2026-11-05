@@ -123,8 +123,11 @@ theorem integral_gpdSurvivalAll (hσ : 0 < σ) (hξ : ξ < 1) :
   change gpdSurvivalAll ξ σ t = (gpdMeasure ξ σ).real (Ioi t)
   rw [measureReal_def, gpdMeasure_Ioi hσ ht.le, ENNReal.toReal_ofReal (gpdSurvivalAll_nonneg _ _ _)]
 
-/-- **The GPD mean excess function is linear** ([EKM, Theorem 3.4.13(e)]): for `ξ < 1`,
-`u ≥ 0` in the support (`σ + ξ u > 0`), `e(u) = (σ + ξ u) / (1 - ξ)`. -/
+/-- **The GPD mean excess function is linear** ([EKM, Theorem 3.4.13(e)]): for `ξ < 1` and
+`σ + ξ u > 0`, `meanExcess (gpdSurvivalAll ξ σ) u = (σ + ξ u) / (1 - ξ)`. This is about the formula
+`gpdSurvivalAll`, for any such `u`. It is a mean excess of the GPD only for `u ≥ 0`: for `u < 0` the
+formula exceeds `1` and is not a survival function. The probabilistic form is
+`meanExcess_gpdMeasure`. -/
 theorem meanExcess_gpdSurvivalAll (hσ : 0 < σ) (hξ : ξ < 1) {u : ℝ} (hu : 0 < σ + ξ * u) :
     meanExcess (gpdSurvivalAll ξ σ) u = (σ + ξ * u) / (1 - ξ) := by
   have hpos := gpdSurvivalAll_pos (ξ := ξ) hσ hu

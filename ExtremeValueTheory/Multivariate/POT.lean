@@ -185,8 +185,10 @@ omit [IsProbabilityMeasure ν] in
 /-- **Threshold stability of the standardized multivariate GPD** ([RT06, Theorem 2.2]): for a
 simple max-stable law with exponent function `V`, `H_0(y) = (V(y ∧ 1) - V(y)) / V(1)` satisfies,
 for every `t ≥ 1` and `y ∈ (0, ∞)^ι`,
-`(H_0(t y) - H_0(t y ∧ t 1)) / (1 - H_0(t 1)) = H_0(y)`: the conditional law of `Y / t` given
-`Y ≰ t 1` is again `H_0`. Moreover `1 - H_0(t 1) = 1 / t`. -/
+`(H_0(t y) - H_0(t y ∧ t 1)) / (1 - H_0(t 1)) = H_0(y)`, and `1 - H_0(t 1) = 1 / t`. This is an
+identity between values of the function `H_0`; read for a variable `Y` with c.d.f. `H_0`, it says that
+the conditional law of `Y / t` given `Y ≰ t 1` is again `H_0`, but no such `Y` appears, and `H_0` is
+not shown here to be a c.d.f. -/
 theorem IsSimpleMaxStable.standardMGPD_threshold_stable [Nonempty ι]
     (hν : IsSimpleMaxStable ν) {t : ℝ} (ht : 1 ≤ t) {y : ι → ℝ} (hy : ∀ i, 0 < y i) :
     1 - standardMGPD ν (t • 1) = t⁻¹ ∧

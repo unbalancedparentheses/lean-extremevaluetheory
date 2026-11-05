@@ -239,10 +239,10 @@ theorem exists_measurable_gpdMLE {K : Set (ℝ × ℝ)} (hK : IsCompact K)
 
 /-- **Asymptotic normality of the GPD maximum likelihood estimator, unconditional form.** Let
 `K ⊂ {ξ > -1, σ > 0}` be compact with `θ₀ = (ξ₀, σ₀)`, `ξ₀ > -1/2`, `ξ₀ ≠ 0`, in its interior and
-let `X₀, X₁, …` be iid `GPD(θ₀)`. Then there is a maximum likelihood estimator — an
-(almost everywhere) measurable maximizer `θ̂ₙ ∈ K` of the log-likelihood of `X₀, …, X_{n-1}` for
-every `n` and every outcome, a measurable function of the sample — and every such estimator
-satisfies `√n (θ̂ₙ - θ₀) ⇒ N(0, I(θ₀)⁻¹)`. -/
+let `X₀, X₁, …` be iid `GPD(θ₀)`. Then there is a maximum likelihood estimator — measurable maps
+`gₙ : ℝⁿ → K`, with `gₙ(x)` a maximizer of the log-likelihood over `K` for every `n` and every `x`
+— such that `√n (gₙ(X₀, …, X_{n-1}) - θ₀) ⇒ N(0, I(θ₀)⁻¹)`. This concludes existence only; the
+statement for every measurable maximizer is `tendstoInDistribution_gpdMLE_all`. -/
 theorem exists_gpdMLE_tendstoInDistribution {K : Set (ℝ × ℝ)} (hK : IsCompact K)
     (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K)
     (hξ₀ : -1 / 2 < ξ₀) (hξ₀0 : ξ₀ ≠ 0) (hσ₀ : 0 < σ₀)

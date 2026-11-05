@@ -928,4 +928,261 @@ theorem test_nonvacuous_logEcho_tendstoInMeasure_runsEstimator (hα : 0 < α) :
     hu tendsto_shortBlock hrlog hk (s := Nat.sqrt) tendsto_sqrt_atTop tendsto_log_div_natSqrt hrsk
 
 
+/-! ### The newest extremal-index estimators, with limit `ϑ`
+
+Levels `uₙ = n^(1/(4α))`, so `pₙ ≍ n^(-1/4)`, and blocks `rₙ = ⌊n^(1/8)⌋`. -/
+
+/-- Test-specific: the level `uₙ = n^(1/(4α))`. -/
+private noncomputable def u8 (α : ℝ) (n : ℕ) : ℝ := (n : ℝ) ^ (1 / (4 * α))
+
+/-- Test-specific: the block length `rₙ = ⌊n^(1/8)⌋`. -/
+private noncomputable def r8 (n : ℕ) : ℕ := ⌊(n : ℝ) ^ (1 / 8 : ℝ)⌋₊
+
+/-- Test-specific: `uₙ → ∞`. -/
+private theorem tendsto_u8 (hα : 0 < α) : Tendsto (u8 α) atTop atTop :=
+  (tendsto_rpow_atTop (by positivity)).comp tendsto_natCast_atTop_atTop
+
+/-- Test-specific: `uₙ^(-α) = n^(-1/4)`. -/
+private theorem u8_rpow (hα : 0 < α) (n : ℕ) : u8 α n ^ (-α) = (n : ℝ) ^ (-(1 / 4) : ℝ) := by
+  rw [u8, ← Real.rpow_mul (Nat.cast_nonneg n)]
+  congr 1
+  field_simp
+
+/-- Test-specific: `rₙ ≤ n^(1/8)`. -/
+private theorem r8_le (n : ℕ) : (r8 n : ℝ) ≤ (n : ℝ) ^ (1 / 8 : ℝ) := Nat.floor_le (by positivity)
+
+/-- Test-specific: `rₙ → ∞`. -/
+private theorem tendsto_r8 : Tendsto r8 atTop atTop :=
+  tendsto_nat_floor_atTop.comp ((tendsto_rpow_atTop (by norm_num)).comp tendsto_natCast_atTop_atTop)
+
+/-- Test-specific: `rₙ n^(-b) → 0` for `b > 1/8`. -/
+private theorem tendsto_r8_mul_rpow {b : ℝ} (hb : 1 / 8 < b) :
+    Tendsto (fun n : ℕ => (r8 n : ℝ) * (n : ℝ) ^ (-b)) atTop (𝓝 0) := by
+  have h : Tendsto (fun n : ℕ => (n : ℝ) ^ (-(b - 1 / 8))) atTop (𝓝 0) :=
+    (tendsto_rpow_neg_atTop (by linarith)).comp tendsto_natCast_atTop_atTop
+  refine squeeze_zero' (Eventually.of_forall fun n => by positivity) ?_ h
+  filter_upwards [eventually_gt_atTop 0] with n hn
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+  rw [show -(b - 1 / 8) = 1 / 8 + -b by ring, Real.rpow_add hn']
+  exact mul_le_mul_of_nonneg_right (r8_le n) (by positivity)
+
+/-- Test-specific: `log n / rₙ → 0`. -/
+private theorem tendsto_log_div_r8 : Tendsto (fun n : ℕ => Real.log n / r8 n) atTop (𝓝 0) := by
+  have hlo : Tendsto (fun n : ℕ => 2 * (Real.log n / (n : ℝ) ^ (1 / 8 : ℝ))) atTop (𝓝 0) := by
+    simpa using (((isLittleO_log_rpow_atTop (r := 1 / 8) (by norm_num)).tendsto_div_nhds_zero).comp
+      tendsto_natCast_atTop_atTop).const_mul 2
+  have hpow : Tendsto (fun n : ℕ => (n : ℝ) ^ (1 / 8 : ℝ)) atTop atTop :=
+    (tendsto_rpow_atTop (by norm_num)).comp tendsto_natCast_atTop_atTop
+  refine squeeze_zero' ?_ ?_ hlo
+  · filter_upwards [eventually_ge_atTop 1] with n hn
+    exact div_nonneg (Real.log_natCast_nonneg n) (Nat.cast_nonneg _)
+  · filter_upwards [hpow.eventually_ge_atTop 2, eventually_ge_atTop 1] with n h2 hn
+    have hl := Real.log_natCast_nonneg n
+    have hfl : (n : ℝ) ^ (1 / 8 : ℝ) - 1 < r8 n := Nat.sub_one_lt_floor _
+    have hr : (n : ℝ) ^ (1 / 8 : ℝ) / 2 ≤ r8 n := by linarith
+    have hp : 0 < (n : ℝ) ^ (1 / 8 : ℝ) := by linarith
+    calc Real.log n / r8 n ≤ Real.log n / ((n : ℝ) ^ (1 / 8 : ℝ) / 2) :=
+          div_le_div_of_nonneg_left hl (by positivity) hr
+      _ = _ := by field_simp
+
+/-- Test-specific: a variable above the noise has `n P(W > uₙ) ≥ n^(3/4)`. -/
+private theorem rpow_le_mul_measureReal (hα : 0 < α) {W : (ℤ → ℝ) → ℝ} (hW : ∀ ω, Z 0 ω ≤ W ω)
+    {n : ℕ} (hn : 0 < n) :
+    (n : ℝ) ^ (3 / 4 : ℝ) ≤ n * (P α).real {ω | u8 α n < W ω} := by
+  have := isProbabilityMeasure_P hα
+  have hn' : (1 : ℝ) ≤ n := by exact_mod_cast hn
+  have hu : 1 ≤ u8 α n := Real.one_le_rpow hn' (by positivity)
+  have hl : (n : ℝ) ^ (-(1 / 4) : ℝ) ≤ (P α).real {ω | u8 α n < W ω} := by
+    rw [← u8_rpow hα, ← measureReal_lt_of_map_eq measurable_Z (map_Z hα) hα 0 hu]
+    exact measureReal_mono fun ω hω => lt_of_lt_of_le hω (hW ω)
+  have he : (n : ℝ) ^ (3 / 4 : ℝ) = n * (n : ℝ) ^ (-(1 / 4) : ℝ) := by
+    nth_rewrite 2 [← Real.rpow_one (n : ℝ)]
+    rw [← Real.rpow_add (by linarith)]
+    norm_num
+  rw [he]
+  exact mul_le_mul_of_nonneg_left hl (Nat.cast_nonneg n)
+
+/-- Test-specific: `n P(W > uₙ) → ∞`. -/
+private theorem tendsto_mul_measureReal (hα : 0 < α) {W : (ℤ → ℝ) → ℝ} (hW : ∀ ω, Z 0 ω ≤ W ω) :
+    Tendsto (fun n : ℕ => n * (P α).real {ω | u8 α n < W ω}) atTop atTop :=
+  tendsto_atTop_mono' atTop ((eventually_gt_atTop 0).mono fun _ hn => rpow_le_mul_measureReal hα hW hn)
+    ((tendsto_rpow_atTop (by norm_num)).comp tendsto_natCast_atTop_atTop)
+
+/-- Test-specific: `S / (n P(W > uₙ)) → 0` for `S n^(-3/4) → 0`. -/
+private theorem tendsto_div_mul_measureReal (hα : 0 < α) {W : (ℤ → ℝ) → ℝ} (hW : ∀ ω, Z 0 ω ≤ W ω)
+    {S : ℕ → ℕ} (hS : Tendsto (fun n : ℕ => (S n : ℝ) * (n : ℝ) ^ (-(3 / 4) : ℝ)) atTop (𝓝 0)) :
+    Tendsto (fun n : ℕ => (S n : ℝ) / (n * (P α).real {ω | u8 α n < W ω})) atTop (𝓝 0) := by
+  refine squeeze_zero' (Eventually.of_forall fun n => by positivity) ?_ hS
+  filter_upwards [eventually_gt_atTop 0] with n hn
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+  have h := rpow_le_mul_measureReal hα hW hn
+  rw [Real.rpow_neg hn'.le, ← div_eq_mul_inv]
+  exact div_le_div_of_nonneg_left (Nat.cast_nonneg _) (by positivity) h
+
+/-- **Non-vacuity of `logEcho_tendstoInMeasure_blocksEstimator`**, the companion of the short-runs
+warning: `uₙ = n^(1/(4α))`, blocks `rₙ = ⌊n^(1/8)⌋`, longer than the echo lag; the blocks estimator
+tends to `1/2 = θ`. All hypotheses discharged. -/
+theorem test_nonvacuous_logEcho_tendstoInMeasure_blocksEstimator (hα : 0 < α) :
+    TendstoInMeasure (P α) (fun n => blocksEstimator (fun k : ℕ => echoProcess logLag Z k) n
+      (r8 n) (u8 α n)) atTop (fun _ => 1 / 2) := by
+  have := isProbabilityMeasure_P hα
+  have hW : ∀ ω, Z 0 ω ≤ echoProcess logLag Z ((0 : ℕ) : ℤ) ω := fun ω => by
+    simpa using le_echoProcess (L := logLag) (Z := Z) 0 ω
+  have hrb : Tendsto (fun n => (r8 n : ℝ) * u8 α n ^ (-α)) atTop (𝓝 0) := by
+    simpa only [u8_rpow hα] using tendsto_r8_mul_rpow (b := 1 / 4) (by norm_num)
+  have hlogu : Tendsto (fun n => Real.log (u8 α n) / r8 n) atTop (𝓝 0) := by
+    have h := tendsto_log_div_r8.const_mul (1 / (4 * α))
+    rw [mul_zero] at h
+    refine h.congr' ?_
+    filter_upwards [eventually_gt_atTop 0] with n hn
+    rw [u8, Real.log_rpow (by exact_mod_cast hn), mul_div_assoc]
+  exact logEcho_tendstoInMeasure_blocksEstimator hα measurable_Z (iIndepFun_Z hα) (map_Z hα) Z_nonneg
+    (tendsto_u8 hα) tendsto_r8 hrb hlogu tendsto_log_div_r8 (tendsto_mul_measureReal hα hW)
+    (tendsto_div_mul_measureReal hα hW (tendsto_r8_mul_rpow (by norm_num)))
+
+/-- Test-specific: `Z_0` lies below `|M_0|`. -/
+private theorem Z_le_abs_M (ω : ℤ → ℝ) : Z 0 ω ≤ |M 0 ω| :=
+  (le_max_left _ _).trans (le_abs_self _)
+
+/-- Test-specific: `P(|M_0| > uₙ) ≤ 2 n^(-1/4)`. -/
+private theorem measureReal_abs_M_le (hα : 0 < α) {n : ℕ} (hn : 0 < n) :
+    (P α).real {ω | u8 α n < |M 0 ω|} ≤ 2 * (n : ℝ) ^ (-(1 / 4) : ℝ) := by
+  have := isProbabilityMeasure_P hα
+  have hn' : (1 : ℝ) ≤ n := by exact_mod_cast hn
+  have hu : 1 ≤ u8 α n := Real.one_le_rpow hn' (by positivity)
+  have hsub : {ω | u8 α n < |M 0 ω|} ⊆ {ω | u8 α n < Z 0 ω} ∪ {ω | u8 α n < Z 1 ω} := by
+    intro ω hω
+    have h0 : u8 α n < |M 0 ω| := hω
+    rw [abs_of_nonneg (M_nonneg 0 ω)] at h0
+    have h : u8 α n < max (Z 0 ω) (Z 1 ω) := by simpa [M, movingMax] using h0
+    exact lt_max_iff.1 h
+  calc _ ≤ (P α).real ({ω | u8 α n < Z 0 ω} ∪ {ω | u8 α n < Z 1 ω}) := measureReal_mono hsub
+    _ ≤ _ := measureReal_union_le _ _
+    _ = _ := by
+      rw [measureReal_lt_of_map_eq measurable_Z (map_Z hα) hα 0 hu,
+        measureReal_lt_of_map_eq measurable_Z (map_Z hα) hα 1 hu, u8_rpow hα]
+      ring
+
+/-- Test-specific: `rₙ P(|M_0| > uₙ) → 0`. -/
+private theorem tendsto_r8_mul_measureReal (hα : 0 < α) :
+    Tendsto (fun n : ℕ => (r8 n : ℝ) * (P α).real {ω | u8 α n < |M 0 ω|}) atTop (𝓝 0) := by
+  have h := (tendsto_r8_mul_rpow (b := 1 / 4) (by norm_num)).const_mul 2
+  rw [mul_zero] at h
+  refine squeeze_zero' (Eventually.of_forall fun n => by positivity) ?_ h
+  filter_upwards [eventually_gt_atTop 0] with n hn
+  calc _ ≤ (r8 n : ℝ) * (2 * (n : ℝ) ^ (-(1 / 4) : ℝ)) :=
+        mul_le_mul_of_nonneg_left (measureReal_abs_M_le hα hn) (Nat.cast_nonneg _)
+    _ = _ := by ring
+
+/-- Test-specific: `P(|M_0| > uₙ) → 0`. -/
+private theorem tendsto_measureReal_abs_M (hα : 0 < α) :
+    Tendsto (fun n : ℕ => (P α).real {ω | u8 α n < |M 0 ω|}) atTop (𝓝 0) := by
+  have h : Tendsto (fun n : ℕ => 2 * (n : ℝ) ^ (-(1 / 4) : ℝ)) atTop (𝓝 0) := by
+    simpa using ((tendsto_rpow_neg_atTop (y := 1 / 4) (by norm_num)).comp
+      tendsto_natCast_atTop_atTop).const_mul 2
+  refine squeeze_zero' (Eventually.of_forall fun _ => measureReal_nonneg) ?_ h
+  filter_upwards [eventually_gt_atTop 0] with n hn using measureReal_abs_M_le hα hn
+
+/-- Test-specific: forward anticlustering of the moving maximum at `(uₙ, rₙ)`. -/
+private theorem forwardAntiClusteringAt_M (hα : 0 < α) :
+    ForwardAntiClusteringAt (P α) M (u8 α) r8 :=
+  have := isProbabilityMeasure_P hα
+  (antiClusteringAt_of_indepFun measurable_M (hasShiftInvariantWindows_M hα) (indepFun_M hα)
+    (tendsto_measureReal_abs_M hα) (tendsto_r8_mul_measureReal hα)).forward
+
+/-- Test-specific: `rₙ / n → 0`. -/
+private theorem tendsto_r8_div : Tendsto (fun n => (r8 n : ℝ) / n) atTop (𝓝 0) := by
+  refine (tendsto_r8_mul_rpow (b := 1) (by norm_num)).congr fun n => ?_
+  rw [Real.rpow_neg_one, div_eq_mul_inv]
+
+/-- **Non-vacuity of `HasSpectralTailProcess.tendstoInMeasure_blocksEstimator`**, on the moving
+maximum: levels `uₙ = n^(1/(4α))`, blocks `⌊n^(1/8)⌋`, `sₙ = 1`. The estimator tends to
+`ϑ = 1/2` (EKM Ex. 8.1.3: this is `θ` for the moving maximum). All hypotheses discharged. -/
+theorem test_nonvacuous_hasSpectralTailProcess_tendstoInMeasure_blocksEstimator (hα : 0 < α) :
+    TendstoInMeasure (P α) (fun n => blocksEstimator (fun k : ℕ => |M k|) n (r8 n) (u8 α n)) atTop
+      (fun _ => (candidateExtremalIndex fairCoin movingMaxSpectral α).toReal) ∧
+      candidateExtremalIndex fairCoin movingMaxSpectral α = 2⁻¹ := by
+  have := isProbabilityMeasure_P hα
+  have hm := isMDependent_abs_M hα
+  have hXa : ∀ t : ℕ, Measurable ((fun k : ℕ => |M k|) t) := fun t =>
+    continuous_abs.measurable.comp (measurable_M t)
+  have hs := (hasShiftInvariantWindows_M hα).isStationary_abs measurable_M
+  have hk := tendsto_mul_measureReal hα Z_le_abs_M
+  refine ⟨(hasSpectralTailProcess_M hα).tendstoInMeasure_blocksEstimator hα measurable_M
+    measurable_movingMaxSpectral (hasShiftInvariantWindows_M hα) (tendsto_u8 hα) tendsto_r8
+    (forwardAntiClusteringAt_M hα) tendsto_r8_div hk (fun _ => 1) ?_ ?_ ?_,
+    candidateExtremalIndex_movingMax hα⟩
+  · have := tendsto_sum_measureReal_lt_and_lt_div_of_isMDependent (S := fun _ => 1) hXa hs hm
+      (u := u8 α) (by simpa using hk)
+      (by simpa [Function.comp_def] using tendsto_inv_atTop_zero.comp tendsto_natCast_atTop_atTop)
+    simpa using this
+  · exact tendsto_sum_alphaMixing_div_of_isMDependent hm (Eventually.of_forall fun _ => le_rfl) _
+  · refine tendsto_const_nhds.congr' ?_
+    filter_upwards [tendsto_r8.eventually_gt_atTop 0] with n hn
+    rw [hm.alphaMixing_eq_zero (by omega), ENNReal.toReal_zero, zero_div]
+
+/-- **Non-vacuity of `HasSpectralTailProcess.tendstoInMeasure_runsEstimator`**, on the moving
+maximum: levels `uₙ = n^(1/(4α))`, runs `⌊n^(1/8)⌋`, `sₙ = 1`. The estimator tends to `ϑ = 1/2`. All
+hypotheses discharged. -/
+theorem test_nonvacuous_hasSpectralTailProcess_tendstoInMeasure_runsEstimator (hα : 0 < α) :
+    TendstoInMeasure (P α) (fun n => runsEstimator (fun k : ℕ => |M k|) n (r8 n) (u8 α n)) atTop
+      (fun _ => (candidateExtremalIndex fairCoin movingMaxSpectral α).toReal) := by
+  have := isProbabilityMeasure_P hα
+  have hm := isMDependent_abs_M hα
+  have hXa : ∀ t : ℕ, Measurable ((fun k : ℕ => |M k|) t) := fun t =>
+    continuous_abs.measurable.comp (measurable_M t)
+  have hs := (hasShiftInvariantWindows_M hα).isStationary_abs measurable_M
+  have hk := tendsto_mul_measureReal hα Z_le_abs_M
+  refine (hasSpectralTailProcess_M hα).tendstoInMeasure_runsEstimator hα measurable_M
+    measurable_movingMaxSpectral (hasShiftInvariantWindows_M hα) (tendsto_u8 hα) tendsto_r8
+    (forwardAntiClusteringAt_M hα) tendsto_r8_div hk (fun _ => 1) ?_ ?_
+  · have hS : Tendsto (fun n : ℕ => ((r8 n + 1 : ℕ) : ℝ) / n) atTop (𝓝 0) := by
+      have h := tendsto_r8_div.add (tendsto_inv_atTop_zero.comp tendsto_natCast_atTop_atTop)
+      rw [add_zero] at h
+      refine h.congr fun n => ?_
+      simp [div_eq_mul_inv]
+      ring
+    have := tendsto_sum_measureReal_lt_and_lt_div_of_isMDependent (S := fun n => r8 n + 1) hXa hs hm
+      (u := u8 α) (by simpa using hk) hS
+    simpa using this
+  · exact tendsto_sum_alphaMixing_div_of_isMDependent hm (Eventually.of_forall fun _ => le_rfl) _
+
+/-! ### `AC(rₙ)` on the critical scale -/
+
+/-- **Non-vacuity of `powEchoProcess_antiClustering_iff_critical`**: with `n P(X_0 > aₙ) → 1` on a
+concrete space and blocks `rₙ = ⌊c n^(γ/α)⌋ + 1`, for which `rₙ / n^(γ/α) → c > 0`, `AC(rₙ)` fails
+(`powEchoProcess_not_antiClustering_critical`), at `γ = α/2`, for every `c > 0`. All hypotheses
+discharged. -/
+theorem test_nonvacuous_powEchoProcess_not_antiClustering_critical (hα : 0 < α) {c : ℝ}
+    (hc : 0 < c) :
+    ∃ a : ℕ → ℝ, Tendsto (fun n : ℕ => n * (P α).real
+        {ω | a n < echoProcess (powLag (α / 2)) Z 0 ω}) atTop (𝓝 1) ∧
+      ¬ AntiClustering (P α) (echoProcess (powLag (α / 2)) Z) a
+        (fun n => ⌊c * (n : ℝ) ^ (1 / 2 : ℝ)⌋₊ + 1) := by
+  have := isProbabilityMeasure_P hα
+  have hγ : 0 < α / 2 := by positivity
+  have hγα : α / 2 < α := by linarith
+  obtain ⟨a, ha⟩ := (powEchoProcess_theta_lt_vartheta hα measurable_Z (iIndepFun_Z hα) (map_Z hα)
+    Z_nonneg hγ hγα).2.1.hasExceedanceLevels_abs
+    (measurable_echoProcess measurable_Z (measurable_powLag _)) 1 one_pos
+  have ha : Tendsto (fun n : ℕ => n * (P α).real
+      {ω | a n < echoProcess (powLag (α / 2)) Z 0 ω}) atTop (𝓝 1) := by
+    simpa [abs_of_nonneg (echoProcess_nonneg Z_nonneg _ _)] using ha
+  refine ⟨a, ha, powEchoProcess_not_antiClustering_critical hα measurable_Z (iIndepFun_Z hα)
+    (map_Z hα) Z_nonneg hγ hγα one_pos ha hc ?_⟩
+  have hρ : α / 2 / α = 1 / 2 := by field_simp
+  rw [hρ]
+  have hpow : Tendsto (fun n : ℕ => (n : ℝ) ^ (1 / 2 : ℝ)) atTop atTop :=
+    (tendsto_rpow_atTop (by norm_num)).comp tendsto_natCast_atTop_atTop
+  have hup : Tendsto (fun n : ℕ => c + 1 / (n : ℝ) ^ (1 / 2 : ℝ)) atTop (𝓝 c) := by
+    simpa using (tendsto_const_nhds (x := c)).add (hpow.const_div_atTop 1)
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds hup ?_ ?_
+  all_goals
+    filter_upwards [hpow.eventually_gt_atTop 0] with n hn
+    have hf := Nat.floor_le (show 0 ≤ c * (n : ℝ) ^ (1 / 2 : ℝ) by positivity)
+    have hl := Nat.lt_floor_add_one (c * (n : ℝ) ^ (1 / 2 : ℝ))
+    simp only [Nat.cast_add, Nat.cast_one]
+  · rw [le_div_iff₀ hn]; linarith
+  · rw [div_le_iff₀ hn, add_mul, div_mul_cancel₀ _ hn.ne']; linarith
+
 end NonVacuity.Dependence

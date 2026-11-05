@@ -56,8 +56,10 @@ Everything that depends on these is marked **[unverified]**.
   - If AC holds for r'_n ≥ r_n eventually, it holds for r_n.
   - So ρ = 0 (with r_n → ∞) gives AC: compare with ⌈n^{ρ'}⌉ for some ρ' < γ/α.
   - And ρ = 1 gives failure: compare with ⌈n^{ρ'}⌉ for some ρ' > γ/α.
-- **The critical scale ρ = γ/α.** The answer depends on the constant in r_n ~ c n^{γ/α}: AC fails if κ = (2/τ)^{γ/α}/c < 1 and holds if κ > 1. The case κ = 1 is not decided.
-  - The question is about ranges of ρ, so this does not matter for the answer. It must still be stated as "for ρ ≠ ρ₀".
+- **The critical scale ρ = γ/α.** AC(r_n), at all levels a_n x, does not depend on the constant: it fails for every c > 0 when r_n ~ c n^{γ/α} (Lean, `powEchoProcess_not_antiClustering_critical`), and it holds when r_n = o(n^{γ/α}) (Lean, `powEchoProcess_antiClustering_of_tendsto_zero`), so for r_n / n^{γ/α} → c ≥ 0 it holds iff c = 0 (`powEchoProcess_antiClustering_iff_critical`).
+  - The dependence on c belongs to one level sequence only: `powEchoProcess_critical` gives failure of forward anticlustering at u_n if κ = (2/τ)^{γ/α}/c < 1 and anticlustering at u_n if κ > 1, with κ = 1 undecided. At the level a_n x the constant is κ(x) = x^γ (2/τ)^{γ/α}/c, which is below 1 for small x.
+  - Sequences with r_n/n^{γ/α} → ∞ and log r_n/log n → γ/α are not covered.
+  - The question is about ranges of ρ, so this does not matter for the answer.
 - **Requirement (1.1).** θ = 1/2 exists (Lean, `powEchoProcess_theta_lt_vartheta`), so the process has "weak extremal dependence" in BKW's sense.
 
 **Verdict on fit: (A) answers the second question as literally stated, for every ρ₀ ∈ (0,1).** Caveats to state honestly:
@@ -130,7 +132,7 @@ Mention in the same paragraph that the example also has θ < ϑ (θ = 1/2, ϑ = 
 - **Known.** The standard theorem (Basrak–Segers 2009; KS20 ch. 7) needs AC(r_n) *and* the mixing condition A(a_n) at the same r_n. Classically, the runs/local formula for θ needs D^{(k)} (CHM 1991) on top of D(u_n). So experts will not be surprised that mixing alone is insufficient.
 - **New, as far as I can tell.**
   1. An explicit, very simple stationary model that is β-mixing (geometrically for the log lag; for the power lag β(h) ≲ Σ_{m≥0} P(Z^γ ≥ h+m) ~ h^{1−α/γ}, so polynomial), regularly varying, with the iid spectral tail process Θ_t = 1{t=0} (ϑ = 1), yet θ = 1/2.
-  2. A proof that on every polynomial block scale (ρ ∈ (0,1), ρ ≠ γ/α) AC and condition A are never simultaneously satisfied, although each holds on its own range of scales.
+  2. A proof that on every polynomial block scale (ρ ∈ (0,1), ρ ≠ γ/α) AC and condition A are never simultaneously satisfied. For the logarithmic lag each holds on its own range of scales (`logEchoProcess_betaMixing_incompatible`). For the power lag, AC holds for ρ < γ/α and A fails there, and AC fails for ρ > γ/α; that A holds for ρ > γ/α is expected but **not proved**, so "each holds on its own range" is not a Lean statement for that lag.
 
   BW explicitly say that their θ < ϑ model lacks "very strong mixing properties", so no prior θ < ϑ example in the RV literature is known to be strongly mixing.
 - **Caveats.**

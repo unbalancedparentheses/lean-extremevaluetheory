@@ -70,6 +70,7 @@ import ExtremeValueTheory.StableLaws.GaussianDomain.Necessity
 import ExtremeValueTheory.StableLaws.GaussianDomain.Lindeberg
 import ExtremeValueTheory.StableLaws.GaussianDomain
 import ExtremeValueTheory.ForMathlib.Probability.Process.Stationary
+import ExtremeValueTheory.ForMathlib.Probability.GaussianMoments
 import ExtremeValueTheory.ForMathlib.MeasureTheory.Measure.Bonferroni
 import ExtremeValueTheory.ForMathlib.Analysis.SpecialFunctions.Gamma.Trigamma
 import ExtremeValueTheory.Dependence.Leadbetter

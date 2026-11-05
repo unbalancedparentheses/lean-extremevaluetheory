@@ -50,7 +50,8 @@ variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'
 of `tendstoInDistribution_hill_of_tendsto_zero` (iid, second-order regular variation of the tail
 quantile function with index `γ > 0`, `k → ∞`, `k/n → 0`, `√k A(n/k) → 0`), the coverage
 probability of the Wald interval `[γ̂ - z γ̂/√k, γ̂ + z γ̂/√k]`, `γ̂ = H_{k,n}`, converges to
-`N(0, 1)([-z, z])`; for `z = z_{α/2}` the limit is `1 - α`. -/
+`N(0, 1)([-z, z])`; for `z = z_{α/2}` the limit is `1 - α`. The second-order definition needs `A`
+eventually nonzero, so exact Pareto data are excluded. -/
 theorem tendsto_measure_mem_hillInterval {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i))
     (hindep : iIndepFun X P) (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {γ ρ : ℝ}
     {A : ℝ → ℝ} (hγ : 0 < γ)
@@ -112,7 +113,8 @@ lemma continuousAt_gpdReturnLevelVar {ξ σ ζ N : ℝ} (hξ : ξ ≠ 0) (hNζ :
 hypotheses of `tendstoInDistribution_gpdReturnLevel` (maximum likelihood over a compact set,
 `ξ₀ > -1/2`, `ξ₀ ≠ 0`, known exceedance probability `ζ`) and `N ζ > 1`, let
 `ŝₙ = (∇x_Nᵀ I⁻¹ ∇x_N)^{1/2}` be the plug-in standard error at the MLE. The coverage probability
-of `[x̂_N - z ŝₙ/√n, x̂_N + z ŝₙ/√n]` converges to `N(0, 1)([-z, z])`. -/
+of `[x̂_N - z ŝₙ/√n, x̂_N + z ŝₙ/√n]` converges to `N(0, 1)([-z, z])`. Here `u`, `ζ` and `N` are
+constants and the `Xᵢ` exact iid GPD excesses, as in `tendstoInDistribution_gpdReturnLevel`. -/
 theorem tendsto_measure_mem_gpdReturnLevelInterval {ξ₀ σ₀ u ζ N : ℝ} {X : ℕ → Ω → ℝ}
     {K : Set (ℝ × ℝ)} (hK : IsCompact K)
     (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K)

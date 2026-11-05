@@ -54,8 +54,9 @@ theorem integrable_sq_ferroSegersLaw {θ : ℝ} (hθ0 : 0 < θ) :
     Integrable (fun x : ℝ => x ^ 2) (ferroSegersLaw θ) :=
   integrable_pow_ferroSegersLaw hθ0 2
 
-/-- **No clustering**: with extremal index `θ = 1` the Ferro–Segers law is the standard
-exponential law ([Ferro–Segers 2003, Theorem 1]). -/
+/-- **No clustering**: at `θ = 1` the mixture `ferroSegersLaw` is the standard exponential law. This
+is an identity about the definition; [Ferro–Segers 2003, Theorem 1], which motivates the law, is
+not proved. -/
 @[simp] theorem ferroSegersLaw_one : ferroSegersLaw 1 = expMeasure 1 := by
   simp [ferroSegersLaw]
 

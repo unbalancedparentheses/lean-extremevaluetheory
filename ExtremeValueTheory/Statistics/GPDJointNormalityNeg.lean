@@ -542,7 +542,8 @@ theorem gpdScore_sub_eq_segHess_neg {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhdNeg �
     rfl
 
 /-- **The one-sided bound along the segment**: the segment-averaged Hessian quadratic form is at
-most `C₁ |t|²`, whatever the position of the observation relative to the endpoints. -/
+most `C₁ |t|²`, for an observation in the support of both `θ₀` and `θ`, however close to their
+endpoints. -/
 theorem segHess_quad_le_neg {C₁ : ℝ} (hC : ∀ θ ∈ gpdNbhdNeg ξ₀ σ₀, gpdQuadCoef θ ≤ C₁)
     {θ : ℝ × ℝ} (hθ : θ ∈ gpdNbhdNeg ξ₀ σ₀) {x : ℝ} (hx : 0 ≤ x) (h0 : 0 < σ₀ + ξ₀ * x)
     (h1 : 0 < θ.2 + θ.1 * x) (t₁ t₂ : ℝ) :
@@ -825,8 +826,8 @@ theorem segHess_dev_le {H : ℝ → ℝ → ℝ → ℝ}
     linarith
 
 /-- **The deviation of the segment-averaged Hessian quadratic form** (one-sided): at most
-`2ε |t|²` on the good set and `(C₁ + 8 Kc) gpdDom |t|²` near the endpoint, whatever the
-position of the observation relative to the endpoint of `θ`. -/
+`2ε |t|²` on the good set and `(C₁ + 8 Kc) gpdDom |t|²` near the endpoint, for an observation in
+the support of `θ`, however close to its endpoint. -/
 theorem segHess_quad_dev_le {Kc C₁ : ℝ} (hC₁ : 0 ≤ C₁)
     (hK : ∀ θ ∈ gpdNbhdNeg ξ₀ σ₀, gpdHessCoef θ ≤ Kc)
     (hC : ∀ θ ∈ gpdNbhdNeg ξ₀ σ₀, gpdQuadCoef θ ≤ C₁) {c ε δ : ℝ} (hε : 0 ≤ ε)

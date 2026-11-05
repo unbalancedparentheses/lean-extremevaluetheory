@@ -41,12 +41,21 @@ Hypotheses throughout: `α > 0`, iid Pareto(`α`) innovations `Z ≥ 0` (`hZ`, `
   condition `AC(rₙ)` (all levels `aₙ x`, `n P(X_0 > aₙ) → τ > 0`) holds **iff** `ρ < γ / α`.
 * `powEchoProcess_critical`: for `rₙ / n^(γ/α) → c > 0`, the cluster ratio tends to
   `(1 + φ_{α/γ}(κ)) / 2` with `κ = (2/τ)^(γ/α) / c`, the late-return mass is `(1 - φ_{α/γ}(κ)) / 2`;
-  forward anticlustering fails when `κ < 1` and anticlustering holds when `κ > 1`.
+  at the one level sequence `uₙ`, forward anticlustering fails when `κ < 1` and anticlustering
+  holds when `κ > 1`.
+* `powEchoProcess_antiClustering_iff_critical`: for `rₙ / n^(γ/α) → c ≥ 0`, `AC(rₙ)` holds **iff**
+  `c = 0` (`powEchoProcess_not_antiClustering_critical`,
+  `powEchoProcess_antiClustering_of_tendsto_zero`).
 
 ## Remarks
 
-* At `ρ = γ / α` the answer depends on constants: with `rₙ ~ c n^(γ/α)`, `AC` fails for
-  `c > (2/τ)^(γ/α)` and holds for `c < (2/τ)^(γ/α)`; the boundary case is not decided here.
+* At `ρ = γ / α`, for `rₙ ~ c n^(γ/α)` with `c > 0`, `powEchoProcess_critical` concerns one level
+  sequence `uₙ`: forward anticlustering at `uₙ` fails for `c > (2/τ)^(γ/α)` and anticlustering
+  at `uₙ` holds for `c < (2/τ)^(γ/α)`; the case of equality is not decided for that one level
+  sequence. The condition `AC(rₙ)`, at all levels `aₙ x`, does not depend on `c`: it fails for
+  every `c > 0` (`powEchoProcess_not_antiClustering_critical`), since the constant for the
+  level `aₙ x` is `κ(x) = x^γ (2/τ)^(γ/α) / c`, which is below `1` for small `x`. It holds when
+  `rₙ / n^(γ/α) → 0` (`powEchoProcess_antiClustering_of_tendsto_zero`).
 * The `β`-mixing of the echo process and the incompatibility of anticlustering with the block
   condition `A(uₙ)` are in `Dependence/EchoMixing.lean`.
 -/
@@ -712,7 +721,8 @@ include hα hZ hind hlaw hpos in
 `rₙ / n^(γ/α) → c > 0`, the echo lag over block length is `uₙ^γ / rₙ → κ = (2/τ)^(γ/α) / c`, the
 cluster ratio tends to `(1 + φ_{α/γ}(κ)) / 2` and the late-return mass is `(1 - φ_{α/γ}(κ)) / 2`.
 For `κ < 1` (i.e. `c > (2/τ)^(γ/α)`) this lies strictly between `θ = 1/2` and `ϑ = 1`, and
-forward anticlustering fails; for `κ > 1` anticlustering holds. -/
+forward anticlustering fails; for `κ > 1` anticlustering holds. All this is along the one level
+sequence `uₙ`; for `AC(rₙ)` at all levels see `powEchoProcess_not_antiClustering_critical`. -/
 theorem powEchoProcess_critical (hγ : 0 < γ) (hγα : γ < α) {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
     (hτ : Tendsto (fun n : ℕ => n * P.real {ω | u n < echoProcess (powLag γ) Z 0 ω}) atTop (𝓝 τ))
     {r : ℕ → ℕ} {c : ℝ} (hc : 0 < c)
@@ -785,6 +795,137 @@ theorem powEchoProcess_critical (hγ : 0 < γ) (hγα : γ < α) {u : ℕ → �
     filter_upwards [hκ.eventually (lt_mem_nhds hκ1), hrr.eventually_gt_atTop 0] with n hn hrn
     have hR : (0 : ℝ) < r n := by exact_mod_cast hrn
     exact (one_le_div hR).1 hn.le
+
+include hα hZ hind hlaw hpos in
+/-- For a general echo lag: if `n P(X_0 > aₙ) → τ` then `n P(X_0 > aₙ x) → τ x^(-α)` for every
+`x > 0` (the marginal tail is regularly varying with index `-α`). -/
+theorem tendsto_mul_measureReal_lt_echoProcess_mul (hLm : Measurable L) (hL1 : ∀ z, 1 ≤ L z)
+    (hLinf : Tendsto L atTop atTop) {a : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
+    (hτ : Tendsto (fun n : ℕ => n * P.real {ω | a n < echoProcess L Z 0 ω}) atTop (𝓝 τ))
+    {x : ℝ} (hx : 0 < x) :
+    Tendsto (fun n : ℕ => n * P.real {ω | a n * x < echoProcess L Z 0 ω}) atTop
+      (𝓝 (τ * x ^ (-α))) := by
+  obtain ⟨ha, hnb, -⟩ := echoProcess_levels hα hZ hind hlaw hpos hLm hL1 hLinf hτ0 hτ
+  have hax : Tendsto (fun n => a n * x) atTop atTop := ha.atTop_mul_const hx
+  have hratio := (tendsto_measureReal_lt_echoProcess_div hα hZ hind hlaw hLm hL1 0).comp hax
+  have h := (hnb.mul_const (x ^ (-α))).mul hratio
+  have hlim : τ / 2 * x ^ (-α) * 2 = τ * x ^ (-α) := by ring
+  rw [hlim] at h
+  refine h.congr' ?_
+  filter_upwards [ha.eventually_gt_atTop 0] with n han
+  have hb : (a n * x) ^ (-α) ≠ 0 := (Real.rpow_pos_of_pos (mul_pos han hx) _).ne'
+  simp only [Function.comp_apply]
+  rw [Real.mul_rpow han.le hx.le] at hb ⊢
+  field_simp
+
+include hα hZ hind hlaw hpos in
+/-- **`AC(rₙ)` fails on the whole critical scale.** With `n P(X_0 > aₙ) → τ > 0` and
+`rₙ / n^(γ/α) → c > 0`, the anticlustering condition at all levels `aₙ x` fails for **every**
+`c > 0`. Indeed `powEchoProcess_critical` at the level `aₙ x`, for which
+`n P(X_0 > aₙ x) → τ x^(-α)`, has `κ(x) = x^γ (2/τ)^(γ/α) / c`, which is below `1` for small `x`,
+so that forward anticlustering fails at that level. The dependence on `c` in
+`powEchoProcess_critical` concerns one level sequence only. -/
+theorem powEchoProcess_not_antiClustering_critical (hγ : 0 < γ) (hγα : γ < α) {a : ℕ → ℝ} {τ : ℝ}
+    (hτ0 : 0 < τ)
+    (hτ : Tendsto (fun n : ℕ => n * P.real {ω | a n < echoProcess (powLag γ) Z 0 ω}) atTop (𝓝 τ))
+    {r : ℕ → ℕ} {c : ℝ} (hc : 0 < c)
+    (hrc : Tendsto (fun n : ℕ => (r n : ℝ) / (n : ℝ) ^ (γ / α)) atTop (𝓝 c)) :
+    ¬ AntiClustering P (echoProcess (powLag γ) Z) a r := by
+  intro hAC
+  have hc2 : 0 < 2 / c := by positivity
+  -- the level `aₙ x` with `n P(X_0 > aₙ x) → τ' = 2 (2/c)^(α/γ)` has `κ = 1/2`
+  set τ' : ℝ := 2 * (2 / c) ^ (α / γ) with hτ'def
+  have hτ' : 0 < τ' := by positivity
+  set x : ℝ := (τ / τ') ^ (1 / α) with hxdef
+  have hx : 0 < x := by positivity
+  have hxτ : τ * x ^ (-α) = τ' := by
+    rw [hxdef, ← Real.rpow_mul (by positivity), show 1 / α * -α = -1 by field_simp, Real.rpow_neg_one,
+      inv_div]
+    field_simp
+  have hlev := tendsto_mul_measureReal_lt_echoProcess_mul hα hZ hind hlaw hpos (measurable_powLag γ)
+    (one_le_powLag γ) (tendsto_powLag hγ) hτ0 hτ hx
+  rw [hxτ] at hlev
+  have hκ : (2 / τ') ^ (γ / α) / c = 1 / 2 := by
+    have hbase : 2 / τ' = ((2 / c) ^ (α / γ))⁻¹ := by rw [hτ'def]; field_simp
+    rw [hbase, Real.inv_rpow (by positivity), ← Real.rpow_mul hc2.le,
+      show α / γ * (γ / α) = 1 by field_simp, Real.rpow_one, inv_div]
+    field_simp
+  have hcrit := powEchoProcess_critical hα hZ hind hlaw hpos hγ hγα hτ' hlev hc hrc
+  exact hcrit.2.2.1 (by rw [hκ]; norm_num) (hAC x hx).forward
+
+include hα hZ hind hlaw hpos in
+/-- **`AC(rₙ)` holds strictly below the critical scale.** With `n P(X_0 > aₙ) → τ > 0` and
+`rₙ / n^(γ/α) → 0`, the anticlustering condition holds at all levels `aₙ x`. Here `rₙ → ∞` is not
+assumed, and `log rₙ / log n` need not converge, so that this also covers `ρ = γ / α`, for
+example `rₙ ~ n^(γ/α) / log n`. -/
+theorem powEchoProcess_antiClustering_of_tendsto_zero (hγ : 0 < γ) (hγα : γ < α) {a : ℕ → ℝ}
+    {τ : ℝ} (hτ0 : 0 < τ)
+    (hτ : Tendsto (fun n : ℕ => n * P.real {ω | a n < echoProcess (powLag γ) Z 0 ω}) atTop (𝓝 τ))
+    {r : ℕ → ℕ} (hrc : Tendsto (fun n : ℕ => (r n : ℝ) / (n : ℝ) ^ (γ / α)) atTop (𝓝 0)) :
+    AntiClustering P (echoProcess (powLag γ) Z) a r := by
+  intro x hx
+  have hτx : 0 < τ * x ^ (-α) := by positivity
+  have hlev := tendsto_mul_measureReal_lt_echoProcess_mul hα hZ hind hlaw hpos (measurable_powLag γ)
+    (one_le_powLag γ) (tendsto_powLag hγ) hτ0 hτ hx
+  obtain ⟨hu, hnb, -⟩ := echoProcess_levels hα hZ hind hlaw hpos (measurable_powLag γ)
+    (one_le_powLag γ) (tendsto_powLag hγ) hτx hlev
+  set ρ := γ / α
+  have hρ0 : 0 < ρ := div_pos hγ hα
+  have hρ1 : ρ < 1 := (div_lt_one hα).2 hγα
+  have hb : 0 < τ * x ^ (-α) / 2 := by positivity
+  -- `rₙ uₙ^(-α) = (rₙ / n^ρ) n^(ρ - 1) (n uₙ^(-α)) → 0`
+  have hnρ1 : Tendsto (fun n : ℕ => (n : ℝ) ^ (ρ - 1)) atTop (𝓝 0) := by
+    have := (tendsto_rpow_neg_atTop (show 0 < 1 - ρ by linarith)).comp tendsto_natCast_atTop_atTop
+    refine this.congr fun n => ?_
+    simp only [Function.comp_apply, neg_sub]
+  have hrb : Tendsto (fun n : ℕ => (r n : ℝ) * (a n * x) ^ (-α)) atTop (𝓝 0) := by
+    have h := (hrc.mul hnρ1).mul hnb
+    simp only [mul_zero, zero_mul] at h
+    refine h.congr' ?_
+    filter_upwards [eventually_gt_atTop 0] with n hn
+    have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+    have h1 : (n : ℝ) ^ (ρ - 1) = (n : ℝ) ^ ρ / n := by rw [Real.rpow_sub_one hn'.ne']
+    have h2 : (n : ℝ) ^ ρ ≠ 0 := (Real.rpow_pos_of_pos hn' _).ne'
+    rw [h1]
+    field_simp
+  -- `rₙ / uₙ^γ = (rₙ / n^ρ) (n uₙ^(-α))^ρ → 0`
+  have hratio : Tendsto (fun n : ℕ => (r n : ℝ) / (a n * x) ^ γ) atTop (𝓝 0) := by
+    have hpow := hnb.rpow_const (p := ρ) (Or.inl hb.ne')
+    have h := hrc.mul hpow
+    rw [zero_mul] at h
+    refine h.congr' ?_
+    filter_upwards [hu.eventually_gt_atTop 0, eventually_gt_atTop 0] with n hun hn
+    have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+    have hb' : 0 < (a n * x) ^ (-α) := Real.rpow_pos_of_pos hun _
+    have e1 : ((n : ℝ) * (a n * x) ^ (-α)) ^ ρ = (n : ℝ) ^ ρ / (a n * x) ^ γ := by
+      rw [Real.mul_rpow hn'.le hb'.le, ← Real.rpow_mul hun.le,
+        show -α * ρ = -γ by simp only [ρ]; field_simp, Real.rpow_neg hun.le]
+      rfl
+    have h2 : (n : ℝ) ^ ρ ≠ 0 := (Real.rpow_pos_of_pos hn' _).ne'
+    have h3 : (a n * x) ^ γ ≠ 0 := (Real.rpow_pos_of_pos hun _).ne'
+    rw [e1]
+    field_simp
+  refine antiClusteringAt_powEchoProcess hα hZ hind hlaw hpos hγ.le hu hrb ?_
+  filter_upwards [hratio.eventually (gt_mem_nhds one_pos), hu.eventually_gt_atTop 0] with n hn hun
+  have h3 : 0 < (a n * x) ^ γ := Real.rpow_pos_of_pos hun _
+  exact ((div_lt_one h3).1 hn).le
+
+include hα hZ hind hlaw hpos in
+/-- **The boundary of `AC(rₙ)` at `ρ = γ / α`.** With `n P(X_0 > aₙ) → τ > 0` and
+`rₙ / n^(γ/α) → c ≥ 0`, the anticlustering condition at all levels `aₙ x` holds **iff** `c = 0`. -/
+theorem powEchoProcess_antiClustering_iff_critical (hγ : 0 < γ) (hγα : γ < α) {a : ℕ → ℝ} {τ : ℝ}
+    (hτ0 : 0 < τ)
+    (hτ : Tendsto (fun n : ℕ => n * P.real {ω | a n < echoProcess (powLag γ) Z 0 ω}) atTop (𝓝 τ))
+    {r : ℕ → ℕ} {c : ℝ} (hc : 0 ≤ c)
+    (hrc : Tendsto (fun n : ℕ => (r n : ℝ) / (n : ℝ) ^ (γ / α)) atTop (𝓝 c)) :
+    AntiClustering P (echoProcess (powLag γ) Z) a r ↔ c = 0 := by
+  constructor
+  · intro hAC
+    by_contra hne
+    exact powEchoProcess_not_antiClustering_critical hα hZ hind hlaw hpos hγ hγα hτ0 hτ
+      (lt_of_le_of_ne hc (Ne.symm hne)) hrc hAC
+  · rintro rfl
+    exact powEchoProcess_antiClustering_of_tendsto_zero hα hZ hind hlaw hpos hγ hγα hτ0 hτ hrc
 
 end PowEchoPoly
 

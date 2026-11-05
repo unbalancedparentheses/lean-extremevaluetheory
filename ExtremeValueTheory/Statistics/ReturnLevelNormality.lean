@@ -289,6 +289,35 @@ theorem tendsto_gpdReturnLevel_zero (u σ : ℝ) {ζ N : ℝ} (hNζ : 0 < N * ζ
     Tendsto (fun ξ => gpdReturnLevel u ξ σ ζ N) (𝓝 0) (𝓝 (gpdReturnLevel u 0 σ ζ N)) :=
   (continuousAt_const.add (continuousAt_const.mul (continuousAt_boxCox_shape_zero hNζ))).tendsto
 
+/-- **The defining property of the POT return level** ([Coles, §4.3.3]): for `N ζ > 0` the survival
+function of the excess law at `x_N - u` is `1 / (N ζ)`, so that in the model
+`P(X > x) = ζ Ḡ(x - u)` the level `x_N` is exceeded with probability `1 / N`. -/
+theorem gpdSurvivalAll_gpdReturnLevel_sub {ξ σ u ζ N : ℝ} (hσ : 0 < σ) (hNζ : 0 < N * ζ) :
+    gpdSurvivalAll ξ σ (gpdReturnLevel u ξ σ ζ N - u) = (N * ζ)⁻¹ := by
+  simp only [gpdSurvivalAll, gpdReturnLevel, add_sub_cancel_left]
+  split_ifs with hξ
+  · subst hξ
+    have e : -(σ * log (N * ζ)) / σ = -log (N * ζ) := by field_simp
+    rw [boxCox_zero, e, exp_neg, exp_log hNζ]
+  · have e : 1 + ξ * (σ * boxCox ξ (N * ζ)) / σ = (N * ζ) ^ ξ := by
+      rw [boxCox_of_ne hξ]
+      field_simp
+      ring
+    rw [e, max_eq_left (rpow_nonneg hNζ.le _), ← rpow_mul hNζ.le,
+      show ξ * -(1 / ξ) = -1 by field_simp, rpow_neg_one]
+
+/-- The defining property of the POT return level as a probability, for `N ζ > 1`, where
+`x_N - u ≥ 0`: `P_{GPD}(X > x_N - u) = 1 / (N ζ)`. -/
+theorem measureReal_gpdMeasure_Ioi_gpdReturnLevel_sub {ξ σ u ζ N : ℝ} (hσ : 0 < σ)
+    (hNζ : 1 < N * ζ) :
+    (gpdMeasure ξ σ).real (Ioi (gpdReturnLevel u ξ σ ζ N - u)) = (N * ζ)⁻¹ := by
+  have h0 : 0 < N * ζ := one_pos.trans hNζ
+  have hx : 0 ≤ gpdReturnLevel u ξ σ ζ N - u := by
+    rw [gpdReturnLevel, add_sub_cancel_left]
+    exact (mul_pos hσ (boxCox_pos_of_one_lt hNζ)).le
+  rw [measureReal_def, gpdMeasure_Ioi hσ hx, gpdSurvivalAll_gpdReturnLevel_sub hσ h0,
+    ENNReal.toReal_ofReal (inv_pos.2 h0).le]
+
 /-- The GPD return level as a function of `(ξ, σ) ∈ ℝ²`, with `u`, `ζ` and `N` fixed. -/
 noncomputable def gpdReturnLevelVec (u ζ N : ℝ) (v : EuclideanSpace ℝ (Fin 2)) : ℝ :=
   gpdReturnLevel u (v 0) (v 1) ζ N
@@ -410,7 +439,8 @@ lemma tendsto_sqrt_natCast_atTop : Tendsto (fun n : ℕ => √(n : ℝ)) atTop a
 /-- **Asymptotic normality of the GEV return level** ([Coles, §3.3.3]). If estimators
 `θ̂ₙ = (ξ̂ₙ, μ̂ₙ, σ̂ₙ)` of the GEV parameters satisfy `√n (θ̂ₙ - θ₀) ⇒ N(0, V)` and `ξ₀ ≠ 0`, then
 the plug-in `m`-block return level satisfies `√n (ẑ_m - z_m) ⇒ N(0, ∇z_mᵀ V ∇z_m)`, with the
-gradient `gevReturnLevelGrad` (`gevReturnLevelGrad_eq`). -/
+gradient `gevReturnLevelGrad` (`gevReturnLevelGrad_eq`). This is the delta method: no data appear,
+`θ̂ₙ` and `V` are arbitrary, and parameter normality is a hypothesis. -/
 theorem tendstoInDistribution_gevReturnLevel {ξ₀ μ₀ σ₀ m : ℝ} (hξ₀ : ξ₀ ≠ 0) (hm : 1 < m)
     {θh : ℕ → Ω → ℝ × ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P)
     {V : Matrix (Fin 3) (Fin 3) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 3)}
@@ -437,7 +467,9 @@ theorem tendstoInDistribution_gevReturnLevel {ξ₀ μ₀ σ₀ m : ℝ} (hξ₀
 
 /-- **Asymptotic normality of the Gumbel return level** ([Coles, §3.3.3]): if
 `√n (μ̂ₙ - μ₀, σ̂ₙ - σ₀) ⇒ N(0, V)`, then `√n (ẑ_m - z_m) ⇒ N(0, ∇zᵀ V ∇z)`,
-`∇z = (1, -log y_m)`, `y_m = -log(1 - 1/m)`. -/
+`∇z = (1, -log y_m)`, `y_m = -log(1 - 1/m)`. This is the delta method: no data appear, `θ̂ₙ` and `V`
+are arbitrary, and parameter normality is a hypothesis. `m > 1` is not assumed: the statement stays
+true for `m ≤ 1`, since the level is linear in `(μ, σ)`, but it is then not a return level. -/
 theorem tendstoInDistribution_gumbelReturnLevel {μ₀ σ₀ m : ℝ}
     {θh : ℕ → Ω → ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P)
     {V : Matrix (Fin 2) (Fin 2) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 2)}
@@ -506,7 +538,9 @@ measurable maximizers of the GPD log-likelihood over `K`. For a known exceedance
 
   `√n (x̂_N - x_N) ⇒ N(0, ∇x_Nᵀ I(θ₀)⁻¹ ∇x_N)`,
 
-the variance being `gpdReturnLevelVar ξ₀ σ₀ ζ N` (`dotProduct_gpdReturnLevelGrad`). -/
+the variance being `gpdReturnLevelVar ξ₀ σ₀ ζ N` (`dotProduct_gpdReturnLevelGrad`). Here `u`, `ζ` and
+`N` are constants, unconnected to the sample: the `Xᵢ` are exact iid GPD excesses of deterministic
+number `n`, and no parent law, exceedance count or threshold error appears. -/
 theorem tendstoInDistribution_gpdReturnLevel {ξ₀ σ₀ u ζ N : ℝ} {X : ℕ → Ω → ℝ}
     {K : Set (ℝ × ℝ)} (hK : IsCompact K)
     (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K)
@@ -536,7 +570,8 @@ lemma measurable_gpdReturnLevel₃ (u N : ℝ) :
 ([Coles, §4.3.3]). If `√n (ζ̂ₙ - ζ₀, ξ̂ₙ - ξ₀, σ̂ₙ - σ₀) ⇒ N(0, V)`, `ξ₀ ≠ 0`, `N ζ₀ > 0`, then
 `√n (x̂_N - x_N) ⇒ N(0, ∇x_Nᵀ V ∇x_N)` with `∇x_N = (σ N^ξ ζ^{ξ-1}, σ ∂_ξ h, h)`
 (`gpdReturnLevelGrad₃`, `gpdReturnLevelGrad₃_zero`). Coles takes `V` block diagonal, with
-`ζ̂` the exceedance frequency (`Var = ζ(1 - ζ)`) and the GPD inverse information. -/
+`ζ̂` the exceedance frequency (`Var = ζ(1 - ζ)`) and the GPD inverse information. This is the delta
+method: no data appear, and joint normality is a hypothesis. -/
 theorem tendstoInDistribution_gpdReturnLevel₃ {ζ₀ ξ₀ σ₀ u N : ℝ} (hξ₀ : ξ₀ ≠ 0)
     (hNζ : 0 < N * ζ₀) {θh : ℕ → Ω → ℝ × ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P)
     {V : Matrix (Fin 3) (Fin 3) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 3)}
