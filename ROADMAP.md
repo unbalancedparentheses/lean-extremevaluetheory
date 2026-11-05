@@ -77,8 +77,8 @@ Only the maintainer can do these:
 - [ ] Read the paper, then submit it to arXiv (check early whether an endorsement is needed)
 - [ ] Send the expert emails (drafted), and the one to Hirata
 - [ ] Post on the Lean Zulip, and open the Mathlib pull requests
-- [ ] Get de Haan–Ferreira, Embrechts et al., Coles and Kulik–Soulier: the agents had no access to the books, so some theorem numbers and
-  Coles's figures are from memory, and the novelty check needs Kulik–Soulier
+- [ ] Get the books (de Haan–Ferreira, Embrechts et al., Coles, Kulik–Soulier first): the agents had no access to them, so some theorem
+  numbers and Coles's figures are from memory, and the novelty check needs Kulik–Soulier. Then review the specification against them (C)
 - [ ] Decide on the deprecation policy, the Code of Conduct contact, Palomar, and a Hugging Face account for the dataset
 
 **First release: `v0.9.0`, before the work in flight** (decided 2026-11-04). A citable release with
@@ -433,8 +433,18 @@ Second survey (2026-10-25, [`docs/OPEN_PROBLEMS_SURVEY2.md`](docs/OPEN_PROBLEMS_
 - [x] Specification tests for return levels, confidence intervals, SRE/GARCH and extremal-index estimators
 - [x] Comparison with Hirata's independent Isabelle statements ([`docs/HIRATA_COMPARISON.md`](docs/HIRATA_COMPARISON.md))
 - [x] A review deadline in CI, the Comparator challenge, and the catalogue's check
-- [ ] A mechanized comparison with Hirata's statements is out of reach across provers; ask Hirata to read ours instead
-- [ ] Check every citation against the books (no agent had access), and record which were checked
+- [ ] Ask Hirata to read the comparison: a mechanized comparison across provers is out of reach
+- [ ] **Review the specification against the mathematics in the books**, once the maintainer has them (de Haan–Ferreira, Embrechts et al.,
+      Coles, Kulik–Soulier, Resnick, Bingham–Goldie–Teugels, Leadbetter et al.). For each catalogue entry, take the theorem as
+      the book states it and compare it with the Lean: every hypothesis, the conclusion, the conventions and any constants. So far, audits and
+      reviews have compared the Lean with docstrings, papers we could reach and memory, never with the books themselves.
+      - Record per entry: book, theorem number, the verdict and any difference, in `catalogue/` and [`FAITHFULNESS.md`](FAITHFULNESS.md);
+      - correct theorem numbers and statuses, and confirm or replace known-answer values recalled from memory (Coles's figures);
+      - settle the open doubts: the Pickands indexing against dHF 3.3.5, the citations the seventh audit flagged (dHF 2.4.8,
+        EKM 3.4.13(e), Billingsley 12.3), and the novelty check against Kulik–Soulier's examples;
+      - keep book text out of the repository beyond short quotations: record references and our own statements.
+
+      This complements expert review and does not replace it: an AI comparing with a book is still an AI's judgement.
 - [ ] **Human expert review** with [`docs/REVIEW.md`](docs/REVIEW.md): the one check that is
       independent of the AI that wrote the statements. Send to two or three extreme value theorists
       (e.g. Kulik, Segers, Drees, Kytölä's group), fix what they find, and list the reviewers and the
