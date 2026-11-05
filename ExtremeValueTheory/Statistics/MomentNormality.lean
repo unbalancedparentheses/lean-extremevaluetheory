@@ -49,10 +49,24 @@ whose first term is asymptotically `N(0, Var g(E_0)) = N(0, 1 + γ²)`
 consists of products of the tight sequences `√k (m_j - j!)` with factors tending to `0` in
 probability. Slutsky's lemma and the quantile transform conclude.
 
-## Scope
+## Scope and comparison with the source
 
-The case `γ ≤ 0` of [dHF, Theorem 3.5.4] needs the second-order condition for `U` itself (not
-for `log U`) and the tail quantile process; it is not covered here.
+This file proves the case `γ > 0` of [dHF, Theorem 3.5.4] only.
+
+* **The second-order hypothesis is the ratio form** `IsSecondOrderRegularlyVarying U γ ρ A`, that
+  is, a condition on `U(xt) / U(t)`. The textbook states its condition for `U` through
+  `(U(xt) - U(t)) / a(t)`. The two have different auxiliary functions, so `λ` and the bias
+  `momentBias γ ρ` here are those of the ratio form, and they are not stated in terms of the
+  textbook's `A`. The translation between the two conditions is not formalized.
+* **The case `γ ≤ 0` is not proved.** There the asymptotic variance is different for `γ < 0`, namely
+  `(1 - γ)² (1 - 2γ) (1 - γ + 6γ²) / ((1 - 3γ) (1 - 4γ))`. What is missing:
+  - uniform (Drees-type) inequalities for second-order *extended* regular variation, needed to
+    dominate the summands in `tendstoInMeasure_meanExcess_fun` (the library has them only for the
+    ratio form, `IsSecondOrderRegularlyVarying.exists_bound`);
+  - the second-order expansion of `log U` when `a(t) / U(t) → 0`, with the normalization of
+    `M^{(j)}` by `(a(n/k) / U(n/k))^j` in place of the constants of the case `γ > 0`;
+  - the case analysis of the bias according to the relative sizes of `γ` and `ρ`, and the treatment
+    of `γ = 0`.
 
 ## References
 
@@ -363,35 +377,6 @@ theorem momentEstimator_expansion {γ r M₁ M₂ : ℝ} (hγ : γ ≠ 0) (h2 : 
 
 end Decomposition
 
-/-! ### Convergence in probability: arithmetic with prescribed limits -/
-
-section Arith
-
-variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} {ι : Type*} {l : Filter ι}
-
-theorem TendstoInMeasure.add' {f g : ι → Ω → ℝ} {a b c : ℝ}
-    (hf : TendstoInMeasure P f l (fun _ => a)) (hg : TendstoInMeasure P g l (fun _ => b))
-    (h : a + b = c) : TendstoInMeasure P (fun i ω => f i ω + g i ω) l (fun _ => c) :=
-  h ▸ tendstoInMeasure_comp₂ hf hg (φ := fun p => p.1 + p.2) continuous_add.continuousAt
-
-theorem TendstoInMeasure.mul' {f g : ι → Ω → ℝ} {a b c : ℝ}
-    (hf : TendstoInMeasure P f l (fun _ => a)) (hg : TendstoInMeasure P g l (fun _ => b))
-    (h : a * b = c) : TendstoInMeasure P (fun i ω => f i ω * g i ω) l (fun _ => c) :=
-  h ▸ tendstoInMeasure_mul hf hg
-
-theorem TendstoInMeasure.const_mul' {f : ι → Ω → ℝ} {a : ℝ} (c : ℝ)
-    (hf : TendstoInMeasure P f l (fun _ => a)) :
-    TendstoInMeasure P (fun i ω => c * f i ω) l (fun _ => c * a) :=
-  tendstoInMeasure_comp hf (φ := fun x => c * x) (continuous_const.mul continuous_id).continuousAt
-
-theorem TendstoInMeasure.comp₂' {f g : ι → Ω → ℝ} {a b c : ℝ}
-    (hf : TendstoInMeasure P f l (fun _ => a)) (hg : TendstoInMeasure P g l (fun _ => b))
-    {φ : ℝ × ℝ → ℝ} (hφ : ContinuousAt φ (a, b)) (h : φ (a, b) = c) :
-    TendstoInMeasure P (fun i ω => φ (f i ω, g i ω)) l (fun _ => c) :=
-  h ▸ tendstoInMeasure_comp₂ hf hg hφ
-
-end Arith
-
 /-! ### Asymptotic normality on the exponential scale -/
 
 section General
@@ -510,14 +495,14 @@ theorem tendstoInDistribution_momentEstimator_comp_exp {E : ℕ → Ω → ℝ}
   have hBne : ∀ᶠ n in atTop, B (n / k n) ≠ 0 := hnk.eventually h2B.eventually_ne_zero
   have hV : TendstoInMeasure P (fun n ω => √(k n : ℝ) *
       B (exp (orderStat (fun i : Fin n => E i ω) (k n)))) atTop (fun _ => lam) := by
-    have h := TendstoInMeasure.mul' (tendstoInMeasure_const_of_tendsto (P := P) hlamB) hQ
+    have h := tendstoInMeasure_mul_of_eq (tendstoInMeasure_const_of_tendsto (P := P) hlamB) hQ
       (mul_one lam)
     refine tendstoInMeasure_of_eventuallyEq h ?_
     filter_upwards [hBne] with n hn ω
     field_simp
   have hBs : TendstoInMeasure P (fun n ω =>
       B (exp (orderStat (fun i : Fin n => E i ω) (k n)))) atTop (fun _ => 0) := by
-    have h := TendstoInMeasure.mul' (tendstoInMeasure_const_of_tendsto (P := P) hBnk) hQ
+    have h := tendstoInMeasure_mul_of_eq (tendstoInMeasure_const_of_tendsto (P := P) hBnk) hQ
       (zero_mul 1)
     refine tendstoInMeasure_of_eventuallyEq h ?_
     filter_upwards [hBne] with n hn ω
@@ -593,53 +578,53 @@ theorem tendstoInDistribution_momentEstimator_comp_exp {E : ℕ → Ω → ℝ}
   set M2 : ℕ → Ω → ℝ := fun n ω => γ ^ 2 * m2 n ω + 2 * γ * Bs n ω * W2 n ω +
     Bs n ω * Bs n ω * W3 n ω with hM2def
   have hM1 : TendstoInMeasure P M1 atTop (fun _ => γ) :=
-    TendstoInMeasure.add' (TendstoInMeasure.const_mul' γ hm1) (TendstoInMeasure.mul' hBs hW1 (zero_mul _))
+    tendstoInMeasure_add_of_eq (tendstoInMeasure_const_mul γ hm1) (tendstoInMeasure_mul_of_eq hBs hW1 (zero_mul _))
       (by ring)
   have hM2 : TendstoInMeasure P M2 atTop (fun _ => 2 * γ ^ 2) :=
-    TendstoInMeasure.add' (TendstoInMeasure.add' (TendstoInMeasure.const_mul' (γ ^ 2) hm2)
-      (TendstoInMeasure.mul' (TendstoInMeasure.const_mul' (2 * γ) hBs) hW2 rfl) rfl)
-      (TendstoInMeasure.mul' (TendstoInMeasure.mul' hBs hBs rfl) hW3 rfl) (by ring)
+    tendstoInMeasure_add_of_eq (tendstoInMeasure_add_of_eq (tendstoInMeasure_const_mul (γ ^ 2) hm2)
+      (tendstoInMeasure_mul_of_eq (tendstoInMeasure_const_mul (2 * γ) hBs) hW2 rfl) rfl)
+      (tendstoInMeasure_mul_of_eq (tendstoInMeasure_mul_of_eq hBs hBs rfl) hW3 rfl) (by ring)
   have hγ2 : (2 * γ ^ 2 - γ ^ 2) ≠ 0 := by
     rw [show 2 * γ ^ 2 - γ ^ 2 = γ ^ 2 by ring]; positivity
   have hDm : TendstoInMeasure P (fun n ω => M2 n ω - M1 n ω ^ 2) atTop (fun _ => γ ^ 2) :=
-    TendstoInMeasure.comp₂' hM1 hM2 (φ := fun p => p.2 - p.1 ^ 2) (by fun_prop) (by ring)
+    tendstoInMeasure_comp₂_of_eq hM1 hM2 (φ := fun p => p.2 - p.1 ^ 2) (by fun_prop) (by ring)
   have hc : TendstoInMeasure P (fun n ω => 2 / γ - (M1 n ω + γ) / (M2 n ω - M1 n ω ^ 2)) atTop
       (fun _ => 0) :=
-    TendstoInMeasure.comp₂' hM1 hM2 (φ := fun p => 2 / γ - (p.1 + γ) / (p.2 - p.1 ^ 2))
+    tendstoInMeasure_comp₂_of_eq hM1 hM2 (φ := fun p => 2 / γ - (p.1 + γ) / (p.2 - p.1 ^ 2))
       (continuousAt_const.sub (ContinuousAt.div (by fun_prop) (by fun_prop) hγ2))
       (by field_simp; ring)
   have hd : TendstoInMeasure P (fun n ω => 1 / (2 * (M2 n ω - M1 n ω ^ 2)) - 1 / (2 * γ ^ 2))
       atTop (fun _ => 0) :=
-    TendstoInMeasure.comp₂' hM1 hM2 (φ := fun p => 1 / (2 * (p.2 - p.1 ^ 2)) - 1 / (2 * γ ^ 2))
+    tendstoInMeasure_comp₂_of_eq hM1 hM2 (φ := fun p => 1 / (2 * (p.2 - p.1 ^ 2)) - 1 / (2 * γ ^ 2))
       ((ContinuousAt.div (by fun_prop) (by fun_prop) (by simpa using hγ2)).sub
         continuousAt_const)
       (by field_simp; ring)
   -- the bias and the negligible terms
-  have hVW1 := TendstoInMeasure.mul' hV hW1 rfl
-  have hVW2 := TendstoInMeasure.mul' hV hW2 rfl
-  have hVBW3 := TendstoInMeasure.mul' (TendstoInMeasure.mul' hV hBs rfl) hW3 rfl
+  have hVW1 := tendstoInMeasure_mul_of_eq hV hW1 rfl
+  have hVW2 := tendstoInMeasure_mul_of_eq hV hW2 rfl
+  have hVBW3 := tendstoInMeasure_mul_of_eq (tendstoInMeasure_mul_of_eq hV hBs rfl) hW3 rfl
   have hbias : TendstoInMeasure P (fun n ω => (1 - 2 / γ) * (√(k n : ℝ) * Bs n ω * W1 n ω) +
       1 / γ * (√(k n : ℝ) * Bs n ω * W2 n ω) +
       1 / (2 * γ ^ 2) * (√(k n : ℝ) * Bs n ω * Bs n ω * W3 n ω)) atTop (fun _ => μ) :=
-    TendstoInMeasure.add' (TendstoInMeasure.add' (TendstoInMeasure.const_mul' _ hVW1) (TendstoInMeasure.const_mul' _ hVW2) rfl)
-      (TendstoInMeasure.const_mul' _ hVBW3) (by simp only [hμ, momentBias]; field_simp; ring)
+    tendstoInMeasure_add_of_eq (tendstoInMeasure_add_of_eq (tendstoInMeasure_const_mul _ hVW1) (tendstoInMeasure_const_mul _ hVW2) rfl)
+      (tendstoInMeasure_const_mul _ hVBW3) (by simp only [hμ, momentBias]; field_simp; ring)
   have hac : TendstoInMeasure P (fun n ω => (γ * (√(k n : ℝ) * (m1 n ω - 1)) +
       √(k n : ℝ) * Bs n ω * W1 n ω) * (2 / γ - (M1 n ω + γ) / (M2 n ω - M1 n ω ^ 2))) atTop
       (fun _ => 0) := by
-    have h1 := TendstoInMeasure.const_mul' γ
+    have h1 := tendstoInMeasure_const_mul γ
       (tendstoInMeasure_mul_zero_of_isBoundedInProbability' hS1 hc)
-    have h2 := TendstoInMeasure.mul' hVW1 hc rfl
-    refine tendstoInMeasure_of_eventuallyEq (TendstoInMeasure.add' h1 h2 (by ring))
+    have h2 := tendstoInMeasure_mul_of_eq hVW1 hc rfl
+    refine tendstoInMeasure_of_eventuallyEq (tendstoInMeasure_add_of_eq h1 h2 (by ring))
       (Eventually.of_forall fun n ω => ?_)
     ring
   have hbd : TendstoInMeasure P (fun n ω => (γ ^ 2 * (√(k n : ℝ) * (m2 n ω - 2)) +
       2 * γ * (√(k n : ℝ) * Bs n ω * W2 n ω) + √(k n : ℝ) * Bs n ω * Bs n ω * W3 n ω) *
       (1 / (2 * (M2 n ω - M1 n ω ^ 2)) - 1 / (2 * γ ^ 2))) atTop (fun _ => 0) := by
-    have h1 := TendstoInMeasure.const_mul' (γ ^ 2)
+    have h1 := tendstoInMeasure_const_mul (γ ^ 2)
       (tendstoInMeasure_mul_zero_of_isBoundedInProbability' hS2 hd)
-    have h2 := TendstoInMeasure.mul' (TendstoInMeasure.add' (TendstoInMeasure.const_mul' (2 * γ) hVW2) hVBW3 rfl)
+    have h2 := tendstoInMeasure_mul_of_eq (tendstoInMeasure_add_of_eq (tendstoInMeasure_const_mul (2 * γ) hVW2) hVBW3 rfl)
       hd rfl
-    refine tendstoInMeasure_of_eventuallyEq (TendstoInMeasure.add' h1 h2 (by ring))
+    refine tendstoInMeasure_of_eventuallyEq (tendstoInMeasure_add_of_eq h1 h2 (by ring))
       (Eventually.of_forall fun n ω => ?_)
     ring
   set R : ℕ → Ω → ℝ := fun n ω => ((1 - 2 / γ) * (√(k n : ℝ) * Bs n ω * W1 n ω) +
@@ -651,7 +636,7 @@ theorem tendstoInDistribution_momentEstimator_comp_exp {E : ℕ → Ω → ℝ}
         2 * γ * (√(k n : ℝ) * Bs n ω * W2 n ω) + √(k n : ℝ) * Bs n ω * Bs n ω * W3 n ω) *
         (1 / (2 * (M2 n ω - M1 n ω ^ 2)) - 1 / (2 * γ ^ 2)) with hRdef
   have hR : TendstoInMeasure P R atTop (fun _ => μ) :=
-    TendstoInMeasure.add' (TendstoInMeasure.add' hbias hac (add_zero μ)) hbd (add_zero μ)
+    tendstoInMeasure_add_of_eq (tendstoInMeasure_add_of_eq hbias hac (add_zero μ)) hbd (add_zero μ)
   have hRm : ∀ n, AEMeasurable (R n) P := by
     intro n
     have := hBsm n; have := hm1m n; have := hm2m n; have := hW1m n; have := hW2m n
@@ -771,7 +756,8 @@ variable {Ω Ω' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'
   {P : Measure Ω} [IsProbabilityMeasure P] {P' : Measure Ω'} [IsProbabilityMeasure P']
 
 /-- **Asymptotic normality of the moment estimator, `γ > 0`** ([dHF, Theorem 3.5.4], case
-`γ > 0`; Dekkers, Einmahl and de Haan 1989). Let `X_0, X_1, …` be iid real random variables
+`γ > 0`, with the second-order condition in ratio form; see the module docstring; Dekkers, Einmahl
+and de Haan 1989). Let `X_0, X_1, …` be iid real random variables
 whose tail quantile function `U(t) = F̄^←(1/t)` is of second-order regular variation with
 first-order index `γ > 0`, second-order index `ρ ≤ 0` and auxiliary function `A`. If
 `k = k(n) → ∞`, `k / n → 0` and `√k A(n / k) → λ`, then
@@ -788,10 +774,10 @@ theorem tendstoInDistribution_momentEstimator {X : ℕ → Ω → ℝ} (hX : ∀
         √(k n : ℝ) * (momentEstimator (fun i : Fin n => X i ω) (k n) - γ))
       atTop Z (fun _ => P) P' := by
   obtain ⟨Ω₀, _, P₀, E, hEm, hE, hind, hP₀⟩ := exists_iid ℕ (expMeasure 1)
-  have hUm := measurable_tailQuantile (survival_anti (P := P) (X 0))
+  have hUm := measurable_survivalQuantile (survival_anti (P := P) (X 0))
     (continuousWithinAt_survival (P := P) (hX 0)) (tendsto_survival_atTop (P := P) (hX 0))
     (tendsto_survival_atBot (P := P) (hX 0))
-  have hUmono := monotoneOn_tailQuantile (survival_anti (P := P) (X 0))
+  have hUmono := monotoneOn_survivalQuantile (survival_anti (P := P) (X 0))
     (continuousWithinAt_survival (P := P) (hX 0)) (tendsto_survival_atTop (P := P) (hX 0))
     (tendsto_survival_atBot (P := P) (hX 0))
   have hB := tendstoInDistribution_momentEstimator_comp_exp hEm hE hind hγ hUm hUmono h2 hk hkn

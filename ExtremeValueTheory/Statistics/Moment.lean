@@ -348,6 +348,53 @@ theorem tendstoInMeasure_of_eqOn {ι : Type*} {l : Filter ι} {f g : ι → Ω �
   · right
     exact hωA
 
+/-- Sums of sequences converging in probability to constants, with the limit up to an equation. -/
+theorem tendstoInMeasure_add_of_eq {f g : ι → Ω → ℝ} {a b c : ℝ}
+    (hf : TendstoInMeasure P f l (fun _ => a)) (hg : TendstoInMeasure P g l (fun _ => b))
+    (h : a + b = c) : TendstoInMeasure P (fun i ω => f i ω + g i ω) l (fun _ => c) :=
+  h ▸ tendstoInMeasure_comp₂ hf hg (φ := fun p => p.1 + p.2) continuous_add.continuousAt
+
+/-- Products of sequences converging in probability to constants, with the limit up to an equation. -/
+theorem tendstoInMeasure_mul_of_eq {f g : ι → Ω → ℝ} {a b c : ℝ}
+    (hf : TendstoInMeasure P f l (fun _ => a)) (hg : TendstoInMeasure P g l (fun _ => b))
+    (h : a * b = c) : TendstoInMeasure P (fun i ω => f i ω * g i ω) l (fun _ => c) :=
+  h ▸ tendstoInMeasure_mul hf hg
+
+/-- A constant multiple of a sequence converging in probability to a constant. -/
+theorem tendstoInMeasure_const_mul {f : ι → Ω → ℝ} {a : ℝ} (c : ℝ)
+    (hf : TendstoInMeasure P f l (fun _ => a)) :
+    TendstoInMeasure P (fun i ω => c * f i ω) l (fun _ => c * a) :=
+  tendstoInMeasure_comp hf (φ := fun x => c * x) (continuous_const.mul continuous_id).continuousAt
+
+/-- `tendstoInMeasure_comp₂`, with the limit up to an equation. -/
+theorem tendstoInMeasure_comp₂_of_eq {f g : ι → Ω → ℝ} {a b c : ℝ}
+    (hf : TendstoInMeasure P f l (fun _ => a)) (hg : TendstoInMeasure P g l (fun _ => b))
+    {φ : ℝ × ℝ → ℝ} (hφ : ContinuousAt φ (a, b)) (h : φ (a, b) = c) :
+    TendstoInMeasure P (fun i ω => φ (f i ω, g i ω)) l (fun _ => c) :=
+  h ▸ tendstoInMeasure_comp₂ hf hg hφ
+
+/-- If `G(s, y) → g₀` as `s → l_s` and `y → c`, `t_n → l_s` deterministically and `Y_n → c` in
+probability, then `G(t_n, Y_n) → g₀` in probability. -/
+theorem tendstoInMeasure_comp_prod_of_tendsto {E β : Type*} [PseudoMetricSpace E]
+    {lt : Filter β} {G : β × E → ℝ} {c : E} {g₀ : ℝ} (hG : Tendsto G (lt ×ˢ 𝓝 c) (𝓝 g₀))
+    {t : ℕ → β} (ht : Tendsto t atTop lt) {Y : ℕ → Ω → E}
+    (hY : TendstoInMeasure P Y atTop (fun _ => c)) :
+    TendstoInMeasure P (fun n ω => G (t n, Y n ω)) atTop (fun _ => g₀) := by
+  rw [tendstoInMeasure_iff_dist] at hY ⊢
+  intro ε hε
+  obtain ⟨S, hS, B, hB, hSB⟩ := mem_prod_iff.1 (hG (Metric.ball_mem_nhds g₀ hε))
+  obtain ⟨δ, hδ, hδB⟩ := Metric.mem_nhds_iff.1 hB
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds (hY δ hδ)
+    (Eventually.of_forall fun _ => bot_le) ?_
+  filter_upwards [ht hS] with n hn
+  refine measure_mono fun ω hω => ?_
+  simp only [mem_ofPred_eq] at hω ⊢
+  by_contra hcon
+  push Not at hcon
+  have hmem := hSB (show (t n, Y n ω) ∈ S ×ˢ B from ⟨hn, hδB (Metric.mem_ball.2 hcon)⟩)
+  simp only [Set.mem_preimage, Metric.mem_ball] at hmem
+  linarith
+
 /-- If `f_i = g_i` everywhere for `i` large, convergence in probability transfers. -/
 theorem tendstoInMeasure_of_eventuallyEq {ι : Type*} {l : Filter ι} {f g : ι → Ω → ℝ} {c : ℝ}
     (hg : TendstoInMeasure P g l (fun _ => c)) (heq : ∀ᶠ i in l, ∀ ω, f i ω = g i ω) :

@@ -10,6 +10,61 @@ import ExtremeValueTheory.RegularVariation.Extended
 
 /-!
 # Asymptotic normality of the Pickands estimator
+
+Let `X_0, X_1, …` be iid with tail quantile function `U(t) = F^←(1 - 1/t)`, and let
+`γ̂_P = (log 2)⁻¹ log ((X_{(k+1)} - X_{(2k+1)}) / (X_{(2k+1)} - X_{(4k+1)}))`
+(`ExtremeValueTheory.pickands`). Under second-order extended regular variation of `U` with indices
+`γ ∈ ℝ`, `ρ` and auxiliary functions `a`, `A`, and `k → ∞`, `k / n → 0`, `√k A(n/k) → λ`,
+
+  `√k (γ̂_P - γ) ⇒ N(λ b_{γ,ρ}, σ²_γ)`.
+
+## Main results
+
+* `tendstoInDistribution_pickands`: the theorem above, for every `γ ∈ ℝ`.
+* `tendstoInDistribution_pickands_of_tendsto_zero`: the unbiased case `λ = 0`.
+* `tendstoInDistribution_pickands_uniform`, `tendstoInDistribution_pickands_comp_exp`: the same for
+  the samples `U(1/(1 - V_i))`, `V_i` iid uniform, and `U(e^{E_i})`, `E_i` iid exponential.
+* `pickandsVariance_of_ne`, `pickandsVariance_zero`: `σ²_γ = γ² (2^{2γ+1} + 1) / (2 (2^γ - 1) log 2)²`
+  for `γ ≠ 0` and `σ²_0 = 3 / (4 (log 2)⁴)`.
+* `pickandsBias_of_ne`, `pickandsBias_zero_right`: the closed forms
+  `b_{γ,ρ} = D_{γ+ρ}(2) / D_γ(2) · 2^{-ρ} (1 - 2^{-ρ}) / (ρ log 2)` for `ρ ≠ 0` and `b_{γ,0} = 1`.
+* `tendstoInDistribution_sqrt_smul_tailTime`: joint normality of intermediate uniform order
+  statistics at integer multiples of `k`.
+* `isExtSecondOrderRegularlyVarying_add_extRVLimit`: the model `U = D_γ + c D_{γ+ρ}`, which
+  satisfies the hypothesis for every `γ` and every `ρ < 0`.
+
+## Comparison with the source
+
+The target is [dHF, Theorem 3.3.5] (see also Dekkers and de Haan 1989). The statement differs from
+it in the following ways.
+
+* **Uniformity is assumed.** `IsExtSecondOrderRegularlyVarying` asks for locally uniform
+  convergence in `x`. The textbook condition is pointwise and uniformity is a theorem there. That
+  implication is not formalized, so the hypothesis here is formally stronger than the textbook's.
+* **Indexing.** Here `k` is the smallest of the three indices, `4k` the largest; `√k` and `A(n/k)`
+  use the smallest. If the largest index `K = 4k` is used for the normalization instead, then
+  `√K = 2 √k` multiplies the variance by `4`, and when `|A|` is regularly varying of index `ρ`, with
+  `λ_K = lim √K A(n/K)`, the mean becomes `λ_K 4^ρ b_{γ,ρ}`. This translation is a remark and is not
+  a theorem of this file; nor is the version with the integer parts `⌊K/4⌋, ⌊K/2⌋, K`, whose
+  indices are not exactly in the ratio `1 : 2 : 4`.
+* **The sign and index conditions on `A`** of [dHF, Theorem 2.3.3] are neither assumed nor used.
+
+## Proof
+
+Let `V_i` be iid uniform and `T_j = (n/k)(1 - V_{(j+1)})`. The tail empirical process gives
+`√k (τ - T_{τ k}) ⇒ B(τ)` jointly at `τ = 1, 2, 4` (`tendstoInDistribution_sqrt_smul_tailTime`).
+The estimator of the sample `U(1/(1 - V_i))` is `pickandsLog U (n/k) Y / log 2` with `Y = (-T_{τ k})`.
+Write `pickandsLog U (n/k) Y = pickandsMap γ Y + (pickandsLog U (n/k) Y - pickandsMap γ Y)`. The delta
+method (`hasGradientAt_pickandsMap`, `pickandsGrad_quadForm`) gives the Gaussian part, and the
+second-order condition at the moving point `Y` gives the bias (`tendsto_pickandsLog_sub_div`).
+The quantile transform passes to general samples.
+
+## References
+
+* [dHF] L. de Haan, A. Ferreira, *Extreme Value Theory: An Introduction*, Springer, 2006.
+* J. Pickands III, *Statistical inference using extreme order statistics*, Ann. Statist. 3 (1975).
+* A. L. M. Dekkers, L. de Haan, *On the estimation of the extreme-value index and large quantile
+  estimation*, Ann. Statist. 17 (1989).
 -/
 
 open Filter Topology Set Real MeasureTheory ProbabilityTheory
@@ -478,7 +533,7 @@ theorem hasGradientAt_pickandsMap (γ : ℝ) :
   refine hF.congr_fderiv ?_
   ext v
   simp only [InnerProductSpace.toDual_apply_apply, PiLp.inner_apply, Fin.sum_univ_three,
-    ContinuousLinearMap.sub_apply, ContinuousLinearMap.smul_apply, smul_eq_mul,
+    sub_apply, smul_apply, smul_eq_mul,
     RCLike.inner_apply, conj_trivial, pickandsGrad, Pi.sub_apply]
   rw [hN, hN', hv0, hv1, hv2]
   simp only [EuclideanSpace.proj, PiLp.proj_apply]
@@ -718,36 +773,6 @@ theorem tendsto_pickandsLog_sub_div {U : ℝ → ℝ} {γ ρ : ℝ} {a A : ℝ �
 
 end Remainder
 
-/-! ### Convergence in probability through a joint limit -/
-
-section Prob
-
-variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω}
-
-/-- If `G(s, y) → g₀` as `s → l_s` and `y → c`, `t_n → l_s` deterministically and `Y_n → c` in
-probability, then `G(t_n, Y_n) → g₀` in probability. -/
-theorem TendstoInMeasure.comp_prod_of_tendsto {E β : Type*} [PseudoMetricSpace E]
-    {lt : Filter β} {G : β × E → ℝ} {c : E} {g₀ : ℝ} (hG : Tendsto G (lt ×ˢ 𝓝 c) (𝓝 g₀))
-    {t : ℕ → β} (ht : Tendsto t atTop lt) {Y : ℕ → Ω → E}
-    (hY : TendstoInMeasure P Y atTop (fun _ => c)) :
-    TendstoInMeasure P (fun n ω => G (t n, Y n ω)) atTop (fun _ => g₀) := by
-  rw [tendstoInMeasure_iff_dist] at hY ⊢
-  intro ε hε
-  obtain ⟨S, hS, B, hB, hSB⟩ := mem_prod_iff.1 (hG (Metric.ball_mem_nhds g₀ hε))
-  obtain ⟨δ, hδ, hδB⟩ := Metric.mem_nhds_iff.1 hB
-  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds (hY δ hδ)
-    (Eventually.of_forall fun _ => bot_le) ?_
-  filter_upwards [ht hS] with n hn
-  refine measure_mono fun ω hω => ?_
-  simp only [mem_ofPred_eq] at hω ⊢
-  by_contra hcon
-  push Not at hcon
-  have hmem := hSB (show (t n, Y n ω) ∈ S ×ˢ B from ⟨hn, hδB (Metric.mem_ball.2 hcon)⟩)
-  simp only [mem_preimage, Metric.mem_ball] at hmem
-  linarith
-
-end Prob
-
 /-! ### Asymptotic normality of the Pickands estimator -/
 
 section Normality
@@ -855,8 +880,8 @@ theorem tendstoInDistribution_pickands_uniform {V : ℕ → Ω → ℝ} (hV : �
     intro ε hε
     simpa [dist_eq_norm, hY, pickandsCenter] using hY0 ε hε
   have ht : Tendsto (fun n : ℕ => (n : ℝ) / k n) atTop atTop := tendsto_div_atTop_of_tendsto hk hkn
-  have hG := TendstoInMeasure.comp_prod_of_tendsto (tendsto_pickandsLog_sub_div h2) ht hYc
-  have hB := TendstoInMeasure.mul' (tendstoInMeasure_const_of_tendsto (P := P) hlam) hG rfl
+  have hG := tendstoInMeasure_comp_prod_of_tendsto (tendsto_pickandsLog_sub_div h2) ht hYc
+  have hB := tendstoInMeasure_mul_of_eq (tendstoInMeasure_const_of_tendsto (P := P) hlam) hG rfl
   have hBm : ∀ n, AEMeasurable (fun ω => √(k n : ℝ) * A (n / k n) *
       ((pickandsLog U (n / k n) (Y n ω) - pickandsMap γ (Y n ω)) / A (n / k n))) P := fun n =>
     (measurable_const.mul ((((measurable_pickandsLog hUmeas _).comp (hYm n)).sub
@@ -1009,8 +1034,8 @@ theorem tendstoInDistribution_pickands_comp_exp {E : ℕ → Ω → ℝ} (hEm : 
     rw [sub_sub_cancel, exp_neg, one_div, inv_inv]
   simpa only [e] using h
 
-/-- **Asymptotic normality of the Pickands estimator** (Pickands 1975; Dekkers and de Haan 1989,
-Theorem 2.3; [dHF, Theorem 3.3.5]). Let `X_0, X_1, …` be iid real random variables whose tail
+/-- **Asymptotic normality of the Pickands estimator** (Pickands 1975; Dekkers and de Haan 1989;
+[dHF, Theorem 3.3.5]). Let `X_0, X_1, …` be iid real random variables whose tail
 quantile function `U(t) = F^←(1 - 1/t)` satisfies the second-order condition
 `IsExtSecondOrderRegularlyVarying U γ ρ a A` for some `γ ∈ ℝ`, `ρ`. If `k = k(n) → ∞`, `k / n → 0`
 and `√k A(n / k) → λ`, then the estimator
@@ -1136,7 +1161,7 @@ theorem pickandsBias_of_ne (γ : ℝ) {ρ : ℝ} (hρ : ρ ≠ 0) :
 extended regular variation, with `a(t) = t^γ (1 + c t^ρ)` and `A(t) = ρ c t^ρ / (1 + c t^ρ)`. This
 is the standard example with a nontrivial second-order term; it covers all `γ ∈ ℝ`, `ρ < 0`. -/
 theorem isExtSecondOrderRegularlyVarying_add_extRVLimit {γ ρ c : ℝ} (hρ : ρ < 0) (hc : 0 < c)
-    {U : ℝ → ℝ} (hU : ∀ t, 0 < t → U t = extRVLimit γ t + c * extRVLimit (γ + ρ) t) :
+    {U : ℝ → ℝ} (hU : ∀ᶠ t in atTop, U t = extRVLimit γ t + c * extRVLimit (γ + ρ) t) :
     IsExtSecondOrderRegularlyVarying U γ ρ (fun t => t ^ γ * (1 + c * t ^ ρ))
       (fun t => ρ * (c * t ^ ρ) / (1 + c * t ^ ρ)) := by
   have hto : Tendsto (fun t : ℝ => c * t ^ ρ) atTop (𝓝 0) := by
@@ -1154,14 +1179,23 @@ theorem isExtSecondOrderRegularlyVarying_add_extRVLimit {γ ρ c : ℝ} (hρ : �
     exact (div_neg_of_neg_of_pos (mul_neg_of_neg_of_pos hρ this) (by linarith)).ne
   · rw [Metric.tendstoLocallyUniformlyOn_iff]
     intro ε hε x hx
-    refine ⟨Ioi 0, self_mem_nhdsWithin, ?_⟩
-    filter_upwards [eventually_gt_atTop 0] with t ht y hy
-    have hy0 : 0 < y := hy
+    have hx0 : (0 : ℝ) < x := hx
+    obtain ⟨T, hT⟩ := eventually_atTop.1 hU
+    refine ⟨Ioi (x / 2), mem_nhdsWithin_of_mem_nhds (Ioi_mem_nhds (half_lt_self hx0)), ?_⟩
+    filter_upwards [eventually_gt_atTop 0, eventually_ge_atTop T,
+      eventually_ge_atTop (2 * T / x)] with t ht htT htx y hy
+    have hy0 : 0 < y := (half_pos hx0).trans hy
+    have hyt : T ≤ y * t := by
+      have h1 : T ≤ x / 2 * t := by
+        rw [div_le_iff₀ hx0] at htx
+        linarith
+      have h2 : x / 2 * t ≤ y * t := mul_le_mul_of_nonneg_right (le_of_lt hy) ht.le
+      exact h1.trans h2
     have hw : 0 < c * t ^ ρ := by positivity
     have htγ : 0 < t ^ γ := by positivity
     have key : ((U (y * t) - U t) / (t ^ γ * (1 + c * t ^ ρ)) - extRVLimit γ y) /
         (ρ * (c * t ^ ρ) / (1 + c * t ^ ρ)) = extSecondOrderLimit γ ρ y := by
-      rw [extSecondOrderLimit_of_ne hρ.ne hy0, hU _ (mul_pos hy0 ht), hU _ ht, mul_comm y t,
+      rw [extSecondOrderLimit_of_ne hρ.ne hy0, hT _ hyt, hT _ htT, mul_comm y t,
         extRVLimit_mul ht hy0, extRVLimit_mul ht hy0, rpow_add ht]
       have h1w : 1 + c * t ^ ρ ≠ 0 := by positivity
       have h2 : t ^ ρ ≠ 0 := by positivity
@@ -1169,6 +1203,159 @@ theorem isExtSecondOrderRegularlyVarying_add_extRVLimit {γ ρ c : ℝ} (hρ : �
       ring
     rw [key, dist_self]
     exact hε
+
+/-- `H_{0,0}(x) = (log x)² / 2` on `(0, ∞)`. -/
+theorem extSecondOrderLimit_zero_zero {x : ℝ} (hx : 0 < x) :
+    extSecondOrderLimit 0 0 x = Real.log x ^ 2 / 2 := by
+  have hsub : Set.uIcc (1 : ℝ) x ⊆ Ioi 0 := fun s hs => by
+    rcases Set.mem_uIcc.1 hs with h | h <;> simp only [mem_Ioi] <;> linarith [h.1]
+  have hd : ∀ s ∈ Set.uIcc (1 : ℝ) x, HasDerivAt (fun s => Real.log s ^ 2 / 2)
+      (s ^ ((0 : ℝ) - 1) * boxCox 0 s) s := fun s hs => by
+    have hs0 : 0 < s := hsub hs
+    refine (((hasDerivAt_log hs0.ne').pow 2).div_const 2).congr_deriv ?_
+    rw [boxCox_zero, zero_sub, rpow_neg_one]
+    field_simp
+    simp
+  have hii : IntervalIntegrable (fun s : ℝ => s ^ ((0 : ℝ) - 1) * boxCox 0 s) volume 1 x :=
+    ((continuousOn_rpow_mul_boxCox 0 0).mono hsub).intervalIntegrable
+  rw [extSecondOrderLimit, intervalIntegral.integral_eq_sub_of_hasDerivAt hd hii, log_one]
+  ring
+
+/-- `H_{γ,0}(x) = (x^γ log x - D_γ(x)) / γ` on `(0, ∞)` for `γ ≠ 0`. -/
+theorem extSecondOrderLimit_zero_right {γ : ℝ} (hγ : γ ≠ 0) {x : ℝ} (hx : 0 < x) :
+    extSecondOrderLimit γ 0 x = (x ^ γ * Real.log x - extRVLimit γ x) / γ := by
+  have hsub : Set.uIcc (1 : ℝ) x ⊆ Ioi 0 := fun s hs => by
+    rcases Set.mem_uIcc.1 hs with h | h <;> simp only [mem_Ioi] <;> linarith [h.1]
+  have hd : ∀ s ∈ Set.uIcc (1 : ℝ) x, HasDerivAt (fun s => (s ^ γ * Real.log s - extRVLimit γ s) / γ)
+      (s ^ (γ - 1) * boxCox 0 s) s := fun s hs => by
+    have hs0 : 0 < s := hsub hs
+    refine ((((hasDerivAt_rpow_const (p := γ) (Or.inl hs0.ne')).mul (hasDerivAt_log hs0.ne')).sub
+      (hasDerivAt_extRVLimit γ hs0)).div_const γ).congr_deriv ?_
+    rw [boxCox_zero, rpow_sub_one hs0.ne']
+    field_simp
+    ring
+  have hii : IntervalIntegrable (fun s : ℝ => s ^ (γ - 1) * boxCox 0 s) volume 1 x :=
+    ((continuousOn_rpow_mul_boxCox γ 0).mono hsub).intervalIntegrable
+  rw [extSecondOrderLimit, intervalIntegral.integral_eq_sub_of_hasDerivAt hd hii, log_one,
+    extRVLimit_one]
+  simp
+
+/-- **The Pickands bias for `ρ = 0`**: `b_{γ,0} = 1` for every `γ`. This is also the limit of
+`pickandsBias_of_ne` as `ρ → 0`. -/
+theorem pickandsBias_zero_right (γ : ℝ) : pickandsBias γ 0 = 1 := by
+  have hL : Real.log 2 ≠ 0 := (Real.log_pos one_lt_two).ne'
+  have hlh : Real.log (1 / 2) = -Real.log 2 := by rw [one_div, log_inv]
+  have hlq : Real.log (1 / 4) = -(2 * Real.log 2) := by
+    rw [one_div, log_inv, show (4 : ℝ) = 2 ^ 2 by norm_num, log_pow]
+    norm_num
+  by_cases hγ : γ = 0
+  · subst hγ
+    unfold pickandsBias
+    rw [extSecondOrderLimit_zero_zero one_pos, extSecondOrderLimit_zero_zero (by norm_num),
+      extSecondOrderLimit_zero_zero (by norm_num), log_one, hlh, hlq]
+    simp only [extRVLimit_zero_left, log_one, hlh, hlq]
+    generalize Real.log 2 = L at hL ⊢
+    field_simp
+    ring_nf
+    rw [pow_two, mul_assoc, mul_inv_cancel₀ hL]
+    ring
+  · have hp : (2 : ℝ) ^ (-γ) ≠ 0 := (rpow_pos_of_pos two_pos _).ne'
+    have hD : extRVLimit γ 2 ≠ 0 := (extRVLimit_pos one_lt_two).ne'
+    have hh : ((1 : ℝ) / 2) ^ γ = 2 ^ (-γ) := by
+      rw [one_div, inv_rpow two_pos.le, rpow_neg two_pos.le]
+    have hq : ((1 : ℝ) / 4) ^ γ = (2 ^ (-γ)) ^ 2 := by
+      rw [show (1 : ℝ) / 4 = 2⁻¹ * 2⁻¹ by norm_num, mul_rpow (by norm_num) (by norm_num),
+        inv_rpow two_pos.le, rpow_neg two_pos.le]
+      ring
+    have h1 := extRVLimit_one_sub_half γ
+    have h2 := extRVLimit_half_sub_quarter γ
+    have hD1 : extRVLimit γ (1 / 2) = -(2 ^ (-γ) * extRVLimit γ 2) := by
+      rw [extRVLimit_one] at h1
+      linarith
+    have hD2 : extRVLimit γ (1 / 4) =
+        -(2 ^ (-γ) * extRVLimit γ 2) - (2 ^ (-γ)) ^ 2 * extRVLimit γ 2 := by
+      rw [hD1] at h2
+      linarith
+    have hDγ : extRVLimit γ 2 = (2 ^ γ - 1) / γ := extRVLimit_of_ne hγ 2
+    have h2γ : (2 : ℝ) ^ γ * 2 ^ (-γ) = 1 := by
+      rw [← rpow_add two_pos, add_neg_cancel, rpow_zero]
+    unfold pickandsBias
+    rw [h1, h2, extSecondOrderLimit_zero_right hγ one_pos,
+      extSecondOrderLimit_zero_right hγ (by norm_num),
+      extSecondOrderLimit_zero_right hγ (by norm_num), hh, hq, hlh, hlq, hD1, hD2, log_one,
+      extRVLimit_one]
+    set p : ℝ := 2 ^ (-γ) with hpdef
+    set D : ℝ := extRVLimit γ 2 with hDdef
+    have hγD : γ * D = 1 / p - 1 := by
+      have h1p : 1 / p = 2 ^ γ := by
+        rw [div_eq_iff hp]
+        exact h2γ.symm
+      rw [hDγ, h1p]
+      field_simp
+    have e : (((1 : ℝ) ^ γ * 0 - 0) / γ - (p * -Real.log 2 - -(p * D)) / γ) / (p * D) -
+        ((p * -Real.log 2 - -(p * D)) / γ -
+          (p ^ 2 * -(2 * Real.log 2) - (-(p * D) - p ^ 2 * D)) / γ) / (p ^ 2 * D) =
+        Real.log 2 * (1 / p - 1) / (γ * D) := by
+      field_simp
+      ring
+    rw [e, hγD]
+    have h1p : 1 / p - 1 ≠ 0 := by
+      rw [← hγD]; exact mul_ne_zero hγ hD
+    have h1p' : 1 - p ≠ 0 := fun h => h1p (by
+      rw [show (1 : ℝ) / p - 1 = (1 - p) / p by field_simp, h, zero_div])
+    field_simp
+
+/-- For a sample `U(e^E)`, with `E` standard exponential and `U` continuous and strictly increasing
+on `[1, ∞)`, the tail quantile function is `U` on `(1, ∞)`. -/
+theorem survivalQuantile_survival_comp_exp {Ω₀ : Type*} {mΩ₀ : MeasurableSpace Ω₀} {P₀ : Measure Ω₀}
+    [IsProbabilityMeasure P₀] {E : Ω₀ → ℝ} (hE : HasLaw E (expMeasure 1) P₀) {U : ℝ → ℝ}
+    (hU : StrictMonoOn U (Ici 1)) (hc : ContinuousOn U (Ici 1)) {t : ℝ} (ht : 1 < t) :
+    survivalQuantile (survival P₀ fun ω => U (exp (E ω))) t = U t := by
+  have ht0 : 0 < t := one_pos.trans ht
+  have hnull : P₀.real {ω | E ω ≤ 0} = 0 := by
+    have h := hE.measure_eq (p := fun x => x ≤ 0) measurableSet_Iic
+    have h0 := expMeasure_Iic (le_refl (0 : ℝ))
+    simp only [neg_zero, exp_zero, sub_self, ENNReal.ofReal_zero] at h0
+    rw [measureReal_def, show {ω | E ω ≤ 0} = {ω | (fun x => x ≤ 0) (E ω)} from rfl, h]
+    change (expMeasure 1 (Iic 0)).toReal = 0
+    rw [h0]; rfl
+  have htail : ∀ {s : ℝ}, 1 ≤ s → P₀.real {ω | Real.log s < E ω} = s⁻¹ := fun {s} hs => by
+    rw [measureReal_lt_expMeasure_of_hasLaw hE (log_nonneg hs), exp_neg,
+      exp_log (one_pos.trans_le hs)]
+  rw [survivalQuantile_of_one_lt ht, upperQuantile_def]
+  refine IsLeast.csInf_eq ⟨?_, fun y hy => ?_⟩
+  · simp only [mem_ofPred_eq, survival_eq_measureReal]
+    have hsub : {ω | U t < U (exp (E ω))} ⊆ {ω | E ω ≤ 0} ∪ {ω | Real.log t < E ω} := by
+      intro ω hω
+      simp only [mem_union, mem_ofPred_eq] at hω ⊢
+      by_contra hcon
+      push Not at hcon
+      obtain ⟨h1, h2⟩ := hcon
+      have h3 : exp (E ω) ≤ t := (le_log_iff_exp_le ht0).1 h2
+      have h4 : 1 ≤ exp (E ω) := one_le_exp h1.le
+      exact absurd hω (not_lt.2 (hU.monotoneOn h4 (mem_Ici.2 ht.le) h3))
+    calc P₀.real {ω | U t < U (exp (E ω))}
+        ≤ P₀.real ({ω | E ω ≤ 0} ∪ {ω | Real.log t < E ω}) := measureReal_mono hsub
+      _ ≤ P₀.real {ω | E ω ≤ 0} + P₀.real {ω | Real.log t < E ω} := measureReal_union_le _ _
+      _ = t⁻¹ := by rw [hnull, htail ht.le, zero_add]
+  · by_contra hyt
+    rw [not_le] at hyt
+    have hev : ∀ᶠ s in 𝓝 t, y < U s := by
+      have h := (hc t (mem_Ici.2 ht.le)).eventually (lt_mem_nhds hyt)
+      rwa [nhdsWithin_eq_nhds.2 (Ici_mem_nhds ht)] at h
+    obtain ⟨s, hsy, hs⟩ := ((hev.filter_mono nhdsWithin_le_nhds).and (Ioo_mem_nhdsLT ht)).exists
+    have hs0 : 0 < s := one_pos.trans hs.1
+    have hsub : {ω | Real.log s < E ω} ⊆ {ω | y < U (exp (E ω))} := by
+      intro ω hω
+      simp only [mem_ofPred_eq] at hω ⊢
+      have h1 : s < exp (E ω) := (log_lt_iff_lt_exp hs0).1 hω
+      exact hsy.trans (hU (mem_Ici.2 hs.1.le) (mem_Ici.2 (hs.1.le.trans h1.le)) h1)
+    have h2 : s⁻¹ ≤ P₀.real {ω | y < U (exp (E ω))} := by
+      rw [← htail hs.1.le]
+      exact measureReal_mono hsub
+    simp only [mem_ofPred_eq, survival_eq_measureReal] at hy
+    have h3 : t⁻¹ < s⁻¹ := inv_strictAnti₀ hs0 hs.2
+    linarith
 
 end Normality
 
