@@ -42,13 +42,13 @@ Everything still open, in the order to do it. The sections below give the detail
 **Next, in order (2026-11-05)**
 
 Ours, running or next:
-1. [>] Codex review of the specification (`Challenge.lean`, core definitions, `full` labels, tests); fix what holds up
-2. [>] `v0.10.0`, after that review and the downstream check, with the DOI in `CITATION.cff`, the README and the paper
-3. [>] [#45](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/45) a computable GEV interval
-4. [>] [#41](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/41) likelihood for block maxima from a domain of
+1. [ ] Codex review of the specification (`Challenge.lean`, core definitions, `full` labels, tests); fix what holds up
+2. [ ] `v0.10.0`, after that review and the downstream check, with the DOI in `CITATION.cff`, the README and the paper
+3. [ ] [#45](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/45) a computable GEV interval
+4. [ ] [#41](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/41) likelihood for block maxima from a domain of
    attraction: **the main gap for practice**
-5. [>] [#42](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/42) the Gumbel case `ξ₀ = 0`
-6. [>] The first Mathlib pull requests, as drafts (`upstream/mathlib/`)
+5. [ ] [#42](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/42) the Gumbel case `ξ₀ = 0`
+6. [ ] The first Mathlib pull requests, as drafts (`upstream/mathlib/`)
 7. [ ] Peaks over threshold for real data: excesses from a law in a domain of attraction, a random number of exceedances, `ζ` estimated
 8. [ ] [#43](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/43) moment normality for `γ ≤ 0`;
    [#44](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/44) Wilks for `ξ₀ ≤ 0` and the GEV;
@@ -107,7 +107,7 @@ posting, deciding).
 
 1. [~] **The statistics practitioners use** (*agent*)
    - [x] GEV joint normality and return levels, Pickands normality, Wilks and profile likelihood for the GPD, nonparametric tail dependence
-   - [>] A computable GEV interval (#45), the Gumbel case (#42), block maxima from a domain of attraction (#41)
+   - [ ] A computable GEV interval (#45), the Gumbel case (#42), block maxima from a domain of attraction (#41)
    - [ ] Moment normality for `γ ≤ 0` (#43), Wilks for `ξ₀ ≤ 0` and the GEV (#44): wanted, not blockers
 2. [~] **Close the design pass** (*agent*)
    - [x] One definition per concept, with deprecated aliases
@@ -125,23 +125,25 @@ posting, deciding).
    - [ ] Finish the novelty check, then the arXiv note on the echo process (see B)
 6. [~] **Ready for users and contributors** (details in H)
    - [x] Release `v0.9.0` with a Zenodo DOI, badges, "use it in your project", a downstream CI job
-   - [>] `v0.10.0`; `v1.0.0` after the review
+   - [ ] `v0.10.0`; `v1.0.0` after the review
    - [x] Counts by status and Limitations in the README; `CONTRIBUTING.md`, `CLAUDE.md`, labels, good first issues, open problems as issues;
      architecture checks; axiom audit; Comparator challenge; review deadline; catalogue and its gates
 
 ### Work in flight
 
-**Status (2026-11-05):** agents running, on the maintainer's go-ahead. They push only to their own branches; the maintainer's session
-reviews and merges. Each has a checkpoint on GitHub if the usage limit stops it.
+**Status (2026-11-05): all agents paused by the maintainer.** They resume only when the maintainer says so. They were stopped minutes after
+starting, with nothing committed, so each restarts from `main`; the briefs are issues
+[#41](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/41),
+[#42](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/42) and
+[#45](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/45). `v0.10.0` is on hold until the Codex review of the
+specification, which was also stopped before it reported, is run again.
 
-| Task | Branch or output | Note |
-|---|---|---|
-| Codex review of the specification | read-only report | `v0.10.0` waits for it |
-| Computable GEV interval ([#45](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/45)) | `wip/gev-plugin-interval` | |
-| Likelihood for block maxima ([#41](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/41)) | `wip/block-maxima-likelihood` | draft PR |
-| Gumbel case ([#42](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/42)) | `wip/gev-gumbel-normality` | draft PR |
-| First Mathlib pull requests, as drafts | `wip/mathlib-prs` | the maintainer opens them |
-| Mathlib v4.36 trial ([#9](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/9)) | `wip/mathlib-v4.36-trial` | merge once v4.36.0 is stable |
+| Task | State |
+|---|---|
+| Codex review of the specification | stopped, no report; run again |
+| Computable GEV interval (#45), likelihood for block maxima (#41), Gumbel case (#42) | stopped, nothing committed |
+| First Mathlib pull requests, as drafts | stopped, nothing committed |
+| Mathlib v4.36 trial ([#9](https://github.com/unbalancedparentheses/lean-extremevaluetheory/pull/9)) | `wip/mathlib-v4.36-trial`; merge once v4.36.0 is stable |
 
 ### Waiting on the maintainer
 
