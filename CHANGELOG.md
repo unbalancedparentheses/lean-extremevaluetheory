@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- A new `Examples` library, built in CI and importing only the umbrella: a tutorial (`docs/TUTORIAL.md`), the
+  standard laws and three applied problems. A guide to finding results (`docs/FINDING_RESULTS.md`).
+- New in the library: domains of attraction of the GPD, GEV, Cauchy and Student t laws, explicit norming constants
+  (`DomainOfAttraction/NamedLaws.lean`), reinsurance layers (`HeavyTails/Layer.lean`) and Hill consistency for a
+  sample with a given law (`Statistics/HillOfLaw.lean`).
 - Non-vacuity tests for the answer to Bai–Kulik–Wang's question (on both sides of the cutoff), for mixing
   without `θ = ϑ` (at each of its three block scales) and for the warning about short runs (with all its
   rates realized).

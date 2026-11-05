@@ -476,3 +476,21 @@ $X_1 \sim \mu$, $X_2 \sim \nu$.
   A large value of $X_0$ is caused by a single large $Z_{-J}$; the conditional law of $J$ is proportional
   to $\psi_J^\alpha$.
 \end{proof}
+
+\section{Reinsurance layers}
+
+\begin{proposition}[Expected payout of a layer]
+  \label{prop:layer-payout}
+  \uses{prop:subexp-examples}
+  \lean{ExtremeValueTheory.layerPayout, ExtremeValueTheory.integral_layerPayout,
+    ExtremeValueTheory.integral_layerPayout_paretoMeasure}
+  \leanok
+  For a finite measure $\mu$ on $\bR$, $d \in \bR$ and $l \ge 0$,
+  $\int \min((x - d)^+, l) \, d\mu(x) = \int_d^{d + l} \mu(t, \infty) \, dt$. For the Pareto law with
+  scale $t \le d$ and index $r \ne 1$ this equals $t^r ((d + l)^{1 - r} - d^{1 - r}) / (1 - r)$.
+\end{proposition}
+\begin{proof}
+  \leanok
+  The layer cake formula, since $\{\min((x - d)^+, l) > s\} = \{x > d + s\}$ for $0 < s < l$ and is empty
+  for $s \ge l$.
+\end{proof}

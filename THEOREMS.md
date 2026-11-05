@@ -65,10 +65,21 @@ for proofs sketches and dependencies.
 - **Linear processes** (`HeavyTails/LinearProcess*.lean`, `Dependence/MovingAverage*.lean`): tails of
   `Σ ψ_j Z_j` for regularly varying noise with tail balance (finite and infinite sums, every `α > 0`), and the spectral tail process of finite moving averages with candidate extremal index
   `ϑ = max ψ_j^α / Σ ψ_j^α` (`MovingAverage.candidateExtremalIndex_spectral`).
+- **Further named laws** (`DomainOfAttraction/NamedLaws.lean`): `GPD(ξ, σ)` is in `MDA(H_ξ)` for every `ξ`
+  (`isInMDAGEV_ofMeasure_gpdMeasure`); a GEV law is in its own domain (`isInMDAGEV_gevLocScaleCDF`); the Cauchy
+  law is in `MDA(Φ_1)` (`isInMDAFrechet_ofMeasure_cauchyMeasure`) and Student's t law with `ν` degrees of freedom
+  in `MDA(Φ_ν)` (`isInMDAFrechet_ofMeasure_studentTMeasure`), with the constant of `studentTMeasure` defined as an
+  integral and not identified with its `Γ` formula. A law with a regularly varying density has a regularly varying
+  tail (`isRegularlyVarying_measureReal_Ioi_withDensity`). Explicit norming constants for the Pareto, power and
+  exponential laws (`tendsto_paretoCDF_pow`, `tendsto_powerCDF_pow`, `tendsto_standardExponentialCDF_pow`).
+- **Reinsurance layers** (`HeavyTails/Layer.lean`): the expected payout of a layer is the integral of the tail
+  over the layer (`integral_layerPayout`), with a closed form for Pareto losses
+  (`integral_layerPayout_paretoMeasure`).
 - **Hill estimator consistency** (`tendstoInMeasure_hill`): for iid samples whose tail is
   regularly varying with index `-α`, and `k → ∞`, `k/n → 0`, the Hill estimator
   `(1/k) Σ_{i<k} (log X₍ᵢ₊₁₎ - log X₍ₖ₊₁₎)` converges to `1/α` in probability. With order
   statistics and their binomial distribution.
+  `tendstoInMeasure_hill_of_hasLaw` and `tendstoInMeasure_inv_hill_of_hasLaw` state it for a sample with a given law.
 - **Hill estimator for dependent data** (`Statistics/HillDependent.lean`): consistency from a variance
   bound on exceedance counts alone (`tendstoInMeasure_hill_of_variance`), hence for m-dependent
   sequences and for stationary α-mixing sequences with a cluster condition

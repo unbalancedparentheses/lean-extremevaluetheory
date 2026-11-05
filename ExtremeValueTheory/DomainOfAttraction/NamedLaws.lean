@@ -483,7 +483,6 @@ theorem isInMDAFrechet_ofMeasure_cauchyMeasure (x₀ : ℝ) {γ : ℝ≥0} (hγ 
 /-- **Student's t law with `ν` degrees of freedom is in the Fréchet domain `MDA(Φ_ν)`**
 ([EKM, Table 3.4.2]). -/
 theorem isInMDAFrechet_ofMeasure_studentTMeasure {ν : ℝ} (hν : 0 < ν) :
-    have := isProbabilityMeasure_studentTMeasure hν
     (ofMeasure (studentTMeasure ν)).IsInMDAFrechet hν :=
   have := isProbabilityMeasure_studentTMeasure hν
   (isInMDAFrechet_ofMeasure_iff hν).2 (isRegularlyVarying_measureReal_Ioi_studentTMeasure hν)
