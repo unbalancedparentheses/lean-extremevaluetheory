@@ -191,6 +191,10 @@ import ExtremeValueTheory.Statistics.GEVMLEFisher
 import ExtremeValueTheory.Statistics.GEVFisherInformation
 import ExtremeValueTheory.Statistics.GEVHessian
 import ExtremeValueTheory.Statistics.GEVMLEEnvelope
+import ExtremeValueTheory.Statistics.GEVMLECoordinates
+import ExtremeValueTheory.Statistics.GEVMLEDomination
+import ExtremeValueTheory.Statistics.GEVMLEInformation
+import ExtremeValueTheory.Statistics.GEVMLEPath
 import ExtremeValueTheory.Statistics.GEVGumbelLimit
 import ExtremeValueTheory.Statistics.MeasurableArgmax
 import ExtremeValueTheory.Statistics.GPDJointNormalityNeg
