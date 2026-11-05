@@ -519,3 +519,86 @@ for $F$ is a function $f$, positive for $t$ near $x_F$, such that
   \leanok
   Invert the Pickands--Balkema--de Haan limit: the auxiliary function is $a(t) = \beta(U(t))$.
 \end{proof}
+
+\section{Further named laws}
+
+\begin{proposition}[Laws with a regularly varying density]
+  \label{prop:rv-density-tail}
+  \uses{thm:karamata-relaxed}
+  \lean{ExtremeValueTheory.IsRegularlyVarying.integral_Ioi, ExtremeValueTheory.measureReal_withDensity_Ioi,
+    ExtremeValueTheory.isRegularlyVarying_measureReal_Ioi_withDensity}
+  \leanok
+  If $f$ is measurable and regularly varying with index $-(\alpha + 1)$, $\alpha > 0$, then
+  $x \mapsto \int_x^\infty f$ is regularly varying with index $-\alpha$. In particular a law whose density
+  is regularly varying with index $-(\alpha + 1)$ has a tail regularly varying with index $-\alpha$.
+\end{proposition}
+\begin{proof}
+  \leanok
+  By Karamata's theorem $\int_x^\infty f \sim x f(x) / \alpha$; take the ratio at $cx$ and at $x$.
+\end{proof}
+
+\begin{proposition}[Cauchy and Student t laws]
+  \label{prop:cauchy-student-mda}
+  \uses{prop:rv-density-tail, thm:mda-frechet-iff}
+  \lean{ExtremeValueTheory.studentTMeasure, ExtremeValueTheory.studentTMeasure_one,
+    ExtremeValueTheory.isProbabilityMeasure_studentTMeasure,
+    ExtremeValueTheory.isRegularlyVarying_measureReal_Ioi_studentTMeasure,
+    CumulativeDistributionFunction.isRegularlyVarying_measureReal_Ioi_cauchyMeasure,
+    CumulativeDistributionFunction.isInMDAFrechet_ofMeasure_cauchyMeasure,
+    CumulativeDistributionFunction.isInMDAFrechet_ofMeasure_studentTMeasure}
+  \leanok
+  The Cauchy law is in the Fr\'echet domain of $\Phi_1$. The law with density proportional to
+  $(1 + x^2 / \nu)^{-(\nu + 1) / 2}$, $\nu > 0$, is in the Fr\'echet domain of $\Phi_\nu$, and for
+  $\nu = 1$ it is the standard Cauchy law. The normalizing constant is defined as an integral; its
+  expression through $\Gamma$ is not formalized.
+\end{proposition}
+\begin{proof}
+  \leanok
+  Both densities are regularly varying; apply Proposition~\ref{prop:rv-density-tail} and Gnedenko's theorem.
+\end{proof}
+
+\begin{proposition}[The generalized Pareto law]
+  \label{prop:gpd-mda}
+  \uses{thm:mda-frechet-iff, thm:mda-weibull-iff, thm:mda-gumbel-iff}
+  \lean{CumulativeDistributionFunction.measureReal_gpdMeasure_Ioi,
+    CumulativeDistributionFunction.isRegularlyVarying_measureReal_Ioi_gpdMeasure,
+    CumulativeDistributionFunction.isInMDAGEV_ofMeasure_gpdMeasure}
+  \leanok
+  For every $\xi \in \bR$ and $\sigma > 0$, $\mathrm{GPD}(\xi, \sigma)$ is in the domain of attraction
+  of $H_\xi$.
+\end{proposition}
+\begin{proof}
+  \leanok
+  The tail is explicit, and the three cases are checked with the three characterizations of the domains.
+\end{proof}
+
+\begin{proposition}[Extreme value laws are in their own domains]
+  \label{prop:gev-own-domain}
+  \uses{def:mda-frechet, def:mda-weibull, def:mda-gumbel}
+  \lean{CumulativeDistributionFunction.IsInMDAFrechet.smul, CumulativeDistributionFunction.IsInMDAWeibull.smul,
+    CumulativeDistributionFunction.IsInMDAGumbel.smul, CumulativeDistributionFunction.IsInMDAGEV.smul,
+    CumulativeDistributionFunction.isInMDAFrechet_standardFrechetCDF,
+    CumulativeDistributionFunction.isInMDAWeibull_standardWeibullCDF,
+    CumulativeDistributionFunction.isInMDAGEV_gevCDF, CumulativeDistributionFunction.isInMDAGEV_gevLocScaleCDF}
+  \leanok
+  Domains of attraction are closed under affine transformations of the law, and $H_{\xi,\mu,\sigma}$ is
+  in the domain of attraction of $H_\xi$.
+\end{proposition}
+\begin{proof}
+  \leanok
+  Compose the norming maps with the affine map; the standard laws are max-stable with explicit constants.
+\end{proof}
+
+\begin{proposition}[Explicit norming constants]
+  \label{prop:norming-constants}
+  \uses{prop:von-mises-examples}
+  \lean{CumulativeDistributionFunction.tendsto_paretoCDF_pow, CumulativeDistributionFunction.tendsto_powerCDF_pow,
+    CumulativeDistributionFunction.tendsto_standardExponentialCDF_pow}
+  \leanok
+  $F^n(n^{1/\alpha} x) \to \Phi_\alpha(x)$ for the Pareto law, $F^n(1 + n^{-1/\alpha} x) \to \Psi_\alpha(x)$
+  for $1 - (1 - x)^\alpha$ on $[0, 1]$, and $F^n(x + \log n) \to \Lambda(x)$ for the standard exponential law.
+\end{proposition}
+\begin{proof}
+  \leanok
+  In each case $F$ at the norming point is eventually $1 + t / n$; use $(1 + t / n)^n \to e^t$.
+\end{proof}

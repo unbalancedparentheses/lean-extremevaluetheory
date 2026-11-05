@@ -9,7 +9,7 @@ It also fails if a file under `ExtremeValueTheory/` is not reachable from the um
 `ExtremeValueTheory.lean`: Lake would not build it and the axiom audit would not see it.
 
 Usage: python3 scripts/check_source.py [ROOT ...]
-Default roots: ExtremeValueTheory ExtremeValueTheory.lean Test Test.lean Downstream
+Default roots: ExtremeValueTheory ExtremeValueTheory.lean Test Test.lean Downstream Examples Examples.lean
 """
 
 import re
@@ -98,7 +98,7 @@ def unreachable(umbrella: Path = Path("ExtremeValueTheory.lean")) -> list[Path]:
 
 def main() -> int:
     args = [Path(a) for a in sys.argv[1:]]
-    roots = args or [Path(r) for r in ("ExtremeValueTheory", "ExtremeValueTheory.lean", "Test", "Test.lean", "Downstream")]
+    roots = args or [Path(r) for r in ("ExtremeValueTheory", "ExtremeValueTheory.lean", "Test", "Test.lean", "Downstream", "Examples", "Examples.lean")]
     files = [f for root in roots for f in ([root] if root.is_file() else sorted(root.rglob("*.lean")))]
     if not files:
         print("check_source: no Lean files found", file=sys.stderr)

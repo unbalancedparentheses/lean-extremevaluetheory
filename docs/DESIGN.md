@@ -20,7 +20,8 @@ structures, theorem names describe the statement). Library-specific rules:
   convention: `ξ > 0` is the Fréchet side with index `1/ξ`, `ξ < 0` the Weibull side with index
   `-1/ξ`, `ξ = 0` the Gumbel domain (`isInMDAGEV_iff_of_pos`, `isInMDAGEV_iff_of_neg`,
   `isInMDAGEV_zero_iff` in `DomainOfAttraction/GEVDomain.lean`). Membership of a named law is
-  `isInMDA…_<law>`, e.g. `isInMDAGEV_paretoCDF`.
+  `isInMDA…_<law>`, e.g. `isInMDAGEV_paretoCDF`, or `isInMDAGEV_ofMeasure_gpdMeasure` for a law given as a
+  measure.
 * **Named laws.** A c.d.f. is `<name>CDF` (`standardGumbelCDF`, `standardFrechetCDF hα`,
   `paretoCDF hα`, `powerCDF hα`, `standardExponentialCDF`); a measure is `<name>Measure` or
   Mathlib's name (`paretoMeasure t r`, `expMeasure 1`, `gpdMeasure ξ σ`); a survival function is
@@ -109,6 +110,7 @@ Further conventions:
 | estimators and their asymptotics | `Statistics/` |
 | sharpness of hypotheses | `Minimality/` |
 | checks of the statements | `Test/` |
+| worked examples for users | `Examples/`, a separate library that imports only the umbrella |
 
 * A lemma goes where a user would look for it: next to the definition it evaluates, or next to
   the theorem it feeds. Evaluation, measurability and `simp` lemmas for a definition live in the

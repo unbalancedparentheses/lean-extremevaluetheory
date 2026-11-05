@@ -103,6 +103,7 @@ jobs:
           status=passing
           lake build ExtremeValueTheory 2>&1 | tee "$RUNNER_TEMP/build.log" || status=failing
           lake build Test 2>&1 | tee -a "$RUNNER_TEMP/build.log" || status=failing
+          lake build Examples 2>&1 | tee -a "$RUNNER_TEMP/build.log" || status=failing
           echo "status=$status" >> "$GITHUB_OUTPUT"
           echo "Build $status"
 
@@ -122,7 +123,7 @@ jobs:
           {
             echo "Automated Mathlib bump: \`$CURRENT\` -> \`$REV\` (toolchain \`$TOOLCHAIN\`)."
             echo
-            echo "**Build: $STATUS** (\`lake build ExtremeValueTheory\` and \`lake build Test\`)."
+            echo "**Build: $STATUS** (\`lake build ExtremeValueTheory\`, \`lake build Test\` and \`lake build Examples\`)."
             echo "Errors: $errors. Deprecation warnings: $deprecations. Full log: $RUN_URL"
             if [ "$STATUS" = failing ]; then
               echo

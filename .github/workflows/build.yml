@@ -15,3 +15,5 @@ jobs:
       - uses: leanprover/lean-action@v1
       - name: Build the specification tests and the axiom audit
         run: lake build Test
+      - name: Build the worked examples
+        run: lake build Examples

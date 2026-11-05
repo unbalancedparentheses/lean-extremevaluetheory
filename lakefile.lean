@@ -19,3 +19,9 @@ lean_lib «ExtremeValueTheory» where
 the library. Built in CI by `lake build Test`; see `Test/README.md`. -/
 lean_lib «Test» where
   globs := #[.andSubmodules `Test]
+
+/-- Worked examples for downstream users: a tutorial, the standard laws and applied problems. They
+import only the umbrella `ExtremeValueTheory`, and nothing in the library imports them. Built in CI
+by `lake build Examples`; see `docs/TUTORIAL.md`. -/
+lean_lib «Examples» where
+  globs := #[.andSubmodules `Examples]

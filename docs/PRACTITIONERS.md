@@ -16,6 +16,13 @@ commit `9a3bfe3` (2026-10-18), and each name still exists in release `v0.9.0`; t
 Everything in the library is **asymptotic** (`n → ∞`, `k → ∞`, `u → x_F`). Nothing is said about
 finite-sample bias, coverage of confidence intervals, or how to choose `k` or the threshold `u`.
 
+**Worked examples.** Three concrete problems end in one statement that the build checks, and each says what
+the theorem does not cover: a 100-year flood return level
+([`Examples/Applications/HundredYearFlood.lean`](../Examples/Applications/HundredYearFlood.lean)), a reinsurance
+layer ([`ReinsuranceLayer.lean`](../Examples/Applications/ReinsuranceLayer.lean), an exact calculation for a known
+law rather than an asymptotic statement) and a tail index estimated with Hill
+([`HillTailIndex.lean`](../Examples/Applications/HillTailIndex.lean)).
+
 ---
 
 ## 1. Summary table

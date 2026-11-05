@@ -613,3 +613,16 @@ follow de Haan and Ferreira, \emph{Extreme Value Theory: An Introduction}, Sprin
   A uniform bound $|\log U(xt) - \log U(t) - \gamma \log x| \le C(1 + \log x)\,a$ when $|A| \le a$ on $[t, xt]$, and
   the delta method. A bound $C|A(t)|\log x$ fails in general for slowly varying $|A|$.
 \end{proof}
+
+\begin{corollary}[Hill consistency for a sample with a given law]
+  \label{cor:hill-of-law}
+  \uses{thm:hill-consistency}
+  \lean{ExtremeValueTheory.tendstoInMeasure_hill_of_hasLaw, ExtremeValueTheory.tendstoInMeasure_inv_hill_of_hasLaw}
+  \leanok
+  For an iid sample of a law $\mu$ whose tail is regularly varying with index $-\alpha$, with $k \to \infty$
+  and $k / n \to 0$, the Hill estimator tends to $1 / \alpha$ in probability, and its inverse to $\alpha$.
+\end{corollary}
+\begin{proof}
+  \leanok
+  The tail of $X_0$ is the tail of $\mu$; the second statement is the continuous mapping theorem.
+\end{proof}
