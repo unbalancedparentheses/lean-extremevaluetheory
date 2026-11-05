@@ -1,5 +1,6 @@
 import ExtremeValueTheory.DomainOfAttraction.Examples
 import ExtremeValueTheory.DomainOfAttraction.GEVDomain
+import ExtremeValueTheory.DomainOfAttraction.Norming
 import ExtremeValueTheory.DomainOfAttraction.SampleMaxima
 
 /-!
@@ -144,5 +145,60 @@ theorem test_normal_cond_excess :
     simp [gpdSurvivalAll]
   rw [hg] at h
   exact ⟨Ω, _, P, X 0, β, hP, h⟩
+
+/-! ### Canonical norming constants and the equivalent forms -/
+
+/-- Exercises `exists_tendsto_pow_norming_tailQuantile` on Pareto(`2`), in `MDA(H_{1/2})`. -/
+theorem test_canonical_pareto :
+    ∃ a : ℝ → ℝ, ∀ x, Tendsto (fun n : ℕ ↦
+      paretoCDF (two_pos : (0 : ℝ) < 2) (a n * x + (paretoCDF two_pos).tailQuantile n) ^ n) atTop
+      (𝓝 (gevCDF (1 / 2) x)) := by
+  obtain ⟨a, -, h⟩ := exists_tendsto_pow_norming_tailQuantile (isInMDAGEV_paretoCDF two_pos)
+  exact ⟨a, h⟩
+
+/-- Exercises `tendsto_pow_tailQuantile_mul_of_pos`, the scale-only constants for `ξ > 0`, on
+Pareto(`1`): `F (U_n s) ^ n → Φ_1(s)`. -/
+theorem test_tendsto_pow_tailQuantile_mul_pareto (s : ℝ) :
+    Tendsto (fun n : ℕ ↦ paretoCDF one_pos ((paretoCDF one_pos).tailQuantile n * s) ^ n) atTop
+      (𝓝 (standardFrechetCDF (one_div_pos.2 (show (0 : ℝ) < 1 / 1 by norm_num)) s)) :=
+  tendsto_pow_tailQuantile_mul_of_pos (isInMDAGEV_paretoCDF one_pos) (by norm_num) s
+
+/-- Exercises `exists_tendsto_pow_tailQuantile_of_neg`, the constants for `ξ < 0`, on the uniform
+law, with `ξ = -1`. -/
+theorem test_exists_tendsto_pow_tailQuantile_uniform :
+    ∃ ℓ : ℝ, Tendsto (powerCDF one_pos).tailQuantile atTop (𝓝 ℓ) :=
+  (exists_tendsto_pow_tailQuantile_of_neg (isInMDAGEV_powerCDF one_pos) (by norm_num)).imp
+    fun _ h ↦ h.1
+
+/-- Exercises `tendsto_pow_spacing_of_zero`, the spacing constants for `ξ = 0`, on the normal law. -/
+theorem test_tendsto_pow_spacing_normal (x : ℝ) :
+    Tendsto (fun n : ℕ ↦ standardNormalCDF (((standardNormalCDF.tailQuantile (2 * n) -
+      standardNormalCDF.tailQuantile n) / log 2) * x + standardNormalCDF.tailQuantile n) ^ n) atTop
+      (𝓝 (standardGumbelCDF x)) :=
+  tendsto_pow_spacing_of_zero isInMDAGEV_standardNormalCDF one_lt_two x
+
+/-- Exercises `isInMDAGEV_iff_exists_tendsto_mul_one_sub`: the normal law, in tail form. -/
+theorem test_exists_tendsto_mul_one_sub_normal :
+    ∃ a b : ℕ → ℝ, (∀ n, 0 < a n) ∧ ∀ x, Tendsto (fun n : ℕ ↦
+      (n : ℝ) * (1 - standardNormalCDF (a n * x + b n))) atTop (𝓝 (exp (-x))) := by
+  obtain ⟨a, b, ha, h⟩ :=
+    (isInMDAGEV_iff_exists_tendsto_mul_one_sub 0).1 isInMDAGEV_standardNormalCDF
+  refine ⟨a, b, ha, fun x ↦ ?_⟩
+  simpa using h x (by simp [exp_pos])
+
+/-- Exercises `isInMDAGEV_iff_exists_tendsto_div_tail` on Pareto(`1`), with `ξ = 1`: the limit is
+`(1 + x)⁻¹` for `x > -1`, including negative `x`. -/
+theorem test_exists_tendsto_div_tail_pareto :
+    ∃ f : ℝ → ℝ, (∀ᶠ t in (paretoCDF (one_pos : (0 : ℝ) < 1)).upperEndpointFilter, 0 < f t) ∧
+      Tendsto (fun t ↦ (1 - paretoCDF one_pos (t + f t * (-1 / 2))) / (1 - paretoCDF one_pos t))
+        (paretoCDF one_pos).upperEndpointFilter (𝓝 2) := by
+  have hF : (paretoCDF (one_pos : (0 : ℝ) < 1)).IsInMDAGEV 1 := by
+    simpa using isInMDAGEV_paretoCDF (one_pos : (0 : ℝ) < 1)
+  obtain ⟨f, hf, h⟩ := (isInMDAGEV_iff_exists_tendsto_div_tail 1).1 hF
+  have hval : gpdSurvivalAll 1 1 (-1 / 2) = 2 := by
+    norm_num [gpdSurvivalAll]
+  refine ⟨f, hf, ?_⟩
+  have := h (-1 / 2) (by rw [hval]; norm_num)
+  rwa [hval] at this
 
 end Test.KnownAnswers.DomainExamples

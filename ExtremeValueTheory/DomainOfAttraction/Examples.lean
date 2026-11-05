@@ -5,6 +5,7 @@ Authors: Federico Carrone
 -/
 import ExtremeValueTheory.Dependence.MDependent
 import ExtremeValueTheory.DomainOfAttraction.NamedLaws
+import ExtremeValueTheory.DomainOfAttraction.Norming
 import ExtremeValueTheory.HeavyTails.Lognormal
 import Mathlib.Analysis.Calculus.LHopital
 import Mathlib.Probability.Distributions.Cauchy
@@ -40,16 +41,6 @@ open Real Filter Topology Set MeasureTheory ProbabilityTheory ExtremeValueTheory
 open scoped ENNReal NNReal
 
 namespace CumulativeDistributionFunction
-
-/-- If `n (1 - p_n) → τ`, then `p_n ^ n → e^{-τ}`. -/
-private lemma tendsto_pow_of_tendsto_mul_one_sub {p : ℕ → ℝ} {τ : ℝ}
-    (h : Tendsto (fun n : ℕ ↦ (n : ℝ) * (1 - p n)) atTop (𝓝 τ)) :
-    Tendsto (fun n ↦ p n ^ n) atTop (𝓝 (exp (-τ))) := by
-  have h1 : Tendsto (fun n : ℕ ↦ (n : ℝ) * -(1 - p n)) atTop (𝓝 (-τ)) := by
-    simpa only [mul_neg] using h.neg
-  refine (Real.tendsto_one_add_pow_exp_of_tendsto h1).congr fun n ↦ ?_
-  congr 1
-  ring
 
 /-- **A criterion for the Gumbel domain**: if `a_n > 0` eventually and
 `n (1 - F (a_n x + b_n)) → e^{-x}` for every `x`, then `F` is in `MDA(Λ)`. The positivity of `a_n` is
