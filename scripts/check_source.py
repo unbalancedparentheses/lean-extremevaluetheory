@@ -8,8 +8,12 @@ proof, `implemented_by`). Comments and strings are removed first, so prose may m
 It also fails if a file under `ExtremeValueTheory/` is not reachable from the umbrella
 `ExtremeValueTheory.lean`: Lake would not build it and the axiom audit would not see it.
 
+`Challenge.lean` is the one file allowed a `sorry`: stating the comparator's challenge is its purpose
+(see `comparator.json`). Everything else forbidden stays forbidden there.
+
 Usage: python3 scripts/check_source.py [ROOT ...]
 Default roots: ExtremeValueTheory ExtremeValueTheory.lean Test Test.lean Downstream Examples Examples.lean
+Challenge.lean Solution.lean
 """
 
 import re
@@ -32,6 +36,8 @@ FORBIDDEN = [
     (r"(?<![\w.'])says(?![\w'])", "a search tactic left in the source"),
 ]
 PATTERNS = [(re.compile(p, re.MULTILINE), why) for p, why in FORBIDDEN]
+SORRY_ALLOWED_IN = Path("Challenge.lean")
+SORRY = FORBIDDEN[0][1]
 
 
 def strip_comments_and_strings(text: str) -> str:
@@ -75,6 +81,7 @@ def check(path: Path) -> list[str]:
     return [
         f"{path}:{code.count(chr(10), 0, m.start()) + 1}: {why}"
         for pattern, why in PATTERNS
+        if not (why == SORRY and path == SORRY_ALLOWED_IN)
         for m in pattern.finditer(code)
     ]
 
@@ -98,7 +105,7 @@ def unreachable(umbrella: Path = Path("ExtremeValueTheory.lean")) -> list[Path]:
 
 def main() -> int:
     args = [Path(a) for a in sys.argv[1:]]
-    roots = args or [Path(r) for r in ("ExtremeValueTheory", "ExtremeValueTheory.lean", "Test", "Test.lean", "Downstream", "Examples", "Examples.lean")]
+    roots = args or [Path(r) for r in ("ExtremeValueTheory", "ExtremeValueTheory.lean", "Test", "Test.lean", "Downstream", "Examples", "Examples.lean", "Challenge.lean", "Solution.lean")]
     files = [f for root in roots for f in ([root] if root.is_file() else sorted(root.rglob("*.lean")))]
     if not files:
         print("check_source: no Lean files found", file=sys.stderr)

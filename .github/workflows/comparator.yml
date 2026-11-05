@@ -1,0 +1,43 @@
+name: Comparator
+
+# `lake comparator` checks that `Solution.lean` proves the statements of `Challenge.lean`, down to the
+# definitions, that the proofs use only the permitted axioms, and that the kernels accept them. It
+# builds and exports inside a `bwrap` sandbox, which needs Linux. See `comparator.json`.
+
+on:
+  push:
+    branches: [main]
+    tags: ["*"]
+  workflow_dispatch:
+
+concurrency:
+  group: comparator-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  comparator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the sandbox
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap
+          # Ubuntu 24.04 restricts unprivileged user namespaces, which bwrap needs.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all -- true
+      - uses: leanprover/lean-action@v1
+      - name: Judge the solution against the challenge, in the sandbox, with every bundled kernel
+        run: lake comparator --paranoid
+      - name: Check that the comparator rejects a changed definition
+        run: |
+          sed -i 's/if x < 0 then Real.exp (-((-x) ^ α)) else 1/if x < 0 then Real.exp (-((-x) ^ α)) else 0/' Challenge.lean
+          git diff --stat -- Challenge.lean | grep -q '1 file changed'
+          if lake comparator > rejected.log 2>&1; then
+            cat rejected.log
+            echo "The comparator accepted a challenge with a changed definition"
+            exit 1
+          fi
+          grep -q 'does not match' rejected.log
+          git checkout -- Challenge.lean

@@ -1,0 +1,15 @@
+{
+  "challenge_module": "Challenge",
+  "solution_module": "Solution",
+  "theorem_names": [
+    "Challenge.fisher_tippett_gnedenko",
+    "Challenge.pickands_balkema_de_haan",
+    "Challenge.hill_consistent",
+    "Challenge.echo_anticlustering_iff",
+    "Challenge.limits_nonvacuous",
+    "Challenge.pickands_nonvacuous",
+    "Challenge.hill_nonvacuous",
+    "Challenge.echo_nonvacuous"
+  ],
+  "permitted_axioms": ["propext", "Quot.sound", "Classical.choice"]
+}

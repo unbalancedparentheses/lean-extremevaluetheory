@@ -12,8 +12,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check the source for sorry, new axioms and search tactics
         run: python3 scripts/check_source.py
+      - name: Check the architecture and the review deadline, and test these checks on bad files
+        run: |
+          python3 scripts/check_architecture.py
+          python3 scripts/check_architecture.py --self-test
       - uses: leanprover/lean-action@v1
       - name: Build the specification tests and the axiom audit
         run: lake build Test
       - name: Build the worked examples
         run: lake build Examples
+      - name: Report duplicate definitions
+        run: python3 scripts/check_architecture.py --duplicates

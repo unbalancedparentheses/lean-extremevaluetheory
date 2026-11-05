@@ -25,3 +25,10 @@ import only the umbrella `ExtremeValueTheory`, and nothing in the library import
 by `lake build Examples`; see `docs/TUTORIAL.md`. -/
 lean_lib «Examples» where
   globs := #[.andSubmodules `Examples]
+
+/-- The comparator challenge and its solution (see `comparator.json`). Not a default target and not
+part of the library. `roots` is empty so that tools that import every library root, such as
+`checkdecls`, do not load these two modules together: they declare the same names on purpose. -/
+lean_lib «ComparatorChallenge» where
+  roots := #[]
+  globs := #[.one `Challenge, .one `Solution]

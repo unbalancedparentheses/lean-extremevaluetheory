@@ -1,0 +1,262 @@
+import Mathlib
+
+/-!
+# The challenge
+
+Four headline theorems of this repository, stated using only Mathlib. A reader who wants to know
+what has been proved reads this file and nothing else: it does not import the library, every
+definition it uses is written out below, and `lake comparator` (see `comparator.json`) checks that
+`Solution.lean` proves these exact statements, down to the definitions, from the standard axioms.
+
+The `sorry`s are the point of the file: they are what `Solution.lean` has to fill in. `Challenge`
+is not part of the library, and `scripts/check_source.py` allows `sorry` in this file only.
+
+A theorem with vacuous hypotheses says nothing, so the file also shows they can be met. The cheap
+checks are the `sanity_` lemmas, proved here; the `#guard_msgs` at the end fails the build if they
+ever depend on `sorry`. The others are the `_nonvacuous` theorems: stated here, proved in
+`Solution.lean` and compared like the rest.
+
+## Where these statements stop short
+
+* `pickands_balkema_de_haan` takes the supremum over all `x ≥ 0`. The literature's is over
+  `0 < x < x_F - u`, where the excess ratio is positive. So the implication from left to right is
+  stronger here, and the converse assumes more.
+* `hill_consistent` is convergence in probability of iid data only. Almost sure consistency,
+  asymptotic normality and dependent data are not claimed here.
+* `echo_anticlustering_iff` excludes the critical `ρ = γ/α`, about which it claims nothing.
+  Its noise is nonnegative at every `ω`, which Pareto noise is only almost surely; replacing `Z` by
+  `|Z|` changes the process only on a null set. The lag is `⌊z^γ⌋ + 1` rather than `⌈z^γ⌉`. That this
+  answers Bai, Kulik and Wang's question (is there a process with anticlustering for
+  `lim log rₙ / log n = ρ` only up to some `ρ₀ < 1`?) is our reading of their paper, not a theorem.
+-/
+
+open Filter Topology MeasureTheory ProbabilityTheory
+
+namespace Challenge
+
+/-! ## Maxima: definitions -/
+
+/-- `F` is a distribution function: nondecreasing, right-continuous, from `0` at `-∞` to `1` at
+`+∞`. -/
+structure IsDistributionFunction (F : ℝ → ℝ) : Prop where
+  mono : Monotone F
+  rightCont : ∀ x, ContinuousWithinAt F (Set.Ici x) x
+  atBot : Tendsto F atBot (𝓝 0)
+  atTop : Tendsto F atTop (𝓝 1)
+
+/-- `G` is degenerate: for a distribution function, this says that it is a point mass. -/
+def IsDegenerate (G : ℝ → ℝ) : Prop := ∀ x, G x = 0 ∨ G x = 1
+
+/-- `F` is in the domain of attraction of `G`: there are `aₙ > 0` and `bₙ` with
+`F(aₙ x + bₙ)ⁿ → G(x)` at every continuity point `x` of `G`. -/
+def InDomainOfAttraction (F G : ℝ → ℝ) : Prop :=
+  ∃ a b : ℕ → ℝ, (∀ n, 0 < a n) ∧
+    ∀ x, ContinuousAt G x → Tendsto (fun n ↦ F (a n * x + b n) ^ n) atTop (𝓝 (G x))
+
+/-- `G` and `H` are of the same type: `G(a x + b) = H(x)` for some `a > 0` and `b`. -/
+def SameType (G H : ℝ → ℝ) : Prop := ∃ a b : ℝ, 0 < a ∧ ∀ x, G (a * x + b) = H x
+
+/-- The standard Gumbel distribution function `Λ`. -/
+noncomputable def gumbel (x : ℝ) : ℝ := Real.exp (-Real.exp (-x))
+
+/-- The standard Fréchet distribution function `Φ_α`. -/
+noncomputable def frechet (α x : ℝ) : ℝ := if x ≤ 0 then 0 else Real.exp (-(x ^ (-α)))
+
+/-- The standard Weibull distribution function `Ψ_α` (of maxima: supported on `x ≤ 0`). -/
+noncomputable def weibull (α x : ℝ) : ℝ := if x < 0 then Real.exp (-((-x) ^ α)) else 1
+
+/-! ## 1. Fisher–Tippett–Gnedenko -/
+
+/-- **Fisher–Tippett–Gnedenko.** If `F` and `G` are distribution functions, `G` is not degenerate
+and `F(aₙ x + bₙ)ⁿ → G(x)` at the continuity points of `G`, then `G` is of Gumbel, Fréchet or
+Weibull type. -/
+theorem fisher_tippett_gnedenko {F G : ℝ → ℝ} (hF : IsDistributionFunction F)
+    (hG : IsDistributionFunction G) (hnd : ¬ IsDegenerate G) (h : InDomainOfAttraction F G) :
+    SameType G gumbel ∨ (∃ α > 0, SameType G (frechet α)) ∨ (∃ α > 0, SameType G (weibull α)) :=
+  sorry
+
+/-- `Λ` is a nondegenerate distribution function. -/
+theorem sanity_gumbel : IsDistributionFunction gumbel ∧ ¬ IsDegenerate gumbel := by
+  have hmono : Monotone gumbel := fun x y hxy ↦ by unfold gumbel; gcongr
+  refine ⟨⟨hmono, fun x ↦ (by unfold gumbel; fun_prop : Continuous gumbel).continuousWithinAt, ?_, ?_⟩,
+    fun h ↦ ?_⟩
+  · exact Real.tendsto_exp_atBot.comp
+      (tendsto_neg_atTop_atBot.comp (Real.tendsto_exp_atTop.comp tendsto_neg_atBot_atTop))
+  · have h0 : Tendsto (fun x : ℝ ↦ -Real.exp (-x)) atTop (𝓝 0) := by
+      simpa using (Real.tendsto_exp_atBot.comp tendsto_neg_atTop_atBot).neg
+    have h1 := (Real.continuous_exp.tendsto 0).comp h0
+    rwa [Real.exp_zero] at h1
+  · have h1 : gumbel 0 < 1 := Real.exp_lt_one_iff.2 (by simp)
+    rcases h 0 with h0 | h0
+    · exact (Real.exp_pos _).ne' h0
+    · exact h1.ne h0
+
+/-- The hypotheses of `fisher_tippett_gnedenko` are satisfied: `F = G = Λ`, `aₙ = 1`,
+`bₙ = log n`. -/
+theorem sanity_fisher_tippett_gnedenko : InDomainOfAttraction gumbel gumbel := by
+  refine ⟨fun _ ↦ 1, fun n ↦ Real.log n, fun _ ↦ one_pos, fun x _ ↦ ?_⟩
+  refine tendsto_const_nhds.congr' ?_
+  filter_upwards [eventually_gt_atTop 0] with n hn
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+  unfold gumbel
+  rw [← Real.exp_nat_mul, one_mul, neg_add, Real.exp_add, Real.exp_neg (Real.log n),
+    Real.exp_log hn']
+  field_simp
+
+/-! ## 2. Pickands–Balkema–de Haan -/
+
+/-- The standard generalized extreme value distribution function `H_ξ`. -/
+noncomputable def gev (ξ x : ℝ) : ℝ :=
+  if ξ = 0 then Real.exp (-Real.exp (-x))
+  else if 0 < 1 + ξ * x then Real.exp (-(1 + ξ * x) ^ (-1 / ξ))
+  else if 0 < ξ then 0 else 1
+
+/-- The survival function of the generalized Pareto distribution with shape `ξ` and scale `1`. For
+`ξ < 0` and `1 + ξ x ≤ 0` the base is `0` and the exponent positive, so the value is `0`. -/
+noncomputable def gpdSurvival (ξ x : ℝ) : ℝ :=
+  if ξ = 0 then Real.exp (-x) else (max (1 + ξ * x) 0) ^ (-(1 / ξ))
+
+/-- The filter `u ↑ x_F`, where `x_F = sup {x | F x < 1}` is the right endpoint of `F`, possibly
+infinite: it is generated by the sets `{u | x < u ∧ F u < 1}` with `F x < 1`. -/
+def toRightEndpoint (F : ℝ → ℝ) : Filter ℝ :=
+  ⨅ x ∈ {x | F x < 1}, 𝓟 (Set.Ioi x ∩ {u | F u < 1})
+
+/-- The limits above are distribution functions. -/
+theorem limits_nonvacuous :
+    (∀ α > 0, IsDistributionFunction (frechet α) ∧ IsDistributionFunction (weibull α)) ∧
+      ∀ ξ, IsDistributionFunction (gev ξ) :=
+  sorry
+
+/-- The hypothesis of `pickands_balkema_de_haan` can be met for every `ξ`. -/
+theorem pickands_nonvacuous (ξ : ℝ) :
+    ∃ F, IsDistributionFunction F ∧ InDomainOfAttraction F (gev ξ) :=
+  sorry
+
+/-- **Pickands–Balkema–de Haan**, for every shape `ξ ∈ ℝ`. The distribution function `F` is in the
+domain of attraction of `H_ξ` if and only if there is a scale `β(u) > 0` with
+`P(X > u + β(u) x | X > u) = F̄(u + β(u) x) / F̄(u)` converging to the generalized Pareto survival
+function of shape `ξ`, uniformly in `x ≥ 0`, as `u ↑ x_F`. -/
+theorem pickands_balkema_de_haan {F : ℝ → ℝ} (hF : IsDistributionFunction F) (ξ : ℝ) :
+    InDomainOfAttraction F (gev ξ) ↔
+      ∃ β : ℝ → ℝ, (∀ᶠ u in toRightEndpoint F, 0 < β u) ∧
+        TendstoUniformlyOn (fun u x ↦ (1 - F (u + β u * x)) / (1 - F u)) (gpdSurvival ξ)
+          (toRightEndpoint F) (Set.Ici 0) :=
+  sorry
+
+/-- The limit in `pickands_balkema_de_haan` is not vacuous: `u ↑ x_F` is a proper filter. -/
+theorem sanity_toRightEndpoint {F : ℝ → ℝ} (hF : IsDistributionFunction F) :
+    (toRightEndpoint F).NeBot := by
+  have hne : {x | F x < 1}.Nonempty :=
+    ((hF.atBot.eventually (gt_mem_nhds one_pos)).exists).imp fun _ h ↦ h
+  have hbasis : (toRightEndpoint F).HasBasis (· ∈ {x | F x < 1})
+      (fun x ↦ Set.Ioi x ∩ {u | F u < 1}) := by
+    refine hasBasis_biInf_principal ?_ hne
+    rintro x hx y hy
+    refine ⟨max x y, ?_, ?_⟩
+    · rcases max_cases x y with ⟨h, -⟩ | ⟨h, -⟩ <;> simpa [h]
+    · exact ⟨Set.inter_subset_inter_left _ (Set.Ioi_subset_Ioi (le_max_left _ _)),
+        Set.inter_subset_inter_left _ (Set.Ioi_subset_Ioi (le_max_right _ _))⟩
+  refine hbasis.neBot_iff.2 fun {x} hx ↦ ?_
+  have hx' : F x < 1 := hx
+  -- By right-continuity, `F < 1` just to the right of `x`.
+  have hev := (continuousWithinAt_Ioi_iff_Ici.2 (hF.rightCont x)).eventually (gt_mem_nhds hx')
+  obtain ⟨y, hy, hxy⟩ := (hev.and self_mem_nhdsWithin).exists
+  exact ⟨y, hxy, hy⟩
+
+/-! ## 3. Consistency of the Hill estimator -/
+
+/-- `f` is regularly varying at `+∞` with index `ρ`: eventually positive, with
+`f(c x) / f(x) → c^ρ` as `x → ∞` for every `c > 0`. -/
+def IsRegularlyVarying (f : ℝ → ℝ) (ρ : ℝ) : Prop :=
+  (∀ᶠ x in atTop, 0 < f x) ∧ ∀ c : ℝ, 0 < c → Tendsto (fun x ↦ f (c * x) / f x) atTop (𝓝 (c ^ ρ))
+
+/-- The descending order statistics of a sample: `orderStat x j` is `X_{(j+1)}`, the `(j+1)`-th
+largest entry, for `j < n`. It is `0` for `j ≥ n`, which does not matter below, since `k/n → 0`
+gives `k(n) < n` eventually. `Tuple.sort x` is Mathlib's permutation sorting `x` increasingly. -/
+noncomputable def orderStat {n : ℕ} (x : Fin n → ℝ) (j : ℕ) : ℝ :=
+  if h : j < n then x (Tuple.sort x (Fin.rev ⟨j, h⟩)) else 0
+
+/-- The Hill estimator `H_{k,n} = (1/k) ∑_{i<k} (log X_{(i+1)} - log X_{(k+1)})`. -/
+noncomputable def hill {n : ℕ} (x : Fin n → ℝ) (k : ℕ) : ℝ :=
+  (k : ℝ)⁻¹ * ∑ i ∈ Finset.range k, (Real.log (orderStat x i) - Real.log (orderStat x k))
+
+/-- **Weak consistency of the Hill estimator.** For iid real random variables whose survival
+function `x ↦ P(X₀ > x)` is regularly varying with index `-α < 0`, and `k(n) → ∞` with
+`k(n)/n → 0`, the Hill estimator of the first `n` observations converges in probability to
+`1/α`. -/
+theorem hill_consistent {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+    {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurable (X i)) (hindep : iIndepFun X P)
+    (hident : ∀ i, IdentDistrib (X i) (X 0) P P) {α : ℝ} (hα : 0 < α)
+    (hRV : IsRegularlyVarying (fun x ↦ (P {ω | x < X 0 ω}).toReal) (-α)) {k : ℕ → ℕ}
+    (hk : Tendsto k atTop atTop) (hkn : Tendsto (fun n ↦ (k n : ℝ) / n) atTop (𝓝 0)) :
+    TendstoInMeasure P (fun n ω ↦ hill (fun i : Fin n ↦ X i ω) (k n)) atTop (fun _ ↦ 1 / α) :=
+  sorry
+
+/-- The hypotheses of `hill_consistent` can be met for every `α`, with `k(n) = ⌊√n⌋`. -/
+theorem hill_nonvacuous {α : ℝ} (hα : 0 < α) :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ),
+      IsProbabilityMeasure P ∧ (∀ i, Measurable (X i)) ∧ iIndepFun X P ∧
+      (∀ i, IdentDistrib (X i) (X 0) P P) ∧
+      IsRegularlyVarying (fun x ↦ (P {ω | x < X 0 ω}).toReal) (-α) ∧
+      Tendsto Nat.sqrt atTop atTop ∧ Tendsto (fun n ↦ (Nat.sqrt n : ℝ) / n) atTop (𝓝 0) :=
+  sorry
+
+/-! ## 4. The answer to Bai–Kulik–Wang -/
+
+/-- The echo process `X_t = max(Z_t, sup {Z_s : s < t, s + L(Z_s) = t})`: each innovation `Z_s`
+appears at time `s` and once more, as an echo, at time `s + L(Z_s)`. Summing over the lag `j + 1`
+of the echo. Under the hypotheses of `echo_anticlustering_iff` only finitely many terms are nonzero
+almost surely, so the supremum is a.s. a maximum and its junk value on unbounded families is on a
+null set. -/
+noncomputable def echoProcess {Ω : Type*} (L : ℝ → ℕ) (Z : ℤ → Ω → ℝ) (t : ℤ) (ω : Ω) : ℝ :=
+  max (Z t ω) (⨆ j : ℕ, if L (Z (t - (j + 1)) ω) = j + 1 then Z (t - (j + 1)) ω else 0)
+
+/-- The power lag `L(z) = ⌊z^γ⌋ + 1`. -/
+noncomputable def powLag (γ z : ℝ) : ℕ := ⌊z ^ γ⌋₊ + 1
+
+/-- The anticlustering condition `AC(rₙ)` at the levels `aₙ`: for all `x > 0`, written as an
+`ε`–`m` bound,
+`lim_{m → ∞} limsup_{n → ∞} P(max_{m ≤ |t| ≤ rₙ} |X_t| > aₙ x | |X_0| > aₙ x) = 0`. -/
+def AntiClustering {Ω : Type*} [MeasurableSpace Ω] (P : Measure Ω) (X : ℤ → Ω → ℝ) (a : ℕ → ℝ)
+    (r : ℕ → ℕ) : Prop :=
+  ∀ x : ℝ, 0 < x → ∀ ε : ℝ, 0 < ε → ∃ m : ℕ, ∀ᶠ n in atTop,
+    P.real {ω | a n * x < |X 0 ω| ∧ ∃ t : ℤ, (m : ℤ) ≤ |t| ∧ |t| ≤ r n ∧ a n * x < |X t ω|} ≤
+      ε * P.real {ω | a n * x < |X 0 ω|}
+
+/-- **The answer to the second question of Bai, Kulik and Wang** (arXiv:2409.17966, §1). For iid
+Pareto(`α`) noise, the echo process with lag `⌊z^γ⌋ + 1`, `0 < γ < α`, levels with
+`n P(X_0 > aₙ) → τ > 0` and blocks with `log rₙ / log n → ρ ∈ (0, 1)`, `ρ ≠ γ/α`: anticlustering
+holds if and only if `ρ < γ/α`. -/
+theorem echo_anticlustering_iff {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω}
+    [IsProbabilityMeasure P] {α γ : ℝ} {Z : ℤ → Ω → ℝ} (hα : 0 < α) (hZ : ∀ t, Measurable (Z t))
+    (hind : iIndepFun Z P) (hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α) (hpos : ∀ t ω, 0 ≤ Z t ω)
+    (hγ : 0 < γ) (hγα : γ < α) {a : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)
+    (hτ : Tendsto (fun n : ℕ ↦ n * P.real {ω | a n < echoProcess (powLag γ) Z 0 ω}) atTop (𝓝 τ))
+    {ρ : ℝ} (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (hρ : ρ ≠ γ / α) {r : ℕ → ℕ}
+    (hr : Tendsto (fun n : ℕ ↦ Real.log (r n) / Real.log n) atTop (𝓝 ρ)) :
+    AntiClustering P (echoProcess (powLag γ) Z) a r ↔ ρ < γ / α :=
+  sorry
+
+/-- The hypotheses of `echo_anticlustering_iff` can be met for every `0 < γ < α`, with `τ = 1` and
+`rₙ = ⌊√n⌋`, so `ρ = 1/2`. Both sides of the cutoff `γ/α` occur, by the choice of `γ`. -/
+theorem echo_nonvacuous {α : ℝ} (hα : 0 < α) :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (Z : ℤ → Ω → ℝ),
+      IsProbabilityMeasure P ∧ (∀ t, Measurable (Z t)) ∧ iIndepFun Z P ∧
+      (∀ t, P.map (Z t) = paretoMeasure 1 α) ∧ (∀ t ω, 0 ≤ Z t ω) ∧
+      Tendsto (fun n : ℕ ↦ Real.log (Nat.sqrt n) / Real.log n) atTop (𝓝 (1 / 2)) ∧
+      ∀ γ, 0 < γ → γ < α → ∃ a : ℕ → ℝ,
+        Tendsto (fun n : ℕ ↦ n * P.real {ω | a n < echoProcess (powLag γ) Z 0 ω}) atTop (𝓝 1) :=
+  sorry
+
+/-- info: 'Challenge.sanity_gumbel' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in #print axioms sanity_gumbel
+/--
+info: 'Challenge.sanity_fisher_tippett_gnedenko' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in #print axioms sanity_fisher_tippett_gnedenko
+/--
+info: 'Challenge.sanity_toRightEndpoint' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in #print axioms sanity_toRightEndpoint
+
+end Challenge
