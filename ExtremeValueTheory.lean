@@ -53,6 +53,7 @@ import ExtremeValueTheory.StableLaws.GeneralizedCLT.CharFun
 import ExtremeValueTheory.StableLaws.GeneralizedCLT
 import ExtremeValueTheory.StableLaws.Constants
 import ExtremeValueTheory.RegularVariation.KaramataConverse
+import ExtremeValueTheory.RegularVariation.KaramataIntegrals
 import ExtremeValueTheory.DomainOfAttraction.VonMises
 import ExtremeValueTheory.StableLaws.GeneralizedCLTOne
 import ExtremeValueTheory.StableLaws.EulerConstant
