@@ -15,8 +15,8 @@ import Mathlib.Probability.Distributions.Cauchy
 # Domains of attraction of further named laws, and explicit norming constants
 
 `DomainOfAttraction/VonMises.lean`, `Gumbel.lean` and `GEVDomain.lean` place the Pareto, power and
-exponential laws in their domains. This file adds the other standard laws of a textbook table
-([EKM, Tables 3.4.2–3.4.4]), and the explicit norming constants for the first three.
+exponential laws in their domains. This file adds other standard laws, and the explicit norming
+constants of the first three ([EKM, Tables 3.4.2–3.4.4]).
 
 ## Main definitions
 
@@ -117,13 +117,16 @@ noncomputable def studentTMeasure (ν : ℝ) : Measure ℝ :=
 
 variable {ν : ℝ}
 
+/-- The kernel of Student's t law is positive. -/
 lemma studentTKernel_pos (hν : 0 < ν) (x : ℝ) : 0 < studentTKernel ν x :=
   rpow_pos_of_pos (by positivity) _
 
+/-- The kernel of Student's t law is measurable. -/
 lemma measurable_studentTKernel (ν : ℝ) : Measurable (studentTKernel ν) := by
   unfold studentTKernel
   fun_prop
 
+/-- The kernel of Student's t law is integrable. -/
 theorem integrable_studentTKernel (hν : 0 < ν) : Integrable (studentTKernel ν) := by
   have h : Integrable fun x : ℝ => (1 + ‖x‖ ^ 2) ^ (-(ν + 1) / 2) :=
     integrable_rpow_neg_one_add_norm_sq (E := ℝ) (r := ν + 1) (by simpa using hν)
@@ -131,6 +134,7 @@ theorem integrable_studentTKernel (hν : 0 < ν) : Integrable (studentTKernel ν
   refine (h.comp_div hs).congr (Eventually.of_forall fun x => ?_)
   simp only [studentTKernel, Real.norm_eq_abs, sq_abs, div_pow, sq_sqrt hν.le]
 
+/-- The integral of the kernel, which is the inverse of the normalizing constant, is positive. -/
 theorem integral_studentTKernel_pos (hν : 0 < ν) : 0 < ∫ y, studentTKernel ν y := by
   rw [integral_pos_iff_support_of_nonneg (fun x => (studentTKernel_pos hν x).le)
     (integrable_studentTKernel hν)]
@@ -138,19 +142,24 @@ theorem integral_studentTKernel_pos (hν : 0 < ν) : 0 < ∫ y, studentTKernel �
     Function.support_eq_univ fun x => (studentTKernel_pos hν x).ne'
   simp [this]
 
+/-- The density of Student's t law is nonnegative. -/
 lemma studentTPDFReal_nonneg (hν : 0 < ν) (x : ℝ) : 0 ≤ studentTPDFReal ν x :=
   mul_nonneg (inv_nonneg.2 (integral_studentTKernel_pos hν).le) (studentTKernel_pos hν x).le
 
+/-- The density of Student's t law is measurable. -/
 lemma measurable_studentTPDFReal (ν : ℝ) : Measurable (studentTPDFReal ν) :=
   (measurable_studentTKernel ν).const_mul _
 
+/-- The density of Student's t law is integrable. -/
 theorem integrable_studentTPDFReal (hν : 0 < ν) : Integrable (studentTPDFReal ν) :=
   (integrable_studentTKernel hν).const_mul _
 
+/-- The density of Student's t law integrates to `1`. -/
 theorem integral_studentTPDFReal (hν : 0 < ν) : ∫ x, studentTPDFReal ν x = 1 := by
   simp only [studentTPDFReal]
   rw [integral_const_mul, inv_mul_cancel₀ (integral_studentTKernel_pos hν).ne']
 
+/-- Student's t law is a probability measure. -/
 theorem isProbabilityMeasure_studentTMeasure (hν : 0 < ν) :
     IsProbabilityMeasure (studentTMeasure ν) := by
   refine ⟨?_⟩
@@ -385,7 +394,7 @@ theorem isRegularlyVarying_measureReal_Ioi_gpdMeasure (hξ : 0 < ξ) (hσ : 0 < 
   have hp : 0 ≤ 1 + ξ * x / σ := by positivity
   rw [measureReal_gpdMeasure_Ioi hσ hx, gpdSurvivalAll, ite_eq_right hξ.ne', max_eq_left hp]
 
-/-- **`GPD(ξ, σ)` is in `MDA(H_ξ)`** for every `ξ` ([EKM, Tables 3.4.2–3.4.4]). -/
+/-- **`GPD(ξ, σ)` is in `MDA(H_ξ)`** for every `ξ`. -/
 theorem isInMDAGEV_ofMeasure_gpdMeasure (ξ : ℝ) (hσ : 0 < σ) :
     (ofMeasure (gpdMeasure ξ σ)).IsInMDAGEV ξ := by
   rcases lt_trichotomy ξ 0 with hξ | rfl | hξ
@@ -480,8 +489,7 @@ theorem isInMDAFrechet_ofMeasure_cauchyMeasure (x₀ : ℝ) {γ : ℝ≥0} (hγ 
     (ofMeasure (cauchyMeasure x₀ γ)).IsInMDAFrechet one_pos :=
   (isInMDAFrechet_ofMeasure_iff one_pos).2 (isRegularlyVarying_measureReal_Ioi_cauchyMeasure x₀ hγ)
 
-/-- **Student's t law with `ν` degrees of freedom is in the Fréchet domain `MDA(Φ_ν)`**
-([EKM, Table 3.4.2]). -/
+/-- **Student's t law with `ν` degrees of freedom is in the Fréchet domain `MDA(Φ_ν)`**. -/
 theorem isInMDAFrechet_ofMeasure_studentTMeasure {ν : ℝ} (hν : 0 < ν) :
     (ofMeasure (studentTMeasure ν)).IsInMDAFrechet hν :=
   have := isProbabilityMeasure_studentTMeasure hν

@@ -32,6 +32,7 @@ namespace Examples.Applications.ReinsuranceLayer
 /-- The loss law: Pareto with minimum `1` and index `2`. -/
 noncomputable abbrev loss : Measure ℝ := paretoMeasure 1 2
 
+/-- The tail of the loss: `P(X > x) = x⁻²` for `x ≥ 1`. -/
 theorem tail_loss {x : ℝ} (hx : 1 ≤ x) : tail loss x = (x ^ (2 : ℝ))⁻¹ := by
   rw [loss, tail_paretoMeasure one_pos two_pos hx, Real.one_rpow, one_mul,
     Real.rpow_neg (by linarith)]

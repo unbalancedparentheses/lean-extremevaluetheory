@@ -38,12 +38,15 @@ namespace Examples.Applications.HundredYearFlood
 /-- The compact parameter set for `(ξ, σ)` over which the likelihood is maximized. -/
 def K : Set (ℝ × ℝ) := Icc (-1 / 4 : ℝ) (3 / 4) ×ˢ Icc (50 : ℝ) 200
 
+/-- `K` is compact. -/
 theorem isCompact_K : IsCompact K := isCompact_Icc.prod isCompact_Icc
 
+/-- `K` lies in the admissible region `ξ > -1`, `σ > 0`. -/
 theorem K_sub : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2 := by
   rintro ⟨a, b⟩ ⟨⟨ha, -⟩, ⟨hb, -⟩⟩
   exact ⟨by simp only at ha ⊢; linarith, by simp only at hb ⊢; linarith⟩
 
+/-- The true parameter `(1/4, 100)` is interior to `K`. -/
 theorem mem_interior_K : ((1 / 4 : ℝ), (100 : ℝ)) ∈ interior K := by
   rw [K, interior_prod_eq, interior_Icc, interior_Icc]
   exact ⟨⟨by norm_num, by norm_num⟩, ⟨by norm_num, by norm_num⟩⟩

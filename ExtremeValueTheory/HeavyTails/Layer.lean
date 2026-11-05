@@ -34,11 +34,14 @@ namespace ExtremeValueTheory
 /-- The payout of the reinsurance layer with retention `d` and limit `l` on a loss `x`. -/
 noncomputable def layerPayout (d l x : ℝ) : ℝ := min (max (x - d) 0) l
 
+/-- The payout of a layer is nonnegative. -/
 lemma layerPayout_nonneg {d l : ℝ} (hl : 0 ≤ l) (x : ℝ) : 0 ≤ layerPayout d l x :=
   le_min (le_max_right _ _) hl
 
+/-- The payout of a layer is at most its limit. -/
 lemma layerPayout_le {d l : ℝ} (x : ℝ) : layerPayout d l x ≤ l := min_le_right _ _
 
+/-- The payout of a layer is measurable in the loss. -/
 lemma measurable_layerPayout (d l : ℝ) : Measurable (layerPayout d l) := by
   unfold layerPayout
   fun_prop
