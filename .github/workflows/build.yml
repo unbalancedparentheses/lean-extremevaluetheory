@@ -23,3 +23,7 @@ jobs:
         run: lake build Examples
       - name: Report duplicate definitions
         run: python3 scripts/check_architecture.py --duplicates
+      - name: Check the theorem catalogue against Lean, and its gate against overclaiming
+        run: python3 scripts/catalogue.py check
+      - name: Report the catalogue's counts
+        run: python3 scripts/catalogue.py report >> "$GITHUB_STEP_SUMMARY"

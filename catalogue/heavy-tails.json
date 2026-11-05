@@ -1,0 +1,306 @@
+[
+  {
+    "id": "subexponential-of-rv",
+    "name": "Regularly varying tails are subexponential",
+    "source": "EKM Cor 1.3.2",
+    "lean_name": "ExtremeValueTheory.IsSubexponential.of_isRegularlyVarying",
+    "file": "ExtremeValueTheory/HeavyTails/Subexponential.lean",
+    "statement": "ExtremeValueTheory.IsSubexponential.of_isRegularlyVarying {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] (h0 : μ (Set.Iio 0) = 0) {α : ℝ}\n  (hRV : ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.tail μ) (-α)) :\n  ExtremeValueTheory.IsSubexponential μ",
+    "status": "full",
+    "scope_note": "Laws on [0, infinity). The sign of the index is not assumed; it is forced.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "31565b576573cb17874bdc9b725b199a"
+  },
+  {
+    "id": "subexponential-long-tailed",
+    "name": "Subexponential laws are long-tailed",
+    "source": "EKM Lemma 1.3.5(a)",
+    "lean_name": "ExtremeValueTheory.IsSubexponential.tendsto_tail_sub_div",
+    "file": "ExtremeValueTheory/HeavyTails/Subexponential.lean",
+    "statement": "ExtremeValueTheory.IsSubexponential.tendsto_tail_sub_div {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] (h : ExtremeValueTheory.IsSubexponential μ) (y : ℝ) :\n  Filter.Tendsto (fun x => ExtremeValueTheory.tail μ (x - y) / ExtremeValueTheory.tail μ x)\n    Filter.atTop (nhds 1)",
+    "status": "full",
+    "scope_note": "Holds for every real y.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "62f9816182d2a5ec7ff3eb917f828d98"
+  },
+  {
+    "id": "subexponential-convpow-tail",
+    "name": "Tail of the n-fold convolution is ~ n times the tail",
+    "source": "EKM Lemma 1.3.4",
+    "lean_name": "ExtremeValueTheory.IsSubexponential.tendsto_tail_convPow_div",
+    "file": "ExtremeValueTheory/HeavyTails/Subexponential.lean",
+    "statement": "ExtremeValueTheory.IsSubexponential.tendsto_tail_convPow_div {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] (h : ExtremeValueTheory.IsSubexponential μ) {n : ℕ}\n  (hn : 1 ≤ n) :\n  Filter.Tendsto\n    (fun x =>\n      ExtremeValueTheory.tail (ExtremeValueTheory.Subexp.convPow μ n) x /\n        ExtremeValueTheory.tail μ x)\n    Filter.atTop (nhds ↑n)",
+    "status": "full",
+    "scope_note": "n >= 1.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "03c3fb09de883d44ced6f62f6dcb2ecd"
+  },
+  {
+    "id": "max-tail",
+    "name": "Tail of the maximum of n iid variables",
+    "source": "EKM Lemma 1.3.1",
+    "lean_name": "ExtremeValueTheory.tendsto_measure_max_div_tail",
+    "file": "ExtremeValueTheory/HeavyTails/Subexponential.lean",
+    "statement": "ExtremeValueTheory.tendsto_measure_max_div_tail {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] (hpos : ∀ (x : ℝ), 0 < ExtremeValueTheory.tail μ x)\n  (n : ℕ) :\n  Filter.Tendsto\n    (fun x =>\n      (MeasureTheory.Measure.pi fun x => μ).real {ω | ∃ i, x < ω i} / ExtremeValueTheory.tail μ x)\n    Filter.atTop (nhds ↑n)",
+    "status": "full",
+    "scope_note": "Needs only a positive tail; stated on the product measure.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "80b645257b93c6824501e24c05a232c4"
+  },
+  {
+    "id": "single-big-jump",
+    "name": "Single big jump principle",
+    "source": "EKM Lemma 1.3.1(a), Lemma 1.3.4",
+    "lean_name": "ExtremeValueTheory.IsSubexponential.tendsto_measure_sum_div_measure_max",
+    "file": "ExtremeValueTheory/HeavyTails/Subexponential.lean",
+    "statement": "ExtremeValueTheory.IsSubexponential.tendsto_measure_sum_div_measure_max\n  {μ : MeasureTheory.Measure ℝ} [MeasureTheory.IsProbabilityMeasure μ]\n  (h : ExtremeValueTheory.IsSubexponential μ) {n : ℕ} (hn : 1 ≤ n) :\n  Filter.Tendsto\n    (fun x =>\n      (MeasureTheory.Measure.pi fun x => μ).real {ω | x < ∑ i, ω i} /\n        (MeasureTheory.Measure.pi fun x => μ).real {ω | ∃ i, x < ω i})\n    Filter.atTop (nhds 1)",
+    "status": "full",
+    "scope_note": "Fixed n >= 1; stated on the product measure.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "c85a4c07aebbcc1fe34160fe0db59109"
+  },
+  {
+    "id": "kesten-bound",
+    "name": "Kesten's bound",
+    "source": "EKM Lemma 1.3.5(c)",
+    "lean_name": "ExtremeValueTheory.IsSubexponential.kesten_bound",
+    "file": "ExtremeValueTheory/HeavyTails/Subexponential.lean",
+    "statement": "ExtremeValueTheory.IsSubexponential.kesten_bound {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] (h : ExtremeValueTheory.IsSubexponential μ) {ε : ℝ}\n  (hε : 0 < ε) :\n  ∃ K,\n    ∀ (n : ℕ) (x : ℝ),\n      ExtremeValueTheory.tail (ExtremeValueTheory.Subexp.convPow μ n) x ≤\n        K * (1 + ε) ^ n * ExtremeValueTheory.tail μ x",
+    "status": "full",
+    "scope_note": "All n and all real x, slightly stronger than the book.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "ea7f9d5481692ad96223e84dbf3dcd1e"
+  },
+  {
+    "id": "subexponential-tail-equivalent",
+    "name": "Subexponentiality is a property of the tail-equivalence class",
+    "source": "EKM Lemma A3.15",
+    "lean_name": "ExtremeValueTheory.IsSubexponential.of_tendsto_tail_div",
+    "file": "ExtremeValueTheory/HeavyTails/RandomSums.lean",
+    "statement": "ExtremeValueTheory.IsSubexponential.of_tendsto_tail_div {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] {ν : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure ν] (h : ExtremeValueTheory.IsSubexponential μ)\n  (hν0 : ν (Set.Iio 0) = 0) {c : ℝ} (hc : 0 < c)\n  (hν :\n    Filter.Tendsto (fun x => ExtremeValueTheory.tail ν x / ExtremeValueTheory.tail μ x) Filter.atTop\n      (nhds c)) :\n  ExtremeValueTheory.IsSubexponential ν",
+    "status": "full",
+    "scope_note": "The new law is on [0, infinity), and the limit c is positive.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "1dfb7dcc2fa6e66955d1eb8d12f294db"
+  },
+  {
+    "id": "subexponential-convpow",
+    "name": "Convolution powers of a subexponential law are subexponential",
+    "source": "EKM Lemma A3.15",
+    "lean_name": "ExtremeValueTheory.IsSubexponential.convPow",
+    "file": "ExtremeValueTheory/HeavyTails/RandomSums.lean",
+    "statement": "ExtremeValueTheory.IsSubexponential.convPow {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] (h : ExtremeValueTheory.IsSubexponential μ) {n : ℕ}\n  (hn : 1 ≤ n) : ExtremeValueTheory.IsSubexponential (ExtremeValueTheory.Subexp.convPow μ n)",
+    "status": "full",
+    "scope_note": "n >= 1.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "1c21ae8b3f8654923e1c8a1b5dde6d13"
+  },
+  {
+    "id": "subexponential-compound",
+    "name": "Compound laws of subexponential laws are subexponential",
+    "source": "EKM Thm A3.20",
+    "lean_name": "ExtremeValueTheory.IsSubexponential.compound",
+    "file": "ExtremeValueTheory/HeavyTails/RandomSums.lean",
+    "statement": "ExtremeValueTheory.IsSubexponential.compound {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] {p : ℕ → NNReal}\n  (h : ExtremeValueTheory.IsSubexponential μ) (hp : HasSum p 1) {ε : ℝ} (hε : 0 < ε)\n  (hs : Summable fun n => ↑(p n) * (1 + ε) ^ n) (hEN : 0 < ∑' (n : ℕ), ↑n * ↑(p n)) :\n  ExtremeValueTheory.IsSubexponential (ExtremeValueTheory.compound μ p)",
+    "status": "full",
+    "scope_note": "Light-tailed counting law, E(1+eps)^N < infinity. Stated for the compound law sum p_n mu^{*n}, not for a random sum on a probability space.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "51d97b6b8b03d0a72b3bcc208153eed9"
+  },
+  {
+    "id": "random-sums",
+    "name": "Random sums: P(S_N > x) ~ E N P(X > x)",
+    "source": "EKM Thm A3.20",
+    "lean_name": "ExtremeValueTheory.IsSubexponential.tendsto_tail_compound_div",
+    "file": "ExtremeValueTheory/HeavyTails/RandomSums.lean",
+    "statement": "ExtremeValueTheory.IsSubexponential.tendsto_tail_compound_div {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] {p : ℕ → NNReal}\n  (h : ExtremeValueTheory.IsSubexponential μ) {ε : ℝ} (hε : 0 < ε)\n  (hs : Summable fun n => ↑(p n) * (1 + ε) ^ n) :\n  Filter.Tendsto\n    (fun x =>\n      ExtremeValueTheory.tail (ExtremeValueTheory.compound μ p) x / ExtremeValueTheory.tail μ x)\n    Filter.atTop (nhds (∑' (n : ℕ), ↑n * ↑(p n)))",
+    "status": "full",
+    "scope_note": "Light-tailed counting law. Stated for the compound law, which is the law of an independent random sum.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "676bd907fe52bfac2f44182e6ea002e2"
+  },
+  {
+    "id": "embrechts-veraverbeke",
+    "name": "Embrechts-Veraverbeke ruin asymptotics",
+    "source": "EKM Thm 1.3.6",
+    "lean_name": "ExtremeValueTheory.IsSubexponential.tendsto_pkRuin_div",
+    "file": "ExtremeValueTheory/HeavyTails/Ruin.lean",
+    "statement": "ExtremeValueTheory.IsSubexponential.tendsto_pkRuin_div {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] (h : ExtremeValueTheory.IsSubexponential μ) {ρ : ℝ}\n  (hρ : 0 < ρ) :\n  Filter.Tendsto (fun u => ExtremeValueTheory.pkRuin ρ μ u / ExtremeValueTheory.tail μ u)\n    Filter.atTop (nhds (1 / ρ))",
+    "status": "reduced",
+    "scope_note": "The ruin probability is defined by the Pollaczek-Khinchine formula, which is not derived from the Cramér-Lundberg process: the link from the risk process to the formula is not proved.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "b790d7771fef3682ade682a8ba64a84f"
+  },
+  {
+    "id": "ruin-regularly-varying",
+    "name": "Ruin with regularly varying claims",
+    "source": "EKM Ex 1.3.8",
+    "lean_name": "ExtremeValueTheory.tendsto_pkRuin_div_mul_tail",
+    "file": "ExtremeValueTheory/HeavyTails/Ruin.lean",
+    "statement": "ExtremeValueTheory.tendsto_pkRuin_div_mul_tail {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] {α : ℝ}\n  (hRV : ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.tail μ) (-α)) (hα : 1 < α)\n  {ρ : ℝ} (hρ : 0 < ρ) :\n  Filter.Tendsto\n    (fun u =>\n      ExtremeValueTheory.pkRuin ρ (ExtremeValueTheory.integratedTail μ) u /\n        (u * ExtremeValueTheory.tail μ u))\n    Filter.atTop (nhds (1 / ((ρ * ∫ (t : ℝ) in Set.Ioi 0, ExtremeValueTheory.tail μ t) * (α - 1))))",
+    "status": "reduced",
+    "scope_note": "Same as embrechts-veraverbeke: the ruin probability is the Pollaczek-Khinchine formula, not derived from the risk process. Nonnegative claims are not assumed, so m is E X+.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "d2577d54b62c4d5fc4b436bc196e6a43"
+  },
+  {
+    "id": "s-star-in-s",
+    "name": "The class S* is contained in the subexponential class",
+    "source": "Klüppelberg (1988) Thm 3.2",
+    "lean_name": "ExtremeValueTheory.IsSStar.isSubexponential",
+    "file": "ExtremeValueTheory/HeavyTails/SStar.lean",
+    "statement": "ExtremeValueTheory.IsSStar.isSubexponential {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] (h : ExtremeValueTheory.IsSStar μ) :\n  ExtremeValueTheory.IsSubexponential μ",
+    "status": "full",
+    "scope_note": "Theorem number not verified against the paper.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "02db008abb3f3299d81fa816385523b0"
+  },
+  {
+    "id": "s-star-integrated-tail",
+    "name": "Integrated tails of S* laws are subexponential",
+    "source": "Klüppelberg (1988) Thm 3.2",
+    "lean_name": "ExtremeValueTheory.IsSStar.isSubexponential_integratedTail",
+    "file": "ExtremeValueTheory/HeavyTails/SStar.lean",
+    "statement": "ExtremeValueTheory.IsSStar.isSubexponential_integratedTail {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] (h : ExtremeValueTheory.IsSStar μ) :\n  ExtremeValueTheory.IsSubexponential (ExtremeValueTheory.integratedTail μ)",
+    "status": "full",
+    "scope_note": "Theorem number not verified against the paper.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "4611caad5ab47cb7372723b981ab47e4"
+  },
+  {
+    "id": "weibull-tail-subexponential",
+    "name": "Weibull-type tails exp(-x^tau), tau < 1, are subexponential",
+    "source": "EKM Ex 1.4.3, Prop A3.16",
+    "lean_name": "ExtremeValueTheory.IsSubexponential.of_tail_eq_exp_neg_rpow",
+    "file": "ExtremeValueTheory/HeavyTails/StretchedExponential.lean",
+    "statement": "ExtremeValueTheory.IsSubexponential.of_tail_eq_exp_neg_rpow {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] {τ : ℝ} (h0 : μ (Set.Iio 0) = 0) (hτ0 : 0 < τ)\n  (hτ1 : τ < 1) (htail : ∀ (x : ℝ), 0 ≤ x → ExtremeValueTheory.tail μ x = Real.exp (-x ^ τ)) :\n  ExtremeValueTheory.IsSubexponential μ",
+    "status": "full",
+    "scope_note": "Takes any measure with this tail on [0, infinity); weibullTailLaw shows one exists.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "46580af8912dcf79ce6b80100c6aaee7"
+  },
+  {
+    "id": "lognormal-subexponential",
+    "name": "The lognormal law is subexponential",
+    "source": "EKM Ex 1.4.7, Table 1.4.3",
+    "lean_name": "ExtremeValueTheory.IsSubexponential.lognormal",
+    "file": "ExtremeValueTheory/HeavyTails/Lognormal.lean",
+    "statement": "ExtremeValueTheory.IsSubexponential.lognormal (m : ℝ) {v : NNReal} (hv : v ≠ 0) :\n  ExtremeValueTheory.IsSubexponential (ExtremeValueTheory.lognormal m v)",
+    "status": "full",
+    "scope_note": "Every location, every positive variance.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "68f5c0eda83db622fb6b3d95d3425190"
+  },
+  {
+    "id": "convolution-roots",
+    "name": "Closure of the subexponential class under convolution roots",
+    "source": "EGV (1979); EKM Appendix A3",
+    "lean_name": "ExtremeValueTheory.IsSubexponential.of_convPow",
+    "file": "ExtremeValueTheory/HeavyTails/ConvolutionRoots.lean",
+    "statement": "ExtremeValueTheory.IsSubexponential.of_convPow {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] (h0 : μ (Set.Iio 0) = 0) {n : ℕ} (hn : 1 ≤ n)\n  (hG : ExtremeValueTheory.IsSubexponential (ExtremeValueTheory.Subexp.convPow μ n)) :\n  ExtremeValueTheory.IsSubexponential μ",
+    "status": "full",
+    "scope_note": "Laws on [0, infinity).",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "e07e33f807361762b2b3b56a9d86d4b2"
+  },
+  {
+    "id": "linear-process-finite",
+    "name": "Tails of finite moving averages",
+    "source": "EKM Lemma A3.26; DR85",
+    "lean_name": "ExtremeValueTheory.LinearProcess.tendsto_measureReal_sum_mul_div",
+    "file": "ExtremeValueTheory/HeavyTails/LinearProcess.lean",
+    "statement": "ExtremeValueTheory.LinearProcess.tendsto_measureReal_sum_mul_div.{u_1, u_2} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {ι : Type u_2} {Z : ι → Ω → ℝ} {Z₀ : Ω → ℝ} (hZ : ∀ (j : ι), Measurable (Z j))\n  (hZ₀ : Measurable Z₀) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hident : ∀ (j : ι), ProbabilityTheory.IdentDistrib (Z j) Z₀ P P) {α p : ℝ}\n  (hL : ExtremeValueTheory.IsRegularlyVarying (fun x => P.real {ω | x < |Z₀ ω|}) (-α))\n  (hp :\n    Filter.Tendsto (fun x => P.real {ω | x < Z₀ ω} / P.real {ω | x < |Z₀ ω|}) Filter.atTop (nhds p))\n  (ψ : ι → ℝ) (s : Finset ι) :\n  Filter.Tendsto (fun x => P.real {ω | x < ∑ j ∈ s, ψ j * Z j ω} / P.real {ω | x < |Z₀ ω|})\n    Filter.atTop (nhds (∑ j ∈ s, ExtremeValueTheory.LinearProcess.tailWeight α p (ψ j)))",
+    "status": "full",
+    "scope_note": "Finite sums, real coefficients, tail balance, no sign condition on the noise.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "d3f806ead86ad9b27d256fc684adadca"
+  },
+  {
+    "id": "linear-process-series",
+    "name": "Tails of infinite moving averages, all alpha > 0",
+    "source": "EKM Lemma A3.26; DR85",
+    "lean_name": "ExtremeValueTheory.LinearProcess.tendsto_measureReal_tsum_mul_div_of_summable_rpow",
+    "file": "ExtremeValueTheory/HeavyTails/LinearProcessSeries.lean",
+    "statement": "ExtremeValueTheory.LinearProcess.tendsto_measureReal_tsum_mul_div_of_summable_rpow.{u_1}\n  {Ω : Type u_1} {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {Z : ℕ → Ω → ℝ} {Z₀ : Ω → ℝ}\n  (hZ : ∀ (j : ℕ), Measurable (Z j)) (hZ₀ : Measurable Z₀) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hident : ∀ (j : ℕ), ProbabilityTheory.IdentDistrib (Z j) Z₀ P P) {α δ p : ℝ} (hδ : 0 < δ)\n  (hδα : δ < α) (hδ1 : δ < 1)\n  (hL : ExtremeValueTheory.IsRegularlyVarying (fun x => P.real {ω | x < |Z₀ ω|}) (-α))\n  (hp :\n    Filter.Tendsto (fun x => P.real {ω | x < Z₀ ω} / P.real {ω | x < |Z₀ ω|}) Filter.atTop (nhds p))\n  {ψ : ℕ → ℝ} (hψ : Summable fun j => |ψ j| ^ δ) :\n  Filter.Tendsto (fun x => P.real {ω | x < ∑' (j : ℕ), ψ j * Z j ω} / P.real {ω | x < |Z₀ ω|})\n    Filter.atTop (nhds (∑' (j : ℕ), ExtremeValueTheory.LinearProcess.tailWeight α p (ψ j)))",
+    "status": "full",
+    "scope_note": "Under the summability condition sum |psi_j|^delta < infinity for some delta < min(alpha, 1), that of DR85. The weaker conditions known for alpha > 1 (Mikosch-Samorodnitsky) are not covered.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "a0c8df8094bfa4ff125f7ac737eb6695"
+  }
+]

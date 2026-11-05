@@ -1,0 +1,338 @@
+[
+  {
+    "id": "theta-le-vartheta",
+    "name": "theta <= candidate index, no mixing or anticlustering",
+    "source": "KS20 Lemma 7.5.4, as described by BKW (2024); KS20 itself not consulted",
+    "lean_name": "ExtremeValueTheory.HasSpectralTailProcess.le_candidateExtremalIndex'",
+    "file": "ExtremeValueTheory/Dependence/ThetaLeVartheta.lean",
+    "statement": "ExtremeValueTheory.HasSpectralTailProcess.le_candidateExtremalIndex'.{u_1, u_2} {Ω : Type u_1}\n  {Ω' : Type u_2} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ} {Q : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ} (hα : 0 < α)\n  (hX : ∀ (t : ℤ), Measurable (X t)) (hΘm : ∀ (t : ℤ), Measurable (Θ t))\n  (hstat : ExtremeValueTheory.HasShiftInvariantWindows P X)\n  (h : ExtremeValueTheory.HasSpectralTailProcess P X α Q Θ) {θ : ℝ}\n  (hθ : ExtremeValueTheory.HasExtremalIndex (fun k => |X ↑k|) P θ) :\n  θ ≤ (ExtremeValueTheory.candidateExtremalIndex Q Θ α).toReal",
+    "status": "full",
+    "scope_note": "Stationarity, a spectral tail process and existence of theta for |X| only.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "f725c78ef6234499198185c409a022e8"
+  },
+  {
+    "id": "gap-formula",
+    "name": "The gap formula: cluster ratio -> L iff late-return mass = candidate index - L",
+    "source": "this library",
+    "lean_name": "ExtremeValueTheory.HasSpectralTailProcess.tendsto_clusterRatio_iff",
+    "file": "ExtremeValueTheory/Dependence/ThetaGap.lean",
+    "statement": "ExtremeValueTheory.HasSpectralTailProcess.tendsto_clusterRatio_iff.{u_1, u_2} {Ω : Type u_1}\n  {Ω' : Type u_2} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ} {Q : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ} {u : ℕ → ℝ} {r : ℕ → ℕ} (hα : 0 < α)\n  (hX : ∀ (t : ℤ), Measurable (X t)) (hΘm : ∀ (t : ℤ), Measurable (Θ t))\n  (hstat : ExtremeValueTheory.HasShiftInvariantWindows P X)\n  (h : ExtremeValueTheory.HasSpectralTailProcess P X α Q Θ)\n  (hu : Filter.Tendsto u Filter.atTop Filter.atTop)\n  (hr : Filter.Tendsto r Filter.atTop Filter.atTop) (L : ℝ) :\n  Filter.Tendsto (ExtremeValueTheory.clusterRatio P X u r) Filter.atTop (nhds L) ↔\n    ExtremeValueTheory.HasLateReturnMass P X u r\n      ((ExtremeValueTheory.candidateExtremalIndex Q Θ α).toReal - L)",
+    "status": "full",
+    "scope_note": "No anticlustering, mixing or r_n/n -> 0. Late-return mass is the library's own notion.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "8a64c1df782f14cdefad141e5606fd78"
+  },
+  {
+    "id": "log-echo-theta-lt-vartheta",
+    "name": "An explicit stationary process with theta = 1/2 < candidate index = 1",
+    "source": "this library",
+    "lean_name": "ExtremeValueTheory.logEchoProcess_theta_lt_vartheta",
+    "file": "ExtremeValueTheory/Dependence/EchoProcess.lean",
+    "statement": "ExtremeValueTheory.logEchoProcess_theta_lt_vartheta.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {α : ℝ} {Z : ℤ → Ω → ℝ}\n  (hα : 0 < α) (hZ : ∀ (t : ℤ), Measurable (Z t)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hlaw : ∀ (t : ℤ), MeasureTheory.Measure.map (Z t) P = ProbabilityTheory.paretoMeasure 1 α)\n  (hpos : ∀ (t : ℤ) (ω : Ω), 0 ≤ Z t ω) :\n  ExtremeValueTheory.HasShiftInvariantWindows P\n      (ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z) ∧\n    ExtremeValueTheory.HasSpectralTailProcess P\n        (ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z) α\n        (MeasureTheory.Measure.dirac ()) ExtremeValueTheory.unitSpectral ∧\n      (ExtremeValueTheory.candidateExtremalIndex (MeasureTheory.Measure.dirac ())\n              ExtremeValueTheory.unitSpectral α).toReal =\n          1 ∧\n        ExtremeValueTheory.HasExtremalIndex\n          (fun k => ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z ↑k) P (1 / 2)",
+    "status": "full",
+    "scope_note": "An example, with iid Pareto(1, alpha) noise, assumed nonnegative at every point (a null-set normalization).",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "28dbdb88e442583f5777b052d8a1e74d"
+  },
+  {
+    "id": "log-echo-phase-transition",
+    "name": "Block-length phase transition of the log-echo process",
+    "source": "this library",
+    "lean_name": "ExtremeValueTheory.logEchoProcess_phase_transition",
+    "file": "ExtremeValueTheory/Dependence/EchoPhaseTransition.lean",
+    "statement": "ExtremeValueTheory.logEchoProcess_phase_transition.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {α : ℝ} {Z : ℤ → Ω → ℝ}\n  (hα : 0 < α) (hZ : ∀ (t : ℤ), Measurable (Z t)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hlaw : ∀ (t : ℤ), MeasureTheory.Measure.map (Z t) P = ProbabilityTheory.paretoMeasure 1 α)\n  (hpos : ∀ (t : ℤ) (ω : Ω), 0 ≤ Z t ω) {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)\n  (hτ :\n    Filter.Tendsto\n      (fun n =>\n        ↑n * P.real {ω | u n < ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z 0 ω})\n      Filter.atTop (nhds τ))\n  (r : ℕ → ℕ) :\n  (Filter.Tendsto r Filter.atTop Filter.atTop →\n      Filter.Tendsto (fun n => ↑(r n) / Real.log ↑n) Filter.atTop (nhds 0) →\n        Filter.Tendsto\n            (ExtremeValueTheory.clusterRatio P\n              (ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z) u r)\n            Filter.atTop (nhds 1) ∧\n          ExtremeValueTheory.HasLateReturnMass P\n            (ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z) u r 0) ∧\n    (∀ (c : ℝ),\n        0 < c →\n          Filter.Tendsto (fun n => ↑(r n) / Real.log ↑n) Filter.atTop (nhds c) →\n            Filter.Tendsto\n                (ExtremeValueTheory.clusterRatio P\n                  (ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z) u r)\n                Filter.atTop (nhds ((1 + min (1 / (c * α)) 1) / 2)) ∧\n              ExtremeValueTheory.HasLateReturnMass P\n                (ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z) u r\n                ((1 - min (1 / (c * α)) 1) / 2)) ∧\n      (Filter.Tendsto r Filter.atTop Filter.atTop →\n        Filter.Tendsto (fun n => ↑(r n) / ↑n) Filter.atTop (nhds 0) →\n          Filter.Tendsto (fun n => Real.log ↑n / ↑(r n)) Filter.atTop (nhds 0) →\n            Filter.Tendsto\n                (ExtremeValueTheory.clusterRatio P\n                  (ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z) u r)\n                Filter.atTop (nhds (1 / 2)) ∧\n              ExtremeValueTheory.HasLateReturnMass P\n                (ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z) u r (1 / 2))",
+    "status": "full",
+    "scope_note": "For r_n of order log n. Same noise as log-echo-theta-lt-vartheta.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "296b5a772459fdee62d4d48dace215e2"
+  },
+  {
+    "id": "mixture-no-extremal-index",
+    "name": "A mixture with no extremal index",
+    "source": "this library",
+    "lean_name": "ExtremeValueTheory.not_hasExtremalIndex_mixture",
+    "file": "ExtremeValueTheory/Dependence/MixtureProcess.lean",
+    "statement": "ExtremeValueTheory.not_hasExtremalIndex_mixture.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {α : ℝ} {Z : ℤ → Ω → ℝ}\n  {E : Set Ω} (hE : MeasurableSet E)\n  (hEZ :\n    ProbabilityTheory.Indep (MeasurableSpace.generateFrom {E})\n      (ExtremeValueTheory.innovationSigma Z) P)\n  (hα : 0 < α) (hZ : ∀ (t : ℤ), Measurable (Z t)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hlaw : ∀ (t : ℤ), MeasureTheory.Measure.map (Z t) P = ProbabilityTheory.paretoMeasure 1 α)\n  (hp0 : 0 < P.real E) (hp1 : P.real E < 1) (θ : ℝ) :\n  ¬ExtremeValueTheory.HasExtremalIndex (fun k => ExtremeValueTheory.mixtureProcess E Z ↑k) P θ",
+    "status": "full",
+    "scope_note": "An example: 0 < P(E) < 1, E independent of the noise.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "ea8bbe670181ccc6b272966d5b8e22aa"
+  },
+  {
+    "id": "bkw-answer",
+    "name": "Answer to Bai-Kulik-Wang: anticlustering iff rho < gamma/alpha",
+    "source": "this library; answers BKW (2024) §1, second question",
+    "lean_name": "ExtremeValueTheory.powEchoProcess_antiClustering_iff",
+    "file": "ExtremeValueTheory/Dependence/EchoPowerLag.lean",
+    "statement": "ExtremeValueTheory.powEchoProcess_antiClustering_iff.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {α γ : ℝ} {Z : ℤ → Ω → ℝ}\n  (hα : 0 < α) (hZ : ∀ (t : ℤ), Measurable (Z t)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hlaw : ∀ (t : ℤ), MeasureTheory.Measure.map (Z t) P = ProbabilityTheory.paretoMeasure 1 α)\n  (hpos : ∀ (t : ℤ) (ω : Ω), 0 ≤ Z t ω) (hγ : 0 < γ) (hγα : γ < α) {a : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)\n  (hτ :\n    Filter.Tendsto\n      (fun n =>\n        ↑n * P.real {ω | a n < ExtremeValueTheory.echoProcess (ExtremeValueTheory.powLag γ) Z 0 ω})\n      Filter.atTop (nhds τ))\n  {ρ : ℝ} (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (hρ : ρ ≠ γ / α) {r : ℕ → ℕ}\n  (hr : Filter.Tendsto (fun n => Real.log ↑(r n) / Real.log ↑n) Filter.atTop (nhds ρ)) :\n  ExtremeValueTheory.AntiClustering P\n      (ExtremeValueTheory.echoProcess (ExtremeValueTheory.powLag γ) Z) a r ↔\n    ρ < γ / α",
+    "status": "full",
+    "scope_note": "An example for every cutoff in (0,1). The critical rho = gamma/alpha is excluded here and treated by power-echo-critical. Novelty is a literature check, not a theorem.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "ca78ee17b1ae2c1a5ad3051eb4d17d94"
+  },
+  {
+    "id": "power-echo-transition",
+    "name": "Polynomial block-length transition of the power-lag echo",
+    "source": "this library; BKW (2024)",
+    "lean_name": "ExtremeValueTheory.powEchoProcess_polyBlocks",
+    "file": "ExtremeValueTheory/Dependence/EchoPowerLag.lean",
+    "statement": "ExtremeValueTheory.powEchoProcess_polyBlocks.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {α γ : ℝ} {Z : ℤ → Ω → ℝ}\n  (hα : 0 < α) (hZ : ∀ (t : ℤ), Measurable (Z t)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hlaw : ∀ (t : ℤ), MeasureTheory.Measure.map (Z t) P = ProbabilityTheory.paretoMeasure 1 α)\n  (hpos : ∀ (t : ℤ) (ω : Ω), 0 ≤ Z t ω) (hγ : 0 < γ) (hγα : γ < α) {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)\n  (hτ :\n    Filter.Tendsto\n      (fun n =>\n        ↑n * P.real {ω | u n < ExtremeValueTheory.echoProcess (ExtremeValueTheory.powLag γ) Z 0 ω})\n      Filter.atTop (nhds τ))\n  {ρ : ℝ} (hρ0 : 0 < ρ) (hρ1 : ρ < 1) {r : ℕ → ℕ}\n  (hr : Filter.Tendsto (fun n => Real.log ↑(r n) / Real.log ↑n) Filter.atTop (nhds ρ)) :\n  (ρ < γ / α →\n      Filter.Tendsto\n          (ExtremeValueTheory.clusterRatio P\n            (ExtremeValueTheory.echoProcess (ExtremeValueTheory.powLag γ) Z) u r)\n          Filter.atTop (nhds 1) ∧\n        ExtremeValueTheory.AntiClusteringAt P\n          (ExtremeValueTheory.echoProcess (ExtremeValueTheory.powLag γ) Z) u r) ∧\n    (γ / α < ρ →\n      Filter.Tendsto\n          (ExtremeValueTheory.clusterRatio P\n            (ExtremeValueTheory.echoProcess (ExtremeValueTheory.powLag γ) Z) u r)\n          Filter.atTop (nhds (1 / 2)) ∧\n        ¬ExtremeValueTheory.ForwardAntiClusteringAt P\n            (ExtremeValueTheory.echoProcess (ExtremeValueTheory.powLag γ) Z) u r)",
+    "status": "full",
+    "scope_note": "log r_n / log n -> rho in (0,1); the boundary rho = gamma/alpha is left out of both cases.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "516dfa98be8baaca63ebb7276f4ccb9b"
+  },
+  {
+    "id": "power-echo-critical",
+    "name": "The critical block length r_n ~ c n^(gamma/alpha)",
+    "source": "this library; BKW (2024)",
+    "lean_name": "ExtremeValueTheory.powEchoProcess_critical",
+    "file": "ExtremeValueTheory/Dependence/EchoPowerLag.lean",
+    "statement": "ExtremeValueTheory.powEchoProcess_critical.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {α γ : ℝ} {Z : ℤ → Ω → ℝ}\n  (hα : 0 < α) (hZ : ∀ (t : ℤ), Measurable (Z t)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hlaw : ∀ (t : ℤ), MeasureTheory.Measure.map (Z t) P = ProbabilityTheory.paretoMeasure 1 α)\n  (hpos : ∀ (t : ℤ) (ω : Ω), 0 ≤ Z t ω) (hγ : 0 < γ) (hγα : γ < α) {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)\n  (hτ :\n    Filter.Tendsto\n      (fun n =>\n        ↑n * P.real {ω | u n < ExtremeValueTheory.echoProcess (ExtremeValueTheory.powLag γ) Z 0 ω})\n      Filter.atTop (nhds τ))\n  {r : ℕ → ℕ} {c : ℝ} (hc : 0 < c)\n  (hrc : Filter.Tendsto (fun n => ↑(r n) / ↑n ^ (γ / α)) Filter.atTop (nhds c)) :\n  Filter.Tendsto\n      (ExtremeValueTheory.clusterRatio P\n        (ExtremeValueTheory.echoProcess (ExtremeValueTheory.powLag γ) Z) u r)\n      Filter.atTop (nhds ((1 + ExtremeValueTheory.echoShape (α / γ) ((2 / τ) ^ (γ / α) / c)) / 2)) ∧\n    ExtremeValueTheory.HasLateReturnMass P\n        (ExtremeValueTheory.echoProcess (ExtremeValueTheory.powLag γ) Z) u r\n        ((1 - ExtremeValueTheory.echoShape (α / γ) ((2 / τ) ^ (γ / α) / c)) / 2) ∧\n      ((2 / τ) ^ (γ / α) / c < 1 →\n          ¬ExtremeValueTheory.ForwardAntiClusteringAt P\n              (ExtremeValueTheory.echoProcess (ExtremeValueTheory.powLag γ) Z) u r) ∧\n        (1 < (2 / τ) ^ (γ / α) / c →\n          ExtremeValueTheory.AntiClusteringAt P\n            (ExtremeValueTheory.echoProcess (ExtremeValueTheory.powLag γ) Z) u r)",
+    "status": "full",
+    "scope_note": "Anticlustering is decided for kappa != 1 only; at kappa = 1 it stays open, though the limits are given.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "5d987d9579185d0b6e57ec7448b13f47"
+  },
+  {
+    "id": "log-echo-beta-mixing",
+    "name": "The log-echo process is geometrically beta-mixing",
+    "source": "this library",
+    "lean_name": "ExtremeValueTheory.betaMixing_logEchoProcess_le",
+    "file": "ExtremeValueTheory/Dependence/EchoMixing.lean",
+    "statement": "ExtremeValueTheory.betaMixing_logEchoProcess_le.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {α : ℝ} {Z : ℤ → Ω → ℝ}\n  (hα : 0 < α) (hZ : ∀ (t : ℤ), Measurable (Z t)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hlaw : ∀ (t : ℤ), MeasureTheory.Measure.map (Z t) P = ProbabilityTheory.paretoMeasure 1 α)\n  {h : ℕ} (hh : 1 ≤ h) :\n  (ProbabilityTheory.betaMixing\n        (fun k => ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z ↑k) P h).toReal ≤\n    2 * (2 ^ α * Real.exp α / (1 - Real.exp (-α))) * Real.exp (-α) ^ h",
+    "status": "full",
+    "scope_note": "An explicit bound for h >= 1, for Pareto noise.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "6be8d7b8b6c5950ea832d0fee3ec29cb"
+  },
+  {
+    "id": "echo-beta-mixing",
+    "name": "Every echo process with E L(Z) < infinity is beta-mixing",
+    "source": "this library",
+    "lean_name": "ExtremeValueTheory.isBetaMixing_echoProcess",
+    "file": "ExtremeValueTheory/Dependence/EchoMixing.lean",
+    "statement": "ExtremeValueTheory.isBetaMixing_echoProcess.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {α : ℝ} {Z : ℤ → Ω → ℝ}\n  {L : ℝ → ℕ} (hZ : ∀ (t : ℤ), Measurable (Z t)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hlaw : ∀ (t : ℤ), MeasureTheory.Measure.map (Z t) P = ProbabilityTheory.paretoMeasure 1 α)\n  (hLm : Measurable L)\n  (hLsum : Summable fun j => (ProbabilityTheory.paretoMeasure 1 α).real {z | j + 1 ≤ L z}) :\n  ProbabilityTheory.IsBetaMixing (fun k => ExtremeValueTheory.echoProcess L Z ↑k) P",
+    "status": "full",
+    "scope_note": "Pareto noise.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "e5117be1ecda26f4c0312602ead6294f"
+  },
+  {
+    "id": "log-echo-incompatible",
+    "name": "Geometric beta-mixing, yet anticlustering and A(u_n) never hold together",
+    "source": "this library",
+    "lean_name": "ExtremeValueTheory.logEchoProcess_betaMixing_incompatible",
+    "file": "ExtremeValueTheory/Dependence/EchoMixing.lean",
+    "statement": "ExtremeValueTheory.logEchoProcess_betaMixing_incompatible.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {α : ℝ} {Z : ℤ → Ω → ℝ} (hα : 0 < α) (hZ : ∀ (t : ℤ), Measurable (Z t))\n  (hind : ProbabilityTheory.iIndepFun Z P)\n  (hlaw : ∀ (t : ℤ), MeasureTheory.Measure.map (Z t) P = ProbabilityTheory.paretoMeasure 1 α)\n  (hpos : ∀ (t : ℤ) (ω : Ω), 0 ≤ Z t ω) :\n  (∀ (h : ℕ),\n      1 ≤ h →\n        (ProbabilityTheory.betaMixing\n              (fun k => ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z ↑k) P h).toReal ≤\n          2 * (2 ^ α * Real.exp α / (1 - Real.exp (-α))) * Real.exp (-α) ^ h) ∧\n    ProbabilityTheory.IsBetaMixing\n        (fun k => ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z ↑k) P ∧\n      ∀ (u : ℕ → ℝ) (τ : ℝ),\n        0 < τ →\n          Filter.Tendsto\n              (fun n =>\n                ↑n *\n                  P.real {ω | u n < ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z 0 ω})\n              Filter.atTop (nhds τ) →\n            ∀ (r : ℕ → ℕ),\n              Filter.Tendsto r Filter.atTop Filter.atTop →\n                (Filter.Tendsto (fun n => ↑(r n) / Real.log ↑n) Filter.atTop (nhds 0) →\n                    ExtremeValueTheory.AntiClusteringAt P\n                        (ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z) u r ∧\n                      ¬ExtremeValueTheory.ConditionA\n                          (fun k => |ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z ↑k|)\n                          P u r) ∧\n                  (∀ (c : ℝ),\n                      0 < c →\n                        Filter.Tendsto (fun n => ↑(r n) / Real.log ↑n) Filter.atTop (nhds c) →\n                          ¬ExtremeValueTheory.ConditionA\n                              (fun k =>\n                                |ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z ↑k|)\n                              P u r) ∧\n                    (Filter.Tendsto (fun n => ↑(r n) / ↑n) Filter.atTop (nhds 0) →\n                      Filter.Tendsto (fun n => Real.log ↑n / ↑(r n)) Filter.atTop (nhds 0) →\n                        ExtremeValueTheory.ConditionA\n                            (fun k =>\n                              |ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z ↑k|)\n                            P u r ∧\n                          ¬ExtremeValueTheory.ForwardAntiClusteringAt P\n                              (ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z) u r)",
+    "status": "full",
+    "scope_note": "An example, for the block scales r_n = o(log n), r_n ~ c log n, and log n = o(r_n), r_n = o(n).",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "e9536f9e240ec0026e593eab61c792f4"
+  },
+  {
+    "id": "power-echo-incompatible",
+    "name": "Power-lag echo: anticlustering and A(u_n) never hold together",
+    "source": "this library",
+    "lean_name": "ExtremeValueTheory.powEchoProcess_not_conditionA_and_antiClustering",
+    "file": "ExtremeValueTheory/Dependence/EchoMixing.lean",
+    "statement": "ExtremeValueTheory.powEchoProcess_not_conditionA_and_antiClustering.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {α γ : ℝ} {Z : ℤ → Ω → ℝ} (hα : 0 < α) (hZ : ∀ (t : ℤ), Measurable (Z t))\n  (hind : ProbabilityTheory.iIndepFun Z P)\n  (hlaw : ∀ (t : ℤ), MeasureTheory.Measure.map (Z t) P = ProbabilityTheory.paretoMeasure 1 α)\n  (hpos : ∀ (t : ℤ) (ω : Ω), 0 ≤ Z t ω) (hγ : 0 < γ) (hγα : γ < α) {u : ℕ → ℝ} {τ : ℝ} (hτ0 : 0 < τ)\n  (hτ :\n    Filter.Tendsto\n      (fun n =>\n        ↑n * P.real {ω | u n < ExtremeValueTheory.echoProcess (ExtremeValueTheory.powLag γ) Z 0 ω})\n      Filter.atTop (nhds τ))\n  {ρ : ℝ} (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (hρ : ρ ≠ γ / α) {r : ℕ → ℕ}\n  (hr : Filter.Tendsto (fun n => Real.log ↑(r n) / Real.log ↑n) Filter.atTop (nhds ρ)) :\n  ProbabilityTheory.IsBetaMixing\n      (fun k => ExtremeValueTheory.echoProcess (ExtremeValueTheory.powLag γ) Z ↑k) P ∧\n    (ExtremeValueTheory.AntiClusteringAt P\n          (ExtremeValueTheory.echoProcess (ExtremeValueTheory.powLag γ) Z) u r ↔\n        ρ < γ / α) ∧\n      ¬(ExtremeValueTheory.ConditionA\n            (fun k => |ExtremeValueTheory.echoProcess (ExtremeValueTheory.powLag γ) Z ↑k|) P u r ∧\n          ExtremeValueTheory.AntiClusteringAt P\n            (ExtremeValueTheory.echoProcess (ExtremeValueTheory.powLag γ) Z) u r)",
+    "status": "full",
+    "scope_note": "rho != gamma/alpha.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "776286dc6da514a287d62cf6a601cb13"
+  },
+  {
+    "id": "needs-condition-a",
+    "name": "A(u_n) is necessary in theta-equals-vartheta",
+    "source": "this library",
+    "lean_name": "ExtremeValueTheory.Minimality.scaleMixture_needs_conditionA",
+    "file": "ExtremeValueTheory/Minimality/DependenceScaleMixture.lean",
+    "statement": "ExtremeValueTheory.Minimality.scaleMixture_needs_conditionA.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {α c : ℝ} {Z : ℤ → Ω → ℝ} {E : Set Ω} (hE : MeasurableSet E)\n  (hEZ :\n    ProbabilityTheory.Indep (MeasurableSpace.generateFrom {E})\n      (ExtremeValueTheory.innovationSigma Z) P)\n  (hα : 0 < α) (hZ : ∀ (t : ℤ), Measurable (Z t)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hlaw : ∀ (t : ℤ), MeasureTheory.Measure.map (Z t) P = ProbabilityTheory.paretoMeasure 1 α)\n  (hpos : ∀ (t : ℤ) (ω : Ω), 0 ≤ Z t ω) (hc0 : 0 ≤ c) (hc1 : c < 1) (hp0 : 0 < P.real E)\n  (hp1 : P.real E < 1) :\n  ExtremeValueTheory.HasShiftInvariantWindows P (ExtremeValueTheory.Minimality.scaleMixture E c Z) ∧\n    ExtremeValueTheory.HasSpectralTailProcess P (ExtremeValueTheory.Minimality.scaleMixture E c Z) α\n        (MeasureTheory.Measure.dirac ()) ExtremeValueTheory.unitSpectral ∧\n      (ExtremeValueTheory.candidateExtremalIndex (MeasureTheory.Measure.dirac ())\n              ExtremeValueTheory.unitSpectral α).toReal =\n          1 ∧\n        (∀ τ > 0,\n            ∀ (u : ℕ → ℝ),\n              Filter.Tendsto\n                  (fun n =>\n                    ↑n * P.real {ω | u n < |ExtremeValueTheory.Minimality.scaleMixture E c Z 0 ω|})\n                  Filter.atTop (nhds τ) →\n                ∀ (r : ℕ → ℕ),\n                  Filter.Tendsto r Filter.atTop Filter.atTop →\n                    Filter.Tendsto (fun n => ↑(r n) / ↑n) Filter.atTop (nhds 0) →\n                      ExtremeValueTheory.AntiClusteringAt P\n                          (ExtremeValueTheory.Minimality.scaleMixture E c Z) u r ∧\n                        ¬ExtremeValueTheory.ConditionA\n                            (fun k => |ExtremeValueTheory.Minimality.scaleMixture E c Z ↑k|) P u\n                            r) ∧\n          ∀ (θ : ℝ),\n            ¬ExtremeValueTheory.HasExtremalIndex\n                (fun k => |ExtremeValueTheory.Minimality.scaleMixture E c Z ↑k|) P θ",
+    "status": "full",
+    "scope_note": "A counterexample.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "c253f3bcb658483267c1052e068df2b0"
+  },
+  {
+    "id": "needs-condition-d-prime",
+    "name": "D'(u_n) is necessary in Leadbetter's theorem",
+    "source": "this library",
+    "lean_name": "ExtremeValueTheory.Minimality.leadbetter_needs_conditionD'",
+    "file": "ExtremeValueTheory/Minimality/DependenceLeadbetter.lean",
+    "statement": "ExtremeValueTheory.Minimality.leadbetter_needs_conditionD'.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {Z : ℕ → Ω → ℝ} (hZ : ∀ (t : ℕ), Measurable (Z t)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hid : ∀ (t : ℕ), ProbabilityTheory.IdentDistrib (Z t) (Z 0) P P)\n  (hcont : Continuous fun x => P.real {ω | Z 0 ω ≤ x}) {τ : ℝ} (hτ0 : 0 < τ) :\n  ∃ u,\n    Filter.Tendsto (fun n => ↑n * P.real {ω | u n < max (Z 0 ω) (Z (0 + 1) ω)}) Filter.atTop\n        (nhds τ) ∧\n      ProbabilityTheory.IsStationary (fun t ω => max (Z t ω) (Z (t + 1) ω)) P ∧\n        ExtremeValueTheory.ConditionD (fun t ω => max (Z t ω) (Z (t + 1) ω)) P u ∧\n          ¬ExtremeValueTheory.ConditionD' (fun t ω => max (Z t ω) (Z (t + 1) ω)) P u ∧\n            ¬Filter.Tendsto\n                (fun n =>\n                  P.real\n                    {ω |\n                      ExtremeValueTheory.partialMax (fun t ω => max (Z t ω) (Z (t + 1) ω)) n ω ≤\n                        u n})\n                Filter.atTop (nhds (Real.exp (-τ)))",
+    "status": "full",
+    "scope_note": "A counterexample: the moving maximum of iid noise with continuous marginal.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "79f99cf83835c9809d8e8c0e396e167d"
+  },
+  {
+    "id": "hill-needs-mixing",
+    "name": "The mixing condition cannot be dropped from the mixing Hill theorem",
+    "source": "this library",
+    "lean_name": "ExtremeValueTheory.Minimality.mixture_hill_needs_mixing",
+    "file": "ExtremeValueTheory/Minimality/DependenceHill.lean",
+    "statement": "ExtremeValueTheory.Minimality.mixture_hill_needs_mixing.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {α : ℝ} {Z : ℤ → Ω → ℝ} {E : Set Ω} (hE : MeasurableSet E)\n  (hEZ :\n    ProbabilityTheory.Indep (MeasurableSpace.generateFrom {E})\n      (ExtremeValueTheory.innovationSigma Z) P)\n  (hα : 0 < α) (hZ : ∀ (t : ℤ), Measurable (Z t)) (hind : ProbabilityTheory.iIndepFun Z P)\n  (hlaw : ∀ (t : ℤ), MeasureTheory.Measure.map (Z t) P = ProbabilityTheory.paretoMeasure 1 α)\n  (hp0 : 0 < P.real E) {k : ℕ → ℕ} (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0)) :\n  ProbabilityTheory.IsStationary (fun n ω => ExtremeValueTheory.mixtureProcess E Z (↑n) ω) P ∧\n    ExtremeValueTheory.IsRegularlyVarying\n        (fun x => (P {ω | x < ExtremeValueTheory.mixtureProcess E Z (↑0) ω}).toReal) (-α) ∧\n      (∀ (u : ℕ → ℝ) (c : ℝ),\n          0 < c →\n            Filter.Tendsto u Filter.atTop Filter.atTop →\n              Filter.Tendsto\n                  (fun n =>\n                    ↑n * (P {ω | u n < ExtremeValueTheory.mixtureProcess E Z (↑0) ω}).toReal /\n                      ↑(k n))\n                  Filter.atTop (nhds c) →\n                Filter.Tendsto\n                  (fun n =>\n                    (∑ h ∈ Finset.Icc 1 ((fun x => 0) n),\n                          P.real\n                            {ω |\n                              u n < ExtremeValueTheory.mixtureProcess E Z (↑0) ω ∧\n                                u n < ExtremeValueTheory.mixtureProcess E Z (↑h) ω}) /\n                        (P {ω | u n < ExtremeValueTheory.mixtureProcess E Z (↑0) ω}).toReal /\n                      ↑(k n))\n                  Filter.atTop (nhds 0)) ∧\n        (¬MeasureTheory.TendstoInMeasure P\n              (fun n ω =>\n                ExtremeValueTheory.hill (fun i => ExtremeValueTheory.mixtureProcess E Z (↑↑i) ω)\n                  (k n))\n              Filter.atTop fun x => 1 / α) ∧\n          ¬Filter.Tendsto\n              (fun n =>\n                ↑n / ↑(k n) ^ 2 *\n                  ∑ h ∈ Finset.Ico ((fun x => 0) n + 1) n,\n                    (ProbabilityTheory.alphaMixing\n                        (fun n ω => ExtremeValueTheory.mixtureProcess E Z (↑n) ω) P h).toReal)\n              Filter.atTop (nhds 0)",
+    "status": "full",
+    "scope_note": "A counterexample, for the constant/iid mixture.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "6d640752e8b829c146362e2a1764a3f7"
+  },
+  {
+    "id": "mixing-does-not-give-theta-vartheta",
+    "name": "Geometric strong mixing does not give theta = candidate index",
+    "source": "this library",
+    "lean_name": "ExtremeValueTheory.Minimality.logEcho_alphaMixing_theta_ne_vartheta",
+    "file": "ExtremeValueTheory/Minimality/DependenceMixing.lean",
+    "statement": "ExtremeValueTheory.Minimality.logEcho_alphaMixing_theta_ne_vartheta.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {α : ℝ} {Z : ℤ → Ω → ℝ} (hα : 0 < α) (hZ : ∀ (t : ℤ), Measurable (Z t))\n  (hind : ProbabilityTheory.iIndepFun Z P)\n  (hlaw : ∀ (t : ℤ), MeasureTheory.Measure.map (Z t) P = ProbabilityTheory.paretoMeasure 1 α)\n  (hpos : ∀ (t : ℤ) (ω : Ω), 0 ≤ Z t ω) :\n  ProbabilityTheory.IsStrongMixing\n      (fun k => ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z ↑k) P ∧\n    (∀ (h : ℕ),\n        1 ≤ h →\n          (ProbabilityTheory.alphaMixing\n                (fun k => ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z ↑k) P\n                h).toReal ≤\n            2 * (2 ^ α * Real.exp α / (1 - Real.exp (-α))) * Real.exp (-α) ^ h) ∧\n      ExtremeValueTheory.HasShiftInvariantWindows P\n          (ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z) ∧\n        ExtremeValueTheory.HasSpectralTailProcess P\n            (ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z) α\n            (MeasureTheory.Measure.dirac ()) ExtremeValueTheory.unitSpectral ∧\n          (ExtremeValueTheory.candidateExtremalIndex (MeasureTheory.Measure.dirac ())\n                  ExtremeValueTheory.unitSpectral α).toReal =\n              1 ∧\n            ExtremeValueTheory.HasExtremalIndex\n                (fun k => ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z ↑k) P (1 / 2) ∧\n              ∀ (u : ℕ → ℝ) (τ : ℝ),\n                0 < τ →\n                  Filter.Tendsto\n                      (fun n =>\n                        ↑n *\n                          P.real\n                            {ω |\n                              u n < ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z 0 ω})\n                      Filter.atTop (nhds τ) →\n                    ∀ (r : ℕ → ℕ),\n                      Filter.Tendsto r Filter.atTop Filter.atTop →\n                        Filter.Tendsto (fun n => ↑(r n) / ↑n) Filter.atTop (nhds 0) →\n                          Filter.Tendsto (fun n => Real.log ↑n / ↑(r n)) Filter.atTop (nhds 0) →\n                            ExtremeValueTheory.ConditionA\n                                (fun k =>\n                                  |ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z ↑k|)\n                                P u r ∧\n                              ¬ExtremeValueTheory.ForwardAntiClusteringAt P\n                                  (ExtremeValueTheory.echoProcess ExtremeValueTheory.logLag Z) u r",
+    "status": "full",
+    "scope_note": "A counterexample: anticlustering does not follow from mixing.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "fe43cd1aa9768c30a2f08f735ec9e318"
+  },
+  {
+    "id": "breiman-counterexample",
+    "name": "E Y^alpha < infinity is not enough in Breiman's lemma",
+    "source": "this library; compare Breiman (1965)",
+    "lean_name": "ExtremeValueTheory.Minimality.breiman_counterexample",
+    "file": "ExtremeValueTheory/Minimality/ClassicalBreiman.lean",
+    "statement": "ExtremeValueTheory.Minimality.breiman_counterexample {α : ℝ} (hα : 0 < α) :\n  Measurable (ExtremeValueTheory.Minimality.breimanX α) ∧\n    Measurable (ExtremeValueTheory.Minimality.breimanY α) ∧\n      ProbabilityTheory.IndepFun (ExtremeValueTheory.Minimality.breimanX α)\n          (ExtremeValueTheory.Minimality.breimanY α) ExtremeValueTheory.Minimality.breimanP ∧\n        (∀ᵐ (ω : ℝ × ℝ) ∂ExtremeValueTheory.Minimality.breimanP,\n            0 ≤ ExtremeValueTheory.Minimality.breimanY α ω) ∧\n          ExtremeValueTheory.IsRegularlyVarying\n              (fun x =>\n                (ExtremeValueTheory.Minimality.breimanP\n                    {ω | x < ExtremeValueTheory.Minimality.breimanX α ω}).toReal)\n              (-α) ∧\n            MeasureTheory.Integrable (fun ω => ExtremeValueTheory.Minimality.breimanY α ω ^ α)\n                ExtremeValueTheory.Minimality.breimanP ∧\n              Filter.Tendsto\n                  (fun x =>\n                    (ExtremeValueTheory.Minimality.breimanP\n                          {ω |\n                            x <\n                              ExtremeValueTheory.Minimality.breimanX α ω *\n                                ExtremeValueTheory.Minimality.breimanY α ω}).toReal /\n                      (ExtremeValueTheory.Minimality.breimanP\n                          {ω | x < ExtremeValueTheory.Minimality.breimanX α ω}).toReal)\n                  Filter.atTop Filter.atTop ∧\n                ∀ (L : ℝ),\n                  ¬Filter.Tendsto\n                      (fun x =>\n                        (ExtremeValueTheory.Minimality.breimanP\n                              {ω |\n                                x <\n                                  ExtremeValueTheory.Minimality.breimanX α ω *\n                                    ExtremeValueTheory.Minimality.breimanY α ω}).toReal /\n                          (ExtremeValueTheory.Minimality.breimanP\n                              {ω | x < ExtremeValueTheory.Minimality.breimanX α ω}).toReal)\n                      Filter.atTop (nhds L)",
+    "status": "full",
+    "scope_note": "A counterexample for every alpha > 0.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "2f635db34fae3f6b2e1d92d194f99edc"
+  },
+  {
+    "id": "breiman-pareto-tail",
+    "name": "Breiman's lemma with E Y^alpha < infinity for asymptotically Pareto tails",
+    "source": "this library; compare Breiman (1965)",
+    "lean_name": "ExtremeValueTheory.Minimality.tendsto_measure_mul_div_measure_of_tendsto_rpow_mul",
+    "file": "ExtremeValueTheory/Minimality/ClassicalBreiman.lean",
+    "statement": "ExtremeValueTheory.Minimality.tendsto_measure_mul_div_measure_of_tendsto_rpow_mul.{u_1} {α : ℝ}\n  {Ω : Type u_1} [MeasurableSpace Ω] {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {X Y : Ω → ℝ} (hX : Measurable X) (hY : Measurable Y)\n  (hXY : ProbabilityTheory.IndepFun X Y P) (hY0 : ∀ᵐ (ω : Ω) ∂P, 0 ≤ Y ω) (hα : 0 < α) {c : ℝ}\n  (hc : 0 < c)\n  (hpar : Filter.Tendsto (fun x => x ^ α * (P {ω | x < X ω}).toReal) Filter.atTop (nhds c))\n  (hmom : MeasureTheory.Integrable (fun ω => Y ω ^ α) P) :\n  Filter.Tendsto (fun x => (P {ω | x < X ω * Y ω}).toReal / (P {ω | x < X ω}).toReal) Filter.atTop\n    (nhds (∫ (ω : Ω), Y ω ^ α ∂P))",
+    "status": "full",
+    "scope_note": "Only tails with x^alpha P(X > x) -> c > 0, not general regular variation, which is what makes the weaker moment enough; see breiman-counterexample.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "95f51bdc124fe3b9244c5f58c0db99e8"
+  },
+  {
+    "id": "needs-tail-balance",
+    "name": "Tail balance is necessary for the generalized CLT",
+    "source": "this library; compare Feller §XVII.5 Thm 2",
+    "lean_name": "ExtremeValueTheory.Minimality.not_tendsto_of_not_tailBalance",
+    "file": "ExtremeValueTheory/Minimality/ClassicalGeneralizedCLT.lean",
+    "statement": "ExtremeValueTheory.Minimality.not_tendsto_of_not_tailBalance {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] {α : ℝ} (hα0 : 0 < α) (hα2 : α < 2)\n  (hRV : ExtremeValueTheory.IsRegularlyVarying (ExtremeValueTheory.absTail μ) (-α))\n  (hnb :\n    ¬∃ p,\n        Filter.Tendsto (fun x => μ.real (Set.Ioi x) / ExtremeValueTheory.absTail μ x) Filter.atTop\n          (nhds p))\n  {a b : ℕ → ℝ} (ha : ∀ (n : ℕ), 0 < a n) {ν : MeasureTheory.ProbabilityMeasure ℝ}\n  (hnd : ∀ (x : ℝ), ↑ν ≠ MeasureTheory.Measure.dirac x) :\n  ¬Filter.Tendsto\n      (fun n =>\n        ⟨MeasureTheory.Measure.map (fun x => (a n)⁻¹ * (x - b n))\n            (ExtremeValueTheory.Subexp.convPow μ n),\n          ⋯⟩)\n      Filter.atTop (nhds ν)",
+    "status": "full",
+    "scope_note": "Also follows from gclt-converse; stated directly.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "6a6c96d46b204e7cf9099c3227d4d62e"
+  },
+  {
+    "id": "atom-von-mises-counterexample",
+    "name": "The no-atom hypothesis of the finite-endpoint von Mises theorem is necessary",
+    "source": "this library",
+    "lean_name": "ExtremeValueTheory.Minimality.atomCDF_vonMises_counterexample",
+    "file": "ExtremeValueTheory/Minimality/ClassicalVonMises.lean",
+    "statement": "ExtremeValueTheory.Minimality.atomCDF_vonMises_counterexample :\n  (∀ x ∈ Set.Ioo 0 1,\n      HasDerivAt (↑ExtremeValueTheory.Minimality.atomCDF.toStieltjesFunction) (Real.exp (-x)) x) ∧\n    (∀ x ∈ Set.Ioo 0 1, HasDerivAt (fun t => Real.exp (-t)) (-Real.exp (-x)) x) ∧\n      (∀ x ∈ Set.Ioo 0 1, 0 < Real.exp (-x)) ∧\n        Filter.Tendsto\n            (fun t =>\n              (1 - ↑ExtremeValueTheory.Minimality.atomCDF.toStieltjesFunction t) * -Real.exp (-t) /\n                Real.exp (-t) ^ 2)\n            (nhdsWithin 1 (Set.Iio 1)) (nhds (-1)) ∧\n          ¬Filter.Tendsto (↑ExtremeValueTheory.Minimality.atomCDF.toStieltjesFunction)\n                (nhdsWithin 1 (Set.Iio 1)) (nhds 1) ∧\n            ¬ExtremeValueTheory.Minimality.atomCDF.IsInMDAGumbel ∧\n              ¬Filter.Tendsto\n                  (fun t =>\n                    (1 -\n                        ↑ExtremeValueTheory.Minimality.atomCDF.toStieltjesFunction\n                          (t +\n                            1 *\n                              ((1 - ↑ExtremeValueTheory.Minimality.atomCDF.toStieltjesFunction t) /\n                                Real.exp (-t)))) /\n                      (1 - ↑ExtremeValueTheory.Minimality.atomCDF.toStieltjesFunction t))\n                  (nhdsWithin 1 (Set.Iio 1)) (nhds (Real.exp (-1)))",
+    "status": "full",
+    "scope_note": "A counterexample.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "fce53d6f1877b03266b067f400f3fb68"
+  },
+  {
+    "id": "karamata-fails-below-one",
+    "name": "Karamata's tail-integral limit fails for alpha < 1",
+    "source": "this library",
+    "lean_name": "ExtremeValueTheory.Minimality.not_tendsto_integral_Ioi_div_of_lt_one",
+    "file": "ExtremeValueTheory/Minimality/ClassicalKaramata.lean",
+    "statement": "ExtremeValueTheory.Minimality.not_tendsto_integral_Ioi_div_of_lt_one {F : ℝ → ℝ} {α : ℝ}\n  (hF : Antitone F) (hRV : ExtremeValueTheory.IsRegularlyVarying F (-α)) (hα : α < 1) :\n  ¬Filter.Tendsto (fun x => (∫ (t : ℝ) in Set.Ioi x, F t) / (x * F x)) Filter.atTop\n      (nhds (1 / (α - 1)))",
+    "status": "reduced",
+    "scope_note": "Only antitone F: the docstring and RESEARCH.md say 'every F', but the statement assumes F antitone. alpha = 1 is a separate theorem.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "f537999c30c6b738f61321515a4baaea"
+  }
+]

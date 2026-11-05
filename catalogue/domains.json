@@ -1,0 +1,162 @@
+[
+  {
+    "id": "frechet-domain",
+    "name": "Gnedenko: Fréchet domain of attraction",
+    "source": "EKM Thm 3.3.7; dHF Thm 1.2.1",
+    "lean_name": "CumulativeDistributionFunction.isInMDAFrechet_iff",
+    "file": "ExtremeValueTheory/DomainOfAttraction/Frechet.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAFrechet_iff (F : CumulativeDistributionFunction) {α : ℝ}\n  (hα : 0 < α) :\n  F.IsInMDAFrechet hα ↔\n    ExtremeValueTheory.IsRegularlyVarying (fun x => 1 - ↑F.toStieltjesFunction x) (-α)",
+    "status": "full",
+    "scope_note": "Both directions. Eventual positivity inside regular variation encodes x_F = infinity. Explicit norming constants are not in the statement.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "70028707289a787061dcd1e6754c8443"
+  },
+  {
+    "id": "weibull-domain",
+    "name": "Gnedenko: Weibull domain of attraction",
+    "source": "EKM Thm 3.3.12; dHF Thm 1.2.1(2)",
+    "lean_name": "CumulativeDistributionFunction.isInMDAWeibull_iff",
+    "file": "ExtremeValueTheory/DomainOfAttraction/Weibull.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAWeibull_iff (F : CumulativeDistributionFunction) {α : ℝ}\n  (hα : 0 < α) :\n  F.IsInMDAWeibull hα ↔\n    ∃ xF,\n      ↑F.toStieltjesFunction xF = 1 ∧\n        (∀ x < xF, ↑F.toStieltjesFunction x < 1) ∧\n          ExtremeValueTheory.IsRegularlyVarying (fun t => 1 - ↑F.toStieltjesFunction (xF - t⁻¹))\n            (-α)",
+    "status": "full",
+    "scope_note": "Both directions, with x_F exactly the right endpoint. Explicit norming constants are not in the statement.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "7492fe39c574c769d778b79308551f5f"
+  },
+  {
+    "id": "gumbel-domain",
+    "name": "De Haan: Gumbel domain of attraction",
+    "source": "dHF Thms 1.1.8, 1.2.5; EKM Thm 3.3.26",
+    "lean_name": "CumulativeDistributionFunction.isInMDAGumbel_iff",
+    "file": "ExtremeValueTheory/DomainOfAttraction/GumbelNecessity.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAGumbel_iff (F : CumulativeDistributionFunction) :\n  F.IsInMDAGumbel ↔\n    ((∀ (x : ℝ), ↑F.toStieltjesFunction x < 1) ∧\n        ∃ f,\n          (∀ᶠ (t : ℝ) in Filter.atTop, 0 < f t) ∧\n            ∀ (x : ℝ),\n              Filter.Tendsto\n                (fun t =>\n                  (1 - ↑F.toStieltjesFunction (t + x * f t)) / (1 - ↑F.toStieltjesFunction t))\n                Filter.atTop (nhds (Real.exp (-x)))) ∨\n      ∃ xF,\n        (∀ x < xF, ↑F.toStieltjesFunction x < 1) ∧\n          ↑F.toStieltjesFunction xF = 1 ∧\n            ∃ f,\n              (∀ᶠ (t : ℝ) in nhdsWithin xF (Set.Iio xF), 0 < f t) ∧\n                ∀ (x : ℝ),\n                  Filter.Tendsto\n                    (fun t =>\n                      (1 - ↑F.toStieltjesFunction (t + x * f t)) / (1 - ↑F.toStieltjesFunction t))\n                    (nhdsWithin xF (Set.Iio xF)) (nhds (Real.exp (-x)))",
+    "status": "full",
+    "scope_note": "Both directions, x_F finite or infinite, one auxiliary function for all x. Stated as a disjunction of the two endpoint cases.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "1e74274f7a0fd0bacc9897dacb337b9a"
+  },
+  {
+    "id": "von-mises-frechet",
+    "name": "Von Mises condition for the Fréchet domain",
+    "source": "EKM Cor 3.3.8; dHF Thm 1.1.8(1)",
+    "lean_name": "CumulativeDistributionFunction.isInMDAFrechet_of_vonMises",
+    "file": "ExtremeValueTheory/DomainOfAttraction/VonMises.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAFrechet_of_vonMises (F : CumulativeDistributionFunction)\n  {α : ℝ} (hα : 0 < α) {z : ℝ} {F₁ : ℝ → ℝ}\n  (h1 : ∀ x > z, HasDerivAt (↑F.toStieltjesFunction) (F₁ x) x)\n  (hvm :\n    Filter.Tendsto (fun x => x * F₁ x / (1 - ↑F.toStieltjesFunction x)) Filter.atTop (nhds α)) :\n  F.IsInMDAFrechet hα",
+    "status": "full",
+    "scope_note": "A derivative of F near infinity instead of a density; positivity of the derivative is not assumed.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "1aa24a1804c1d45f534048a9446ded18"
+  },
+  {
+    "id": "von-mises-weibull",
+    "name": "Von Mises condition for the Weibull domain",
+    "source": "EKM Cor 3.3.13; dHF Thm 1.1.8(2)",
+    "lean_name": "CumulativeDistributionFunction.isInMDAWeibull_of_vonMises",
+    "file": "ExtremeValueTheory/DomainOfAttraction/VonMises.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAWeibull_of_vonMises (F : CumulativeDistributionFunction)\n  {α : ℝ} (hα : 0 < α) {z xF : ℝ} (hz : z < xF) {F₁ : ℝ → ℝ}\n  (h1 : ∀ x ∈ Set.Ioo z xF, HasDerivAt (↑F.toStieltjesFunction) (F₁ x) x)\n  (hvm :\n    Filter.Tendsto (fun x => (xF - x) * F₁ x / (1 - ↑F.toStieltjesFunction x))\n      (nhdsWithin xF (Set.Iio xF)) (nhds α)) :\n  F.IsInMDAWeibull hα",
+    "status": "full",
+    "scope_note": "A derivative of F near x_F instead of a density; F(x_F) = 1 is derived.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "bfeb112cde251a822f856fa63521aadb"
+  },
+  {
+    "id": "von-mises-gumbel-infinite",
+    "name": "Von Mises condition for the Gumbel domain, infinite endpoint",
+    "source": "EKM Thm 3.3.27; dHF Thm 1.1.8",
+    "lean_name": "CumulativeDistributionFunction.isInMDAGumbel_of_vonMises",
+    "file": "ExtremeValueTheory/DomainOfAttraction/Gumbel.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAGumbel_of_vonMises (F : CumulativeDistributionFunction)\n  {z : ℝ} {F₁ F₂ : ℝ → ℝ} (h1 : ∀ x > z, HasDerivAt (↑F.toStieltjesFunction) (F₁ x) x)\n  (h2 : ∀ x > z, HasDerivAt F₁ (F₂ x) x) (hpos : ∀ x > z, 0 < F₁ x)\n  (hvm :\n    Filter.Tendsto (fun t => (1 - ↑F.toStieltjesFunction t) * F₂ t / F₁ t ^ 2) Filter.atTop\n      (nhds (-1))) :\n  F.IsInMDAGumbel",
+    "status": "reduced",
+    "scope_note": "x_F = infinity only: the cited theorem also covers finite x_F, which is the separate entry von-mises-gumbel-finite. Together they give the book's result.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "b28f11f5a35e9b22113e21e86b4b26e9"
+  },
+  {
+    "id": "von-mises-gumbel-finite",
+    "name": "Von Mises condition for the Gumbel domain, finite endpoint",
+    "source": "EKM Thm 3.3.27; dHF Thm 1.1.8",
+    "lean_name": "CumulativeDistributionFunction.isInMDAGumbel_of_vonMises_nhdsLT",
+    "file": "ExtremeValueTheory/DomainOfAttraction/Gumbel.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAGumbel_of_vonMises_nhdsLT (F : CumulativeDistributionFunction)\n  {z xF : ℝ} (hz : z < xF) {F₁ F₂ : ℝ → ℝ}\n  (h1 : ∀ x ∈ Set.Ioo z xF, HasDerivAt (↑F.toStieltjesFunction) (F₁ x) x)\n  (h2 : ∀ x ∈ Set.Ioo z xF, HasDerivAt F₁ (F₂ x) x) (hpos : ∀ x ∈ Set.Ioo z xF, 0 < F₁ x)\n  (hF1 : Filter.Tendsto (↑F.toStieltjesFunction) (nhdsWithin xF (Set.Iio xF)) (nhds 1))\n  (hvm :\n    Filter.Tendsto (fun t => (1 - ↑F.toStieltjesFunction t) * F₂ t / F₁ t ^ 2)\n      (nhdsWithin xF (Set.Iio xF)) (nhds (-1))) :\n  F.IsInMDAGumbel",
+    "status": "reduced",
+    "scope_note": "x_F finite only, with F -> 1 at x_F as an explicit hypothesis (needed: atom-von-mises-counterexample). The infinite endpoint is the separate entry von-mises-gumbel-infinite.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "c21082b00b2e45159766682f926d6d2e"
+  },
+  {
+    "id": "exponential-in-gumbel-domain",
+    "name": "The exponential law is in the Gumbel domain",
+    "source": "EKM §3.3.3 (example)",
+    "lean_name": "CumulativeDistributionFunction.isInMDAGumbel_standardExponentialCDF",
+    "file": "ExtremeValueTheory/DomainOfAttraction/Gumbel.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAGumbel_standardExponentialCDF :\n  CumulativeDistributionFunction.standardExponentialCDF.IsInMDAGumbel",
+    "status": "full",
+    "scope_note": "An example; the standard exponential law only.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "5f33b944c2170532ffaba9d9e9bbec44"
+  },
+  {
+    "id": "exp-neg-inv-in-gumbel-domain",
+    "name": "A finite-endpoint law in the Gumbel domain",
+    "source": "EKM Thm 3.3.27 (example)",
+    "lean_name": "CumulativeDistributionFunction.isInMDAGumbel_expNegInvCDF",
+    "file": "ExtremeValueTheory/DomainOfAttraction/Gumbel.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAGumbel_expNegInvCDF :\n  CumulativeDistributionFunction.expNegInvCDF.IsInMDAGumbel",
+    "status": "full",
+    "scope_note": "An example: F(x) = 1 - exp(-x/(1-x)) on [0,1).",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "0a2b51baab503e91f7e0f6eaab4d3cd7"
+  },
+  {
+    "id": "quantile-domain",
+    "name": "Quantile form of the domain of attraction condition",
+    "source": "dHF Thm 1.1.6",
+    "lean_name": "CumulativeDistributionFunction.isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile",
+    "file": "ExtremeValueTheory/DomainOfAttraction/Quantile.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile\n  (F : CumulativeDistributionFunction) (γ : ℝ) :\n  F.IsInMDAGEV γ ↔ ∃ a, ExtremeValueTheory.IsExtendedRegularlyVarying F.tailQuantile γ a",
+    "status": "full",
+    "scope_note": "Both directions, every extreme value index; the auxiliary function is existential.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "d6a9f0d95dc5488c9b2648a6647aa73a"
+  }
+]

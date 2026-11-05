@@ -1,0 +1,162 @@
+[
+  {
+    "id": "prm-exists",
+    "name": "Poisson random measures exist",
+    "source": "Res87 §3.3; Kallenberg Thm 3.6",
+    "lean_name": "ProbabilityTheory.exists_isPoissonRandomMeasure",
+    "file": "ExtremeValueTheory/ForMathlib/Probability/PoissonRandomMeasure.lean",
+    "statement": "ProbabilityTheory.exists_isPoissonRandomMeasure.{u} {E : Type u} [MeasurableSpace E]\n  (ν : MeasureTheory.Measure E) [MeasureTheory.SFinite ν] :\n  ∃ Ω x P N, MeasureTheory.IsProbabilityMeasure P ∧ ProbabilityTheory.IsPoissonRandomMeasure N ν P",
+    "status": "full",
+    "scope_note": "Every s-finite intensity, on a probability space in the same universe.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "b2c76b1ed2c993b03f587ebe7a20f382"
+  },
+  {
+    "id": "prm-laplace",
+    "name": "Laplace functional of a Poisson random measure",
+    "source": "Res87 Prop 3.6; Kallenberg Lemma 3.1",
+    "lean_name": "ProbabilityTheory.IsPoissonRandomMeasure.lintegral_exp_neg_lintegral",
+    "file": "ExtremeValueTheory/ForMathlib/Probability/PoissonRandomMeasureLaplace.lean",
+    "statement": "ProbabilityTheory.IsPoissonRandomMeasure.lintegral_exp_neg_lintegral.{u_1, u_2} {Ω : Type u_1}\n  {E : Type u_2} {mΩ : MeasurableSpace Ω} [MeasurableSpace E] {N : Ω → MeasureTheory.Measure E}\n  {ν : MeasureTheory.Measure E} {P : MeasureTheory.Measure Ω}\n  (hN : ProbabilityTheory.IsPoissonRandomMeasure N ν P) [MeasureTheory.SigmaFinite ν]\n  {f : E → ENNReal} (hf : Measurable f) :\n  ∫⁻ (ω : Ω), (-↑(∫⁻ (x : E), f x ∂N ω)).exp ∂P = (-↑(∫⁻ (x : E), 1 - (-↑(f x)).exp ∂ν)).exp",
+    "status": "full",
+    "scope_note": "All measurable f >= 0, sigma-finite intensity, exp(-infinity) = 0.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "11e96be32bb61f5062f55e2689394a6a"
+  },
+  {
+    "id": "prm-unique-law",
+    "name": "Poisson random measures with the same intensity have the same law",
+    "source": "Res87 Prop 3.6",
+    "lean_name": "ProbabilityTheory.IsPoissonRandomMeasure.map_eq",
+    "file": "ExtremeValueTheory/ForMathlib/Probability/RandomMeasureLaw.lean",
+    "statement": "ProbabilityTheory.IsPoissonRandomMeasure.map_eq.{u_1, u_2, u_3} {Ω : Type u_1} {Ω' : Type u_2}\n  {E : Type u_3} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} [MeasurableSpace E]\n  {P : MeasureTheory.Measure Ω} {P' : MeasureTheory.Measure Ω'} {N : Ω → MeasureTheory.Measure E}\n  {N' : Ω' → MeasureTheory.Measure E} {ν : MeasureTheory.Measure E} [MeasureTheory.SigmaFinite ν]\n  (hN : ProbabilityTheory.IsPoissonRandomMeasure N ν P)\n  (hN' : ProbabilityTheory.IsPoissonRandomMeasure N' ν P') :\n  MeasureTheory.Measure.map N P = MeasureTheory.Measure.map N' P'",
+    "status": "full",
+    "scope_note": "Sigma-finite intensity. Uniqueness from simple functions, not from compactly supported functions alone.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "89247c428b294843be9852e162264784"
+  },
+  {
+    "id": "binomial-to-poisson",
+    "name": "Binomial point processes converge to a Poisson random measure",
+    "source": "Res87 Prop 3.21; Kallenberg Thm 4.11",
+    "lean_name": "ProbabilityTheory.tendstoInLawVaguely_sumDiracRange",
+    "file": "ExtremeValueTheory/ForMathlib/Probability/PointProcessConvergence.lean",
+    "statement": "ProbabilityTheory.tendstoInLawVaguely_sumDiracRange.{u_2, u_3} {E : Type u_2} [MeasurableSpace E]\n  [TopologicalSpace E] [T2Space E] [LocallyCompactSpace E] [RegularSpace E] [OpensMeasurableSpace E]\n  {μ : ℕ → MeasureTheory.Measure E} [∀ (n : ℕ), MeasureTheory.IsProbabilityMeasure (μ n)]\n  {ν : MeasureTheory.Measure E} [ν.Regular]\n  (h : MeasureTheory.Measure.TendstoVaguely (fun n => ↑n • μ n) Filter.atTop ν) {Ω' : Type u_3}\n  {mΩ' : MeasurableSpace Ω'} {N' : Ω' → MeasureTheory.Measure E} {P' : MeasureTheory.Measure Ω'}\n  (hN' : ProbabilityTheory.IsPoissonRandomMeasure N' ν P') :\n  ProbabilityTheory.TendstoInLawVaguely (fun n z => ProbabilityTheory.sumDiracRange n z)\n    (fun n => MeasureTheory.Measure.infinitePi fun x => μ n) Filter.atTop N' P' ν",
+    "status": "reduced",
+    "scope_note": "Convergence in law is defined through joint counts on disjoint relatively compact continuity sets, not as weak convergence on a space of point measures: the library puts no topology on that space.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "95cfa93fea13b3b47c73514f78e77c36"
+  },
+  {
+    "id": "exceedance-point-process",
+    "name": "Point process of exceedances, time-space",
+    "source": "Res87 Cor 4.19; EKM Thm 5.3.2",
+    "lean_name": "ExtremeValueTheory.tendsto_measureReal_sumDiracRange_timeSpace_eq",
+    "file": "ExtremeValueTheory/PointProcess/Exceedances.lean",
+    "statement": "ExtremeValueTheory.tendsto_measureReal_sumDiracRange_timeSpace_eq.{u_1, u_2} {Ω : Type u_1}\n  [MeasurableSpace Ω] {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {X : ℕ → Ω → ℝ} {F G : CumulativeDistributionFunction} {As : ℕ → AffineIncrEquiv} {u : ℝ}\n  (hX : ∀ (i : ℕ), Measurable (X i)) (hind : ProbabilityTheory.iIndepFun X P)\n  (hF : ∀ (i : ℕ) (x : ℝ), P.real {ω | X i ω ≤ x} = ↑F.toStieltjesFunction x)\n  (hlim :\n    ∀ (x : ℝ),\n      Filter.Tendsto (fun n => ↑(As n • F).toStieltjesFunction x ^ n) Filter.atTop\n        (nhds (↑G.toStieltjesFunction x)))\n  (hu : 0 < ↑G.toStieltjesFunction u) {Ω' : Type u_2} {mΩ' : MeasurableSpace Ω'}\n  {N' : Ω' → MeasureTheory.Measure (ℝ × ℝ)} {P' : MeasureTheory.Measure Ω'}\n  (hN' :\n    ProbabilityTheory.IsPoissonRandomMeasure N'\n      ((MeasureTheory.volume.restrict (Set.Ioc 0 1)).prod\n        (ExtremeValueTheory.exceedanceMeasure G hu))\n      P')\n  {k : ℕ} {s t : Fin k → ℝ} {C : Fin k → Set ℝ} (hs : ∀ (j : Fin k), 0 ≤ s j)\n  (hst : ∀ (j : Fin k), s j ≤ t j) (ht : ∀ (j : Fin k), t j ≤ 1)\n  (hC : ∀ (j : Fin k), ExtremeValueTheory.IsExceedanceInterval G u (C j))\n  (hd : Pairwise (Function.onFun Disjoint fun j => Set.Ioc (s j) (t j) ×ˢ C j)) (m : Fin k → ℕ) :\n  Filter.Tendsto\n    (fun n =>\n      P.real\n        {ω |\n          ∀ (j : Fin k),\n            (ProbabilityTheory.sumDiracRange n fun i => ((↑i + 1) / ↑n, (As n) (X i ω)))\n                (Set.Ioc (s j) (t j) ×ˢ C j) =\n              ↑(m j)})\n    Filter.atTop (nhds (P'.real {ω | ∀ (j : Fin k), (N' ω) (Set.Ioc (s j) (t j) ×ˢ C j) = ↑(m j)}))",
+    "status": "reduced",
+    "scope_note": "Joint counts on disjoint time rectangles over exceedance intervals above u with G(u) > 0, not convergence on the compactified space.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "f624d0786e9c840724f4f2c2fb9236a5"
+  },
+  {
+    "id": "max-stable-process-construction",
+    "name": "De Haan's spectral representation of max-stable processes, constructive direction",
+    "source": "dHF Thm 9.4.1; de Haan (1984)",
+    "lean_name": "ProbabilityTheory.IsPoissonRandomMeasure.isSimpleMaxStable_map_process",
+    "file": "ExtremeValueTheory/MaxStable/Spectral.lean",
+    "statement": "ProbabilityTheory.IsPoissonRandomMeasure.isSimpleMaxStable_map_process.{u_1, u_2, u_3, u_4}\n  {S : Type u_1} {T : Type u_2} [MeasurableSpace S] {Ω : Type u_3} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} {N : Ω → MeasureTheory.Measure (ℝ × S)}\n  {μ : MeasureTheory.Measure S} {W : T → S → ENNReal} [MeasureTheory.SFinite μ]\n  (hN : ProbabilityTheory.IsPoissonRandomMeasure N ((ExtremeValueTheory.radialMeasure 1).prod μ) P)\n  (hW : ∀ (t : T), Measurable (W t)) (hW1 : ∀ (t : T), ∫⁻ (s : S), W t s ∂μ = 1) {ι : Type u_4}\n  [Fintype ι] (t : ι → T) :\n  ExtremeValueTheory.IsSimpleMaxStable\n    (MeasureTheory.Measure.map (fun ω i => ExtremeValueTheory.spectralVector W (N ω) (t i)) P)",
+    "status": "reduced",
+    "scope_note": "Constructive direction only, and finite-dimensional laws only: that every max-stable process has such a representation is not proved.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "f89146089d9ea58bb1ce51efff7962ba"
+  },
+  {
+    "id": "skorokhod-separable",
+    "name": "The Skorokhod space D[0,1] is separable",
+    "source": "Billingsley Thm 12.2",
+    "lean_name": "SkorokhodSpace.instSeparableSpace",
+    "file": "ExtremeValueTheory/ForMathlib/Topology/Skorokhod/Separable.lean",
+    "statement": "SkorokhodSpace.instSeparableSpace.{u_1} {E : Type u_1} [PseudoEMetricSpace E]\n  [TopologicalSpace.SeparableSpace E] : TopologicalSpace.SeparableSpace (SkorokhodSpace E)",
+    "status": "full",
+    "scope_note": "Time set [0,1], values in a separable pseudo-emetric space.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "fc6504eddfc6169c1f9dff02733bfffc"
+  },
+  {
+    "id": "skorokhod-borel",
+    "name": "Borel sigma-algebra of D[0,1] is that of the projections",
+    "source": "Billingsley Thm 12.5",
+    "lean_name": "SkorokhodSpace.measurableSpace_eq_comap_coeFn",
+    "file": "ExtremeValueTheory/ForMathlib/Topology/Skorokhod/Measurable.lean",
+    "statement": "SkorokhodSpace.measurableSpace_eq_comap_coeFn.{u_1} {E : Type u_1} [PseudoEMetricSpace E]\n  [MeasurableSpace E] [BorelSpace E] [SecondCountableTopology E] :\n  SkorokhodSpace.instMeasurableSpace = MeasurableSpace.comap (fun x => ⇑x) MeasurableSpace.pi",
+    "status": "full",
+    "scope_note": "All projections, not a dense subset of times; second-countable values.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "2c788b6192e7a3829b517c2fd7a121c3"
+  },
+  {
+    "id": "skorokhod-polish",
+    "name": "The Skorokhod space D[0,1] is Polish",
+    "source": "Billingsley Thm 12.2",
+    "lean_name": "SkorokhodSpace.instPolishSpace",
+    "file": "ExtremeValueTheory/ForMathlib/Topology/Skorokhod/Complete.lean",
+    "statement": "SkorokhodSpace.instPolishSpace.{u_1} {E : Type u_1} [EMetricSpace E] [CompleteSpace E]\n  [TopologicalSpace.SeparableSpace E] : PolishSpace (SkorokhodSpace E)",
+    "status": "full",
+    "scope_note": "Complete separable (extended) metric E. The instance needs a metric on E, not only a Polish topology.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "ca6eb1303020116641abb88217ead92b"
+  },
+  {
+    "id": "skorokhod-tightness",
+    "name": "Tightness and fidi convergence give weak convergence in D[0,1]",
+    "source": "Billingsley Thm 13.1",
+    "lean_name": "SkorokhodSpace.tendsto_of_tendsto_map_restrict_of_isTight",
+    "file": "ExtremeValueTheory/ForMathlib/Probability/SkorokhodWeakConvergence.lean",
+    "statement": "SkorokhodSpace.tendsto_of_tendsto_map_restrict_of_isTight.{u_1} {E : Type u_1} [MetricSpace E]\n  [SecondCountableTopology E] [MeasurableSpace E] [BorelSpace E]\n  {μs : ℕ → MeasureTheory.ProbabilityMeasure (SkorokhodSpace E)}\n  {μ : MeasureTheory.ProbabilityMeasure (SkorokhodSpace E)} {T : Set ↑unitInterval}\n  (hT : Tᶜ.Countable) (h1 : 1 ∈ T)\n  (hfdd :\n    ∀ (J : Finset ↑unitInterval),\n      ↑J ⊆ T →\n        Filter.Tendsto (fun n => (μs n).map fun x t => x ↑t) Filter.atTop\n          (nhds (μ.map fun x t => x ↑t)))\n  (htight : MeasureTheory.IsTightMeasureSet (Set.range fun n => ↑(μs n))) :\n  Filter.Tendsto μs Filter.atTop (nhds μ)",
+    "status": "full",
+    "scope_note": "Fidi convergence on any T with countable complement containing 1. Time [0,1] only; the sufficient moment criteria for tightness are separate.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "c7f35b2f593f8cfb8bee238a9424a46a"
+  }
+]

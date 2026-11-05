@@ -1,0 +1,434 @@
+[
+  {
+    "id": "hill-consistency",
+    "name": "Weak consistency of the Hill estimator",
+    "source": "dHF Thm 3.2.2; Mason (1982)",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_hill",
+    "file": "ExtremeValueTheory/Statistics/Hill.lean",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_hill.{u_1} {Ω : Type u_1} [MeasurableSpace Ω]\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {X : ℕ → Ω → ℝ}\n  (hX : ∀ (i : ℕ), Measurable (X i)) (hindep : ProbabilityTheory.iIndepFun X P)\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (X i) (X 0) P P) {α : ℝ} (hα : 0 < α)\n  (hRV : ExtremeValueTheory.IsRegularlyVarying (fun x => (P {ω | x < X 0 ω}).toReal) (-α))\n  {k : ℕ → ℕ} (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0)) :\n  MeasureTheory.TendstoInMeasure P (fun n ω => ExtremeValueTheory.hill (fun i => X (↑i) ω) (k n))\n    Filter.atTop fun x => 1 / α",
+    "status": "full",
+    "scope_note": "Consistency only; Mason's converse is not claimed. No positivity assumption, as in dHF: logs of nonpositive order statistics are junk values only on an event of vanishing probability.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "a2a9fdffc28e459a9faf8ef74c254c28"
+  },
+  {
+    "id": "hill-normality",
+    "name": "Asymptotic normality of the Hill estimator",
+    "source": "dHF Thm 3.2.5",
+    "lean_name": "ExtremeValueTheory.tendstoInDistribution_hill",
+    "file": "ExtremeValueTheory/Statistics/HillNormality.lean",
+    "statement": "ExtremeValueTheory.tendstoInDistribution_hill.{u_1, u_2} {Ω : Type u_1} {Ω' : Type u_2}\n  {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {P' : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure P'] {X : ℕ → Ω → ℝ} (hX : ∀ (i : ℕ), Measurable (X i))\n  (hindep : ProbabilityTheory.iIndepFun X P)\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ} {A : ℝ → ℝ}\n  (hγ : 0 < γ)\n  (h2 :\n    ExtremeValueTheory.IsSecondOrderRegularlyVarying\n      (ExtremeValueTheory.survivalQuantile (ExtremeValueTheory.survival P (X 0))) γ ρ A)\n  {k : ℕ → ℕ} (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0))\n  (hlam : Filter.Tendsto (fun n => √↑(k n) * A (↑n / ↑(k n))) Filter.atTop (nhds lam)) {Z : Ω' → ℝ}\n  (hZ :\n    ProbabilityTheory.HasLaw Z (ProbabilityTheory.gaussianReal (lam / (1 - ρ)) (γ ^ 2).toNNReal)\n      P') :\n  MeasureTheory.TendstoInDistribution\n    (fun n ω => √↑(k n) * (ExtremeValueTheory.hill (fun i => X (↑i) ω) (k n) - γ)) Filter.atTop Z\n    (fun x => P) P'",
+    "status": "full",
+    "scope_note": "The definition of second-order regular variation builds in that |A| is RV_rho and has constant sign, which dHF derive when the limit is non-degenerate.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "ff69e6f9a9c4d36ab82a3ee634a385ae"
+  },
+  {
+    "id": "hill-normality-pareto",
+    "name": "Asymptotic normality of the Hill estimator, exact Pareto",
+    "source": "dHF Thm 3.2.5 (vanishing bias)",
+    "lean_name": "ExtremeValueTheory.tendstoInDistribution_hill_pareto",
+    "file": "ExtremeValueTheory/Statistics/HillNormality.lean",
+    "statement": "ExtremeValueTheory.tendstoInDistribution_hill_pareto.{u_1, u_2} {Ω : Type u_1} {Ω' : Type u_2}\n  {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {P' : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure P'] {X : ℕ → Ω → ℝ} (hX : ∀ (i : ℕ), Measurable (X i))\n  (hindep : ProbabilityTheory.iIndepFun X P)\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (X i) (X 0) P P) {α : ℝ} (hα : 0 < α)\n  (hPar : ∀ (x : ℝ), 1 ≤ x → (P {ω | x < X 0 ω}).toReal = x ^ (-α)) {k : ℕ → ℕ}\n  (hk : Filter.Tendsto k Filter.atTop Filter.atTop) (hkn : ∀ᶠ (n : ℕ) in Filter.atTop, k n < n)\n  {Z : Ω' → ℝ}\n  (hZ : ProbabilityTheory.HasLaw Z (ProbabilityTheory.gaussianReal 0 (α⁻¹ ^ 2).toNNReal) P') :\n  MeasureTheory.TendstoInDistribution\n    (fun n ω => √↑(k n) * (ExtremeValueTheory.hill (fun i => X (↑i) ω) (k n) - α⁻¹)) Filter.atTop Z\n    (fun x => P) P'",
+    "status": "reduced",
+    "scope_note": "Exact Pareto samples only. It needs only k < n, not k/n -> 0, which is the part beyond the cited theorem.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "a712df4aad328406ed6398c2586cfca3"
+  },
+  {
+    "id": "hill-variance-condition",
+    "name": "Hill consistency from a variance bound on exceedance counts",
+    "source": "this library; cf. Resnick-Stărică (1995)",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_hill_of_variance",
+    "file": "ExtremeValueTheory/Statistics/HillDependent.lean",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_hill_of_variance.{u_1} {Ω : Type u_1} [MeasurableSpace Ω]\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {X : ℕ → Ω → ℝ}\n  (hX : ∀ (i : ℕ), Measurable (X i))\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (X i) (X 0) P P) {α : ℝ} (hα : 0 < α)\n  (hRV : ExtremeValueTheory.IsRegularlyVarying (fun x => (P {ω | x < X 0 ω}).toReal) (-α))\n  {k : ℕ → ℕ} (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0))\n  (hvar :\n    ∀ (u : ℕ → ℝ) (c : ℝ),\n      0 < c →\n        Filter.Tendsto u Filter.atTop Filter.atTop →\n          Filter.Tendsto (fun n => ↑n * (P {ω | u n < X 0 ω}).toReal / ↑(k n)) Filter.atTop\n              (nhds c) →\n            Filter.Tendsto\n              (fun n =>\n                ProbabilityTheory.variance (ExtremeValueTheory.tailCount X n (u n)) P / ↑(k n) ^ 2)\n              Filter.atTop (nhds 0)) :\n  MeasureTheory.TendstoInMeasure P (fun n ω => ExtremeValueTheory.hill (fun i => X (↑i) ω) (k n))\n    Filter.atTop fun x => 1 / α",
+    "status": "reduced",
+    "scope_note": "The key step for dependent data is assumed: the variance bound on exceedance counts, along every level sequence, is a hypothesis. It reduces dependence to that bound and says nothing about which processes satisfy it.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "0fd7439871b718247d65ebd6b1a9bd7d"
+  },
+  {
+    "id": "hill-m-dependent",
+    "name": "Hill consistency for m-dependent sequences",
+    "source": "this library; cf. Resnick-Stărică (1995)",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_hill_of_isMDependent",
+    "file": "ExtremeValueTheory/Statistics/HillDependent.lean",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_hill_of_isMDependent.{u_1} {Ω : Type u_1} [MeasurableSpace Ω]\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {X : ℕ → Ω → ℝ} {m : ℕ}\n  (hX : ∀ (i : ℕ), Measurable (X i)) (hdep : ProbabilityTheory.IsMDependent X m P)\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (X i) (X 0) P P) {α : ℝ} (hα : 0 < α)\n  (hRV : ExtremeValueTheory.IsRegularlyVarying (fun x => (P {ω | x < X 0 ω}).toReal) (-α))\n  {k : ℕ → ℕ} (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0)) :\n  MeasureTheory.TendstoInMeasure P (fun n ω => ExtremeValueTheory.hill (fun i => X (↑i) ω) (k n))\n    Filter.atTop fun x => 1 / α",
+    "status": "full",
+    "scope_note": "The variance bound is derived from m-dependence, and only identical marginals are needed, not stationarity.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "c1f9ee57339c14842a79e43a3eb832db"
+  },
+  {
+    "id": "hill-alpha-mixing",
+    "name": "Hill consistency under strong mixing, with a rate",
+    "source": "cf. Rootzén-Leadbetter-de Haan (1998); KS20 §9.1",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_hill_of_alphaMixing_rate",
+    "file": "ExtremeValueTheory/Statistics/HillDependent.lean",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_hill_of_alphaMixing_rate.{u_1} {Ω : Type u_1}\n  [MeasurableSpace Ω] {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {X : ℕ → Ω → ℝ} (hX : ∀ (i : ℕ), Measurable (X i)) (hstat : ProbabilityTheory.IsStationary X P)\n  {α : ℝ} (hα : 0 < α)\n  (hRV : ExtremeValueTheory.IsRegularlyVarying (fun x => (P {ω | x < X 0 ω}).toReal) (-α))\n  {k : ℕ → ℕ} (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0)) (r : ℕ → ℕ)\n  (hclus :\n    ∀ (u : ℕ → ℝ) (c : ℝ),\n      0 < c →\n        Filter.Tendsto u Filter.atTop Filter.atTop →\n          Filter.Tendsto (fun n => ↑n * (P {ω | u n < X 0 ω}).toReal / ↑(k n)) Filter.atTop\n              (nhds c) →\n            Filter.Tendsto\n              (fun n =>\n                (∑ h ∈ Finset.Icc 1 (r n), P.real {ω | u n < X 0 ω ∧ u n < X h ω}) /\n                    (P {ω | u n < X 0 ω}).toReal /\n                  ↑(k n))\n              Filter.atTop (nhds 0))\n  (hmix :\n    Filter.Tendsto\n      (fun n => (↑n / ↑(k n)) ^ 2 * (ProbabilityTheory.alphaMixing X P (r n + 1)).toReal)\n      Filter.atTop (nhds 0)) :\n  MeasureTheory.TendstoInMeasure P (fun n ω => ExtremeValueTheory.hill (fun i => X (↑i) ω) (k n))\n    Filter.atTop fun x => 1 / α",
+    "status": "reduced",
+    "scope_note": "The cluster condition is assumed along every level sequence, not derived from the tail process, and the mixing rate (n/k)^2 alpha(r+1) -> 0 is a simple sufficient one, not the sharpest.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "1a15fad8e6cbf0e1f722f50e9d810419"
+  },
+  {
+    "id": "hill-sum-anticlustering",
+    "name": "Hill consistency under S(r_n, u_n) and strong mixing",
+    "source": "KS20 §9.1",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_hill_of_alphaMixing_of_sumAntiClustering",
+    "file": "ExtremeValueTheory/Statistics/HillCluster.lean",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_hill_of_alphaMixing_of_sumAntiClustering.{u_1} {Ω : Type u_1}\n  [MeasurableSpace Ω] {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {X : ℕ → Ω → ℝ} (hX : ∀ (i : ℕ), Measurable (X i)) (hstat : ProbabilityTheory.IsStationary X P)\n  {α : ℝ} (hα : 0 < α)\n  (hRV : ExtremeValueTheory.IsRegularlyVarying (fun x => (P {ω | x < X 0 ω}).toReal) (-α))\n  {k : ℕ → ℕ} (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0)) (r : ℕ → ℕ)\n  (hS :\n    ∀ (u : ℕ → ℝ) (c : ℝ),\n      0 < c →\n        Filter.Tendsto u Filter.atTop Filter.atTop →\n          Filter.Tendsto (fun n => ↑n * (P {ω | u n < X 0 ω}).toReal / ↑(k n)) Filter.atTop\n              (nhds c) →\n            ExtremeValueTheory.SumAntiClusteringAt P X u r)\n  (hmix :\n    Filter.Tendsto\n      (fun n =>\n        ↑n / ↑(k n) ^ 2 *\n          ∑ h ∈ Finset.Ico (r n + 1) n, (ProbabilityTheory.alphaMixing X P h).toReal)\n      Filter.atTop (nhds 0)) :\n  MeasureTheory.TendstoInMeasure P (fun n ω => ExtremeValueTheory.hill (fun i => X (↑i) ω) (k n))\n    Filter.atTop fun x => 1 / α",
+    "status": "reduced",
+    "scope_note": "The condition S(r_n, u_n) is assumed along every level sequence and has no concrete instance in the library; the mixing condition is a sufficient rate. Not checked against the wording in KS20.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "b07cc1c0ed5caebce1b6705e7a0ade51"
+  },
+  {
+    "id": "pickands-consistency",
+    "name": "Weak consistency of the Pickands estimator",
+    "source": "EKM Thm 6.4.1; dHF §3.3",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_pickands",
+    "file": "ExtremeValueTheory/Statistics/Pickands.lean",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_pickands.{u_1} {Ω : Type u_1} [MeasurableSpace Ω]\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {X : ℕ → Ω → ℝ}\n  (hX : ∀ (i : ℕ), Measurable (X i)) (hindep : ProbabilityTheory.iIndepFun X P)\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (X i) (X 0) P P)\n  {F : CumulativeDistributionFunction}\n  (hF : ∀ (x : ℝ), ↑F.toStieltjesFunction x = (P {ω | X 0 ω ≤ x}).toReal) {ξ : ℝ}\n  (hMDA : F.IsInMDAGEV ξ) {k : ℕ → ℕ} (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0)) :\n  MeasureTheory.TendstoInMeasure P\n    (fun n ω => ExtremeValueTheory.pickands (fun i => X (↑i) ω) (k n)) Filter.atTop fun x => ξ",
+    "status": "full",
+    "scope_note": "Every xi. Consistency only: the asymptotic normality in EKM's theorem is not stated. Indices are shifted by one against EKM.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "4e9b9df6b9328266607532b18ab498cc"
+  },
+  {
+    "id": "moment-consistency",
+    "name": "Weak consistency of the moment estimator",
+    "source": "dHF Thm 3.5.2",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_momentEstimator_of_isInMDAGEV'",
+    "file": "ExtremeValueTheory/Statistics/MomentGeneral.lean",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_momentEstimator_of_isInMDAGEV'.{u_1} {Ω : Type u_1}\n  [MeasurableSpace Ω] {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {X : ℕ → Ω → ℝ} (hX : ∀ (i : ℕ), Measurable (X i)) (hindep : ProbabilityTheory.iIndepFun X P)\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (X i) (X 0) P P)\n  {F : CumulativeDistributionFunction}\n  (hF : ∀ (x : ℝ), ↑F.toStieltjesFunction x = (P {ω | X 0 ω ≤ x}).toReal) {γ : ℝ}\n  (hMDA : F.IsInMDAGEV γ) (hxF : ∃ y, 0 < y ∧ ↑F.toStieltjesFunction y < 1) {k : ℕ → ℕ}\n  (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0)) :\n  MeasureTheory.TendstoInMeasure P\n    (fun n ω => ExtremeValueTheory.momentEstimator (fun i => X (↑i) ω) (k n)) Filter.atTop fun x =>\n    γ",
+    "status": "full",
+    "scope_note": "Every gamma, x_F > 0 as in dHF. Consistency only.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "93b2e550fb2ecd3f1c398589da394e6a"
+  },
+  {
+    "id": "weissman-intermediate",
+    "name": "Ratio consistency of the Weissman estimator at intermediate levels",
+    "source": "dHF §4.3; EKM §6.4.4",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_weissman_div",
+    "file": "ExtremeValueTheory/Statistics/ExtremeQuantile.lean",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_weissman_div.{u_1} {Ω : Type u_1} [MeasurableSpace Ω]\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {X : ℕ → Ω → ℝ}\n  (hX : ∀ (i : ℕ), Measurable (X i)) (hindep : ProbabilityTheory.iIndepFun X P)\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (X i) (X 0) P P) {α : ℝ} (hα : 0 < α)\n  (hRV : ExtremeValueTheory.IsRegularlyVarying (fun x => (P {ω | x < X 0 ω}).toReal) (-α))\n  {k : ℕ → ℕ} (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0)) {p : ℕ → ℝ}\n  (hp0 : ∀ᶠ (n : ℕ) in Filter.atTop, 0 < p n) {a b : ℝ} (ha : 0 < a)\n  (hd : ∀ᶠ (n : ℕ) in Filter.atTop, ↑(k n) / (↑n * p n) ∈ Set.Icc a b) :\n  MeasureTheory.TendstoInMeasure P\n    (fun n ω =>\n      ExtremeValueTheory.weissman (fun i => X (↑i) ω) (k n) (p n) /\n        ExtremeValueTheory.upperQuantile (ExtremeValueTheory.survival P (X 0)) (p n))\n    Filter.atTop fun x => 1",
+    "status": "reduced",
+    "scope_note": "Only p_n comparable to k/n: no extrapolation beyond the sample range, which is the point of the estimator.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "565180878d1c7526a37534511ff6d8ca"
+  },
+  {
+    "id": "weissman-consistency",
+    "name": "Consistency of the Weissman estimator beyond the sample",
+    "source": "dHF §4.3; Weissman (1978)",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_weissman_div_of_secondOrder",
+    "file": "ExtremeValueTheory/Statistics/ExtremeQuantileSecondOrder.lean",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_weissman_div_of_secondOrder.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {X : ℕ → Ω → ℝ} (hX : ∀ (i : ℕ), Measurable (X i)) (hindep : ProbabilityTheory.iIndepFun X P)\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ} {A : ℝ → ℝ}\n  (hγ : 0 < γ) (hρ : ρ < 0)\n  (h2 :\n    ExtremeValueTheory.IsSecondOrderRegularlyVarying\n      (ExtremeValueTheory.survivalQuantile (ExtremeValueTheory.survival P (X 0))) γ ρ A)\n  {k : ℕ → ℕ} (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0))\n  (hlam : Filter.Tendsto (fun n => √↑(k n) * A (↑n / ↑(k n))) Filter.atTop (nhds lam)) {p : ℕ → ℝ}\n  (hp0 : ∀ᶠ (n : ℕ) in Filter.atTop, 0 < p n)\n  (hd1 : ∀ᶠ (n : ℕ) in Filter.atTop, 1 ≤ ↑(k n) / (↑n * p n))\n  (hd : Filter.Tendsto (fun n => Real.log (↑(k n) / (↑n * p n)) / √↑(k n)) Filter.atTop (nhds 0)) :\n  MeasureTheory.TendstoInMeasure P\n    (fun n ω =>\n      ExtremeValueTheory.weissman (fun i => X (↑i) ω) (k n) (p n) /\n        ExtremeValueTheory.upperQuantile (ExtremeValueTheory.survival P (X 0)) (p n))\n    Filter.atTop fun x => 1",
+    "status": "reduced",
+    "scope_note": "gamma > 0 and rho < 0 only. The case rho = 0 of consistency, and gamma <= 0, are not covered here.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "4575c645642d4ad12d81c848e1b2e5d2"
+  },
+  {
+    "id": "weissman-normality",
+    "name": "Asymptotic normality of the Weissman estimator",
+    "source": "dHF §4.3",
+    "lean_name": "ExtremeValueTheory.tendstoInDistribution_weissman",
+    "file": "ExtremeValueTheory/Statistics/ExtremeQuantileSecondOrder.lean",
+    "statement": "ExtremeValueTheory.tendstoInDistribution_weissman.{u_1, u_2} {Ω : Type u_1} {Ω' : Type u_2}\n  {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {P' : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure P'] {X : ℕ → Ω → ℝ} (hX : ∀ (i : ℕ), Measurable (X i))\n  (hindep : ProbabilityTheory.iIndepFun X P)\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ} {A : ℝ → ℝ}\n  (hγ : 0 < γ) (hρ : ρ < 0)\n  (h2 :\n    ExtremeValueTheory.IsSecondOrderRegularlyVarying\n      (ExtremeValueTheory.survivalQuantile (ExtremeValueTheory.survival P (X 0))) γ ρ A)\n  {k : ℕ → ℕ} (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0))\n  (hlam : Filter.Tendsto (fun n => √↑(k n) * A (↑n / ↑(k n))) Filter.atTop (nhds lam)) {p : ℕ → ℝ}\n  (hp0 : ∀ᶠ (n : ℕ) in Filter.atTop, 0 < p n)\n  (hd : Filter.Tendsto (fun n => ↑(k n) / (↑n * p n)) Filter.atTop Filter.atTop)\n  (hdk : Filter.Tendsto (fun n => Real.log (↑(k n) / (↑n * p n)) / √↑(k n)) Filter.atTop (nhds 0))\n  {Z : Ω' → ℝ}\n  (hZ :\n    ProbabilityTheory.HasLaw Z (ProbabilityTheory.gaussianReal (lam / (1 - ρ)) (γ ^ 2).toNNReal)\n      P') :\n  MeasureTheory.TendstoInDistribution\n    (fun n ω =>\n      √↑(k n) / Real.log (↑(k n) / (↑n * p n)) *\n        (ExtremeValueTheory.weissman (fun i => X (↑i) ω) (k n) (p n) /\n            ExtremeValueTheory.upperQuantile (ExtremeValueTheory.survival P (X 0)) (p n) -\n          1))\n    Filter.atTop Z (fun x => P) P'",
+    "status": "reduced",
+    "scope_note": "gamma > 0 and rho < 0 only; rho = 0 is the separate entry weissman-normality-rho-zero.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "4df7e6414d490cb027d865cf6ef0d14d"
+  },
+  {
+    "id": "weissman-normality-rho-zero",
+    "name": "Asymptotic normality of the Weissman estimator at rho = 0",
+    "source": "dHF §4.3",
+    "lean_name": "ExtremeValueTheory.tendstoInDistribution_weissman_of_rho_eq_zero",
+    "file": "ExtremeValueTheory/Statistics/ExtremeQuantileRhoZero.lean",
+    "statement": "ExtremeValueTheory.tendstoInDistribution_weissman_of_rho_eq_zero.{u_1, u_2} {Ω : Type u_1}\n  {Ω' : Type u_2} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {P' : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure P'] {X : ℕ → Ω → ℝ} (hX : ∀ (i : ℕ), Measurable (X i))\n  (hindep : ProbabilityTheory.iIndepFun X P)\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (X i) (X 0) P P) {γ lam : ℝ} {A : ℝ → ℝ}\n  (hγ : 0 < γ)\n  (h2 :\n    ExtremeValueTheory.IsSecondOrderRegularlyVarying\n      (ExtremeValueTheory.survivalQuantile (ExtremeValueTheory.survival P (X 0))) γ 0 A)\n  {k : ℕ → ℕ} (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0))\n  (hlam : Filter.Tendsto (fun n => √↑(k n) * A (↑n / ↑(k n))) Filter.atTop (nhds lam)) {p : ℕ → ℝ}\n  (hp0 : ∀ᶠ (n : ℕ) in Filter.atTop, 0 < p n)\n  (hd : Filter.Tendsto (fun n => ↑(k n) / (↑n * p n)) Filter.atTop Filter.atTop)\n  (hdk : Filter.Tendsto (fun n => Real.log (↑(k n) / (↑n * p n)) / √↑(k n)) Filter.atTop (nhds 0))\n  {η : ℕ → ℝ} (hη : Filter.Tendsto η Filter.atTop (nhds 0))\n  (hAη :\n    ∀ᶠ (n : ℕ) in Filter.atTop,\n      ∀ y ∈ Set.Icc (↑n / ↑(k n)) (p n)⁻¹, |A y / A (↑n / ↑(k n)) - 1| ≤ η n)\n  {Z : Ω' → ℝ}\n  (hZ : ProbabilityTheory.HasLaw Z (ProbabilityTheory.gaussianReal 0 (γ ^ 2).toNNReal) P') :\n  MeasureTheory.TendstoInDistribution\n    (fun n ω =>\n      √↑(k n) / Real.log (↑(k n) / (↑n * p n)) *\n        (ExtremeValueTheory.weissman (fun i => X (↑i) ω) (k n) (p n) /\n            ExtremeValueTheory.upperQuantile (ExtremeValueTheory.survival P (X 0)) (p n) -\n          1))\n    Filter.atTop Z (fun x => P) P'",
+    "status": "reduced",
+    "scope_note": "Assumes A asymptotically constant on the extrapolation range, an extra hypothesis. Not checked against the text of dHF at rho = 0.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "445571ba3c80043119bceb736e89f0c8"
+  },
+  {
+    "id": "tail-probability-normality",
+    "name": "Asymptotic normality of the tail probability estimator",
+    "source": "dHF Thm 4.4.1",
+    "lean_name": "ExtremeValueTheory.tendstoInDistribution_tailProbEstimator",
+    "file": "ExtremeValueTheory/Statistics/ExtremeQuantileRhoZero.lean",
+    "statement": "ExtremeValueTheory.tendstoInDistribution_tailProbEstimator.{u_1, u_2} {Ω : Type u_1} {Ω' : Type u_2}\n  {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {P' : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure P'] {X : ℕ → Ω → ℝ} (hX : ∀ (i : ℕ), Measurable (X i))\n  (hindep : ProbabilityTheory.iIndepFun X P)\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (X i) (X 0) P P) {γ ρ lam : ℝ} {A : ℝ → ℝ}\n  (hγ : 0 < γ) (hρ : ρ < 0)\n  (h2 :\n    ExtremeValueTheory.IsSecondOrderRegularlyVarying\n      (ExtremeValueTheory.survivalQuantile (ExtremeValueTheory.survival P (X 0))) γ ρ A)\n  {k : ℕ → ℕ} (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0))\n  (hlam : Filter.Tendsto (fun n => √↑(k n) * A (↑n / ↑(k n))) Filter.atTop (nhds lam)) {y : ℕ → ℝ}\n  (he :\n    Filter.Tendsto\n      (fun n =>\n        y n / ExtremeValueTheory.upperQuantile (ExtremeValueTheory.survival P (X 0)) (↑(k n) / ↑n))\n      Filter.atTop Filter.atTop)\n  (hek :\n    Filter.Tendsto\n      (fun n =>\n        Real.log\n            (y n /\n              ExtremeValueTheory.upperQuantile (ExtremeValueTheory.survival P (X 0))\n                (↑(k n) / ↑n)) /\n          √↑(k n))\n      Filter.atTop (nhds 0))\n  {Z : Ω' → ℝ}\n  (hZ :\n    ProbabilityTheory.HasLaw Z\n      (ProbabilityTheory.gaussianReal (lam / ((1 - ρ) * γ ^ 2)) (γ⁻¹ ^ 2).toNNReal) P') :\n  MeasureTheory.TendstoInDistribution\n    (fun n ω =>\n      √↑(k n) /\n          Real.log\n            (y n /\n              ExtremeValueTheory.upperQuantile (ExtremeValueTheory.survival P (X 0))\n                (↑(k n) / ↑n)) *\n        (ExtremeValueTheory.tailProbEstimator (fun i => X (↑i) ω) (k n) (y n) /\n            (P {ω | y n < X 0 ω}).toReal -\n          1))\n    Filter.atTop Z (fun x => P) P'",
+    "status": "reduced",
+    "scope_note": "gamma > 0 and rho < 0 only: heavy tails, while the theorem cited covers the general index.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "ccb8da35191a7642205f05cb32dd711c"
+  },
+  {
+    "id": "block-maxima",
+    "name": "Consistency of the block maxima method",
+    "source": "EKM §6.3; Coles §3.3",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_blockMaxEmpCDF",
+    "file": "ExtremeValueTheory/Statistics/BlockMaxima.lean",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_blockMaxEmpCDF.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {X : ℕ → Ω → ℝ}\n  (hX : ∀ (t : ℕ), Measurable (X t)) (hind : ProbabilityTheory.iIndepFun X P)\n  (hid : ∀ (t : ℕ), ProbabilityTheory.IdentDistrib (X t) (X 0) P P) {a b : ℕ → ℝ}\n  (ha : ∀ (n : ℕ), 0 < a n) {x Hx : ℝ}\n  (hMDA : Filter.Tendsto (fun n => P.real {ω | X 0 ω ≤ a n * x + b n} ^ n) Filter.atTop (nhds Hx))\n  {m n : ℕ → ℕ} (hm : Filter.Tendsto m Filter.atTop Filter.atTop)\n  (hn : Filter.Tendsto n Filter.atTop Filter.atTop) :\n  MeasureTheory.TendstoInMeasure P\n    (fun k ω => ExtremeValueTheory.blockMaxEmpCDF X a b (m k) (n k) x ω) Filter.atTop fun x => Hx",
+    "status": "reduced",
+    "scope_note": "The normalizing constants are known and given, at one point x. It is the empirical c.d.f. of normalized block maxima, with no parameter estimated.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "3a3d2a8a715918aa826fb2e886cb18c7"
+  },
+  {
+    "id": "gev-l-skewness",
+    "name": "L-skewness of the GEV law, Hosking's form",
+    "source": "Hosking (1990)",
+    "lean_name": "ExtremeValueTheory.lSkewness_gevCDF_hosking",
+    "file": "ExtremeValueTheory/Statistics/LMoments.lean",
+    "statement": "ExtremeValueTheory.lSkewness_gevCDF_hosking {ξ : ℝ} (hξ : ξ < 1) (h0 : ξ ≠ 0) :\n  ExtremeValueTheory.lSkewness (ExtremeValueTheory.gevCDF ξ).measure =\n    2 * (1 - 3 ^ (- -ξ)) / (1 - 2 ^ (- -ξ)) - 3",
+    "status": "full",
+    "scope_note": "Standard law; xi < 1, xi != 0. The library's xi is Hosking's -k.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "3c2486fe556750062e6ef2baf7fcb873"
+  },
+  {
+    "id": "sample-pwm",
+    "name": "Strong consistency of the sample probability-weighted moments",
+    "source": "HWW (1985)",
+    "lean_name": "ExtremeValueTheory.ae_tendsto_samplePWM",
+    "file": "ExtremeValueTheory/Statistics/LMomentsEstimators.lean",
+    "statement": "ExtremeValueTheory.ae_tendsto_samplePWM.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} {μ : MeasureTheory.Measure ℝ} [MeasureTheory.IsProbabilityMeasure μ]\n  {X : ℕ → Ω → ℝ} (hX : ∀ (i : ℕ), ProbabilityTheory.HasLaw (X i) μ P)\n  (hind : ProbabilityTheory.iIndepFun X P) (hcont : Continuous ↑(ProbabilityTheory.cdf μ))\n  (hint : MeasureTheory.Integrable (fun x => x) μ) (r : ℕ) :\n  ∀ᵐ (ω : Ω) ∂P,\n    Filter.Tendsto (fun n => ExtremeValueTheory.samplePWM (fun i => X i ω) n r) Filter.atTop\n      (nhds (ExtremeValueTheory.pwm μ r))",
+    "status": "reduced",
+    "scope_note": "Assumes a continuous F, an extra hypothesis.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "c3729406219361dffb60fadca3b7957f"
+  },
+  {
+    "id": "gpd-pwm-shape",
+    "name": "Strong consistency of the PWM estimator of the GPD shape",
+    "source": "Hosking-Wallis (1987)",
+    "lean_name": "ExtremeValueTheory.ae_tendsto_gpdPWMShapeEst",
+    "file": "ExtremeValueTheory/Statistics/LMomentsEstimators.lean",
+    "statement": "ExtremeValueTheory.ae_tendsto_gpdPWMShapeEst.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} {X : ℕ → Ω → ℝ} {ξ σ : ℝ} (hσ : 0 < σ) (hξ : ξ < 1)\n  (hX : ∀ (i : ℕ), ProbabilityTheory.HasLaw (X i) (ExtremeValueTheory.gpdMeasure ξ σ) P)\n  (hind : ProbabilityTheory.iIndepFun X P) :\n  ∀ᵐ (ω : Ω) ∂P,\n    Filter.Tendsto (fun n => ExtremeValueTheory.gpdPWMShapeEst (fun i => X i ω) n) Filter.atTop\n      (nhds ξ)",
+    "status": "full",
+    "scope_note": "xi < 1, exact GPD samples. Consistency only; the asymptotic normality for xi < 1/2 is not stated.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "de8410087645535a8a3e7c978306abfe"
+  },
+  {
+    "id": "gpd-pwm-scale",
+    "name": "Strong consistency of the PWM estimator of the GPD scale",
+    "source": "Hosking-Wallis (1987)",
+    "lean_name": "ExtremeValueTheory.ae_tendsto_gpdPWMScaleEst",
+    "file": "ExtremeValueTheory/Statistics/LMomentsEstimators.lean",
+    "statement": "ExtremeValueTheory.ae_tendsto_gpdPWMScaleEst.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} {X : ℕ → Ω → ℝ} {ξ σ : ℝ} (hσ : 0 < σ) (hξ : ξ < 1)\n  (hX : ∀ (i : ℕ), ProbabilityTheory.HasLaw (X i) (ExtremeValueTheory.gpdMeasure ξ σ) P)\n  (hind : ProbabilityTheory.iIndepFun X P) :\n  ∀ᵐ (ω : Ω) ∂P,\n    Filter.Tendsto (fun n => ExtremeValueTheory.gpdPWMScaleEst (fun i => X i ω) n) Filter.atTop\n      (nhds σ)",
+    "status": "full",
+    "scope_note": "xi < 1, exact GPD samples. Consistency only.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "3fc4e399b043d8844180c70716e71b88"
+  },
+  {
+    "id": "tail-empirical-process",
+    "name": "Functional CLT for the uniform tail empirical process",
+    "source": "dHF Thm 5.1.4; Einmahl (1992)",
+    "lean_name": "ExtremeValueTheory.tendstoInDistribution_tailEmpiricalPath",
+    "file": "ExtremeValueTheory/Statistics/TailEmpiricalProcess.lean",
+    "statement": "ExtremeValueTheory.tendstoInDistribution_tailEmpiricalPath.{u_1, u_2} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} {U : ℕ → Ω → ℝ} {k : ℕ → ℕ}\n  [MeasureTheory.IsProbabilityMeasure P] (hU : ∀ (i : ℕ), Measurable (U i))\n  (hind : ProbabilityTheory.iIndepFun U P)\n  (hlaw :\n    ∀ (i : ℕ), MeasureTheory.Measure.map (U i) P = MeasureTheory.volume.restrict (Set.Icc 0 1))\n  (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0)) {Ω' : Type u_2}\n  {mΩ' : MeasurableSpace Ω'} {P' : MeasureTheory.Measure Ω'} [MeasureTheory.IsProbabilityMeasure P']\n  {B : Ω' → SkorokhodSpace ℝ} (hB : Measurable B)\n  (hBfdd :\n    ∀ (J : Finset ↑unitInterval),\n      MeasureTheory.Measure.map (fun x t => x ↑t) (MeasureTheory.Measure.map B P') =\n        ExtremeValueTheory.brownianFdd fun t => unitInterval.toNNReal' ↑t) :\n  MeasureTheory.TendstoInDistribution (fun n => ExtremeValueTheory.tailEmpiricalPath U n (k n))\n    Filter.atTop B (fun x => P) P'",
+    "status": "reduced",
+    "scope_note": "Uniform samples and unweighted: the process for regularly varying F and the weighted (Chibisov-O'Reilly) form in dHF are not covered.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "eff4252cca422207047310789aab4a64"
+  },
+  {
+    "id": "tail-empirical-weighted",
+    "name": "Weighted bound for the tail empirical process near 0",
+    "source": "dHF Thm 5.1.4, weighted form; Einmahl (1992)",
+    "lean_name": "ExtremeValueTheory.exists_eventually_measureReal_weighted_le",
+    "file": "ExtremeValueTheory/Statistics/TailEmpiricalProcessRV.lean",
+    "statement": "ExtremeValueTheory.exists_eventually_measureReal_weighted_le.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {U : ℕ → Ω → ℝ} (hU : ∀ (i : ℕ), Measurable (U i)) (hind : ProbabilityTheory.iIndepFun U P)\n  (hlaw :\n    ∀ (i : ℕ), MeasureTheory.Measure.map (U i) P = MeasureTheory.volume.restrict (Set.Icc 0 1))\n  {k : ℕ → ℕ} (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0)) {η : ℝ} (hη0 : 0 < η)\n  {ε θ : ℝ} (hε : 0 < ε) (hθ : 0 < θ) :\n  ∃ δ ∈ Set.Ioc 0 1,\n    ∀ᶠ (n : ℕ) in Filter.atTop,\n      P.real\n          {ω |\n            ∃ t ∈ Set.Ioc 0 δ,\n              ε * t ^ (1 / 2 - η) < |ExtremeValueTheory.tailEmpiricalProcess U n (k n) t ω|} ≤\n        θ",
+    "status": "reduced",
+    "scope_note": "Only the tail estimate near 0, for uniform samples, not full weighted weak convergence.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "87132038fe0505ab35495d6b2fe46966"
+  },
+  {
+    "id": "blocks-estimator",
+    "name": "Consistency of the disjoint blocks estimator",
+    "source": "KS20 §10.2; Hsing (1991); Smith-Weissman (1994)",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_blocksEstimator",
+    "file": "ExtremeValueTheory/Statistics/ExtremalIndexEstimators.lean",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_blocksEstimator.{u_1} {Ω : Type u_1} [MeasurableSpace Ω]\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {X : ℕ → Ω → ℝ}\n  (hX : ∀ (t : ℕ), Measurable (X t)) (hs : ProbabilityTheory.IsStationary X P) {u : ℕ → ℝ}\n  {r : ℕ → ℕ} {θ : ℝ} (hr : ∀ᶠ (n : ℕ) in Filter.atTop, 0 < r n)\n  (hrn : Filter.Tendsto (fun n => ↑(r n) / ↑n) Filter.atTop (nhds 0))\n  (hk : Filter.Tendsto (fun n => ↑n * P.real {ω | u n < X 0 ω}) Filter.atTop Filter.atTop)\n  (hθ :\n    Filter.Tendsto\n      (fun n =>\n        P.real (ExtremeValueTheory.blockEvent X (r n) 0 (u n)) /\n          (↑(r n) * P.real {ω | u n < X 0 ω}))\n      Filter.atTop (nhds θ))\n  (s : ℕ → ℕ)\n  (hclus :\n    Filter.Tendsto\n      (fun n =>\n        (∑ h ∈ Finset.Icc 1 (s n), P.real {ω | u n < X 0 ω ∧ u n < X h ω}) /\n          (↑n * P.real {ω | u n < X 0 ω} ^ 2))\n      Filter.atTop (nhds 0))\n  (hmix :\n    Filter.Tendsto\n      (fun n =>\n        (∑ h ∈ Finset.Ico (s n + 1) n, (ProbabilityTheory.alphaMixing X P h).toReal) /\n          (↑n * P.real {ω | u n < X 0 ω} ^ 2))\n      Filter.atTop (nhds 0))\n  (hmixB :\n    Filter.Tendsto\n      (fun n =>\n        (ProbabilityTheory.alphaMixing X P (r n + 1)).toReal /\n          (↑(r n) * P.real {ω | u n < X 0 ω}) ^ 2)\n      Filter.atTop (nhds 0)) :\n  MeasureTheory.TendstoInMeasure P (fun n => ExtremeValueTheory.blocksEstimator X n (r n) (u n))\n    Filter.atTop fun x => θ",
+    "status": "reduced",
+    "scope_note": "The limit of the block cluster ratio is assumed, not derived: the conclusion is convergence to that assumed population target. Cluster and mixing rates are hypotheses too.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "ed5bfabbaf09cf76708a30e4ae0a6432"
+  },
+  {
+    "id": "runs-estimator",
+    "name": "Consistency of the runs estimator",
+    "source": "KS20 §10.2; Smith-Weissman (1994); Weissman-Novak (1998)",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_runsEstimator",
+    "file": "ExtremeValueTheory/Statistics/ExtremalIndexEstimators.lean",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_runsEstimator.{u_1} {Ω : Type u_1} [MeasurableSpace Ω]\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {X : ℕ → Ω → ℝ}\n  (hX : ∀ (t : ℕ), Measurable (X t)) (hs : ProbabilityTheory.IsStationary X P) {u : ℕ → ℝ}\n  {r : ℕ → ℕ} {θ : ℝ} (hrn : Filter.Tendsto (fun n => ↑(r n) / ↑n) Filter.atTop (nhds 0))\n  (hk : Filter.Tendsto (fun n => ↑n * P.real {ω | u n < X 0 ω}) Filter.atTop Filter.atTop)\n  (hθ :\n    Filter.Tendsto\n      (fun n => P.real (ExtremeValueTheory.runEvent X (r n) 0 (u n)) / P.real {ω | u n < X 0 ω})\n      Filter.atTop (nhds θ))\n  (s : ℕ → ℕ)\n  (hclus :\n    Filter.Tendsto\n      (fun n =>\n        (∑ h ∈ Finset.Icc 1 (r n + s n), P.real {ω | u n < X 0 ω ∧ u n < X h ω}) /\n          (↑n * P.real {ω | u n < X 0 ω} ^ 2))\n      Filter.atTop (nhds 0))\n  (hmix :\n    Filter.Tendsto\n      (fun n =>\n        (∑ h ∈ Finset.Ico (s n + 1) n, (ProbabilityTheory.alphaMixing X P h).toReal) /\n          (↑n * P.real {ω | u n < X 0 ω} ^ 2))\n      Filter.atTop (nhds 0)) :\n  MeasureTheory.TendstoInMeasure P (fun n => ExtremeValueTheory.runsEstimator X n (r n) (u n))\n    Filter.atTop fun x => θ",
+    "status": "reduced",
+    "scope_note": "The limit of the runs ratio is assumed, not derived, and the cluster and mixing rates are hypotheses.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "b62cbfa84884b06fa996f44f2fbfe5e1"
+  },
+  {
+    "id": "blocks-estimator-candidate",
+    "name": "The blocks estimator converges to the candidate extremal index",
+    "source": "KS20 §10.2",
+    "lean_name": "ExtremeValueTheory.HasSpectralTailProcess.tendstoInMeasure_blocksEstimator",
+    "file": "ExtremeValueTheory/Statistics/ExtremalIndexEstimators.lean",
+    "statement": "ExtremeValueTheory.HasSpectralTailProcess.tendstoInMeasure_blocksEstimator.{u_2, u_3} {Ω : Type u_2}\n  {Ω' : Type u_3} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ} {Q : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ} (hα : 0 < α)\n  (hX : ∀ (t : ℤ), Measurable (X t)) (hΘm : ∀ (t : ℤ), Measurable (Θ t))\n  (hstat : ExtremeValueTheory.HasShiftInvariantWindows P X)\n  (h : ExtremeValueTheory.HasSpectralTailProcess P X α Q Θ) {u : ℕ → ℝ}\n  (hu : Filter.Tendsto u Filter.atTop Filter.atTop) {r : ℕ → ℕ}\n  (hr : Filter.Tendsto r Filter.atTop Filter.atTop)\n  (hAC : ExtremeValueTheory.ForwardAntiClusteringAt P X u r)\n  (hrn : Filter.Tendsto (fun n => ↑(r n) / ↑n) Filter.atTop (nhds 0))\n  (hk : Filter.Tendsto (fun n => ↑n * P.real {ω | u n < |X 0 ω|}) Filter.atTop Filter.atTop)\n  (s : ℕ → ℕ)\n  (hclus :\n    Filter.Tendsto\n      (fun n =>\n        (∑ h ∈ Finset.Icc 1 (s n), P.real {ω | u n < |X 0 ω| ∧ u n < |X (↑h) ω|}) /\n          (↑n * P.real {ω | u n < |X 0 ω|} ^ 2))\n      Filter.atTop (nhds 0))\n  (hmix :\n    Filter.Tendsto\n      (fun n =>\n        (∑ h ∈ Finset.Ico (s n + 1) n,\n            (ProbabilityTheory.alphaMixing (fun k => |X ↑k|) P h).toReal) /\n          (↑n * P.real {ω | u n < |X 0 ω|} ^ 2))\n      Filter.atTop (nhds 0))\n  (hmixB :\n    Filter.Tendsto\n      (fun n =>\n        (ProbabilityTheory.alphaMixing (fun k => |X ↑k|) P (r n + 1)).toReal /\n          (↑(r n) * P.real {ω | u n < |X 0 ω|}) ^ 2)\n      Filter.atTop (nhds 0)) :\n  MeasureTheory.TendstoInMeasure P\n    (fun n => ExtremeValueTheory.blocksEstimator (fun k => |X ↑k|) n (r n) (u n)) Filter.atTop\n    fun x => (ExtremeValueTheory.candidateExtremalIndex Q Θ α).toReal",
+    "status": "reduced",
+    "scope_note": "The target is now the candidate index, by anticlustering, but anticlustering and the cluster and mixing rates are all hypotheses, for |X|. Equal to theta only under the block condition as well.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "3157cfdd456feb7c3809c903d8894f49"
+  },
+  {
+    "id": "runs-estimator-candidate",
+    "name": "The runs estimator converges to the candidate extremal index",
+    "source": "KS20 §10.2",
+    "lean_name": "ExtremeValueTheory.HasSpectralTailProcess.tendstoInMeasure_runsEstimator",
+    "file": "ExtremeValueTheory/Statistics/ExtremalIndexEstimators.lean",
+    "statement": "ExtremeValueTheory.HasSpectralTailProcess.tendstoInMeasure_runsEstimator.{u_2, u_3} {Ω : Type u_2}\n  {Ω' : Type u_3} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {X : ℤ → Ω → ℝ} {α : ℝ} {Q : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure Q] {Θ : ℤ → Ω' → ℝ} (hα : 0 < α)\n  (hX : ∀ (t : ℤ), Measurable (X t)) (hΘm : ∀ (t : ℤ), Measurable (Θ t))\n  (hstat : ExtremeValueTheory.HasShiftInvariantWindows P X)\n  (h : ExtremeValueTheory.HasSpectralTailProcess P X α Q Θ) {u : ℕ → ℝ}\n  (hu : Filter.Tendsto u Filter.atTop Filter.atTop) {r : ℕ → ℕ}\n  (hr : Filter.Tendsto r Filter.atTop Filter.atTop)\n  (hAC : ExtremeValueTheory.ForwardAntiClusteringAt P X u r)\n  (hrn : Filter.Tendsto (fun n => ↑(r n) / ↑n) Filter.atTop (nhds 0))\n  (hk : Filter.Tendsto (fun n => ↑n * P.real {ω | u n < |X 0 ω|}) Filter.atTop Filter.atTop)\n  (s : ℕ → ℕ)\n  (hclus :\n    Filter.Tendsto\n      (fun n =>\n        (∑ h ∈ Finset.Icc 1 (r n + s n), P.real {ω | u n < |X 0 ω| ∧ u n < |X (↑h) ω|}) /\n          (↑n * P.real {ω | u n < |X 0 ω|} ^ 2))\n      Filter.atTop (nhds 0))\n  (hmix :\n    Filter.Tendsto\n      (fun n =>\n        (∑ h ∈ Finset.Ico (s n + 1) n,\n            (ProbabilityTheory.alphaMixing (fun k => |X ↑k|) P h).toReal) /\n          (↑n * P.real {ω | u n < |X 0 ω|} ^ 2))\n      Filter.atTop (nhds 0)) :\n  MeasureTheory.TendstoInMeasure P\n    (fun n => ExtremeValueTheory.runsEstimator (fun k => |X ↑k|) n (r n) (u n)) Filter.atTop\n    fun x => (ExtremeValueTheory.candidateExtremalIndex Q Θ α).toReal",
+    "status": "reduced",
+    "scope_note": "As blocks-estimator-candidate: anticlustering and the cluster and mixing rates are hypotheses, for |X|.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "fc2fc13dd8b47fdea9ad076d5421a85c"
+  },
+  {
+    "id": "intervals-estimator",
+    "name": "Consistency of the intervals estimator from the moments",
+    "source": "Ferro-Segers (2003)",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_intervalsEstimator₁",
+    "file": "ExtremeValueTheory/Statistics/ExtremalIndexEstimatorsIntervals.lean",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_intervalsEstimator₁.{u_1} {Ω : Type u_1} [MeasurableSpace Ω]\n  {P : MeasureTheory.Measure Ω} {m : ℕ → ℕ} (hm : ∀ᶠ (n : ℕ) in Filter.atTop, 0 < m n)\n  {T : (n : ℕ) → Ω → Fin (m n) → ℝ} {c : ℕ → ℝ} (hc : ∀ᶠ (n : ℕ) in Filter.atTop, c n ≠ 0) {θ : ℝ}\n  (hθ0 : 0 < θ)\n  (h1 :\n    MeasureTheory.TendstoInMeasure P (fun n ω => (∑ i, c n * T n ω i) / ↑(m n)) Filter.atTop\n      fun x => ∫ (x : ℝ), x ∂ExtremeValueTheory.ferroSegersLaw θ)\n  (h2 :\n    MeasureTheory.TendstoInMeasure P (fun n ω => (∑ i, (c n * T n ω i) ^ 2) / ↑(m n)) Filter.atTop\n      fun x => ∫ (x : ℝ), x ^ 2 ∂ExtremeValueTheory.ferroSegersLaw θ) :\n  MeasureTheory.TendstoInMeasure P (fun n ω => ExtremeValueTheory.intervalsEstimator₁ (T n ω))\n    Filter.atTop fun x => θ",
+    "status": "reduced",
+    "scope_note": "The whole probabilistic content is assumed: convergence of the first and second empirical moments of the inter-exceedance times is a hypothesis, which contains both the Ferro-Segers limit law and a law of large numbers. What is proved is the algebra from those moments to the estimator. Inter-exceedance times are abstract, not built from a process.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "fd55afef33d680c5fbd4efead74bad45"
+  },
+  {
+    "id": "hill-confidence-interval",
+    "name": "Asymptotic confidence interval for the tail index",
+    "source": "dHF §3.2",
+    "lean_name": "ExtremeValueTheory.tendsto_measure_mem_hillInterval",
+    "file": "ExtremeValueTheory/Statistics/ConfidenceIntervals.lean",
+    "statement": "ExtremeValueTheory.tendsto_measure_mem_hillInterval.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P] {X : ℕ → Ω → ℝ}\n  (hX : ∀ (i : ℕ), Measurable (X i)) (hindep : ProbabilityTheory.iIndepFun X P)\n  (hident : ∀ (i : ℕ), ProbabilityTheory.IdentDistrib (X i) (X 0) P P) {γ ρ : ℝ} {A : ℝ → ℝ}\n  (hγ : 0 < γ)\n  (h2 :\n    ExtremeValueTheory.IsSecondOrderRegularlyVarying\n      (ExtremeValueTheory.survivalQuantile (ExtremeValueTheory.survival P (X 0))) γ ρ A)\n  {k : ℕ → ℕ} (hk : Filter.Tendsto k Filter.atTop Filter.atTop)\n  (hkn : Filter.Tendsto (fun n => ↑(k n) / ↑n) Filter.atTop (nhds 0))\n  (hA : Filter.Tendsto (fun n => √↑(k n) * A (↑n / ↑(k n))) Filter.atTop (nhds 0)) (z : ℝ) :\n  Filter.Tendsto\n    (fun n =>\n      P\n        {ω |\n          γ ∈\n            Set.Icc\n              (ExtremeValueTheory.hill (fun i => X (↑i) ω) (k n) -\n                z * ExtremeValueTheory.hill (fun i => X (↑i) ω) (k n) / √↑(k n))\n              (ExtremeValueTheory.hill (fun i => X (↑i) ω) (k n) +\n                z * ExtremeValueTheory.hill (fun i => X (↑i) ω) (k n) / √↑(k n))})\n    Filter.atTop (nhds ((ProbabilityTheory.gaussianReal 0 1) (Set.Icc (-z) z)))",
+    "status": "full",
+    "scope_note": "Wald interval under sqrt(k) A(n/k) -> 0, the condition under which it is valid; a bias-corrected interval is not stated.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "a349309efcb21f05374ed9e588c389ae"
+  }
+]

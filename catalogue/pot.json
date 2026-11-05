@@ -1,0 +1,162 @@
+[
+  {
+    "id": "pbdh-forward",
+    "name": "Pickands-Balkema-de Haan, forward direction",
+    "source": "EKM Thm 3.4.13(b); dHF Thm 1.1.6",
+    "lean_name": "CumulativeDistributionFunction.exists_tendstoUniformlyOn_excessSurvival_of_isInMDAGEV'",
+    "file": "ExtremeValueTheory/PeaksOverThreshold/Balkema.lean",
+    "statement": "CumulativeDistributionFunction.exists_tendstoUniformlyOn_excessSurvival_of_isInMDAGEV'\n  (F : CumulativeDistributionFunction) {ξ : ℝ} (hF : F.IsInMDAGEV ξ) :\n  ∃ β,\n    (∀ᶠ (u : ℝ) in F.upperEndpointFilter, 0 < β u) ∧\n      TendstoUniformlyOn\n        (fun u x =>\n          ExtremeValueTheory.excessSurvival (fun y => 1 - ↑F.toStieltjesFunction y) u (β u * x))\n        (ExtremeValueTheory.gpdSurvivalAll ξ 1) F.upperEndpointFilter (Set.Ici 0)",
+    "status": "reduced",
+    "scope_note": "Only the direction domain of attraction => GPD limit. The equivalence is pbdh.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "10dd76297897d7b24e2cb32e522d8a09"
+  },
+  {
+    "id": "pbdh",
+    "name": "Pickands-Balkema-de Haan theorem",
+    "source": "EKM Thm 3.4.13(b); dHF Thm 1.1.6",
+    "lean_name": "CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival",
+    "file": "ExtremeValueTheory/PeaksOverThreshold/Converse.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAGEV_iff_exists_tendstoUniformlyOn_excessSurvival\n  (F : CumulativeDistributionFunction) (ξ : ℝ) :\n  F.IsInMDAGEV ξ ↔\n    ∃ β,\n      (∀ᶠ (u : ℝ) in F.upperEndpointFilter, 0 < β u) ∧\n        TendstoUniformlyOn\n          (fun u x =>\n            ExtremeValueTheory.excessSurvival (fun y => 1 - ↑F.toStieltjesFunction y) u (β u * x))\n          (ExtremeValueTheory.gpdSurvivalAll ξ 1) F.upperEndpointFilter (Set.Ici 0)",
+    "status": "full",
+    "scope_note": "Equivalence for every xi, with an arbitrary eventually positive scale. Written after the change of variable x -> beta(u) x, so the GPD has scale 1 and x ranges over [0, infinity) rather than (0, x_F - u).",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "e9c5d8a66e3591318677f2cd356104f4"
+  },
+  {
+    "id": "pbdh-frechet",
+    "name": "Pickands-Balkema-de Haan, Fréchet case",
+    "source": "EKM Thm 3.4.13(b)",
+    "lean_name": "CumulativeDistributionFunction.isInMDAFrechet_iff_tendstoUniformlyOn_excessSurvival",
+    "file": "ExtremeValueTheory/PeaksOverThreshold/Balkema.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAFrechet_iff_tendstoUniformlyOn_excessSurvival\n  (F : CumulativeDistributionFunction) {α : ℝ} (hα : 0 < α) :\n  F.IsInMDAFrechet hα ↔\n    TendstoUniformlyOn\n      (fun u x =>\n        ExtremeValueTheory.excessSurvival (fun y => 1 - ↑F.toStieltjesFunction y) u (u / α * x))\n      (ExtremeValueTheory.gpdSurvivalNonneg (1 / α) 1) Filter.atTop (Set.Ici 0)",
+    "status": "reduced",
+    "scope_note": "xi > 0 only, with the canonical scale beta(u) = u/alpha on both sides: the converse is weaker than the book's, which allows any scale.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "69d8a29f8b58adc64dad2b63b56a4af6"
+  },
+  {
+    "id": "pbdh-weibull",
+    "name": "Pickands-Balkema-de Haan, Weibull case",
+    "source": "EKM Thm 3.4.13(b)",
+    "lean_name": "CumulativeDistributionFunction.isInMDAWeibull_iff_tendstoUniformlyOn_excessSurvival",
+    "file": "ExtremeValueTheory/PeaksOverThreshold/Balkema.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAWeibull_iff_tendstoUniformlyOn_excessSurvival\n  (F : CumulativeDistributionFunction) {α : ℝ} (hα : 0 < α) :\n  F.IsInMDAWeibull hα ↔\n    ∃ xF,\n      ↑F.toStieltjesFunction xF = 1 ∧\n        (∀ x < xF, ↑F.toStieltjesFunction x < 1) ∧\n          TendstoUniformlyOn\n            (fun u x =>\n              ExtremeValueTheory.excessSurvival (fun y => 1 - ↑F.toStieltjesFunction y) u\n                ((xF - u) / α * x))\n            (ExtremeValueTheory.gpdSurvivalAll (-1 / α) 1) (nhdsWithin xF (Set.Iio xF)) (Set.Ici 0)",
+    "status": "reduced",
+    "scope_note": "xi < 0 only, with the canonical scale beta(u) = (x_F - u)/alpha on both sides: the converse is weaker than the book's.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "4c85984c167d5f3dd16bdf9db4e9db6c"
+  },
+  {
+    "id": "pbdh-gumbel",
+    "name": "Pickands-Balkema-de Haan, Gumbel case",
+    "source": "EKM Thm 3.4.13(b); dHF Thm 1.1.6",
+    "lean_name": "CumulativeDistributionFunction.tendstoUniformlyOn_excessSurvival_of_auxiliary",
+    "file": "ExtremeValueTheory/PeaksOverThreshold/Balkema.lean",
+    "statement": "CumulativeDistributionFunction.tendstoUniformlyOn_excessSurvival_of_auxiliary\n  (F : CumulativeDistributionFunction) {L : Filter ℝ} {f : ℝ → ℝ} (hf : ∀ᶠ (u : ℝ) in L, 0 < f u)\n  (h :\n    ∀ (x : ℝ),\n      0 ≤ x →\n        Filter.Tendsto\n          (fun t => (1 - ↑F.toStieltjesFunction (t + x * f t)) / (1 - ↑F.toStieltjesFunction t)) L\n          (nhds (Real.exp (-x)))) :\n  TendstoUniformlyOn\n    (fun u x =>\n      ExtremeValueTheory.excessSurvival (fun y => 1 - ↑F.toStieltjesFunction y) u (f u * x))\n    (ExtremeValueTheory.gpdSurvivalAll 0 1) L (Set.Ici 0)",
+    "status": "reduced",
+    "scope_note": "xi = 0 only, and it starts from an auxiliary function rather than from the domain of attraction. The existence of the auxiliary function is a hypothesis here.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "54509d33ddbf7a3d0274c65f72ec7cf1"
+  },
+  {
+    "id": "pbdh-frechet-antitone",
+    "name": "Pickands-Balkema-de Haan, Fréchet forward direction for a survival function",
+    "source": "EKM Thm 3.4.13",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_excessSurvival",
+    "file": "ExtremeValueTheory/PeaksOverThreshold/Frechet.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.tendstoUniformlyOn_excessSurvival {F : ℝ → ℝ} {α : ℝ}\n  (hF : Antitone F) (hRV : ExtremeValueTheory.IsRegularlyVarying F (-α)) (hα : 0 < α) :\n  TendstoUniformlyOn (fun u x => ExtremeValueTheory.excessSurvival F u (u / α * x))\n    (ExtremeValueTheory.gpdSurvivalNonneg (1 / α) 1) Filter.atTop (Set.Ici 0)",
+    "status": "reduced",
+    "scope_note": "Forward direction, xi > 0 only, with the explicit scale u/alpha, for an antitone regularly varying function.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "342ece1e16dcf4c25e069597224a3270"
+  },
+  {
+    "id": "mean-excess-rv",
+    "name": "Mean excess of a regularly varying tail",
+    "source": "EKM §3.4",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.tendsto_meanExcess_div",
+    "file": "ExtremeValueTheory/PeaksOverThreshold/Frechet.lean",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.tendsto_meanExcess_div {F : ℝ → ℝ} {α : ℝ} (hF : Antitone F)\n  (hRV : ExtremeValueTheory.IsRegularlyVarying F (-α)) (hα : 1 < α) :\n  Filter.Tendsto (fun u => ExtremeValueTheory.meanExcess F u / u) Filter.atTop (nhds (1 / (α - 1)))",
+    "status": "full",
+    "scope_note": "F antitone, which holds for a survival function. meanExcess is the formula (integral of F over (u, infinity))/F(u), which equals E[X - u | X > u] when F is a survival function.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "94be66e4d123e5bdb5b2bdba30ed4ed6"
+  },
+  {
+    "id": "mean-excess-gpd",
+    "name": "The GPD mean excess function is linear",
+    "source": "EKM Thm 3.4.13(e)",
+    "lean_name": "ExtremeValueTheory.meanExcess_gpdSurvivalAll",
+    "file": "ExtremeValueTheory/Statistics/MeanExcess.lean",
+    "statement": "ExtremeValueTheory.meanExcess_gpdSurvivalAll {ξ σ : ℝ} (hσ : 0 < σ) (hξ : ξ < 1) {u : ℝ}\n  (hu : 0 < σ + ξ * u) :\n  ExtremeValueTheory.meanExcess (ExtremeValueTheory.gpdSurvivalAll ξ σ) u = (σ + ξ * u) / (1 - ξ)",
+    "status": "full",
+    "scope_note": "xi < 1 and u in the support. As in mean-excess-rv, the mean excess is the integral formula.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "a16f0b65c381eff4c9dcba2c1539cce0"
+  },
+  {
+    "id": "mean-excess-converse",
+    "name": "A linear mean excess characterizes the GPD",
+    "source": "EKM Thm 3.4.13(e)",
+    "lean_name": "ExtremeValueTheory.eq_gpdSurvivalAll_of_meanExcess_eq_linear",
+    "file": "ExtremeValueTheory/Statistics/MeanExcess.lean",
+    "statement": "ExtremeValueTheory.eq_gpdSurvivalAll_of_meanExcess_eq_linear {μ : MeasureTheory.Measure ℝ}\n  [MeasureTheory.IsProbabilityMeasure μ] {a b : ℝ} (ha : 0 < a) (hb : 0 ≤ b)\n  (hS : ∀ (u : ℝ), 0 ≤ u → 0 < μ.real (Set.Ioi u))\n  (he :\n    ∀ (u : ℝ), 0 ≤ u → ExtremeValueTheory.meanExcess (fun t => μ.real (Set.Ioi t)) u = a + b * u)\n  {u : ℝ} (hu : 0 ≤ u) :\n  μ.real (Set.Ioi u) =\n    μ.real (Set.Ioi 0) * ExtremeValueTheory.gpdSurvivalAll (b / (1 + b)) (a / (1 + b)) u",
+    "status": "reduced",
+    "scope_note": "Unbounded support only (slope b >= 0, positive tail on [0, infinity)): shapes xi < 0 are left out, and it describes the tail beyond 0, not the law.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "cf08e4a3121a950ab8acc55213deda74"
+  },
+  {
+    "id": "empirical-mean-excess",
+    "name": "Strong consistency of the empirical mean excess function",
+    "source": "no number cited in the library",
+    "lean_name": "ExtremeValueTheory.ae_tendsto_empMeanExcess",
+    "file": "ExtremeValueTheory/Statistics/MeanExcess.lean",
+    "statement": "ExtremeValueTheory.ae_tendsto_empMeanExcess.{u_1} {Ω : Type u_1} {mΩ : MeasurableSpace Ω}\n  {P : MeasureTheory.Measure Ω} {μ : MeasureTheory.Measure ℝ} [MeasureTheory.IsProbabilityMeasure μ]\n  {X : ℕ → Ω → ℝ} (hX : ∀ (i : ℕ), ProbabilityTheory.HasLaw (X i) μ P)\n  (hind : ProbabilityTheory.iIndepFun X P) (hpos : MeasureTheory.Integrable (fun x => max x 0) μ)\n  {u : ℝ} (hu : 0 < μ.real (Set.Ioi u)) :\n  ∀ᵐ (ω : Ω) ∂P,\n    Filter.Tendsto (fun n => ExtremeValueTheory.empMeanExcess (fun i => X i ω) n u) Filter.atTop\n      (nhds (ExtremeValueTheory.meanExcess (fun t => μ.real (Set.Ioi t)) u))",
+    "status": "full",
+    "scope_note": "A fixed threshold u; iid data. Uniformity in u and behaviour as u grows with n are not stated.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "b5b6e8e7dc9438dc5cfbe311750677eb"
+  }
+]
