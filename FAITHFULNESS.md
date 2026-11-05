@@ -95,7 +95,7 @@ Processes*.
 | ‡ `IsRegularlyVarying.tendsto_integral_zero_div` | BGT Prop 1.5.8 | `f ∈ RV_ρ`, `ρ > −1`, locally bounded ⇒ `∫_0^x f/(x f(x)) → 1/(ρ+1)` | Measurable, interval-integrable on every `[0,x]`. | FAITHFUL |
 | ‡ `isInMDAFrechet_of_vonMises`, `isInMDAWeibull_of_vonMises` | EKM Cor 3.3.8 / 3.3.13 | `x F'(x)/F̄(x) → α` ⇒ `MDA(Φ_α)`; `(x_F−x)F'(x)/F̄(x) → α` ⇒ `MDA(Ψ_α)` | Only differentiability near the endpoint; positivity of `F'` is not assumed (it follows). The Weibull version derives `F x_F = 1`. Instantiated by `paretoCDF` and `powerCDF`. | FAITHFUL |
 | `tendsto_measure_mul_div_measure` | Breiman (1965); JM Lemma 4.2(1) | `X ⫫ Y`, `P(X > x) ∈ RV_{−α}`, `Y ≥ 0`, `E Y^{α+ε} < ∞` ⇒ `P(XY > x)/P(X > x) → E Y^α` | Hypotheses are `IndepFun X Y P`, `Y ≥ 0` a.e., RV of `x ↦ (P{x < X}).toReal`, and integrability of `Y^{α+ε}`. The conclusion is `→ ∫ Y^α dP` (`0^α = 0` since `α > 0`, and `Y^α` is integrable). No sign condition on `X`, which matches the reference. | FAITHFUL |
-| `gpdSurvivalNonneg` (def; formerly `gpdSurvival`) | EKM Def 3.4.1 | `Ḡ_{ξ,β}(x) = (1+ξx/β)^{−1/ξ}`, or `e^{−x/β}` if `ξ = 0` | Same formula, used only for `ξ ≥ 0`, `x ≥ 0`. For `ξ < 0` and `x > −β/ξ`, `rpow` of a negative base returns junk instead of `0`. This is documented and unused. | FAITHFUL (for `ξ ≥ 0`) |
+| `gpdSurvivalNonneg` (def; formerly `gpdSurvival`; deprecated in favour of `gpdSurvivalAll`) | EKM Def 3.4.1 | `Ḡ_{ξ,β}(x) = (1+ξx/β)^{−1/ξ}`, or `e^{−x/β}` if `ξ = 0` | Same formula, meaningful only for `ξ ≥ 0`, `x ≥ 0`. For `ξ < 0` and `x > −β/ξ`, `rpow` of a negative base returns junk instead of `0`. No library statement uses it any more. | FAITHFUL (for `ξ ≥ 0`) |
 | `tendstoUniformlyOn_excessSurvival` / `tendsto_sup_excessSurvival` | EKM Thm 3.4.13(b) (Pickands–Balkema–de Haan) | `F ∈ MDA(H_ξ)` ⇔ ∃ `β(u)`: `sup_{0<x<x_F−u} |F_u(x) − Ḡ_{ξ,β(u)}(x)| → 0` | Only the "⇒" direction, only the Fréchet case `ξ = 1/α > 0`, with explicit `β(u) = u/α`. It is stated after the change of variable `x = β(u) y`: `F(u + (u/α)y)/F(u) → Ḡ_{1/α,1}(y)` uniformly for `y ≥ 0`, which is equivalent to the textbook form. Assumes `F` antitone and in `RV_{−α}`, which by `isInMDAFrechet_iff` is exactly `MDA(Φ_α)` when `F = 1 − F_X`. | DIFFERS (one direction, `ξ > 0` only); correct as stated |
 | `tendsto_meanExcess_div` | EKM §3.4 (mean excess of RV tails), via Karamata | `F̄ ∈ RV_{−α}`, `α > 1` ⇒ `e(u)/u → 1/(α−1)` | `meanExcess F u = (∫_{Ioi u} F)/F u`, which is `E[X − u | X > u]` when `F = F̄`. Assumes `F` antitone. | FAITHFUL |
 | † `IsInMDAGumbel` (def) | EKM §3.3.3, dHF Def 1.1.1 | `Fⁿ(a_n x + b_n) → Λ(x)` | Same shape as the Fréchet definition, for every `x`. Since `Λ` is continuous this is weak convergence. Inhabited: `isInMDAGumbel_standardExponentialCDF`, `isInMDAGumbel_standardGumbelCDF`. | FAITHFUL |
@@ -268,7 +268,7 @@ for readers):
   available only through the library's own existence result.
 - **Index conventions.** `orderStat x j` is the `(j+1)`-th largest value, so `hill x k` uses the top
   `k+1` order statistics and Pickands uses `X_(k+1), X_(2k+1), X_(4k+1)` where EKM writes
-  `X_(k), X_(2k), X_(4k)`. `gpdSurvivalNonneg` is meaningful only for `ξ ≥ 0` (use `gpdSurvivalAll` for `ξ < 0`).
+  `X_(k), X_(2k), X_(4k)`. `gpdSurvivalNonneg`, now deprecated, is meaningful only for `ξ ≥ 0`; the library uses `gpdSurvivalAll`.
 
 Mutation checks ([`Test/MUTATION.md`](Test/MUTATION.md), `scripts/mutation_check.py`): 323 perturbations of
 the statements of the 45 headline and research theorems (flipped inequalities, shifted limits, changed

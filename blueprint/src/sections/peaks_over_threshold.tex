@@ -17,8 +17,10 @@ $F(x) = \PR[X > x]$.
 
 \begin{definition}[Generalized Pareto survival function]
   \label{def:gpd-survival}
-  \lean{ExtremeValueTheory.gpdSurvivalNonneg}
+  \lean{ExtremeValueTheory.gpdSurvivalAll}
   \leanok
+  In Lean this is the case $\xi \ge 0$, $x \ge 0$ of Definition~\ref{def:gpd-survival-general}: the
+  library has one GPD survival function, valid for every shape.
   For shape $\xi \ge 0$, scale $\beta > 0$ and $x \ge 0$, the survival function of the
   generalized Pareto distribution (GPD) is
   \begin{align*}
@@ -33,14 +35,14 @@ $F(x) = \PR[X > x]$.
 \begin{lemma}[Basic properties of the GPD]
   \label{lem:gpd-properties}
   \uses{def:gpd-survival}
-  \lean{ExtremeValueTheory.gpdSurvivalNonneg_of_eq_zero, ExtremeValueTheory.gpdSurvivalNonneg_of_ne_zero,
-    ExtremeValueTheory.gpdSurvivalNonneg_pos, ExtremeValueTheory.gpdSurvivalNonneg_le_one,
-    ExtremeValueTheory.gpdSurvivalNonneg_antitoneOn, ExtremeValueTheory.gpdSurvivalNonneg_tendsto_atTop,
-    ExtremeValueTheory.gpdSurvivalNonneg_continuousOn, ExtremeValueTheory.gpdSurvivalNonneg_inv_one}
+  \lean{ExtremeValueTheory.gpdSurvivalAll_zero_left, ExtremeValueTheory.gpdSurvivalAll_of_ne_zero_of_nonneg,
+    ExtremeValueTheory.gpdSurvivalAll_pos_of_nonneg, ExtremeValueTheory.gpdSurvivalAll_le_one,
+    ExtremeValueTheory.gpdSurvivalAll_antitoneOn, ExtremeValueTheory.gpdSurvivalAll_tendsto_atTop,
+    ExtremeValueTheory.gpdSurvivalAll_continuousOn, ExtremeValueTheory.gpdSurvivalAll_inv_one}
   \leanok
   Let $\xi \ge 0$ and $\beta > 0$. On $[0, \infty)$ the function $\overline{G}_{\xi,\beta}$ takes
   values in $(0, 1]$, is antitone and continuous, and tends to $0$ at $+\infty$. Moreover, for
-  $\alpha \ne 0$, $\overline{G}_{1/\alpha, 1}(x) = (1 + x/\alpha)^{-\alpha}$.
+  $\alpha > 0$ and $x \ge 0$, $\overline{G}_{1/\alpha, 1}(x) = (1 + x/\alpha)^{-\alpha}$.
 \end{lemma}
 \begin{proof}
   \leanok
@@ -190,14 +192,17 @@ Definition~\ref{def:excess-survival} applied to $\overline{F}$.
 \begin{lemma}[Properties of the general GPD]
   \label{lem:gpd-general-properties}
   \uses{def:gpd-survival-general, lem:gpd-properties}
-  \lean{ExtremeValueTheory.gpdSurvivalAll_eq_gpdSurvivalNonneg, ExtremeValueTheory.gpdSurvivalAll_zero_left,
+  \lean{ExtremeValueTheory.gpdSurvivalAll_of_ne_zero_of_nonneg,
+    ExtremeValueTheory.gpdSurvivalAll_eq_zero_of_neg, ExtremeValueTheory.gpdSurvivalAll_zero_left,
     ExtremeValueTheory.gpdSurvivalAll_neg_inv, ExtremeValueTheory.gpdSurvivalAll_nonneg,
     ExtremeValueTheory.gpdSurvivalAll_antitoneOn, ExtremeValueTheory.gpdSurvivalAll_zero_right,
     ExtremeValueTheory.gpdSurvivalAll_le_one, ExtremeValueTheory.gpdSurvivalAll_continuousOn,
     ExtremeValueTheory.gpdSurvivalAll_tendsto_atTop}
   \leanok
-  Definition~\ref{def:gpd-survival-general} agrees with Definition~\ref{def:gpd-survival} for
-  $\xi \ge 0$, $\beta > 0$, $x \ge 0$, and $\overline{G}_{0,\beta}(x) = e^{-x/\beta}$. For
+  Inside the support ($1 + \xi x/\beta \ge 0$) the truncation is inactive, so
+  Definition~\ref{def:gpd-survival-general} agrees with the formula of
+  Definition~\ref{def:gpd-survival} for $\xi \ge 0$, $\beta > 0$, $x \ge 0$; for $\xi < 0$ it
+  vanishes where $1 + \xi x/\beta \le 0$; and $\overline{G}_{0,\beta}(x) = e^{-x/\beta}$. For
   $\alpha > 0$, $\overline{G}_{-1/\alpha, 1}(x) = \big( \max(1 - x/\alpha, 0) \big)^\alpha$. For
   $\beta > 0$, on $[0, \infty)$ the function $\overline{G}_{\xi,\beta}$ is nonnegative, at most
   $1$, equal to $1$ at $0$, antitone and continuous, and it tends to $0$ at $+\infty$.

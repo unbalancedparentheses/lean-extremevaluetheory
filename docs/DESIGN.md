@@ -31,10 +31,10 @@ structures, theorem names describe the statement). Library-specific rules:
 * **Hypotheses in names** state the hypothesis that is actually used. `_of_summable_rpow`, not
   `_of_lt_one`, when the hypothesis is the summability of `|c_j|^δ` (the old name suggested
   `α < 1`).
-* **No primes or vague suffixes for genuinely different objects.** `gpdSurvivalNonneg` (correct
-  only for `ξ ≥ 0`) and `gpdSurvivalAll` (all `ξ`) replaced `gpdSurvival` and `gpdSurvival'`. A
-  prime is acceptable only for a local variant of a lemma with the same statement shape, as in
-  Mathlib.
+* **No primes or vague suffixes for genuinely different objects.** `gpdSurvivalAll` (all `ξ`)
+  replaced `gpdSurvival` and `gpdSurvival'`; `gpdSurvivalNonneg` (correct only for `ξ ≥ 0`) is
+  deprecated. A prime is acceptable only for a local variant of a lemma with the same statement
+  shape, as in Mathlib.
 * **Terminology that clashes with the literature is renamed.** The quantity once called the
   "escape mass" (`HasEscapeMass`, `escapeSet`, `clusterEscape`) is the *late-return mass*
   (`HasLateReturnMass`, …), since Abadi–Freitas–Freitas use "escape" for something else.
