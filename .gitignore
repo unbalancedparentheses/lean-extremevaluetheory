@@ -5,3 +5,4 @@
 /home_page/_site
 .DS_Store
 .claude/worktrees/
+__pycache__/
