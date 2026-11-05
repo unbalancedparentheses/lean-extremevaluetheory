@@ -12,10 +12,11 @@
 \newcommand{\doi}{\texttt{[DOI: fill in after the release]}}
 
 \title{A library of extreme value theory in Lean 4}
-\author{Federico Carrone}
+\author{Federico Carrone\thanks{Repository and issue tracker: \repo.}}
 \date{November 2026}
 
 \begin{document}
+\sloppy
 \maketitle
 
 \begin{abstract}
@@ -46,16 +47,50 @@ ExtremeValueProject, by Kalle Kytölä and the participants of an Aalto Universi
 mathematics~\cite{evp}. The source, an interactive blueprint, API documentation and a catalogue of
 results with their references are at \repo; this paper refers to release \release{} (\doi).
 
-Our main points are the following.
-\begin{itemize}
-  \item The library's scope (Section~\ref{sec:contents}), which covers the standard textbooks'
-        theory of maxima, regular variation and peaks over threshold, and much of their statistics.
-  \item How the library tests that a statement is the right one, and not only that its proof is
-        correct (Section~\ref{sec:trust}).
-  \item What the process found (Section~\ref{sec:new}): hypotheses in the literature that cannot be
-        dropped, and new examples for the extremal index.
-  \item What it does not establish (Section~\ref{sec:limits}).
-\end{itemize}
+\section{Contributions}
+
+\begin{enumerate}
+  \item \textbf{Scope} (Sections~\ref{sec:related} and~\ref{sec:contents}). We know of no broader machine-checked development of extreme value theory, within the limits of the search in Section~\ref{sec:related}.
+        It runs from the classical theory of maxima and regular variation through statistics to dependent sequences, multivariate extremes and point processes, on one set of conventions (Section~\ref{sec:design}).
+  \item \textbf{Testing statements, not only proofs} (Section~\ref{sec:trust}). A proof assistant
+        checks proofs. We describe the checks we use for the separate question of whether a statement is the right one, with their results and their limits.
+  \item \textbf{What the process found} (Sections~\ref{sec:new} and~\ref{sec:proof}): hypotheses in the literature that cannot be
+        dropped, and examples for the extremal index that, to our knowledge, are new. These claims are provisional.
+  \item \textbf{An honest map} (Section~\ref{sec:limits}): where the library is narrower than the textbooks, and what no one independent has yet checked.
+\end{enumerate}
+
+\section{Related work}\label{sec:related}
+
+We searched the web, GitHub and arXiv for formalizations of extreme value theory in Lean, Isabelle and Coq, and of regular variation, stable laws and the Skorokhod space. The search was
+not exhaustive, so what follows reports what we found, not what exists. Table~\ref{tab:related} compares the nearest work.
+
+\begin{table}[ht]
+\centering\small
+\begin{tabular}{p{0.21\linewidth}p{0.2\linewidth}p{0.24\linewidth}p{0.22\linewidth}}
+\toprule
+ & This work & ExtremeValueProject~\cite{evp} & MathFin~\cite{mathfin} \\
+\midrule
+Prover & Lean 4 & Lean 4 & Lean 4 \\
+Focus & Extreme value theory & A course project & Mathematical finance \\
+Fisher--Tippett--Gnedenko & Proved & The project's target; our development starts from it & Limit family only; the theorem is not formalized there \\
+Peaks over threshold & Equivalence, every shape & -- & GPD properties; the theorem is not formalized there \\
+Statistics of extremes & Yes & -- & -- \\
+Dependent sequences & Yes & -- & -- \\
+\bottomrule
+\end{tabular}
+\caption{The nearest formalizations we found. A dash means we did not find this in the project. Entries for the other projects describe the versions we read in November 2026.}
+\label{tab:related}
+\end{table}
+
+\paragraph{Extremes.} Our Fisher--Tippett--Gnedenko development and its blueprint are based on ExtremeValueProject~\cite{evp}, from which this library began. MathFin~\cite{coelho}
+is a Lean library of mathematical finance. It has about 900 lines on extremes, connected to its risk measures, and its source states that neither Fisher--Tippett--Gnedenko nor Pickands--Balkema--de Haan
+is formalized there. Its aims complement ours, and its classification of each result by how faithful it is to the claim influenced our own plans.
+
+\paragraph{Probability in proof assistants.} This library depends on Mathlib's measure-theoretic probability~\cite{mathlib,doob}. Avigad, H\"olzl and Serafin proved the central limit theorem in Isabelle~\cite{clt}, and
+Degenne, Ledvinka, Marion and Pfaffelhuber constructed Brownian motion in Lean~\cite{brownian}, which Coelho extended to an It\^o calculus~\cite{ito}. Our tail empirical process theorem needs a Brownian motion, for which it uses the library's own existence result, not that development.
+We did not find formalizations of regular variation, stable laws or the Skorokhod space.
+
+\paragraph{The extremal index.} The closest mathematics to Section~\ref{sec:new} is the stable-regenerative model of Bai and Wang~\cite{bw} and the analysis of Bai, Kulik and Wang~\cite{bkw}.
 
 \section{What is formalized}\label{sec:contents}
 
@@ -63,7 +98,8 @@ The central result is the classification of limits of normalized maxima. Writing
 $A\bullet G$ for the distribution function $G$ after an increasing affine change of variables, the
 library states it as follows.
 \begin{alltt}\small
-theorem CumulativeDistributionFunction.IsExtremeValueDistr.classification
+theorem CumulativeDistributionFunction
+    .IsExtremeValueDistr.classification
     \{G : CumulativeDistributionFunction\} (hG : G.IsExtremeValueDistr) :
     (\(\exists\) (A : AffineIncrEquiv), A \(\bullet\) G = standardGumbelCDF) \(\lor\)
       (\(\exists\) (A : AffineIncrEquiv) (\(\xi\) : \(\mathbb{R}\)) (h\(\xi\) : 0 < \(\xi\)),
@@ -73,7 +109,10 @@ theorem CumulativeDistributionFunction.IsExtremeValueDistr.classification
 \end{alltt}
 Here \lean{G.IsExtremeValueDistr} says that $G$ is non-degenerate and is a limit of $F(a_n x + b_n)^n$
 at continuity points of $G$, for some distribution function $F$ and affine normalizations.
-Table~\ref{tab:contents} summarizes the rest; the repository's \texttt{THEOREMS.md} lists each result with its source.
+This is the theorem of Fisher and Tippett~\cite{ft} and Gnedenko~\cite{gnedenko}. Table~\ref{tab:contents} summarizes the rest, following the standard
+accounts~\cite{ekm,dhf,bgt,resnick,llr,coles}; the repository's \texttt{THEOREMS.md} lists each result with its source. Among the original sources are Balkema and de Haan~\cite{balkema} and
+Pickands~\cite{pickands} for peaks over threshold, Hill~\cite{hill} for the tail estimator, Smith~\cite{smith} for likelihood, Embrechts and Veraverbeke~\cite{ev} for ruin, Leadbetter~\cite{leadbetter} for dependent sequences, and
+Basrak and Segers~\cite{bs} for the tail process.
 
 \begin{table}[ht]
 \centering\small
@@ -104,6 +143,17 @@ General results that are not specific to extremes (vague convergence, Poisson ra
 coefficients, the Skorokhod space, the delta method) were absent from Mathlib when we needed them. They
 live in a separate folder, written to Mathlib's conventions so that they can be contributed upstream.
 
+\section{Design}\label{sec:design}
+
+\paragraph{One representation of laws.} A probability law on $\mathbb R$ appears in three forms: a measure, which is the canonical law, as in Mathlib; Mathlib's distribution function of a measure;
+and \lean{CumulativeDistributionFunction}, a Stieltjes function with limits $0$ and $1$, which carries the affine action, types and domains of attraction. One file, \lean{CDFBridge.lean}, is the bridge between them, and no other file proves conversions.
+
+\paragraph{Conventions.} Predicates are \lean{Is...} structures with facts in their namespace, and names follow Mathlib's rules. Statistical theorems take samples in one form: measurable $X_i$ with \lean{iIndepFun} and \lean{IdentDistrib}. A theorem that
+is the counterpart of a textbook result says so in its docstring and cites the source. Renames leave a deprecated alias. The repository's \texttt{docs/DESIGN.md} records these rules.
+
+\paragraph{Separation by purpose.} General results go in \lean{ForMathlib/} (31 files and about 8,400 lines), which imports only Mathlib and itself, so that it can move upstream unchanged. Counterexamples showing that hypotheses are needed go in
+\lean{Minimality/}. Tests of statements go in a separate \lean{Test} library, which uses only public statements.
+
 \section{Testing the statements}\label{sec:trust}
 
 Lean's kernel guarantees that a conclusion follows from its hypotheses. It does not guarantee that the
@@ -128,6 +178,23 @@ checks, all but the last of which can be rerun from the repository.
     judged it harmless.
   \item[Faithfulness audits.] Six written comparisons of statements with the literature, recording each deviation.
 \end{description}
+Table~\ref{tab:audit} gives the audits' verdicts on the 133 statements and definitions in their main table. These records can lag the code: the Codex review of this release (Section~\ref{sec:built}) found some scope notes that later theorems had overtaken.
+
+\begin{table}[ht]
+\centering\small
+\begin{tabular}{p{0.72\linewidth}r}
+\toprule
+Verdict recorded in \texttt{FAITHFULNESS.md} & Count \\
+\midrule
+Faithful: the statement matches the cited result & 87 \\
+Faithful within a stated scope, such as a special case or an extra hypothesis & 34 \\
+Differs from the cited form, but correct as stated & 12 \\
+\bottomrule
+\end{tabular}
+\caption{Audit verdicts. They are the judgement of AI-assisted audits, not of experts.}
+\label{tab:audit}
+\end{table}
+
 These tests and audits were themselves written with AI assistance, so they are not independent of the
 statements they test. They reduce the risk of error, but do not remove it.
 
@@ -172,6 +239,26 @@ book~\cite{ks20}, Weissman--Cohen, or Smith (1988), so the claim of novelty is p
 Some results close to these are known: $\theta\le\vartheta$ is Lemma 7.5.4 of~\cite{ks20} as cited by~\cite{bkw},
 and the principle behind the mixing example is classical.
 
+\section{A proof in detail: the echo process}\label{sec:proof}
+
+The echo results take about 4,400 lines of Lean, including the gap formula below. For a measurable lag $L\ge 1$ with $L(z)\to\infty$ and $E[L(Z_0)]<\infty$, the argument runs as follows.
+
+\paragraph{Sources of an exceedance.} $X_t>x$ holds exactly when some shock is its source: either $Z_t>x$, or $Z_{t-j}>x$ with $L(Z_{t-j})=j$ for some $j\ge 1$ (\lean{echoSource}). Summing over $j$ gives the upper bound $P(X_0>x)\le P(Z_0>x)+\sum_{j\ge1}P(Z_{-j}>x,\,L(Z_{-j})=j)=2P(Z_0>x)$.
+For the lower bound we need that these events rarely overlap, and a pairwise-independence inequality
+$P(\bigcup_j A_j)\ge S-S^2$, where $S=\sum_j P(A_j)$ (\lean{le_measureReal_iUnion_of_pairwise}), supplies it. So $P(X_0>x)\sim 2x^{-\alpha}$ (\lean{tendsto_measureReal_lt_echoProcess_div}).
+
+\paragraph{The tail process.} Conditionally on $X_0>x$, the source is the shock at $0$, whose echo is at lag $L(Z_0)\to\infty$, or a shock at lag $-L\to-\infty$. At any fixed lag $t\ne0$, nothing else is large. A general criterion, that this asymptotic independence forces $\Theta_t=\mathbf 1\{t=0\}$, then gives $\vartheta=1$
+(\lean{hasSpectralTailProcess_echoProcess}). This step uses $L\to\infty$ but not the finite mean.
+
+\paragraph{The maxima.} Up to echoes of shocks from before time $0$, $M_n\le u_n$ is the event that all of $Z_1,\dots,Z_n$ are at most $u_n$. Finite mean makes those echoes negligible. If $nP(X_0>u_n)\to\tau$ then $nP(Z_0>u_n)\to\tau/2$, so $P(M_n\le u_n)\to e^{-\tau/2}$ and $\theta=1/2$ (\lean{hasExtremalIndex_echoProcess}).
+The computation of $\theta$ is direct, and does not use the block condition.
+
+\paragraph{The gap.} A general theorem explains the discrepancy. Define the \emph{late-return mass} $\eta$ as the conditional mass of returns inside a block at lags that grow with the level. Then the cluster ratio tends to $L$ exactly when $\eta=\vartheta-L$, with no anticlustering or mixing assumed, and under $A(u_n)$,
+$\theta=\vartheta-\eta$, so that $\theta<\vartheta$ exactly when $\eta>0$ (\lean{HasSpectralTailProcess.eq_candidateExtremalIndex_iff_hasLateReturnMass_zero}). For the echo process, $\eta=1/2$ (\lean{hasLateReturnMass_echoProcess}). This is close to a reformulation of classical blocks-and-runs identities. We did not find the two-sided statement in the literature.
+
+\paragraph{What the formalization contributed.} Each lemma states the hypotheses it uses, which is how we can say that $\vartheta=1$ needs only $L\to\infty$, and that $\theta\le\vartheta$ needs no mixing or anticlustering. The formal counterexample also corrected our own understanding: notes we wrote earlier had
+read a lemma of Planini\'c and Soulier~\cite{ps18} as saying that $|Y_t|\to0$ could replace anticlustering in $\theta=\vartheta$. The echo process has $|Y_t|\to 0$ and $\theta<\vartheta$, so that reading is false. The error was ours, and we do not claim one in their paper.
+
 \section{Limitations}\label{sec:limits}
 
 Many results are narrower than their textbook forms. The README and \texttt{FAITHFULNESS.md} give the full list; the most important are the following.
@@ -194,7 +281,23 @@ Many results are narrower than their textbook forms. The README and \texttt{FAIT
   \item \textbf{Asymptotics only.} The library says nothing about finite-sample behaviour or about choosing a threshold or block length.
 \end{itemize}
 
-\section{How it was built}
+\section{Evaluation and reproducibility}\label{sec:repro}
+
+\paragraph{Evidence.} The library has about 100,000 lines and 4,300 theorems and lemmas, in 9,487 declarations counted by the axiom audit. On the latest run before this release, the independent kernel accepted all 719,515 declarations of the library and its dependencies. A build that passes in continuous integration is itself the evidence for the axiom claim.
+
+\paragraph{To reproduce.} Release \release{} (\doi) pins Lean v4.35.0 and Mathlib v4.35.0 (commit \texttt{56a00585}) in \lean{lean-toolchain} and \lean{lake-manifest.json}. Then:
+\begin{alltt}\small
+git clone \repo
+cd lean-extremevaluetheory && git checkout v0.9.0
+lake exe cache get     # prebuilt Mathlib
+lake build             # the library
+lake build Test        # specification tests and the axiom audit
+\end{alltt}
+A weekly job builds a fresh project that requires the repository and imports only the umbrella module, which checks that others can use it as a dependency.
+
+\paragraph{Upstream.} Nothing has been contributed to Mathlib yet. \texttt{UPSTREAMING.md} plans how the \lean{ForMathlib/} files could move there as a series of small pull requests.
+
+\section{How it was built}\label{sec:built}
 
 Most of the code, tests and documents were written by AI coding agents (Claude Code), directed and reviewed by the author, on top of the
 Aalto project. Codex, a second AI system, reviewed the statements and claims of this release. This changes what evidence the library
@@ -208,13 +311,37 @@ so no knowledge of Lean is needed, and corrections are very welcome. It does not
 intervals or the extremal-index estimators; \texttt{FAITHFULNESS.md} lists those. Next come the missing likelihood results, contributing the general
 results to Mathlib, and executable estimators cross-checked against R and Python packages.
 
-\begin{thebibliography}{9}
+What this library is not is part of the point. It is not software for analysing data, it says nothing about finite samples, and it does not replace statistical judgement about thresholds, block lengths or whether a model fits. It provides a checked account of what the asymptotic theory says and under exactly which hypotheses.
+
+\begin{thebibliography}{99}
+\bibitem{clt} J.~Avigad, J.~H\"olzl and L.~Serafin. A formally verified proof of the central limit theorem. J.\ Automated Reasoning 59 (2017) 389--423.
 \bibitem{bkw} S.~Bai, R.~Kulik and Y.~Wang. A remarkable example on clustering of extremes for regularly-varying stochastic processes. arXiv:2409.17966; Ann.\ Appl.\ Probab.\ 36(4) (2026) 3132--3168.
 \bibitem{bw} S.~Bai and Y.~Wang. Tail processes for stable-regenerative multiple-stable model. arXiv:2110.07499; Bernoulli 29(4) (2023) 3255--3279.
+\bibitem{balkema} A.~A.~Balkema and L.~de Haan. Residual life time at great age. Ann.\ Probab.\ 2 (1974) 792--804.
+\bibitem{bs} B.~Basrak and J.~Segers. Regularly varying multivariate time series. Stochastic Process.\ Appl.\ 119 (2009) 1055--1080.
+\bibitem{bgt} N.~H.~Bingham, C.~M.~Goldie and J.~L.~Teugels. \emph{Regular Variation}. Cambridge University Press, 1987.
+\bibitem{coelho} R.~Coelho. A formally verified library of mathematical finance in Lean 4. arXiv:2606.01356, 2026.
+\bibitem{ito} R.~Coelho. A machine-checked It\^o calculus for Brownian motion. arXiv:2606.15089, 2026.
+\bibitem{coles} S.~Coles. \emph{An Introduction to Statistical Modeling of Extreme Values}. Springer, 2001.
+\bibitem{brownian} R.~Degenne, D.~Ledvinka, E.~Marion and P.~Pfaffelhuber. Formalization of Brownian motion in Lean. arXiv:2511.20118, 2025.
+\bibitem{dhf} L.~de Haan and A.~Ferreira. \emph{Extreme Value Theory: An Introduction}. Springer, 2006.
 \bibitem{lean4} L.~de Moura and S.~Ullrich. The Lean 4 theorem prover and programming language. CADE 2021.
-\bibitem{evp} K.~Kytölä and contributors. ExtremeValueProject. \url{https://github.com/kkytola/ExtremeValueProject}.
+\bibitem{ekm} P.~Embrechts, C.~Kl\"uppelberg and T.~Mikosch. \emph{Modelling Extremal Events}. Springer, 1997.
+\bibitem{ev} P.~Embrechts and N.~Veraverbeke. Estimates for the probability of ruin with special emphasis on the possibility of large claims. Insurance Math.\ Econom.\ 1 (1982) 55--72.
+\bibitem{ft} R.~A.~Fisher and L.~H.~C.~Tippett. Limiting forms of the frequency distribution of the largest or smallest member of a sample. Proc.\ Cambridge Philos.\ Soc.\ 24 (1928) 180--190.
+\bibitem{gnedenko} B.~Gnedenko. Sur la distribution limite du terme maximum d'une s\'erie al\'eatoire. Ann.\ of Math.\ 44 (1943) 423--453.
+\bibitem{hill} B.~M.~Hill. A simple general approach to inference about the tail of a distribution. Ann.\ Statist.\ 3 (1975) 1163--1174.
 \bibitem{ks20} R.~Kulik and P.~Soulier. \emph{Heavy-Tailed Time Series}. Springer, 2020.
+\bibitem{evp} K.~Kytölä and contributors. ExtremeValueProject. \url{https://github.com/kkytola/ExtremeValueProject}.
+\bibitem{leadbetter} M.~R.~Leadbetter. Extremes and local dependence in stationary sequences. Z.\ Wahrsch.\ Verw.\ Gebiete 65 (1983) 291--306.
+\bibitem{llr} M.~R.~Leadbetter, G.~Lindgren and H.~Rootz\'en. \emph{Extremes and Related Properties of Random Sequences and Processes}. Springer, 1983.
+\bibitem{mathfin} formal-mathfin. \url{https://github.com/formal-applied-math/formal-mathfin}.
 \bibitem{mathlib} The mathlib Community. The Lean mathematical library. CPP 2020.
+\bibitem{pickands} J.~Pickands III. Statistical inference using extreme order statistics. Ann.\ Statist.\ 3 (1975) 119--131.
+\bibitem{ps18} H.~Planini\'c and P.~Soulier. The tail process revisited. Extremes 21 (2018) 551--579.
+\bibitem{resnick} S.~I.~Resnick. \emph{Extreme Values, Regular Variation and Point Processes}. Springer, 1987.
+\bibitem{smith} R.~L.~Smith. Maximum likelihood estimation in a class of nonregular cases. Biometrika 72 (1985) 67--90.
+\bibitem{doob} K.~Ying and R.~Degenne. A formalization of Doob's martingale convergence theorems in mathlib. arXiv:2212.05578, 2022.
 \end{thebibliography}
 
 \end{document}
