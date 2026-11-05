@@ -3,6 +3,7 @@ Copyright (c) 2026 Federico Carrone.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
+import ExtremeValueTheory.RegularVariation.Extended
 import ExtremeValueTheory.RegularVariation.UniformConvergence
 import ExtremeValueTheory.RegularVariation.KaramataConverse
 import Mathlib.Analysis.SpecialFunctions.Log.Deriv
@@ -64,16 +65,6 @@ open Filter Topology Set Real MeasureTheory
 
 namespace ExtremeValueTheory
 
-/-- The function `h_ρ(x) = (x^ρ - 1) / ρ`, with `h_0(x) = log x`, the limit function of
-second-order regular variation ([dHF, §2.3]). -/
-noncomputable def boxCox (ρ x : ℝ) : ℝ :=
-  if ρ = 0 then log x else (x ^ ρ - 1) / ρ
-
-theorem boxCox_zero (x : ℝ) : boxCox 0 x = log x := by simp [boxCox]
-
-theorem boxCox_of_ne {ρ : ℝ} (hρ : ρ ≠ 0) (x : ℝ) : boxCox ρ x = (x ^ ρ - 1) / ρ := by
-  simp [boxCox, hρ]
-
 theorem boxCox_exp (ρ u : ℝ) :
     boxCox ρ (exp u) = if ρ = 0 then u else (exp (ρ * u) - 1) / ρ := by
   unfold boxCox
@@ -94,14 +85,6 @@ theorem boxCox_exp_nonneg_le {ρ u : ℝ} (hρ : ρ ≤ 0) (hu : 0 ≤ u) :
     · exact div_nonneg_of_nonpos (by linarith) hρ
     · rw [div_le_iff_of_neg hρ']
       linarith
-
-theorem boxCox_pos_of_one_lt {ρ x : ℝ} (hx : 1 < x) : 0 < boxCox ρ x := by
-  unfold boxCox
-  split_ifs with h
-  · exact log_pos hx
-  · rcases lt_or_gt_of_ne h with hρ | hρ
-    · exact div_pos_of_neg_of_neg (by linarith [rpow_lt_one_of_one_lt_of_neg hx hρ]) hρ
-    · exact div_pos (by linarith [one_lt_rpow hx hρ]) hρ
 
 /-- **Second-order regular variation** ([dHF, Definition 2.3.1 and Theorem 2.3.3], in the case
 `γ > 0` relevant for heavy tails). A function `U`, eventually positive, is of second-order regular

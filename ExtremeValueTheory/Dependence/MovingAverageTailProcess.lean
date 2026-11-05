@@ -3,6 +3,7 @@ Copyright (c) 2026 Federico Carrone.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
+import ExtremeValueTheory.UpperQuantile
 import ExtremeValueTheory.Dependence.MovingAverage
 import ExtremeValueTheory.HeavyTails.LinearProcess
 
@@ -202,9 +203,10 @@ variable [IsProbabilityMeasure P] {Z : ℤ → Ω → ℝ} {α : ℝ}
 /-- **Tail of `X_0`**: `P(X_0 > x) / P(Z_0 > x) → ∑_{j ≤ m} ψ_j^α`. -/
 theorem tendsto_measureReal_process_div (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hα : 0 < α)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j) :
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j) :
     Tendsto (fun x => P.real {ω | x < process m ψ Z 0 ω} / P.real {ω | x < Z 0 ω}) atTop
       (𝓝 (weightSum m ψ α)) := by
+  replace hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α) := hL
   have habs : ∀ x, {ω | x < |Z 0 ω|} = {ω | x < Z 0 ω} := fun x => by
     ext ω; simp [abs_of_nonneg (hZ0 0 ω)]
   have hL' : IsRegularlyVarying (fun x => P.real {ω | x < |Z 0 ω|}) (-α) := by
@@ -469,11 +471,12 @@ variable [IsProbabilityMeasure P]
 /-- **Convergence of the conditional laws on a window** for the moving average. -/
 theorem tendstoLawCond_window (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hα : 0 < α)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψm : ∀ j, m < j → ψ j = 0) (hW : 0 < weightSum m ψ α) (S : Finset ℤ) :
     TendstoLawCond P (fun x => {ω | x < |process m ψ Z 0 ω|})
       (fun _ ω (t : S) => process m ψ Z t ω / |process m ψ Z 0 ω|) atTop
       ((indexLaw m ψ α).map fun j (t : S) => spectral m ψ t j) := by
+  replace hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α) := hL
   intro f
   have := indexLaw_isProbabilityMeasure (m := m) (α := α) hψ0 hW
   set J := (range (m + 1)).filter (fun j => 0 < ψ j) with hJ
@@ -751,9 +754,10 @@ theorem tendstoLawCond_window (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z
 with spectral tail process `Θ_t = ψ_{J+t} / ψ_J`, `P(J = j) = ψ_j^α / ∑_i ψ_i^α`. -/
 theorem hasSpectralTailProcess (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hα : 0 < α)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψm : ∀ j, m < j → ψ j = 0) (hW : 0 < weightSum m ψ α) :
     HasSpectralTailProcess P (process m ψ Z) α (indexLaw m ψ α) (spectral m ψ) := by
+  replace hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α) := hL
   refine ⟨?_, tendstoLawCond_window hZ hind hident hZ0 hα hL hψ0 hψm hW⟩
   have hBset : ∀ x, {ω | x < |process m ψ Z 0 ω|} = {ω | x < process m ψ Z 0 ω} := fun x => by
     ext ω; simp [abs_of_nonneg (process_nonneg hψ0 hZ0 0 ω)]
@@ -768,7 +772,7 @@ varying noise has a spectral tail process whose candidate extremal index is
 theorem exists_hasSpectralTailProcess_candidateExtremalIndex_eq (hZ : ∀ i, Measurable (Z i))
     (hind : iIndepFun Z P) (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P)
     (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hα : 0 < α)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψm : ∀ j, m < j → ψ j = 0) (hW : 0 < weightSum m ψ α) :
     HasSpectralTailProcess P (process m ψ Z) α (indexLaw m ψ α) (spectral m ψ) ∧
       candidateExtremalIndex (indexLaw m ψ α) (spectral m ψ) α =

@@ -5,6 +5,7 @@ Authors: Kalle Kytölä, ...
 Modified by Federico Carrone, 2026, from kkytola/ExtremeValueProject (commit f7c9a8ce260d):
 ported to Lean/Mathlib v4.35.0 and renamed `ExtremeValueProject` to `ExtremeValueTheory`.
 -/
+import ExtremeValueTheory.PseudoInverses
 import ExtremeValueTheory.SelfSimilarCDF.Types
 
 /-!
@@ -419,10 +420,6 @@ lemma exists_smul_eq_pow_of_isExtremeValueDistr {G : CumulativeDistributionFunct
   simp only [inv_smul_smul] at this
   exact this.symm
 
-/-- The left-continuous quantile function (generalized inverse) of a c.d.f. -/
-private noncomputable def lowerQuantile (F : CumulativeDistributionFunction) (p : ℝ) : ℝ :=
-  sInf {y | p ≤ F y}
-
 private lemma setOf_le_nonempty (F : CumulativeDistributionFunction) {p : ℝ} (hp : p < 1) :
     {y | p ≤ F y}.Nonempty := by
   obtain ⟨y, hy⟩ := (F.tendsto_atTop.eventually (eventually_gt_nhds hp)).exists
@@ -437,44 +434,44 @@ private lemma setOf_le_bddBelow (F : CumulativeDistributionFunction) {p : ℝ} (
   have hy' : p ≤ F y := hy
   linarith [hN y h.le]
 
-private lemma isLeast_lowerQuantile (F : CumulativeDistributionFunction) {p : ℝ} (hp0 : 0 < p)
-    (hp1 : p < 1) : IsLeast {y | p ≤ F y} (lowerQuantile F p) := by
+private lemma isLeast_lcInv_cdf (F : CumulativeDistributionFunction) {p : ℝ} (hp0 : 0 < p)
+    (hp1 : p < 1) : IsLeast {y | p ≤ F y} (lcInv ⇑F p) := by
   refine ⟨?_, fun y hy ↦ csInf_le (setOf_le_bddBelow F hp0) hy⟩
   by_contra hcon
-  have hlt : F (lowerQuantile F p) < p := lt_of_not_ge hcon
-  have hev : ∀ᶠ y in 𝓝[≥] (lowerQuantile F p), F y < p :=
+  have hlt : F (lcInv ⇑F p) < p := lt_of_not_ge hcon
+  have hev : ∀ᶠ y in 𝓝[≥] (lcInv ⇑F p), F y < p :=
     (F.right_continuous _).eventually (gt_mem_nhds hlt)
   obtain ⟨u, hu, hsub⟩ := mem_nhdsGE_iff_exists_Ico_subset.mp hev
   obtain ⟨y, hy, hyu⟩ := exists_lt_of_csInf_lt (setOf_le_nonempty F hp1) hu
-  have hqy : lowerQuantile F p ≤ y := csInf_le (setOf_le_bddBelow F hp0) hy
+  have hqy : lcInv ⇑F p ≤ y := csInf_le (setOf_le_bddBelow F hp0) hy
   have hy' : p ≤ F y := hy
   have := hsub ⟨hqy, hyu⟩
   simp only [mem_ofPred_eq] at this
   linarith
 
-private lemma lowerQuantile_smul (F : CumulativeDistributionFunction) (A : AffineIncrEquiv)
+private lemma lcInv_cdf_smul (F : CumulativeDistributionFunction) (A : AffineIncrEquiv)
     {p : ℝ} (hp0 : 0 < p) (hp1 : p < 1) :
-    lowerQuantile (A • F) p = A (lowerQuantile F p) := by
-  obtain ⟨h1, h2⟩ := isLeast_lowerQuantile F hp0 hp1
+    lcInv ⇑(A • F) p = A (lcInv ⇑F p) := by
+  obtain ⟨h1, h2⟩ := isLeast_lcInv_cdf F hp0 hp1
   refine IsLeast.csInf_eq ⟨?_, fun y hy ↦ ?_⟩
-  · show p ≤ (A • F) (A (lowerQuantile F p))
+  · show p ≤ (A • F) (A (lcInv ⇑F p))
     rw [mulAction_apply_eq_self_apply]
     exact h1
-  · have : lowerQuantile F p ≤ A⁻¹ y := h2 (show p ≤ F (A⁻¹ y) from hy)
-    calc A (lowerQuantile F p) ≤ A (A⁻¹ y) := A.mono this
+  · have : lcInv ⇑F p ≤ A⁻¹ y := h2 (show p ≤ F (A⁻¹ y) from hy)
+    calc A (lcInv ⇑F p) ≤ A (A⁻¹ y) := A.mono this
       _ = y := EquivLike.right_inv A y
 
-private lemma lowerQuantile_pow (F : CumulativeDistributionFunction) {t : ℝ} (t_pos : 0 < t)
+private lemma lcInv_cdf_pow (F : CumulativeDistributionFunction) {t : ℝ} (t_pos : 0 < t)
     {p : ℝ} (hp0 : 0 ≤ p) :
-    lowerQuantile (F.pow t_pos) p = lowerQuantile F (p ^ t⁻¹) := by
-  unfold lowerQuantile
+    lcInv ⇑(F.pow t_pos) p = lcInv ⇑F (p ^ t⁻¹) := by
+  unfold lcInv
   congr 1
   ext y
   simp only [mem_ofPred_eq, pow_apply_eq]
   exact (rpow_inv_le_iff_of_pos hp0 (F.apply_nonneg y) t_pos).symm
 
-private lemma lowerQuantile_mono (F : CumulativeDistributionFunction) {p p' : ℝ} (hp0 : 0 < p)
-    (hp' : p' < 1) (h : p ≤ p') : lowerQuantile F p ≤ lowerQuantile F p' :=
+private lemma lcInv_cdf_mono (F : CumulativeDistributionFunction) {p p' : ℝ} (hp0 : 0 < p)
+    (hp' : p' < 1) (h : p ≤ p') : lcInv ⇑F p ≤ lcInv ⇑F p' :=
   csInf_le_csInf (setOf_le_bddBelow F hp0) (setOf_le_nonempty F hp')
     (fun _ hy ↦ le_trans h hy)
 
@@ -509,26 +506,26 @@ theorem self_similar {G : CumulativeDistributionFunction}
   have hx1 : G x₁ < 1 := lt_of_le_of_lt (G.mono hlt.le) h2
   have hp₂0 : 0 < (G x₁ + 1) / 2 := by linarith
   have hp₂1 : (G x₁ + 1) / 2 < 1 := by linarith
-  have hy₁ : lowerQuantile G (G x₁) ≤ x₁ :=
-    (isLeast_lowerQuantile G h1 hx1).2 (show G x₁ ≤ G x₁ from le_rfl)
-  have hy₂ : x₁ < lowerQuantile G ((G x₁ + 1) / 2) := by
+  have hy₁ : lcInv ⇑G (G x₁) ≤ x₁ :=
+    (isLeast_lcInv_cdf G h1 hx1).2 (show G x₁ ≤ G x₁ from le_rfl)
+  have hy₂ : x₁ < lcInv ⇑G ((G x₁ + 1) / 2) := by
     by_contra hcon
     push Not at hcon
-    have h' : (G x₁ + 1) / 2 ≤ G (lowerQuantile G ((G x₁ + 1) / 2)) :=
-      (isLeast_lowerQuantile G hp₂0 hp₂1).1
+    have h' : (G x₁ + 1) / 2 ≤ G (lcInv ⇑G ((G x₁ + 1) / 2)) :=
+      (isLeast_lcInv_cdf G hp₂0 hp₂1).1
     linarith [G.mono hcon]
   have hq : ∀ p, 0 < p → p < 1 → ∀ s,
-      A s (lowerQuantile G p) = lowerQuantile G (p ^ (exp s)⁻¹) := by
+      A s (lcInv ⇑G p) = lcInv ⇑G (p ^ (exp s)⁻¹) := by
     intro p hp0 hp1 s
-    rw [← lowerQuantile_smul G (A s) hp0 hp1, hA s, lowerQuantile_pow G (exp_pos s) hp0.le]
-  have hmono : ∀ p, 0 < p → p < 1 → Monotone (fun s ↦ A s (lowerQuantile G p)) := by
+    rw [← lcInv_cdf_smul G (A s) hp0 hp1, hA s, lcInv_cdf_pow G (exp_pos s) hp0.le]
+  have hmono : ∀ p, 0 < p → p < 1 → Monotone (fun s ↦ A s (lcInv ⇑G p)) := by
     intro p hp0 hp1 s s' hss'
     simp only [hq p hp0 hp1]
-    apply lowerQuantile_mono G (rpow_pos_of_pos hp0 _)
+    apply lcInv_cdf_mono G (rpow_pos_of_pos hp0 _)
       (rpow_lt_one hp0.le hp1 (inv_pos.mpr (exp_pos _)))
     exact rpow_le_rpow_of_exponent_ge hp0 hp1.le (inv_anti₀ (exp_pos s) (exp_le_exp.mpr hss'))
-  set y₁ := lowerQuantile G (G x₁)
-  set y₂ := lowerQuantile G ((G x₁ + 1) / 2)
+  set y₁ := lcInv ⇑G (G x₁)
+  set y₂ := lcInv ⇑G ((G x₁ + 1) / 2)
   have hm₁ : Measurable (fun s ↦ A s y₁) := (hmono _ h1 hx1).measurable
   have hm₂ : Measurable (fun s ↦ A s y₂) := (hmono _ hp₂0 hp₂1).measurable
   have hne : y₂ - y₁ ≠ 0 := by intro h; linarith

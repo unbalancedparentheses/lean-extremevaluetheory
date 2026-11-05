@@ -547,7 +547,7 @@ lemma memLp_lin_score (u v : ℝ) :
     MemLp (fun x => u * gpdScoreXi ξ σ x + v * gpdScoreSigma ξ σ x) 2 (gpdMeasure ξ σ) := by
   have hm : Measurable fun x => u * gpdScoreXi ξ σ x + v * gpdScoreSigma ξ σ x := by
     have := measurable_gpdScoreXi ξ σ; have := measurable_gpdScoreSigma ξ σ; fun_prop
-  rw [gpdMeasure, stdExpMeasure_eq_expMeasure, memLp_map_measure_iff hm.aestronglyMeasurable
+  rw [gpdMeasure, memLp_map_measure_iff hm.aestronglyMeasurable
     (measurable_gpdTransform ξ σ).aemeasurable]
   exact (memLp_lin_exp_expMeasure hξ (u * -((1 / ξ + 1) / ξ) + v * (((1 + ξ) / ξ - 1) / σ))
     (u * (1 / ξ)) (u * ((1 / ξ + 1) / ξ) + v * (-((1 + ξ) / ξ) / σ))).ae_eq

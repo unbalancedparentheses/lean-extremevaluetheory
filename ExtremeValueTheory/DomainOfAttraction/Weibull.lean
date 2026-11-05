@@ -65,19 +65,6 @@ theorem tendsto_zero_of_isRegularlyVarying {g : ℝ → ℝ} (hg : Antitone g) (
   · rw [← hL0] at hL
     exact hL
 
-/-- If `t * u (p n) → μ` and `t * u (q n) → ν` with `ν < μ` and `u` antitone, then
-eventually `p n < q n`. -/
-private lemma eventually_lt_of_tendsto_mul {u : ℝ → ℝ} (hu : Antitone u) {p q : ℕ → ℝ}
-    {μ ν : ℝ} (hp : Tendsto (fun n : ℕ ↦ (n : ℝ) * u (p n)) atTop (𝓝 μ))
-    (hq : Tendsto (fun n : ℕ ↦ (n : ℝ) * u (q n)) atTop (𝓝 ν)) (hμν : ν < μ) :
-    ∀ᶠ n in atTop, p n < q n := by
-  filter_upwards [hp.eventually (lt_mem_nhds (show (μ + ν) / 2 < μ by linarith)),
-    hq.eventually (gt_mem_nhds (show ν < (μ + ν) / 2 by linarith))] with n h1 h2
-  by_contra hcon
-  push Not at hcon
-  have := mul_le_mul_of_nonneg_left (hu hcon) (Nat.cast_nonneg n)
-  linarith
-
 /-- **The endpoint lemma.** If `u` is antitone and nonnegative,
 `n * u (a n * z + b n) → (-z) ^ α` for every `z < 0` and `n * u (b n) → 0`, then for every
 `c > 0`, eventually `u (b n + c * a n) = 0`. -/
@@ -108,14 +95,18 @@ theorem eventually_eq_zero_of_tendsto_mul_affine {u : ℝ → ℝ} (hu : Antiton
   have hstep : ∀ δ, 0 < δ → δ < κ → ∀ᶠ n in atTop,
       a (2 * n) < a n * (κ + 2 * δ) ∧ b (2 * n) < b n + 3 * δ * a n := by
     intro δ hδ hδκ
-    have q1 := eventually_lt_of_tendsto_mul hu (p := fun n ↦ a (2 * n) * (-1) + b (2 * n))
-      (q := fun n ↦ a n * (-κ + δ) + b n) (hdbl (-1) (by norm_num)) (h (-κ + δ) (by linarith))
+    have q1 := Frechet.eventually_lt_of_tendsto_mul (s := fun n : ℕ ↦ (n : ℝ)) hu
+      (p := fun n ↦ a (2 * n) * (-1) + b (2 * n))
+      (q := fun n ↦ a n * (-κ + δ) + b n)
+      (.of_forall Nat.cast_nonneg) (hdbl (-1) (by norm_num)) (h (-κ + δ) (by linarith))
       (by
         rw [show -(-κ + δ) = κ - δ by ring, neg_neg, Real.one_rpow,
           show (1 : ℝ) / 2 = κ ^ α from hκα.symm]
         exact Real.rpow_lt_rpow (by linarith) (by linarith) hα)
-    have q2 := eventually_lt_of_tendsto_mul hu (p := fun n ↦ a n * (-2 * κ - δ) + b n)
-      (q := fun n ↦ a (2 * n) * (-2) + b (2 * n)) (h (-2 * κ - δ) (by linarith))
+    have q2 := Frechet.eventually_lt_of_tendsto_mul (s := fun n : ℕ ↦ (n : ℝ)) hu
+      (p := fun n ↦ a n * (-2 * κ - δ) + b n)
+      (q := fun n ↦ a (2 * n) * (-2) + b (2 * n))
+      (.of_forall Nat.cast_nonneg) (h (-2 * κ - δ) (by linarith))
       (hdbl (-2) (by norm_num))
       (by
         rw [show -(-2 * κ - δ) = 2 * κ + δ by ring, neg_neg, ← h2κα]
@@ -252,10 +243,6 @@ private lemma neg_log_standardWeibullCDF {α x : ℝ} (hα : 0 < α) (hx : x < 0
     -Real.log (standardWeibullCDF hα x) = (-x) ^ α := by
   rw [standardWeibullCDF_apply_neg_eq hα hx, Real.log_exp, neg_neg, Real.rpow_eq_pow]
 
-private lemma antitone_one_sub' (F : CumulativeDistributionFunction) :
-    Antitone (fun x ↦ 1 - F x) :=
-  fun _ _ h ↦ sub_le_sub_left (F.mono' h) 1
-
 private lemma inv_neg_inv_rpow_neg {α y : ℝ} (hy : 0 < y) : (-(-y⁻¹)) ^ α = y ^ (-α) := by
   rw [neg_neg, Real.inv_rpow hy.le, Real.rpow_neg hy.le]
 
@@ -341,7 +328,7 @@ theorem exists_endpoint_of_isInMDAWeibull (F : CumulativeDistributionFunction) {
     intro n x
     rw [mulAction_apply_eq, AffineIncrEquiv.apply_eq]
   set u : ℝ → ℝ := fun x ↦ 1 - F x with hu_def
-  have hu : Antitone u := F.antitone_one_sub'
+  have hu : Antitone u := F.antitone_one_sub
   have hu0 : ∀ x, 0 ≤ u x := fun x ↦ by simp only [hu_def]; linarith [F.apply_le_one x]
   have hz : ∀ z < 0, Tendsto (fun n : ℕ ↦ (n : ℝ) * u (a n * z + b n)) atTop
       (𝓝 ((-z) ^ α)) := by

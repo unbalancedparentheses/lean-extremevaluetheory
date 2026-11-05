@@ -3,6 +3,7 @@ Copyright (c) 2026 Federico Carrone.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
+import ExtremeValueTheory.UpperQuantile
 import ExtremeValueTheory.Dependence.MDependent
 import ExtremeValueTheory.Dependence.MovingMaxTailProcess
 import ExtremeValueTheory.Dependence.MovingAverageTailProcess
@@ -171,10 +172,11 @@ of the sliding window, the spectral tail process `MovingAverage.hasSpectralTailP
 `MovingAverage.candidateExtremalIndex_spectral`. -/
 theorem hasExtremalIndex (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hα : 0 < α)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψm : ∀ j, m < j → ψ j = 0) (hW : 0 < weightSum m ψ α) :
     HasExtremalIndex (fun n : ℕ => process m ψ Z n) P
       ((range (m + 1)).sup' nonempty_range_add_one ψ ^ α / ∑ j ∈ range (m + 1), ψ j ^ α) := by
+  replace hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α) := hL
   have hF : Measurable fun y : Fin (m + 1) → ℝ => ∑ j : Fin (m + 1), ψ j * y j :=
     Finset.measurable_sum _ fun j _ => (measurable_pi_apply j).const_mul _
   have hstat : HasShiftInvariantWindows P (process m ψ Z) := by

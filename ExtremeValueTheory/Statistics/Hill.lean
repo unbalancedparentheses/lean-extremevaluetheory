@@ -62,6 +62,15 @@ namespace ExtremeValueTheory
 
 /-! ### Deterministic part -/
 
+/-- The expected exceedance indicator of a level is the survival function at that level. -/
+theorem integral_ite_lt' {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} {Y : Ω → ℝ}
+    (hY : Measurable Y) (u : ℝ) :
+    ∫ ω, (if u < Y ω then (1 : ℝ) else 0) ∂P = survival P Y u := by
+  have : (fun ω => if u < Y ω then (1 : ℝ) else 0) = {ω | u < Y ω}.indicator 1 := by
+    ext ω; simp [Set.indicator]
+  rw [this, integral_indicator_one (measurableSet_lt measurable_const hY), measureReal_def]
+  rfl
+
 section Deterministic
 
 variable {n : ℕ}
@@ -323,11 +332,6 @@ theorem lintegral_logExcess_sq_le (hY : Measurable Y) {α : ℝ} (hα : 0 < α) 
         rw [← ENNReal.ofReal_mul zero_le_two]
         congr 1; ring
 
-theorem integral_exp_neg_mul_Ioi {α : ℝ} (hα : 0 < α) :
-    ∫ u in Ioi 0, Real.exp (-α * u) = 1 / α := by
-  rw [integral_exp_mul_Ioi (neg_lt_zero.2 hα) 0]
-  simp only [mul_zero, Real.exp_zero, neg_div_neg_eq]
-
 /-- The mean log-excess over a high threshold `s`, divided by the tail probability `F̄(s)`,
 tends to `1 / α` as `s → ∞`: this is the integrated form of regular variation used by the
 Hill estimator. -/
@@ -401,7 +405,7 @@ section Threshold
 
 /-- The generalized inverse `sInf {x | F x ≤ p}` of a right-continuous antitone function; this
 is `upperQuantile_spec_of_tendsto_atTop`. -/
-@[deprecated upperQuantile_spec_of_tendsto_atTop (since := "2026-10-23")]
+@[deprecated upperQuantile_spec_of_tendsto_atTop (since := "2026-11-05")]
 theorem threshold_spec {F : ℝ → ℝ} (hF : Antitone F) (hrc : ∀ x, ContinuousWithinAt F (Ici x) x)
     (h0 : Tendsto F atTop (𝓝 0)) {p M : ℝ} (hp : 0 < p) (hM : p < F M) :
     F (sInf {x | F x ≤ p}) ≤ p ∧ (∀ x < sInf {x | F x ≤ p}, p < F x) ∧

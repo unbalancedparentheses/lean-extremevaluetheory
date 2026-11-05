@@ -3,6 +3,7 @@ Copyright (c) 2026 Federico Carrone.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
+import ExtremeValueTheory.UpperQuantile
 import ExtremeValueTheory.Dependence.Anticlustering
 import ExtremeValueTheory.CDFBridge
 
@@ -57,8 +58,9 @@ sequence with `n P(X_0 > uₙ) → τ`. The levels are `uₙ = inf {x ≥ 0 | P(
 right continuity `n P(X_0 > uₙ) ≤ τ`, while for `λ > 1`,
 `n P(X_0 > uₙ) ≥ τ P(X_0 > uₙ) / P(X_0 > uₙ / λ) → τ λ^ρ`. -/
 theorem hasExceedanceLevels_of_isRegularlyVarying {X : ℕ → Ω → ℝ} (hX0 : Measurable (X 0))
-    {ρ : ℝ} (hRV : IsRegularlyVarying (fun x => P.real {ω | x < X 0 ω}) ρ) :
+    {ρ : ℝ} (hRV : IsRegularlyVarying (survival P (X 0)) ρ) :
     HasExceedanceLevels X P := by
+  replace hRV : IsRegularlyVarying (fun x => P.real {ω | x < X 0 ω}) ρ := hRV
   set g : ℝ → ℝ := fun x => P.real {ω | x < X 0 ω} with hg
   set μ := P.map (X 0)
   have hgcdf : ∀ x, g x = 1 - cdf μ x := fun x ↦ (one_sub_cdf_map_apply hX0.aemeasurable x).symm

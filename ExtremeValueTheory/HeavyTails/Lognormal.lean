@@ -16,14 +16,14 @@ tail is neither regularly varying nor of Weibull type.
 
 ## Main definitions
 
-* `ExtremeValueTheory.gaussianTail m v c = P(Z > c)`, `Z ∼ N(m, v)`.
+* The Gaussian tail `Φ̄(c) = P(Z > c)`, `Z ∼ N(m, v)`, is `tail (gaussianReal m v) c`.
 * `ExtremeValueTheory.lognormal m v`: the push-forward of `gaussianReal m v` under `exp`.
 
 ## Main results
 
-* `gaussianTail_le`, `le_gaussianTail`: the **Mills-ratio bounds**: for `c > m`,
+* `tail_gaussianReal_le`, `le_tail_gaussianReal`: the **Mills-ratio bounds**: for `c > m`,
   `p(c) / ((c - m)(1/v + 1/(c - m)²)) ≤ Φ̄(c) ≤ v p(c) / (c - m)`, where `p = gaussianPDFReal m v`.
-* `tendsto_gaussianTail_div`: the **Mills ratio** `Φ̄(c) ~ v p(c) / (c - m)` as `c → ∞`.
+* `tendsto_tail_gaussianReal_div`: the **Mills ratio** `Φ̄(c) ~ v p(c) / (c - m)` as `c → ∞`.
 * `tail_lognormal`: `F̄(x) = Φ̄(log x)` for `x > 0`.
 * `tendsto_tail_lognormal_sub_div`: the lognormal law is long-tailed.
 * `IsSubexponential.lognormal`: **the lognormal law is subexponential**.
@@ -55,12 +55,9 @@ section Mills
 
 variable {m : ℝ} {v : ℝ≥0}
 
-/-- The Gaussian tail `Φ̄(c) = P(Z > c)`, `Z ∼ N(m, v)`. -/
-noncomputable def gaussianTail (m : ℝ) (v : ℝ≥0) (c : ℝ) : ℝ := (gaussianReal m v).real (Ioi c)
-
-theorem gaussianTail_eq_integral (hv : v ≠ 0) (c : ℝ) :
-    gaussianTail m v c = ∫ s in Ioi c, gaussianPDFReal m v s := by
-  rw [gaussianTail, measureReal_def, gaussianReal_apply_eq_integral _ hv, ENNReal.toReal_ofReal]
+theorem tail_gaussianReal_eq_integral (hv : v ≠ 0) (c : ℝ) :
+    tail (gaussianReal m v) c = ∫ s in Ioi c, gaussianPDFReal m v s := by
+  rw [tail, measureReal_def, gaussianReal_apply_eq_integral _ hv, ENNReal.toReal_ofReal]
   exact setIntegral_nonneg measurableSet_Ioi fun s _ => gaussianPDFReal_nonneg _ _ _
 
 private theorem hasDerivAt_gaussianPDFReal (s : ℝ) :
@@ -88,8 +85,8 @@ private theorem tendsto_gaussianPDFReal_atTop (hv : v ≠ 0) :
   simpa using (tendsto_exp_atBot.comp this).const_mul (√(2 * π * v))⁻¹
 
 /-- **Upper Mills bound.** For `c > m`, `Φ̄(c) ≤ v p(c) / (c - m)`. -/
-theorem gaussianTail_le (hv : v ≠ 0) {c : ℝ} (hc : m < c) :
-    gaussianTail m v c ≤ v * gaussianPDFReal m v c / (c - m) := by
+theorem tail_gaussianReal_le (hv : v ≠ 0) {c : ℝ} (hc : m < c) :
+    tail (gaussianReal m v) c ≤ v * gaussianPDFReal m v c / (c - m) := by
   have hv' : (0 : ℝ) < v := by positivity
   have hderiv : ∀ s ∈ Ici c, HasDerivAt (fun s => -gaussianPDFReal m v s)
       ((s - m) / v * gaussianPDFReal m v s) s := fun s _ => by
@@ -102,7 +99,7 @@ theorem gaussianTail_le (hv : v ≠ 0) {c : ℝ} (hc : m < c) :
   have hint := integrableOn_Ioi_deriv_of_nonneg' hderiv hpos hlim
   have heq := integral_Ioi_of_hasDerivAt_of_nonneg' hderiv hpos hlim
   rw [zero_sub, neg_neg] at heq
-  rw [gaussianTail_eq_integral hv, le_div_iff₀ (by linarith), ← heq, mul_comm,
+  rw [tail_gaussianReal_eq_integral hv, le_div_iff₀ (by linarith), ← heq, mul_comm,
     ← integral_const_mul, ← integral_const_mul]
   refine setIntegral_mono_on ((integrable_gaussianPDFReal m v).integrableOn.const_mul _)
     (hint.const_mul _) measurableSet_Ioi fun s hs => ?_
@@ -111,8 +108,8 @@ theorem gaussianTail_le (hv : v ≠ 0) {c : ℝ} (hc : m < c) :
   exact mul_le_mul_of_nonneg_right (by linarith) (gaussianPDFReal_nonneg _ _ _)
 
 /-- **Lower Mills bound.** For `c > m`, `p(c) / (c - m) ≤ (1 / v + 1 / (c - m)²) Φ̄(c)`. -/
-theorem le_gaussianTail (hv : v ≠ 0) {c : ℝ} (hc : m < c) :
-    gaussianPDFReal m v c / (c - m) ≤ (1 / v + 1 / (c - m) ^ 2) * gaussianTail m v c := by
+theorem le_tail_gaussianReal (hv : v ≠ 0) {c : ℝ} (hc : m < c) :
+    gaussianPDFReal m v c / (c - m) ≤ (1 / v + 1 / (c - m) ^ 2) * tail (gaussianReal m v) c := by
   have hv' : (0 : ℝ) < v := by positivity
   set p := gaussianPDFReal m v
   have hderiv : ∀ s ∈ Ici c, HasDerivAt (fun s => -p s / (s - m))
@@ -134,7 +131,7 @@ theorem le_gaussianTail (hv : v ≠ 0) {c : ℝ} (hc : m < c) :
   have hint := integrableOn_Ioi_deriv_of_nonneg' hderiv hpos hlim
   have heq := integral_Ioi_of_hasDerivAt_of_nonneg' hderiv hpos hlim
   rw [zero_sub, neg_div, neg_neg] at heq
-  rw [← heq, gaussianTail_eq_integral hv, ← integral_const_mul]
+  rw [← heq, tail_gaussianReal_eq_integral hv, ← integral_const_mul]
   refine setIntegral_mono_on hint ((integrable_gaussianPDFReal m v).integrableOn.const_mul _)
     measurableSet_Ioi fun s hs => ?_
   have hs' : c < s := hs
@@ -142,28 +139,28 @@ theorem le_gaussianTail (hv : v ≠ 0) {c : ℝ} (hc : m < c) :
   refine mul_le_mul_of_nonneg_right ?_ (gaussianPDFReal_nonneg _ _ _)
   gcongr
 
-theorem gaussianTail_antitone : Antitone (gaussianTail m v) := fun _ _ h =>
+theorem tail_gaussianReal_antitone : Antitone (tail (gaussianReal m v)) := fun _ _ h =>
   measureReal_mono (Ioi_subset_Ioi h)
 
-theorem gaussianTail_pos (hv : v ≠ 0) (c : ℝ) : 0 < gaussianTail m v c := by
+theorem tail_gaussianReal_pos (hv : v ≠ 0) (c : ℝ) : 0 < tail (gaussianReal m v) c := by
   have hv' : (0 : ℝ) < v := by positivity
   set c' := max c (m + 1)
   have hc' : m < c' := by have := le_max_right c (m + 1); linarith
-  have h1 := le_gaussianTail hv hc'
+  have h1 := le_tail_gaussianReal hv hc'
   have h2 : 0 < gaussianPDFReal m v c' / (c' - m) :=
     div_pos (gaussianPDFReal_pos _ _ _ hv) (by linarith)
-  have h3 : 0 < gaussianTail m v c' := by
+  have h3 : 0 < tail (gaussianReal m v) c' := by
     by_contra hneg
-    have : gaussianTail m v c' ≤ 0 := not_lt.1 hneg
-    have : (1 / (v : ℝ) + 1 / (c' - m) ^ 2) * gaussianTail m v c' ≤ 0 :=
+    have : tail (gaussianReal m v) c' ≤ 0 := not_lt.1 hneg
+    have : (1 / (v : ℝ) + 1 / (c' - m) ^ 2) * tail (gaussianReal m v) c' ≤ 0 :=
       mul_nonpos_of_nonneg_of_nonpos (by positivity) this
     linarith
-  exact h3.trans_le (gaussianTail_antitone (le_max_left _ _))
+  exact h3.trans_le (tail_gaussianReal_antitone (le_max_left _ _))
 
 /-- **Mills ratio** ([EKM, Example 1.4.7]; Feller, Vol. I, Lemma VII.1.2):
 `Φ̄(c) ~ v p(c) / (c - m)` as `c → ∞`. -/
-theorem tendsto_gaussianTail_div (hv : v ≠ 0) :
-    Tendsto (fun c => gaussianTail m v c / (v * gaussianPDFReal m v c / (c - m))) atTop
+theorem tendsto_tail_gaussianReal_div (hv : v ≠ 0) :
+    Tendsto (fun c => tail (gaussianReal m v) c / (v * gaussianPDFReal m v c / (c - m))) atTop
       (𝓝 1) := by
   have hv' : (0 : ℝ) < v := by positivity
   have hlo : Tendsto (fun c : ℝ => (1 + v / (c - m) ^ 2)⁻¹) atTop (𝓝 (1 + 0)⁻¹) := by
@@ -174,27 +171,27 @@ theorem tendsto_gaussianTail_div (hv : v ≠ 0) :
   · filter_upwards [eventually_gt_atTop m] with c hc
     have hcm : 0 < c - m := by linarith
     have hp := gaussianPDFReal_pos m v c hv
-    have h := le_gaussianTail hv hc
+    have h := le_tail_gaussianReal hv hc
     rw [le_div_iff₀ (by positivity), inv_mul_eq_div, div_le_iff₀ (by positivity)]
     calc v * gaussianPDFReal m v c / (c - m) = v * (gaussianPDFReal m v c / (c - m)) := by ring
-      _ ≤ v * ((1 / v + 1 / (c - m) ^ 2) * gaussianTail m v c) := by gcongr
+      _ ≤ v * ((1 / v + 1 / (c - m) ^ 2) * tail (gaussianReal m v) c) := by gcongr
       _ = _ := by field_simp
   · filter_upwards [eventually_gt_atTop m] with c hc
     have hcm : 0 < c - m := by linarith
     have hp := gaussianPDFReal_pos m v c hv
     rw [div_le_one (by positivity)]
-    exact gaussianTail_le hv hc
+    exact tail_gaussianReal_le hv hc
 
 /-- Ratio bound: for `m + 1 ≤ a ≤ b`,
 `Φ̄(a) ≤ (b - m)/(a - m) · (1 + v/(b - m)²) · exp(((b - m)² - (a - m)²) / (2v)) · Φ̄(b)`. -/
-theorem gaussianTail_le_mul (hv : v ≠ 0) {a b : ℝ} (ha : m + 1 ≤ a) (hab : a ≤ b) :
-    gaussianTail m v a ≤ (b - m) / (a - m) * (1 + v / (b - m) ^ 2) *
-      exp (((b - m) ^ 2 - (a - m) ^ 2) / (2 * v)) * gaussianTail m v b := by
+theorem tail_gaussianReal_le_mul (hv : v ≠ 0) {a b : ℝ} (ha : m + 1 ≤ a) (hab : a ≤ b) :
+    tail (gaussianReal m v) a ≤ (b - m) / (a - m) * (1 + v / (b - m) ^ 2) *
+      exp (((b - m) ^ 2 - (a - m) ^ 2) / (2 * v)) * tail (gaussianReal m v) b := by
   have hv' : (0 : ℝ) < v := by positivity
   have ham : 0 < a - m := by linarith
   have hbm : 0 < b - m := by linarith
-  have h1 := gaussianTail_le hv (show m < a by linarith)
-  have h2 := le_gaussianTail hv (show m < b by linarith)
+  have h1 := tail_gaussianReal_le hv (show m < a by linarith)
+  have h2 := le_tail_gaussianReal hv (show m < b by linarith)
   have hp : gaussianPDFReal m v a =
       gaussianPDFReal m v b * exp (((b - m) ^ 2 - (a - m) ^ 2) / (2 * v)) := by
     simp only [gaussianPDFReal_def, mul_assoc, ← exp_add]
@@ -202,16 +199,34 @@ theorem gaussianTail_le_mul (hv : v ≠ 0) {a b : ℝ} (ha : m + 1 ≤ a) (hab :
     field_simp
     ring
   have hE : 0 < exp (((b - m) ^ 2 - (a - m) ^ 2) / (2 * v)) := exp_pos _
-  have h2' : gaussianPDFReal m v b ≤ (b - m) / v * (1 + v / (b - m) ^ 2) * gaussianTail m v b := by
+  have h2' : gaussianPDFReal m v b ≤ (b - m) / v * (1 + v / (b - m) ^ 2) * tail (gaussianReal m v) b := by
     rw [div_le_iff₀ hbm] at h2
-    calc gaussianPDFReal m v b ≤ (1 / v + 1 / (b - m) ^ 2) * gaussianTail m v b * (b - m) := h2
+    calc gaussianPDFReal m v b ≤ (1 / v + 1 / (b - m) ^ 2) * tail (gaussianReal m v) b * (b - m) := h2
       _ = _ := by field_simp
-  calc gaussianTail m v a ≤ v * gaussianPDFReal m v a / (a - m) := h1
+  calc tail (gaussianReal m v) a ≤ v * gaussianPDFReal m v a / (a - m) := h1
     _ = v / (a - m) * exp (((b - m) ^ 2 - (a - m) ^ 2) / (2 * v)) * gaussianPDFReal m v b := by
         rw [hp]; ring
     _ ≤ v / (a - m) * exp (((b - m) ^ 2 - (a - m) ^ 2) / (2 * v)) *
-          ((b - m) / v * (1 + v / (b - m) ^ 2) * gaussianTail m v b) := by gcongr
+          ((b - m) / v * (1 + v / (b - m) ^ 2) * tail (gaussianReal m v) b) := by gcongr
     _ = _ := by field_simp
+
+/-- The Gaussian tail `Φ̄(c) = P(Z > c)`, `Z ∼ N(m, v)`. Deprecated: use
+`tail (gaussianReal m v) c`. -/
+@[deprecated tail (since := "2026-11-05")]
+noncomputable def gaussianTail (m : ℝ) (v : ℝ≥0) (c : ℝ) : ℝ := tail (gaussianReal m v) c
+
+set_option linter.deprecated false in
+@[deprecated "`gaussianTail` is deprecated" (since := "2026-11-05")]
+theorem gaussianTail_eq_tail (m : ℝ) (v : ℝ≥0) (c : ℝ) :
+    gaussianTail m v c = tail (gaussianReal m v) c := rfl
+
+@[deprecated (since := "2026-11-05")] alias gaussianTail_eq_integral := tail_gaussianReal_eq_integral
+@[deprecated (since := "2026-11-05")] alias gaussianTail_le_mul := tail_gaussianReal_le_mul
+@[deprecated (since := "2026-11-05")] alias gaussianTail_le := tail_gaussianReal_le
+@[deprecated (since := "2026-11-05")] alias le_gaussianTail := le_tail_gaussianReal
+@[deprecated (since := "2026-11-05")] alias gaussianTail_antitone := tail_gaussianReal_antitone
+@[deprecated (since := "2026-11-05")] alias gaussianTail_pos := tail_gaussianReal_pos
+@[deprecated (since := "2026-11-05")] alias tendsto_gaussianTail_div := tendsto_tail_gaussianReal_div
 
 end Mills
 
@@ -233,15 +248,15 @@ theorem lognormal_Iio_zero : lognormal m v (Iio 0) = 0 := by
   ext y; simp [(exp_pos y).le]
 
 theorem tail_lognormal {x : ℝ} (hx : 0 < x) :
-    tail (lognormal m v) x = gaussianTail m v (log x) := by
-  rw [tail, lognormal, map_measureReal_apply measurable_exp measurableSet_Ioi, gaussianTail]
+    tail (lognormal m v) x = tail (gaussianReal m v) (log x) := by
+  rw [tail, lognormal, map_measureReal_apply measurable_exp measurableSet_Ioi, tail]
   congr 1
   ext y; simp only [mem_preimage, mem_Ioi]
   rw [log_lt_iff_lt_exp hx]
 
 theorem tail_lognormal_pos (hv : v ≠ 0) (x : ℝ) : 0 < tail (lognormal m v) x := by
   have h1 : 0 < tail (lognormal m v) (max x 1) := by
-    rw [tail_lognormal (by positivity)]; exact gaussianTail_pos hv _
+    rw [tail_lognormal (by positivity)]; exact tail_gaussianReal_pos hv _
   exact h1.trans_le (tail_antitone (le_max_left _ _))
 
 /-- The basic ratio estimate for the lognormal tail: for `x ≥ 2 e^{m+1}` and `0 ≤ t ≤ x / 2`,
@@ -275,8 +290,8 @@ theorem tail_lognormal_sub_le (hv : v ≠ 0) {x t : ℝ} (hx : 2 * exp (m + 1) �
     have : (b - m) ^ 2 - (a - m) ^ 2 ≤ 2 * d * (b - m) := by nlinarith
     nlinarith
   rw [tail_lognormal hxt0, tail_lognormal hx0]
-  refine (gaussianTail_le_mul hv ha hab).trans ?_
-  have hQ := (gaussianTail_pos hv (m := m) b).le
+  refine (tail_gaussianReal_le_mul hv ha hab).trans ?_
+  have hQ := (tail_gaussianReal_pos hv (m := m) b).le
   gcongr
 
 /-- `(log x - m) / x` is antitone on `[e^{m+1}, ∞)`. -/
@@ -440,7 +455,7 @@ theorem tendsto_tail_lognormal_half_sq_div (hv : v ≠ 0) :
   -- `F̄(x/2) ≤ v p(log(x/2))`
   have hup : tail (lognormal m v) (x / 2) ≤ v * K * exp (-(log x - L - m) ^ 2 / (2 * v)) := by
     rw [tail_lognormal hx2]
-    refine (gaussianTail_le hv (by linarith)).trans ?_
+    refine (tail_gaussianReal_le hv (by linarith)).trans ?_
     rw [div_le_iff₀ (by linarith), gaussianPDFReal_def, haL]
     have : 0 ≤ v * K * exp (-(log x - L - m) ^ 2 / (2 * v)) := by positivity
     have h1 : 1 ≤ log x - L - m := by linarith

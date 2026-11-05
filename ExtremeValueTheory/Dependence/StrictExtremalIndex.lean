@@ -3,6 +3,7 @@ Copyright (c) 2026 Federico Carrone.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
+import ExtremeValueTheory.UpperQuantile
 import ExtremeValueTheory.Dependence.MDependentExamples
 import ExtremeValueTheory.Dependence.InfiniteMovingAverageTailProcess
 import ExtremeValueTheory.Dependence.AR1
@@ -45,7 +46,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} [IsProbability
 /-- A regularly varying marginal tail gives the strict extremal index from the extremal index. -/
 theorem HasExtremalIndex.strict_of_isRegularlyVarying {θ : ℝ} (h : HasExtremalIndex X P θ)
     (hX0 : Measurable (X 0)) {ρ : ℝ}
-    (hRV : IsRegularlyVarying (fun x => P.real {ω | x < X 0 ω}) ρ) :
+    (hRV : IsRegularlyVarying (survival P (X 0)) ρ) :
     HasExtremalIndexStrict X P θ :=
   ⟨h, hasExceedanceLevels_of_isRegularlyVarying hX0 hRV⟩
 
@@ -63,7 +64,9 @@ theorem HasSpectralTailProcess.hasExceedanceLevels_of_nonneg
     (h : HasSpectralTailProcess P X α Q Θ) (hX0 : Measurable (X 0)) (hnn : ∀ ω, 0 ≤ X 0 ω) :
     HasExceedanceLevels (fun k : ℕ => X k) P :=
   hasExceedanceLevels_of_isRegularlyVarying (X := fun k : ℕ => X k) (by simpa using hX0)
-    (by simpa [abs_of_nonneg (hnn _)] using h.1)
+    (by
+      change IsRegularlyVarying (fun x => P.real {ω | x < X 0 ω}) _
+      simpa [abs_of_nonneg (hnn _)] using h.1)
 
 /-- **Strict form of `HasSpectralTailProcess.hasExtremalIndex_abs`**: `θ = ϑ` for `(|X_n|)`, and
 `θ` is the unique extremal index. -/
@@ -106,7 +109,7 @@ theorem hasExtremalIndex_movingMax_of_isMDependent_strict (hα : 0 < α)
 theorem MovingAverage.hasExtremalIndex_strict {m : ℕ} {ψ : ℕ → ℝ} (hZ : ∀ i, Measurable (Z i))
     (hind : iIndepFun Z P) (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P)
     (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hα : 0 < α)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψm : ∀ j, m < j → ψ j = 0) (hW : 0 < MovingAverage.weightSum m ψ α) :
     HasExtremalIndexStrict (fun n : ℕ => MovingAverage.process m ψ Z n) P
       ((Finset.range (m + 1)).sup' Finset.nonempty_range_add_one ψ ^ α /
@@ -121,7 +124,7 @@ theorem InfiniteMovingAverage.hasExtremalIndex_strict {ψ : ℕ → ℝ} {δ : �
     (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
     (hδα : δ < α) (hα1 : α < 1)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
     HasExtremalIndexStrict (fun n : ℕ => InfiniteMovingAverage.process ψ Z n) P
       ((⨆ j, ψ j) ^ α / ∑' j, ψ j ^ α) :=
@@ -134,9 +137,10 @@ theorem InfiniteMovingAverage.hasExtremalIndex_strict {ψ : ℕ → ℝ} {δ : �
 `1 - φ^α`. -/
 theorem AR1.hasExtremalIndex_strict {φ : ℝ} (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hα : 0 < α)
-    (hα1 : α < 1) (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α))
+    (hα1 : α < 1) (hL : IsRegularlyVarying (survival P (Z 0)) (-α))
     (hφ0 : 0 < φ) (hφ1 : φ < 1) :
     HasExtremalIndexStrict (fun n : ℕ => AR1.process φ Z n) P (1 - φ ^ α) := by
+  replace hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α) := hL
   have hδ : 0 < α / 2 := by positivity
   exact ⟨AR1.hasExtremalIndex hZ hind hident hZ0 hα hα1 hL hφ0 hφ1,
     (InfiniteMovingAverage.hasSpectralTailProcess (ψ := fun j => φ ^ j) hZ hind hident hZ0 hδ

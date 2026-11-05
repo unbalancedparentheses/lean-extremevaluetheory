@@ -78,6 +78,12 @@ variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω}
 noncomputable def tailCount (X : ℕ → Ω → ℝ) (n : ℕ) (u : ℝ) (ω : Ω) : ℝ :=
   ∑ i ∈ range n, if u < X i ω then (1 : ℝ) else 0
 
+/-- `tailCount` is the exceedance count of the first `n` observations, as a real number. -/
+theorem tailCount_eq_exceedCount (X : ℕ → Ω → ℝ) (n : ℕ) (u : ℝ) (ω : Ω) :
+    tailCount X n u ω = exceedCount (fun i : Fin n ↦ X i ω) u := by
+  rw [tailCount, exceedCount_eq_sum]
+  exact (Fin.sum_univ_eq_sum_range (fun i ↦ if u < X i ω then (1 : ℝ) else 0) n).symm
+
 theorem measurable_ite_lt {Y : Ω → ℝ} (hY : Measurable Y) (u : ℝ) :
     Measurable fun ω => if u < Y ω then (1 : ℝ) else 0 :=
   Measurable.ite (measurableSet_lt measurable_const hY) measurable_const measurable_const
@@ -86,13 +92,6 @@ theorem memLp_ite_lt [IsFiniteMeasure P] {Y : Ω → ℝ} (hY : Measurable Y) (u
     (p : ENNReal) : MemLp (fun ω => if u < Y ω then (1 : ℝ) else 0) p P :=
   MemLp.of_bound (measurable_ite_lt hY u).aestronglyMeasurable 1
     (Eventually.of_forall fun ω => by split_ifs <;> norm_num)
-
-theorem integral_ite_lt' {Y : Ω → ℝ} (hY : Measurable Y) (u : ℝ) :
-    ∫ ω, (if u < Y ω then (1 : ℝ) else 0) ∂P = survival P Y u := by
-  have : (fun ω => if u < Y ω then (1 : ℝ) else 0) = {ω | u < Y ω}.indicator 1 := by
-    ext ω; simp [Set.indicator]
-  rw [this, integral_indicator_one (measurableSet_lt measurable_const hY), measureReal_def]
-  rfl
 
 variable {X : ℕ → Ω → ℝ}
 

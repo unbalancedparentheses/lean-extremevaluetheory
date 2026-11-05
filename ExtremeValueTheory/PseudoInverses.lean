@@ -22,7 +22,7 @@ variable {R S : Type*} [CompleteLinearOrder R] [CompleteLinearOrder S]
 
 /-- The left-continuous pseudoinverse of a function `F`, given by
 `(lcInv F)(y) := inf {x | F x ≥ y}`. -/
-def lcInv (F : R → S) (y : S) := sInf {x | y ≤ F x}
+def lcInv {R S : Type*} [InfSet R] [LE S] (F : R → S) (y : S) : R := sInf {x | y ≤ F x}
 
 /-- The right-continuous pseudoinverse of a function `F`, given by
 `(rcInv F)(y) := sup {x | F x ≤ y}`. -/

@@ -3,6 +3,7 @@ Copyright (c) 2026 Federico Carrone.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
+import ExtremeValueTheory.UpperQuantile
 import ExtremeValueTheory.Dependence.StrictExtremalIndex
 import ExtremeValueTheory.Dependence.MarkovTailChain
 import ExtremeValueTheory.Dependence.EchoProcess
@@ -41,7 +42,7 @@ theorem InfiniteMovingAverage.hasExtremalIndex_of_summable_rpow_strict {ψ : ℕ
     (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hδ : 0 < δ)
     (hδα : δ < α) (hδ1 : δ < 1)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hψ0 : ∀ j, 0 ≤ ψ j)
     (hψ : Summable fun j => ψ j ^ δ) (hpos : ∃ j, 0 < ψ j) :
     HasExtremalIndexStrict (fun n : ℕ => InfiniteMovingAverage.process ψ Z n) P
       ((⨆ j, ψ j) ^ α / ∑' j, ψ j ^ α) :=
@@ -55,7 +56,7 @@ the unique extremal index `1 - φ^α`. -/
 theorem AR1.hasExtremalIndex_of_pos_strict {φ : ℝ} (hZ : ∀ i, Measurable (Z i))
     (hind : iIndepFun Z P) (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P)
     (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hα : 0 < α)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α))
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α))
     (hφ0 : 0 < φ) (hφ1 : φ < 1) :
     HasExtremalIndexStrict (fun n : ℕ => AR1.process φ Z n) P (1 - φ ^ α) :=
   ⟨AR1.hasExtremalIndex_of_pos hZ hind hident hZ0 hα hL hφ0 hφ1,

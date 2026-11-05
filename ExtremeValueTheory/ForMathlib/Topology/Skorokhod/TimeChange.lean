@@ -331,4 +331,20 @@ theorem exists_orderIso_apply_eq_of_separated (R : Finset I) (g : I → I) {η :
   obtain ⟨φ, h₁, h₂, h₃, -⟩ := exists_orderIso_apply_eq_of_separated_and_slope R g hR₀ hR hg
   exact ⟨φ, h₁, h₂, h₃⟩
 
+/-- Finitely many points of the unit interval are pairwise at distance at least `4 η`, for some
+`η > 0`. -/
+theorem exists_pos_separated (S : Finset I) :
+    ∃ η > (0 : ℝ), ∀ a ∈ S, ∀ b ∈ S, a ≠ b → 4 * η ≤ dist a b := by
+  classical
+  set P := (S ×ˢ S).filter fun p : I × I ↦ p.1 ≠ p.2
+  rcases P.eq_empty_or_nonempty with hP | hP
+  · refine ⟨1, one_pos, fun a ha b hb hab ↦ ?_⟩
+    have : (a, b) ∈ P := Finset.mem_filter.2 ⟨Finset.mem_product.2 ⟨ha, hb⟩, hab⟩
+    simp [hP] at this
+  · obtain ⟨p₀, hp₀, hmin⟩ := P.exists_min_image (fun p ↦ dist p.1 p.2) hP
+    have hne := dist_pos.2 (Finset.mem_filter.1 hp₀).2
+    refine ⟨dist p₀.1 p₀.2 / 4, by positivity, fun a ha b hb hab ↦ ?_⟩
+    have := hmin (a, b) (Finset.mem_filter.2 ⟨Finset.mem_product.2 ⟨ha, hb⟩, hab⟩)
+    linarith
+
 end unitInterval

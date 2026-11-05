@@ -22,7 +22,7 @@ tail quantile function `U = F^←(1 - 1/·)` of a distribution in the domain of 
 
 ## Main definitions
 
-* `ExtremeValueTheory.extRVLimit γ x`: the limit function `D_γ(x)`.
+* `ExtremeValueTheory.boxCox γ x`: the limit function `D_γ(x)`.
 * `ExtremeValueTheory.IsExtendedRegularlyVarying f γ a`: `f` is extended regularly varying with
   index `γ` and auxiliary function `a`.
 
@@ -57,44 +57,68 @@ namespace ExtremeValueTheory
 
 /-! ### The limit function -/
 
-/-- The limit function of extended regular variation, `D_γ(x) = (x ^ γ - 1) / γ` for `γ ≠ 0`
-and `D_0(x) = log x`. -/
-noncomputable def extRVLimit (γ x : ℝ) : ℝ :=
+/-- The Box–Cox function `h_ρ(x) = (x ^ ρ - 1) / ρ` for `ρ ≠ 0`, with `h_0(x) = log x`. It is the
+limit function `D_γ` of extended regular variation ([dHF, Definition B.2.1]) and the limit function
+of second-order regular variation ([dHF, §2.3]). -/
+noncomputable def boxCox (γ x : ℝ) : ℝ :=
   if γ = 0 then Real.log x else (x ^ γ - 1) / γ
+
+/-- The transformation `t ↦ (t ^ (-ξ) - 1) / ξ` (`-log t` for `ξ = 0`). It carries the standard
+exponential law to the GEV law `H_ξ`, and it is the inverse `Λ_ξ` of the GPD survival function
+`Ḡ_{ξ,1}` (`gevTransform_gpdSurvivalAll`). It is `boxCox` up to reparametrization:
+`gevTransform ξ t = -boxCox (-ξ) t` (`gevTransform_eq_neg_boxCox`). -/
+noncomputable def gevTransform (ξ t : ℝ) : ℝ :=
+  if ξ = 0 then -Real.log t else (t ^ (-ξ) - 1) / ξ
+
+/-- `gevTransform` is `boxCox` up to reparametrization. -/
+theorem gevTransform_eq_neg_boxCox (ξ t : ℝ) : gevTransform ξ t = -boxCox (-ξ) t := by
+  unfold gevTransform boxCox
+  by_cases h : ξ = 0
+  · simp [h]
+  · have h' : ξ ≠ 0 := h
+    simp only [h, neg_eq_zero, ↓reduceIte]
+    field_simp
 
 section Limit
 
 variable {γ : ℝ}
 
-theorem extRVLimit_zero_left (x : ℝ) : extRVLimit 0 x = Real.log x := by
-  simp [extRVLimit]
+theorem boxCox_zero (x : ℝ) : boxCox 0 x = Real.log x := by
+  simp [boxCox]
 
-theorem extRVLimit_of_ne (hγ : γ ≠ 0) (x : ℝ) : extRVLimit γ x = (x ^ γ - 1) / γ := by
-  simp [extRVLimit, hγ]
+theorem boxCox_of_ne {ρ : ℝ} (hρ : ρ ≠ 0) (x : ℝ) : boxCox ρ x = (x ^ ρ - 1) / ρ := by
+  simp [boxCox, hρ]
 
-theorem extRVLimit_one (γ : ℝ) : extRVLimit γ 1 = 0 := by
-  unfold extRVLimit
+theorem boxCox_one (γ : ℝ) : boxCox γ 1 = 0 := by
+  unfold boxCox
   split_ifs <;> simp
 
 /-- The cocycle identity `D_γ(x y) = D_γ(x) + x ^ γ D_γ(y)`. -/
-theorem extRVLimit_mul {x y : ℝ} (hx : 0 < x) (hy : 0 < y) :
-    extRVLimit γ (x * y) = extRVLimit γ x + x ^ γ * extRVLimit γ y := by
+theorem boxCox_mul {x y : ℝ} (hx : 0 < x) (hy : 0 < y) :
+    boxCox γ (x * y) = boxCox γ x + x ^ γ * boxCox γ y := by
   by_cases hγ : γ = 0
   · subst hγ
-    simp [extRVLimit, Real.log_mul hx.ne' hy.ne']
-  · simp only [extRVLimit, hγ, ↓reduceIte]
+    simp [boxCox, Real.log_mul hx.ne' hy.ne']
+  · simp only [boxCox, hγ, ↓reduceIte]
     rw [mul_rpow hx.le hy.le]
     field_simp
     ring
 
-theorem extRVLimit_pos {x : ℝ} (hx : 1 < x) : 0 < extRVLimit γ x := by
-  rcases lt_trichotomy γ 0 with hγ | hγ | hγ
-  · rw [extRVLimit_of_ne hγ.ne]
-    exact div_pos_of_neg_of_neg (by linarith [rpow_lt_one_of_one_lt_of_neg hx hγ]) hγ
-  · subst hγ
-    simp [extRVLimit, Real.log_pos hx]
-  · rw [extRVLimit_of_ne hγ.ne']
-    exact div_pos (by linarith [one_lt_rpow hx hγ]) hγ
+theorem boxCox_pos_of_one_lt {ρ x : ℝ} (hx : 1 < x) : 0 < boxCox ρ x := by
+  rcases lt_trichotomy ρ 0 with hρ | hρ | hρ
+  · rw [boxCox_of_ne hρ.ne]
+    exact div_pos_of_neg_of_neg (by linarith [rpow_lt_one_of_one_lt_of_neg hx hρ]) hρ
+  · subst hρ
+    simp [boxCox, Real.log_pos hx]
+  · rw [boxCox_of_ne hρ.ne']
+    exact div_pos (by linarith [one_lt_rpow hx hρ]) hρ
+
+@[deprecated (since := "2026-11-05")] alias extRVLimit := boxCox
+@[deprecated (since := "2026-11-05")] alias extRVLimit_zero_left := boxCox_zero
+@[deprecated (since := "2026-11-05")] alias extRVLimit_of_ne := boxCox_of_ne
+@[deprecated (since := "2026-11-05")] alias extRVLimit_one := boxCox_one
+@[deprecated (since := "2026-11-05")] alias extRVLimit_mul := boxCox_mul
+@[deprecated (since := "2026-11-05")] alias extRVLimit_pos := boxCox_pos_of_one_lt
 
 end Limit
 
@@ -105,7 +129,7 @@ end Limit
 `(f (x t) - f t) / a t → D_γ(x)` as `t → ∞`. -/
 def IsExtendedRegularlyVarying (f : ℝ → ℝ) (γ : ℝ) (a : ℝ → ℝ) : Prop :=
   (∀ᶠ t in atTop, 0 < a t) ∧
-    ∀ x : ℝ, 0 < x → Tendsto (fun t => (f (x * t) - f t) / a t) atTop (𝓝 (extRVLimit γ x))
+    ∀ x : ℝ, 0 < x → Tendsto (fun t => (f (x * t) - f t) / a t) atTop (𝓝 (boxCox γ x))
 
 variable {f a : ℝ → ℝ} {γ : ℝ}
 
@@ -113,17 +137,17 @@ variable {f a : ℝ → ℝ} {γ : ℝ}
 `a (y t) / a t = (D_t(2y) - D_t(y)) / D_{yt}(2)` with `D_t(x) = (f (x t) - f t) / a t`. -/
 private lemma tendsto_aux_ratio (ha : ∀ᶠ t in atTop, 0 < a t)
     (h : ∀ x : ℝ, 1 < x → Tendsto (fun t => (f (x * t) - f t) / a t) atTop
-      (𝓝 (extRVLimit γ x)))
+      (𝓝 (boxCox γ x)))
     {y : ℝ} (hy : 1 < y) : Tendsto (fun t => a (y * t) / a t) atTop (𝓝 (y ^ γ)) := by
   have hy0 : 0 < y := by linarith
   have hs := tendsto_id.const_mul_atTop hy0
   have hA := h (2 * y) (by linarith)
   have hB := h y hy
   have hC := (h 2 one_lt_two).comp hs
-  have hD2 : extRVLimit γ 2 ≠ 0 := (extRVLimit_pos one_lt_two).ne'
+  have hD2 : boxCox γ 2 ≠ 0 := (boxCox_pos_of_one_lt one_lt_two).ne'
   have hlim := (hA.sub hB).div hC hD2
-  have hval : (extRVLimit γ (2 * y) - extRVLimit γ y) / extRVLimit γ 2 = y ^ γ := by
-    rw [mul_comm 2 y, extRVLimit_mul hy0 two_pos]
+  have hval : (boxCox γ (2 * y) - boxCox γ y) / boxCox γ 2 = y ^ γ := by
+    rw [mul_comm 2 y, boxCox_mul hy0 two_pos]
     field_simp
     ring
   rw [hval] at hlim
@@ -144,7 +168,7 @@ private lemma tendsto_aux_ratio (ha : ∀ᶠ t in atTop, 0 < a t)
 /-- To check extended regular variation it suffices to consider `x > 1`. -/
 theorem IsExtendedRegularlyVarying.of_one_lt (ha : ∀ᶠ t in atTop, 0 < a t)
     (h : ∀ x : ℝ, 1 < x → Tendsto (fun t => (f (x * t) - f t) / a t) atTop
-      (𝓝 (extRVLimit γ x))) :
+      (𝓝 (boxCox γ x))) :
     IsExtendedRegularlyVarying f γ a := by
   refine ⟨ha, fun x hx => ?_⟩
   rcases lt_trichotomy x 1 with hx1 | rfl | hx1
@@ -153,9 +177,9 @@ theorem IsExtendedRegularlyVarying.of_one_lt (ha : ∀ᶠ t in atTop, 0 < a t)
     have h1 := (h x⁻¹ hxi).comp hs
     have h2 := ((tendsto_aux_ratio ha h hxi).comp hs).inv₀ (rpow_pos_of_pos (inv_pos.2 hx) γ).ne'
     have hlim := (h1.mul h2).neg
-    have hval : -(extRVLimit γ x⁻¹ * (x⁻¹ ^ γ)⁻¹) = extRVLimit γ x := by
-      have := extRVLimit_mul (γ := γ) hx (inv_pos.2 hx)
-      rw [mul_inv_cancel₀ hx.ne', extRVLimit_one] at this
+    have hval : -(boxCox γ x⁻¹ * (x⁻¹ ^ γ)⁻¹) = boxCox γ x := by
+      have := boxCox_mul (γ := γ) hx (inv_pos.2 hx)
+      rw [mul_inv_cancel₀ hx.ne', boxCox_one] at this
       rw [inv_rpow hx.le, inv_inv]
       linarith
     rw [hval] at hlim
@@ -165,7 +189,7 @@ theorem IsExtendedRegularlyVarying.of_one_lt (ha : ∀ᶠ t in atTop, 0 < a t)
     rw [← mul_assoc, inv_mul_cancel₀ hx.ne', one_mul]
     field_simp
     ring
-  · simp only [one_mul, sub_self, zero_div, extRVLimit_one]
+  · simp only [one_mul, sub_self, zero_div, boxCox_one]
     exact tendsto_const_nhds
   · exact h x hx1
 
@@ -174,7 +198,7 @@ namespace IsExtendedRegularlyVarying
 theorem eventually_pos (hf : IsExtendedRegularlyVarying f γ a) : ∀ᶠ t in atTop, 0 < a t := hf.1
 
 theorem tendsto (hf : IsExtendedRegularlyVarying f γ a) {x : ℝ} (hx : 0 < x) :
-    Tendsto (fun t => (f (x * t) - f t) / a t) atTop (𝓝 (extRVLimit γ x)) := hf.2 x hx
+    Tendsto (fun t => (f (x * t) - f t) / a t) atTop (𝓝 (boxCox γ x)) := hf.2 x hx
 
 /-- **The auxiliary function is regularly varying** with index `γ` ([dHF, Theorem B.2.1]). -/
 theorem isRegularlyVarying (hf : IsExtendedRegularlyVarying f γ a) : IsRegularlyVarying a γ := by
@@ -307,15 +331,15 @@ theorem IsExtendedRegularlyVarying.tendsto_div_of_pos (hf : IsExtendedRegularlyV
   have hu0 : 0 < u := by linarith
   have h4 : (4 : ℝ) ^ γ = u ^ 2 := by
     rw [show (4 : ℝ) = 2 * 2 by norm_num, mul_rpow (by norm_num) (by norm_num), hu, sq]
-  have hD4 : extRVLimit γ 4 = (u ^ 2 - 1) / γ := by rw [extRVLimit_of_ne hγ.ne', h4]
-  have hD2 : extRVLimit γ 2 = (u - 1) / γ := by rw [extRVLimit_of_ne hγ.ne']
+  have hD4 : boxCox γ 4 = (u ^ 2 - 1) / γ := by rw [boxCox_of_ne hγ.ne', h4]
+  have hD2 : boxCox γ 2 = (u - 1) / γ := by rw [boxCox_of_ne hγ.ne']
   have hu2 : 0 < u ^ 2 - 1 := by nlinarith
-  have hD4pos : 0 < extRVLimit γ 4 := extRVLimit_pos (by norm_num)
-  have hD2pos : 0 < extRVLimit γ 2 := extRVLimit_pos one_lt_two
+  have hD4pos : 0 < boxCox γ 4 := boxCox_pos_of_one_lt (by norm_num)
+  have hD2pos : 0 < boxCox γ 2 := boxCox_pos_of_one_lt one_lt_two
   have hs2 : Tendsto (fun t : ℝ => 2 * t) atTop atTop := tendsto_id.const_mul_atTop two_pos
   set L : ℝ → ℝ := fun t => f (4 * t) - f t with hL_def
-  have hL : Tendsto (fun t => L t / a t) atTop (𝓝 (extRVLimit γ 4)) := hf.2 4 (by norm_num)
-  have hF2 : Tendsto (fun t => (f (2 * t) - f t) / a t) atTop (𝓝 (extRVLimit γ 2)) :=
+  have hL : Tendsto (fun t => L t / a t) atTop (𝓝 (boxCox γ 4)) := hf.2 4 (by norm_num)
+  have hF2 : Tendsto (fun t => (f (2 * t) - f t) / a t) atTop (𝓝 (boxCox γ 2)) :=
     hf.2 2 two_pos
   have hR2 : Tendsto (fun t => a (2 * t) / a t) atTop (𝓝 u) := hf.isRegularlyVarying.2 2 two_pos
   have hLpos : ∀ᶠ t in atTop, 0 < L t := by
@@ -332,7 +356,7 @@ theorem IsExtendedRegularlyVarying.tendsto_div_of_pos (hf : IsExtendedRegularlyV
   set ε : ℝ → ℝ := fun t => ρ t * (c + δ t) - c with hε_def
   have hρlim : Tendsto ρ atTop (𝓝 u⁻¹) := by
     have := hL.div ((hL.comp hs2).mul hR2) (mul_pos hD4pos hu0).ne'
-    rw [show extRVLimit γ 4 / (extRVLimit γ 4 * u) = u⁻¹ by field_simp] at this
+    rw [show boxCox γ 4 / (boxCox γ 4 * u) = u⁻¹ by field_simp] at this
     refine this.congr' ?_
     filter_upwards [hev] with t ht
     obtain ⟨h1, h2, h3, h4⟩ := ht
@@ -342,7 +366,7 @@ theorem IsExtendedRegularlyVarying.tendsto_div_of_pos (hf : IsExtendedRegularlyV
     generalize a t = p at *
     generalize a (2 * t) = q at *
     field_simp
-  have hδlim : Tendsto δ atTop (𝓝 (extRVLimit γ 2 / extRVLimit γ 4)) := by
+  have hδlim : Tendsto δ atTop (𝓝 (boxCox γ 2 / boxCox γ 4)) := by
     refine (hF2.div hL hD4pos.ne').congr' ?_
     filter_upwards [hev] with t ht
     obtain ⟨h1, h2, h3, h4⟩ := ht
@@ -514,8 +538,8 @@ theorem IsExtendedRegularlyVarying.exists_tendsto_of_neg (hf : IsExtendedRegular
   set p : ℝ := (2 : ℝ) ^ γ with hp
   have hp0 : 0 < p := rpow_pos_of_pos two_pos γ
   have hp1 : p < 1 := rpow_lt_one_of_one_lt_of_neg one_lt_two hγ
-  set D := extRVLimit γ 2 with hD
-  have hDpos : 0 < D := extRVLimit_pos one_lt_two
+  set D := boxCox γ 2 with hD
+  have hDpos : 0 < D := boxCox_pos_of_one_lt one_lt_two
   have hF2 : Tendsto (fun t => (f (2 * t) - f t) / a t) atTop (𝓝 D) := hf.2 2 two_pos
   have hR2 : Tendsto (fun t => a (2 * t) / a t) atTop (𝓝 p) := hf.isRegularlyVarying.2 2 two_pos
   have hev : ∀ ε, 0 < ε → ∃ T₀, 0 < T₀ ∧ ∀ t ≥ T₀, 0 < a t ∧
@@ -557,7 +581,7 @@ theorem IsExtendedRegularlyVarying.exists_tendsto_of_neg (hf : IsExtendedRegular
   set ℓ := ⨆ s, f s with hℓ_def
   have hℓ : Tendsto f atTop (𝓝 ℓ) := tendsto_atTop_ciSup hmono hbdd
   have hval : D / (1 - p) = -γ⁻¹ := by
-    rw [hD, extRVLimit_of_ne hγ.ne, ← hp]
+    rw [hD, boxCox_of_ne hγ.ne, ← hp]
     have : 1 - p ≠ 0 := by linarith
     field_simp
     ring
@@ -620,8 +644,8 @@ regularly varying with index `γ ≤ 0`, then `a t / f t → 0`. -/
 theorem IsExtendedRegularlyVarying.tendsto_aux_div_zero_of_nonpos
     (hf : IsExtendedRegularlyVarying f γ a) (hγ : γ ≤ 0) (hpos : ∀ᶠ t in atTop, 0 < f t) :
     Tendsto (fun t => a t / f t) atTop (𝓝 0) := by
-  set D := extRVLimit γ 2 with hD
-  have hDpos : 0 < D := extRVLimit_pos one_lt_two
+  set D := boxCox γ 2 with hD
+  have hDpos : 0 < D := boxCox_pos_of_one_lt one_lt_two
   set p : ℝ := (2 : ℝ) ^ γ with hp
   have hp1 : p ≤ 1 := rpow_le_one_of_one_le_of_nonpos one_le_two hγ
   have hF2 : Tendsto (fun t => (f (2 * t) - f t) / a t) atTop (𝓝 D) := hf.2 2 two_pos
@@ -735,8 +759,8 @@ theorem IsExtendedRegularlyVarying.exists_sub_le_of_nonpos
     (hf : IsExtendedRegularlyVarying f γ a) (hγ : γ ≤ 0) {c : ℝ} (hmono : MonotoneOn f (Ici c))
     {δ : ℝ} (hδ : 0 < δ) :
     ∃ C T₀ : ℝ, 0 < T₀ ∧ ∀ t ≥ T₀, ∀ y ≥ 1, f (y * t) - f t ≤ C * a t * y ^ δ := by
-  set D := extRVLimit γ 2 with hD
-  have hDpos : 0 < D := extRVLimit_pos one_lt_two
+  set D := boxCox γ 2 with hD
+  have hDpos : 0 < D := boxCox_pos_of_one_lt one_lt_two
   set p : ℝ := (2 : ℝ) ^ γ with hp
   have hp1 : p ≤ 1 := rpow_le_one_of_one_le_of_nonpos one_le_two hγ
   set Q : ℝ := (2 : ℝ) ^ δ with hQ
@@ -815,7 +839,7 @@ theorem IsExtendedRegularlyVarying.log (hf : IsExtendedRegularlyVarying f γ a) 
   have hs := tendsto_id.const_mul_atTop hx
   set r : ℝ → ℝ := fun t => a t / f t with hr
   set d : ℝ → ℝ := fun t => (f (x * t) - f t) / a t with hd
-  have hdlim : Tendsto d atTop (𝓝 (extRVLimit γ x)) := hf.2 x hx
+  have hdlim : Tendsto d atTop (𝓝 (boxCox γ x)) := hf.2 x hx
   have hev : ∀ᶠ t in atTop, 0 < a t ∧ 0 < f t ∧ 0 < f (x * t) := by
     filter_upwards [hf.1, hpos, hs.eventually hpos] with t h1 h2 h3
     exact ⟨h1, h2, h3⟩
@@ -843,7 +867,7 @@ theorem IsExtendedRegularlyVarying.log (hf : IsExtendedRegularlyVarying f γ a) 
     have hr0 : Tendsto r atTop (𝓝 0) := hf.tendsto_aux_div_zero_of_nonpos hγ hpos
     refine tendsto_of_tendsto_of_tendsto_of_le_of_le' (g := fun t => d t / (1 + r t * d t))
       ?_ hdlim ?_ ?_
-    · have h2 : Tendsto (fun t => 1 + r t * d t) atTop (𝓝 (1 + 0 * extRVLimit γ x)) :=
+    · have h2 : Tendsto (fun t => 1 + r t * d t) atTop (𝓝 (1 + 0 * boxCox γ x)) :=
         tendsto_const_nhds.add (hr0.mul hdlim)
       have := hdlim.div h2 (by norm_num)
       rw [zero_mul, add_zero, div_one] at this
@@ -860,7 +884,7 @@ theorem IsExtendedRegularlyVarying.log (hf : IsExtendedRegularlyVarying f γ a) 
       rw [h1, div_le_iff₀ h2.1]
       have := Real.log_le_sub_one_of_pos h2.2
       linarith
-  · rw [min_eq_right hγ.le, extRVLimit_zero_left]
+  · rw [min_eq_right hγ.le, boxCox_zero]
     obtain ⟨hgm, hge⟩ := IsExtendedRegularlyVarying.monotone_comp_max hmono
     have hg := hf.congr hge.symm
     have hrlim : Tendsto r atTop (𝓝 γ) := by
@@ -868,17 +892,17 @@ theorem IsExtendedRegularlyVarying.log (hf : IsExtendedRegularlyVarying f γ a) 
       filter_upwards [hge] with t ht
       simp only [hr]
       rw [ht]
-    have hxγ : 1 + γ * extRVLimit γ x = x ^ γ := by
-      rw [extRVLimit_of_ne hγ.ne']
+    have hxγ : 1 + γ * boxCox γ x = x ^ γ := by
+      rw [boxCox_of_ne hγ.ne']
       field_simp
       ring
-    have hval : Real.log (1 + γ * extRVLimit γ x) / γ = Real.log x := by
+    have hval : Real.log (1 + γ * boxCox γ x) / γ = Real.log x := by
       rw [hxγ, Real.log_rpow hx]
       field_simp
     rw [← hval]
-    have h1 : Tendsto (fun t => 1 + r t * d t) atTop (𝓝 (1 + γ * extRVLimit γ x)) :=
+    have h1 : Tendsto (fun t => 1 + r t * d t) atTop (𝓝 (1 + γ * boxCox γ x)) :=
       tendsto_const_nhds.add (hrlim.mul hdlim)
-    have hne : 1 + γ * extRVLimit γ x ≠ 0 := by
+    have hne : 1 + γ * boxCox γ x ≠ 0 := by
       rw [hxγ]
       exact (rpow_pos_of_pos hx γ).ne'
     refine (((Real.continuousAt_log hne).tendsto.comp h1).div hrlim hγ.ne').congr' ?_

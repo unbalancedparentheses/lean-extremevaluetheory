@@ -526,7 +526,7 @@ measurability difference does not matter here.
 **Quantile form. Equivalent.** `MDA_iff_tail_quantile'` against
 `isInMDAGEV_iff_exists_isExtendedRegularlyVarying_tailQuantile`.
 `tail_quantile F t = Inf {x. 1 - 1/t ≤ F x}` and `tailQuantile t = sInf {y | 1 - F y ≤ 1 / t}` are the same set.
-`extRVLimit` matches his limit. Junk values at `t ≤ 1` (infimum of an unbounded set) do not matter, since
+`boxCox` matches his limit. Junk values at `t ≤ 1` (infimum of an unbounded set) do not matter, since
 the limit is along `at_top`.
 
 **von Mises conditions. Neither contains the other.**
@@ -577,7 +577,7 @@ second-order regular variation, Breiman's lemma and multivariate regular variati
 His development has no estimators, no dependence and no multivariate results.
 
 **Neither has:** a statement that `ξ` is unique, `MDA(H_ξ) ∩ MDA(H_ξ') ≠ ∅ → ξ = ξ'`. It is a short consequence of
-convergence of types, or of comparing `extRVLimit` at two points. (The parameters of the law itself are identified in
+convergence of types, or of comparing `boxCox` at two points. (The parameters of the law itself are identified in
 ours: `gev_params_eq_of_measure_eq`.)
 
 ## Differences that suggest a problem or an improvement in our library

@@ -3,6 +3,7 @@ Copyright (c) 2026 Federico Carrone.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
+import ExtremeValueTheory.Dependence.Leadbetter
 import ExtremeValueTheory.Statistics.GPDLikelihood
 
 /-!
@@ -100,7 +101,7 @@ lemma gpdScoreDeriv_gpdTransform (hσ₀ : 0 < σ₀) (hξ : ξ ≠ 0) (t : ℝ)
 /-- The score is square integrable for `ξ > -1/2`. -/
 lemma memLp_gpdScorePsi (hξ : -1 / 2 < ξ) (hξ0 : ξ ≠ 0) (hσ₀ : 0 < σ₀) :
     MemLp (gpdScorePsi ξ σ₀) 2 (gpdMeasure ξ σ₀) := by
-  rw [gpdMeasure, stdExpMeasure_eq_expMeasure, memLp_map_measure_iff
+  rw [gpdMeasure, memLp_map_measure_iff
     (measurable_gpdScorePsi ξ σ₀).aestronglyMeasurable
     (measurable_gpdTransform ξ σ₀).aemeasurable]
   have he : MemLp (fun t => exp ((-ξ) * t)) 2 (expMeasure 1) := by
@@ -216,6 +217,30 @@ lemma runMax_nonneg (f : ℕ → ℝ) (n : ℕ) : 0 ≤ runMax f n := by
   induction n with
   | zero => exact le_rfl
   | succ n ih => exact ih.trans (le_max_left _ _)
+
+/-- For `n > 0`, `runMax f n` is `partialMax` of `f` (as a sequence on a one-point space), floored
+at `0`. -/
+theorem runMax_eq_max_partialMax (f : ℕ → ℝ) {n : ℕ} (hn : 0 < n) :
+    runMax f n = max 0 (partialMax (fun i (_ : Unit) ↦ f i) n ()) := by
+  refine le_antisymm ?_ (max_le (runMax_nonneg f n) ((partialMax_le_iff hn).2 fun i hi ↦
+    ?_))
+  · have hf : ∀ i < n, f i ≤ partialMax (fun i (_ : Unit) ↦ f i) n () :=
+      (partialMax_le_iff (X := fun i (_ : Unit) ↦ f i) (ω := ()) hn).1 le_rfl
+    have key : ∀ k ≤ n, runMax f k ≤ max 0 (partialMax (fun i (_ : Unit) ↦ f i) n ()) := by
+      intro k
+      induction k with
+      | zero => exact fun _ ↦ le_max_left _ _
+      | succ k ih =>
+        exact fun hk ↦ max_le (ih (by omega)) ((hf k (by omega)).trans (le_max_right _ _))
+    exact key n le_rfl
+  · have : ∀ {i m : ℕ}, i < m → f i ≤ runMax f m := fun {i m} him ↦ by
+      induction m with
+      | zero => exact absurd him (Nat.not_lt_zero _)
+      | succ m ih =>
+        rcases Nat.lt_succ_iff_lt_or_eq.1 him with h | rfl
+        · exact (ih h).trans (le_max_left _ _)
+        · exact le_max_right _ _
+    exact this hi
 
 lemma le_runMax (f : ℕ → ℝ) {i n : ℕ} (hi : i < n) : f i ≤ runMax f n := by
   induction n with

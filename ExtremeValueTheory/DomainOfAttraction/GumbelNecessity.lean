@@ -206,10 +206,6 @@ private lemma gumbelNec_neg_log_standardGumbelCDF (x : ℝ) :
     -Real.log (standardGumbelCDF x) = Real.exp (-x) := by
   rw [standardGumbelCDF_apply_eq, Real.log_exp, neg_neg]
 
-private lemma gumbelNec_antitone_one_sub (F : CumulativeDistributionFunction) :
-    Antitone (fun x ↦ 1 - F x) :=
-  fun _ _ h ↦ sub_le_sub_left (F.mono' h) 1
-
 /-- If `F` is in the Gumbel domain of attraction, there are `a n > 0` and `b n` with
 `n * (1 - F (a n * x + b n)) → exp (-x)` for every `x`. -/
 theorem tendsto_mul_of_isInMDAGumbel (F : CumulativeDistributionFunction)
@@ -240,9 +236,9 @@ theorem exists_auxiliary_atTop_of_isInMDAGumbel (F : CumulativeDistributionFunct
   obtain ⟨a, b, ha, hlim⟩ := F.tendsto_mul_of_isInMDAGumbel h
   have hb : Tendsto (fun n : ℕ ↦ (n : ℝ) * (1 - F (b n))) atTop (𝓝 1) := by
     simpa using hlim 0
-  refine Gumbel.exists_auxiliary_of_tendsto_mul F.gumbelNec_antitone_one_sub ha hlim
+  refine Gumbel.exists_auxiliary_of_tendsto_mul F.antitone_one_sub ha hlim
     (Eventually.of_forall fun t ↦
-      Gumbel.eventually_lt_of_tendsto_natCast_mul_one F.gumbelNec_antitone_one_sub hb
+      Gumbel.eventually_lt_of_tendsto_natCast_mul_one F.antitone_one_sub hb
         (by linarith [hF t])) fun K ↦ ?_
   filter_upwards [eventually_ge_atTop (b K)] with t ht
   exact ⟨K, le_rfl, ht⟩
@@ -260,9 +256,9 @@ theorem exists_auxiliary_nhdsLT_of_isInMDAGumbel (F : CumulativeDistributionFunc
   obtain ⟨a, b, ha, hlim⟩ := F.tendsto_mul_of_isInMDAGumbel h
   have hb : Tendsto (fun n : ℕ ↦ (n : ℝ) * (1 - F (b n))) atTop (𝓝 1) := by
     simpa using hlim 0
-  refine Gumbel.exists_auxiliary_of_tendsto_mul F.gumbelNec_antitone_one_sub ha hlim
+  refine Gumbel.exists_auxiliary_of_tendsto_mul F.antitone_one_sub ha hlim
     (eventually_nhdsWithin_of_forall fun t ht ↦
-      Gumbel.eventually_lt_of_tendsto_natCast_mul_one F.gumbelNec_antitone_one_sub hb
+      Gumbel.eventually_lt_of_tendsto_natCast_mul_one F.antitone_one_sub hb
         (by linarith [hlt t ht])) fun K ↦ ?_
   obtain ⟨n, hn1, hnK⟩ := ((hb.eventually (lt_mem_nhds zero_lt_one)).and
     (eventually_ge_atTop K)).exists
@@ -311,7 +307,7 @@ theorem exists_rightEndpoint_of_not_lt_one (F : CumulativeDistributionFunction)
   push Not at hF
   obtain ⟨x₁, hx₁⟩ := hF
   obtain ⟨y₀, hy₀⟩ := (F.tendsto_atBot.eventually (gt_mem_nhds one_pos)).exists
-  have hq := upperQuantile_spec (p := 0) F.gumbelNec_antitone_one_sub
+  have hq := upperQuantile_spec (p := 0) F.antitone_one_sub
     (fun x ↦ continuousWithinAt_const.sub (F.right_continuous x))
     ⟨x₁, by show 1 - F x₁ ≤ 0; linarith⟩ ⟨y₀, by show 0 < 1 - F y₀; linarith⟩
   refine ⟨upperQuantile (fun x ↦ 1 - F x) 0, fun x hx ↦ ?_, ?_⟩

@@ -3,6 +3,7 @@ Copyright (c) 2026 Federico Carrone.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
+import ExtremeValueTheory.UpperQuantile
 import ExtremeValueTheory.RegularVariation.Basic
 import Mathlib.MeasureTheory.Group.Convolution
 import Mathlib.MeasureTheory.Constructions.Pi
@@ -63,6 +64,12 @@ namespace ExtremeValueTheory
 
 /-- The survival function (tail) `F̄ x = μ (x, ∞)` of a measure `μ` on `ℝ`. -/
 noncomputable def tail (μ : Measure ℝ) (x : ℝ) : ℝ := μ.real (Ioi x)
+
+/-- The survival function of a random variable is the tail of its law. -/
+theorem survival_eq_tail {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} {Y : Ω → ℝ}
+    (hY : Measurable Y) (x : ℝ) : survival P Y x = tail (P.map Y) x := by
+  rw [survival_eq_measureReal, tail, map_measureReal_apply hY measurableSet_Ioi]
+  rfl
 
 namespace Subexp
 

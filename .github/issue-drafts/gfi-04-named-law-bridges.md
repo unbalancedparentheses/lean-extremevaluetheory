@@ -23,6 +23,6 @@ Each is a case split on the position of `x`, using the evaluation lemmas of the 
 - [ ] `lake build`, `lake build Test` and `python3 scripts/check_source.py` pass.
 
 ## Pointers
-- `gpdCDF`: `Statistics/GPDLikelihood.lean`. `gpdSurvivalAll`: `PeaksOverThreshold/Balkema.lean`.
+- `gpdCDF`: `Statistics/GPDLikelihood.lean`. `gpdSurvivalAll`: `PeaksOverThreshold/Frechet.lean`.
 - `standardExponentialCDF_apply_of_nonneg`, `standardExponentialCDF_apply_of_nonpos`: `DomainOfAttraction/Gumbel.lean`.
 - `powerCDF_apply_of_mem_Icc`, `powerCDF_apply_of_nonpos`, `powerCDF_apply_of_one_le`, `paretoCDF_apply_of_one_le`, `paretoCDF_apply_of_le_one`: `DomainOfAttraction/VonMises.lean`.

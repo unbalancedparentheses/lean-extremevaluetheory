@@ -31,10 +31,10 @@ structures, theorem names describe the statement). Library-specific rules:
 * **Hypotheses in names** state the hypothesis that is actually used. `_of_summable_rpow`, not
   `_of_lt_one`, when the hypothesis is the summability of `|c_j|^δ` (the old name suggested
   `α < 1`).
-* **No primes or vague suffixes for genuinely different objects.** `gpdSurvivalNonneg` (correct
-  only for `ξ ≥ 0`) and `gpdSurvivalAll` (all `ξ`) replaced `gpdSurvival` and `gpdSurvival'`. A
-  prime is acceptable only for a local variant of a lemma with the same statement shape, as in
-  Mathlib.
+* **No primes or vague suffixes for genuinely different objects.** `gpdSurvivalAll` (all `ξ`)
+  replaced `gpdSurvival` and `gpdSurvival'`; `gpdSurvivalNonneg` (correct only for `ξ ≥ 0`) is
+  deprecated. A prime is acceptable only for a local variant of a lemma with the same statement
+  shape, as in Mathlib.
 * **Terminology that clashes with the literature is renamed.** The quantity once called the
   "escape mass" (`HasEscapeMass`, `escapeSet`, `clusterEscape`) is the *late-return mass*
   (`HasLateReturnMass`, …), since Abadi–Freitas–Freitas use "escape" for something else.
@@ -120,6 +120,43 @@ Further conventions:
 * Every new file is imported from `ExtremeValueTheory.lean`.
 * Every public declaration has a docstring; every file has a module docstring with *Main
   results* and *References*. No `sorry`, no new axioms.
+
+## One definition per concept
+
+Each concept has one canonical definition. Other names for it are deprecated (see
+[Deprecation](#deprecation)), and new code uses the canonical name.
+
+| Concept | Canonical | Deprecated | File |
+|---|---|---|---|
+| upper quantile at level `p` | `upperQuantile S p` | `ExtremeValueTheory.tailQuantile P Y p` | `UpperQuantile.lean` |
+| survival function of a random variable | `survival P Y` | `ARMAX.survival`, inline `fun x => P.real {ω \| x < Y ω}` | `UpperQuantile.lean` |
+| GPD survival function | `gpdSurvivalAll ξ β` | `gpdSurvival`, `gpdSurvival'`, `gpdSurvivalNonneg` | `PeaksOverThreshold/Frechet.lean` |
+| Box–Cox function | `boxCox ρ x` | `extRVLimit` | `RegularVariation/Extended.lean` |
+| `(t ^ (-ξ) - 1) / ξ`, inverse of `Ḡ_{ξ,1}` | `gevTransform ξ t` | `gpdSurvivalInv` | `RegularVariation/Extended.lean` |
+| Gaussian tail | `tail (gaussianReal m v) c` | `gaussianTail` | `HeavyTails/Subexponential.lean` |
+| standard exponential law | `expMeasure 1` (Mathlib) | `stdExpMeasure` | `GEV/Moments.lean` holds the bridge |
+| left-continuous inverse | `lcInv F y` | none (a private copy was removed) | `PseudoInverses.lean` |
+| tail of a c.d.f. is antitone | `CumulativeDistributionFunction.antitone_one_sub` | none (private copies were removed) | `CumulativeDistributionFunction.lean` |
+
+`survivalQuantile S t` and `F.tailQuantile t` are the return-period forms of `upperQuantile`, and
+`returnLevel ξ m` is `gevTransform ξ (-log (1 - 1 / m))`; all three are defined from the canonical
+definition.
+
+Some definitions look alike but are not the same function. They stay separate definitions, and a
+bridge lemma states exactly how they are related:
+
+| Definition | Bridge | Why it stays |
+|---|---|---|
+| `gpdSurvivalNonneg` | `gpdSurvivalAll_eq_gpdSurvivalNonneg` (for `ξ ≥ 0`, `x ≥ 0`) | Deprecated but not an alias: outside the support it is `rpow` of a negative base, so an alias would make `gpdSurvivalNonneg_of_ne_zero` false. |
+| `gevTransform`, `boxCox` | `gevTransform_eq_neg_boxCox`, `returnLevel_eq_boxCox` | They are one function up to a reparametrization, and the two parametrizations are both standard. |
+| `gpdTransform ξ σ t` | `gpdTransform_eq_mul_boxCox` | The proofs use the form `σ (e^{ξ t} - 1) / ξ`, which is not definitionally the bridge's form. |
+| `tailCount X n u ω` | `tailCount_eq_exceedCount` | A real-valued sum over `range n`, where `exceedCount` is a natural number over `Fin n`. |
+| `survival P Y`, `tail μ` | `survival_eq_tail` (for measurable `Y`) | One is a function of a random variable and the other of a law. |
+| `partialMax X n ω`, `blockMax X n j ω` | `blockMax_eq_partialMax` (for `n > 0`) | The junk value at `n = 0` differs: `X 0 ω` and `0`. |
+| `runMax f n` (`Statistics/GPDLikelihoodNormality.lean`) | `runMax_eq_max_partialMax` (for `n > 0`) | It is floored at `0`, which its proofs use. |
+
+`runMax m ψ n` in `Dependence/MovingAverage.lean` has the same short name but is another concept,
+the maximum of the coefficients from index `n` on.
 
 ## Deprecation
 

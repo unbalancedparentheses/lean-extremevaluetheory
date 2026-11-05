@@ -75,7 +75,8 @@ private lemma injOn_gevTransform (ξ : ℝ) : InjOn (gevTransform ξ) (Ioi 0) :=
 /-- The GEV law has no atoms. -/
 lemma measure_gevCDF_singleton (ξ x : ℝ) : (gevCDF ξ).measure {x} = 0 := by
   have hm := measurable_gevTransform ξ
-  rw [measure_gevCDF_eq_map, Measure.map_apply hm (measurableSet_singleton x), stdExpMeasure]
+  rw [measure_gevCDF_eq_map, Measure.map_apply hm (measurableSet_singleton x),
+    expMeasure_one_eq_withDensity]
   refine withDensity_absolutelyContinuous _ _ ?_
   rw [Measure.restrict_apply (hm (measurableSet_singleton x))]
   refine Set.Countable.measure_zero (Set.Subsingleton.countable ?_) _

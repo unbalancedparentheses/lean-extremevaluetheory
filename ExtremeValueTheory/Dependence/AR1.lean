@@ -3,6 +3,7 @@ Copyright (c) 2026 Federico Carrone.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
+import ExtremeValueTheory.UpperQuantile
 import ExtremeValueTheory.Dependence.InfiniteMovingAverageTailProcess
 
 /-!
@@ -85,9 +86,10 @@ nonnegative noise (independence is not needed) with `P(Z_0 > x)` regularly varyi
 `-α`, `α > 0`, and `0 < φ < 1`, almost surely `X_t = φ X_{t-1} + Z_t` for all `t ∈ ℤ`. -/
 theorem ae_process_eq_of_pos (hZ : ∀ i, Measurable (Z i))
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hα : 0 < α)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hφ0 : 0 < φ)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hφ0 : 0 < φ)
     (hφ1 : φ < 1) :
     ∀ᵐ ω ∂P, ∀ t : ℤ, process φ Z t ω = φ * process φ Z (t - 1) ω + Z t ω := by
+  replace hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α) := hL
   obtain ⟨hδ, hδα, hδ1⟩ := half_min_bounds hα
   have hL' : IsRegularlyVarying (fun x => P.real {ω | x < |Z 0 ω|}) (-α) := by
     simpa only [InfiniteMovingAverage.setOf_lt_abs_eq hZ0] using hL
@@ -105,9 +107,10 @@ varying with index `-α`, `α > 0`, the process `X_t = ∑_{j ≥ 0} φ^j Z_{t-j
 solution of `X_t = φ X_{t-1} + Z_t`, `ae_process_eq_of_pos`) has extremal index `1 - φ^α`. -/
 theorem hasExtremalIndex_of_pos (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hα : 0 < α)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α))
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α))
     (hφ0 : 0 < φ) (hφ1 : φ < 1) :
     HasExtremalIndex (fun n : ℕ => process φ Z n) P (1 - φ ^ α) := by
+  replace hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α) := hL
   obtain ⟨hδ, hδα, hδ1⟩ := half_min_bounds hα
   have h := InfiniteMovingAverage.hasExtremalIndex_of_summable_rpow (ψ := fun j => φ ^ j) hZ hind hident
     hZ0 hδ hδα hδ1 hL (fun j => pow_nonneg hφ0.le j) (summable_rpow hφ0 hφ1 hδ) ⟨0, by simp⟩
@@ -128,11 +131,12 @@ hypotheses of `hasExtremalIndex_of_pos`, `X` has spectral tail process `Θ_t = �
 (for `J + t ≥ 0`, else `0`), `P(J = j) = φ^{jα} / ∑_i φ^{iα}`. -/
 theorem hasSpectralTailProcess_of_pos (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hα : 0 < α)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α))
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α))
     (hφ0 : 0 < φ) (hφ1 : φ < 1) :
     HasSpectralTailProcess P (process φ Z) α
       (InfiniteMovingAverage.indexLaw (fun j => φ ^ j) α)
       (InfiniteMovingAverage.spectral fun j => φ ^ j) := by
+  replace hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α) := hL
   obtain ⟨hδ, hδα, hδ1⟩ := half_min_bounds hα
   exact InfiniteMovingAverage.hasSpectralTailProcess_of_summable_rpow (ψ := fun j => φ ^ j) hZ hind
     hident hZ0 hδ hδα hδ1 hL (fun j => pow_nonneg hφ0.le j) (summable_rpow hφ0 hφ1 hδ) ⟨0, by simp⟩
@@ -142,7 +146,7 @@ theorem, almost surely `X_t = φ X_{t-1} + Z_t` for all `t ∈ ℤ`. A special c
 `ae_process_eq_of_pos`. -/
 theorem ae_process_eq (hZ : ∀ i, Measurable (Z i)) (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P)
     (hZ0 : ∀ i ω, 0 ≤ Z i ω) {δ : ℝ} (hδ : 0 < δ) (hδα : δ < α) (_hα1 : α < 1)
-    (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α)) (hφ0 : 0 < φ)
+    (hL : IsRegularlyVarying (survival P (Z 0)) (-α)) (hφ0 : 0 < φ)
     (hφ1 : φ < 1) :
     ∀ᵐ ω ∂P, ∀ t : ℤ, process φ Z t ω = φ * process φ Z (t - 1) ω + Z t ω :=
   ae_process_eq_of_pos hZ hident hZ0 (hδ.trans hδα) hL hφ0 hφ1
@@ -154,7 +158,7 @@ theorem ae_process_eq (hZ : ∀ i, Measurable (Z i)) (hident : ∀ i, IdentDistr
 `hasExtremalIndex_of_pos`. -/
 theorem hasExtremalIndex (hZ : ∀ i, Measurable (Z i)) (hind : iIndepFun Z P)
     (hident : ∀ i, IdentDistrib (Z i) (Z 0) P P) (hZ0 : ∀ i ω, 0 ≤ Z i ω) (hα : 0 < α)
-    (_hα1 : α < 1) (hL : IsRegularlyVarying (fun x => P.real {ω | x < Z 0 ω}) (-α))
+    (_hα1 : α < 1) (hL : IsRegularlyVarying (survival P (Z 0)) (-α))
     (hφ0 : 0 < φ) (hφ1 : φ < 1) :
     HasExtremalIndex (fun n : ℕ => process φ Z n) P (1 - φ ^ α) :=
   hasExtremalIndex_of_pos hZ hind hident hZ0 hα hL hφ0 hφ1

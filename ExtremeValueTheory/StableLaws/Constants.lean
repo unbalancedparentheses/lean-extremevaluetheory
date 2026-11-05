@@ -51,9 +51,7 @@ namespace StableIntegral
 /-- `∫₀^∞ e^{-x u} du = 1 / x`. -/
 theorem integral_exp_neg_mul_Ioi {x : ℝ} (hx : 0 < x) :
     ∫ u in Ioi (0 : ℝ), Real.exp (-(x * u)) = 1 / x := by
-  have h := integral_exp_mul_Ioi (a := -x) (by linarith) 0
-  simp only [mul_zero, Real.exp_zero, neg_mul] at h
-  rw [h]; field_simp
+  simpa only [neg_mul] using ExtremeValueTheory.integral_exp_neg_mul_Ioi hx
 
 theorem integrableOn_exp_neg_mul_Ioi {x : ℝ} (hx : 0 < x) :
     IntegrableOn (fun u : ℝ => Real.exp (-(x * u))) (Ioi 0) := by

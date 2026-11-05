@@ -66,45 +66,51 @@ section GPDInv
 
 variable {ξ : ℝ}
 
-theorem gpdSurvivalInv_nonneg {v : ℝ} (hv : 0 < v) (hv1 : v ≤ 1) : 0 ≤ gpdSurvivalInv ξ v := by
+theorem gevTransform_nonneg {v : ℝ} (hv : 0 < v) (hv1 : v ≤ 1) : 0 ≤ gevTransform ξ v := by
   rcases hv1.lt_or_eq with h | h
-  · rw [← gpdSurvivalInv_one (ξ := ξ)]
-    exact (gpdSurvivalInv_lt_gpdSurvivalInv hv h).le
-  · rw [h, gpdSurvivalInv_one]
+  · rw [← gevTransform_one (ξ := ξ)]
+    exact (gevTransform_lt_gevTransform hv h).le
+  · rw [h, gevTransform_one]
+
+@[deprecated (since := "2026-11-05")] alias gpdSurvivalInv_nonneg := gevTransform_nonneg
 
 /-- To the right of `Λ_ξ v`, the GPD survival function is `< v`. -/
-theorem gpdSurvival'_lt_of_gpdSurvivalInv_lt {v y : ℝ} (hv : 0 < v) (hv1 : v ≤ 1)
-    (hy : gpdSurvivalInv ξ v < y) : gpdSurvivalAll ξ 1 y < v := by
-  have h0 := gpdSurvivalInv_nonneg (ξ := ξ) hv hv1
+theorem gpdSurvivalAll_lt_of_gevTransform_lt {v y : ℝ} (hv : 0 < v) (hv1 : v ≤ 1)
+    (hy : gevTransform ξ v < y) : gpdSurvivalAll ξ 1 y < v := by
+  have h0 := gevTransform_nonneg (ξ := ξ) hv hv1
   have hle : gpdSurvivalAll ξ 1 y ≤ v := by
     have := gpdSurvivalAll_antitoneOn (ξ := ξ) one_pos (mem_Ici.2 h0) (mem_Ici.2 (h0.trans hy.le))
       hy.le
-    rwa [gpdSurvivalAll_gpdSurvivalInv hv] at this
+    rwa [gpdSurvivalAll_gevTransform hv] at this
   refine hle.lt_of_ne fun heq => ?_
-  have := gpdSurvivalInv_gpdSurvivalAll (ξ := ξ) (x := y) (by rw [heq]; exact hv)
+  have := gevTransform_gpdSurvivalAll (ξ := ξ) (x := y) (by rw [heq]; exact hv)
   rw [heq] at this
   exact hy.ne this
 
+@[deprecated (since := "2026-11-05")] alias gpdSurvival'_lt_of_gpdSurvivalInv_lt := gpdSurvivalAll_lt_of_gevTransform_lt
+
 /-- To the left of `Λ_ξ v` (on `[0, ∞)`), the GPD survival function is `> v`. -/
-theorem lt_gpdSurvival'_of_lt_gpdSurvivalInv {v y : ℝ} (hv : 0 < v) (hy0 : 0 ≤ y)
-    (hy : y < gpdSurvivalInv ξ v) : v < gpdSurvivalAll ξ 1 y := by
+theorem lt_gpdSurvivalAll_of_lt_gevTransform {v y : ℝ} (hv : 0 < v) (hy0 : 0 ≤ y)
+    (hy : y < gevTransform ξ v) : v < gpdSurvivalAll ξ 1 y := by
   have hle : v ≤ gpdSurvivalAll ξ 1 y := by
     have := gpdSurvivalAll_antitoneOn (ξ := ξ) one_pos (mem_Ici.2 hy0)
       (mem_Ici.2 (hy0.trans hy.le)) hy.le
-    rwa [gpdSurvivalAll_gpdSurvivalInv hv] at this
+    rwa [gpdSurvivalAll_gevTransform hv] at this
   refine hle.lt_of_ne fun heq => ?_
-  have := gpdSurvivalInv_gpdSurvivalAll (ξ := ξ) (x := y) (by rw [← heq]; exact hv)
+  have := gevTransform_gpdSurvivalAll (ξ := ξ) (x := y) (by rw [← heq]; exact hv)
   rw [← heq] at this
   exact hy.ne this.symm
 
+@[deprecated (since := "2026-11-05")] alias lt_gpdSurvival'_of_lt_gpdSurvivalInv := lt_gpdSurvivalAll_of_lt_gevTransform
+
 /-- The Pickands ratio of the limit points: with `x_m = Λ_ξ(m/8)`,
 `(x_1 - x_2) / (x_2 - x_4) = 2 ^ ξ`. -/
-theorem gpdSurvivalInv_pickands_ratio :
-    (gpdSurvivalInv ξ (1 / 8) - gpdSurvivalInv ξ (2 / 8)) /
-      (gpdSurvivalInv ξ (2 / 8) - gpdSurvivalInv ξ (4 / 8)) = (2 : ℝ) ^ ξ := by
+theorem gevTransform_pickands_ratio :
+    (gevTransform ξ (1 / 8) - gevTransform ξ (2 / 8)) /
+      (gevTransform ξ (2 / 8) - gevTransform ξ (4 / 8)) = (2 : ℝ) ^ ξ := by
   by_cases hξ : ξ = 0
   · subst hξ
-    simp only [gpdSurvivalInv, ↓reduceIte, rpow_zero]
+    simp only [gevTransform, ↓reduceIte, rpow_zero]
     have h8 : Real.log (1 / 8) = -3 * Real.log 2 := by
       rw [show (1 / 8 : ℝ) = (2 ^ 3)⁻¹ by norm_num, Real.log_inv, Real.log_pow]; push_cast; ring
     have h4 : Real.log (2 / 8) = -2 * Real.log 2 := by
@@ -115,7 +121,7 @@ theorem gpdSurvivalInv_pickands_ratio :
     have : Real.log 2 ≠ 0 := (Real.log_pos one_lt_two).ne'
     field_simp
     ring
-  · simp only [gpdSurvivalInv, hξ, ↓reduceIte]
+  · simp only [gevTransform, hξ, ↓reduceIte]
     set t : ℝ := (2 : ℝ) ^ ξ with ht
     have hpow : ∀ j : ℕ, ((1 / 2 : ℝ) ^ j) ^ (-ξ) = t ^ j := by
       intro j
@@ -145,6 +151,8 @@ theorem gpdSurvivalInv_pickands_ratio :
     field_simp
     ring
 
+@[deprecated (since := "2026-11-05")] alias gpdSurvivalInv_pickands_ratio := gevTransform_pickands_ratio
+
 end GPDInv
 
 /-! ### A weak law of large numbers for exceedance counts -/
@@ -152,13 +160,6 @@ end GPDInv
 section Count
 
 variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
-
-omit [IsProbabilityMeasure P] in
-private lemma integral_ite_lt' (X : Ω → ℝ) (hX : Measurable X) (a : ℝ) :
-    ∫ ω, (if a < X ω then (1 : ℝ) else 0) ∂P = (P {ω | a < X ω}).toReal := by
-  have : (fun ω => if a < X ω then (1 : ℝ) else 0) = {ω | a < X ω}.indicator 1 := by
-    ext ω; simp [Set.indicator]
-  rw [this, integral_indicator_one (measurableSet_lt measurable_const hX), measureReal_def]
 
 /-- **Exceedance counts over moving thresholds.** If the `X_i` are iid and the deterministic
 thresholds `a_n` satisfy `n P(X_0 > a_n) / k_n → c` with `k_n → ∞`, then the number of
@@ -192,12 +193,12 @@ theorem tendsto_measure_abs_exceedCount_div_sub {X : ℕ → Ω → ℝ} (hX : �
     · split_ifs <;> norm_num
   · refine hc.congr fun n => ?_
     simp only
-    rw [integral_ite_lt' (X 0) (hX 0)]
+    rw [integral_ite_lt' (hX 0), survival]
   · have h := hc.mul hkinv
     rw [mul_zero] at h
     refine h.congr fun n => ?_
     simp only [hsq]
-    rw [integral_ite_lt' (X 0) (hX 0)]
+    rw [integral_ite_lt' (hX 0), survival]
     field_simp
 
 end Count
@@ -326,25 +327,25 @@ theorem tendstoInMeasure_pickands {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurab
     exact_mod_cast this
   -- localization of `(X_{(mk+1)} - u_n) / β(u_n)` around `Λ_ξ(m/8)`
   have hloc : ∀ v : ℝ, 0 < v → v < 1 → ∀ m : ℕ, (m : ℝ) = 8 * v → ∀ η : ℝ, 0 < η →
-      Tendsto (fun n => P {ω | ¬ (gpdSurvivalInv ξ v - η <
+      Tendsto (fun n => P {ω | ¬ (gevTransform ξ v - η <
         (orderStat (fun i : Fin n => X i ω) (m * k n) - u n) / β (u n) ∧
         (orderStat (fun i : Fin n => X i ω) (m * k n) - u n) / β (u n) ≤
-          gpdSurvivalInv ξ v + η)}) atTop (𝓝 0) := by
+          gevTransform ξ v + η)}) atTop (𝓝 0) := by
     intro v hv hv1 m hm η hη
-    have hΛ : 0 < gpdSurvivalInv ξ v := by
-      have := gpdSurvivalInv_lt_gpdSurvivalInv (ξ := ξ) hv hv1
-      rwa [gpdSurvivalInv_one] at this
-    set x := gpdSurvivalInv ξ v - min η (gpdSurvivalInv ξ v / 2) with hx_def
-    have hmin1 := min_le_left η (gpdSurvivalInv ξ v / 2)
-    have hmin2 := min_le_right η (gpdSurvivalInv ξ v / 2)
-    have hmin0 : 0 < min η (gpdSurvivalInv ξ v / 2) := lt_min hη (by linarith)
+    have hΛ : 0 < gevTransform ξ v := by
+      have := gevTransform_lt_gevTransform (ξ := ξ) hv hv1
+      rwa [gevTransform_one] at this
+    set x := gevTransform ξ v - min η (gevTransform ξ v / 2) with hx_def
+    have hmin1 := min_le_left η (gevTransform ξ v / 2)
+    have hmin2 := min_le_right η (gevTransform ξ v / 2)
+    have hmin0 : 0 < min η (gevTransform ξ v / 2) := lt_min hη (by linarith)
     have hx0 : 0 ≤ x := by rw [hx_def]; linarith
-    have hGx := lt_gpdSurvival'_of_lt_gpdSurvivalInv (ξ := ξ) hv hx0 (by rw [hx_def]; linarith)
-    have hGy := gpdSurvival'_lt_of_gpdSurvivalInv_lt (ξ := ξ) (y := gpdSurvivalInv ξ v + η) hv
+    have hGx := lt_gpdSurvivalAll_of_lt_gevTransform (ξ := ξ) hv hx0 (by rw [hx_def]; linarith)
+    have hGy := gpdSurvivalAll_lt_of_gevTransform_lt (ξ := ξ) (y := gevTransform ξ v + η) hv
       hv1.le (by linarith)
     have h := tendsto_measure_not_mem_orderStat hX hindep hident hk (hmk m) hβn
       (G := fun x => 8 * gpdSurvivalAll ξ 1 x) hlim hx0 (by rw [hm]; linarith)
-      (y := gpdSurvivalInv ξ v + η) (by linarith) (by rw [hm]; linarith)
+      (y := gevTransform ξ v + η) (by linarith) (by rw [hm]; linarith)
     refine tendsto_of_tendsto_of_tendsto_of_le_of_le' tendsto_const_nhds h
       (Eventually.of_forall fun _ => bot_le) (Eventually.of_forall fun n => measure_mono ?_)
     intro ω hω
@@ -353,12 +354,12 @@ theorem tendstoInMeasure_pickands {X : ℕ → Ω → ℝ} (hX : ∀ i, Measurab
     apply hω
     exact ⟨by linarith [hc.1], hc.2⟩
   -- the continuous mapping step
-  set x₁ := gpdSurvivalInv ξ (1 / 8) with hx₁
-  set x₂ := gpdSurvivalInv ξ (2 / 8) with hx₂
-  set x₄ := gpdSurvivalInv ξ (4 / 8) with hx₄
-  have hratio : (x₁ - x₂) / (x₂ - x₄) = (2 : ℝ) ^ ξ := gpdSurvivalInv_pickands_ratio
+  set x₁ := gevTransform ξ (1 / 8) with hx₁
+  set x₂ := gevTransform ξ (2 / 8) with hx₂
+  set x₄ := gevTransform ξ (4 / 8) with hx₄
+  have hratio : (x₁ - x₂) / (x₂ - x₄) = (2 : ℝ) ^ ξ := gevTransform_pickands_ratio
   have h24 : x₂ - x₄ ≠ 0 :=
-    (sub_pos.2 (gpdSurvivalInv_lt_gpdSurvivalInv (ξ := ξ) (by norm_num) (by norm_num))).ne'
+    (sub_pos.2 (gevTransform_lt_gevTransform (ξ := ξ) (by norm_num) (by norm_num))).ne'
   set φ : ℝ × ℝ × ℝ → ℝ := fun p => Real.log ((p.1 - p.2.1) / (p.2.1 - p.2.2)) / Real.log 2
     with hφ_def
   have hφ : φ (x₁, x₂, x₄) = ξ := by

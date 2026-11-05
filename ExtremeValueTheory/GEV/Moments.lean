@@ -5,8 +5,10 @@ Authors: Federico Carrone
 -/
 import ExtremeValueTheory.GEV.Family
 import ExtremeValueTheory.CDFBridge
+import ExtremeValueTheory.RegularVariation.Extended
 import Mathlib.NumberTheory.Harmonic.GammaDeriv
 import Mathlib.Probability.Moments.Variance
+import Mathlib.Probability.Distributions.Exponential
 
 /-!
 # Moments of the generalized extreme value distributions
@@ -29,7 +31,6 @@ representation turns every moment of `H_ξ` into an Euler integral, and gives ([
 
 ## Main definitions and results
 
-* `ExtremeValueTheory.stdExpMeasure`: the standard exponential law on `(0, ∞)`.
 * `ExtremeValueTheory.gevTransform ξ t`: the map `t ↦ (t ^ (-ξ) - 1) / ξ` (`-log t` at `ξ = 0`).
 * `measure_gevCDF_eq_map`: `H_ξ` is the image of the standard exponential law under
   `gevTransform ξ`.
@@ -74,14 +75,33 @@ end CumulativeDistributionFunction
 
 namespace ExtremeValueTheory
 
-/-- The standard exponential law, as the measure `e^{-t} dt` on `(0, ∞)`. -/
+/-- The standard exponential law, as the measure `e^{-t} dt` on `(0, ∞)`. Deprecated: use
+Mathlib's `expMeasure 1` (`expMeasure_one_eq_withDensity`). -/
+@[deprecated "use `expMeasure 1`" (since := "2026-11-05")]
 noncomputable def stdExpMeasure : Measure ℝ :=
   (volume.restrict (Ioi 0)).withDensity fun t ↦ ENNReal.ofReal (exp (-t))
 
-/-- The transformation `t ↦ (t ^ (-ξ) - 1) / ξ` (`-log t` for `ξ = 0`) carrying the standard
-exponential law to `H_ξ`. -/
-noncomputable def gevTransform (ξ t : ℝ) : ℝ :=
-  if ξ = 0 then -log t else (t ^ (-ξ) - 1) / ξ
+/-- Mathlib's exponential law of rate `1` is the measure `e^{-t} dt` on `(0, ∞)`. -/
+theorem expMeasure_one_eq_withDensity : expMeasure 1 =
+    (volume.restrict (Ioi 0)).withDensity fun t ↦ ENNReal.ofReal (exp (-t)) := by
+  rw [expMeasure, gammaMeasure, ← withDensity_indicator measurableSet_Ioi]
+  refine (withDensity_congr_ae ?_).symm
+  have h0 : ∀ᵐ x : ℝ ∂volume, x ≠ 0 := by simp [ae_iff, measure_singleton]
+  filter_upwards [h0] with x hx
+  simp only [gammaPDF, gammaPDFReal, Set.indicator, mem_Ioi]
+  rcases lt_or_gt_of_ne hx with h | h
+  · simp [h.not_ge, h.not_gt]
+  · simp [h.le, h]
+
+set_option linter.deprecated false in
+@[deprecated "`stdExpMeasure` is deprecated" (since := "2026-11-05")]
+theorem stdExpMeasure_eq_expMeasure : stdExpMeasure = expMeasure 1 :=
+  expMeasure_one_eq_withDensity.symm
+
+instance : IsProbabilityMeasure (expMeasure 1) := isProbabilityMeasure_expMeasure one_pos
+
+set_option linter.deprecated false in
+instance : IsProbabilityMeasure stdExpMeasure := stdExpMeasure_eq_expMeasure ▸ inferInstance
 
 lemma measurable_gevTransform (ξ : ℝ) : Measurable (gevTransform ξ) := by
   by_cases h : ξ = 0
@@ -124,12 +144,12 @@ private lemma gevTransform_le_iff {ξ x t : ℝ} (hξ : ξ ≠ 0) (hc : 0 < 1 + 
 /-- **Exponential representation of the GEV law**: `H_ξ` is the law of `(T ^ (-ξ) - 1) / ξ`
 (of `-log T` for `ξ = 0`) for a standard exponential `T`. -/
 theorem measure_gevCDF_eq_map (ξ : ℝ) :
-    (gevCDF ξ).measure = stdExpMeasure.map (gevTransform ξ) := by
+    (gevCDF ξ).measure = (expMeasure 1).map (gevTransform ξ) := by
   have hm := measurable_gevTransform ξ
   refine Measure.ext_of_Iic _ _ fun x ↦ ?_
   have hS : MeasurableSet (gevTransform ξ ⁻¹' Iic x) := hm measurableSet_Iic
   rw [CumulativeDistributionFunction.measure_Iic,
-    Measure.map_apply hm measurableSet_Iic, stdExpMeasure, withDensity_apply _ hS,
+    Measure.map_apply hm measurableSet_Iic, expMeasure_one_eq_withDensity, withDensity_apply _ hS,
     Measure.restrict_restrict hS]
   change ENNReal.ofReal (gevCDF ξ x) = _
   rw [gevCDF_apply]
@@ -186,7 +206,7 @@ theorem measure_gevCDF_eq_map (ξ : ℝ) :
 theorem integral_gevCDF (ξ : ℝ) {f : ℝ → ℝ} (hf : Measurable f) :
     ∫ x, f x ∂(gevCDF ξ).measure = ∫ t in Ioi 0, exp (-t) * f (gevTransform ξ t) := by
   rw [measure_gevCDF_eq_map, integral_map (measurable_gevTransform ξ).aemeasurable
-    hf.aestronglyMeasurable, stdExpMeasure, integral_withDensity_eq_integral_toReal_smul
+    hf.aestronglyMeasurable, expMeasure_one_eq_withDensity, integral_withDensity_eq_integral_toReal_smul
     measurable_expDensity (ae_of_all _ fun _ ↦ ENNReal.ofReal_lt_top)]
   congr 1
   funext t
@@ -197,7 +217,7 @@ theorem integrable_gevCDF_iff (ξ : ℝ) {f : ℝ → ℝ} (hf : Measurable f) :
     Integrable f (gevCDF ξ).measure ↔
       IntegrableOn (fun t ↦ exp (-t) * f (gevTransform ξ t)) (Ioi 0) := by
   rw [measure_gevCDF_eq_map, integrable_map_measure hf.aestronglyMeasurable
-    (measurable_gevTransform ξ).aemeasurable, stdExpMeasure, integrable_withDensity_iff
+    (measurable_gevTransform ξ).aemeasurable, expMeasure_one_eq_withDensity, integrable_withDensity_iff
     measurable_expDensity (ae_of_all _ fun _ ↦ ENNReal.ofReal_lt_top), IntegrableOn]
   refine integrable_congr (ae_of_all _ fun t ↦ ?_)
   simp only [Function.comp_apply]

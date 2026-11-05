@@ -338,7 +338,7 @@ theorem measure_gevLocScaleCDF_eq_withDensity (ξ μ : ℝ) (hσ : 0 < σ) :
 `μ + σ (T^{-ξ} - 1)/ξ` (of `μ - σ log T` for `ξ = 0`) for a standard exponential `T`. -/
 theorem measure_gevLocScaleCDF_eq_map (ξ μ : ℝ) (hσ : 0 < σ) :
     (gevLocScaleCDF ξ μ hσ).measure =
-      stdExpMeasure.map (fun t => μ + σ * gevTransform ξ t) := by
+      (expMeasure 1).map (fun t => μ + σ * gevTransform ξ t) := by
   rw [gevLocScaleCDF, CumulativeDistributionFunction.measure_smul_eq_map, measure_gevCDF_eq_map,
     Measure.map_map (by fun_prop) (measurable_gevTransform ξ)]
   congr 1
@@ -379,13 +379,19 @@ lemma log_gevLocScaleDensity_transform (hσ : 0 < σ) {t : ℝ} (ht : 0 < t) :
     neg_neg, exp_log ht]
   ring
 
-lemma integrable_stdExpMeasure_iff {f : ℝ → ℝ} (_hf : Measurable f) :
-    Integrable f stdExpMeasure ↔ IntegrableOn (fun t => exp (-t) * f t) (Ioi 0) := by
-  rw [stdExpMeasure, integrable_withDensity_iff (by fun_prop)
+lemma integrable_expMeasure_one_iff {f : ℝ → ℝ} (_hf : Measurable f) :
+    Integrable f (expMeasure 1) ↔ IntegrableOn (fun t => exp (-t) * f t) (Ioi 0) := by
+  rw [expMeasure_one_eq_withDensity, integrable_withDensity_iff (by fun_prop)
     (ae_of_all _ fun _ => ENNReal.ofReal_lt_top), IntegrableOn]
   refine integrable_congr (ae_of_all _ fun t => ?_)
   simp only
   rw [ENNReal.toReal_ofReal (exp_pos _).le, mul_comm]
+
+set_option linter.deprecated false in
+@[deprecated integrable_expMeasure_one_iff (since := "2026-11-05")]
+lemma integrable_stdExpMeasure_iff {f : ℝ → ℝ} (hf : Measurable f) :
+    Integrable f stdExpMeasure ↔ IntegrableOn (fun t => exp (-t) * f t) (Ioi 0) := by
+  rw [stdExpMeasure_eq_expMeasure, integrable_expMeasure_one_iff hf]
 
 /-- `∫_0^∞ e^{-t} t^a dt` converges for `a > -1`. -/
 lemma integrableOn_exp_neg_mul_rpow {a : ℝ} (ha : -1 < a) :
@@ -401,7 +407,7 @@ lemma integrable_log_gevLocScaleDensity_self (hσ : 0 < σ) :
   have hT : Measurable fun t => μ + σ * gevTransform ξ t :=
     measurable_const.add (measurable_const.mul (measurable_gevTransform ξ))
   rw [measure_gevLocScaleCDF_eq_map, integrable_map_measure hm.aestronglyMeasurable
-    hT.aemeasurable, integrable_stdExpMeasure_iff (hm.comp hT)]
+    hT.aemeasurable, integrable_expMeasure_one_iff (hm.comp hT)]
   have h1 : IntegrableOn (fun t => exp (-t) * t ^ (0 : ℝ)) (Ioi 0) :=
     integrableOn_exp_neg_mul_rpow (by norm_num)
   have h2 : IntegrableOn (fun t => exp (-t) * t ^ (1 : ℝ)) (Ioi 0) :=

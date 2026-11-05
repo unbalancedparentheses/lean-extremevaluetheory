@@ -173,7 +173,7 @@ theorem integral_gevLocScaleCDF (hσ : 0 < σ) {h : ℝ → ℝ} (hh : Measurabl
     ∫ x, h x ∂(gevLocScaleCDF ξ μ hσ).measure =
       ∫ t in Ioi 0, exp (-t) * h (μ + σ * gevTransform ξ t) := by
   rw [measure_gevLocScaleCDF_eq_map, integral_map
-    (measurable_affine_gevTransform ξ μ σ).aemeasurable hh.aestronglyMeasurable, stdExpMeasure,
+    (measurable_affine_gevTransform ξ μ σ).aemeasurable hh.aestronglyMeasurable, expMeasure_one_eq_withDensity,
     integral_withDensity_eq_integral_toReal_smul (by fun_prop)
       (ae_of_all _ fun _ => ENNReal.ofReal_lt_top)]
   congr 1
@@ -185,7 +185,7 @@ theorem integrable_gevLocScaleCDF_iff (hσ : 0 < σ) {h : ℝ → ℝ} (hh : Mea
       IntegrableOn (fun t => exp (-t) * h (μ + σ * gevTransform ξ t)) (Ioi 0) := by
   rw [measure_gevLocScaleCDF_eq_map, integrable_map_measure hh.aestronglyMeasurable
     (measurable_affine_gevTransform ξ μ σ).aemeasurable,
-    integrable_stdExpMeasure_iff (hh.comp (measurable_affine_gevTransform ξ μ σ))]
+    integrable_expMeasure_one_iff (hh.comp (measurable_affine_gevTransform ξ μ σ))]
   rfl
 
 variable {h : ℝ → ℝ} {a₀ b₀ c₀ a₁ b₁ c₁ a₂ b₂ c₂ : ℝ}

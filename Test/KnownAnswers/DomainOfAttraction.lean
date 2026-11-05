@@ -238,11 +238,11 @@ theorem test_tailQuantile_pareto_rv {α : ℝ} (hα : 0 < α) :
 
 /-- `D_γ(x) = (x^γ - 1)/γ`: `D_1(x) = x - 1`, `D_{-1}(x) = 1 - 1/x`, `D_0(e) = 1`. -/
 theorem test_extRVLimit_values (x : ℝ) :
-    extRVLimit 1 x = x - 1 ∧ extRVLimit (-1) x = 1 - x⁻¹ ∧ extRVLimit 0 (exp 1) = 1 := by
+    boxCox 1 x = x - 1 ∧ boxCox (-1) x = 1 - x⁻¹ ∧ boxCox 0 (exp 1) = 1 := by
   refine ⟨?_, ?_, ?_⟩
-  · simp [extRVLimit]
-  · rw [extRVLimit_of_ne (by norm_num), rpow_neg_one]; ring
-  · simp [extRVLimit]
+  · simp [boxCox]
+  · rw [boxCox_of_ne (by norm_num), rpow_neg_one]; ring
+  · simp [boxCox]
 
 /-- `U(t) = log t` (exponential law) is extended regularly varying with `γ = 0` and auxiliary
 function `a ≡ 1` ([dHF, Example 1.1.7]). -/
@@ -250,7 +250,7 @@ theorem test_log_isExtendedRV : IsExtendedRegularlyVarying log 0 (fun _ ↦ 1) :
   refine ⟨Eventually.of_forall fun _ ↦ one_pos, fun x hx ↦ ?_⟩
   refine tendsto_const_nhds.congr' ?_
   filter_upwards [eventually_gt_atTop 0] with t ht
-  rw [log_mul hx.ne' ht.ne', extRVLimit_zero_left]
+  rw [log_mul hx.ne' ht.ne', boxCox_zero]
   ring
 
 /-- `U(t) = t^γ` with `γ > 0` is extended regularly varying with index `γ` and auxiliary function
@@ -262,7 +262,7 @@ theorem test_rpow_isExtendedRV {γ : ℝ} (hγ : 0 < γ) :
   refine tendsto_const_nhds.congr' ?_
   filter_upwards [eventually_gt_atTop 0] with t ht
   have := (rpow_pos_of_pos ht γ).ne'
-  rw [mul_rpow hx.le ht.le, extRVLimit_of_ne hγ.ne']
+  rw [mul_rpow hx.le ht.le, boxCox_of_ne hγ.ne']
   field_simp
 
 /-- For the uniform law, `U(t) = 1 - 1/t` is extended regularly varying with `γ = -1` and
@@ -274,7 +274,7 @@ theorem test_uniform_tailQuantile_isExtendedRV :
   refine tendsto_const_nhds.congr' ?_
   have hxt : Tendsto (fun t ↦ x * t) atTop atTop := tendsto_id.const_mul_atTop hx
   filter_upwards [eventually_gt_atTop 1, hxt.eventually_gt_atTop 1] with t ht hxt1
-  rw [test_tailQuantile_uniform ht, test_tailQuantile_uniform hxt1, extRVLimit_of_ne (by norm_num),
+  rw [test_tailQuantile_uniform ht, test_tailQuantile_uniform hxt1, boxCox_of_ne (by norm_num),
     rpow_neg_one]
   have : t ≠ 0 := by linarith
   field_simp
