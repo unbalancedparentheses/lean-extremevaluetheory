@@ -263,6 +263,118 @@ theorem antiClustering_iff {Ω : Type*} [MeasurableSpace Ω] (P : Measure Ω) (X
     (a : ℕ → ℝ) (r : ℕ → ℕ) :
     Challenge.AntiClustering P X a r ↔ ExtremeValueTheory.AntiClustering P X a r := Iff.rfl
 
+/-! ## The hypotheses can be met -/
+
+theorem limits_nonvacuous :
+    (∀ α > 0, IsDistributionFunction (frechet α) ∧ IsDistributionFunction (weibull α)) ∧
+      ∀ ξ, IsDistributionFunction (gev ξ) := by
+  refine ⟨fun α hα ↦ ⟨?_, ?_⟩, fun ξ ↦ ?_⟩
+  · rw [frechet_eq hα]; exact isDistributionFunction_coe _
+  · rw [weibull_eq hα]; exact isDistributionFunction_coe _
+  · rw [gev_eq]; exact isDistributionFunction_coe _
+
+theorem pickands_nonvacuous (ξ : ℝ) :
+    ∃ F, IsDistributionFunction F ∧ InDomainOfAttraction F (gev ξ) := by
+  have key : ∃ F : CumulativeDistributionFunction, F.IsInMDAGEV ξ := by
+    rcases lt_trichotomy ξ 0 with hξ | rfl | hξ
+    · have hα : 0 < -1 / ξ := div_pos_of_neg_of_neg neg_one_lt_zero hξ
+      have := isInMDAGEV_powerCDF hα
+      rw [show -1 / (-1 / ξ) = ξ by field_simp] at this
+      exact ⟨_, this⟩
+    · exact ⟨_, isInMDAGEV_standardExponentialCDF⟩
+    · have hα : 0 < 1 / ξ := one_div_pos.2 hξ
+      have := isInMDAGEV_paretoCDF hα
+      rw [one_div_one_div] at this
+      exact ⟨_, this⟩
+  obtain ⟨F, hF⟩ := key
+  exact ⟨F, isDistributionFunction_coe F, (inDomainOfAttraction_gev_iff F ξ).2 hF⟩
+
+theorem hill_nonvacuous {α : ℝ} (hα : 0 < α) :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ),
+      IsProbabilityMeasure P ∧ (∀ i, Measurable (X i)) ∧ iIndepFun X P ∧
+      (∀ i, IdentDistrib (X i) (X 0) P P) ∧
+      Challenge.IsRegularlyVarying (fun x ↦ (P {ω | x < X 0 ω}).toReal) (-α) ∧
+      Tendsto Nat.sqrt atTop atTop ∧ Tendsto (fun n ↦ (Nat.sqrt n : ℝ) / n) atTop (𝓝 0) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  obtain ⟨Ω, _, P, X, hXm, hlaw, hind, hP⟩ := exists_iid ℕ (paretoMeasure 1 α)
+  refine ⟨Ω, _, P, X, hP, hXm, hind, fun i ↦ (hlaw i).identDistrib (hlaw 0), ?_,
+    ExtremeValueTheory.tendsto_sqrt_atTop, ExtremeValueTheory.tendsto_sqrt_div⟩
+  exact (ExtremeValueTheory.isRegularlyVarying_tail_paretoMeasure one_pos hα).congr
+    (Eventually.of_forall fun x ↦ by
+      show _ = (P _).toReal
+      rw [(hlaw 0).measure_eq (p := (x < ·)) measurableSet_Ioi]
+      rfl)
+
+theorem tendsto_log_nat : Tendsto (fun n : ℕ ↦ Real.log n) atTop atTop :=
+  Real.tendsto_log_atTop.comp tendsto_natCast_atTop_atTop
+
+theorem tendsto_log_sqrt_div_log :
+    Tendsto (fun n : ℕ ↦ Real.log (Nat.sqrt n) / Real.log n) atTop (𝓝 (1 / 2)) := by
+  have hlow : Tendsto (fun n : ℕ => 1 / 2 - Real.log 2 / Real.log n) atTop (𝓝 (1 / 2)) := by
+    simpa using tendsto_const_nhds.sub (tendsto_log_nat.const_div_atTop (Real.log 2))
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' hlow tendsto_const_nhds ?_ ?_
+  · filter_upwards [tendsto_log_nat.eventually_gt_atTop 0,
+      ExtremeValueTheory.tendsto_sqrt_atTop.eventually_ge_atTop 1] with n hn hs
+    have hspos : (0 : ℝ) < Nat.sqrt n := by exact_mod_cast hs
+    have hs1 : (1 : ℝ) ≤ Nat.sqrt n := by exact_mod_cast hs
+    have hle : (n : ℝ) ≤ (2 * (Nat.sqrt n : ℝ)) ^ 2 := by
+      have h := (Nat.lt_succ_sqrt' n).le
+      have h' : (n : ℝ) ≤ ((Nat.sqrt n : ℝ) + 1) ^ 2 := by exact_mod_cast h
+      nlinarith
+    have hnpos : (0 : ℝ) < n := by
+      by_contra h0
+      have : (n : ℝ) = 0 := le_antisymm (not_lt.1 h0) (Nat.cast_nonneg n)
+      simp [this] at hn
+    have hlog := Real.log_le_log hnpos hle
+    rw [Real.log_pow, Real.log_mul two_ne_zero hspos.ne'] at hlog
+    push_cast at hlog
+    rw [sub_le_iff_le_add, ← add_div, le_div_iff₀ hn]
+    linarith
+  · filter_upwards [tendsto_log_nat.eventually_gt_atTop 0,
+      ExtremeValueTheory.tendsto_sqrt_atTop.eventually_ge_atTop 1] with n hn hs
+    have hspos : (0 : ℝ) < Nat.sqrt n := by exact_mod_cast hs
+    have hle : (Nat.sqrt n : ℝ) ^ 2 ≤ n := by exact_mod_cast Nat.sqrt_le' n
+    have hlog := Real.log_le_log (by positivity) hle
+    rw [Real.log_pow] at hlog
+    push_cast at hlog
+    rw [div_le_iff₀ hn]
+    linarith
+
+theorem echo_nonvacuous {α : ℝ} (hα : 0 < α) :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (Z : ℤ → Ω → ℝ),
+      IsProbabilityMeasure P ∧ (∀ t, Measurable (Z t)) ∧ iIndepFun Z P ∧
+      (∀ t, P.map (Z t) = paretoMeasure 1 α) ∧ (∀ t ω, 0 ≤ Z t ω) ∧
+      Tendsto (fun n : ℕ ↦ Real.log (Nat.sqrt n) / Real.log n) atTop (𝓝 (1 / 2)) ∧
+      ∀ γ, 0 < γ → γ < α → ∃ a : ℕ → ℝ,
+        Tendsto (fun n : ℕ ↦ n * P.real {ω | a n < Challenge.echoProcess (Challenge.powLag γ) Z 0 ω})
+          atTop (𝓝 1) := by
+  have := isProbabilityMeasure_paretoMeasure one_pos hα
+  let P : Measure (ℤ → ℝ) := Measure.infinitePi fun _ : ℤ ↦ paretoMeasure 1 α
+  let Z : ℤ → (ℤ → ℝ) → ℝ := fun t ω ↦ |ω t|
+  have hP : IsProbabilityMeasure P := by unfold P; infer_instance
+  have hZm : ∀ t, Measurable (Z t) := fun t ↦ continuous_abs.measurable.comp (measurable_pi_apply t)
+  have hZ0 : ∀ t ω, 0 ≤ Z t ω := fun t ω ↦ abs_nonneg _
+  have hind : iIndepFun Z P :=
+    iIndepFun_infinitePi (X := fun _ (x : ℝ) ↦ |x|) fun _ ↦ continuous_abs.measurable
+  have hlaw : ∀ t, P.map (Z t) = paretoMeasure 1 α := fun t ↦ by
+    have e : Z t = (fun x : ℝ ↦ |x|) ∘ fun ω : ℤ → ℝ ↦ ω t := rfl
+    rw [e, ← Measure.map_map (g := fun x : ℝ ↦ |x|) (f := fun ω : ℤ → ℝ ↦ ω t)
+      continuous_abs.measurable (measurable_pi_apply t), Measure.infinitePi_map_eval]
+    have hae : (fun x : ℝ ↦ |x|) =ᵐ[paretoMeasure 1 α] id := by
+      filter_upwards [ExtremeValueTheory.ae_one_lt_paretoMeasure (α := α)] with r hr
+      exact abs_of_pos (one_pos.trans hr)
+    rw [Measure.map_congr hae, Measure.map_id]
+  refine ⟨_, _, P, Z, hP, hZm, hind, hlaw, hZ0, tendsto_log_sqrt_div_log, fun γ hγ hγα ↦ ?_⟩
+  obtain ⟨a, ha⟩ := (ExtremeValueTheory.powEchoProcess_theta_lt_vartheta hα hZm hind hlaw hZ0 hγ
+    hγα).2.1.hasExceedanceLevels_abs
+    (ExtremeValueTheory.measurable_echoProcess hZm (ExtremeValueTheory.measurable_powLag γ)) 1 one_pos
+  refine ⟨a, ha.congr fun n ↦ ?_⟩
+  congr 2
+  ext ω
+  simp only [Set.mem_ofPred_eq, Nat.cast_zero, Pi.abs_apply]
+  rw [abs_of_nonneg (ExtremeValueTheory.echoProcess_nonneg hZ0 _ _)]
+  rfl
+
 end Solution
 
 namespace Challenge
@@ -296,5 +408,31 @@ theorem echo_anticlustering_iff {Ω : Type*} [MeasurableSpace Ω] {P : Measure �
     (hr : Tendsto (fun n : ℕ ↦ Real.log (r n) / Real.log n) atTop (𝓝 ρ)) :
     AntiClustering P (echoProcess (powLag γ) Z) a r ↔ ρ < γ / α :=
   ExtremeValueTheory.powEchoProcess_antiClustering_iff hα hZ hind hlaw hpos hγ hγα hτ0 hτ hρ0 hρ1 hρ hr
+
+theorem limits_nonvacuous :
+    (∀ α > 0, IsDistributionFunction (frechet α) ∧ IsDistributionFunction (weibull α)) ∧
+      ∀ ξ, IsDistributionFunction (gev ξ) :=
+  Solution.limits_nonvacuous
+
+theorem pickands_nonvacuous (ξ : ℝ) :
+    ∃ F, IsDistributionFunction F ∧ InDomainOfAttraction F (gev ξ) :=
+  Solution.pickands_nonvacuous ξ
+
+theorem hill_nonvacuous {α : ℝ} (hα : 0 < α) :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ),
+      IsProbabilityMeasure P ∧ (∀ i, Measurable (X i)) ∧ iIndepFun X P ∧
+      (∀ i, IdentDistrib (X i) (X 0) P P) ∧
+      IsRegularlyVarying (fun x ↦ (P {ω | x < X 0 ω}).toReal) (-α) ∧
+      Tendsto Nat.sqrt atTop atTop ∧ Tendsto (fun n ↦ (Nat.sqrt n : ℝ) / n) atTop (𝓝 0) :=
+  Solution.hill_nonvacuous hα
+
+theorem echo_nonvacuous {α : ℝ} (hα : 0 < α) :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (Z : ℤ → Ω → ℝ),
+      IsProbabilityMeasure P ∧ (∀ t, Measurable (Z t)) ∧ iIndepFun Z P ∧
+      (∀ t, P.map (Z t) = paretoMeasure 1 α) ∧ (∀ t ω, 0 ≤ Z t ω) ∧
+      Tendsto (fun n : ℕ ↦ Real.log (Nat.sqrt n) / Real.log n) atTop (𝓝 (1 / 2)) ∧
+      ∀ γ, 0 < γ → γ < α → ∃ a : ℕ → ℝ,
+        Tendsto (fun n : ℕ ↦ n * P.real {ω | a n < echoProcess (powLag γ) Z 0 ω}) atTop (𝓝 1) :=
+  Solution.echo_nonvacuous hα
 
 end Challenge

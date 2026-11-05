@@ -28,8 +28,8 @@ jobs:
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all -- true
       - uses: leanprover/lean-action@v1
-      - name: Judge the solution against the challenge, in the sandbox
-        run: lake comparator
+      - name: Judge the solution against the challenge, in the sandbox, with every bundled kernel
+        run: lake comparator --paranoid
       - name: Check that the comparator rejects a changed definition
         run: |
           sed -i 's/if x < 0 then Real.exp (-((-x) ^ α)) else 1/if x < 0 then Real.exp (-((-x) ^ α)) else 0/' Challenge.lean
