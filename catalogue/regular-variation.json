@@ -129,35 +129,35 @@
   },
   {
     "id": "karamata-converse",
-    "name": "Karamata's theorem, converse half",
+    "name": "Karamata's theorem, converse half, tail integrals",
     "source": "BGT Thm 1.6.1",
-    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi_of_pos",
     "file": "ExtremeValueTheory/RegularVariation/KaramataConverse.lean",
-    "statement": "ExtremeValueTheory.IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi {F : ℝ → ℝ} {α a : ℝ}\n  (hF : Antitone F) (hint : MeasureTheory.IntegrableOn F (Set.Ioi a) MeasureTheory.volume)\n  (hα : 1 < α)\n  (h :\n    Filter.Tendsto (fun x => x * F x / ∫ (t : ℝ) in Set.Ioi x, F t) Filter.atTop (nhds (α - 1))) :\n  ExtremeValueTheory.IsRegularlyVarying F (-α)",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.of_tendsto_mul_div_integral_Ioi_of_pos {F : ℝ → ℝ} {α : ℝ}\n  (hpos : ∀ᶠ (x : ℝ) in Filter.atTop, 0 < F x) (hα : 1 < α)\n  (h :\n    Filter.Tendsto (fun x => x * F x / ∫ (t : ℝ) in Set.Ioi x, F t) Filter.atTop (nhds (α - 1))) :\n  ExtremeValueTheory.IsRegularlyVarying F (-α)",
     "status": "reduced",
-    "scope_note": "Assumes F antitone on R and integrable on a half-line; the book allows locally integrable F.",
+    "scope_note": "The tail case with weight sigma = 0. Assumes only eventual positivity. The weighted form is of_tendsto_rpow_mul_div_integral_Ioi, the rho > -1 case of_tendsto_mul_div_integral. The book's statement was recalled, not checked.",
     "axioms": [
       "Classical.choice",
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "25aea0b2185a264cc28cbd7294e3df88"
+    "input_hash": "6add6d158be6c7e9f26691a59965f545"
   },
   {
     "id": "karamata-zero",
-    "name": "Karamata's theorem for integrals over [0, x]",
+    "name": "Karamata's theorem for integrals over [a, x]",
     "source": "BGT Prop 1.5.8, Thm 1.5.11(i)",
-    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_zero_div",
+    "lean_name": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_interval_div",
     "file": "ExtremeValueTheory/RegularVariation/KaramataConverse.lean",
-    "statement": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_zero_div {f : ℝ → ℝ} {ρ : ℝ}\n  (hf : ExtremeValueTheory.IsRegularlyVarying f ρ) (hm : Measurable f) (hρ : -1 < ρ)\n  (hint : ∀ (x : ℝ), IntervalIntegrable f MeasureTheory.volume 0 x) :\n  Filter.Tendsto (fun x => (∫ (t : ℝ) in 0..x, f t) / (x * f x)) Filter.atTop (nhds (1 / (ρ + 1)))",
+    "statement": "ExtremeValueTheory.IsRegularlyVarying.tendsto_integral_interval_div {f : ℝ → ℝ} {ρ a : ℝ}\n  (hf : ExtremeValueTheory.IsRegularlyVarying f ρ) (hm : Measurable f) (hρ : -1 < ρ)\n  (hint : ∀ x ≥ a, IntervalIntegrable f MeasureTheory.volume a x) :\n  Filter.Tendsto (fun x => (∫ (t : ℝ) in a..x, f t) / (x * f x)) Filter.atTop (nhds (1 / (ρ + 1)))",
     "status": "full",
-    "scope_note": "Integrates from 0 and so assumes interval integrability on every [0, x]; the book integrates from a large X, an equivalent setting because f can be changed on [0, X).",
+    "scope_note": "Any lower limit a, with integrability on [a, x]. Assumes f Borel measurable on all of R; tendsto_integral_div_of_measurableNearTop assumes it only near infinity.",
     "axioms": [
       "Classical.choice",
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "12675d907d1464517ff26a5cc8d03403"
+    "input_hash": "f3727b23a80aaed1fa124babefe0ed1e"
   },
   {
     "id": "breiman",
