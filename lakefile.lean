@@ -19,3 +19,10 @@ lean_lib «ExtremeValueTheory» where
 the library. Built in CI by `lake build Test`; see `Test/README.md`. -/
 lean_lib «Test» where
   globs := #[.andSubmodules `Test]
+
+/-- The comparator challenge and its solution (see `comparator.json`). Not a default target and not
+part of the library. `roots` is empty so that tools that import every library root, such as
+`checkdecls`, do not load these two modules together: they declare the same names on purpose. -/
+lean_lib «ComparatorChallenge» where
+  roots := #[]
+  globs := #[.one `Challenge, .one `Solution]
