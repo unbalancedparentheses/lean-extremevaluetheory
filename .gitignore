@@ -1,4 +1,6 @@
 /.lake
+/dist
+__pycache__/
 /blueprint/web
 /blueprint/print
 /blueprint/src/web.paux
