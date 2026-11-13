@@ -32,6 +32,8 @@ and places the textbook examples in it, with the de Haan–Ferreira sign convent
 * `isInMDAGEV_paretoCDF`: Pareto(`α`) is in `MDA(H_{1/α})`.
 * `isInMDAGEV_powerCDF`: `1 - (1 - x)^α` (uniform for `α = 1`) is in `MDA(H_{-1/α})`.
 * `isInMDAGEV_standardExponentialCDF`: the standard exponential law is in `MDA(H_0)`.
+* `logisticCDF`: the standard logistic c.d.f. `x ↦ (1 + exp (-x))⁻¹`.
+* `isInMDAGumbel_logisticCDF`, `isInMDAGEV_logisticCDF`: the logistic law is in `MDA(H_0)`.
 
 ## References
 
@@ -91,6 +93,54 @@ theorem isInMDAGEV_powerCDF {α : ℝ} (hα : 0 < α) : (powerCDF hα).IsInMDAGE
 /-- **The standard exponential law is in `MDA(H_0)`** ([EKM, Table 3.4.4]). -/
 theorem isInMDAGEV_standardExponentialCDF : standardExponentialCDF.IsInMDAGEV 0 :=
   isInMDAGumbel_standardExponentialCDF.isInMDAGEV
+
+/-- The standard logistic c.d.f. `x ↦ (1 + exp (-x))⁻¹`. -/
+noncomputable def logisticCDF : CumulativeDistributionFunction where
+  toFun x := (1 + Real.exp (-x))⁻¹
+  mono' := fun x y hxy ↦ by
+    refine inv_anti₀ (add_pos zero_lt_one (Real.exp_pos _)) ?_
+    gcongr
+  right_continuous' := fun x ↦
+    ((continuous_const.add (Real.continuous_exp.comp continuous_neg)).inv₀
+      (fun y ↦ (add_pos zero_lt_one (Real.exp_pos _)).ne')).continuousWithinAt
+  tendsto_atTop := by
+    have h : Tendsto (fun x : ℝ ↦ (1 + Real.exp (-x))⁻¹) atTop (𝓝 ((1 + 0)⁻¹)) :=
+      (tendsto_const_nhds.add (Real.tendsto_exp_atBot.comp tendsto_neg_atTop_atBot)).inv₀
+        (by norm_num)
+    simpa using h
+  tendsto_atBot := by
+    have h : Tendsto (fun x : ℝ ↦ 1 + Real.exp (-x)) atBot atTop :=
+      Filter.tendsto_atTop_add_const_left atBot 1
+        (Real.tendsto_exp_atTop.comp tendsto_neg_atBot_atTop)
+    exact tendsto_inv_atTop_zero.comp h
+
+/-- **The standard logistic distribution is in the Gumbel domain of attraction** (direct
+computation using `isInMDAGumbel_of_tendsto_mul` with `a n = 1` and `b n = log n`). -/
+theorem isInMDAGumbel_logisticCDF : logisticCDF.IsInMDAGumbel := by
+  refine logisticCDF.isInMDAGumbel_of_tendsto_mul (a := fun _ ↦ 1) (b := fun n ↦ Real.log n)
+    (fun _ ↦ one_pos) fun x ↦ ?_
+  have hlim : Tendsto (fun n : ℕ ↦ Real.exp (-x) / (1 + Real.exp (-x) / n)) atTop
+      (𝓝 (Real.exp (-x) / (1 + 0))) :=
+    tendsto_const_nhds.div
+      (tendsto_const_nhds.add (tendsto_const_nhds.div_atTop tendsto_natCast_atTop_atTop))
+      (by norm_num)
+  rw [add_zero, div_one] at hlim
+  refine hlim.congr' ?_
+  filter_upwards [eventually_ge_atTop 1] with n hn
+  have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+  have hval : logisticCDF (1 * x + Real.log n) = (1 + Real.exp (-(1 * x + Real.log n)))⁻¹ := rfl
+  rw [hval, one_mul, neg_add, Real.exp_add, Real.exp_neg (Real.log _), Real.exp_log hn']
+  have h1 : 0 < 1 + Real.exp (-x) * (n : ℝ)⁻¹ :=
+    add_pos zero_lt_one (mul_pos (Real.exp_pos _) (inv_pos.2 hn'))
+  have h2 : 0 < 1 + Real.exp (-x) / (n : ℝ) :=
+    add_pos zero_lt_one (div_pos (Real.exp_pos _) hn')
+  field_simp
+  ring
+
+/-- **The standard logistic law is in `MDA(H_0)`** (direct computation from
+`isInMDAGumbel_logisticCDF`). -/
+theorem isInMDAGEV_logisticCDF : logisticCDF.IsInMDAGEV 0 :=
+  isInMDAGumbel_logisticCDF.isInMDAGEV
 
 /-! ### The link with `gevCDF` -/
 
