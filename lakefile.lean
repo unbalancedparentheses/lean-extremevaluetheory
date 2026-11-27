@@ -32,3 +32,12 @@ part of the library. `roots` is empty so that tools that import every library ro
 lean_lib «ComparatorChallenge» where
   roots := #[]
   globs := #[.one `Challenge, .one `Solution]
+
+/-- Standalone executable (`Float`) reference implementations of the library's estimators, used for
+numerical cross-checking against Python (`scipy.stats`) and R (`evd`, `exdex`). Not part of the
+verified mathematical library; see `scripts/crosscheck_estimators.py`. -/
+lean_lib «Executable» where
+  roots := #[`Executable.Estimators]
+
+lean_exe «evt_estimators» where
+  root := `Executable.Main
