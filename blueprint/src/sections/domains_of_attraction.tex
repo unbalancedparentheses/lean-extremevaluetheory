@@ -349,9 +349,12 @@ for $F$ is a function $f$, positive for $t$ near $x_F$, such that
   \label{prop:mda-gumbel-examples}
   \uses{def:std-exponential-cdf, def:std-Gumbel-cdf, thm:von-mises, def:mda-gumbel}
   \lean{CumulativeDistributionFunction.isInMDAGumbel_standardExponentialCDF,
-    CumulativeDistributionFunction.isInMDAGumbel_standardGumbelCDF}
+    CumulativeDistributionFunction.isInMDAGumbel_standardGumbelCDF,
+    CumulativeDistributionFunction.logisticCDF,
+    CumulativeDistributionFunction.isInMDAGumbel_logisticCDF,
+    CumulativeDistributionFunction.isInMDAGEV_logisticCDF}
   \leanok
-  The standard exponential distribution and the standard Gumbel distribution $\GumbelCDF$ are in
+  The standard exponential, standard Gumbel $\GumbelCDF$, and standard logistic distributions are in
   the Gumbel domain of attraction.
 \end{proposition}
 \begin{proof}

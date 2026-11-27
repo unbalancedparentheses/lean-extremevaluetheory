@@ -64,6 +64,7 @@ SOURCES = {
     "Billingsley": "Billingsley, Convergence of Probability Measures, 2nd ed. (1999)",
     "Breiman": "Breiman, On some limit theorems similar to the arc-sin law, Theory Probab. Appl. (1965)",
     "Coles": "Coles, An Introduction to Statistical Modeling of Extreme Values (2001)",
+    "Cissokho-Kulik": "Cissokho, Kulik, Estimation of cluster functionals for regularly varying time series: runs and sliding blocks estimators, Electron. J. Statist. (2021)",
     "DR85": "Davis, Resnick, Limit theory for moving averages of random variables with regularly varying tail "
             "probabilities, Ann. Probab. (1985)",
     "EGV": "Embrechts, Goldie, Veraverbeke, Subexponentiality and infinite divisibility, Z. Wahrsch. (1979)",

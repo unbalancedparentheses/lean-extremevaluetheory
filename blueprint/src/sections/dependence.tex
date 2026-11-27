@@ -789,6 +789,27 @@ We follow Basrak and Segers, \emph{Regularly varying multivariate time series}, 
   The mixing conditions follow from the geometric $\alpha$-mixing of the echo process.
 \end{proof}
 
+\begin{theorem}[Sliding-blocks estimators under \texorpdfstring{$\alpha$}{alpha}-mixing alone]
+  \label{thm:sliding-blocks-alpha-mixing}
+  \uses{thm:extremal-index-estimators}
+  \lean{ExtremeValueTheory.abs_covariance_le_strongMixingCoeff,
+    ExtremeValueTheory.slidingClusterEstimator,
+    ExtremeValueTheory.slidingBlocksEstimator,
+    ExtremeValueTheory.tendstoInMeasure_slidingClusterEstimator,
+    ExtremeValueTheory.tendstoInMeasure_slidingBlocksEstimator,
+    ExtremeValueTheory.HasSpectralTailProcess.tendstoInMeasure_slidingBlocksEstimator}
+  \leanok
+  For a stationary sequence with intermediate thresholds $n p_n \to \infty$, $r_n/n \to 0$, and strong
+  ($\alpha$-)mixing rates alone (with no $\beta$-mixing hypothesis, addressing Cissokho and Kulik 2021, \S5.3),
+  sliding-blocks cluster-functional estimators and the sliding-blocks extremal-index estimator converge in
+  probability to their population targets.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Ibragimov's $L^\infty$ covariance bound $|\operatorname{Cov}(U, V)| \le 4 \|U\|_\infty \|V\|_\infty \alpha(h)$
+  for bounded block functionals, combined with Chebyshev's inequality.
+\end{proof}
+
 \section{Stochastic recurrence equations and GARCH}
 
 \begin{theorem}[Stationary solution of \texorpdfstring{$X = AX + B$}{X = AX + B}]

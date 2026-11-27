@@ -28,8 +28,8 @@ likelihood theorems describe exact models, not real data: see [Limitations](#lim
 | | |
 |---|---|
 | Size | about 117,000 lines; 4,800+ theorems and lemmas |
-| Axioms | no `sorry`; CI checks that all 10,958 declarations use only `propext`, `Classical.choice`, `Quot.sound` |
-| [Theorem catalogue](catalogue/) | 232 headline results: 147 `full`, 2 `wrapper` (restate Mathlib), 83 `reduced` (a special case, an extra hypothesis, or part of the conclusion assumed), judged strictly; the gap is widest in statistics and likelihood, where 36 of 50 are `reduced` |
+| Axioms | no `sorry`; CI checks that all 10,965 declarations use only `propext`, `Classical.choice`, `Quot.sound` |
+| [Theorem catalogue](catalogue/) | 239 headline results: 151 `full`, 2 `wrapper` (restate Mathlib), 86 `reduced` (a special case, an extra hypothesis, or part of the conclusion assumed), judged strictly; the gap is widest in statistics and likelihood, where 39 of 54 are `reduced` |
 | [Audits](FAITHFULNESS.md) | 191 statements compared with the literature: 114 faithful, 60 faithful within a stated scope, 17 differ from the cited form while correct as stated |
 | Tests | 145 non-vacuity and 253 known-answer tests; 57 Python (`scipy.stats`) & R (`evd`, `exdex`) cross-checks on executable reference estimators |
 | [Challenge file](Challenge.lean) | four headline theorems stated using only Mathlib, checked by `lake comparator` |

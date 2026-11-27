@@ -44,10 +44,10 @@ Everything still open, in the order to do it. The sections below give the detail
 Ours, running or next:
 1. [ ] Codex review of the specification (`Challenge.lean`, core definitions, `full` labels, tests); fix what holds up
 2. [ ] `v0.10.0`, after that review and the downstream check, with the DOI in `CITATION.cff`, the README and the paper
-3. [ ] [#45](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/45) a computable GEV interval
+3. [x] [#45](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/45) a computable GEV interval (`tendsto_measure_mem_gevMLEReturnLevelPlugInInterval`)
 4. [ ] [#41](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/41) likelihood for block maxima from a domain of
    attraction: **the main gap for practice**
-5. [ ] [#42](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/42) the Gumbel case `ξ₀ = 0`
+5. [~] [#42](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/42) the Gumbel case `ξ₀ = 0` (2-parameter Gumbel MLE normality, computable plug-in CI, and 3×3 `gevFisherInfoZero` + score CLT done; 3-parameter GEV and 2-parameter GPD MLE normality at `ξ₀ = 0` in progress)
 6. [ ] The first Mathlib pull requests, as drafts (`upstream/mathlib/`)
 7. [ ] Peaks over threshold for real data: excesses from a law in a domain of attraction, a random number of exceedances, `ζ` estimated
 8. [ ] [#43](https://github.com/unbalancedparentheses/lean-extremevaluetheory/issues/43) moment normality for `γ ≤ 0`;
@@ -151,10 +151,9 @@ See "Only the maintainer can do these" in the ranked plan. Also: the three Depen
 
 ### Cleanup to do
 
-- [ ] Fix the remaining Mathlib deprecation warnings (about 18: `Statistics/`, `GEVDomain.lean`,
-      `ExtremalIndexEstimatorsIid.lean`) after the statistics agents finish
+- [x] Fix the remaining Mathlib deprecation warnings (`Statistics/`, `GEVDomain.lean`, `ExtremalIndexEstimatorsIid.lean`, and `Test/`)
 - [ ] Rename the remaining `Statistics/` lemmas whose names still contain `gpdSurvival'`
-- [ ] In the tests, replace `iidLaw_cdf` (`Test/NonVacuity/Processes.lean`) and `gumbelLaw_real_Iic`
+- [x] In the tests, replace `iidLaw_cdf` (`Test/NonVacuity/Processes.lean`) and `gumbelLaw_real_Iic`
       (`Test/NonVacuity/Multivariate.lean`) by the bridge's `hasLaw_measure_iff` and `measureReal_Iic`
 - [ ] `Statistics/Hill.lean` still converts by hand between `cdf (P.map Y)` and the survival function;
       use `CDFBridge` instead

@@ -30,6 +30,8 @@ sources:
       reference: "Breiman, On some limit theorems similar to the arc-sin law, Theory Probab. Appl. (1965)"
     - key: "Bücher-Segers"
       reference: "Bücher, Segers, On the maximum likelihood estimator for the generalized extreme-value distribution, Extremes (2017)"
+    - key: "Cissokho-Kulik"
+      reference: "Cissokho, Kulik, Estimation of cluster functionals for regularly varying time series: runs and sliding blocks estimators, Electron. J. Statist. (2021)"
     - key: "Coles"
       reference: "Coles, An Introduction to Statistical Modeling of Extreme Values (2001)"
     - key: "DR85"
@@ -128,18 +130,18 @@ axioms:
     - "propext"
   audit: "Test/AxiomAudit.lean fails the build if any declaration of the library uses another axiom"
 catalogue:
-  entries: 232
+  entries: 239
   by_status:
-    full: 147
+    full: 151
     wrapper: 2
-    reduced: 83
+    reduced: 86
   by_area:
     classical:
       full: 18
       wrapper: 2
       reduced: 2
     domains:
-      full: 17
+      full: 18
       wrapper: 0
       reduced: 4
     regular-variation:
@@ -163,9 +165,9 @@ catalogue:
       wrapper: 0
       reduced: 19
     likelihood:
-      full: 5
+      full: 6
       wrapper: 0
-      reduced: 17
+      reduced: 20
     dependence:
       full: 12
       wrapper: 0
@@ -179,6 +181,6 @@ catalogue:
       wrapper: 0
       reduced: 3
     new-results:
-      full: 20
+      full: 22
       wrapper: 0
       reduced: 1

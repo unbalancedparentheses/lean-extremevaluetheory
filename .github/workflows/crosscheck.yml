@@ -1,0 +1,44 @@
+name: Estimator Cross-Check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - 'Executable/**'
+      - 'scripts/crosscheck_estimators.py'
+      - 'lakefile.lean'
+      - '.github/workflows/crosscheck.yml'
+  workflow_dispatch:
+
+jobs:
+  crosscheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install elan
+        run: curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+
+      - name: Build standalone Lean estimator executable
+        run: ~/.elan/bin/lake build evt_estimators
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python packages (numpy, scipy)
+        run: pip install numpy scipy
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Install R packages (evd, exdex)
+        run: Rscript -e 'install.packages(c("evd", "exdex"), Ncpus = 2)'
+
+      - name: Run Python and R cross-checks against Lean executable
+        run: python3 scripts/crosscheck_estimators.py

@@ -355,13 +355,47 @@ We follow Smith, \emph{Maximum likelihood estimation in a class of nonregular ca
   \lean{ExtremeValueTheory.gevReturnLevelVar, ExtremeValueTheory.gevReturnLevelVar_pos,
     ExtremeValueTheory.tendstoInDistribution_gevMLEReturnLevel,
     ExtremeValueTheory.exists_gevMLE_returnLevel_tendstoInDistribution,
-    ExtremeValueTheory.tendsto_measure_mem_gevMLEReturnLevelInterval}
+    ExtremeValueTheory.tendsto_measure_mem_gevMLEReturnLevelInterval,
+    ExtremeValueTheory.continuousAt_gevFisherInfo,
+    ExtremeValueTheory.continuousAt_gevMLECov,
+    ExtremeValueTheory.continuousAt_gevReturnLevelVar,
+    ExtremeValueTheory.tendsto_measure_mem_gevMLEReturnLevelPlugInInterval,
+    ExtremeValueTheory.exists_gevMLE_returnLevelPlugInInterval_tendsto}
   \leanok
   In the same setting, for $m > 1$, $\sqrt{n}(\hat z_m - z_m) \Rightarrow N(0, \nabla z^\top V \nabla z)$, a
-  nondegenerate limit, with no normality assumed. The Wald interval has the nominal coverage for any consistent
-  standard error [Coles, \S3.3.3].
+  nondegenerate limit, with no normality assumed. Because the Fisher information, its inverse, and
+  $\nabla z^\top V \nabla z$ are continuous on $\{\xi > -1/2, \xi \ne 0, \sigma > 0\}$, the computable
+  plug-in Wald interval $\hat z_m \pm z \hat s_n / \sqrt{n}$ has asymptotic coverage $N(0,1)([-z,z])$
+  with no standard-error hypothesis [Coles, \S3.3.3].
 \end{theorem}
 \begin{proof}
   \leanok
-  The delta method applied to the previous theorem.
+  The delta method applied to the previous theorem, together with continuity of the plug-in variance.
+\end{proof}
+
+\begin{theorem}[Two-parameter Gumbel MLE normality and $3 \times 3$ Fisher information at \texorpdfstring{$\xi = 0$}{xi = 0}]
+  \label{thm:gumbel-mle-normality}
+  \uses{thm:gev-gumbel-limit, thm:delta-method}
+  \lean{ExtremeValueTheory.gumbelMLECov, ExtremeValueTheory.posDef_gumbelMLECov,
+    ExtremeValueTheory.tendstoInDistribution_gumbelMLE,
+    ExtremeValueTheory.exists_gumbelMLE_tendstoInDistribution,
+    ExtremeValueTheory.tendstoInDistribution_gumbelMLEReturnLevel,
+    ExtremeValueTheory.tendsto_measure_mem_gumbelMLEReturnLevelPlugInInterval,
+    ExtremeValueTheory.gevFisherInfoZero,
+    ExtremeValueTheory.posDef_gevFisherInfoZero,
+    ExtremeValueTheory.tendstoInDistribution_gumbelScoreVec3}
+  \leanok
+  For an iid Gumbel$(\mu_0, \sigma_0)$ sample ($\xi = 0$ fixed), measurable maximizers over a compact
+  $K \subset \mathbb{R} \times (0, \infty)$ with $(\mu_0, \sigma_0) \in \operatorname{int} K$ satisfy
+  $\sqrt{n}(\hat\theta_n - \theta_0) \Rightarrow N(0, I_{\mathrm{Gumbel}}(\sigma_0)^{-1})$, and the
+  return level and its computable plug-in Wald interval achieve their asymptotic limit and nominal coverage.
+  For the full three-parameter GEV model at $\xi = 0$, the $3 \times 3$ Fisher information matrix
+  $\mathrm{gevFisherInfoZero}(\sigma)$ is positive definite and the normalized trivariate score converges
+  to $N(0, \mathrm{gevFisherInfoZero}(\sigma))$.
+\end{theorem}
+\begin{proof}
+  \leanok
+  Lipschitz control of the Gumbel Hessian, strong law for the averaged observed information, and Slutsky
+  for the two-parameter model; direct linear independence of the three Gumbel scores at $z = 0, -1$
+  and Cram\'er--Wold for the trivariate score at $\xi = 0$.
 \end{proof}
