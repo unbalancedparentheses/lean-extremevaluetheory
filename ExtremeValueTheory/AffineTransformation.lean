@@ -768,7 +768,7 @@ lemma AffineIncrEquiv.extend_strictMono (A : AffineIncrEquiv) : StrictMono A.ext
   intro x y hxy
   induction x using EReal.rec <;> induction y using EReal.rec
   all_goals simp_all [EReal.coe_lt_coe_iff]
-  all_goals first | exact EReal.bot_lt_coe _ | exact EReal.coe_lt_top _ | exact hA hxy
+  exact hA hxy
 
 /-- The extension of an orientation-preserving affine equivalence to `[-∞,+∞]`, as an order
 isomorphism. -/

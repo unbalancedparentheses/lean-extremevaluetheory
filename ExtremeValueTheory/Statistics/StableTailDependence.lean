@@ -80,7 +80,7 @@ Asymptotic normality of `ℓ̂_n` needs a second-order condition and is not prov
 -/
 
 open MeasureTheory ProbabilityTheory Filter Topology Finset
-open Set (Ioi Ioo mem_setOf_eq mem_iUnion)
+open Set (Ioi Ioo mem_ofPred_eq mem_iUnion)
 
 namespace ExtremeValueTheory
 
@@ -214,6 +214,7 @@ lemma empiricalTailCount_le_add_marginalRankCount (X : ℕ → ι → ℝ) (n k 
   · exact Or.inl ⟨hin, j, hj.trans_le (mul_le_mul_of_nonneg_left hl hk)⟩
   · exact Or.inr ⟨j, hin, hj.trans_le (mul_le_mul_of_nonneg_left hl hk)⟩
 
+omit [Fintype ι] in
 /-- The per-coordinate form of the upper sandwich. -/
 lemma marginalRankCount_le_card {F : ℝ → ℝ} (hF : Monotone F) (X : ℕ → ι → ℝ) (n : ℕ) (j : ι)
     {b c : ℝ} (hb : c ≤ #{m ∈ range n | b < F (X m j)}) :
@@ -354,7 +355,7 @@ theorem tendsto_measure_abs_card_div_sub {X : ℕ → Ω → E} (hX : ∀ i, Mea
   have hsub : {ω | ε ≤ |(#{i ∈ range n | X i ω ∈ S n} : ℝ) / b n - m|} ⊆
       {ω | ε * b n / 2 ≤ |T ω - P[T]|} := by
     intro ω hω
-    simp only [mem_setOf_eq] at hω ⊢
+    simp only [mem_ofPred_eq] at hω ⊢
     rw [hTfun, hET]
     have h1 : (#{i ∈ range n | X i ω ∈ S n} : ℝ) / b n - m =
         ((#{i ∈ range n | X i ω ∈ S n} : ℝ) - n * P.real (X 0 ⁻¹' S n)) / b n +
@@ -407,7 +408,7 @@ theorem tendsto_measure_abs_card_tailUnion_sub {X : ℕ → Ω → ι → ℝ} (
   have := tendsto_measure_abs_card_div_sub hX hindep hident
     (S := fun n ↦ {y : ι → ℝ | ∃ j, 1 - (k n : ℝ) / n * s j < marginal μ j (y j)})
     (fun n ↦ measurableSet_tailUnion _ _) hkR (m := ℓ s) ?_ hε
-  · simpa only [Set.mem_setOf_eq] using this
+  · simpa only [Set.mem_ofPred_eq] using this
   have hlim := (hℓ s hs).comp (tendsto_div_nhdsGT_zero hk hkn)
   refine hlim.congr' ?_
   filter_upwards [hk.eventually_gt_atTop 0, eventually_gt_atTop 0] with n hk hn
@@ -422,6 +423,7 @@ theorem tendsto_measure_abs_card_tailUnion_sub {X : ℕ → Ω → ι → ℝ} (
   have hn' : (0 : ℝ) < n := by exact_mod_cast hn
   field_simp
 
+omit [Fintype ι] in
 open scoped Classical in
 /-- **Consistency of the marginal tail counts**: for a continuous marginal and `s > 0`,
 `(1/k) #{i < n | F_j(X_i^j) > 1 - (k/n) s} → s` in probability. -/
@@ -525,11 +527,11 @@ theorem tendstoInMeasure_empiricalStableTailDependence {X : ℕ → Ω → ι �
     ((measure_union_le _ _).trans le_rfl) ((measure_union_le _ _).trans
       (add_le_add (measure_iUnion_fintype_le _ _) (measure_iUnion_fintype_le _ _)))))
   intro ω hω
-  simp only [mem_setOf_eq] at hω
+  simp only [mem_ofPred_eq] at hω
   by_contra hout
   simp only [Set.mem_union, mem_iUnion, not_or, not_exists] at hout
   obtain ⟨⟨h1, h2⟩, h3, h4⟩ := hout
-  simp only [E1, E2, E3, E4, mem_setOf_eq, not_le] at h1 h2 h3 h4
+  simp only [E1, E2, E3, E4, mem_ofPred_eq, not_le] at h1 h2 h3 h4
   -- the sandwich
   have hlow : (#{i ∈ range n | ∃ j, 1 - (k n : ℝ) / n * xl j < F j (X i ω j)} : ℝ) ≤
       empiricalTailCount (fun i ↦ X i ω) n (k n) x := by
@@ -631,7 +633,7 @@ theorem tendsto_measure_exists_abs_empiricalStableTailDependence_sub {X : ℕ �
   by_contra hout
   simp only [Set.mem_union, mem_iUnion, not_or, not_exists] at hout
   obtain ⟨hAω, hBω⟩ := hout
-  simp only [A, B, mem_setOf_eq, not_le, Real.dist_eq] at hAω hBω
+  simp only [A, B, mem_ofPred_eq, not_le, Real.dist_eq] at hAω hBω
   set L : ((ι → ℝ)) → ℝ := fun y ↦ empiricalStableTailDependence (fun i ↦ X i ω) n (k n) y with hL
   -- the floor of `x_j / δ`
   have hq : ∀ j, ⌊x j / δ⌋₊ < M + 1 := fun j ↦ by
@@ -757,7 +759,7 @@ theorem tendstoInMeasure_empiricalStableTailDependence_of_tendsto {X : ℕ → �
       T (half_pos hε)) (Eventually.of_forall fun _ ↦ bot_le) ?_
   filter_upwards [hypos, hyT, hsmall] with n hn1 hn2 hn3
   refine measure_mono fun ω hω ↦ ⟨y n, fun j ↦ ⟨hn1 j, hn2 j⟩, ?_⟩
-  simp only [mem_setOf_eq, Real.dist_eq] at hω
+  simp only [mem_ofPred_eq, Real.dist_eq] at hω
   have hLip := (hℓ.abs_sub_le hc hn1 hx).trans_lt hn3
   have h1 := abs_lt.1 hLip
   rcases le_abs'.1 hω with h | h
@@ -811,7 +813,7 @@ theorem tendstoInMeasure_empiricalStableTailDependenceOrderStat {X : ℕ → Ω 
   filter_upwards [hfl1, hfl2, hk.eventually_gt_atTop 0] with n h1 h2 hkpos
   congr 1
   ext ω
-  simp only [mem_setOf_eq]
+  simp only [mem_ofPred_eq]
   rw [empiricalStableTailDependenceOrderStat_eq _ hkpos fun j ↦ ⟨h1 j, h2 j⟩]
 
 end Consistency
@@ -859,6 +861,7 @@ theorem IsMDAWith.tendsto_measure_exists_abs_empiricalStableTailDependence_sub
   ExtremeValueTheory.tendsto_measure_exists_abs_empiricalStableTailDependence_sub hX hindep hident
     hlaw hcμ (h.hasStableTailDependence hcμ hcν) hk hkn T hε
 
+omit [IsProbabilityMeasure P] in
 lemma tendstoInMeasure_const_sub {f : ℕ → Ω → ℝ} {g : Ω → ℝ} (c : ℝ)
     (h : TendstoInMeasure P f atTop g) :
     TendstoInMeasure P (fun n ω ↦ c - f n ω) atTop (fun ω ↦ c - g ω) := by
@@ -867,7 +870,7 @@ lemma tendstoInMeasure_const_sub {f : ℕ → Ω → ℝ} {g : Ω → ℝ} (c : 
   refine (h ε hε).congr fun n ↦ ?_
   congr 1
   ext ω
-  simp only [mem_setOf_eq, Real.dist_eq, sub_sub_sub_cancel_left, abs_sub_comm]
+  simp only [mem_ofPred_eq, Real.dist_eq, sub_sub_sub_cancel_left, abs_sub_comm]
 
 /-- The rank-based estimator `χ̂_n = 2 - ℓ̂_n(1, 1)` of the upper tail dependence coefficient. -/
 noncomputable def tailDependenceEstimator (X : ℕ → Fin 2 → ℝ) (n k : ℕ) : ℝ :=

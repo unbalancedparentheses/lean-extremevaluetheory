@@ -398,7 +398,7 @@ theorem test_pickandsMap_center (γ : ℝ) : pickandsMap γ pickandsCenter = γ 
 theorem test_pickandsBias_one_neg_one : pickandsBias 1 (-1) = 2 := by
   have hL : Real.log 2 ≠ 0 := (Real.log_pos one_lt_two).ne'
   rw [pickandsBias_of_ne 1 (by norm_num : (-1 : ℝ) ≠ 0),
-    show (1 : ℝ) + -1 = 0 by norm_num, extRVLimit_zero_left, extRVLimit_of_ne one_ne_zero]
+    show (1 : ℝ) + -1 = 0 by norm_num, boxCox_zero, boxCox_of_ne one_ne_zero]
   norm_num
 
 /-- The Pickands bias for `ρ = 0` does not depend on `γ`: `b_{γ,0} = 1`. -/

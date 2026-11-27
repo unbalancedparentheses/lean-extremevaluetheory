@@ -20,7 +20,7 @@ open Real Set
 
 /-- Lemma 3.1 (ode-of-order-two-for-Q) -/
 lemma ode_of_order_two_for_Q
-    {Q α : ℝ → ℝ} (Q_diffble : Differentiable ℝ Q) (hQ0 : Q 0 = 0)
+    {Q α : ℝ → ℝ} (Q_diffble : Differentiable ℝ Q) (_hQ0 : Q 0 = 0)
     (hDQ0 : deriv Q 0 = 1) (Q_eqn : ∀ h s, Q (h + s) = Q h * α s + Q s) :
     ContDiff ℝ 2 Q ∧ (∀ s, deriv (deriv Q) s = (deriv Q s) * (deriv (deriv Q) 0)) := by
   -- Step 1: `α = Q'`.

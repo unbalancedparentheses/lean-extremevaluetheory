@@ -223,11 +223,25 @@ for proofs sketches and dependencies.
   `IsStable.existsUnique_isStableIndex`), every non-degenerate limit of normalized sums is stable, and
   the domain of attraction of the normal law is characterized by slow variation of the truncated second
   moment (`domainOfAttraction_gaussianReal_iff`).
-- **Joint normality of the GEV maximum likelihood estimator** (`Statistics/GEVMLENormality.lean`,
-  `GEVReturnLevelNormality.lean`): for an exact iid GEV sample, `ξ₀ > −1/2`, `ξ₀ ≠ 0`, and maximizers over a compact set with
-  the truth in its interior, `√n(θ̂ − θ₀) ⇒ N(0, I⁻¹)` (`tendstoInDistribution_gevMLE`); measurable maximizers exist
-  (`exists_gevMLE_tendstoInDistribution`), and the return level is normal with no normality assumed
-  (`tendstoInDistribution_gevMLEReturnLevel`, `tendsto_measure_mem_gevMLEReturnLevelInterval`). `ξ₀ = 0` is not covered.
+- **Joint normality of the GEV and Gumbel maximum likelihood estimators** (`Statistics/GEVMLENormality.lean`,
+  `GEVReturnLevelNormality.lean`, `GumbelMLENormality.lean`): for an exact iid GEV sample, `ξ₀ > −1/2`, `ξ₀ ≠ 0`,
+  and maximizers over a compact set with the truth in its interior, `√n(θ̂ − θ₀) ⇒ N(0, I⁻¹)`
+  (`tendstoInDistribution_gevMLE`); measurable maximizers exist (`exists_gevMLE_tendstoInDistribution`), the
+  return level is normal (`tendstoInDistribution_gevMLEReturnLevel`), and the plug-in Wald interval using the
+  continuous Fisher-information variance `gevReturnLevelVar` has asymptotic coverage `N(0, 1)([-z, z])` with no
+  standard-error hypothesis (`tendsto_measure_mem_gevMLEReturnLevelPlugInInterval`). For the two-parameter Gumbel
+  model (`ξ = 0`), the MLE is jointly normal (`tendstoInDistribution_gumbelMLE`,
+  `exists_gumbelMLE_tendstoInDistribution`), with unconditional return-level normality and computable plug-in CI
+  (`tendstoInDistribution_gumbelMLEReturnLevel`, `tendsto_measure_mem_gumbelMLEReturnLevelPlugInInterval`);
+  the full `3 × 3` GEV Fisher information at `ξ = 0` is positive definite with a trivariate score CLT
+  (`posDef_gevFisherInfoZero`, `tendstoInDistribution_gumbelScoreVec3`). Three-parameter GEV MLE normality at
+  `ξ₀ = 0` is not yet covered.
+- **Sliding-blocks cluster and extremal-index estimators under α-mixing** (`Statistics/SlidingBlocks.lean`):
+  Ibragimov's `L∞` strong-mixing covariance bound (`abs_covariance_le_strongMixingCoeff`); weak consistency of
+  sliding-blocks cluster-functional estimators (`tendstoInMeasure_slidingClusterEstimator`) and the sliding-blocks
+  extremal-index estimator (`tendstoInMeasure_slidingBlocksEstimator`,
+  `HasSpectralTailProcess.tendstoInMeasure_slidingBlocksEstimator`) under α-mixing rates alone, with no β-mixing
+  hypothesis (addressing Cissokho–Kulik 2021, §5.3).
 - **Nonparametric tail dependence** (`Multivariate/StableTailDependence.lean`, `Statistics/StableTailDependence.lean`):
   the empirical stable tail dependence function is consistent, pointwise (`tendstoInMeasure_empiricalStableTailDependence`)
   and uniformly (`tendsto_measure_exists_abs_empiricalStableTailDependence_sub`), and `χ̂ → 2 − ℓ(1,1)`

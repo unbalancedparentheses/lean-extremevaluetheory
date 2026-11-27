@@ -129,7 +129,7 @@ lemma le_sInf_setOf_lcInv_ge {F : R → S} (x x' : R) (hx : x' < x) :
   apply le_sInf fun y hy ↦ ?_
   simp only [mem_ofPred_eq] at hy
   by_contra con
-  simp only [ge_iff_le, not_le] at con
+  simp only [not_le] at con
   simpa using (hy.trans (lcInv_mono F con.le)).trans_lt aux
 
 lemma sSup_setOf_rcInv_le_le {F : R → S} (x x' : R) (hx : x < x') :

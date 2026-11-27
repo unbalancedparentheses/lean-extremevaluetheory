@@ -232,6 +232,37 @@ theorem test_nonvacuous_tendstoInMeasure_runsEstimator :
       (tendsto_hk hlaw) (by simpa using tendsto_r_div))
     (tendsto_sum_alphaMixing_div_of_isMDependent hm (Eventually.of_forall fun _ => le_rfl) _)
 
+/-- Exercises `tendstoInMeasure_slidingBlocksEstimator_of_isMDependent`: same iid `Exp(1)`
+sequence, thresholds and block lengths; the sliding-blocks estimator tends to `θ = 1`.
+All hypotheses discharged. -/
+theorem test_nonvacuous_tendstoInMeasure_slidingBlocksEstimator_of_isMDependent :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ),
+      IsProbabilityMeasure P ∧ (∀ i, HasLaw (X i) (expMeasure 1) P) ∧ iIndepFun X P ∧
+      TendstoInMeasure P (fun n => slidingBlocksEstimator X n (r n) (u n)) atTop (fun _ => 1) := by
+  obtain ⟨Ω, _, P, X, hP, hXm, hlaw, hind, hid⟩ := exists_iid_exp
+  refine ⟨Ω, _, P, X, hP, hlaw, hind, ?_⟩
+  exact tendstoInMeasure_slidingBlocksEstimator_of_isMDependent hXm
+    (isStationary_of_iIndepFun hXm hind hid) (hind.isMDependent_zero hXm) tendsto_r tendsto_r_div
+    (tendsto_hk hlaw) (tendsto_blockRatio hXm hlaw hind hid)
+
+/-- Exercises the general `tendstoInMeasure_slidingClusterEstimator` without `β`-mixing:
+iid `Exp(1)` sequence with the bounded cluster functional `blockExceedInd`, proving consistency
+from `α`-mixing rates alone. All hypotheses discharged. -/
+theorem test_nonvacuous_tendstoInMeasure_slidingBlocksEstimator :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ),
+      IsProbabilityMeasure P ∧ (∀ i, HasLaw (X i) (expMeasure 1) P) ∧ iIndepFun X P ∧
+      TendstoInMeasure P (fun n => slidingBlocksEstimator X n (r n) (u n)) atTop (fun _ => 1) := by
+  obtain ⟨Ω, _, P, X, hP, hXm, hlaw, hind, hid⟩ := exists_iid_exp
+  refine ⟨Ω, _, P, X, hP, hlaw, hind, ?_⟩
+  have hm := hind.isMDependent_zero hXm
+  refine tendstoInMeasure_slidingBlocksEstimator hXm (isStationary_of_iIndepFun hXm hind hid) r_pos
+    tendsto_r_div (tendsto_hk hlaw) (tendsto_blockRatio hXm hlaw hind hid)
+    (s := fun _ => 0) (by simp)
+    (tendsto_sum_alphaMixing_div_of_isMDependent hm (Eventually.of_forall fun _ => le_rfl) _)
+    (tendsto_sum_alphaMixing_sliding_of_pointwise ?_)
+  refine tendsto_const_nhds.congr fun n => ?_
+  rw [hm.alphaMixing_eq_zero (by omega), ENNReal.toReal_zero, zero_div]
+
 /-! ### Intervals estimator -/
 
 /-- Exercises `tendstoInMeasure_intervalsEstimator₁` (Ferro–Segers): `mₙ = n` iid

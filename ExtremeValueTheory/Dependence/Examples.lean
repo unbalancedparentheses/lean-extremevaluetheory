@@ -130,6 +130,7 @@ variable {Z : ℕ → Ω → ℝ} (hZ : ∀ t, Measurable (Z t)) (hind : iIndepF
   (hid : ∀ t, IdentDistrib (Z t) (Z 0) P P)
 include hZ hind hid
 
+omit [IsProbabilityMeasure P] in
 /-- The moving maximum `X t = max (Z t) (Z (t + 1))` of a stationary sequence is stationary. -/
 theorem isStationary_movingMax :
     IsStationary (fun t ω ↦ max (Z t ω) (Z (t + 1) ω)) P := by

@@ -239,6 +239,7 @@ import ExtremeValueTheory.Minimality.ClassicalHill
 import ExtremeValueTheory.Minimality.ClassicalSummary
 import ExtremeValueTheory.Dependence.EchoMixing
 import ExtremeValueTheory.Statistics.ExtremalIndexEstimators
+import ExtremeValueTheory.Statistics.SlidingBlocks
 import ExtremeValueTheory.Statistics.ExtremalIndexEstimatorsIntervals
 import ExtremeValueTheory.Statistics.ExtremalIndexEstimatorsIid
 import ExtremeValueTheory.Statistics.FerroSegersLaw
@@ -247,6 +248,7 @@ import ExtremeValueTheory.ForMathlib.Probability.WaldInterval
 import ExtremeValueTheory.Statistics.ReturnLevelNormality
 import ExtremeValueTheory.Statistics.ConfidenceIntervals
 import ExtremeValueTheory.Statistics.GEVReturnLevelNormality
+import ExtremeValueTheory.Statistics.GumbelMLENormality
 import ExtremeValueTheory.Statistics.LMoments
 import ExtremeValueTheory.Statistics.LMomentsEstimators
 import ExtremeValueTheory.Statistics.MeanExcess

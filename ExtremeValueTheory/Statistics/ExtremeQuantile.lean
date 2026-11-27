@@ -77,7 +77,7 @@ variable {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasur
 
 /-- The former name of the **tail quantile** `x_p = F^←(1 - p) = inf {x | P(Y > x) ≤ p}` of a
 real random variable `Y`; it is `upperQuantile (survival P Y) p`. -/
-@[deprecated upperQuantile (since := "2026-11-05")]
+@[deprecated "Use `upperQuantile (survival P Y)` instead" (since := "2026-11-05")]
 noncomputable abbrev tailQuantile (P : Measure Ω) (Y : Ω → ℝ) (p : ℝ) : ℝ :=
   upperQuantile (survival P Y) p
 

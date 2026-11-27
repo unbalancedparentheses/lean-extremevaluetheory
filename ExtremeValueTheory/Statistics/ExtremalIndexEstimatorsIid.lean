@@ -62,7 +62,7 @@ theorem measureReal_runEvent_of_iIndepFun (hX : ∀ i, Measurable (X i)) (hind :
   have e : runEvent X r i u = ⋂ t ∈ range (r + 1), X (i + t) ⁻¹' f t := by
     ext ω
     simp only [runEvent, maxLE, Set.mem_inter_iff, Finset.mem_Ioc, Set.mem_iInter,
-      Finset.mem_range, Set.mem_preimage, f, Set.mem_setOf_eq]
+      Finset.mem_range, Set.mem_preimage, f, Set.mem_ofPred_eq]
     constructor
     · rintro ⟨h0, h⟩ t ht
       split_ifs with h'
@@ -71,7 +71,7 @@ theorem measureReal_runEvent_of_iIndepFun (hX : ∀ i, Measurable (X i)) (hind :
     · intro h
       refine ⟨by simpa using h 0 (by omega), fun t ht => ?_⟩
       have := h (t - i) (by omega)
-      rw [if_neg (by omega), show i + (t - i) = t by omega] at this
+      rw [ite_eq_right (by omega), show i + (t - i) = t by omega] at this
       exact this
   have hmeas : ∀ t ∈ range (r + 1), MeasurableSet (f t) := fun t _ => by
     simp only [f]; split_ifs <;> measurability
@@ -80,11 +80,11 @@ theorem measureReal_runEvent_of_iIndepFun (hX : ∀ i, Measurable (X i)) (hind :
   have h1 : ∀ t ∈ range r, (P (X (i + (t + 1)) ⁻¹' f (t + 1))).toReal =
       1 - P.real {ω | u < X 0 ω} := by
     intro t _
-    simp only [f, if_neg (Nat.succ_ne_zero t)]
+    simp only [f, ite_eq_right (Nat.succ_ne_zero t)]
     rw [(hid (i + (t + 1))).measure_mem_eq measurableSet_Iic, ← measureReal_le_eq_one_sub hX]
     rfl
   rw [Finset.prod_congr rfl h1, Finset.prod_const, Finset.card_range, mul_comm]
-  simp only [f, if_pos rfl, add_zero]
+  simp only [f, ite_eq_left rfl, add_zero]
   rw [(hid i).measure_mem_eq measurableSet_Ioi]
   rfl
 

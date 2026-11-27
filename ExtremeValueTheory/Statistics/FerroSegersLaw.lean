@@ -30,7 +30,7 @@ open MeasureTheory ProbabilityTheory
 namespace ExtremeValueTheory
 
 /-- All moments of the Ferro–Segers law are finite: `x ↦ x^j` is integrable. -/
-theorem integrable_pow_ferroSegersLaw {θ : ℝ} (hθ0 : 0 < θ) (j : ℕ) :
+theorem integrable_pow_ferroSegersLaw {θ : ℝ} (_hθ0 : 0 < θ) (j : ℕ) :
     Integrable (fun x : ℝ => x ^ j) (ferroSegersLaw θ) := by
   have := isProbabilityMeasure_expMeasure (r := 1) one_pos
   have hmeas : Measurable fun x : ℝ => x / θ := by fun_prop

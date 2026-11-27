@@ -157,7 +157,7 @@ noncomputable def equiv_probabilityMeasure :
   left_inv := by
     intro F
     ext x
-    simp [F.apply_eq_measure_Iic x, ProbabilityMeasure.cdf_toStieltjesFunction_apply_eq]
+    simp [F.apply_eq_measure_Iic x]
     rfl
   right_inv := by
     intro μ

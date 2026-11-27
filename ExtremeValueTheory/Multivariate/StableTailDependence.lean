@@ -90,7 +90,7 @@ lemma measurableSet_one_sub_lt_marginal (j : ι) (c : ℝ) :
 
 lemma measurableSet_tailUnion [Countable ι] (t : ℝ) (x : ι → ℝ) :
     MeasurableSet {y : ι → ℝ | ∃ j, 1 - t * x j < marginal μ j (y j)} := by
-  rw [setOf_exists]
+  rw [ofPred_exists]
   exact MeasurableSet.iUnion fun j ↦ measurableSet_one_sub_lt_marginal j _
 
 /-- **Probability integral transform**: for a continuous marginal `F_j`,
@@ -102,12 +102,12 @@ theorem measureReal_one_sub_lt_marginal {j : ι} (hc : Continuous (marginal μ j
   have hsub : {y : ι → ℝ | 1 - s < marginal μ j (y j)} ⊆ {y | t < y j} := fun y hy ↦ by
     by_contra h
     have := marginal_mono (μ := μ) j (not_lt.1 h)
-    simp only [mem_setOf_eq] at hy
+    simp only [mem_ofPred_eq] at hy
     linarith
   have hnull : μ.real ({y : ι → ℝ | t < y j} \ {y | 1 - s < marginal μ j (y j)}) = 0 := by
     refine (measureReal_eq_zero_iff (measure_ne_top _ _)).2 (measure_mono_null (fun y hy ↦ ?_)
       (measure_lt_and_marginal_le_eq_zero hc t))
-    simp only [Set.mem_sdiff, mem_setOf_eq, not_lt] at hy
+    simp only [Set.mem_sdiff, mem_ofPred_eq, not_lt] at hy
     exact ⟨hy.1, ht ▸ hy.2⟩
   rw [measureReal_eq_measureReal_of_null_sdiff hsub hnull, measureReal_lt_apply, ht]
   ring
@@ -138,7 +138,7 @@ theorem tailUnionProb_le_add [Fintype ι] (hc : ∀ j, Continuous (marginal μ j
     · have hmul : t * y j ≤ t * x j := mul_le_mul_of_nonneg_left hxy ht.le
       have hs : {z : ι → ℝ | 1 - t * y j < marginal μ j (z j)} ⊆
           {z | 1 - t * x j < marginal μ j (z j)} := fun z hz ↦ by
-        simp only [mem_setOf_eq] at hz ⊢
+        simp only [mem_ofPred_eq] at hz ⊢
         linarith
       rw [measureReal_sdiff hs (measurableSet_one_sub_lt_marginal j _),
         measureReal_one_sub_lt_marginal (hc j) (hx j).1 (hx j).2,
@@ -147,7 +147,7 @@ theorem tailUnionProb_le_add [Fintype ι] (hc : ∀ j, Continuous (marginal μ j
     · have hmul : t * x j ≤ t * y j := mul_le_mul_of_nonneg_left hxy ht.le
       have hempty : D j = ∅ := by
         ext z
-        simp only [D, Set.mem_sdiff, mem_setOf_eq, mem_empty_iff_false, iff_false, not_and,
+        simp only [D, Set.mem_sdiff, mem_ofPred_eq, mem_empty_iff_false, iff_false, not_and,
           not_not]
         intro hz
         linarith

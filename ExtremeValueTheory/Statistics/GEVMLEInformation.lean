@@ -125,7 +125,9 @@ noncomputable def gevEtaJInv (ξ₀ σ₀ : ℝ) (f : Fin 3 → ℝ) : ℝ × �
 lemma gevEtaJ_gevEtaJInv (hξ₀ : ξ₀ ≠ 0) (hσ₀ : σ₀ ≠ 0) (f : Fin 3 → ℝ) :
     gevEtaJ ξ₀ σ₀ (gevEtaJInv ξ₀ σ₀ f) = f := by
   funext j
-  fin_cases j <;> simp [gevEtaJ, gevEtaJInv] <;> field_simp <;> ring
+  fin_cases j <;> simp [gevEtaJ, gevEtaJInv]
+  · field_simp
+  · field_simp; ring
 
 lemma gevEtaJInv_gevEtaJ (hξ₀ : ξ₀ ≠ 0) (hσ₀ : σ₀ ≠ 0) (d : ℝ × ℝ × ℝ) :
     gevEtaJInv ξ₀ σ₀ (gevEtaJ ξ₀ σ₀ d) = d := by

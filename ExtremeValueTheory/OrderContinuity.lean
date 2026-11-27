@@ -34,7 +34,7 @@ lemma forall_isLUB_imp_isLUB_image_iff_isLUB_image_Iio {f : R → S} (f_mono : M
     refine ⟨by simpa [mem_upperBounds] using fun a ha ↦ f_mono (hx.1 ha), ?_⟩
     intro y hy
     apply h.2
-    simp only [mem_lowerBounds, mem_upperBounds, mem_image, forall_exists_index, and_imp,
+    simp only [mem_upperBounds, mem_image, forall_exists_index, and_imp,
                forall_apply_eq_imp_iff₂] at hy ⊢
     intro a a_lt
     obtain ⟨b, b_in_s, hb⟩ : ∃ b ∈ s, a < b := by rwa [mem_Iio, lt_isLUB_iff hx] at a_lt

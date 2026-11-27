@@ -199,7 +199,7 @@ lemma Real.eq_Ioo_or_Iio_or_Ioi_or_univ_of_isOpen_of_isConnected
 -- Corrected from upstream: the conclusion had `(interior A).Nonempty` (false for a fat Cantor
 -- set `A`); the intended condition is that the interval `J` is nontrivial.
 lemma exists_interval_measure_inter_gt_mul_measure
-    {A : Set ℝ} (A_mble : MeasurableSet A) (A_pos : 0 < volume A) (A_fin : volume A < ⊤)
+    {A : Set ℝ} (_A_mble : MeasurableSet A) (A_pos : 0 < volume A) (_A_fin : volume A < ⊤)
     {r : ENNReal} (r_lt_one : r < 1) :
     ∃ (J : Set ℝ), IsConnected J ∧ (interior J).Nonempty ∧ volume (J ∩ A) > r * volume J := by
   -- Not needed downstream: the Steinhaus-type results below use Mathlib's
@@ -271,7 +271,7 @@ lemma Ioo_subset_union_add_self_of_Ioo_subset
     · exact Or.inr (mem_add (J_ge ⟨by linarith [hx.1], by linarith⟩))
 
 lemma volume_union_add_self_ge_of_Ioo_subset
-    {J : Set ℝ} {a b : ℝ} (hab : a ≤ b) (J_ge : Ioo a b ⊆ J) (t : ℝ) (ht : |t| < b - a) :
+    {J : Set ℝ} {a b : ℝ} (_hab : a ≤ b) (J_ge : Ioo a b ⊆ J) (t : ℝ) (ht : |t| < b - a) :
     ENNReal.ofReal (b - a + |t|) ≤ volume (J ∪ ({t} + J)) := by
   refine le_trans (le_of_eq ?_) (measure_mono (Ioo_subset_union_add_self_of_Ioo_subset J_ge t ht))
   rw [Real.volume_Ioo]
@@ -281,7 +281,7 @@ lemma volume_union_add_self_ge_of_Ioo_subset
   · rw [abs_of_neg t_neg, min_eq_right (by linarith), max_eq_left (by linarith)]; ring
 
 lemma volume_union_add_self_le_of_subset_Icc
-    {J : Set ℝ} {a b : ℝ} (hab : a ≤ b) (J_le : J ⊆ Icc a b) (t : ℝ) :
+    {J : Set ℝ} {a b : ℝ} (_hab : a ≤ b) (J_le : J ⊆ Icc a b) (t : ℝ) :
     volume (J ∪ ({t} + J)) ≤ ENNReal.ofReal (b - a + |t|) := by
   refine le_trans (measure_mono (union_add_self_subset_Icc_of_subset_Icc J_le t)) (le_of_eq ?_)
   rw [Real.volume_Icc]
@@ -709,7 +709,7 @@ noncomputable def AffineIncrEquiv.subGroupOfIndex₀ :
   simp
 
 @[simp] lemma AffineIncrEquiv.mem_subGroupOfIndex₀_of_no_fixed_point (A : AffineIncrEquiv)
-    {α : ℝ} (hα : α ≠ 0) (c : ℝ) (hA : ∀ x, A x ≠ x) :
+    {α : ℝ} (_hα : α ≠ 0) (_c : ℝ) (hA : ∀ x, A x ≠ x) :
     A ∈ subGroupOfIndex₀ := by
   have a_eq_one : A.coefs.1 = 1 := by
     by_contra h
