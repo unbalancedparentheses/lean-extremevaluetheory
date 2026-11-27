@@ -38,7 +38,7 @@ lemma IsExtremeValueDistr.affineTransform (G : CumulativeDistributionFunction)
   refine ⟨F, fun n ↦ A * As n, ?_⟩
   intro x AG_cont
   have G_cont := affine_continuousAt_of_continuousAt AG_cont A⁻¹
-  simp only [inv_smul_smul, InvMemClass.coe_inv] at G_cont
+  simp only [inv_smul_smul] at G_cont
   exact h (A⁻¹  x) G_cont
 
 end CumulativeDistributionFunction
@@ -268,7 +268,7 @@ lemma not_limitCondition_iff_inv :
   have := tendsto_nhds_unique h1 h2
   simp at this
 
-private def limitCondition' {γ : ℝ} (hγ : γ ∈ Set.Ioo 0 1) (φs : ℕ → ℝ) : Prop :=
+private def limitCondition' {γ : ℝ} (_hγ : γ ∈ Set.Ioo 0 1) (φs : ℕ → ℝ) : Prop :=
   Tendsto (fun n ↦ n * Real.log (φs n)) atTop (𝓝 (Real.log γ))
 
 end rewriting_the_limit_condition

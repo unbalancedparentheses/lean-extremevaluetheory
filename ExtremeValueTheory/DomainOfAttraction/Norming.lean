@@ -68,7 +68,7 @@ theorem gpdSurvivalAll_pos_of_one_add_pos {ξ x : ℝ} (hx : 0 < 1 + ξ * x) :
 
 /-- If `p_n ∈ [0, 1]` and `p_n ^ n → H > 0`, then `n (1 - p_n) → -log H`. -/
 private lemma tendsto_mul_one_sub_of_tendsto_pow {p : ℕ → ℝ} {H : ℝ} (hH : 0 < H)
-    (hp0 : ∀ n, 0 ≤ p n) (hp1 : ∀ n, p n ≤ 1) (h : Tendsto (fun n ↦ p n ^ n) atTop (𝓝 H)) :
+    (hp0 : ∀ n, 0 ≤ p n) (_hp1 : ∀ n, p n ≤ 1) (h : Tendsto (fun n ↦ p n ^ n) atTop (𝓝 H)) :
     Tendsto (fun n : ℕ ↦ (n : ℝ) * (1 - p n)) atTop (𝓝 (-log H)) := by
   have hpos : ∀ᶠ n in atTop, 0 < p n := by
     filter_upwards [h.eventually (lt_mem_nhds (half_lt_self hH)), eventually_gt_atTop 0] with n h1 hn

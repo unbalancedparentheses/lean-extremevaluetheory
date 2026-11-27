@@ -212,7 +212,7 @@ theorem tail_gaussianReal_le_mul (hv : v ≠ 0) {a b : ℝ} (ha : m + 1 ≤ a) (
 
 /-- The Gaussian tail `Φ̄(c) = P(Z > c)`, `Z ∼ N(m, v)`. Deprecated: use
 `tail (gaussianReal m v) c`. -/
-@[deprecated tail (since := "2026-11-05")]
+@[deprecated "Use `tail (gaussianReal m v)` instead" (since := "2026-11-05")]
 noncomputable def gaussianTail (m : ℝ) (v : ℝ≥0) (c : ℝ) : ℝ := tail (gaussianReal m v) c
 
 set_option linter.deprecated false in

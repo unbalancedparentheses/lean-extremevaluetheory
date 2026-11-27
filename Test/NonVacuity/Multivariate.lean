@@ -256,8 +256,7 @@ private theorem G_pos (t : ℝ) : 0 < G t := standardGumbelCDF_pos t
 
 /-- Test-specific: `gumbelLaw` has c.d.f. `G`. -/
 private theorem gumbelLaw_real_Iic (t : ℝ) : gumbelLaw.real (Iic t) = G t := by
-  rw [measureReal_def, gumbelLaw, ← CumulativeDistributionFunction.apply_eq_measure_Iic,
-    standardGumbelCDF_apply_eq, G]
+  simp [gumbelLaw, G, standardGumbelCDF_apply_eq]
 
 /-- Max-stability of the Gumbel c.d.f.: `G(t + log n)^n = G(t)`. -/
 private theorem G_add_log_pow (t : ℝ) {n : ℕ} (hn : 1 ≤ n) : G (t + Real.log n) ^ n = G t := by
@@ -476,7 +475,7 @@ theorem test_hasStableTailDependence_comonoGumbel :
       {y | ∃ j, 1 - t * x j < marginal comonoGumbel j (y j)} =
       {z | 1 - t * max (x 0) (x 1) < G z} := by
     ext z
-    simp only [Set.mem_preimage, Set.mem_setOf_eq, marginal_comonoGumbel, Fin.exists_fin_two]
+    simp only [Set.mem_preimage, Set.mem_ofPred_eq, marginal_comonoGumbel, Fin.exists_fin_two]
     rcases le_total (x 0) (x 1) with h | h
     · have := mul_le_mul_of_nonneg_left h ht.le
       rw [max_eq_right h]

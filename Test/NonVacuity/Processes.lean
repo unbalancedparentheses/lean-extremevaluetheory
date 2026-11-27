@@ -40,11 +40,9 @@ private theorem iidLaw_map (μ : Measure ℝ) [IsProbabilityMeasure μ] (i : ℕ
 
 /-- Test-specific: the coordinates of an iid sample of `F.measure` have c.d.f. `F`. -/
 private theorem iidLaw_cdf (F : CumulativeDistributionFunction) (i : ℕ) (x : ℝ) :
-    (iidLaw F.measure).real {ω | ω i ≤ x} = F x := by
-  have h := congrArg (fun m : Measure ℝ => m (Set.Iic x)) (iidLaw_map F.measure i)
-  rw [Measure.map_apply (measurable_pi_apply i) measurableSet_Iic] at h
-  rw [F.apply_eq_measure_Iic x, measureReal_def, ← h]
-  rfl
+    (iidLaw F.measure).real {ω | ω i ≤ x} = F x :=
+  ((F.hasLaw_measure_iff (measurable_pi_apply i).aemeasurable).1
+    ⟨(measurable_pi_apply i).aemeasurable, iidLaw_map F.measure i⟩ x).symm
 
 /-! ### Poisson random measures -/
 

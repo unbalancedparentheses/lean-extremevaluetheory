@@ -50,16 +50,16 @@ variable {F : CumulativeDistributionFunction}
 /-- For `ξ > 0`, `MDA(H_ξ)` is the Fréchet domain `MDA(Φ_{1/ξ})`. -/
 theorem isInMDAGEV_iff_of_pos {ξ : ℝ} (hξ : 0 < ξ) :
     F.IsInMDAGEV ξ ↔ F.IsInMDAFrechet (one_div_pos.2 hξ) := by
-  rw [IsInMDAGEV, dif_pos hξ]
+  rw [IsInMDAGEV, dite_eq_left hξ]
 
 /-- For `ξ < 0`, `MDA(H_ξ)` is the Weibull domain `MDA(Ψ_{-1/ξ})`. -/
 theorem isInMDAGEV_iff_of_neg {ξ : ℝ} (hξ : ξ < 0) :
     F.IsInMDAGEV ξ ↔ F.IsInMDAWeibull (div_pos_of_neg_of_neg neg_one_lt_zero hξ) := by
-  rw [IsInMDAGEV, dif_neg hξ.not_gt, dif_pos hξ]
+  rw [IsInMDAGEV, dite_eq_right hξ.not_gt, dite_eq_left hξ]
 
 /-- `MDA(H_0)` is the Gumbel domain `MDA(Λ)`. -/
 theorem isInMDAGEV_zero_iff : F.IsInMDAGEV 0 ↔ F.IsInMDAGumbel := by
-  rw [IsInMDAGEV, dif_neg (lt_irrefl 0), dif_neg (lt_irrefl 0)]
+  rw [IsInMDAGEV, dite_eq_right (lt_irrefl 0), dite_eq_right (lt_irrefl 0)]
 
 /-- The Fréchet domain `MDA(Φ_α)` is `MDA(H_{1/α})`. -/
 theorem IsInMDAFrechet.isInMDAGEV {α : ℝ} {hα : 0 < α} (h : F.IsInMDAFrechet hα) :

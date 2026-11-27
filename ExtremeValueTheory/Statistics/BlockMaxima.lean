@@ -60,7 +60,7 @@ noncomputable def blockMax (X : ℕ → Ω → ℝ) (n j : ℕ) (ω : Ω) : ℝ 
 sequence. -/
 theorem blockMax_eq_partialMax (X : ℕ → Ω → ℝ) {n : ℕ} (hn : 0 < n) (j : ℕ) (ω : Ω) :
     blockMax X n j ω = partialMax (fun i ↦ X (j * n + i)) n ω := by
-  rw [blockMax, dif_pos hn]
+  rw [blockMax, dite_eq_left hn]
   refine le_antisymm (Finset.sup'_le _ _ fun i hi ↦ ?_) ((partialMax_le_iff hn).2 fun i hi ↦ ?_)
   · exact (partialMax_le_iff (X := fun i ↦ X (j * n + i)) (ω := ω) hn).1 le_rfl i
       (Finset.mem_range.1 hi)
