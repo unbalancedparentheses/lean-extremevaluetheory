@@ -186,10 +186,15 @@ Regular Variation and Point Processes* (1987) and *Heavy-Tail Phenomena* (2007);
 - [x] GEV: full 3×3 Fisher information (digamma), positive definite, `E[∇²ℓ] = −I`, trivariate score CLT
 - [x] GEV: joint normality of the 3-parameter MLE and unconditional return levels, for `ξ₀ > −1/2`, `ξ₀ ≠ 0`, exact iid sample
       (`tendstoInDistribution_gevMLE`, `tendstoInDistribution_gevMLEReturnLevel`)
-- [>] GEV likelihood for block maxima from a domain of attraction (#41), and at `ξ₀ = 0` (#42); a computable interval (#45)
-- [~] Likelihood at `ξ = 0`: GEV/GPD log-densities and scores continuous at 0 and true derivatives there;
-      Gumbel (μ, σ) Fisher information and score CLT. Missing: the σξ and ξξ entries at 0 (need
-      `ψ''(1) = −2ζ(3)`, not in Mathlib), Hessian continuity, MLE normality at `ξ = 0`
+- [x] GEV computable plug-in return-level interval (#45): continuity of `gevFisherInfo`, `gevMLECov`,
+      `gevReturnLevelVar` on `ξ > −1/2, ξ ≠ 0, σ > 0`, giving `tendsto_measure_mem_gevMLEReturnLevelPlugInInterval`
+      with no standard-error hypothesis
+- [>] GEV likelihood for block maxima from a domain of attraction (#41), and three-parameter MLE at `ξ₀ = 0` (#42)
+- [~] Likelihood at `ξ = 0` (#42): two-parameter Gumbel MLE normality, unconditional return-level normality,
+      and computable plug-in CI (`GumbelMLENormality.lean`); full `3 × 3` positive definite GEV Fisher information
+      `gevFisherInfoZero` and trivariate score CLT at `ξ = 0` (`posDef_gevFisherInfoZero`,
+      `tendstoInDistribution_gumbelScoreVec3`). Remaining: Hessian continuity in `ξ` at `0` and three-parameter
+      GEV / two-parameter GPD MLE normality at `ξ₀ = 0`
 - [x] Probability-weighted moments and L-moments: GPD and GEV closed forms (Hosking's `k = −ξ`), strong
       consistency of the sample PWMs and of the Hosking–Wallis GPD estimator (continuous `F`)
 - [x] Mean excess: GPD linearity, the converse for unbounded support (EKM 3.4.13(e)), empirical consistency
@@ -209,8 +214,8 @@ Regular Variation and Point Processes* (1987) and *Heavy-Tail Phenomena* (2007);
 - [~] Wilks and profile-likelihood intervals: GPD with `ξ₀ > 0` done; `ξ₀ ≤ 0` and the GEV missing (#44)
 - [ ] Hill confidence interval with bias (`λ ≠ 0`)
 - [ ] Bias-reduced estimators (second-order: Gomes et al., Feuerverger–Hall), and their normality
-- [~] Extremal-index estimators: blocks and runs consistent (general, m-dependent, via the tail
-      process); intervals estimator consistent given Ferro–Segers Thm 1
+- [~] Extremal-index estimators: disjoint blocks, runs, and sliding-blocks consistent (general, m-dependent,
+      via the tail process, under α-mixing alone); intervals estimator consistent given Ferro–Segers Thm 1
 - [ ] Ferro–Segers Theorem 1: limit law of normalized inter-exceedance times (makes the intervals
       estimator fully proved)
 
@@ -270,8 +275,9 @@ From the survey in [`docs/PRACTICAL_OPEN_PROBLEMS.md`](docs/PRACTICAL_OPEN_PROBL
 1. [ ] **Block and run length for extremal-index estimators** ("remains an open problem",
        Markovich–Rodionov 2020). Target: a theorem that no polynomial run-length rule works for every
        model, and that long blocks are safe. Closest to what is already proved.
-2. [ ] **Sliding-blocks estimators without β-mixing** (Cissokho–Kulik, §5.3); the estimator behind
-       `exdex::spm`.
+2. [x] **Sliding-blocks estimators without β-mixing** (Cissokho–Kulik, §5.3, `EVT-OP-002`): proved weak
+       consistency of sliding-blocks cluster-functional and extremal-index estimators under α-mixing alone
+       (`ExtremeValueTheory/Statistics/SlidingBlocks.lean`).
 3. [ ] **Is peaks over threshold always more precise than block maxima?** (Cissokho–Kulik); a possible
        counterexample for linear models.
 4. [ ] **GEV likelihood on the whole parameter space** (see A.2).
@@ -403,9 +409,12 @@ tested on the same data against R (`evd`, `ismev`, `extRemes`, `POT`, `exdex`) a
 sign of scipy's GEV shape, rather than only document them in
 [`docs/PRACTITIONERS.md`](docs/PRACTITIONERS.md).
 
-- [ ] Executable (`Float`) versions of the estimators, each linked to the definition it implements
-- [ ] Cross-check scripts against R and Python on shared test data, run in CI
-- [ ] A report of any disagreements with the packages
+- [x] Executable (`Float`) versions of the estimators (`Executable/Estimators.lean`, `Executable/Main.lean`,
+      `lake build evt_estimators`), each linked to the definition it implements
+- [x] Cross-check script against Python (`scipy.stats`) and R (`evd`, `exdex`) on shared test data
+      (`scripts/crosscheck_estimators.py`, 57/57 checks passing; verifies `scipy.stats.genextreme` `c = −ξ` sign
+      reversal, `evd::exi` runs boundary convention, and `exdex::spm` vs threshold sliding-blocks)
+- [ ] Wire `crosscheck_estimators.py` into GitHub Actions CI and expand to `extRemes`/`POT`/`pyextremes`
 
 ---
 

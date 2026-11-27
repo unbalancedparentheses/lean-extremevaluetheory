@@ -27,11 +27,11 @@ likelihood theorems describe exact models, not real data: see [Limitations](#lim
 
 | | |
 |---|---|
-| Size | about 113,000 lines; 4,770 theorems and lemmas |
-| Axioms | no `sorry`; CI checks that all 10,677 declarations use only `propext`, `Classical.choice`, `Quot.sound` |
+| Size | about 117,000 lines; 4,800+ theorems and lemmas |
+| Axioms | no `sorry`; CI checks that all 10,958 declarations use only `propext`, `Classical.choice`, `Quot.sound` |
 | [Theorem catalogue](catalogue/) | 232 headline results: 147 `full`, 2 `wrapper` (restate Mathlib), 83 `reduced` (a special case, an extra hypothesis, or part of the conclusion assumed), judged strictly; the gap is widest in statistics and likelihood, where 36 of 50 are `reduced` |
 | [Audits](FAITHFULNESS.md) | 191 statements compared with the literature: 114 faithful, 60 faithful within a stated scope, 17 differ from the cited form while correct as stated |
-| Tests | 139 non-vacuity and 253 known-answer tests |
+| Tests | 145 non-vacuity and 253 known-answer tests; 57 Python (`scipy.stats`) & R (`evd`, `exdex`) cross-checks on executable reference estimators |
 | [Challenge file](Challenge.lean) | four headline theorems stated using only Mathlib, checked by `lake comparator` |
 
 Here, for example, is the Fisher–Tippett–Gnedenko theorem, from
@@ -106,11 +106,21 @@ Fréchet or Weibull.
   ([`tendstoInDistribution_pickands`](ExtremeValueTheory/Statistics/PickandsNormality.lean)), and the moment
   estimator for $`\gamma > 0`$. Weissman's extreme quantile estimator is also covered.
 
-- **GEV likelihood.** For an iid GEV sample with $`\xi_0 > -1/2`$, $`\xi_0 \ne 0`$, a maximum likelihood estimator on
-  a compact parameter set with the true parameter in its interior is jointly asymptotically normal, with the
-  inverse Fisher information as its covariance
-  ([`tendstoInDistribution_gevMLE`](ExtremeValueTheory/Statistics/GEVMLENormality.lean)), and so is the return level
-  ([`tendstoInDistribution_gevMLEReturnLevel`](ExtremeValueTheory/Statistics/GEVReturnLevelNormality.lean)).
+- **GEV and Gumbel likelihood.** For an iid GEV sample with $`\xi_0 > -1/2`$, $`\xi_0 \ne 0`$, a maximum likelihood
+  estimator on a compact parameter set with the true parameter in its interior is jointly asymptotically normal,
+  with the inverse Fisher information as its covariance
+  ([`tendstoInDistribution_gevMLE`](ExtremeValueTheory/Statistics/GEVMLENormality.lean)), and both the return level
+  and its computable plug-in Wald confidence interval have their asymptotic limit and coverage with no
+  standard-error hypothesis
+  ([`tendstoInDistribution_gevMLEReturnLevel`](ExtremeValueTheory/Statistics/GEVReturnLevelNormality.lean),
+  [`tendsto_measure_mem_gevMLEReturnLevelPlugInInterval`](ExtremeValueTheory/Statistics/GEVReturnLevelNormality.lean)).
+  For the two-parameter Gumbel model ($`\xi = 0`$), the MLE is jointly normal with an unconditional return-level
+  CLT and computable plug-in interval
+  ([`tendstoInDistribution_gumbelMLE`](ExtremeValueTheory/Statistics/GumbelMLENormality.lean),
+  [`tendsto_measure_mem_gumbelMLEReturnLevelPlugInInterval`](ExtremeValueTheory/Statistics/GumbelMLENormality.lean)),
+  and the full $`3 \times 3`$ GEV Fisher information at $`\xi = 0`$ is positive definite with a trivariate score CLT
+  ([`posDef_gevFisherInfoZero`](ExtremeValueTheory/Statistics/GumbelMLENormality.lean),
+  [`tendstoInDistribution_gumbelScoreVec3`](ExtremeValueTheory/Statistics/GumbelMLENormality.lean)).
 
 - **Wilks' theorem and profile likelihood.** For an iid GPD sample with $`\xi_0 > 0`$, the deviance converges to
   $`\chi^2_2`$ and the profile deviance to $`\chi^2_1`$
@@ -156,8 +166,8 @@ Fréchet or Weibull.
 | Peaks over threshold | Pickands–Balkema–de Haan, the generalized Pareto law, mean excess |
 | Stable laws | the generalized central limit theorem, domains of attraction, uniqueness of the index |
 | Heavy tails | subexponential laws, random sums, Pollaczek–Khinchine ruin asymptotics |
-| Estimators | order statistics; Hill, Pickands, moment and Weissman, with asymptotic normality; probability-weighted moments and L-moments; blocks, runs and intervals estimators of the extremal index |
-| Likelihood and return levels | Wald consistency, GPD and GEV likelihood, Fisher information, joint normality of the GPD and GEV estimators, Wilks' theorem, the delta method, return levels, Wald and profile-likelihood intervals |
+| Estimators | order statistics; Hill, Pickands, moment and Weissman, with asymptotic normality; probability-weighted moments and L-moments; blocks, runs, sliding-blocks (under α-mixing alone) and intervals estimators of the extremal index; standalone `Float` reference estimators cross-checked against Python (`scipy.stats`) and R (`evd`, `exdex`) |
+| Likelihood and return levels | Wald consistency, GPD, GEV and Gumbel likelihood, Fisher information, joint normality of the GPD, GEV and Gumbel MLEs, Wilks' theorem, the delta method, return levels, computable plug-in Wald and profile-likelihood intervals |
 | Dependence | Leadbetter's theorem, the extremal index, the tail process, mixing, AR(1), ARMAX, linear processes, Markov chains, `X = AX + B`, GARCH(1,1) tail exponent bounds, the echo processes |
 | Multivariate extremes | multivariate regular variation, converse Cramér–Wold, max-stable vectors and their spectral representation, domains of attraction, the multivariate generalized Pareto law, tail dependence and its nonparametric estimation |
 | Processes | Poisson random measures, exceedance point processes, the Skorokhod space, the tail empirical process |
@@ -184,6 +194,11 @@ that way; their novelty has been checked against the literature
 - **Which hypotheses are needed.** Counterexamples show that the hypotheses of Karamata's theorem,
   Breiman's lemma, the von Mises condition, the generalized CLT and Hill consistency cannot be dropped;
   some others can be weakened (`ExtremeValueTheory/Minimality/`).
+- **Sliding-blocks consistency without β-mixing.** Addressing Cissokho and Kulik (2021, §5.3), sliding-blocks
+  cluster-functional and extremal-index estimators are proved weakly consistent under α-mixing rates alone, via
+  Ibragimov's $`L^\infty`$ covariance bound
+  ([`tendstoInMeasure_slidingClusterEstimator`](ExtremeValueTheory/Statistics/SlidingBlocks.lean),
+  [`tendstoInMeasure_slidingBlocksEstimator`](ExtremeValueTheory/Statistics/SlidingBlocks.lean)).
 - **Known results, proved under weaker hypotheses:** `θ ≤ ϑ` (Kulik–Soulier Lemma 7.5.4) and an exact
   formula for the gap `ϑ − θ`.
 
@@ -201,14 +216,19 @@ statement matches its textbook. The new results' novelty has not been confirmed 
 - GEV: consistency only on a compact parameter set `K ⊂ {ξ > −1, σ > 0}`, and only for an exact iid GEV
   sample. Fitting finite-block maxima from a law in a domain of attraction, or dependent block maxima, is
   not covered. Joint normality (`tendstoInDistribution_gevMLE`) needs `ξ₀ > −1/2` and `ξ₀ ≠ 0`, and the same exact
-  sample. The GEV Wald interval assumes a consistent standard error: no plug-in is proved to be one.
-  `tendstoInDistribution_gevReturnLevel` and its Gumbel version are only the delta method applied to an assumed normal
-  estimator; `tendstoInDistribution_gevMLEReturnLevel` assumes no normality.
+  sample. The plug-in GEV return-level Wald interval (`tendsto_measure_mem_gevMLEReturnLevelPlugInInterval`)
+  assumes no standard-error consistency hypothesis, on the same exact iid sample with `ξ₀ > −1/2`, `ξ₀ ≠ 0`.
+  The standalone delta-method lemmas `tendstoInDistribution_gevReturnLevel` and `tendstoInDistribution_gumbelReturnLevel`
+  take parameter normality as a hypothesis; `tendstoInDistribution_gevMLEReturnLevel` and
+  `tendstoInDistribution_gumbelMLEReturnLevel` do not.
 - GPD: also on a compact set, with the true parameter in its interior. Joint normality needs
   `ξ₀ > −1/2` and `ξ₀ ≠ 0`.
-- `ξ = 0`: the likelihood is only partly covered. With the shape known to be `0`, the scale estimator is
-  normal (`tendstoInDistribution_sampleMean_gpd_zero`). `ξ₀ = 0` is outside every three-parameter GEV result and every
-  joint GPD result, even though the Gumbel model is widely fitted.
+- `ξ = 0`: with the shape fixed at `0`, both the exponential scale MLE (`tendstoInDistribution_sampleMean_gpd_zero`)
+  and the two-parameter Gumbel MLE (`tendstoInDistribution_gumbelMLE`, with unconditional return-level normality
+  and computable plug-in interval `tendsto_measure_mem_gumbelMLEReturnLevelPlugInInterval`) are proved normal on a
+  compact set. For the three-parameter GEV model at `ξ₀ = 0`, the full `3 × 3` Fisher information is positive
+  definite with a trivariate score CLT (`posDef_gevFisherInfoZero`, `tendstoInDistribution_gumbelScoreVec3`),
+  while three-parameter GEV MLE normality and joint GPD MLE normality at `ξ₀ = 0` remain open.
 - Peaks-over-threshold return levels treat the excesses as an exact iid GPD sample with a known exceedance
   probability `ζ`. The number of exceedances is not random, and neither the error of the GPD
   approximation above a finite threshold nor the estimation of `ζ` is accounted for.
