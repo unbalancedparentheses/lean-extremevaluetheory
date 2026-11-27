@@ -331,4 +331,27 @@ theorem test_nonvacuous_tendstoInDistribution_tailEmpiricalPath :
   exact tendstoInDistribution_tailEmpiricalPath hUm hind hlaw' hk hkn measurable_id
     fun J => by rw [Measure.map_id]; exact hμ (fun t : J => (t : unitInterval))
 
+/-! ### Block and run length theorem for extremal-index estimators (`EVT-OP-001`) -/
+
+/-- Exercises `exists_powEcho_runsEstimator_inconsistent_of_poly` at `ρ = 1/2`: constructs a
+stationary, polynomially `β`-mixing process with extremal index `θ = 1/2` and intermediate
+threshold `uₙ` where the runs estimator with `rₙ = ⌊n^(1/2)⌋₊ + 1` converges to `1 ≠ 1/2`,
+while the blocks estimator with a longer polynomial block length `r'ₙ` converges to `1/2`.
+All hypotheses discharged. -/
+theorem test_nonvacuous_exists_powEcho_runsEstimator_inconsistent_of_poly :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (_ : IsProbabilityMeasure P)
+      (X : ℕ → Ω → ℝ) (u : ℕ → ℝ) (βrate C : ℝ),
+      0 < βrate ∧ 0 < C ∧
+      IsStationary X P ∧
+      (∀ h : ℕ, 2 ≤ h → (betaMixing X P h).toReal ≤ C * ((h : ℝ) - 1) ^ (-βrate)) ∧
+      HasExtremalIndex X P (1 / 2) ∧
+      Tendsto u atTop atTop ∧
+      Tendsto (fun n : ℕ => (n : ℝ) * P.real {ω | u n < X 0 ω}) atTop atTop ∧
+      TendstoInMeasure P (fun n => runsEstimator X n (⌊(n : ℝ) ^ (1 / 2 : ℝ)⌋₊ + 1) (u n))
+        atTop (fun _ => 1) ∧
+      ∃ ρ' : ℝ, (1 / 2 : ℝ) < ρ' ∧ ρ' < 1 ∧
+        TendstoInMeasure P (fun n => blocksEstimator X n (⌊(n : ℝ) ^ ρ'⌋₊ + 1) (u n))
+          atTop (fun _ => 1 / 2) :=
+  exists_powEcho_runsEstimator_inconsistent_of_poly (ρ := 1 / 2) (by norm_num) (by norm_num)
+
 end ExtremeValueTheory.Test.NonVacuity.Clusters

@@ -240,6 +240,7 @@ import ExtremeValueTheory.Minimality.ClassicalHill
 import ExtremeValueTheory.Minimality.ClassicalSummary
 import ExtremeValueTheory.Dependence.EchoMixing
 import ExtremeValueTheory.Statistics.ExtremalIndexEstimators
+import ExtremeValueTheory.Statistics.ExtremalIndexBlockLength
 import ExtremeValueTheory.Statistics.SlidingBlocks
 import ExtremeValueTheory.Statistics.ExtremalIndexEstimatorsIntervals
 import ExtremeValueTheory.Statistics.ExtremalIndexEstimatorsIid
