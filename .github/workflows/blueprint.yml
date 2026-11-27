@@ -54,10 +54,10 @@ jobs:
 
       - name: Add swap space for API documentation build
         run: |
-          sudo fallocate -l 8G /swapfile
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
+          sudo fallocate -l 8G /mnt/docgen_swapfile
+          sudo chmod 600 /mnt/docgen_swapfile
+          sudo mkswap /mnt/docgen_swapfile
+          sudo swapon /mnt/docgen_swapfile
 
       - name: Build project API documentation
         run: |
