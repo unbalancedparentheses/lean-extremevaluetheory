@@ -334,5 +334,37 @@
       "propext"
     ],
     "input_hash": "f537999c30c6b738f61321515a4baaea"
+  },
+  {
+    "id": "sliding-blocks-alpha-mixing",
+    "name": "Sliding-blocks extremal-index consistency under α-mixing alone",
+    "source": "this library; addresses Cissokho-Kulik §5.3",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_slidingBlocksEstimator",
+    "file": "ExtremeValueTheory/Statistics/SlidingBlocks.lean",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_slidingBlocksEstimator.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {X : ℕ → Ω → ℝ} (hX : ∀ (t : ℕ), Measurable (X t)) (hs : ProbabilityTheory.IsStationary X P)\n  {u : ℕ → ℝ} {r s : ℕ → ℕ} {θ : ℝ} (hr : ∀ᶠ (n : ℕ) in Filter.atTop, 0 < r n)\n  (hrn : Filter.Tendsto (fun n => ↑(r n) / ↑n) Filter.atTop (nhds 0))\n  (hk : Filter.Tendsto (fun n => ↑n * P.real {ω | u n < X 0 ω}) Filter.atTop Filter.atTop)\n  (hθ :\n    Filter.Tendsto\n      (fun n =>\n        P.real (ExtremeValueTheory.blockEvent X (r n) 0 (u n)) /\n          (↑(r n) * P.real {ω | u n < X 0 ω}))\n      Filter.atTop (nhds θ))\n  (hclus :\n    Filter.Tendsto\n      (fun n =>\n        (∑ h ∈ Finset.Icc 1 (s n), P.real {ω | u n < X 0 ω ∧ u n < X h ω}) /\n          (↑n * P.real {ω | u n < X 0 ω} ^ 2))\n      Filter.atTop (nhds 0))\n  (hmixT :\n    Filter.Tendsto\n      (fun n =>\n        (∑ h ∈ Finset.Ico (s n + 1) n, (ProbabilityTheory.alphaMixing X P h).toReal) /\n          (↑n * P.real {ω | u n < X 0 ω} ^ 2))\n      Filter.atTop (nhds 0))\n  (hmixB :\n    Filter.Tendsto\n      (fun n =>\n        (∑ g ∈ Finset.Ico (r n + 1) n, (ProbabilityTheory.alphaMixing X P g).toReal) /\n          (↑n * (↑(r n) * P.real {ω | u n < X 0 ω}) ^ 2))\n      Filter.atTop (nhds 0)) :\n  MeasureTheory.TendstoInMeasure P\n    (fun n => ExtremeValueTheory.slidingBlocksEstimator X n (r n) (u n)) Filter.atTop fun x => θ",
+    "status": "full",
+    "scope_note": "Weak consistency of the sliding-blocks extremal-index estimator for stationary sequences under α-mixing rates alone (no β-mixing), targeting the population block cluster ratio.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "f0869a04b1adc74b04cb4911602982e4"
+  },
+  {
+    "id": "sliding-cluster-alpha-mixing",
+    "name": "Sliding-blocks cluster-functional consistency under α-mixing alone",
+    "source": "this library; addresses Cissokho-Kulik §5.3",
+    "lean_name": "ExtremeValueTheory.tendstoInMeasure_slidingClusterEstimator",
+    "file": "ExtremeValueTheory/Statistics/SlidingBlocks.lean",
+    "statement": "ExtremeValueTheory.tendstoInMeasure_slidingClusterEstimator.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {X : ℕ → Ω → ℝ} (hX : ∀ (t : ℕ), Measurable (X t)) (hs : ProbabilityTheory.IsStationary X P)\n  {u : ℕ → ℝ} {r l s : ℕ → ℕ} {M μ C : ℝ} (hM : 0 ≤ M) (hC : 0 ≤ C)\n  {H : (n : ℕ) → (Fin (r n) → ℝ) → ℝ} (hHm : ∀ (n : ℕ), Measurable (H n))\n  (hHb : ∀ (n : ℕ) (x : Fin (r n) → ℝ), |H n x| ≤ M)\n  (hH0 : ∀ (n : ℕ) (x : Fin (r n) → ℝ), (∀ (k : Fin (r n)), x k ≤ u n) → H n x = 0)\n  (hr : ∀ᶠ (n : ℕ) in Filter.atTop, 0 < r n)\n  (hrn : Filter.Tendsto (fun n => ↑(r n) / ↑n) Filter.atTop (nhds 0))\n  (hk : Filter.Tendsto (fun n => ↑n * P.real {ω | u n < X 0 ω}) Filter.atTop Filter.atTop)\n  (hμ :\n    Filter.Tendsto\n      (fun n =>\n        (∫ (ω : Ω), H n (ExtremeValueTheory.slidingBlockWindow X (r n) 0 ω) ∂P) /\n          (↑(r n) * P.real {ω | u n < X 0 ω}))\n      Filter.atTop (nhds μ))\n  (hclus :\n    Filter.Tendsto\n      (fun n =>\n        (∑ h ∈ Finset.Icc 1 (s n), P.real {ω | u n < X 0 ω ∧ u n < X h ω}) /\n          (↑n * P.real {ω | u n < X 0 ω} ^ 2))\n      Filter.atTop (nhds 0))\n  (hmixT :\n    Filter.Tendsto\n      (fun n =>\n        (∑ h ∈ Finset.Ico (s n + 1) n, (ProbabilityTheory.alphaMixing X P h).toReal) /\n          (↑n * P.real {ω | u n < X 0 ω} ^ 2))\n      Filter.atTop (nhds 0))\n  (hl : ∀ᶠ (n : ℕ) in Filter.atTop, ↑(l n) ≤ C * ↑(r n))\n  (hmixB :\n    Filter.Tendsto\n      (fun n =>\n        (∑ g ∈ Finset.Ico (l n + 1) n, (ProbabilityTheory.alphaMixing X P g).toReal) /\n          (↑n * (↑(r n) * P.real {ω | u n < X 0 ω}) ^ 2))\n      Filter.atTop (nhds 0)) :\n  MeasureTheory.TendstoInMeasure P\n    (fun n => ExtremeValueTheory.slidingClusterEstimator X n (r n) (u n) (H n)) Filter.atTop\n    fun x => μ",
+    "status": "full",
+    "scope_note": "Weak consistency of sliding-blocks bounded cluster-functional estimators under α-mixing rates alone (no β-mixing), via Ibragimov's L∞ covariance bound.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "977f72ddcea4d2e506f4f9470b15fced"
   }
 ]

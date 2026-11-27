@@ -334,5 +334,21 @@
       "propext"
     ],
     "input_hash": "a5e25057f389cc9970b3535f17ad0c82"
+  },
+  {
+    "id": "logistic-in-gumbel-domain",
+    "name": "The standard logistic law is in the Gumbel domain",
+    "source": "EKM Table 3.4.4",
+    "lean_name": "CumulativeDistributionFunction.isInMDAGumbel_logisticCDF",
+    "file": "ExtremeValueTheory/DomainOfAttraction/GEVDomain.lean",
+    "statement": "CumulativeDistributionFunction.isInMDAGumbel_logisticCDF :\n  CumulativeDistributionFunction.logisticCDF.IsInMDAGumbel",
+    "status": "full",
+    "scope_note": "Direct proof for logisticCDF x = (1 + exp (-x))⁻¹ with norming constants a_n = 1, b_n = log n.",
+    "axioms": [
+      "Classical.choice",
+      "Quot.sound",
+      "propext"
+    ],
+    "input_hash": "f29fcd3a69d68c003c54b4402e13a76e"
   }
 ]
