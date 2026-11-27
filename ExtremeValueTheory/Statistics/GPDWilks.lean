@@ -6,6 +6,7 @@ Authors: Federico Carrone
 import ExtremeValueTheory.Statistics.GPDWilks.Deviance
 import ExtremeValueTheory.Statistics.GPDWilks.Profile
 import ExtremeValueTheory.Statistics.GPDWilks.Coverage
+import ExtremeValueTheory.Statistics.GPDWilks.Regular
 
 /-!
 # Wilks' theorem and profile likelihood intervals for the GPD, `ξ₀ > 0`

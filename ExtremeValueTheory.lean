@@ -197,6 +197,7 @@ import ExtremeValueTheory.Statistics.GPDScaleMLE
 import ExtremeValueTheory.Statistics.GPDFisherInformation
 import ExtremeValueTheory.Statistics.GPDJointNormality
 import ExtremeValueTheory.Statistics.GPDLogLikExpansion
+import ExtremeValueTheory.Statistics.GPDWilks.Regular
 import ExtremeValueTheory.Statistics.GPDWilks
 import ExtremeValueTheory.ForMathlib.Probability.ChiSquared
 import ExtremeValueTheory.Statistics.GEVMLE
@@ -252,6 +253,7 @@ import ExtremeValueTheory.Statistics.ConfidenceIntervals
 import ExtremeValueTheory.Statistics.GEVReturnLevelNormality
 import ExtremeValueTheory.Statistics.GumbelMLENormality
 import ExtremeValueTheory.Statistics.GEVMLENormalityZero
+import ExtremeValueTheory.Statistics.GEVWilks
 import ExtremeValueTheory.Statistics.POTRandomCount
 import ExtremeValueTheory.Statistics.LMoments
 import ExtremeValueTheory.Statistics.LMomentsEstimators

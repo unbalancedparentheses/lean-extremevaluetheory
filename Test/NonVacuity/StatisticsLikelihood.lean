@@ -498,4 +498,89 @@ theorem test_nonvacuous_exists_potReturnLevelPlugInInterval (z : ℝ) :
   exact ⟨Ω₁ × Ω₂, inferInstance, P, inferInstance, I, E, hIm, hindI, hIprob, hElaw, hindE, hindIE,
     g, hgm, hcov⟩
 
+/-- Exercises `tendsto_measure_mem_gpdReturnLevelProfileInterval_reg` and
+`tendsto_measure_mem_gpdDevianceRegion_reg` at negative regular shape `ξ₀ = -1/4` and at the
+Gumbel boundary `ξ₀ = 0` (`GPDWilks.Regular`, #44). All hypotheses discharged. -/
+theorem test_nonvacuous_gpdWilks_regular (c : ℝ) :
+    (∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (_ : IsProbabilityMeasure P)
+        (X : ℕ → Ω → ℝ), iIndepFun X P ∧
+        Tendsto (fun n : ℕ => P {ω | gpdReturnLevel 0 (-(1 / 4 : ℝ)) (3 / 2) (1 / 2) 100 ∈
+            gpdProfileInterval gpdK (fun p => gpdReturnLevel 0 p.1 p.2 (1 / 2) 100) c
+              (fun i : Fin n => X i ω)})
+          atTop (𝓝 (chiSquared 1 (Iic c))) ∧
+        Tendsto (fun n : ℕ => P {ω | (-(1 / 4 : ℝ), (3 / 2 : ℝ)) ∈
+            gpdDevianceRegion gpdK c (fun i : Fin n => X i ω)})
+          atTop (𝓝 (chiSquared 2 (Iic c)))) ∧
+    (∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (_ : IsProbabilityMeasure P)
+        (X : ℕ → Ω → ℝ), iIndepFun X P ∧
+        Tendsto (fun n : ℕ => P {ω | gpdReturnLevel 0 0 (3 / 2) (1 / 2) 100 ∈
+            gpdProfileInterval gpdK (fun p => gpdReturnLevel 0 p.1 p.2 (1 / 2) 100) c
+              (fun i : Fin n => X i ω)})
+          atTop (𝓝 (chiSquared 1 (Iic c))) ∧
+        Tendsto (fun n : ℕ => P {ω | ((0 : ℝ), (3 / 2 : ℝ)) ∈
+            gpdDevianceRegion gpdK c (fun i : Fin n => X i ω)})
+          atTop (𝓝 (chiSquared 2 (Iic c)))) := by
+  constructor
+  · obtain ⟨Ω, _, P, X, -, hlaw, hind, hP⟩ := exists_iid ℕ (gpdMeasure (-(1 / 4)) (3 / 2))
+    have := hP
+    have hint : (-(1 / 4 : ℝ), (3 / 2 : ℝ)) ∈ interior gpdK := by
+      rw [gpdK, interior_prod_eq, interior_Icc, interior_Icc]
+      exact ⟨⟨by norm_num, by norm_num⟩, ⟨by norm_num, by norm_num⟩⟩
+    exact ⟨Ω, _, P, hP, X, hind,
+      tendsto_measure_mem_gpdReturnLevelProfileInterval_reg isCompact_gpdK gpdK_sub hint
+        (by norm_num) (by norm_num) hlaw hind (by norm_num) c,
+      tendsto_measure_mem_gpdDevianceRegion_reg isCompact_gpdK gpdK_sub hint
+        (by norm_num) (by norm_num) hlaw hind c⟩
+  · obtain ⟨Ω, _, P, X, -, hlaw, hind, hP⟩ := exists_iid ℕ (gpdMeasure 0 (3 / 2))
+    have := hP
+    have hint : ((0 : ℝ), (3 / 2 : ℝ)) ∈ interior gpdK := by
+      rw [gpdK, interior_prod_eq, interior_Icc, interior_Icc]
+      exact ⟨⟨by norm_num, by norm_num⟩, ⟨by norm_num, by norm_num⟩⟩
+    exact ⟨Ω, _, P, hP, X, hind,
+      tendsto_measure_mem_gpdReturnLevelProfileInterval_reg isCompact_gpdK gpdK_sub hint
+        (by norm_num) (by norm_num) hlaw hind (by norm_num) c,
+      tendsto_measure_mem_gpdDevianceRegion_reg isCompact_gpdK gpdK_sub hint
+        (by norm_num) (by norm_num) hlaw hind c⟩
+
+/-- Exercises `tendsto_measure_mem_gevDevianceRegion` (`ξ₀ = 1/4`) and
+`exists_gevLocalMLE_deviance_tendstoInDistribution_zero` (`ξ₀ = 0`) (`GEVWilks`, #44).
+All hypotheses discharged. -/
+theorem test_nonvacuous_gevWilks (c : ℝ) :
+    (∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (_ : IsProbabilityMeasure P)
+        (X : ℕ → Ω → ℝ), iIndepFun X P ∧
+        Tendsto (fun n : ℕ => P {ω | ((1 / 4 : ℝ), (1 / 2 : ℝ), (3 / 2 : ℝ)) ∈
+            gevDevianceRegion gevK c (fun i : Fin n => X i ω)})
+          atTop (𝓝 (chiSquared 3 (Iic c)))) ∧
+    (∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (_ : IsProbabilityMeasure P)
+        (X : ℕ → Ω → ℝ), iIndepFun X P ∧
+        ∃ g : (n : ℕ) → (Fin n → ℝ) → ℝ × ℝ × ℝ, (∀ n, Measurable (g n)) ∧
+          Tendsto (fun n : ℕ => P {ω | ¬ IsLocalMax
+            (fun p : ℝ × ℝ × ℝ => gevLogLikE p.1 p.2.1 p.2.2 (fun i : Fin n => X i ω))
+            (g n (fun i : Fin n => X i ω))}) atTop (𝓝 0) ∧
+          TendstoInDistribution
+            (fun (n : ℕ) ω =>
+              2 * (gevLogLikN (g n (fun i : Fin n => X i ω)).1 (g n (fun i : Fin n => X i ω)).2.1
+                  (g n (fun i : Fin n => X i ω)).2.2 (fun i => X i ω) n -
+                gevLogLikN 0 (1 / 2) (3 / 2) (fun i => X i ω) n))
+            atTop (id : ℝ → ℝ) (fun _ => P) (chiSquared 3)) := by
+  have hσ : (0 : ℝ) < 3 / 2 := by norm_num
+  constructor
+  · obtain ⟨Ω, _, P, X, -, hlaw, hind, hP⟩ :=
+      exists_iid ℕ (gevLocScaleCDF (1 / 4) (1 / 2) hσ).measure
+    have := hP
+    exact ⟨Ω, _, P, hP, X, hind,
+      tendsto_measure_mem_gevDevianceRegion isCompact_gevK gevK_sub
+        (mem_interior_gevK (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+          (by norm_num)) (by norm_num) (by norm_num) hσ hlaw hind c⟩
+  · obtain ⟨Ω, _, P, X, -, hlaw, hind, hP⟩ :=
+      exists_iid ℕ (gevLocScaleCDF 0 (1 / 2) hσ).measure
+    have := hP
+    have hK : IsCompact gumbelK := isCompact_Icc.prod isCompact_Icc
+    have hKS : ∀ p ∈ gumbelK, 0 < p.2 := fun p hp => by have : 1 ≤ p.2 := hp.2.1; linarith
+    have hint : ((1 / 2 : ℝ), (3 / 2 : ℝ)) ∈ interior gumbelK := by
+      rw [gumbelK, interior_prod_eq, interior_Icc, interior_Icc]
+      exact ⟨⟨by norm_num, by norm_num⟩, ⟨by norm_num, by norm_num⟩⟩
+    exact ⟨Ω, _, P, hP, X, hind,
+      exists_gevLocalMLE_deviance_tendstoInDistribution_zero hK hKS hint hσ hlaw hind HasLaw.id⟩
+
 end ExtremeValueTheory.Test.NonVacuity
