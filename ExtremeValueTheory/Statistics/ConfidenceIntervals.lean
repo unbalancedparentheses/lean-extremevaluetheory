@@ -85,6 +85,7 @@ theorem tendsto_measure_mem_hillInterval {X : ℕ → Ω → ℝ} (hX : ∀ i, M
 
 lemma measurable_boxCoxShapeDeriv (x : ℝ) : Measurable fun ξ : ℝ => boxCoxShapeDeriv ξ x := by
   unfold boxCoxShapeDeriv
+  refine Measurable.ite (measurableSet_eq_fun measurable_id measurable_const) measurable_const ?_
   fun_prop
 
 lemma measurable_gpdReturnLevelVar (ζ N : ℝ) :
@@ -96,11 +97,10 @@ lemma measurable_gpdReturnLevelVar (ζ N : ℝ) :
   unfold gpdReturnLevelVar
   fun_prop
 
-lemma continuousAt_gpdReturnLevelVar {ξ σ ζ N : ℝ} (hξ : ξ ≠ 0) (hNζ : 0 < N * ζ) :
+lemma continuousAt_gpdReturnLevelVar_all {ξ σ ζ N : ℝ} (hNζ : 0 < N * ζ) :
     ContinuousAt (fun p : ℝ × ℝ => gpdReturnLevelVar p.1 p.2 ζ N) (ξ, σ) := by
   have hD : ContinuousAt (fun p : ℝ × ℝ => boxCoxShapeDeriv p.1 (N * ζ)) (ξ, σ) :=
-    ContinuousAt.comp (g := fun ρ => boxCoxShapeDeriv ρ (N * ζ))
-      (continuousAt_boxCoxShapeDeriv hξ hNζ) continuousAt_fst
+    ((continuous_boxCoxShapeDeriv hNζ).comp continuous_fst).continuousAt
   have hB : ContinuousAt (fun p : ℝ × ℝ => boxCox p.1 (N * ζ)) (ξ, σ) :=
     ((continuous_boxCox_shape hNζ).comp continuous_fst).continuousAt
   have h1 : ContinuousAt (fun p : ℝ × ℝ => p.1) (ξ, σ) := continuousAt_fst
@@ -111,16 +111,16 @@ lemma continuousAt_gpdReturnLevelVar {ξ σ ζ N : ℝ} (hξ : ξ ≠ 0) (hNζ :
       (((continuousAt_const.mul h2).mul (h2.mul hD)).mul hB)).add
       ((continuousAt_const.mul (h2.pow 2)).mul (hB.pow 2)))
 
-/-- **Asymptotic confidence interval for the POT return level** ([Coles, §4.3.3]). Under the
-hypotheses of `tendstoInDistribution_gpdReturnLevel` (maximum likelihood over a compact set,
-`ξ₀ > -1/2`, `ξ₀ ≠ 0`, known exceedance probability `ζ`) and `N ζ > 1`, let
-`ŝₙ = (∇x_Nᵀ I⁻¹ ∇x_N)^{1/2}` be the plug-in standard error at the MLE. The coverage probability
-of `[x̂_N - z ŝₙ/√n, x̂_N + z ŝₙ/√n]` converges to `N(0, 1)([-z, z])`. Here `u`, `ζ` and `N` are
-constants and the `Xᵢ` exact iid GPD excesses, as in `tendstoInDistribution_gpdReturnLevel`. -/
-theorem tendsto_measure_mem_gpdReturnLevelInterval {ξ₀ σ₀ u ζ N : ℝ} {X : ℕ → Ω → ℝ}
+lemma continuousAt_gpdReturnLevelVar {ξ σ ζ N : ℝ} (_hξ : ξ ≠ 0) (hNζ : 0 < N * ζ) :
+    ContinuousAt (fun p : ℝ × ℝ => gpdReturnLevelVar p.1 p.2 ζ N) (ξ, σ) :=
+  continuousAt_gpdReturnLevelVar_all hNζ
+
+/-- **Asymptotic confidence interval for the POT return level across the entire regular range
+`ξ₀ > -1/2` (including `ξ₀ = 0`)** ([Coles, §4.3.3]). -/
+theorem tendsto_measure_mem_gpdReturnLevelInterval_reg {ξ₀ σ₀ u ζ N : ℝ} {X : ℕ → Ω → ℝ}
     {K : Set (ℝ × ℝ)} (hK : IsCompact K)
     (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K)
-    (hξ₀ : -1 / 2 < ξ₀) (hξ₀0 : ξ₀ ≠ 0) (hσ₀ : 0 < σ₀)
+    (hξ₀ : -1 / 2 < ξ₀) (hσ₀ : 0 < σ₀)
     (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ₀ σ₀) P) (hind : iIndepFun X P)
     {θh : ℕ → Ω → ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P) (hθK : ∀ n ω, θh n ω ∈ K)
     (hmax : ∀ n ω, IsMaxOn (fun p : ℝ × ℝ => gpdLogLikE p.1 p.2 (fun i : Fin n => X i ω)) K
@@ -138,23 +138,21 @@ theorem tendsto_measure_mem_gpdReturnLevelInterval {ξ₀ σ₀ u ζ N : ℝ} {X
   have hsq : √v₀ ^ 2 = v₀ := sq_sqrt hv₀.le
   have hW : HasLaw id (gaussianReal 0 (√v₀ ^ 2).toNNReal) (gaussianReal 0 (√v₀ ^ 2).toNNReal) :=
     HasLaw.id
-  have hN := tendstoInDistribution_gpdReturnLevel (u := u) hK hKS hθ₀ hξ₀ hξ₀0 hσ₀ hX hind hθm
+  have hN := tendstoInDistribution_gpdReturnLevel_reg (u := u) hK hKS hθ₀ hξ₀ hσ₀ hX hind hθm
     hθK hmax hNζ0 (show HasLaw id (gaussianReal 0 v₀.toNNReal)
       (gaussianReal 0 (√v₀ ^ 2).toNNReal) from ⟨aemeasurable_id, by rw [Measure.map_id, hsq]⟩)
-  -- consistency of the parameter estimators, from their asymptotic normality
   have hZ : HasLaw id (multivariateGaussian (0 : EuclideanSpace ℝ (Fin 2))
       (gpdFisherInfoInv ξ₀ σ₀)) (multivariateGaussian 0 (gpdFisherInfoInv ξ₀ σ₀)) := HasLaw.id
-  have hθN := tendstoInDistribution_gpdMLE_all hK hKS hθ₀ hξ₀ hξ₀0 hσ₀ hX hind hθm hθK hmax hZ
+  have hθN := tendstoInDistribution_gpdMLE_reg hK hKS hθ₀ hξ₀ hσ₀ hX hind hθm hθK hmax hZ
   have hθ0 : TendstoInMeasure P (fun (n : ℕ) ω =>
       (!₂[(θh n ω).1 - ξ₀, (θh n ω).2 - σ₀] : EuclideanSpace ℝ (Fin 2))) atTop (fun _ => 0) :=
     TendstoInDistribution.tendstoInMeasure_of_smul (r := fun n : ℕ => √(n : ℝ)) hθN
       tendsto_sqrt_natCast_atTop
-  -- consistency of the standard error
   set G : EuclideanSpace ℝ (Fin 2) → ℝ := fun v => √(gpdReturnLevelVar (ξ₀ + v 0) (σ₀ + v 1) ζ N)
   have hG : ContinuousAt G 0 := by
     have haff : ContinuousAt (fun v : EuclideanSpace ℝ (Fin 2) => (ξ₀ + v 0, σ₀ + v 1)) 0 := by
       fun_prop
-    have hc := (continuousAt_gpdReturnLevelVar (σ := σ₀) hξ₀0 hNζ0).comp_of_eq haff (by simp)
+    have hc := (continuousAt_gpdReturnLevelVar_all (ξ := ξ₀) (σ := σ₀) hNζ0).comp_of_eq haff (by simp)
     exact hc.sqrt
   have hS := hθ0.comp_continuousAt hG
   simp only [G, PiLp.zero_apply, add_zero] at hS
@@ -168,13 +166,33 @@ theorem tendsto_measure_mem_gpdReturnLevelInterval {ξ₀ σ₀ u ζ N : ℝ} {X
     tendsto_sqrt_natCast_atTop.eventually_gt_atTop 0
   exact hN.tendsto_measure_mem_waldInterval_gaussian hs z hW hr hS' hSm
 
+/-- **Asymptotic confidence interval for the POT return level** ([Coles, §4.3.3]). Under the
+hypotheses of `tendstoInDistribution_gpdReturnLevel` (maximum likelihood over a compact set,
+`ξ₀ > -1/2`, `ξ₀ ≠ 0`, known exceedance probability `ζ`) and `N ζ > 1`, let
+`ŝₙ = (∇x_Nᵀ I⁻¹ ∇x_N)^{1/2}` be the plug-in standard error at the MLE. The coverage probability
+of `[x̂_N - z ŝₙ/√n, x̂_N + z ŝₙ/√n]` converges to `N(0, 1)([-z, z])`. Here `u`, `ζ` and `N` are
+constants and the `Xᵢ` exact iid GPD excesses, as in `tendstoInDistribution_gpdReturnLevel`. -/
+theorem tendsto_measure_mem_gpdReturnLevelInterval {ξ₀ σ₀ u ζ N : ℝ} {X : ℕ → Ω → ℝ}
+    {K : Set (ℝ × ℝ)} (hK : IsCompact K)
+    (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K)
+    (hξ₀ : -1 / 2 < ξ₀) (_hξ₀0 : ξ₀ ≠ 0) (hσ₀ : 0 < σ₀)
+    (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ₀ σ₀) P) (hind : iIndepFun X P)
+    {θh : ℕ → Ω → ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P) (hθK : ∀ n ω, θh n ω ∈ K)
+    (hmax : ∀ n ω, IsMaxOn (fun p : ℝ × ℝ => gpdLogLikE p.1 p.2 (fun i : Fin n => X i ω)) K
+      (θh n ω)) (hNζ : 1 < N * ζ) (z : ℝ) :
+    Tendsto (fun n : ℕ => P {ω | gpdReturnLevel u ξ₀ σ₀ ζ N ∈ Icc
+      (gpdReturnLevel u (θh n ω).1 (θh n ω).2 ζ N -
+        z * √(gpdReturnLevelVar (θh n ω).1 (θh n ω).2 ζ N) / √(n : ℝ))
+      (gpdReturnLevel u (θh n ω).1 (θh n ω).2 ζ N +
+        z * √(gpdReturnLevelVar (θh n ω).1 (θh n ω).2 ζ N) / √(n : ℝ))})
+      atTop (𝓝 (gaussianReal 0 1 (Icc (-z) z))) :=
+  tendsto_measure_mem_gpdReturnLevelInterval_reg hK hKS hθ₀ hξ₀ hσ₀ hX hind hθm hθK hmax hNζ z
+
 /-! ### The GEV return level -/
 
-/-- **Asymptotic confidence interval for the GEV return level** ([Coles, §3.3.3]). If GEV
-parameter estimators satisfy `√n (θ̂ₙ - θ₀) ⇒ N(0, V)`, `ξ₀ ≠ 0`, the delta-method variance
-`s² = ∇z_mᵀ V ∇z_m` is positive and `ŝₙ → s` in probability, then the coverage probability of
-`[ẑ_m - z ŝₙ/√n, ẑ_m + z ŝₙ/√n]` converges to `N(0, 1)([-z, z])`. -/
-theorem tendsto_measure_mem_gevReturnLevelInterval {ξ₀ μ₀ σ₀ m : ℝ} (hξ₀ : ξ₀ ≠ 0)
+/-- **Asymptotic confidence interval for the GEV return level** ([Coles, §3.3.3]), for every
+`ξ₀ ∈ ℝ` (including `ξ₀ = 0`). -/
+theorem tendsto_measure_mem_gevReturnLevelInterval_all {ξ₀ μ₀ σ₀ m : ℝ}
     (hm : 1 < m) {θh : ℕ → Ω → ℝ × ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P)
     {V : Matrix (Fin 3) (Fin 3) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 3)}
     (h : TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
@@ -189,10 +207,29 @@ theorem tendsto_measure_mem_gevReturnLevelInterval {ξ₀ μ₀ σ₀ m : ℝ} (
       atTop (𝓝 (gaussianReal 0 1 (Icc (-z) z))) := by
   have hW : HasLaw id (gaussianReal 0 (s ^ 2).toNNReal) (gaussianReal 0 (s ^ 2).toNNReal) :=
     HasLaw.id
-  have hN := tendstoInDistribution_gevReturnLevel hξ₀ hm hθm hV h hZ (show HasLaw id
+  have hN := tendstoInDistribution_gevReturnLevel_all hm hθm hV h hZ (show HasLaw id
     (gaussianReal 0 (gevReturnLevelGrad ξ₀ σ₀ m ⬝ᵥ V *ᵥ gevReturnLevelGrad ξ₀ σ₀ m).toNNReal)
     (gaussianReal 0 (s ^ 2).toNNReal) from ⟨aemeasurable_id, by rw [Measure.map_id, hsV]⟩)
   exact hN.tendsto_measure_mem_waldInterval_gaussian hs z hW
     (tendsto_sqrt_natCast_atTop.eventually_gt_atTop 0) hS hSm
+
+/-- **Asymptotic confidence interval for the GEV return level** ([Coles, §3.3.3]). If GEV
+parameter estimators satisfy `√n (θ̂ₙ - θ₀) ⇒ N(0, V)`, `ξ₀ ≠ 0`, the delta-method variance
+`s² = ∇z_mᵀ V ∇z_m` is positive and `ŝₙ → s` in probability, then the coverage probability of
+`[ẑ_m - z ŝₙ/√n, ẑ_m + z ŝₙ/√n]` converges to `N(0, 1)([-z, z])`. -/
+theorem tendsto_measure_mem_gevReturnLevelInterval {ξ₀ μ₀ σ₀ m : ℝ} (_hξ₀ : ξ₀ ≠ 0)
+    (hm : 1 < m) {θh : ℕ → Ω → ℝ × ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P)
+    {V : Matrix (Fin 3) (Fin 3) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 3)}
+    (h : TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
+      !₂[(θh n ω).1 - ξ₀, (θh n ω).2.1 - μ₀, (θh n ω).2.2 - σ₀]) atTop Z (fun _ => P) P')
+    (hZ : HasLaw Z (multivariateGaussian 0 V) P') {s : ℝ} (hs : 0 < s)
+    (hsV : s ^ 2 = gevReturnLevelGrad ξ₀ σ₀ m ⬝ᵥ V *ᵥ gevReturnLevelGrad ξ₀ σ₀ m)
+    {S : ℕ → Ω → ℝ} (hS : TendstoInMeasure P S atTop (fun _ => s))
+    (hSm : ∀ n, AEMeasurable (S n) P) (z : ℝ) :
+    Tendsto (fun n : ℕ => P {ω | gevReturnLevel ξ₀ μ₀ σ₀ m ∈ Icc
+      (gevReturnLevel (θh n ω).1 (θh n ω).2.1 (θh n ω).2.2 m - z * S n ω / √(n : ℝ))
+      (gevReturnLevel (θh n ω).1 (θh n ω).2.1 (θh n ω).2.2 m + z * S n ω / √(n : ℝ))})
+      atTop (𝓝 (gaussianReal 0 1 (Icc (-z) z))) :=
+  tendsto_measure_mem_gevReturnLevelInterval_all hm hθm hV h hZ hs hsV hS hSm z
 
 end ExtremeValueTheory

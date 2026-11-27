@@ -213,6 +213,7 @@ import ExtremeValueTheory.Statistics.GEVGumbelLimit
 import ExtremeValueTheory.Statistics.MeasurableArgmax
 import ExtremeValueTheory.Statistics.GPDJointNormalityNeg
 import ExtremeValueTheory.Statistics.GPDMLENormality
+import ExtremeValueTheory.Statistics.GPDJointNormalityZero
 import ExtremeValueTheory.ForMathlib.Probability.TriangularArrayCLT
 import ExtremeValueTheory.Statistics.TailEmpiricalProcess
 import ExtremeValueTheory.ForMathlib.Probability.FourthMoment

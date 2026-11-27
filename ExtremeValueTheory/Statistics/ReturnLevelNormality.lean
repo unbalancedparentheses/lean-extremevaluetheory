@@ -3,7 +3,7 @@ Copyright (c) 2026 Federico Carrone.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import ExtremeValueTheory.Statistics.GPDMLENormality
+import ExtremeValueTheory.Statistics.GPDJointNormalityZero
 import ExtremeValueTheory.Statistics.ExtremeQuantile
 import ExtremeValueTheory.RegularVariation.SecondOrder
 import ExtremeValueTheory.ForMathlib.Probability.DeltaMethod
@@ -80,48 +80,204 @@ namespace ExtremeValueTheory
 
 section BoxCox
 
-/-- The derivative of `ξ ↦ h_ξ(x) = (x^ξ - 1)/ξ` at `ξ ≠ 0`:
-`∂_ξ h_ξ(x) = x^ξ log x / ξ - (x^ξ - 1)/ξ²`. -/
-noncomputable def boxCoxShapeDeriv (ξ x : ℝ) : ℝ := x ^ ξ * log x / ξ - (x ^ ξ - 1) / ξ ^ 2
+/-- `(exp t - 1) / t`, extended continuously by `1` at `t = 0`. -/
+noncomputable def expm1Div (t : ℝ) : ℝ :=
+  if t = 0 then 1 else (exp t - 1) / t
+
+/-- Derivative of `expm1Div`: `(t exp t - exp t + 1) / t²`, extended continuously by `1/2` at `0`. -/
+noncomputable def expm1DivDeriv (t : ℝ) : ℝ :=
+  if t = 0 then 1 / 2 else (t * exp t - exp t + 1) / t ^ 2
+
+lemma expm1Div_zero : expm1Div 0 = 1 := by simp [expm1Div]
+
+lemma expm1Div_of_ne {t : ℝ} (ht : t ≠ 0) : expm1Div t = (exp t - 1) / t := by
+  simp [expm1Div, ht]
+
+lemma expm1DivDeriv_zero : expm1DivDeriv 0 = 1 / 2 := by simp [expm1DivDeriv]
+
+lemma expm1DivDeriv_of_ne {t : ℝ} (ht : t ≠ 0) :
+    expm1DivDeriv t = (t * exp t - exp t + 1) / t ^ 2 := by
+  simp [expm1DivDeriv, ht]
+
+lemma expm1Div_add_mul_deriv (t : ℝ) : expm1Div t + t * expm1DivDeriv t = exp t := by
+  rcases eq_or_ne t 0 with rfl | ht
+  · simp [expm1Div, expm1DivDeriv]
+  · rw [expm1Div_of_ne ht, expm1DivDeriv_of_ne ht]
+    field_simp
+    ring
+
+lemma abs_expm1Div_sub_one_le {t : ℝ} (ht : |t| ≤ 1) : |expm1Div t - 1| ≤ 3 / 2 * |t| := by
+  rcases eq_or_ne t 0 with rfl | h0
+  · simp [expm1Div]
+  have hb := Real.exp_bound ht (n := 2) (by norm_num)
+  simp only [Finset.sum_range_succ, Finset.sum_range_zero, Nat.factorial, pow_zero, pow_one,
+    Nat.cast_one, Nat.cast_ofNat, div_one, zero_add] at hb
+  have hnum : |exp t - (1 + t)| ≤ 3 / 2 * |t| ^ 2 := by
+    calc |exp t - (1 + t)| ≤ |t| ^ 2 * ((2 + 1) / (2 * 2)) := by
+          convert hb using 2 <;> norm_num
+      _ ≤ 3 / 2 * |t| ^ 2 := by nlinarith [sq_nonneg |t|]
+  have he : expm1Div t - 1 = (exp t - (1 + t)) / t := by
+    rw [expm1Div_of_ne h0]; field_simp; ring
+  rw [he, abs_div, div_le_iff₀ (abs_pos.2 h0)]
+  linarith [show 3 / 2 * |t| * |t| = 3 / 2 * |t| ^ 2 by ring]
+
+lemma abs_expm1DivDeriv_sub_half_le {t : ℝ} (ht : |t| ≤ 1) :
+    |expm1DivDeriv t - 1 / 2| ≤ 5 / 2 * |t| := by
+  rcases eq_or_ne t 0 with rfl | h0
+  · simp [expm1DivDeriv]
+  have hb2 := Real.exp_bound ht (n := 2) (by norm_num)
+  simp only [Finset.sum_range_succ, Finset.sum_range_zero, Nat.factorial, pow_zero, pow_one,
+    Nat.cast_one, Nat.cast_ofNat, div_one, zero_add] at hb2
+  have h2 : |exp t - (1 + t)| ≤ 3 / 2 * |t| ^ 2 := by
+    calc |exp t - (1 + t)| ≤ |t| ^ 2 * ((2 + 1) / (2 * 2)) := by
+          convert hb2 using 2 <;> norm_num
+      _ ≤ 3 / 2 * |t| ^ 2 := by nlinarith [sq_nonneg |t|]
+  have hb3 := Real.exp_bound ht (n := 3) (by norm_num)
+  simp only [Finset.sum_range_succ, Finset.sum_range_zero, Nat.factorial, pow_zero, pow_one,
+    Nat.cast_one, Nat.cast_ofNat, div_one, zero_add] at hb3
+  have h3 : |exp t - (1 + t + t ^ 2 / 2)| ≤ |t| ^ 3 := by
+    calc |exp t - (1 + t + t ^ 2 / 2)| ≤ |t| ^ 3 * ((3 + 1) / (6 * 3)) := by
+          convert hb3 using 2 <;> norm_num
+      _ ≤ |t| ^ 3 := by nlinarith [pow_nonneg (abs_nonneg t) 3]
+  have he : expm1DivDeriv t - 1 / 2 =
+      (t * (exp t - (1 + t)) - (exp t - (1 + t + t ^ 2 / 2))) / t ^ 2 := by
+    rw [expm1DivDeriv_of_ne h0]; field_simp; ring
+  rw [he, abs_div, abs_pow, div_le_iff₀ (pow_pos (abs_pos.2 h0) 2)]
+  calc |t * (exp t - (1 + t)) - (exp t - (1 + t + t ^ 2 / 2))|
+      ≤ |t * (exp t - (1 + t))| + |exp t - (1 + t + t ^ 2 / 2)| := abs_sub _ _
+    _ = |t| * |exp t - (1 + t)| + |exp t - (1 + t + t ^ 2 / 2)| := by rw [abs_mul]
+    _ ≤ |t| * (3 / 2 * |t| ^ 2) + |t| ^ 3 :=
+        add_le_add (mul_le_mul_of_nonneg_left h2 (abs_nonneg _)) h3
+    _ = 5 / 2 * |t| * |t| ^ 2 := by ring
+
+lemma continuousAt_expm1Div_zero : ContinuousAt expm1Div 0 := by
+  rw [ContinuousAt, expm1Div_zero]
+  have h : Tendsto (fun t => expm1Div t - 1) (𝓝 0) (𝓝 0) := by
+    refine squeeze_zero_norm' ?_ (by simpa using (continuous_abs.tendsto (0 : ℝ)).const_mul (3 / 2))
+    filter_upwards [Metric.ball_mem_nhds (0 : ℝ) one_pos] with t ht
+    rw [Real.norm_eq_abs]
+    have ht' : |t| < 1 := by simpa [Metric.mem_ball, Real.dist_eq] using ht
+    exact abs_expm1Div_sub_one_le ht'.le
+  simpa using h.add_const 1
+
+lemma continuous_expm1DivDeriv : Continuous expm1DivDeriv := by
+  rw [continuous_iff_continuousAt]
+  intro t
+  rcases eq_or_ne t 0 with rfl | ht
+  · rw [ContinuousAt, expm1DivDeriv_zero]
+    have h : Tendsto (fun u => expm1DivDeriv u - 1 / 2) (𝓝 0) (𝓝 0) := by
+      refine squeeze_zero_norm' ?_ (by simpa using (continuous_abs.tendsto (0 : ℝ)).const_mul (5 / 2))
+      filter_upwards [Metric.ball_mem_nhds (0 : ℝ) one_pos] with u hu
+      rw [Real.norm_eq_abs]
+      have hu' : |u| < 1 := by simpa [Metric.mem_ball, Real.dist_eq] using hu
+      exact abs_expm1DivDeriv_sub_half_le hu'.le
+    have h' := h.add_const (1 / 2)
+    simp only [sub_add_cancel, zero_add] at h'
+    exact h'
+  · have hev : expm1DivDeriv =ᶠ[𝓝 t] fun u => (u * exp u - exp u + 1) / u ^ 2 := by
+      filter_upwards [isOpen_ne.mem_nhds ht] with u hu
+      exact expm1DivDeriv_of_ne hu
+    refine ContinuousAt.congr ?_ hev.symm
+    fun_prop (disch := exact pow_ne_zero 2 ht)
+
+lemma hasDerivAt_expm1Div (t : ℝ) : HasDerivAt expm1Div (expm1DivDeriv t) t := by
+  have hne : ∀ u : ℝ, u ≠ 0 → HasDerivAt expm1Div (expm1DivDeriv u) u := fun u hu => by
+    have hev : expm1Div =ᶠ[𝓝 u] fun s => (exp s - 1) / s := by
+      filter_upwards [isOpen_ne.mem_nhds hu] with s hs
+      exact expm1Div_of_ne hs
+    have hd := ((Real.hasDerivAt_exp u).sub_const 1).div (hasDerivAt_id u) hu
+    refine (hd.congr_of_eventuallyEq hev).congr_deriv ?_
+    rw [expm1DivDeriv_of_ne hu]
+    simp only [id_eq]
+    field_simp
+    ring
+  rcases eq_or_ne t 0 with rfl | ht
+  · exact hasDerivAt_of_tendsto_punctured (U := univ) Filter.univ_mem
+      (fun u _ hu => hne u hu) continuousAt_expm1Div_zero
+      (continuous_expm1DivDeriv.continuousAt.tendsto.mono_left nhdsWithin_le_nhds)
+  · exact hne t ht
+
+lemma boxCox_eq_log_mul_expm1Div (ξ : ℝ) {x : ℝ} (hx : 0 < x) :
+    boxCox ξ x = log x * expm1Div (ξ * log x) := by
+  rcases eq_or_ne ξ 0 with rfl | hξ
+  · simp [boxCox_zero, expm1Div_zero]
+  · rcases eq_or_ne (log x) 0 with hl | hl
+    · have hx1 : x = 1 := by
+        have := congrArg exp hl
+        rwa [exp_log hx, exp_zero] at this
+      simp [hx1, boxCox_of_ne hξ]
+    · rw [boxCox_of_ne hξ, expm1Div_of_ne (mul_ne_zero hξ hl), rpow_def_of_pos hx, mul_comm (log x) ξ]
+      field_simp
+
+/-- The derivative of `ξ ↦ h_ξ(x) = (x^ξ - 1)/ξ`, extended continuously to `ξ = 0` by
+`(log x)² / 2`: `∂_ξ h_ξ(x) = x^ξ log x / ξ - (x^ξ - 1)/ξ²` for `ξ ≠ 0`. -/
+noncomputable def boxCoxShapeDeriv (ξ x : ℝ) : ℝ :=
+  if ξ = 0 then (log x) ^ 2 / 2 else x ^ ξ * log x / ξ - (x ^ ξ - 1) / ξ ^ 2
+
+lemma boxCoxShapeDeriv_zero (x : ℝ) : boxCoxShapeDeriv 0 x = (log x) ^ 2 / 2 := by
+  simp [boxCoxShapeDeriv]
+
+lemma boxCoxShapeDeriv_of_ne {ξ : ℝ} (hξ : ξ ≠ 0) (x : ℝ) :
+    boxCoxShapeDeriv ξ x = x ^ ξ * log x / ξ - (x ^ ξ - 1) / ξ ^ 2 := by
+  simp [boxCoxShapeDeriv, hξ]
+
+lemma boxCoxShapeDeriv_eq_log_sq_mul_expm1DivDeriv (ξ : ℝ) {x : ℝ} (hx : 0 < x) :
+    boxCoxShapeDeriv ξ x = (log x) ^ 2 * expm1DivDeriv (ξ * log x) := by
+  rcases eq_or_ne ξ 0 with rfl | hξ
+  · simp [boxCoxShapeDeriv_zero, expm1DivDeriv_zero]; ring
+  · rcases eq_or_ne (log x) 0 with hl | hl
+    · have hx1 : x = 1 := by
+        have := congrArg exp hl
+        rwa [exp_log hx, exp_zero] at this
+      simp [hx1, boxCoxShapeDeriv_of_ne hξ]
+    · rw [boxCoxShapeDeriv_of_ne hξ, expm1DivDeriv_of_ne (mul_ne_zero hξ hl),
+        rpow_def_of_pos hx, mul_comm (log x) ξ]
+      field_simp
+      ring
 
 lemma boxCox_eventuallyEq {ξ : ℝ} (hξ : ξ ≠ 0) (x : ℝ) :
     (fun ρ => boxCox ρ x) =ᶠ[𝓝 ξ] fun ρ => (x ^ ρ - 1) / ρ := by
   filter_upwards [isOpen_ne.mem_nhds hξ] with ρ hρ
   exact boxCox_of_ne hρ x
 
-/-- The Box–Cox function is differentiable in its index `ξ ≠ 0`. -/
-theorem hasDerivAt_boxCox_shape {ξ x : ℝ} (hξ : ξ ≠ 0) (hx : 0 < x) :
+/-- The Box–Cox function is differentiable in its index everywhere (including `ξ = 0`),
+for `x > 0`. -/
+theorem hasDerivAt_boxCox_shape_all (ξ : ℝ) {x : ℝ} (hx : 0 < x) :
     HasDerivAt (fun ρ => boxCox ρ x) (boxCoxShapeDeriv ξ x) ξ := by
-  have h1 : HasDerivAt (fun ρ => x ^ ρ) (x ^ ξ * log x) ξ :=
-    (hasStrictDerivAt_const_rpow hx ξ).hasDerivAt
-  have h2 := (h1.sub_const 1).div (hasDerivAt_id ξ) hξ
-  refine (h2.congr_of_eventuallyEq (boxCox_eventuallyEq hξ x)).congr_deriv ?_
-  simp only [boxCoxShapeDeriv, id]
-  field_simp
+  have heq : (fun ρ => boxCox ρ x) = fun ρ => log x * expm1Div (ρ * log x) :=
+    funext fun ρ => boxCox_eq_log_mul_expm1Div ρ hx
+  rw [heq, boxCoxShapeDeriv_eq_log_sq_mul_expm1DivDeriv ξ hx]
+  have h1 : HasDerivAt (fun ρ => ρ * log x) (log x) ξ := by
+    simpa using (hasDerivAt_id ξ).mul_const (log x)
+  have h2 := ((hasDerivAt_expm1Div (ξ * log x)).comp ξ h1).const_mul (log x)
+  exact h2.congr_deriv (by ring)
+
+/-- The Box–Cox function is differentiable in its index `ξ ≠ 0`. -/
+theorem hasDerivAt_boxCox_shape {ξ x : ℝ} (_hξ : ξ ≠ 0) (hx : 0 < x) :
+    HasDerivAt (fun ρ => boxCox ρ x) (boxCoxShapeDeriv ξ x) ξ :=
+  hasDerivAt_boxCox_shape_all ξ hx
 
 /-- The Box–Cox function is continuous in its index at `ξ = 0`: `(x^ξ - 1)/ξ → log x`. -/
 theorem continuousAt_boxCox_shape_zero {x : ℝ} (hx : 0 < x) :
-    ContinuousAt (fun ρ => boxCox ρ x) 0 := by
-  have h := (hasStrictDerivAt_const_rpow hx 0).hasDerivAt.tendsto_slope
-  rw [← continuousWithinAt_compl_self, ContinuousWithinAt, boxCox_zero]
-  simp only [rpow_zero, one_mul] at h
-  refine h.congr' ?_
-  filter_upwards [self_mem_nhdsWithin] with ρ hρ
-  rw [slope_def_field, boxCox_of_ne hρ, rpow_zero, sub_zero]
+    ContinuousAt (fun ρ => boxCox ρ x) 0 :=
+  (hasDerivAt_boxCox_shape_all 0 hx).continuousAt
 
 /-- The Box–Cox function is continuous in its index everywhere, for `x > 0`. -/
-theorem continuous_boxCox_shape {x : ℝ} (hx : 0 < x) : Continuous fun ρ => boxCox ρ x := by
-  refine continuous_iff_continuousAt.2 fun ξ => ?_
-  rcases eq_or_ne ξ 0 with rfl | hξ
-  · exact continuousAt_boxCox_shape_zero hx
-  · exact (hasDerivAt_boxCox_shape hξ hx).continuousAt
+theorem continuous_boxCox_shape {x : ℝ} (hx : 0 < x) : Continuous fun ρ => boxCox ρ x :=
+  continuous_iff_continuousAt.2 fun ξ => (hasDerivAt_boxCox_shape_all ξ hx).continuousAt
 
-lemma continuousAt_boxCoxShapeDeriv {ξ x : ℝ} (hξ : ξ ≠ 0) (hx : 0 < x) :
-    ContinuousAt (fun ρ => boxCoxShapeDeriv ρ x) ξ := by
-  unfold boxCoxShapeDeriv
-  have hc : Continuous fun ρ : ℝ => x ^ ρ := continuous_const.rpow continuous_id fun _ => Or.inl hx.ne'
-  exact ((hc.continuousAt.mul continuousAt_const).div continuousAt_id hξ).sub
-    ((hc.continuousAt.sub continuousAt_const).div (continuousAt_id.pow 2) (pow_ne_zero 2 hξ))
+/-- The shape derivative `ξ ↦ boxCoxShapeDeriv ξ x` is continuous everywhere for `x > 0`
+(including at `ξ = 0`). -/
+theorem continuous_boxCoxShapeDeriv {x : ℝ} (hx : 0 < x) :
+    Continuous fun ρ => boxCoxShapeDeriv ρ x := by
+  have heq : (fun ρ => boxCoxShapeDeriv ρ x) = fun ρ => (log x) ^ 2 * expm1DivDeriv (ρ * log x) :=
+    funext fun ρ => boxCoxShapeDeriv_eq_log_sq_mul_expm1DivDeriv ρ hx
+  rw [heq]
+  exact continuous_const.mul (continuous_expm1DivDeriv.comp (continuous_id.mul continuous_const))
+
+lemma continuousAt_boxCoxShapeDeriv {ξ x : ℝ} (_hξ : ξ ≠ 0) (hx : 0 < x) :
+    ContinuousAt (fun ρ => boxCoxShapeDeriv ρ x) ξ :=
+  (continuous_boxCoxShapeDeriv hx).continuousAt
 
 lemma measurable_boxCox : Measurable fun p : ℝ × ℝ => boxCox p.1 p.2 := by
   unfold boxCox
@@ -206,7 +362,7 @@ lemma returnLevel_of_ne {ξ : ℝ} (hξ : ξ ≠ 0) (m : ℝ) :
 
 lemma boxCoxShapeDeriv_inv {ξ y : ℝ} (hξ : ξ ≠ 0) (hy : 0 < y) (σ : ℝ) :
     σ * boxCoxShapeDeriv ξ y⁻¹ = σ / ξ ^ 2 * (1 - y ^ (-ξ)) - σ / ξ * y ^ (-ξ) * log y := by
-  rw [boxCoxShapeDeriv, inv_rpow hy.le, ← rpow_neg hy.le, log_inv]
+  rw [boxCoxShapeDeriv_of_ne hξ, inv_rpow hy.le, ← rpow_neg hy.le, log_inv]
   field_simp
   ring
 
@@ -230,8 +386,8 @@ lemma hasGradientAt_of_hasFDerivAt {k : ℕ} {g : EuclideanSpace ℝ (Fin k) →
   ext v
   simp [hL, PiLp.inner_apply, mul_comm]
 
-/-- **The gradient of the GEV return level**, `ξ ≠ 0`. -/
-theorem hasGradientAt_gevReturnLevelVec {ξ μ σ m : ℝ} (hξ : ξ ≠ 0) (hm : 1 < m) :
+/-- **The gradient of the GEV return level**, for every `ξ ∈ ℝ` (including `ξ = 0`). -/
+theorem hasGradientAt_gevReturnLevelVec_all {ξ μ σ m : ℝ} (hm : 1 < m) :
     HasGradientAt (gevReturnLevelVec m) (gevReturnLevelGrad ξ σ m) !₂[ξ, μ, σ] := by
   have hx := inv_pos.2 (neg_log_one_sub_inv_pos hm)
   set x := (-log (1 - 1 / m))⁻¹
@@ -244,12 +400,17 @@ theorem hasGradientAt_gevReturnLevelVec {ξ μ σ m : ℝ} (hξ : ξ ≠ 0) (hm 
   have p2 := (EuclideanSpace.proj (𝕜 := ℝ) (2 : Fin 3)).hasFDerivAt (x := !₂[ξ, μ, σ])
   have hb : HasDerivAt (fun ρ => boxCox ρ x) (boxCoxShapeDeriv ξ x)
       (EuclideanSpace.proj (𝕜 := ℝ) (0 : Fin 3) !₂[ξ, μ, σ]) := by
-    simpa using hasDerivAt_boxCox_shape hξ hx
+    simpa using hasDerivAt_boxCox_shape_all ξ hx
   have hd := p1.add (p2.mul (hb.comp_hasFDerivAt !₂[ξ, μ, σ] p0))
   refine hasGradientAt_of_hasFDerivAt
     (hd.congr_of_eventuallyEq (Eventually.of_forall fun v => by simp)) fun v => ?_
   simp [Fin.sum_univ_three, gevReturnLevelGrad, returnLevel_eq_boxCox _ hm, x]
   ring
+
+/-- **The gradient of the GEV return level**, `ξ ≠ 0`. -/
+theorem hasGradientAt_gevReturnLevelVec {ξ μ σ m : ℝ} (_hξ : ξ ≠ 0) (hm : 1 < m) :
+    HasGradientAt (gevReturnLevelVec m) (gevReturnLevelGrad ξ σ m) !₂[ξ, μ, σ] :=
+  hasGradientAt_gevReturnLevelVec_all hm
 
 end GEV
 
@@ -336,24 +497,29 @@ theorem gpdReturnLevelGrad_eq {ξ : ℝ} (hξ : ξ ≠ 0) (σ ζ N : ℝ) :
     gpdReturnLevelGrad ξ σ ζ N =
       !₂[-σ / ξ ^ 2 * ((N * ζ) ^ ξ - 1) + σ / ξ * (N * ζ) ^ ξ * log (N * ζ),
         ((N * ζ) ^ ξ - 1) / ξ] := by
-  rw [gpdReturnLevelGrad, boxCoxShapeDeriv, boxCox_of_ne hξ]
+  rw [gpdReturnLevelGrad, boxCoxShapeDeriv_of_ne hξ, boxCox_of_ne hξ]
   congr 2
   ring
 
-/-- **The gradient of the GPD return level**, `ξ ≠ 0`, `N ζ > 0`. -/
-theorem hasGradientAt_gpdReturnLevelVec {ξ σ u ζ N : ℝ} (hξ : ξ ≠ 0) (hNζ : 0 < N * ζ) :
+/-- **The gradient of the GPD return level**, for every `ξ ∈ ℝ` (including `ξ = 0`), `N ζ > 0`. -/
+theorem hasGradientAt_gpdReturnLevelVec_all {ξ σ u ζ N : ℝ} (hNζ : 0 < N * ζ) :
     HasGradientAt (gpdReturnLevelVec u ζ N) (gpdReturnLevelGrad ξ σ ζ N) !₂[ξ, σ] := by
   have p0 := (EuclideanSpace.proj (𝕜 := ℝ) (0 : Fin 2)).hasFDerivAt (x := !₂[ξ, σ])
   have p1 := (EuclideanSpace.proj (𝕜 := ℝ) (1 : Fin 2)).hasFDerivAt (x := !₂[ξ, σ])
   have hb : HasDerivAt (fun ρ => boxCox ρ (N * ζ)) (boxCoxShapeDeriv ξ (N * ζ))
       (EuclideanSpace.proj (𝕜 := ℝ) (0 : Fin 2) !₂[ξ, σ]) := by
-    simpa using hasDerivAt_boxCox_shape hξ hNζ
+    simpa using hasDerivAt_boxCox_shape_all ξ hNζ
   have hd := (p1.mul (hb.comp_hasFDerivAt !₂[ξ, σ] p0)).const_add u
   refine hasGradientAt_of_hasFDerivAt
     (hd.congr_of_eventuallyEq (Eventually.of_forall fun v => by
       simp [gpdReturnLevelVec, gpdReturnLevel])) fun v => ?_
   simp [Fin.sum_univ_two, gpdReturnLevelGrad]
   ring
+
+/-- **The gradient of the GPD return level**, `ξ ≠ 0`, `N ζ > 0`. -/
+theorem hasGradientAt_gpdReturnLevelVec {ξ σ u ζ N : ℝ} (_hξ : ξ ≠ 0) (hNζ : 0 < N * ζ) :
+    HasGradientAt (gpdReturnLevelVec u ζ N) (gpdReturnLevelGrad ξ σ ζ N) !₂[ξ, σ] :=
+  hasGradientAt_gpdReturnLevelVec_all hNζ
 
 /-- The asymptotic variance `∇x_Nᵀ I(ξ, σ)⁻¹ ∇x_N` of the GPD maximum likelihood return level,
 with `∇x_N = (a, b)`: `(1 + ξ) ((1 + ξ) a² - 2σ a b + 2σ² b²)`. -/
@@ -399,8 +565,9 @@ theorem gpdReturnLevelGrad₃_zero {ζ N : ℝ} (hζ : 0 < ζ) (hN : 0 < N) (ξ 
   rw [mul_rpow hN.le hζ.le, rpow_sub_one hN.ne']
   field_simp
 
-/-- **The gradient of the POT return level in `(ζ, ξ, σ)`**, `ξ ≠ 0`, `N ζ > 0`. -/
-theorem hasGradientAt_gpdReturnLevelVec₃ {ζ ξ σ u N : ℝ} (hξ : ξ ≠ 0) (hNζ : 0 < N * ζ) :
+/-- **The gradient of the POT return level in `(ζ, ξ, σ)`**, for every `ξ ∈ ℝ` (including `ξ = 0`),
+`N ζ > 0`. -/
+theorem hasGradientAt_gpdReturnLevelVec₃_all {ζ ξ σ u N : ℝ} (hNζ : 0 < N * ζ) :
     HasGradientAt (gpdReturnLevelVec₃ u N) (gpdReturnLevelGrad₃ ζ ξ σ N) !₂[ζ, ξ, σ] := by
   set θ : EuclideanSpace ℝ (Fin 3) := !₂[ζ, ξ, σ]
   have p0 := (EuclideanSpace.proj (𝕜 := ℝ) (0 : Fin 3)).hasFDerivAt (x := θ)
@@ -409,23 +576,34 @@ theorem hasGradientAt_gpdReturnLevelVec₃ {ζ ξ σ u N : ℝ} (hξ : ξ ≠ 0)
   have hθ0 : EuclideanSpace.proj (𝕜 := ℝ) (0 : Fin 3) θ = ζ := by simp [θ]
   have hθ1 : EuclideanSpace.proj (𝕜 := ℝ) (1 : Fin 3) θ = ξ := by simp [θ]
   have hθ2 : EuclideanSpace.proj (𝕜 := ℝ) (2 : Fin 3) θ = σ := by simp [θ]
-  have hpow := (p0.const_mul N).rpow p1 (by rw [hθ0]; exact hNζ)
-  have hinv : HasDerivAt (fun y : ℝ => y⁻¹) (-(ξ ^ 2)⁻¹)
-      (EuclideanSpace.proj (𝕜 := ℝ) (1 : Fin 3) θ) := by
-    rw [hθ1]; exact hasDerivAt_inv hξ
-  have hd := (p2.mul ((hpow.sub_const 1).mul (hinv.comp_hasFDerivAt θ p1))).const_add u
-  have hev : (gpdReturnLevelVec₃ u N) =ᶠ[𝓝 θ] fun v => u + v 2 * ((N * v 0) ^ v 1 - 1) * (v 1)⁻¹ := by
-    have hopen : {v : EuclideanSpace ℝ (Fin 3) | v 1 ≠ 0} ∈ 𝓝 θ :=
-      (isOpen_ne_fun (EuclideanSpace.proj (𝕜 := ℝ) (1 : Fin 3)).continuous
-        continuous_const).mem_nhds (by simp [θ, hξ])
-    filter_upwards [hopen] with v hv
-    simp only [gpdReturnLevelVec₃, gpdReturnLevel, boxCox_of_ne hv, div_eq_mul_inv, mul_assoc]
+  have hlog := (Real.hasDerivAt_log (by simpa [hθ0] using hNζ.ne')).comp_hasFDerivAt θ (p0.const_mul N)
+  have harg := p1.mul hlog
+  have hexp := (hasDerivAt_expm1Div (ξ * log (N * ζ))).comp_hasFDerivAt θ
+    (by simpa [hθ0, hθ1] using harg)
+  have hbox := hlog.mul hexp
+  have hd := (p2.mul hbox).const_add u
+  have hev : (gpdReturnLevelVec₃ u N) =ᶠ[𝓝 θ]
+      fun v => u + v 2 * (log (N * v 0) * expm1Div (v 1 * log (N * v 0))) := by
+    have hc : ContinuousAt (fun v : EuclideanSpace ℝ (Fin 3) => N * v 0) θ :=
+      continuousAt_const.mul (EuclideanSpace.proj (𝕜 := ℝ) (0 : Fin 3)).continuous.continuousAt
+    filter_upwards [hc.eventually (lt_mem_nhds (by simpa [θ] using hNζ))] with v hv
+    simp only [gpdReturnLevelVec₃, gpdReturnLevel, boxCox_eq_log_mul_expm1Div _ hv]
   refine hasGradientAt_of_hasFDerivAt (hd.congr_of_eventuallyEq (hev.trans
-    (Eventually.of_forall fun v => by simp [mul_assoc]))) fun v => ?_
-  simp only [hθ0, hθ1, hθ2]
-  simp [θ, Fin.sum_univ_three, gpdReturnLevelGrad₃, boxCoxShapeDeriv, boxCox_of_ne hξ]
-  field_simp
+    (Eventually.of_forall fun _ => rfl))) fun v => ?_
+  have hmul_deriv := expm1Div_add_mul_deriv (ξ * log (N * ζ))
+  have hexp_eq : exp (ξ * log (N * ζ)) = (N * ζ) ^ ξ := by
+    rw [rpow_def_of_pos hNζ, mul_comm]
+  have hrpow_sub : (N * ζ) ^ (ξ - 1) = (N * ζ) ^ ξ * (N * ζ)⁻¹ := by
+    rw [rpow_sub_one hNζ.ne', div_eq_mul_inv]
+  simp only [θ, Fin.sum_univ_three, gpdReturnLevelGrad₃, boxCox_eq_log_mul_expm1Div _ hNζ,
+    boxCoxShapeDeriv_eq_log_sq_mul_expm1DivDeriv _ hNζ, hrpow_sub, ← hexp_eq, ← hmul_deriv]
+  simp
   ring
+
+/-- **The gradient of the POT return level in `(ζ, ξ, σ)`**, `ξ ≠ 0`, `N ζ > 0`. -/
+theorem hasGradientAt_gpdReturnLevelVec₃ {ζ ξ σ u N : ℝ} (_hξ : ξ ≠ 0) (hNζ : 0 < N * ζ) :
+    HasGradientAt (gpdReturnLevelVec₃ u N) (gpdReturnLevelGrad₃ ζ ξ σ N) !₂[ζ, ξ, σ] :=
+  hasGradientAt_gpdReturnLevelVec₃_all hNζ
 
 end Gradients
 
@@ -440,12 +618,9 @@ variable {Ω Ω' Ω'' : Type*} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpac
 lemma tendsto_sqrt_natCast_atTop : Tendsto (fun n : ℕ => √(n : ℝ)) atTop atTop :=
   tendsto_sqrt_atTop.comp tendsto_natCast_atTop_atTop
 
-/-- **Asymptotic normality of the GEV return level** ([Coles, §3.3.3]). If estimators
-`θ̂ₙ = (ξ̂ₙ, μ̂ₙ, σ̂ₙ)` of the GEV parameters satisfy `√n (θ̂ₙ - θ₀) ⇒ N(0, V)` and `ξ₀ ≠ 0`, then
-the plug-in `m`-block return level satisfies `√n (ẑ_m - z_m) ⇒ N(0, ∇z_mᵀ V ∇z_m)`, with the
-gradient `gevReturnLevelGrad` (`gevReturnLevelGrad_eq`). This is the delta method: no data appear,
-`θ̂ₙ` and `V` are arbitrary, and parameter normality is a hypothesis. -/
-theorem tendstoInDistribution_gevReturnLevel {ξ₀ μ₀ σ₀ m : ℝ} (hξ₀ : ξ₀ ≠ 0) (hm : 1 < m)
+/-- **Asymptotic normality of the GEV return level** ([Coles, §3.3.3]), for every `ξ₀ ∈ ℝ`
+(including `ξ₀ = 0`). -/
+theorem tendstoInDistribution_gevReturnLevel_all {ξ₀ μ₀ σ₀ m : ℝ} (hm : 1 < m)
     {θh : ℕ → Ω → ℝ × ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P)
     {V : Matrix (Fin 3) (Fin 3) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 3)}
     (h : TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
@@ -464,10 +639,28 @@ theorem tendstoInDistribution_gevReturnLevel {ξ₀ μ₀ σ₀ m : ℝ} (hξ₀
     congr 1
     ext i; fin_cases i <;> simp
   have hd := h'.delta_method_gaussian hV hZ tendsto_sqrt_natCast_atTop
-    (hasGradientAt_gevReturnLevelVec (μ := μ₀) hξ₀ hm)
+    (hasGradientAt_gevReturnLevelVec_all (ξ := ξ₀) (μ := μ₀) (σ := σ₀) hm)
     (fun n => ((measurable_gevReturnLevel m).comp_aemeasurable (hθm n)).congr
       (Eventually.of_forall fun ω => by simp [gevReturnLevelVec])) hW
   simpa [gevReturnLevelVec] using hd
+
+/-- **Asymptotic normality of the GEV return level** ([Coles, §3.3.3]). If estimators
+`θ̂ₙ = (ξ̂ₙ, μ̂ₙ, σ̂ₙ)` of the GEV parameters satisfy `√n (θ̂ₙ - θ₀) ⇒ N(0, V)` and `ξ₀ ≠ 0`, then
+the plug-in `m`-block return level satisfies `√n (ẑ_m - z_m) ⇒ N(0, ∇z_mᵀ V ∇z_m)`, with the
+gradient `gevReturnLevelGrad` (`gevReturnLevelGrad_eq`). This is the delta method: no data appear,
+`θ̂ₙ` and `V` are arbitrary, and parameter normality is a hypothesis. -/
+theorem tendstoInDistribution_gevReturnLevel {ξ₀ μ₀ σ₀ m : ℝ} (_hξ₀ : ξ₀ ≠ 0) (hm : 1 < m)
+    {θh : ℕ → Ω → ℝ × ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P)
+    {V : Matrix (Fin 3) (Fin 3) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 3)}
+    (h : TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
+      !₂[(θh n ω).1 - ξ₀, (θh n ω).2.1 - μ₀, (θh n ω).2.2 - σ₀]) atTop Z (fun _ => P) P')
+    (hZ : HasLaw Z (multivariateGaussian 0 V) P') {W : Ω'' → ℝ}
+    (hW : HasLaw W (gaussianReal 0
+      (gevReturnLevelGrad ξ₀ σ₀ m ⬝ᵥ V *ᵥ gevReturnLevelGrad ξ₀ σ₀ m).toNNReal) P'') :
+    TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) *
+      (gevReturnLevel (θh n ω).1 (θh n ω).2.1 (θh n ω).2.2 m - gevReturnLevel ξ₀ μ₀ σ₀ m))
+      atTop W (fun _ => P) P'' :=
+  tendstoInDistribution_gevReturnLevel_all hm hθm hV h hZ hW
 
 /-- **Asymptotic normality of the Gumbel return level** ([Coles, §3.3.3]): if
 `√n (μ̂ₙ - μ₀, σ̂ₙ - σ₀) ⇒ N(0, V)`, then `√n (ẑ_m - z_m) ⇒ N(0, ∇zᵀ V ∇z)`,
@@ -507,11 +700,9 @@ lemma measurable_gpdReturnLevel (u ζ N : ℝ) :
     (measurable_boxCox.comp (measurable_fst.prodMk measurable_const)))
 
 /-- **Asymptotic normality of a POT return level from asymptotically normal GPD parameter
-estimators**, `ζ_u` known: if `√n (ξ̂ₙ - ξ₀, σ̂ₙ - σ₀) ⇒ N(0, V)`, `ξ₀ ≠ 0`, `N ζ > 0`, then
-`√n (x̂_N - x_N) ⇒ N(0, ∇x_Nᵀ V ∇x_N)`. -/
-theorem tendstoInDistribution_gpdReturnLevel_of_tendstoInDistribution {ξ₀ σ₀ u ζ N : ℝ}
-    (hξ₀ : ξ₀ ≠ 0) (hNζ : 0 < N * ζ)
-    {θh : ℕ → Ω → ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P)
+estimators**, `ζ_u` known, for every `ξ₀ ∈ ℝ` (including `ξ₀ = 0`). -/
+theorem tendstoInDistribution_gpdReturnLevel_of_tendstoInDistribution_all {ξ₀ σ₀ u ζ N : ℝ}
+    (hNζ : 0 < N * ζ) {θh : ℕ → Ω → ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P)
     {V : Matrix (Fin 2) (Fin 2) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 2)}
     (h : TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
       !₂[(θh n ω).1 - ξ₀, (θh n ω).2 - σ₀]) atTop Z (fun _ => P) P')
@@ -529,10 +720,48 @@ theorem tendstoInDistribution_gpdReturnLevel_of_tendstoInDistribution {ξ₀ σ�
     congr 1
     ext i; fin_cases i <;> simp
   have hd := h'.delta_method_gaussian hV hZ tendsto_sqrt_natCast_atTop
-    (hasGradientAt_gpdReturnLevelVec (σ := σ₀) (u := u) hξ₀ hNζ)
+    (hasGradientAt_gpdReturnLevelVec_all (ξ := ξ₀) (σ := σ₀) (u := u) hNζ)
     (fun n => ((measurable_gpdReturnLevel u ζ N).comp_aemeasurable (hθm n)).congr
       (Eventually.of_forall fun ω => by simp [gpdReturnLevelVec])) hW
   simpa [gpdReturnLevelVec] using hd
+
+/-- **Asymptotic normality of a POT return level from asymptotically normal GPD parameter
+estimators**, `ζ_u` known: if `√n (ξ̂ₙ - ξ₀, σ̂ₙ - σ₀) ⇒ N(0, V)`, `ξ₀ ≠ 0`, `N ζ > 0`, then
+`√n (x̂_N - x_N) ⇒ N(0, ∇x_Nᵀ V ∇x_N)`. -/
+theorem tendstoInDistribution_gpdReturnLevel_of_tendstoInDistribution {ξ₀ σ₀ u ζ N : ℝ}
+    (_hξ₀ : ξ₀ ≠ 0) (hNζ : 0 < N * ζ)
+    {θh : ℕ → Ω → ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P)
+    {V : Matrix (Fin 2) (Fin 2) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 2)}
+    (h : TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
+      !₂[(θh n ω).1 - ξ₀, (θh n ω).2 - σ₀]) atTop Z (fun _ => P) P')
+    (hZ : HasLaw Z (multivariateGaussian 0 V) P') {W : Ω'' → ℝ}
+    (hW : HasLaw W (gaussianReal 0 (gpdReturnLevelGrad ξ₀ σ₀ ζ N ⬝ᵥ
+      V *ᵥ gpdReturnLevelGrad ξ₀ σ₀ ζ N).toNNReal) P'') :
+    TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) *
+      (gpdReturnLevel u (θh n ω).1 (θh n ω).2 ζ N - gpdReturnLevel u ξ₀ σ₀ ζ N))
+      atTop W (fun _ => P) P'' :=
+  tendstoInDistribution_gpdReturnLevel_of_tendstoInDistribution_all hNζ hθm hV h hZ hW
+
+/-- **Asymptotic normality of the maximum likelihood POT return level across the entire regular
+range `ξ₀ > -1/2` (including `ξ₀ = 0`)** ([Coles, §4.3.3]; [Smith 1985]). -/
+theorem tendstoInDistribution_gpdReturnLevel_reg {ξ₀ σ₀ u ζ N : ℝ} {X : ℕ → Ω → ℝ}
+    {K : Set (ℝ × ℝ)} (hK : IsCompact K)
+    (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K)
+    (hξ₀ : -1 / 2 < ξ₀) (hσ₀ : 0 < σ₀)
+    (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ₀ σ₀) P) (hind : iIndepFun X P)
+    {θh : ℕ → Ω → ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P) (hθK : ∀ n ω, θh n ω ∈ K)
+    (hmax : ∀ n ω, IsMaxOn (fun p : ℝ × ℝ => gpdLogLikE p.1 p.2 (fun i : Fin n => X i ω)) K
+      (θh n ω)) (hNζ : 0 < N * ζ) {W : Ω'' → ℝ}
+    (hW : HasLaw W (gaussianReal 0 (gpdReturnLevelVar ξ₀ σ₀ ζ N).toNNReal) P'') :
+    TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) *
+      (gpdReturnLevel u (θh n ω).1 (θh n ω).2 ζ N - gpdReturnLevel u ξ₀ σ₀ ζ N))
+      atTop W (fun _ => P) P'' := by
+  have hZ : HasLaw id (multivariateGaussian (0 : EuclideanSpace ℝ (Fin 2))
+      (gpdFisherInfoInv ξ₀ σ₀)) (multivariateGaussian 0 (gpdFisherInfoInv ξ₀ σ₀)) := HasLaw.id
+  have h := tendstoInDistribution_gpdMLE_reg hK hKS hθ₀ hξ₀ hσ₀ hX hind hθm hθK hmax hZ
+  exact tendstoInDistribution_gpdReturnLevel_of_tendstoInDistribution_all hNζ hθm
+    (posDef_gpdFisherInfoInv hξ₀ hσ₀).posSemidef h hZ
+    (by rwa [dotProduct_gpdReturnLevelGrad])
 
 /-- **Asymptotic normality of the maximum likelihood POT return level** ([Coles, §4.3.3];
 [Smith 1985]). Let `K ⊂ {ξ > -1, σ > 0}` be compact with `θ₀ = (ξ₀, σ₀)`, `ξ₀ > -1/2`,
@@ -548,7 +777,7 @@ number `n`, and no parent law, exceedance count or threshold error appears. -/
 theorem tendstoInDistribution_gpdReturnLevel {ξ₀ σ₀ u ζ N : ℝ} {X : ℕ → Ω → ℝ}
     {K : Set (ℝ × ℝ)} (hK : IsCompact K)
     (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K)
-    (hξ₀ : -1 / 2 < ξ₀) (hξ₀0 : ξ₀ ≠ 0) (hσ₀ : 0 < σ₀)
+    (hξ₀ : -1 / 2 < ξ₀) (_hξ₀0 : ξ₀ ≠ 0) (hσ₀ : 0 < σ₀)
     (hX : ∀ i, HasLaw (X i) (gpdMeasure ξ₀ σ₀) P) (hind : iIndepFun X P)
     {θh : ℕ → Ω → ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P) (hθK : ∀ n ω, θh n ω ∈ K)
     (hmax : ∀ n ω, IsMaxOn (fun p : ℝ × ℝ => gpdLogLikE p.1 p.2 (fun i : Fin n => X i ω)) K
@@ -556,13 +785,8 @@ theorem tendstoInDistribution_gpdReturnLevel {ξ₀ σ₀ u ζ N : ℝ} {X : ℕ
     (hW : HasLaw W (gaussianReal 0 (gpdReturnLevelVar ξ₀ σ₀ ζ N).toNNReal) P'') :
     TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) *
       (gpdReturnLevel u (θh n ω).1 (θh n ω).2 ζ N - gpdReturnLevel u ξ₀ σ₀ ζ N))
-      atTop W (fun _ => P) P'' := by
-  have hZ : HasLaw id (multivariateGaussian (0 : EuclideanSpace ℝ (Fin 2))
-      (gpdFisherInfoInv ξ₀ σ₀)) (multivariateGaussian 0 (gpdFisherInfoInv ξ₀ σ₀)) := HasLaw.id
-  have h := tendstoInDistribution_gpdMLE_all hK hKS hθ₀ hξ₀ hξ₀0 hσ₀ hX hind hθm hθK hmax hZ
-  exact tendstoInDistribution_gpdReturnLevel_of_tendstoInDistribution hξ₀0 hNζ hθm
-    (posDef_gpdFisherInfoInv hξ₀ hσ₀).posSemidef h hZ
-    (by rwa [dotProduct_gpdReturnLevelGrad])
+      atTop W (fun _ => P) P'' :=
+  tendstoInDistribution_gpdReturnLevel_reg hK hKS hθ₀ hξ₀ hσ₀ hX hind hθm hθK hmax hNζ hW
 
 lemma measurable_gpdReturnLevel₃ (u N : ℝ) :
     Measurable fun p : ℝ × ℝ × ℝ => gpdReturnLevel u p.2.1 p.2.2 p.1 N := by
@@ -571,12 +795,8 @@ lemma measurable_gpdReturnLevel₃ (u N : ℝ) :
     (measurable_boxCox.comp (measurable_snd.fst.prodMk (measurable_const.mul measurable_fst))))
 
 /-- **Asymptotic normality of the POT return level with estimated exceedance rate**
-([Coles, §4.3.3]). If `√n (ζ̂ₙ - ζ₀, ξ̂ₙ - ξ₀, σ̂ₙ - σ₀) ⇒ N(0, V)`, `ξ₀ ≠ 0`, `N ζ₀ > 0`, then
-`√n (x̂_N - x_N) ⇒ N(0, ∇x_Nᵀ V ∇x_N)` with `∇x_N = (σ N^ξ ζ^{ξ-1}, σ ∂_ξ h, h)`
-(`gpdReturnLevelGrad₃`, `gpdReturnLevelGrad₃_zero`). Coles takes `V` block diagonal, with
-`ζ̂` the exceedance frequency (`Var = ζ(1 - ζ)`) and the GPD inverse information. This is the delta
-method: no data appear, and joint normality is a hypothesis. -/
-theorem tendstoInDistribution_gpdReturnLevel₃ {ζ₀ ξ₀ σ₀ u N : ℝ} (hξ₀ : ξ₀ ≠ 0)
+([Coles, §4.3.3]), for every `ξ₀ ∈ ℝ` (including `ξ₀ = 0`). -/
+theorem tendstoInDistribution_gpdReturnLevel₃_all {ζ₀ ξ₀ σ₀ u N : ℝ}
     (hNζ : 0 < N * ζ₀) {θh : ℕ → Ω → ℝ × ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P)
     {V : Matrix (Fin 3) (Fin 3) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 3)}
     (h : TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
@@ -595,10 +815,29 @@ theorem tendstoInDistribution_gpdReturnLevel₃ {ζ₀ ξ₀ σ₀ u N : ℝ} (h
     congr 1
     ext i; fin_cases i <;> simp
   have hd := h'.delta_method_gaussian hV hZ tendsto_sqrt_natCast_atTop
-    (hasGradientAt_gpdReturnLevelVec₃ (σ := σ₀) (u := u) hξ₀ hNζ)
+    (hasGradientAt_gpdReturnLevelVec₃_all (ζ := ζ₀) (ξ := ξ₀) (σ := σ₀) (u := u) hNζ)
     (fun n => ((measurable_gpdReturnLevel₃ u N).comp_aemeasurable (hθm n)).congr
       (Eventually.of_forall fun ω => by simp [gpdReturnLevelVec₃])) hW
   simpa [gpdReturnLevelVec₃] using hd
+
+/-- **Asymptotic normality of the POT return level with estimated exceedance rate**
+([Coles, §4.3.3]). If `√n (ζ̂ₙ - ζ₀, ξ̂ₙ - ξ₀, σ̂ₙ - σ₀) ⇒ N(0, V)`, `ξ₀ ≠ 0`, `N ζ₀ > 0`, then
+`√n (x̂_N - x_N) ⇒ N(0, ∇x_Nᵀ V ∇x_N)` with `∇x_N = (σ N^ξ ζ^{ξ-1}, σ ∂_ξ h, h)`
+(`gpdReturnLevelGrad₃`, `gpdReturnLevelGrad₃_zero`). Coles takes `V` block diagonal, with
+`ζ̂` the exceedance frequency (`Var = ζ(1 - ζ)`) and the GPD inverse information. This is the delta
+method: no data appear, and joint normality is a hypothesis. -/
+theorem tendstoInDistribution_gpdReturnLevel₃ {ζ₀ ξ₀ σ₀ u N : ℝ} (_hξ₀ : ξ₀ ≠ 0)
+    (hNζ : 0 < N * ζ₀) {θh : ℕ → Ω → ℝ × ℝ × ℝ} (hθm : ∀ n, AEMeasurable (θh n) P)
+    {V : Matrix (Fin 3) (Fin 3) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 3)}
+    (h : TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
+      !₂[(θh n ω).1 - ζ₀, (θh n ω).2.1 - ξ₀, (θh n ω).2.2 - σ₀]) atTop Z (fun _ => P) P')
+    (hZ : HasLaw Z (multivariateGaussian 0 V) P') {W : Ω'' → ℝ}
+    (hW : HasLaw W (gaussianReal 0 (gpdReturnLevelGrad₃ ζ₀ ξ₀ σ₀ N ⬝ᵥ
+      V *ᵥ gpdReturnLevelGrad₃ ζ₀ ξ₀ σ₀ N).toNNReal) P'') :
+    TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) *
+      (gpdReturnLevel u (θh n ω).2.1 (θh n ω).2.2 (θh n ω).1 N - gpdReturnLevel u ξ₀ σ₀ ζ₀ N))
+      atTop W (fun _ => P) P'' :=
+  tendstoInDistribution_gpdReturnLevel₃_all hNζ hθm hV h hZ hW
 
 end Normality
 

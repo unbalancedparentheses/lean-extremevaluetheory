@@ -271,7 +271,8 @@ theorem test_gpdReturnLevelVariance_rainfall :
   set B : ℝ := 186 / 25 * (w * L / (23 / 125) - (w - 1) / (23 / 125) ^ 2) with hB
   set C : ℝ := (w - 1) / (23 / 125) with hC
   have hgrad : gpdReturnLevelGrad₃ (152 / 17531) (23 / 125) (186 / 25) 36500 = !₂[A, B, C] := by
-    simp only [gpdReturnLevelGrad₃, boxCoxShapeDeriv, boxCox_of_ne (show (23 / 125 : ℝ) ≠ 0 by norm_num)]
+    simp only [gpdReturnLevelGrad₃, boxCoxShapeDeriv_of_ne (show (23 / 125 : ℝ) ≠ 0 by norm_num),
+      boxCox_of_ne (show (23 / 125 : ℝ) ≠ 0 by norm_num)]
     rw [show (36500 : ℝ) * (152 / 17531) = x₀ from rfl, hrpow]
   have hAe : A = 186 / 25 * 36500 * (w / (36500 * (152 / 17531))) := rfl
   have hA1 : 2470 ≤ A := by rw [hAe]; norm_num at hw1 ⊢; linarith
