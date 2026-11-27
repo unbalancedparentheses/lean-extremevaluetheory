@@ -269,4 +269,82 @@ example (ξ σ : ℝ) :
       gevMLECov ξ σ 2 2 = (gevFisherInfo ξ σ)⁻¹ 1 1 ∧ gevMLECov ξ σ 0 1 = (gevFisherInfo ξ σ)⁻¹ 2 0 :=
   ⟨rfl, rfl, rfl, rfl⟩
 
+/-- The compact parameter set `[0, 1] × [1, 2]` for the two-parameter Gumbel model `(μ, σ)`. -/
+private def gumbelK : Set (ℝ × ℝ) := Icc (0 : ℝ) 1 ×ˢ Icc (1 : ℝ) 2
+
+/-- Exercises `exists_gumbelMLE_tendstoInDistribution` (joint asymptotic normality of the
+two-parameter Gumbel MLE): iid `Gumbel(μ = 1/2, σ = 3/2)` samples, `K = [0, 1] × [1, 2]`.
+All hypotheses discharged. -/
+theorem test_nonvacuous_exists_gumbelMLE_tendstoInDistribution :
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ)
+      (_ : IsProbabilityMeasure P), iIndepFun X P ∧
+      ∃ g : (n : ℕ) → (Fin n → ℝ) → ℝ × ℝ, (∀ n, Measurable (g n)) ∧
+        (∀ n x, g n x ∈ gumbelK ∧
+          IsMaxOn (fun p : ℝ × ℝ => gevLogLikE 0 p.1 p.2 x) gumbelK (g n x)) ∧
+        TendstoInDistribution (fun (n : ℕ) ω => √(n : ℝ) •
+            !₂[(g n (fun i : Fin n => X i ω)).1 - 1 / 2,
+              (g n (fun i : Fin n => X i ω)).2 - 3 / 2])
+          atTop (id : EuclideanSpace ℝ (Fin 2) → EuclideanSpace ℝ (Fin 2)) (fun _ => P)
+          (multivariateGaussian 0 (gumbelFisherInfoInv (3 / 2))) := by
+  have hσ : (0 : ℝ) < 3 / 2 := by norm_num
+  obtain ⟨Ω, _, P, X, -, hlaw, hind, hP⟩ :=
+    exists_iid ℕ (gevLocScaleCDF 0 (1 / 2) hσ).measure
+  have := hP
+  have hK : IsCompact gumbelK := isCompact_Icc.prod isCompact_Icc
+  have hKS : ∀ p ∈ gumbelK, 0 < p.2 := fun p hp => by
+    have : 1 ≤ p.2 := hp.2.1; linarith
+  have hint : ((1 / 2 : ℝ), (3 / 2 : ℝ)) ∈ interior gumbelK := by
+    rw [gumbelK, interior_prod_eq, interior_Icc, interior_Icc]
+    exact ⟨⟨by norm_num, by norm_num⟩, ⟨by norm_num, by norm_num⟩⟩
+  refine ⟨Ω, _, P, X, hP, hind, ?_⟩
+  exact exists_gumbelMLE_tendstoInDistribution hK hKS hint hσ hlaw hind HasLaw.id
+
+/-- Exercises `exists_gumbelMLE_returnLevelPlugInInterval_tendsto` (unconditional computable
+plug-in Wald confidence interval for the Gumbel MLE return level): iid `Gumbel(1/2, 3/2)` samples,
+`100`-block return level, measurable maximizers over `[0, 1] × [1, 2]`. All hypotheses discharged. -/
+theorem test_nonvacuous_exists_gumbelMLE_returnLevelPlugInInterval :
+    0 < gumbelReturnLevelVar (3 / 2) 100 ∧
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ)
+      (_ : IsProbabilityMeasure P), iIndepFun X P ∧
+      ∃ g : (n : ℕ) → (Fin n → ℝ) → ℝ × ℝ, (∀ n, Measurable (g n)) ∧
+        (∀ n x, g n x ∈ gumbelK ∧
+          IsMaxOn (fun p : ℝ × ℝ => gevLogLikE 0 p.1 p.2 x) gumbelK (g n x)) ∧
+        ∀ z : ℝ, Tendsto (fun n : ℕ => P {ω | gevReturnLevel 0 (1 / 2) (3 / 2) 100 ∈ Icc
+          (gevReturnLevel 0 (g n (fun i : Fin n => X i ω)).1 (g n (fun i : Fin n => X i ω)).2 100 -
+            z * √(gumbelReturnLevelVar (g n (fun i : Fin n => X i ω)).2 100) / √(n : ℝ))
+          (gevReturnLevel 0 (g n (fun i : Fin n => X i ω)).1 (g n (fun i : Fin n => X i ω)).2 100 +
+            z * √(gumbelReturnLevelVar (g n (fun i : Fin n => X i ω)).2 100) / √(n : ℝ))})
+          atTop (𝓝 (gaussianReal 0 1 (Icc (-z) z))) := by
+  have hσ : (0 : ℝ) < 3 / 2 := by norm_num
+  refine ⟨gumbelReturnLevelVar_pos hσ 100, ?_⟩
+  obtain ⟨Ω, _, P, X, -, hlaw, hind, hP⟩ :=
+    exists_iid ℕ (gevLocScaleCDF 0 (1 / 2) hσ).measure
+  have := hP
+  have hK : IsCompact gumbelK := isCompact_Icc.prod isCompact_Icc
+  have hKS : ∀ p ∈ gumbelK, 0 < p.2 := fun p hp => by
+    have : 1 ≤ p.2 := hp.2.1; linarith
+  have hint : ((1 / 2 : ℝ), (3 / 2 : ℝ)) ∈ interior gumbelK := by
+    rw [gumbelK, interior_prod_eq, interior_Icc, interior_Icc]
+    exact ⟨⟨by norm_num, by norm_num⟩, ⟨by norm_num, by norm_num⟩⟩
+  refine ⟨Ω, _, P, X, hP, hind, ?_⟩
+  exact exists_gumbelMLE_returnLevelPlugInInterval_tendsto (m := 100) hK hKS hint hσ hlaw hind
+
+/-- Exercises `posDef_gevFisherInfoZero` and `tendstoInDistribution_gumbelScoreVec3` (the full
+`3 × 3` positive definite GEV Fisher information and trivariate score CLT at `ξ = 0`): iid
+`GEV(0, 1/2, 3/2)` samples. All hypotheses discharged. -/
+theorem test_nonvacuous_tendstoInDistribution_gumbelScoreVec3 :
+    (gevFisherInfoZero (3 / 2)).PosDef ∧
+    ∃ (Ω : Type) (_ : MeasurableSpace Ω) (P : Measure Ω) (X : ℕ → Ω → ℝ)
+      (_ : IsProbabilityMeasure P), iIndepFun X P ∧
+      TendstoInDistribution
+        (fun (n : ℕ) ω => (√(n : ℝ))⁻¹ • ∑ i ∈ Finset.range n, gumbelScoreVec3 (1 / 2) (3 / 2) (X i ω))
+        atTop (id : EuclideanSpace ℝ (Fin 3) → EuclideanSpace ℝ (Fin 3)) (fun _ => P)
+        (multivariateGaussian 0 (gevFisherInfoZero (3 / 2))) := by
+  have hσ : (0 : ℝ) < 3 / 2 := by norm_num
+  refine ⟨posDef_gevFisherInfoZero hσ, ?_⟩
+  obtain ⟨Ω, _, P, X, -, hlaw, hind, hP⟩ :=
+    exists_iid ℕ (gevLocScaleCDF 0 (1 / 2) hσ).measure
+  have := hP
+  exact ⟨Ω, _, P, X, hP, hind, tendstoInDistribution_gumbelScoreVec3 hσ hlaw hind HasLaw.id⟩
+
 end ExtremeValueTheory.Test.NonVacuity
