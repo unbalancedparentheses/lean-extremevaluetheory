@@ -15,6 +15,11 @@ require «doc-gen4» from git
 @[default_target]
 lean_lib «ExtremeValueTheory» where
 
+/-- Original research results built on top of `ExtremeValueTheory`, kept separate from the core
+textbook library. Built via `lake build Research` and audited by `Test.AxiomAudit`. -/
+lean_lib «Research» where
+  globs := #[.one `Research, .submodules `Research]
+
 /-- Specification tests: non-vacuity, known answers and junk-value checks for the statements of
 the library. Built in CI by `lake build Test`; see `Test/README.md`. -/
 lean_lib «Test» where

@@ -1,8 +1,8 @@
-import ExtremeValueTheory
+import Research
 
 /-! # Non-vacuity and known-answer tests: extremal conditional independence in max-linear DAGs
 
-Exercises every headline theorem of `ExtremeValueTheory.Multivariate.MaxLinearCI` on concrete
+Exercises every headline theorem of `Research.MaxLinearCI` on concrete
 finite-DAG recursive max-linear models, including:
 * bridging a concrete normalized max-linear model on `starDAG` to `IsSimpleMaxStable` via
   `exists_isSimpleMaxStable_maxLinear` and to `spectralExponentMeasure` via

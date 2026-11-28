@@ -86,11 +86,11 @@ def check(path: Path) -> list[str]:
     ]
 
 
-IMPORT = re.compile(r"^(?:public\s+)?(?:meta\s+)?import\s+(?:all\s+)?(ExtremeValueTheory[\w.]*)", re.MULTILINE)
+IMPORT = re.compile(r"^(?:public\s+)?(?:meta\s+)?import\s+(?:all\s+)?((?:ExtremeValueTheory|Research)[\w.]*)", re.MULTILINE)
 
 
-def unreachable(umbrella: Path = Path("ExtremeValueTheory.lean")) -> list[Path]:
-    """Files under `ExtremeValueTheory/` that no chain of imports from the umbrella reaches."""
+def unreachable(umbrella: Path = Path("ExtremeValueTheory.lean"), root_dir: Path = Path("ExtremeValueTheory")) -> list[Path]:
+    """Files under `root_dir/` that no chain of imports from `umbrella` reaches."""
     seen: set[Path] = set()
     stack = [umbrella]
     while stack:
@@ -100,19 +100,21 @@ def unreachable(umbrella: Path = Path("ExtremeValueTheory.lean")) -> list[Path]:
         seen.add(path)
         code = strip_comments_and_strings(path.read_text(encoding="utf-8"))
         stack += [Path(*m.split(".")).with_suffix(".lean") for m in IMPORT.findall(code)]
-    return [f for f in sorted(Path("ExtremeValueTheory").rglob("*.lean")) if f not in seen]
+    return [f for f in sorted(root_dir.rglob("*.lean")) if f not in seen]
 
 
 def main() -> int:
     args = [Path(a) for a in sys.argv[1:]]
-    roots = args or [Path(r) for r in ("ExtremeValueTheory", "ExtremeValueTheory.lean", "Test", "Test.lean", "Downstream", "Examples", "Examples.lean", "Challenge.lean", "Solution.lean")]
+    roots = args or [Path(r) for r in ("ExtremeValueTheory", "ExtremeValueTheory.lean", "Research", "Research.lean", "Test", "Test.lean", "Downstream", "Examples", "Examples.lean", "Challenge.lean", "Solution.lean")]
     files = [f for root in roots for f in ([root] if root.is_file() else sorted(root.rglob("*.lean")))]
     if not files:
         print("check_source: no Lean files found", file=sys.stderr)
         return 2
     problems = [p for f in files for p in check(f)]
     if not args:
-        problems += [f"{f}: not reachable from ExtremeValueTheory.lean" for f in unreachable()]
+        problems += [f"{f}: not reachable from ExtremeValueTheory.lean" for f in unreachable(Path("ExtremeValueTheory.lean"), Path("ExtremeValueTheory"))]
+        if Path("Research.lean").exists():
+            problems += [f"{f}: not reachable from Research.lean" for f in unreachable(Path("Research.lean"), Path("Research"))]
     for p in problems:
         print(p)
     print(f"check_source: {len(files)} files, {len(problems)} problems")

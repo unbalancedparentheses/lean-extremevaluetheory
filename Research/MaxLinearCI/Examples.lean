@@ -3,7 +3,7 @@ Copyright (c) 2026 Federico Carrone. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Federico Carrone
 -/
-import ExtremeValueTheory.Multivariate.MaxLinearCI.Measure
+import Research.MaxLinearCI.Measure
 
 /-!
 # Strictness Witnesses and Complete Resolution of Engelke et al. (2024)

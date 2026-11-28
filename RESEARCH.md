@@ -123,6 +123,21 @@ anticlustering holds iff `ρ < ρ₀` (`ρ ≠ ρ₀`)." Remaining checks before
 (1995, moving maxima with random translations), the Kulik–Soulier examples (ch. 6–7, 14–15), and the
 published wording of Bai–Kulik–Wang.
 
+### Extremal conditional independence in max-linear DAGs (`Research/MaxLinearCI/`)
+
+Engelke, Hentschel, Lalancette and Röttger (2024, [arXiv:2402.02187](https://arxiv.org/abs/2402.02187), *Graphical Models for Multivariate Extremes*) ask whether $d$-separation characterizes extremal conditional independence (Engelke–Ivanovs–Strokorb, [arXiv:2211.15769](https://arxiv.org/abs/2211.15769), Def. 3.1) in recursive max-linear Bayesian networks on finite DAGs, and how extremal conditional independence compares to $*$-separation.
+
+**Resolved and formalized** (`Research/MaxLinearCI.lean`, re-exported by top-level `Research.lean`, with submodules `Graph.lean`, `Measure.lean`, `Examples.lean`; non-vacuity tests in `Test/NonVacuity/MaxLinearCI.lean`):
+
+- **Exact ray characterization (`extremalCondIndep_rayExponentMeasure_iff`):** For any finite-ray exponent measure $\Lambda = \sum_k \Lambda_k$, `ExtremalCondIndep Λ A B C` holds iff (I) every zero-$C$ ray vanishes on $A$ or $B$, and (II) for every nonzero $C$-direction $v$, the $\|b_{C,k}\|_1$-weighted discrete measure over scaled $(A,B)$-coordinates of rays along $v$ is a rank-1 product measure.
+- **Universal positive chain (`MaxLinearModel.isDSeparated_imp_extremalCondIndep`, `MaxLinearModel.isStarSeparated_imp_extremalCondIndep`, `MaxLinearModel.isFootprintSeparated_imp_extremalCondIndep`):** For every finite DAG $G$ and every positive recursive max-linear model $M$ on $G$, $d$-separation $\implies$ $*$-separation $\implies$ footprint separation $\implies$ extremal CI.
+- **Strictness witnesses (`engelke_2024_complete_resolution`):**
+  - *5-node W-graph* (`wDAG`: `0 → 1 ← 2 → 3 ← 4`, `A={0}, B={4}, C={1,3}`): separates $d$-sep (false) from $*$-sep and universal $\Lambda$-CI (true).
+  - *4-node Star DAG* (`starDAG`: `0 → 1, 0 → 2, 0 → 3`, `A={0}, B={1}, C={2,3}`): `0 → 1` is a **direct edge** (both $d$-sep and $*$-sep fail), yet **both** Engelke–Ivanovs–Strokorb `ExtremalCondIndep` and Engelke–Hitz `ParetoCondIndep` hold for **every** positive weight matrix.
+  - *4-node Non-Adjacent Collider* (`colliderDAG`: `0 → 2 ← 1, 0 → 3`): non-adjacent nodes failing $d$-sep and $*$-sep while satisfying universal $\Lambda$-CI.
+  - *4-node Diamond DAG* (`diamondDAG`: `0 → 1 → 3, 0 → 2 → 3`): unit weights satisfy $\Lambda$-CI via a genuine $2 \times 2$ rank-1 product measure, whereas `diag 0 = 2` fails ($2 \cdot 5 \neq 3 \cdot 3$).
+- **Empirical Star-DAG specification benchmark** (`Research/MaxLinearCI/empirical/`): uses the weight-free 4-node Star Theorem as a parameter-free goodness-of-fit test on `flights.rda` (rejecting recursive max-linear in favor of Hüsler–Reiss on 7 US aviation hub-spoke stars with matched pairwise $\chi_{90}$) and analyzes the converging in-tree topology (`max out-degree = 1`, zero separation gaps) of `danube.rda`.
+
 ### Practical open problems
 
 A literature survey of open problems that practitioners care about and that this library can reach
