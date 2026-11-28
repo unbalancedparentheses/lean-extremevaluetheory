@@ -17,6 +17,8 @@ jobs:
           python3 scripts/check_architecture.py
           python3 scripts/check_architecture.py --self-test
       - uses: leanprover/lean-action@v1
+      - name: Build the original research library
+        run: lake build Research
       - name: Build the specification tests and the axiom audit
         run: lake build Test
       - name: Build the worked examples

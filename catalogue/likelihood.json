@@ -229,7 +229,7 @@
     "source": "Coles §3.3.3",
     "lean_name": "ExtremeValueTheory.tendstoInDistribution_gevReturnLevel",
     "file": "ExtremeValueTheory/Statistics/ReturnLevelNormality.lean",
-    "statement": "ExtremeValueTheory.tendstoInDistribution_gevReturnLevel.{u_1, u_2, u_3} {Ω : Type u_1}\n  {Ω' : Type u_2} {Ω'' : Type u_3} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}\n  {mΩ'' : MeasurableSpace Ω''} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {P' : MeasureTheory.Measure Ω'} [MeasureTheory.IsProbabilityMeasure P']\n  {P'' : MeasureTheory.Measure Ω''} [MeasureTheory.IsProbabilityMeasure P''] {ξ₀ μ₀ σ₀ m : ℝ}\n  (hξ₀ : ξ₀ ≠ 0) (hm : 1 < m) {θh : ℕ → Ω → ℝ × ℝ × ℝ} (hθm : ∀ (n : ℕ), AEMeasurable (θh n) P)\n  {V : Matrix (Fin 3) (Fin 3) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 3)}\n  (h :\n    MeasureTheory.TendstoInDistribution\n      (fun n ω => √↑n • !₂[(θh n ω).1 - ξ₀, (θh n ω).2.1 - μ₀, (θh n ω).2.2 - σ₀]) Filter.atTop Z\n      (fun x => P) P')\n  (hZ : ProbabilityTheory.HasLaw Z (ProbabilityTheory.multivariateGaussian 0 V) P') {W : Ω'' → ℝ}\n  (hW :\n    ProbabilityTheory.HasLaw W\n      (ProbabilityTheory.gaussianReal 0\n        ((ExtremeValueTheory.gevReturnLevelGrad ξ₀ σ₀ m).ofLp ⬝ᵥ\n            V.mulVec (ExtremeValueTheory.gevReturnLevelGrad ξ₀ σ₀ m).ofLp).toNNReal)\n      P'') :\n  MeasureTheory.TendstoInDistribution\n    (fun n ω =>\n      √↑n *\n        (ExtremeValueTheory.gevReturnLevel (θh n ω).1 (θh n ω).2.1 (θh n ω).2.2 m -\n          ExtremeValueTheory.gevReturnLevel ξ₀ μ₀ σ₀ m))\n    Filter.atTop W (fun x => P) P''",
+    "statement": "ExtremeValueTheory.tendstoInDistribution_gevReturnLevel.{u_1, u_2, u_3} {Ω : Type u_1}\n  {Ω' : Type u_2} {Ω'' : Type u_3} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'}\n  {mΩ'' : MeasurableSpace Ω''} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {P' : MeasureTheory.Measure Ω'} [MeasureTheory.IsProbabilityMeasure P']\n  {P'' : MeasureTheory.Measure Ω''} [MeasureTheory.IsProbabilityMeasure P''] {ξ₀ μ₀ σ₀ m : ℝ}\n  (_hξ₀ : ξ₀ ≠ 0) (hm : 1 < m) {θh : ℕ → Ω → ℝ × ℝ × ℝ} (hθm : ∀ (n : ℕ), AEMeasurable (θh n) P)\n  {V : Matrix (Fin 3) (Fin 3) ℝ} (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 3)}\n  (h :\n    MeasureTheory.TendstoInDistribution\n      (fun n ω => √↑n • !₂[(θh n ω).1 - ξ₀, (θh n ω).2.1 - μ₀, (θh n ω).2.2 - σ₀]) Filter.atTop Z\n      (fun x => P) P')\n  (hZ : ProbabilityTheory.HasLaw Z (ProbabilityTheory.multivariateGaussian 0 V) P') {W : Ω'' → ℝ}\n  (hW :\n    ProbabilityTheory.HasLaw W\n      (ProbabilityTheory.gaussianReal 0\n        ((ExtremeValueTheory.gevReturnLevelGrad ξ₀ σ₀ m).ofLp ⬝ᵥ\n            V.mulVec (ExtremeValueTheory.gevReturnLevelGrad ξ₀ σ₀ m).ofLp).toNNReal)\n      P'') :\n  MeasureTheory.TendstoInDistribution\n    (fun n ω =>\n      √↑n *\n        (ExtremeValueTheory.gevReturnLevel (θh n ω).1 (θh n ω).2.1 (θh n ω).2.2 m -\n          ExtremeValueTheory.gevReturnLevel ξ₀ μ₀ σ₀ m))\n    Filter.atTop W (fun x => P) P''",
     "status": "reduced",
     "scope_note": "Asymptotic normality of the parameter estimators is a hypothesis, so this is the delta method. For the maximum likelihood estimator, where normality is proved, see gev-mle-return-level-normality. Also xi0 != 0.",
     "axioms": [
@@ -237,7 +237,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "49b159293f09a10e8383af92f9e9a0fc"
+    "input_hash": "e7e98646071ede34bb8ef8b471c8efb3"
   },
   {
     "id": "gev-return-level-interval",
@@ -245,7 +245,7 @@
     "source": "Coles §3.3.3",
     "lean_name": "ExtremeValueTheory.tendsto_measure_mem_gevReturnLevelInterval",
     "file": "ExtremeValueTheory/Statistics/ConfidenceIntervals.lean",
-    "statement": "ExtremeValueTheory.tendsto_measure_mem_gevReturnLevelInterval.{u_1, u_2} {Ω : Type u_1}\n  {Ω' : Type u_2} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {P' : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure P'] {ξ₀ μ₀ σ₀ m : ℝ} (hξ₀ : ξ₀ ≠ 0) (hm : 1 < m)\n  {θh : ℕ → Ω → ℝ × ℝ × ℝ} (hθm : ∀ (n : ℕ), AEMeasurable (θh n) P) {V : Matrix (Fin 3) (Fin 3) ℝ}\n  (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 3)}\n  (h :\n    MeasureTheory.TendstoInDistribution\n      (fun n ω => √↑n • !₂[(θh n ω).1 - ξ₀, (θh n ω).2.1 - μ₀, (θh n ω).2.2 - σ₀]) Filter.atTop Z\n      (fun x => P) P')\n  (hZ : ProbabilityTheory.HasLaw Z (ProbabilityTheory.multivariateGaussian 0 V) P') {s : ℝ}\n  (hs : 0 < s)\n  (hsV :\n    s ^ 2 =\n      (ExtremeValueTheory.gevReturnLevelGrad ξ₀ σ₀ m).ofLp ⬝ᵥ\n        V.mulVec (ExtremeValueTheory.gevReturnLevelGrad ξ₀ σ₀ m).ofLp)\n  {S : ℕ → Ω → ℝ} (hS : MeasureTheory.TendstoInMeasure P S Filter.atTop fun x => s)\n  (hSm : ∀ (n : ℕ), AEMeasurable (S n) P) (z : ℝ) :\n  Filter.Tendsto\n    (fun n =>\n      P\n        {ω |\n          ExtremeValueTheory.gevReturnLevel ξ₀ μ₀ σ₀ m ∈\n            Set.Icc\n              (ExtremeValueTheory.gevReturnLevel (θh n ω).1 (θh n ω).2.1 (θh n ω).2.2 m -\n                z * S n ω / √↑n)\n              (ExtremeValueTheory.gevReturnLevel (θh n ω).1 (θh n ω).2.1 (θh n ω).2.2 m +\n                z * S n ω / √↑n)})\n    Filter.atTop (nhds ((ProbabilityTheory.gaussianReal 0 1) (Set.Icc (-z) z)))",
+    "statement": "ExtremeValueTheory.tendsto_measure_mem_gevReturnLevelInterval.{u_1, u_2} {Ω : Type u_1}\n  {Ω' : Type u_2} {mΩ : MeasurableSpace Ω} {mΩ' : MeasurableSpace Ω'} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {P' : MeasureTheory.Measure Ω'}\n  [MeasureTheory.IsProbabilityMeasure P'] {ξ₀ μ₀ σ₀ m : ℝ} (_hξ₀ : ξ₀ ≠ 0) (hm : 1 < m)\n  {θh : ℕ → Ω → ℝ × ℝ × ℝ} (hθm : ∀ (n : ℕ), AEMeasurable (θh n) P) {V : Matrix (Fin 3) (Fin 3) ℝ}\n  (hV : V.PosSemidef) {Z : Ω' → EuclideanSpace ℝ (Fin 3)}\n  (h :\n    MeasureTheory.TendstoInDistribution\n      (fun n ω => √↑n • !₂[(θh n ω).1 - ξ₀, (θh n ω).2.1 - μ₀, (θh n ω).2.2 - σ₀]) Filter.atTop Z\n      (fun x => P) P')\n  (hZ : ProbabilityTheory.HasLaw Z (ProbabilityTheory.multivariateGaussian 0 V) P') {s : ℝ}\n  (hs : 0 < s)\n  (hsV :\n    s ^ 2 =\n      (ExtremeValueTheory.gevReturnLevelGrad ξ₀ σ₀ m).ofLp ⬝ᵥ\n        V.mulVec (ExtremeValueTheory.gevReturnLevelGrad ξ₀ σ₀ m).ofLp)\n  {S : ℕ → Ω → ℝ} (hS : MeasureTheory.TendstoInMeasure P S Filter.atTop fun x => s)\n  (hSm : ∀ (n : ℕ), AEMeasurable (S n) P) (z : ℝ) :\n  Filter.Tendsto\n    (fun n =>\n      P\n        {ω |\n          ExtremeValueTheory.gevReturnLevel ξ₀ μ₀ σ₀ m ∈\n            Set.Icc\n              (ExtremeValueTheory.gevReturnLevel (θh n ω).1 (θh n ω).2.1 (θh n ω).2.2 m -\n                z * S n ω / √↑n)\n              (ExtremeValueTheory.gevReturnLevel (θh n ω).1 (θh n ω).2.1 (θh n ω).2.2 m +\n                z * S n ω / √↑n)})\n    Filter.atTop (nhds ((ProbabilityTheory.gaussianReal 0 1) (Set.Icc (-z) z)))",
     "status": "reduced",
     "scope_note": "Parameter normality and consistency of the standard error are both hypotheses; a Slutsky step from gev-return-level-normality. Also xi0 != 0.",
     "axioms": [
@@ -253,7 +253,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "af39f8a6efb147f3b86627263e422d99"
+    "input_hash": "7ba54d27bd137e3b13077396e354a258"
   },
   {
     "id": "gpd-return-level-normality",
@@ -261,7 +261,7 @@
     "source": "Coles §4.3.3; Smith (1985)",
     "lean_name": "ExtremeValueTheory.tendstoInDistribution_gpdReturnLevel",
     "file": "ExtremeValueTheory/Statistics/ReturnLevelNormality.lean",
-    "statement": "ExtremeValueTheory.tendstoInDistribution_gpdReturnLevel.{u_1, u_3} {Ω : Type u_1} {Ω'' : Type u_3}\n  {mΩ : MeasurableSpace Ω} {mΩ'' : MeasurableSpace Ω''} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {P'' : MeasureTheory.Measure Ω''}\n  [MeasureTheory.IsProbabilityMeasure P''] {ξ₀ σ₀ u ζ N : ℝ} {X : ℕ → Ω → ℝ} {K : Set (ℝ × ℝ)}\n  (hK : IsCompact K) (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K)\n  (hξ₀ : -1 / 2 < ξ₀) (hξ₀0 : ξ₀ ≠ 0) (hσ₀ : 0 < σ₀)\n  (hX : ∀ (i : ℕ), ProbabilityTheory.HasLaw (X i) (ExtremeValueTheory.gpdMeasure ξ₀ σ₀) P)\n  (hind : ProbabilityTheory.iIndepFun X P) {θh : ℕ → Ω → ℝ × ℝ}\n  (hθm : ∀ (n : ℕ), AEMeasurable (θh n) P) (hθK : ∀ (n : ℕ) (ω : Ω), θh n ω ∈ K)\n  (hmax :\n    ∀ (n : ℕ) (ω : Ω),\n      IsMaxOn (fun p => ExtremeValueTheory.gpdLogLikE p.1 p.2 fun i => X (↑i) ω) K (θh n ω))\n  (hNζ : 0 < N * ζ) {W : Ω'' → ℝ}\n  (hW :\n    ProbabilityTheory.HasLaw W\n      (ProbabilityTheory.gaussianReal 0 (ExtremeValueTheory.gpdReturnLevelVar ξ₀ σ₀ ζ N).toNNReal)\n      P'') :\n  MeasureTheory.TendstoInDistribution\n    (fun n ω =>\n      √↑n *\n        (ExtremeValueTheory.gpdReturnLevel u (θh n ω).1 (θh n ω).2 ζ N -\n          ExtremeValueTheory.gpdReturnLevel u ξ₀ σ₀ ζ N))\n    Filter.atTop W (fun x => P) P''",
+    "statement": "ExtremeValueTheory.tendstoInDistribution_gpdReturnLevel.{u_1, u_3} {Ω : Type u_1} {Ω'' : Type u_3}\n  {mΩ : MeasurableSpace Ω} {mΩ'' : MeasurableSpace Ω''} {P : MeasureTheory.Measure Ω}\n  [MeasureTheory.IsProbabilityMeasure P] {P'' : MeasureTheory.Measure Ω''}\n  [MeasureTheory.IsProbabilityMeasure P''] {ξ₀ σ₀ u ζ N : ℝ} {X : ℕ → Ω → ℝ} {K : Set (ℝ × ℝ)}\n  (hK : IsCompact K) (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K)\n  (hξ₀ : -1 / 2 < ξ₀) (_hξ₀0 : ξ₀ ≠ 0) (hσ₀ : 0 < σ₀)\n  (hX : ∀ (i : ℕ), ProbabilityTheory.HasLaw (X i) (ExtremeValueTheory.gpdMeasure ξ₀ σ₀) P)\n  (hind : ProbabilityTheory.iIndepFun X P) {θh : ℕ → Ω → ℝ × ℝ}\n  (hθm : ∀ (n : ℕ), AEMeasurable (θh n) P) (hθK : ∀ (n : ℕ) (ω : Ω), θh n ω ∈ K)\n  (hmax :\n    ∀ (n : ℕ) (ω : Ω),\n      IsMaxOn (fun p => ExtremeValueTheory.gpdLogLikE p.1 p.2 fun i => X (↑i) ω) K (θh n ω))\n  (hNζ : 0 < N * ζ) {W : Ω'' → ℝ}\n  (hW :\n    ProbabilityTheory.HasLaw W\n      (ProbabilityTheory.gaussianReal 0 (ExtremeValueTheory.gpdReturnLevelVar ξ₀ σ₀ ζ N).toNNReal)\n      P'') :\n  MeasureTheory.TendstoInDistribution\n    (fun n ω =>\n      √↑n *\n        (ExtremeValueTheory.gpdReturnLevel u (θh n ω).1 (θh n ω).2 ζ N -\n          ExtremeValueTheory.gpdReturnLevel u ξ₀ σ₀ ζ N))\n    Filter.atTop W (fun x => P) P''",
     "status": "reduced",
     "scope_note": "The excesses are exactly iid GPD with exceedance probability zeta known: the random number of exceedances and the approximation of real excesses by the GPD are not modelled. Compact K, xi0 > -1/2, xi0 != 0. Parameter normality is proved here, unlike the GEV case.",
     "axioms": [
@@ -269,7 +269,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "9b9a4d17cfe54627c9cd8dfdc04a077c"
+    "input_hash": "27d5521056698108b5252e49dbd776e1"
   },
   {
     "id": "gpd-return-level-interval",
@@ -277,7 +277,7 @@
     "source": "Coles §4.3.3",
     "lean_name": "ExtremeValueTheory.tendsto_measure_mem_gpdReturnLevelInterval",
     "file": "ExtremeValueTheory/Statistics/ConfidenceIntervals.lean",
-    "statement": "ExtremeValueTheory.tendsto_measure_mem_gpdReturnLevelInterval.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {ξ₀ σ₀ u ζ N : ℝ} {X : ℕ → Ω → ℝ} {K : Set (ℝ × ℝ)} (hK : IsCompact K)\n  (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K) (hξ₀ : -1 / 2 < ξ₀)\n  (hξ₀0 : ξ₀ ≠ 0) (hσ₀ : 0 < σ₀)\n  (hX : ∀ (i : ℕ), ProbabilityTheory.HasLaw (X i) (ExtremeValueTheory.gpdMeasure ξ₀ σ₀) P)\n  (hind : ProbabilityTheory.iIndepFun X P) {θh : ℕ → Ω → ℝ × ℝ}\n  (hθm : ∀ (n : ℕ), AEMeasurable (θh n) P) (hθK : ∀ (n : ℕ) (ω : Ω), θh n ω ∈ K)\n  (hmax :\n    ∀ (n : ℕ) (ω : Ω),\n      IsMaxOn (fun p => ExtremeValueTheory.gpdLogLikE p.1 p.2 fun i => X (↑i) ω) K (θh n ω))\n  (hNζ : 1 < N * ζ) (z : ℝ) :\n  Filter.Tendsto\n    (fun n =>\n      P\n        {ω |\n          ExtremeValueTheory.gpdReturnLevel u ξ₀ σ₀ ζ N ∈\n            Set.Icc\n              (ExtremeValueTheory.gpdReturnLevel u (θh n ω).1 (θh n ω).2 ζ N -\n                z * √(ExtremeValueTheory.gpdReturnLevelVar (θh n ω).1 (θh n ω).2 ζ N) / √↑n)\n              (ExtremeValueTheory.gpdReturnLevel u (θh n ω).1 (θh n ω).2 ζ N +\n                z * √(ExtremeValueTheory.gpdReturnLevelVar (θh n ω).1 (θh n ω).2 ζ N) / √↑n)})\n    Filter.atTop (nhds ((ProbabilityTheory.gaussianReal 0 1) (Set.Icc (-z) z)))",
+    "statement": "ExtremeValueTheory.tendsto_measure_mem_gpdReturnLevelInterval.{u_1} {Ω : Type u_1}\n  {mΩ : MeasurableSpace Ω} {P : MeasureTheory.Measure Ω} [MeasureTheory.IsProbabilityMeasure P]\n  {ξ₀ σ₀ u ζ N : ℝ} {X : ℕ → Ω → ℝ} {K : Set (ℝ × ℝ)} (hK : IsCompact K)\n  (hKS : ∀ p ∈ K, -1 < p.1 ∧ 0 < p.2) (hθ₀ : (ξ₀, σ₀) ∈ interior K) (hξ₀ : -1 / 2 < ξ₀)\n  (_hξ₀0 : ξ₀ ≠ 0) (hσ₀ : 0 < σ₀)\n  (hX : ∀ (i : ℕ), ProbabilityTheory.HasLaw (X i) (ExtremeValueTheory.gpdMeasure ξ₀ σ₀) P)\n  (hind : ProbabilityTheory.iIndepFun X P) {θh : ℕ → Ω → ℝ × ℝ}\n  (hθm : ∀ (n : ℕ), AEMeasurable (θh n) P) (hθK : ∀ (n : ℕ) (ω : Ω), θh n ω ∈ K)\n  (hmax :\n    ∀ (n : ℕ) (ω : Ω),\n      IsMaxOn (fun p => ExtremeValueTheory.gpdLogLikE p.1 p.2 fun i => X (↑i) ω) K (θh n ω))\n  (hNζ : 1 < N * ζ) (z : ℝ) :\n  Filter.Tendsto\n    (fun n =>\n      P\n        {ω |\n          ExtremeValueTheory.gpdReturnLevel u ξ₀ σ₀ ζ N ∈\n            Set.Icc\n              (ExtremeValueTheory.gpdReturnLevel u (θh n ω).1 (θh n ω).2 ζ N -\n                z * √(ExtremeValueTheory.gpdReturnLevelVar (θh n ω).1 (θh n ω).2 ζ N) / √↑n)\n              (ExtremeValueTheory.gpdReturnLevel u (θh n ω).1 (θh n ω).2 ζ N +\n                z * √(ExtremeValueTheory.gpdReturnLevelVar (θh n ω).1 (θh n ω).2 ζ N) / √↑n)})\n    Filter.atTop (nhds ((ProbabilityTheory.gaussianReal 0 1) (Set.Icc (-z) z)))",
     "status": "reduced",
     "scope_note": "Same setting as gpd-return-level-normality: exact GPD excesses, known zeta, compact K, xi0 != 0. Wald intervals; profile likelihood intervals are gpd-profile-return-level.",
     "axioms": [
@@ -285,7 +285,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "2dbce77701217c7a1ddab4f3e562320e"
+    "input_hash": "cb33cce8cebe1caabdddf6aa3454baf2"
   },
   {
     "id": "gpd-wilks",
@@ -349,7 +349,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "4459d469a3a64d471544b4dd2d99de2a"
+    "input_hash": "8360f42d8d0ee577d2991d77a1717f59"
   },
   {
     "id": "gev-mle-return-level-plugin-interval",
@@ -365,7 +365,7 @@
       "Quot.sound",
       "propext"
     ],
-    "input_hash": "f213acd76e3440c32723054be6854d93"
+    "input_hash": "04e7acf6c44fa143bb6439bf76e0ffc0"
   },
   {
     "id": "gumbel-mle-joint-normality",

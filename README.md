@@ -28,7 +28,7 @@ likelihood theorems describe exact models, not real data: see [Limitations](#lim
 | | |
 |---|---|
 | Size | about 117,000 lines; 4,800+ theorems and lemmas |
-| Axioms | no `sorry`; CI checks that all 10,965 declarations use only `propext`, `Classical.choice`, `Quot.sound` |
+| Axioms | no `sorry`; CI checks that all 12,198 declarations (`ExtremeValueTheory` + `Research`) use only `propext`, `Classical.choice`, `Quot.sound` |
 | [Theorem catalogue](catalogue/) | 239 headline results: 151 `full`, 2 `wrapper` (restate Mathlib), 86 `reduced` (a special case, an extra hypothesis, or part of the conclusion assumed), judged strictly; the gap is widest in statistics and likelihood, where 39 of 54 are `reduced` |
 | [Audits](FAITHFULNESS.md) | 191 statements compared with the literature: 114 faithful, 60 faithful within a stated scope, 17 differ from the cited form while correct as stated |
 | Tests | 145 non-vacuity and 253 known-answer tests; 57 Python (`scipy.stats`) & R (`evd`, `exdex`) cross-checks on executable reference estimators |
@@ -201,6 +201,15 @@ that way; their novelty has been checked against the literature
   [`tendstoInMeasure_slidingBlocksEstimator`](ExtremeValueTheory/Statistics/SlidingBlocks.lean)).
 - **Known results, proved under weaker hypotheses:** `θ ≤ ϑ` (Kulik–Soulier Lemma 7.5.4) and an exact
   formula for the gap `ϑ − θ`.
+- **Resolution of Engelke et al. (2024) on extremal CI in max-linear DAGs (`Research/MaxLinearCI/`).**
+  Addressing Engelke, Hentschel, Lalancette and Röttger (`arXiv:2402.02187`), an exact rank-1 ray
+  characterization (`extremalCondIndep_rayExponentMeasure_iff`) and four minimal finite-DAG witnesses
+  (`engelke_2024_complete_resolution`) establish the strict hierarchy
+  `d-sep ⊊ *-sep ⊊ universal Λ-CI ⊊ fixed-weight Λ-CI` — including a 4-node star DAG where a *direct
+  causal edge* `0 → 1` is extremally and Pareto conditionally independent given `{2, 3}` for every
+  positive weight matrix (`starDAG_extremalCondIndep`, `starDAG_paretoCondIndep`). Kept in the
+  separate top-level `Research` library alongside a reproducible empirical benchmark on US flight
+  delays and Upper Danube floods ([`Research/MaxLinearCI/empirical/`](Research/MaxLinearCI/empirical/README.md)).
 
 ## Limitations
 
@@ -301,7 +310,8 @@ With [elan](https://github.com/leanprover/elan) installed:
 git clone https://github.com/unbalancedparentheses/lean-extremevaluetheory.git
 cd lean-extremevaluetheory
 lake exe cache get   # prebuilt Mathlib
-lake build           # the library
+lake build           # the core library (ExtremeValueTheory)
+lake build Research  # original research built on top of the library
 lake build Test      # the specification tests and the axiom audit
 ```
 
@@ -338,10 +348,10 @@ A successful `lake build` checks every proof in the library. A proof does not sh
 what the literature says, so the library also tests its statements. `lake build Test` builds the tests and
 the axiom audit, and CI runs them on every push.
 
-- **Axioms.** [`Test/AxiomAudit.lean`](Test/AxiomAudit.lean) fails the build if any of the library's 9,487
-  declarations depends on an axiom other than the three standard ones, so a `sorry` anywhere in a proof fails CI,
+- **Axioms.** [`Test/AxiomAudit.lean`](Test/AxiomAudit.lean) fails the build if any of the 12,198
+  declarations across `ExtremeValueTheory` and `Research` depends on an axiom other than the three standard ones, so a `sorry` anywhere in a proof fails CI,
   even if hidden in a macro. [`scripts/check_source.py`](scripts/check_source.py) also rejects `sorry`, new axioms and
-  search tactics in the source, and any library file not reachable from the umbrella import.
+  search tactics in the source, and any library or research file not reachable from its umbrella import.
 
 - **Independent kernel.** A nightly [workflow](.github/workflows/kernel-check.yml) rechecks everything with
   `con-leche`, an independent kernel with a machine-checked proof that it never accepts `False`. It
@@ -413,6 +423,7 @@ the axiom audit, and CI runs them on every push.
 | `PointProcess/` | exceedance point processes |
 | `Minimality/` | counterexamples showing which hypotheses are needed |
 | `ForMathlib/` | general results written for Mathlib (vague convergence, Poisson random measures, mixing, Skorokhod space, delta method, …); see [`UPSTREAMING.md`](ExtremeValueTheory/ForMathlib/UPSTREAMING.md) |
+| `Research/` | original research built on top of `ExtremeValueTheory`, kept separate from the textbook library (`Research/MaxLinearCI/`, plus empirical benchmarks) |
 | `Test/` | specification tests: non-vacuity, known answers, junk values, mutation checks |
 
 ## Contributing
