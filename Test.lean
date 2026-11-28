@@ -22,3 +22,4 @@ import Test.KnownAnswers.Statistics
 import Test.KnownAnswers.ReturnLevels
 import Test.NonVacuity.ProfileLikelihood
 import Test.KnownAnswers.ProfileLikelihood
+import Test.NonVacuity.MaxLinearCI

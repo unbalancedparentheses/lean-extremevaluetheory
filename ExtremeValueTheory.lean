@@ -261,3 +261,7 @@ import ExtremeValueTheory.Statistics.MeanExcess
 import ExtremeValueTheory.DomainOfAttraction.NamedLaws
 import ExtremeValueTheory.HeavyTails.Layer
 import ExtremeValueTheory.Statistics.HillOfLaw
+import ExtremeValueTheory.Multivariate.MaxLinearCI.Graph
+import ExtremeValueTheory.Multivariate.MaxLinearCI.Measure
+import ExtremeValueTheory.Multivariate.MaxLinearCI.Examples
+import ExtremeValueTheory.Multivariate.MaxLinearCI
